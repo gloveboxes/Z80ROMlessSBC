@@ -1,0 +1,459 @@
+/C0083/C0078/C0053/C0052/C0072/C0067/C0084/C0049/C0053/C0055/C0044 /C0083/C0078/C0055/C0052/C0072/C0067/C0084/C0049/C0053/C0055
+/C0081/C0085/C0065/C0068/C0082/C0085/C0080/C0076/C0069 /C0050/C0262/C0076/C0073/C0078/C0069 /C0084/C0079 /C0049/C0262/C0076/C0073/C0078/C0069 /C0068/C0065/C0084/C0065 /C0083/C0069/C0076/C0069/C0067/C0084/C0079/C0082/C0083/C0047/C0077/C0085/C0076/C0084/C0073/C0080/C0076/C0069/C0088/C0069/C0082/C0083
+SCLS071D − NOVEMBER 1988 − REVISED OCTOBER 2003
+1POST OFFICE BOX 655303 • DALLAS, TEXAS 75265
+/C0068Operating Voltage Range of 4.5 V to 5.5 V
+/C0068High-Current Outputs Drive Up To 15
+LSTTL Loads
+/C0068Typical tpd = 15 ns
+/C0068Low Power Consumption, 80-µA Max ICC
+/C0068±6-mA Output Drive at 5 V
+/C0068Low Input Current of 1 µA Max
+/C0068Inputs Are TTL-Voltage Compatible
+/C0068Buffered Inputs and Outputs
+1
+2
+3
+4
+5
+6
+7
+8
+16
+15
+14
+13
+12
+11
+10
+9
+A/B
+1A
+1B
+1Y
+2A
+2B
+2Y
+GND
+V
+CC
+G
+4A
+4B
+4Y
+3A
+3B
+3Y
+SN54HCT157 ...J  O R  W  PACKAGE
+SN74HCT157 ...D  O R  N  PACKAGE
+(TOP VIEW)
+321 2 0 1 9
+91 01 11 21 3
+4
+5
+6
+7
+8
+18
+17
+16
+15
+14
+4A
+4B
+NC
+4Y
+3A
+1B
+1Y
+NC
+2A
+2B
+1A
+A/B
+NC
+3Y
+3B
+V
+G
+2Y
+GND
+NC
+SN54HCT157 . . . FK PACKAGE
+(TOP VIEW)
+CC
+NC − No internal connection
+description/ordering information
+These data selectors/multiplexers contain inverters and drivers to supply full data selection to the four output
+gates. A separate strobe (G) input is provided. A 4-bit word is selected from one of two sources and is routed
+to the four outputs.
+ORDERING INFORMATION
+TA PACKAGE† ORDERABLE
+PART NUMBER
+TOP-SIDE
+MARKING
+PDIP − N Tube of 25 SN74HCT157N SN74HCT157N
+−40°C to 85°C
+Tube of 40 SN74HCT157D
+−40°C to 85°C
+SOIC − D Reel of 2500 SN74HCT157DR HCT157SOIC − D
+Reel of 250 SN74HCT157DT
+HCT157
+CDIP − J Tube of 25 SNJ54HCT157J SNJ54HCT157J
+−55°C to 125°C CFP − W Tube of 150 SNJ54HCT157W SNJ54HCT157W−55 C to 125 C
+LCCC − FK Tube of 55 SNJ54HCT157FK SNJ54HCT157FK
+† Package drawings, standard packing quantities, thermal data, symbolization, and PCB design guidelines are
+available at www.ti.com/sc/package.
+Copyright  2003, Texas Instruments Incorporated
+Please be aware that an important notice concerning avail ability, standard warranty, and use in critical applications of
+Texas Instruments semiconductor products and disclaimers thereto appears at the end of this data sheet.
+/C0085/C0078/C0076/C0069/C0083/C0083 /C0079/C0084/C0072/C0069/C0082/C0087/C0073/C0083/C0069 /C0078/C0079/C0084/C0069/C0068 /C0116/C0104/C0105/C0115 /C0100/C0111/C0099/C0117/C0109/C0101/C0110/C0116 /C0099/C0111/C0110/C0116/C0097/C0105/C0110/C0115 /C0080/C0082/C0079/C0068/C0085/C0067/C0084/C0073/C0079/C0078
+/C0068/C0065/C0084/C0065 /C0105/C0110/C0102/C0111/C0114/C0109/C0097/C0116/C0105/C0111/C0110 /C0099/C0117/C0114/C0114/C0101/C0110/C0116 /C0097/C0115 /C0111/C0102 /C0112/C0117/C0098/C0108/C0105/C0099/C0097/C0116/C0105/C0111/C0110 /C0100/C0097/C0116/C0101/C0046 /C0080/C0114/C0111/C0100/C0117/C0099/C0116/C0115 /C0099/C0111/C0110/C0102/C0111/C0114/C0109 /C0116/C0111
+/C0115/C0112/C0101/C0099/C0105/C0102/C0105/C0099/C0097/C0116/C0105/C0111/C0110/C0115 /C0112/C0101/C0114 /C0116/C0104/C0101 /C0116/C0101/C0114/C0109/C0115 /C0111/C0102 /C0084/C0101/C0120/C0097/C0115 /C0073/C0110/C0115/C0116/C0114/C0117/C0109/C0101/C0110/C0116/C0115 /C0115/C0116/C0097/C0110/C0100/C0097/C0114/C0100 /C0119/C0097/C0114/C0114/C0097/C0110/C0116/C0121/C0046
+/C0080/C0114/C0111/C0100/C0117/C0099/C0116/C0105/C0111/C0110 /C0112/C0114/C0111/C0099/C0101/C0115/C0115/C0105/C0110/C0103 /C0100/C0111/C0101/C0115 /C0110/C0111/C0116 /C0110/C0101/C0099/C0101/C0115/C0115/C0097/C0114/C0105/C0108/C0121 /C0105/C0110/C0099/C0108/C0117/C0100/C0101 /C0116/C0101/C0115/C0116/C0105/C0110/C0103 /C0111/C0102 /C0097/C0108/C0108
+/C0112/C0097/C0114/C0097/C0109/C0101/C0116/C0101/C0114/C0115/C0046
+/C0083/C0078/C0053/C0052/C0072/C0067/C0084/C0049/C0053/C0055/C0044 /C0083/C0078/C0055/C0052/C0072/C0067/C0084/C0049/C0053/C0055
+/C0081/C0085/C0065/C0068/C0082/C0085/C0080/C0076/C0069 /C0050/C0262/C0076/C0073/C0078/C0069 /C0084/C0079 /C0049/C0262/C0076/C0073/C0078/C0069 /C0068/C0065/C0084/C0065 /C0083/C0069/C0076/C0069/C0067/C0084/C0079/C0082/C0083/C0047/C0077/C0085/C0076/C0084/C0073/C0080/C0076/C0069/C0088/C0069/C0082/C0083
+SCLS071D − NOVEMBER 1988 − REVISED OCTOBER 2003
+2 POST OFFICE BOX 655303 • DALLAS, TEXAS 75265
+FUNCTION TABLE
+INPUTS
+OUTPUT
+STROBE SELECT DATA OUTPUT
+YSTROBE
+G
+SELECT
+A/B A B
+Y
+H X X X L
+L L L XL
+L L H XH
+L H X LL
+L H X H H
+logic diagram (positive logic)
+Pin numbers shown are for the D, J, N, and W packages.
+2
+3
+5
+6
+11
+10
+14
+13
+15
+1
+G
+A/B
+4B
+4A
+3B
+3A
+2B
+2A
+1B
+1A
+4
+7
+9
+12
+1Y
+2Y
+3Y
+4Y
+/C0083/C0078/C0053/C0052/C0072/C0067/C0084/C0049/C0053/C0055/C0044 /C0083/C0078/C0055/C0052/C0072/C0067/C0084/C0049/C0053/C0055
+/C0081/C0085/C0065/C0068/C0082/C0085/C0080/C0076/C0069 /C0050/C0262/C0076/C0073/C0078/C0069 /C0084/C0079 /C0049/C0262/C0076/C0073/C0078/C0069 /C0068/C0065/C0084/C0065 /C0083/C0069/C0076/C0069/C0067/C0084/C0079/C0082/C0083/C0047/C0077/C0085/C0076/C0084/C0073/C0080/C0076/C0069/C0088/C0069/C0082/C0083
+SCLS071D − NOVEMBER 1988 − REVISED OCTOBER 2003
+3POST OFFICE BOX 655303 • DALLAS, TEXAS 75265
+absolute maximum ratings over operating free-air temperature range (unless otherwise noted)†
+Supply voltage range, VCC −0.5 V to 7 V. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Input clamp current, IIK (VI < 0 or VI > VCC) (see Note 1) ±20 mA. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Output clamp current, IOK (VO < 0 or VO > VCC) (see Note 1) ±20 mA. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Continuous output current, IO (VO = 0 to VCC) ±35 mA. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Continuous current through VCC or GND ±70 mA. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Package thermal impedance, θJA (see Note 2): D package 73 °C/W. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+N package 67 °C/W. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Storage temperature range, Tstg −65 °C to 150°C. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+† Stresses beyond those listed under “absolute maximum ratings” may cause permanent damage to the device. These are stress ratings only, and
+functional operation of the device at these or any other conditions beyond those indicated under “recommended operating conditi ons” is not
+implied. Exposure to absolute-maximum-rated conditions for extended periods may affect device reliability.
+NOTES: 1. The input and output voltage ratings may be exceeded if the input and output current ratings are observed.
+2. The package thermal impedance is calculated in accordance with JESD 51-7.
+recommended operating conditions (see Note 3)
+SN54HCT157 SN74HCT157
+UNITMIN NOM MAX MIN NOM MAX UNIT
+VCC Supply voltage 4.5 5 5.5 4.5 5 5.5 V
+VIH High-level input voltage VCC = 4.5 V to 5.5 V 2 2 V
+VIL Low-level input voltage VCC = 4.5 V to 5.5 V 0.8 0.8 V
+VI Input voltage 0 VCC 0 VCC V
+VO Output voltage 0 VCC 0 VCC V
+tt Input transition (rise and fall) time 500 500 ns
+TA Operating free-air temperature −55 125 −40 85 °C
+NOTE 3: All unused inputs of the device must be held at V CC or GND to ensure proper device operation. Refer to the TI application report,
+Implications of Slow or Floating CMOS Inputs, literature number SCBA004.
+electrical characteristics over recommended operating free-air temperature range (unless
+otherwise noted)
+PARAMETER TEST CONDITIONS VCC
+TA = 25°C SN54HCT157 SN74HCT157
+UNITPARAMETER TEST CONDITIONS VCC MIN TYP MAX MIN MAX MIN MAX UNIT
+VOH VI = VIH or VIL
+IOH = −20 µA
+4.5 V
+4.4 4.499 4.4 4.4
+VVOH VI = VIH or VIL IOH = −6 mA 4.5 V 3.98 4.3 3.7 3.84 V
+VOL VI = VIH or VIL
+IOL = 20 µA
+4.5 V
+0.001 0.1 0.1 0.1
+VVOL VI = VIH or VIL IOL = 6 mA 4.5 V 0.17 0.26 0.4 0.33 V
+II VI = VCC or 0 5.5 V ±0.1 ±100 ±1000 ±1000 nA
+ICC VI = VCC or 0, IO = 0 5.5 V 8 160 80 µA
+∆ICC† One input at 0.5 V or 2.4 V,
+Other inputs at 0 or VCC
+5.5 V 1.4 2.4 3 2.9 mA
+Ci
+4.5 V
+to 5.5 V 3 10 10* 10 pF
+* On products compliant to MIL-PRF-38535, this parameter is not production tested.
+† This is the increase in supply current for each input that is at one of the specified TTL voltage levels, rather than 0 V or VCC.
+/C0080/C0082/C0079/C0068/C0085/C0067/C0084 /C0080/C0082/C0069/C0086/C0073/C0069/C0087 /C0105/C0110/C0102/C0111/C0114/C0109/C0097/C0116/C0105/C0111/C0110 /C0099/C0111/C0110/C0099/C0101/C0114/C0110/C0115 /C0112/C0114/C0111/C0100/C0117/C0099/C0116/C0115 /C0105/C0110 /C0116/C0104/C0101 /C0102/C0111/C0114/C0109/C0097/C0116/C0105/C0118/C0101 /C0111/C0114
+/C0100/C0101/C0115/C0105/C0103/C0110 /C0112/C0104/C0097/C0115/C0101 /C0111/C0102 /C0100/C0101/C0118/C0101/C0108/C0111/C0112/C0109/C0101/C0110/C0116/C0046 /C0067/C0104/C0097/C0114/C0097/C0099/C0116/C0101/C0114/C0105/C0115/C0116/C0105/C0099 /C0100/C0097/C0116/C0097 /C0097/C0110/C0100 /C0111/C0116/C0104/C0101/C0114
+/C0115/C0112/C0101/C0099/C0105/C0102/C0105/C0099/C0097/C0116/C0105/C0111/C0110/C0115 /C0097/C0114/C0101 /C0100/C0101/C0115/C0105/C0103/C0110 /C0103/C0111/C0097/C0108/C0115/C0046 /C0084/C0101/C0120/C0097/C0115 /C0073/C0110/C0115/C0116/C0114/C0117/C0109/C0101/C0110/C0116/C0115 /C0114/C0101/C0115/C0101/C0114/C0118/C0101/C0115 /C0116/C0104/C0101 /C0114/C0105/C0103/C0104/C0116 /C0116/C0111
+/C0099/C0104/C0097/C0110/C0103/C0101 /C0111/C0114 /C0100/C0105/C0115/C0099/C0111/C0110/C0116/C0105/C0110/C0117/C0101 /C0116/C0104/C0101/C0115/C0101 /C0112/C0114/C0111/C0100/C0117/C0099/C0116/C0115 /C0119/C0105/C0116/C0104/C0111/C0117/C0116 /C0110/C0111/C0116/C0105/C0099/C0101/C0046
+/C0083/C0078/C0053/C0052/C0072/C0067/C0084/C0049/C0053/C0055/C0044 /C0083/C0078/C0055/C0052/C0072/C0067/C0084/C0049/C0053/C0055
+/C0081/C0085/C0065/C0068/C0082/C0085/C0080/C0076/C0069 /C0050/C0262/C0076/C0073/C0078/C0069 /C0084/C0079 /C0049/C0262/C0076/C0073/C0078/C0069 /C0068/C0065/C0084/C0065 /C0083/C0069/C0076/C0069/C0067/C0084/C0079/C0082/C0083/C0047/C0077/C0085/C0076/C0084/C0073/C0080/C0076/C0069/C0088/C0069/C0082/C0083
+SCLS071D − NOVEMBER 1988 − REVISED OCTOBER 2003
+4 POST OFFICE BOX 655303 • DALLAS, TEXAS 75265
+switching characteristics over recommended operating free-air temperature range, C L = 50 pF
+(unless otherwise noted) (see Figure 1)
+PARAMETER FROM TO VCC
+TA = 25°C SN54HCT157 SN74HCT157
+UNITPARAMETER FROM
+(INPUT)
+TO
+(OUTPUT) VCC MIN TYP MAX MIN MAX MIN MAX UNIT
+A or B Y
+4.5 V 18 28 42 35
+A or B Y 5.5 V 15 25 38 32
+tpd A/B Y
+4.5 V 20 32 48 40
+nstpd A/B Y 5.5 V 17 29 43 36 ns
+G Y
+4.5 V 18 26 39 33
+G Y 5.5 V 15 23 35 30
+tt Any
+4.5 V 8 15 22 19
+nstt Any
+5.5 V 7 14 21 17
+ns
+switching characteristics over recommended operating free-air temperature range, C L = 150 pF
+(unless otherwise noted) (see Figure 1)
+PARAMETER FROM TO VCC
+TA = 25°C SN54HCT157 SN74HCT157
+UNITPARAMETER FROM
+(INPUT)
+TO
+(OUTPUT) VCC MIN TYP MAX MIN MAX MIN MAX UNIT
+A or B Y
+4.5 V 23 42 63 52
+A or B Y 5.5 V 19 38 52 46
+tpd A/B Y
+4.5 V 24 46 72 58
+nstpd A/B Y 5.5 V 21 41 61 52 ns
+G Y
+4.5 V 21 39 58 48
+G Y 5.5 V 19 35 49 43
+tt Any
+4.5 V 17 42 63 53
+nstt Any
+5.5 V 14 38 57 48
+ns
+operating characteristics, TA = 25°C
+PARAMETER TEST CONDITIONS TYP UNIT
+Cpd Power dissipation capacitance No load 12 pF
+/C0080/C0082/C0079/C0068/C0085/C0067/C0084 /C0080/C0082/C0069/C0086/C0073/C0069/C0087 /C0105/C0110/C0102/C0111/C0114/C0109/C0097/C0116/C0105/C0111/C0110 /C0099/C0111/C0110/C0099/C0101/C0114/C0110/C0115 /C0112/C0114/C0111/C0100/C0117/C0099/C0116/C0115 /C0105/C0110 /C0116/C0104/C0101 /C0102/C0111/C0114/C0109/C0097/C0116/C0105/C0118/C0101 /C0111/C0114
+/C0100/C0101/C0115/C0105/C0103/C0110 /C0112/C0104/C0097/C0115/C0101 /C0111/C0102 /C0100/C0101/C0118/C0101/C0108/C0111/C0112/C0109/C0101/C0110/C0116/C0046 /C0067/C0104/C0097/C0114/C0097/C0099/C0116/C0101/C0114/C0105/C0115/C0116/C0105/C0099 /C0100/C0097/C0116/C0097 /C0097/C0110/C0100 /C0111/C0116/C0104/C0101/C0114
+/C0115/C0112/C0101/C0099/C0105/C0102/C0105/C0099/C0097/C0116/C0105/C0111/C0110/C0115 /C0097/C0114/C0101 /C0100/C0101/C0115/C0105/C0103/C0110 /C0103/C0111/C0097/C0108/C0115/C0046 /C0084/C0101/C0120/C0097/C0115 /C0073/C0110/C0115/C0116/C0114/C0117/C0109/C0101/C0110/C0116/C0115 /C0114/C0101/C0115/C0101/C0114/C0118/C0101/C0115 /C0116/C0104/C0101 /C0114/C0105/C0103/C0104/C0116 /C0116/C0111
+/C0099/C0104/C0097/C0110/C0103/C0101 /C0111/C0114 /C0100/C0105/C0115/C0099/C0111/C0110/C0116/C0105/C0110/C0117/C0101 /C0116/C0104/C0101/C0115/C0101 /C0112/C0114/C0111/C0100/C0117/C0099/C0116/C0115 /C0119/C0105/C0116/C0104/C0111/C0117/C0116 /C0110/C0111/C0116/C0105/C0099/C0101/C0046
+/C0083/C0078/C0053/C0052/C0072/C0067/C0084/C0049/C0053/C0055/C0044 /C0083/C0078/C0055/C0052/C0072/C0067/C0084/C0049/C0053/C0055
+/C0081/C0085/C0065/C0068/C0082/C0085/C0080/C0076/C0069 /C0050/C0262/C0076/C0073/C0078/C0069 /C0084/C0079 /C0049/C0262/C0076/C0073/C0078/C0069 /C0068/C0065/C0084/C0065 /C0083/C0069/C0076/C0069/C0067/C0084/C0079/C0082/C0083/C0047/C0077/C0085/C0076/C0084/C0073/C0080/C0076/C0069/C0088/C0069/C0082/C0083
+SCLS071D − NOVEMBER 1988 − REVISED OCTOBER 2003
+5POST OFFICE BOX 655303 • DALLAS, TEXAS 75265
+PARAMETER MEASUREMENT INFORMATION
+VOLTAGE WAVEFORMS
+PROPAGATION DELAY TIMES
+1.3 V
+1.3 V1.3 V
+10%10%
+90% 90%
+3 V
+VOH
+VOL
+0 V
+tr tf
+Input
+(see Note B)
+Output
+1.3 V
+tPLH tPHLTest
+Point
+From Output
+Under Test
+LOAD CIRCUIT
+NOTES: A. C L includes probe and test-fixture capacitance.
+B. Phase relationships between waveforms were chosen arbitrarily. All input pulses are supplied by generators having the following
+characteristics: PRR ≤ 1 MHz, ZO = 50 Ω, tr = 6 ns, tf = 6 ns.
+C. The outputs are measured one at a time with one input transition per measurement.
+D. t PLH and tPHL are the same as tpd.
+CL = 50 pF
+(see Note A)
+Figure 1. Load Circuit and Voltage Waveforms
+PACKAGE OPTION ADDENDUM
+www.ti.com 14-Jun-2026
+PACKAGING INFORMATION
+Orderable part number Status
+(1)
+Material type
+(2)
+Package | Pins Package qty | Carrier RoHS
+(3)
+Lead finish/
+Ball material
+(4)
+MSL rating/
+Peak reflow
+(5)
+Op temp (°C) Part marking
+(6)
+SN74HCT157D Obsolete Production SOIC (D) | 16 - - Call TI Call TI -40 to 85 HCT157
+SN74HCT157DR Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU | SN Level-1-260C-UNLIM -40 to 85 HCT157
+SN74HCT157DR.A Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -40 to 85 HCT157
+SN74HCT157DR1G4 Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -40 to 85 HCT157
+SN74HCT157DR1G4.A Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -40 to 85 HCT157
+SN74HCT157DT Obsolete Production SOIC (D) | 16 - - Call TI Call TI -40 to 85 HCT157
+SN74HCT157N NRND Production PDIP (N) | 16 25 | TUBE Yes NIPDAU N/A for Pkg Type -40 to 85 SN74HCT157N
+SN74HCT157N.A NRND Production PDIP (N) | 16 25 | TUBE Yes NIPDAU N/A for Pkg Type -40 to 85 SN74HCT157N
+ 
+(1) Status:  For more details on status, see our product life cycle.
+ 
+(2) Material type:  When designated, preproduction parts are prototypes/experimental devices, and are not yet approved or released for full production. Testing and final process, including without limitation quality assurance,
+reliability performance testing, and/or process qualification, may not yet be complete, and this item is subject to further changes or possible discontinuation. If available for ordering, purchases will be subject to an additional
+waiver at checkout, and are intended for early internal evaluation purposes only. These items are sold without warranties of any kind.
+ 
+(3) RoHS values:  Yes, No, RoHS Exempt. See the TI RoHS Statement for additional information and value definition.
+ 
+(4) Lead finish/Ball material:  Parts may have multiple material finish options. Finish options are separated by a vertical ruled line. Lead finish/Ball material values may wrap to two lines if the finish value exceeds the maximum
+column width.
+ 
+(5) MSL rating/Peak reflow:  The moisture sensitivity level ratings and peak solder (reflow) temperatures. In the event that a part has multiple moisture sensitivity ratings, only the lowest level per JEDEC standards is shown.
+Refer to the shipping label for the actual reflow temperature that will be used to mount the part to the printed circuit board.
+ 
+(6) Part marking:  There may be an additional marking, which relates to the logo, the lot trace code information, or the environmental category of the part.
+ 
+Multiple part markings will be inside parentheses. Only one part marking contained in parentheses and separated by a "~" will appear on a part. If a line is indented then it is a continuation of the previous line and the two
+combined represent the entire part marking for that device.
+ 
+Important Information and Disclaimer:The information provided on this page represents TI's knowledge and belief as of the date that it is provided. TI bases its knowledge and belief on information provided by third parties, and
+makes no representation or warranty as to the accuracy of such information. Efforts are underway to better integrate information from third parties. TI has taken and continues to take reasonable steps to provide representative
+and accurate information but may not have conducted destructive testing or chemical analysis on incoming materials and chemicals. TI and TI suppliers consider certain information to be proprietary, and thus CAS numbers
+and other limited information may not be available for release.
+Addendum-Page 1
+PACKAGE OPTION ADDENDUM
+www.ti.com 14-Jun-2026
+ 
+In no event shall TI's liability arising out of such information exceed the total purchase price of the TI part(s) at issue in this document sold by TI to Customer on an annual basis.
+ 
+Addendum-Page 2
+PACKAGE MATERIALS INFORMATION
+  
+www.ti.com 10-Aug-2026
+TAPE AND REEL INFORMATION
+Reel Width (W1)
+REEL DIMENSIONS
+A0B0K0WDimension designed to accommodate the component lengthDimension designed to accommodate the component thicknessOverall width of the carrier tapePitch between successive cavity centersDimension designed to accommodate the component width
+TAPE DIMENSIONSK0 P1B0WA0Cavity
+QUADRANT ASSIGNMENTS FOR PIN 1 ORIENTATION IN TAPE
+Pocket QuadrantsSprocket HolesQ1Q1Q2Q2Q3Q3Q4Q4User Direction of Feed
+P1ReelDiameter
+ 
+*All dimensions are nominal
+Device Package
+Type
+Package
+Drawing
+Pins SPQ Reel
+Diameter
+(mm)
+Reel
+Width
+W1 (mm)
+A0
+(mm)
+B0
+(mm)
+K0
+(mm)
+P1
+(mm)
+W
+(mm)
+Pin1
+Quadrant
+SN74HCT157DR SOIC D 16 2500 330.0 16.4 6.5 10.3 2.1 8.0 16.0 Q1
+SN74HCT157DR1G4 SOIC D 16 2500 330.0 16.4 6.5 10.3 2.1 8.0 16.0 Q1
+Pack Materials-Page 1
+PACKAGE MATERIALS INFORMATION
+  
+www.ti.com 10-Aug-2026
+TAPE AND REEL BOX DIMENSIONS
+Width (mm)
+W LH
+ 
+*All dimensions are nominal
+Device Package Type Package Drawing Pins SPQ Length (mm) Width (mm) Height (mm)
+SN74HCT157DR SOIC D 16 2500 353.0 353.0 32.0
+SN74HCT157DR1G4 SOIC D 16 2500 353.0 353.0 32.0
+Pack Materials-Page 2
+PACKAGE MATERIALS INFORMATION
+  
+www.ti.com 10-Aug-2026
+TUBE
+ 
+ 
+L - Tube length
+T - Tube  
+height
+W - Tube  
+width
+B - Alignment groove width
+ 
+ 
+*All dimensions are nominal
+Device Package Name Package Type Pins SPQ L (mm) W (mm) T (µm) B (mm)
+SN74HCT157N N PDIP 16 25 506 13.97 11230 4.32
+SN74HCT157N N PDIP 16 25 506 13.97 11230 4.32
+SN74HCT157N.A N PDIP 16 25 506 13.97 11230 4.32
+SN74HCT157N.A N PDIP 16 25 506 13.97 11230 4.32
+Pack Materials-Page 3
+
+
+IMPORTANT NOTICE AND DISCLAIMER
+TI PROVIDES TECHNICAL AND RELIABILITY DATA (INCLUDING DATASHEETS), DESIGN RESOURCES (INCLUDING REFERENCE 
+DESIGNS), APPLICATION OR OTHER DESIGN ADVICE, WEB TOOLS, SAFETY INFORMATION, AND OTHER RESOURCES “AS IS” 
+AND WITH ALL FAULTS, AND DISCLAIMS ALL WARRANTIES, EXPRESS AND IMPLIED, INCLUDING WITHOUT LIMITATION ANY 
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT OF THIRD 
+PARTY INTELLECTUAL PROPERTY RIGHTS.
+These resources are intended for skilled developers designing with TI products. You are solely responsible for (1) selecting the appropriate 
+TI products for your application, (2) designing, validating and testing your application, and (3) ensuring your application meets applicable 
+standards, and any other safety, security, regulatory or other requirements.
+These resources are subject to change without notice. TI grants you permission to use these resources only for development of an 
+application that uses the TI products described in the resource. Other reproduction and display of these resources is prohibited. No license 
+is granted to any other TI intellectual property right or to any third party intellectual property right. TI disclaims responsibility for, and you fully 
+indemnify TI and its representatives against any claims, damages, costs, losses, and liabilities arising out of your use of these resources.
+TI’s products are provided subject to TI’s Terms of Sale, TI’s General Quality Guidelines, or other applicable terms available either on 
+ti.com or provided in conjunction with such TI products. TI’s provision of these resources does not expand or otherwise alter TI’s applicable 
+warranties or warranty disclaimers for TI products. Unless TI explicitly designates a product as custom or customer-specified, TI products 
+are standard, catalog, general purpose devices.
+TI objects to and rejects any additional or different terms you may propose.
+IMPORTANT NOTICE
+Copyright © 2026, Texas Instruments Incorporated
+Last updated 10/2025

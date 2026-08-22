@@ -1,0 +1,494 @@
+SN74LVC244A Octal Buffer or Driver With 3-State Outputs
+1 Features
+• Operates from 1.65V to 3.6V
+• Inputs accept voltages to 5.5V
+• Specified from –40°C to +85°C and –40°C to 
++125°C
+• Maximum tpd of 5.9ns at 3.3V
+• Typical VOLP (output ground bounce) < 0.8V at VCC 
+= 3.3V, TA = 25°C
+• Typical VOHV (output VOH undershoot) > 2V at VCC 
+= 3.3V, TA = 25°C
+• Supports mixed-mode signal operation on all ports 
+(5V input or output voltage with 3.3V VCC)
+• Ioff supports live insertion, partial-power-down 
+mode, and back-drive protection
+• Can be used as a down translator to translate 
+inputs from a maximum of 5.5V down to the VCC 
+level
+• Available in ultra small logic QFN package (0.5mm 
+maximum height)
+• Latch-up performance exceeds 250mA per JESD 
+17
+2 Applications
+• Servers
+• LED displays
+• Network switches
+• Telecom infrastructure
+• Motor drivers
+• I/O expanders
+• Enable or disable a digital signal
+• Controlling an indicator LED
+• Translation between communication modules and 
+system controllers
+3 Description
+These octal bus buffers are designed for 1.65V to 
+3.6V V CC operation. The SN74LVC244A devices are 
+designed for asynchronous communication between 
+data buses.
+Package Information
+PART 
+NUMBER PACKAGE(1) PACKAGE 
+SIZE(2) BODY SIZE(3)
+SN74LVC244A
+RKS (VQFN, 
+20)
+4.50mm × 
+2.50mm
+4.50mm × 
+2.50mm
+N (PDIP, 20) 24.33mm × 
+9.4mm
+24.33mm × 
+6.35mm
+NS (SOP, 20) 12.60mm × 
+7.8mm
+12.60mm × 
+5.30mm
+DB (SSOP, 20) 7.2mm × 
+7.8mm
+7.2mm × 
+5.30mm
+DGV (TVSOP, 
+20)
+5.00mm × 
+6.4mm
+5.00mm × 
+4.4mm
+DW (SOIC, 20) 12.80mm × 
+10.3mm
+12.80mm × 
+7.50mm
+RGY (VQFN, 
+20)
+4.50mm × 
+3.50mm
+4.50mm × 
+3.50mm
+ZQN (BGA, 20) 4.00mm × 
+3.00mm
+4.00mm × 
+3.00mm
+PW (TSSOP, 
+20)
+6.50mm × 
+6.4mm
+6.50mm × 
+4.40mm
+RWP (X1QFN, 
+20)
+3.30mm × 
+2.50mm
+3.30mm × 
+2.50mm
+DGS (VSSOP, 
+20)
+5.10mm × 
+4.90mm
+5.10mm × 
+3.00mm
+(1) For more information, see Mechanical, Packaging, and 
+Orderable Information.
+(2) The package size (length × width) is a nominal value and 
+includes pins, where applicable.
+(3) The body size (length × width) is a nominal value and does 
+not include pins.
+xA2
+xA3
+xA4
+One of Two 4-Bit Bus Buffers
+xA1
+xOE
+xY1
+xY2
+xY3
+xY4
+Logic Diagram (Positive Logic)
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+An IMPORTANT NOTICE at the end of this data sheet addresses availability, warranty, changes, use in safety-critical applications, 
+intellectual property matters and other important disclaimers. PRODUCTION DATA.
+Table of Contents
+1 Features............................................................................1
+2 Applications.....................................................................1
+3 Description.......................................................................1
+4 Pin Configuration and Functions...................................3
+5 Specifications.................................................................. 5
+5.1 Absolute Maximum Ratings........................................ 5
+5.2 ESD Ratings............................................................... 5
+5.3 Recommended Operating Conditions.........................6
+5.4 Thermal Information....................................................6
+5.5 Electrical Characteristics.............................................7
+5.6 Switching Characteristics............................................8
+5.7 Operating Characteristics........................................... 8
+5.8 Typical Characteristics................................................9
+6 Parameter Measurement Information..........................10
+7 Detailed Description...................................................... 11
+7.1 Overview................................................................... 11
+7.2 Functional Block Diagram......................................... 11
+7.3 Feature Description...................................................11
+7.4 Device Functional Modes..........................................12
+8 Application and Implementation..................................14
+8.1 Application Information............................................. 14
+8.2 Typical Application.................................................... 14
+8.3 Power Supply Recommendations.............................15
+8.4 Layout....................................................................... 15
+9 Device and Documentation Support............................17
+9.1 Documentation Support............................................ 17
+9.2 Receiving Notification of Documentation Updates....17
+9.3 Support Resources................................................... 17
+9.4 Trademarks...............................................................17
+9.5 Electrostatic Discharge Caution................................17
+9.6 Glossary....................................................................17
+10 Revision History.......................................................... 17
+11 Mechanical, Packaging, and Orderable 
+Information.................................................................... 18
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+ www.ti.com
+2 Submit Document Feedback Copyright © 2026 Texas Instruments Incorporated
+Product Folder Links: SN74LVC244A
+4 Pin Configuration and Functions
+1 2 3 4
+A
+B
+C
+D
+E
+Not to scale
+1A1 1OE VCC 2OE
+1A2 2A4 2Y4 1Y1
+1A3 2Y3 2A3 1Y2
+1A4 2A2 2Y2 1Y3
+GND 2Y1 2A1 1Y4
+Figure 4-1. ZQN Package 20-Pin BGA Top View 
+Not to scale
+11OE 20 V CC
+21A1 19 2OE
+32Y4 18 1Y1
+41A2 17 2A4
+52Y3 16 1Y2
+61A3 15 2A3
+72Y2 14 1Y3
+81A4 13 2A2
+92Y1 12 1Y4
+10GND 11 2A1
+Figure 4-2. DB, DGV,DW, N, NS, DGS and PW 
+Packages 20-Pin SSOP, TVSOP, SOIC, PDIP, 
+SO,VSSOP and TSSOP Front View 
+Not to scale
+Thermal
+Pad
+21A1
+32Y4
+41A2
+52Y3
+61A3
+72Y2
+81A4
+92Y1
+10GND
+112A1
+12 1Y4
+13 2A2
+14 1Y3
+15 2A3
+16 1Y2
+17 2A4
+18 1Y1
+19 2OE20 V CC
+1 1OE
+Figure 4-3. RGY and RKS Packages 20-Pin VQFN 
+Top View 
+Not to scale
+Thermal
+Pad
+11A1
+22Y4
+31A2
+42Y3
+51A3
+62Y2
+71A4
+82Y1
+9GND
+102A1
+11 1Y4
+12 2A2
+13 1Y3
+14 2A3
+15 1Y2
+16 2A417 1Y1
+18 2OE
+19 V CC
+20 1OE
+Figure 4-4. RWP Package 20-Pin X1QFN Top View 
+Table 4-1. Pin Functions
+PIN
+TYPE(1) DESCRIPTION
+NAME
+DB, DGV, 
+DW, N, 
+NS, PW, 
+RGY, DGS 
+and RKS
+ZQN RWP
+1A1 2 A1 1 I Port 1A1 input
+www.ti.com
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+Copyright © 2026 Texas Instruments Incorporated Submit Document Feedback 3
+Product Folder Links: SN74LVC244A
+Table 4-1. Pin Functions (continued)
+PIN
+TYPE(1) DESCRIPTION
+NAME
+DB, DGV, 
+DW, N, 
+NS, PW, 
+RGY, DGS 
+and RKS
+ZQN RWP
+1A2 4 B1 3 I Port 1A2 input
+1A3 6 C1 5 I Port 1A3 input
+1A4 8 D1 7 I Port 1A4 input
+1 OE 1 A2 20 I Output enable
+1Y1 18 B4 17 O Port 1Y1 output
+1Y2 16 C4 15 O Port 1Y2 output
+1Y3 14 D4 13 O Port 1Y3 output
+1Y4 12 E4 11 O Port 1Y4 output
+2A1 11 E3 10 I Port 2A1 input
+2A2 13 D2 12 I Port 2A2 input
+2A3 15 C3 14 I Port 2A3 input
+2A4 17 B2 16 I Port 2A4 input
+2 OE 19 A4 18 I Output enable
+2Y1 9 E2 8 O Port 2Y1 output
+2Y2 7 D3 6 O Port 2Y2 output
+2Y3 5 C2 4 O Port 2Y3 output
+2Y4 3 B3 2 O Port 2Y4 output
+GND 10 E1 9 — Ground
+VCC 20 A3 19 — Power pin
+(1) I = input, O = output
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+ www.ti.com
+4 Submit Document Feedback Copyright © 2026 Texas Instruments Incorporated
+Product Folder Links: SN74LVC244A
+5 Specifications
+5.1 Absolute Maximum Ratings
+over operating free-air temperature range (unless otherwise noted)(1)
+MIN MAX UNIT
+VCC Supply voltage –0.5 6.5 V
+VI Input voltage(2) –0.5 6.5 V
+VO Voltage range applied to any output in the high-impedance or power-off state(2) –0.5 6.5 V
+VO Voltage range applied to any output in the high or low state(2) (3) –0.5 VCC + 0.5 V
+IIK Input clamp current VI < 0 –50 mA
+IOK Output clamp current VO < 0 –50 mA
+IO Continuous output current ±50 mA
+Continuous current through VCC or GND ±100 mA
+Ptot Power dissipation TA = –40°C to +125°C(4) (5) 500 mW
+TJ Junction temperature 150 °C
+Tstg Storage temperature –65 150 °C
+(1) Operation outside the Absolute Maximum Ratings may cause permanent device damage. Absolute Maximum Ratings do not imply 
+functional operation of the device at these or any other conditions beyond those listed under Recommended Operating Conditions. 
+If used outside the Recommended Operating Conditions but within the Absolute Maximum Ratings, the device may not be fully 
+functional, and this may affect device reliability, functionality, performance, and shorten the device lifetime.
+(2) The input and output negative-voltage ratings may be exceeded if the input and output current ratings are observed.
+(3) The value of VCC is provided in the Section 5.3 table.
+(4) For the DW package: above 70°C the value of Ptot derates linearly with 8mW/K.
+(5) For the DB, DGV, N, NS, and PW packages: above 60°C the value of Ptot derates linearly with 5.5mW/K.
+5.2 ESD Ratings
+VALUE UNIT
+V(ESD) Electrostatic discharge
+Human-body model (HBM), per ANSI/ESDA/JEDEC JS-001(1) ±2000
+V
+Charged-device model (CDM), per JEDEC specification JESD22C101(2) ±1000
+(1) JEDEC document JEP155 states that 500V HBM allows safe manufacturing with a standard ESD control process.
+(2) JEDEC document JEP157 states that 250V CDM allows safe manufacturing with a standard ESD control process.
+www.ti.com
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+Copyright © 2026 Texas Instruments Incorporated Submit Document Feedback 5
+Product Folder Links: SN74LVC244A
+5.3 Recommended Operating Conditions
+over recommended operating free-air temperature range (unless otherwise noted)(1)
+TA = 25°C –40 TO +85°C –40 TO +125°C
+UNIT
+MIN MAX MIN MAX MIN MAX
+VCC Supply voltage
+Operating 1.65 3.6 1.65 3.6 1.65 3.6
+V
+Data retention only 1.5 1.5 1.5
+VIH
+High-level
+input voltage
+VCC = 1.65V to 1.95V 0.65 × VCC 0.65 × VCC 0.65 × VCC
+VVCC = 2.3V to 2.7V 1.7 1.7 1.7
+VCC = 2.7V to 3.6V 2 2 2
+VIL
+Low-level
+input voltage
+VCC = 1.65V to 1.95V 0.35 × VCC 0.35 × VCC 0.35 × VCC
+VVCC = 2.3V to 2.7V 0.7 0.7 0.7
+VCC = 2.7V to 3.6V 0.8 0.8 0.8
+VI Input voltage 0 5.5 0 5.5 0 5.5 V
+VO Output voltage 0 VCC 0 VCC 0 VCC V
+IOH
+High-level
+output current
+VCC = 1.65V –4 –4 –4
+mA
+VCC = 2.3V –8 –8 –8
+VCC = 2.7V –12 –12 –12
+VCC = 3V –24 –24 –24
+IOL
+Low-level
+output current
+VCC = 1.65V 4 4 4
+mA
+VCC = 2.3V 8 8 8
+VCC = 2.7V 12 12 12
+VCC = 3V 24 24 24
+TA
+Ambient 
+temperature
+BGA package –40 85
+°C
+All other packages –40 125
+(1) All unused inputs of the device must be held at VCC or GND to verify proper device operation. Refer to the TI application note, 
+Implications of Slow or Floating CMOS Inputs.
+5.4 Thermal Information
+PACKAGE PINS
+THERMAL METRIC(1)
+UNIT
+RθJA RθJC(top) RθJB ΨJT ΨJB RθJC(bot)
+PW (TSSOP) 20 120.3 62.5 82.4 16.0 81.5 N/A °C/W
+DGS (VSSOP) 20 124.5 62.9 79.2 7.8 78.7 N/A °C/W
+RKS (VQFN) 20 87.2 93.4 59.8 24.9 59.6 44.3 °C/W
+DB (SSOP) 20 121.7 86.8 87.8 44.7 87.0 N/A °C/W
+DW (SOIC) 20 114.8 84.1 88.8 55.8 87.8 N/A °C/W
+NS (SOP) 20 116.3 82.4 86.2 43.9 85.5 N/A °C/W
+RGY (VQFN) 20 82.84 88.73 56.81 32.37 56.62 42.09 °C/W
+N (PDIP) 20 61.6 46.5 42.5 34.6 42.4 N/A °C/W
+NS (SO) 20 90.1 56.4 57.7 28.4 57.2 N/A °C/W
+RWP (X1QFN) 20 79.9 63.2 46.4 2.6 46.3 N/A °C/W
+DGV (TVSOP) 20 128.7 43.7 70.2 3.1 69.5 N/A °C/W
+(1) For more information about traditional and new thermal metrics, see the Semiconductor and IC Package Thermal Metrics application 
+note.
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+ www.ti.com
+6 Submit Document Feedback Copyright © 2026 Texas Instruments Incorporated
+Product Folder Links: SN74LVC244A
+5.5 Electrical Characteristics
+over recommended operating free-air temperature range (unless otherwise noted)
+PARAMETER TEST CONDITIONS VCC
+TA = 25°C –40 TO +85°C –40 TO +125°C
+UNIT
+MIN TYP MAX MIN MAX MIN MAX
+VOH
+IOH = –100µA
+1.65V 
+to
+3.6V
+VCC – 0.2 VCC  – 0.2 VCC  – 0.3
+V
+IOH = –4mA 1.65V 1.29 1.2 1.05
+IOH = –8mA 2.3V 1.9 1.7 1.55
+IOH = –12mA
+2.7V 2.2 2.2 2.05
+3V 2.4 2.4 2.25
+IOH = –24mA 3V 2.3 2.2 2
+VOL
+IOL = 100µA
+1.65V 
+to
+3.6V
+0.1 0.2 0.3
+VIOL = 4mA 1.65V 0.24 0.45 0.6
+IOL = 8mA 2.3V 0.3 0.7 0.75
+IOL = 12mA 2.7V 0.4 0.4 0.6
+IOL = 24mA 3V 0.55 0.55 0.8
+II VI = 5.5V or GND 3.6V ±1 ±5 ±20 µA
+Ioff VI or VO = 5.5V 0 ±1 ±10 ±20 µA
+IOZ VO = 0 to 5.5V 3.6V ±1 ±10 ±20 µA
+ICC
+VI = VCC or GND
+IO = 0 3.6V
+1 10 40
+µA
+3.6V ≤ VI ≤ 5.5V(1) 1 10 40
+ΔICC
+One input at VCC  – 0.6V,
+Other inputs at VCC or GND
+2.7V 
+to
+3.6V
+500 500 5000 µA
+Ci VI = VCC or GND 3.3V 4 pF
+Co VO = VCC or GND 3.3V 5.5 pF
+(1) This applies in the disabled state only.
+www.ti.com
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+Copyright © 2026 Texas Instruments Incorporated Submit Document Feedback 7
+Product Folder Links: SN74LVC244A
+5.6 Switching Characteristics
+over recommended operating free-air temperature range (unless otherwise noted) (see Figure 6-1)
+PARAMETER FROM
+(INPUT)
+TO
+(OUTPUT) VCC
+TA = 25°C –40 TO +85°C –40 TO 
++125°C UNIT
+MIN TYP MAX MIN MAX MIN MAX
+tpd A Y
+1.5V 7 14.4 14.9 16.4
+ns
+1.8V ± 0.15V 5.9 10.4 10.9 12.4
+2.5V ± 0.2V 4.2 7.4 7.9 10
+2.7V 4.2 6.7 6.9 8.2
+3.3V ±0.3V 3.9 5.7 5.9 7.2
+ten OE Y
+1.5V 8.3 17.8 18.3 19.8
+ns
+1.8V ±0.15V 6.4 12.1 12.6 14.1
+2.5V ±0.2V 4.6 9.1 9.6 11.7
+2.7V 5 8.4 8.6 10.3
+3.3V ±0.3V 4.5 7.4 7.6 9.4
+tdis OE Y
+1.5V 7.2 15.6 16.1 17.6
+ns
+1.8V ±0.15V 5.8 11.6 12.1 13.6
+2.5V ±0.2V 3.7 7.3 7.8 9.9
+2.7V 3.8 6.6 6.8 8.6
+3.3V ±0.3V 3.8 6.3 6.5 8
+tsk(o) 3.3V ±0.3V 1 1.5 ns
+5.7 Operating Characteristics
+TA = 25°C
+PARAMETER TEST CONDITIONS VCC TYP UNIT
+Cpd Power dissipation capacitance per buffer/driver
+Outputs enabled f = 10MHz
+1.8V 43
+pF
+2.5V 43
+3.3V 44
+Outputs disabled f = 10MHz
+1.8V 1
+2.5V 1
+3.3V 2
+SN74LVC244A
+SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026
+ www.ti.com
+8 Submit Document Feedback Copyright © 2026 Texas Instruments Incorporated
+Product Folder Links: SN74LVC244A

@@ -1,0 +1,3892 @@
+OCR extraction of Z8400.PDF using macOS Vision accurate recognition.
+
+===== PAGE 1 =====
+AZiL
+FEATURES
+The extensive instruction set contains 158 instructions,
+including the 8080A instruction set as a subset.
+• NMOS version for low cost high performance solutions,
+CMOS version for high performance low power de-
+signs.
+• NMOS Z0840004 - 4 MHz, Z0840006 - 6.17 MHz,
+Z0840008 - 8 MHz.
+• CMOS Z84C0006 - DC to 6.17 MHz, Z84C008 - DC to
+8 MHz, Z84C0010 - DC to 10 MHz, Z84C0020 - DC -
+20 MIz
+• 6 MHz version can be operated at 6.144 MHz clock.
+SYSTEM
+CONTROL
+CPU
+CONTROL
+CPU
+BUS
+CONTROL
+MREO
+ORO
+RO
+WR
+AFSH
+HALT
+WAIT
+Z8400
+Z80 CPU
+INT
+NMI
+RESET
+BUSREQ
+BUSACK
+CLK
++ 5V
+GND
+Figure 1. Pin Functions
+PS017801-0602
+ADDRESS
+BUS
+DATA
+Product Specification
+Z8400/Z84C00 NMOS/CMOS
+Z80° CPU
+Central Processing Unit
+• The Z80 microprocessors and associated family of
+peripherals can be linked by a vectored interrupt sys-
+tem. This system can be daisy-chained to allow implem-
+entation of a priority interrupt scheme.
+Duplicate set of both general-purpose and flag registers.
+• Two sixteen-bit index registers.
+• Three modes of maskable interrupts:
+Mode 0-8080A similar;
+Mode 1-Non-Z80 environment, location 38H;
+Mode 2-Z80 family peripherals, vectored interrupts.
+On-chip dynamic memory refresh counter.
+A11
+Z8400
+FORG
+20
+GND
+RFSH
+M1
+RESET
+BUSREQ
+WAIT
+BUSACK
+I WR
+I RO
+Figure 2. 40-pin Dual-In-Line (DIP), Pin Assignments
+
+===== PAGE 2 =====
+46776798327
+44 63 42 61 40
+CLK C
+D4 C
+→ AS
+Z80 CPU
+J GND
+DI C
+I RESET
+389333922
+BUSREG
+44 pin Quad Flat Pack (QFP), Pin Assignments
+(Only available for 84C00)
+GENERAL DESCRIPTION
+The CPUs are fourth-generation enhanced microproc
+essors with exceptional computational power. They offer
+higher system throughput and more efficient memory
+utilization than comparable second- and third-generation
+microprocessors. The internal registers contain 208 bits of
+read/write memory that are accessible to the programmer.
+These registers include two sets of six general-purpose
+registers which may be used individually as either 8-bit
+registers or as 16-bit register pairs. In addition, there are two
+sets of accumulator and flag registers. A group of
+"Exchange" instructions makes either set of main or
+alternate registers accessible to the programmer. The
+alternate set allows operation in foreground-background
+mode or it may be reserved for very fast interrupt response.
+Z80 CPU
+13
+31
+30
+Ag
+GMD
+RASH
+MT
+RESET
+BUSRED
+18 19 20 21 22 23 24 25 26 27 28
+14886+++685
+Floure 2b. 44-Pin Chip Carrier Pin Assionments
+The CPU also contains a Stack Pointer, Program Counter,
+two index registers, a Refresh register (countet), and an
+Interrupt register. The CPU is easy to incorporate into a
+system since it requires only a single + 5V power $ource. All
+output signals are fully decoded and timed to control
+standard memory or peripheral circuits; the CPU is
+supported by an extensive family of peripheral controllers.
+The internal block diagram (Figure 3) shows the primary
+functions of the processors. Subsequent text provides more
+detail on the I/O controller family, registers, instruction set,
+interrupts and daisy chaining, and CPU timing.
+8-BIT
+DATA BUS
+DATA BUS
+INTERFACE
+INSTRUCTION
+DECODER
++ 5V →
+GND →
+CLOCK →
+INSTRUCTION
+CPU
+→ TIMINO
+ALU
+CPU
+TIMING
+CONTROL
+8 SYSTEMS
+AND CPU
+CONTROL
+OUTPUTS
+5 CPU
+SPUT
+REGISTER
+ARRAY
+LOGIC AND
+BUFFERS
+16-BIT
+ADDRESS BUS
+Figure 3. Z80C CPU Block Diagram
+PS017801-0602
+
+===== PAGE 3 =====
+Z80
+Table 1. Z80C CPU Registers
+A, A'
+F, F'
+B, B'
+c.C'
+D, D'
+E. E'
+H, H'
+L,L'
+Register
+Accumulator
+Flags
+General Purpose
+General Purpose
+General Purpose
+General Purpose
+General Purpose
+General Purpose
+Size (Bits)
+8
+R
+Interrupt Register
+Refresh Register
+8
+IY
+SP
+Index Register
+Index Register
+Stack Pointer
+16
+16
+16
+PC
+IFF1-IFFą
+IMFa-IMFb
+Program Counter
+Interrupt Enable
+Interrupt Mode
+16
+Flip-Flops
+Flip-Flops
+failure has been detected. After recognition of the NMI
+signal (providing BUSREQ is not active), the CPU jumps to
+restart location 0066H. Normally, software starting at this
+address contains the interrupt service routine.
+Maskable Interrupt (INT). Regardless of the interrupt
+mode set by the user, the CPU response to a maskable
+interrupt input follows a common timing cycle. After the
+interrupt has been detected by the CPU (provided that
+interrupts are enabled and BUSREQ is not active) a special
+interrupt processing cycle begins. This is a special fetch
+(M1) cycle in which TORQ becomes active rather than
+MREQ, as in a normal M1 cycle. In addition, this special M1
+cycle is automatically extended by two WAIT states, to allow
+for the time required to acknowledge the interrupt request.
+Mode 0 Interrupt Operation. This mode is similar to the
+8080 microprocessor interrupt service procedures. The
+interrupting device places an instruction on the data bus.
+This is normally a Restart instruction, which will initiate a call
+Remarks
+Stores an operand or the results of an operation.
+See Instruction Set.
+Can be used separately or as a 16-bit register with C.
+Can be used separately or as a 16-bit register with C
+Can be used separately or as a 16-bit register with E.
+Can be used separately or as a 16-bit register with E.
+Can be used separately or as a 16-bit register with L.
+Can be used separately or as a 16-bit register with L.
+Note: The (B,C), (D,E), and (H,L) sets are combined as follows:
+B - High byte C - Low byte
+D - High byte
+E - Low byte
+H - High byte L - Low byte
+Stores upper eight bits of memory address for vectored interrupt
+processing.
+Provides user-transparent dynamic memory refresh. Automatically
+incremented and placed on the address bus during each
+instruction fetch cycle.
+Used for indexed addressing.
+Used for indexed addressing
+Holds address of the top of the stack. See Push or Pop in instruction
+set.
+Holds address of next instruction.
+Set or reset to indicate interrupt status (see Figure 4).
+Reflect Interrupt mode (see Figure 4).
+to the selected one of eight restart locations in page zero of
+memory. Unlike the 8080, the Z80 CPU responds to the
+Call instruction with only one interrupt acknowledge cycle
+followed by two memory read cycles.
+Mode 1 Interrupt Operation. Mode 1 operation is very
+similar to that for the NMI. The principal difference is that the
+Mode 1 interrupt has only one restart location, 0038H.
+Mode 2 Interrupt Operation. This interrupt mode has been
+designed to most effectively utilize the capabilities of the
+Z80 microprocessor and its associated peripheral family. The
+interrupting peripheral device selects the starting address
+of the interrupt service routine. It does this by placing an 8-
+bit vector on the data bus during the interrupt acknowledge
+cycle. The CPU forms a pointer using this byte as the lower
+8 bits and the contents of the I register as the upper 8 bits:
+This points to an entry in a table of addresses for interrupt
+service routines. The CPU then jumps to the routine at that
+PS017801-0602
+
+===== PAGE 4 =====
+acress. This flexibility in selecting the interrupt service
+routine address allows the peripheral device to use several
+different types of service routines. These routines may be
+located at any available location in memory. Since the
+interrupting device supplies the low-order byte of the 2-byte
+vector, bit 0 (A,) must be a zero.
+Action
+CPU Reset
+DI instruction execution
+El instruction execution
+LD A,I instruction execution
+LD A,R instruction execution
+Accept NMI
+RETN instruction execution
+Interrupt Enable/Disable Operation. Two flip-flops, IFF,
+and IFF2, referred to in the register description, are used to
+signal the CPU interrupt status. Operation of the two
+flip-flops is described in Table 2. For more details, refer to
+the Z80 CPU Technical Manual (03-0029-01) and Z80
+Assembly Language Programming Manual (03-0002-01).
+Table 2. State of Flip-Flops
+IFF1 IFF2 Comments
+Maskable interrupt
+INT disabled
+Maskable interrupt
+INT disabled
+1
+Maskable interrupt
+INT enabled
+IFF2 → Parity flag
+IFF2 → Parity flag
+Maskable interrupt
+INT disabled
+IFF2 •
+IFF2 → IFF1 at
+completion of an
+NMI service
+routine.
+INSTRUCTION SET
+The microprocessor has one of the most powerful and
+versatile instruction sets available in any 8-bit micro-
+processor. It includes such unique operations as a block
+move for fast, efficient data transfers within memory, or
+between memory and I/O. It also allows operations on any
+• Bit set, reset, and test operations
+• Jumps
+• Calls, returns, and restarts
+• Input and output operations
+bit in any location in memory.
+The following is a summary of the instruction set which
+A variety of addressing modes are implemented to permit
+shows the assembly language mnemonic, the operation,
+efficient and fast data transfer between various registers,
+theflag status, and gives comments on each instruction. For . memory locations, and input/output devices. | These
+an explanation of flag notations and symbols for mnemonic
+addressing modes include:
+tables, see the Symbolic Notations section which follows
+• Immediate
+these tables. The Z80 CPU Technical Manual (03-0029-01),
+the Programmer's Reference Guide (03-0012-03), and
+• Immediate extended
+Assembly Language Programming Manual (03-0002-01)
+contain significantly more details for programming use.
+• Modified page zero
+The instructions are divided into the following categories:
+• Relative
+• 8-bit loads
+• Extended
+• 16-bit loads
+• Indexed
+• Exchanges, block transfers, and searches
+• Register
+• 8-bit arithmetic and logic operations
+• Register indirect
+• General-purpose arithmetic and CPU control
+• Implied
+• 16-bit arithmetic operations
+• Bit
+• Rotates and shifts
+PS017801-0602
+
+===== PAGE 5 =====
+8-BIT LOAD GROUP
+Mnemonic
+LD r.r'
+LD r, n
+LD r, (HL)
+LD r, (IX + d)
+Symbolic
+Operation
+I*n
+r + (HL)
+1* (IX+ d)
+S Z
+Flags
+P/ N C
+• x • x
+× • X
+LDr. (IY+d) r+ (lY+d)
+LD (HL), r
+(HL) -r
+LO (IX+0, r (1X+0) =, ..
+LD (IY+d), r (lY+d) +r
+LD (HL), n (HL) +n
+LD (IX+d), n (IX+d) *n
+76
+Opcode
+543 210 Hex
+01
+00
+110
+*n→
+01
+110
+11
+011
+101
+01
+110
+DD
+11 111 101 FD
+01
+110
+01
+11
+01
++ d→
+110
+011
+101
+110
+DD
+11
+01
+00
+11
+00
+111
+101
+110
++d→
+110 110
++n→
+011
+101
+110 110
+*d→
+*n→
+FD
+36
+DD
+36
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+2
+З
+Comments
+000
+001
+010
+011
+100
+101
+111
+Reg
+D
+H
+L
+2
+5
+5
+2
+4
+5
+19
+19
+19
+19
+10
+19
+PS017801-0602
+
+===== PAGE 6 =====
+8-BIT LOAD GROUP (Continued)
+Mnemonic
+Symbolic
+Operation
+Flags
+S Z
+P/V N C
+LD (IY+d), n (lY+d) +n
+LD A, (BC)
+LD A, (DE)
+LD A, (nn)
+A + (BC)
+A * (DE)
+A + (nn)
+• x •x •
+x • x
+X • X
+LD (BC), A
+LD (DE), A
+LD (nn), A
+(BC) + A
+(DE) + A
+(nn) + A
+× •X
+•x • x•
+LD A, I
+A + I
+* $ X 0 X IFF 0
+LD A, R
+A + R
+$ & X O X IFF O
+LDI,A
+1* A
+LD R, A
+R+A
+Opcode
+76
+543 210
+Hex
+00
+11 111 101
+110
+110
+FD
+36
++ d →
+* 0→
+00 001 010
+00
+011
+010
+00
+111 010
+OA
+1A
+ЗА
+*n→
+*n*
+00 000 010
+00
+00
+010 010
+110 010
+02
+12
+32
+*n→
+*n→
+11
+01
+11
+01
+11
+01
+11
+01
+101 101 ED
+010 111
+57
+101 101
+ED
+011
+111
+5F
+101
+101
+ED
+000 111
+47
+101
+101
+ED
+001 111
+4F
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+Comments
+NOTE: IFF, the content of the interrupt enable flip-flop, (IFF2), is copied into the P/V flag.
+16-BIT LOAD GROUP
+Mnemonic
+Symbolic
+Operation
+Flags
+Opcode
+P/V N C
+76
+543 210 Hex
+LD dd, nn
+dd + nn
+LD IX, nn
+IX + on
+LD IY, nn
+IY + nn
+LD HL, (nn)
+H* (nn+1)
+L + (nn)
+LD dd, (nn)
+ddy * (nn + 1) •
+ddL + (nn)
+00
+dd0 001
++n→
+*n→
+11
+011 101
+DD
+00
+100 001
+21
+*n→
+*n*
+11
+00
+111 101
+100 001
+FD
+21
+*n→
++ n*
+00
+101 010
+2A
+*n→
+*n*
+11
+01
+101 101
+ED
+dd1
+011
+*n→
+*n→
+4
+5
+19
+2
+2
+4
+7
+7
+13
+2
+2
+4
+7
+7
+13
+2
+2
+2
+2
+2
+2
+2
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+Comments:
+10
+14
+dd
+00
+01
+10
+11
+Pair
+DE
+HL
+SP
+4
+14
+16
+4
+20
+NOTE: (PAIR)H. (PAIR)L refer to high order and low order eight bits of the register pair respectively. e.g.. BCL = C. AFH = A.
+10
+PS017801-0602
+
+===== PAGE 7 =====
+16-BIT LOAD GROUP (Continued)
+Mnemonic
+LD IX, (nn)
+LD IY, (nn)
+LD (nn), HL
+LD (nn), dd
+LD (nn), IX
+LD (nn), IY
+LD SP, HL
+LD SP, IX
+LD SP, IY
+PUSH ga
+PUSH IX
+PUSH IY
+POP aa
+POP IX
+POP IY
+Symbolic
+Operation
+S Z
+Flags
+P/V N C
+Opcode
+76
+543 210
+Hex
+No. of No. of M No. of T
+Bytes
+Cycies
+States
+Comments
+1X4+ (nn +1) •
+IXL * (nn)
+•X • X •
+TYL * (nn)
+(nn+1) *H •
+(nn) +L
+(nn +1) + ddy •ł
+(nn) * ddL
+(пп+1) *Хн •
+(nn) - IXL
+(пп +1) +1Ун •
+(nn) +IYL
+SP - HL
+4SP + IX
+SP + IY
+(SP -2) + 9AL •
+(SP - 1) + 99H
+SP → SP - 2
+(SP -2) *IXL •
+(SP - 1) + 1X4
+SP → SP - 2
+(SP -2) +IYL • •
+(SP -1) + 1YH
+SP → SP - 2
+gaL - (SP)
+SP → SP + 2
+IX, + (SP)
+SP → SP + 2
+IYH + (SP +1) • • X
+IYL + (SP)
+SP → SP + 2
+11
+011
+101
+00
+101 010
+*n→
+11. 111 101
+00
+101 010
+*n→
+*n*
+00
+100 010
+*n→
+*n→
+11
+01
+101
+101
+ddo
+011
+* n→
++n→
+11
+00
+011
+100
+101
+010
+*n→
+*n→
+11
+00
+111 101
+100 010
+*n→
+*n→
+11
+11
+11
+11
+11
+11
+111
+001
+011
+101
+111
+001
+111
+101
+111
+001
+990
+101
+11
+11
+100 101
+11 111 101
+11
+100 101
+11 990 001
+DD
+2A
+FD
+2A
+22
+ED
+DD
+22
+FD
+22
+F9
+DD
+F9
+FD
+F9
+ES
+FD
+E5
+11 011 101 DD
+11
+100 001
+E1
+11
+111 101
+11 100 001
+FD
+E1
+4
+2
+2
+2
+2
+6
+2
+1 3
+2
+4
+4
+20
+20
+16
+20
+20
+6
+10
+10
+11
+15
+15
+10
+14
+14
+NOTE: (PAIR)H. (PAIR), refer to high order and low order eight bits of the register pair respectively, e.g.. BCL - C, AFH - A.
+99
+11
+Pair
+ВС
+PS017801-0602
+11
+
+===== PAGE 8 =====
+EXCHANGE, BLOCK TRANSFER, BLOCK SEARCH GROUPS
+Mnemonic
+EX DE, HL
+EX AF, AF'
+EXX
+Symbolic
+Operation
+DE * HL
+AF + AF'
+BC ¿$ BC'
+DE ¿$ DE'
+HL + HL'
+Flags
+Opcode
+P/V N C 76
+543 210 Hex
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+•x • x•
+11 101 011
+00 001 000
+11 011 001
+EB
+08
+D9
+EX (SP), HL
+EX (SP), IX
+EX (SP), IY
+H* (SP +1)
+L$¿ SP)
+IXH¿$¿(SP +1) •
+IXI * (SP)
+1YH * (SP + 1)
+IYL - (SP)
+11 100 011 E3
+11
+011 101
+11 100 011
+11 111 101
+11
+100 011
+DD
+ЕЗ
+FD
+ЕЗ
+•
+LDI
+(DE) + (HL)
+DE + DE +1
+HL + HL+1
+BC + BC - 1
+• •
+11
+101 101
+10
+100 000
+ED
+AO
+LDIR
+(DE) + (HL)
+DE + DE +1
+HL + HL+1
+BC + BC - 1
+Repeat until
+BC - 0
+o x
+11 101 101
+10 110 000
+ED
+BO
+LDD
+•
+(DE) + (HL)
+DE + DE - 1
+HL + HL -1
+BC + BC - 1
+11
+101 101
+10
+101 000
+ED
+A8
+LDDR
+(DE) - (HL)
+DE + DE - 1
+HL + HL -1
+BC + BC - 1
+Repeat until
+BC - 0
+11 101 101
+10 111 000
+1
+2
+2
+2
+2
+2
+CPI
+19x1 x?
+1 • 11 101 101 ED 2
+10 100 001 A
+NOTE:
+A - (HL)
+HL +HL+1
+BC + BC - 1
+1 PM flag is 0 if the result of BC - 1 = 0, otherwise P/ - 1.
+2 P/ flag is 0 only at completion of instruction.
+3) Z flag is 1 if A = HL, otherwise Z - 0.
+4
+4
+4
+19
+23
+23
+16
+21
+16
+16
+21
+16
+16
+Comments
+Register bank
+and auxiliary
+register bank
+exchange
+Load (HL) into
+(DE), increment
+the pointers and
+decrement the
+byte counter
+(BC)
+If BC *0
+If BC = ął
+If BC *0
+If BC - 0
+12
+PS017801-0602
+
+===== PAGE 9 =====
+EXCHANGE, BLOCK TRANSFER, BLOCK SEARCH GROUPS (Continued)
+Mnemonic
+Symbolic
+Operation
+S Z
+Flags
+Opcode
+No. of No. of M No. of T
+P/V N C 76 543 210 Hex
+Bytes
+Cycles
+Statos
+CPIR
+A - (HL)
+1 Y x $ X 7 1 • 11 101 101 ED
+HL * HL+1
+BC + BC - 1
+Repeat until
+A = (HL) or
+BC = 0
+10 110 001
+CPD
+9x1 x i
+A - (HL)
+HL + HL - 1
+BC + BC - 1
+11 101 101
+ED
+10 101 001 A9
+CPDR
+A - (HL)
+11 101 101 ED
+RL + HL-1
+BC + BC - 1
+Repeat until
+A = (HL) or
+BC • 0
+NOTE:
+1 P/ flag is 0 if the result of BC - 1 - 0, otherwise PN = 1.
+2 P/ flag is 0 only at completion of instruction.
+© Z flag is 1 if A - (HL), otherwise Z - 0.
+10 111 001
+B9
+8-BIT ARITHMETIC AND LOGICAL GROUP
+Mnemonic
+Symbolic
+Operation
+S Z
+Flags
+P/V N C
+Opcode
+543 210 Hex
+ADD A, r
+ADD A, n
+x * XVO
+110
+ADDA, (HL) A+A+(HL) $ $ X : X V 0 $ 10[000 110
+ADDA, (IX+d) A+A+ (IX+d)$: X $ X VO
+11
+10
+ADDA, (IY+d)A+A+(lY+d) # $ X $ X V 0
+11
+10
+011
+101
+000
+110
+*0→
+111
+101
+000 110
+*d→
+DD
+FD
+ADC A, s
+SUB s
+SBC A, s
+AND s
+OR s
+XOR S
+CP s
+A+A+s+CY $ : X: X V0
+A + A-S
+A +A-S-CY #
+A *A>S
+A + A>S
+A + Aes
+A-S
+P
+× *
+x V
+2
+21
+2
+16
+16
+2
+21
+2
+4
+16
+No. of No. of M No. of T
+Bytes
+Cycies
+States
+4
+2
+5
+19
+5
+19
+Comments
+If BC * 0 and
+A * (HL)
+If BC = 0 or
+A = (HL)
+If BC * 0 and
+A* (HL)
+If BC = 0 or
+A = (HL)
+Comments
+000
+001
+010
+011
+100
+Reg.
+D
+PS017801-0602
+s is any of r, in,
+(HL), (IX + d),
+(lY + d) as
+shown for ADD
+instruction. The
+indicated bis
+replace the
+000 in the
+ADD set above.
+13
+
+===== PAGE 10 =====
+8-BIT ARITHMETIC AND LOGICAL GROUP (Continued)
+Mnemonic
+Symbolic
+Operation
+Flags
+s z
+Opcode
+P/N C 76
+543 210šŘŚę
+Hex
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+Comments
+INCr
+INC (HL)
+INC (IX + d) •
+(HL) *
+(HL) +1
+(IX + d) =
+(IX+d) +1
+* X * X V
+INC (IY + d)
+(lY+d) =
+(lY +d) +1
+m*m-1
+:: X* XVO
+00
+00
+11
+00
+11
+00
+100
+4
+110 100
+011
+101
+110 100
+* d→
+111
+101
+110 100
+*d→
+З
+DD
+11
+23
+FD
+З
+23
+DEC m
+101
+NOTE: m is any of r. (HL), (IX + d), (lY + d) as shown for INC. DEC same format and states as INC. Replace [100 with 101] in opcode.
+GENERAL-PURPOSE ARITHMETIC AND CPU CONTROL GROUPS
+Mnemonic
+Symbolic
+Operation
+Flage
+$ Z
+Opcode
+No. of No. of M No. of T
+P/V N C 76
+543 210 Hexą
+Bytes
+Cycles
+Statos
+Commente
+DAA
+*X* XP • *
+00
+100 111ł
+27
+4
+CPL
+A + A
+• •X 1 X • 1 • 00 101 111 2F
+NEG
+A +0 -A
+CCF
+CY + CY
+× x x
+11
+01
+00
+101
+101
+' ED
+000 100
+44
+2
+8
+111 111
+3F
+- 1
+4
+SCF
+NOP
+HALT
+DI *
+El *
+IM O
+CY +1
+00
+110
+111
+37
+No operation
+...
+• X
+00
+000 000
+00
+CPU halted
+IFF +0
+01
+110 110
+76
+11
+110
+011
+F3
+IFF + 1
+Set interrupt
+x • x
+x • x •
+11
+111 011
+FB
+11
+101
+101
+ED
+mode 0
+01
+000
+110
+46
+IM 1
+Set interrupt
+•X • X•
+11
+101 101
+ED
+2
+mode 1
+01
+010
+110
+56
+IM 2
+Set interrupt
+11
+101 101
+ED
+2
+mode 2
+01 011 110
+5E
+NOTES:
+© converts accumulator content into packed BCD following add or subtract with packed BCD operands.
+IFF indicates the interrupt enable flip-flop.
+CY indicates the carry flip-flop.
+* indicates interrupts are not sampled at the end of El or DI.
+4
+Decimal adjust
+accumulator
+Complement
+accumulator
+(one's
+complement.
+Negate acc.
+(two's
+complement.
+Complement
+carry flag.
+Set carry flag.
+8
+2
+Z80 CPU
+14
+PS017801-0602
+
+===== PAGE 11 =====
+16-BIT ARITHMETIC GROUP
+Symbolic
+Mnemonic
+Operation
+S Z
+Flags
+P/V N C
+ADDHL, ss HL-HL+ss • • X X X • 0 $
+ADC HL, ss HL +
+HL+SS+CY $Ù
+* xxx Vo
+SBC HL, ss HL +
+HL-ss-CY $
+ADD IX, pp
+IX+Ix+pp • • XxX • 0;
+ADD IY, rr
+IY +IY+Tr
+• • XXX •0 :
+INC ss
+INC IX
+SS * 88 + 1
+IX + IX+1
+• • x
+• x
+INC IY
+1Y +1Y+1
+• X • X
+DEC sS
+DEC IX
+Ss + Ss - 1
+IX = IX-1
+• X
+DEC IY
+IY + IY -1
+ROTATE AND SHIFT GROUP
+Flags
+S Z
+Opcode
+543 210
+No. of No. of M No. of T
+Cycles
+States
+00
+ssl
+001
+1
+11
+11
+01
+101
+SS 1
+101
+010
+ED
+2
+15
+11
+01
+11
+01
+101
+101
+SSO
+010
+011
+101
+pp1
+001
+ED
+2
+15
+DD
+2
+4
+15
+11
+00
+00
+11
+00
+11
+00
+00
+11
+00
+11
+00
+111
+ssO
+011
+100
+111
+100
+ss1
+011
+101
+111
+101
+101
+001
+011
+101
+011
+101
+011
+011
+101
+011
+101
+011
+FD
+2
+15
+2
+10
+23
+FD
+23
+2
+2
+10
+DD
+2B
+FD
+2B
+2
+2
+10
+2
+2
+10
+Symbolic
+Mnemonic Operation
+Opcode
+No. of No. of M No. of T
+P/V N C 76 543 210 Hex Bytes Cycles States
+• xOx •0 :
+00
+000 111 07
+4
+RLA
+X 0 X
+00
+010 111 17
+4
+RRCA
+...
+x o x
+00 001 111 OF
+4
+RRA
+×
+00 011 111
+1F
+PS017801-0602
+Comments
+00
+01
+10
+11
+PP
+00
+01
+10
+11
+00
+01
+10
+11
+Reg.
+BC
+DE
+HL
+SP
+DE
+SP
+Reg.
+BC
+DE
+IY
+SP
+Comments
+Rotate left
+circular
+accumulator.
+Rotate left
+accumulator.
+Rotate right
+circular
+accumulator.
+Rotate right
+accumulator.
+15
+
+===== PAGE 12 =====
+ROTATE AND SHIFT GROUP (Continued)
+Symbolic
+Mnemonic Operation
+Flags
+P/N C
+RLCr
+RLC (HL)
+* X0 XP
+• *
+ALC (IX+d)
+* * XOX P
+r,(HL), (IX + d), (IY + d)
+RLC (IY + d)
+* * XO XPO
+RL m
+* * XOX P
+m = r,(HL, (IX + d),(IY + d)
+RRC m
+-LEY
+m = (HL), (IX + d). (IY + d)
+BR m
+*: X0 XP
+m = r,(HL),(IX + d), (lY + d)
+SLA m
+[eY-
+XOX PO :
+SRA m
+m=(HL),IX+ d), (lY + d)
+0 8 8
+m= (HL), (IX + d), (lY + d)
+SRL m
+XOX PO
+m= r, (HL), (IX + d), (lY + d)
+RLD
+ARD 2450[74
+* : : X O X P
+11
+00
+11
+00
+11
+11
+00
+11
+11
+00
+11
+01
+11
+01
+Opcode
+543 210
+001
+011
+000
+CB
+001 011
+000
+110
+011 101
+DD
+001 011
+110
+111
+001
+LOL
+011
+FD
+CB
+110
+001
+011
+100
+101
+101
+101
+101
+111
+ED
+6F
+101 101
+100 111
+ED
+67
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+2
+2
+4
+2
+4
+6
+15
+23
+23
+Commente
+Rotate left
+circular
+register r.
+Reg
+000
+001
+010
+011
+001
+101
+111
+D
+L
+Instruction
+format and
+states are as
+shown for
+RLCs. To form
+new opcode
+replace 000)
+or RLCs with
+shown code.
+2
+5
+18
+18
+Rotate digit
+left and
+right between
+the accumu.
+lator and
+location (HL),
+The content
+of the upper
+half of the
+accumulator
+is unaffected.
+PS017801-0602
+
+===== PAGE 13 =====
+BIT SET, RESET AND TEST GROUP
+Mnemonic
+BIT b, r
+Symbolic
+Operation
+Flags
+P/ N C
+X * X 1 XX 0
+BITb, (HL) Z+ (HL)6
+ВІТЬ, (1X+0)% 2= (1X+0)ь Х : Х 1 Х
+ВІТЬ, (1Y+d)6Z=(1Y+d)6 Х :
+SET b, r
+16+1
+SET b, (HL) (HL +1
+SETb. (IX+d) (IX+0)6+1
+SETb, (IY+d) (IY +06 +1
+RES b, m
+ть + 0
+mar, (HL),
+(IX+ d), (lY + d)
+Opcode
+78
+543 210
+Hex
+11
+01
+11
+01
+11
+11
+001 011
+001
+011
+110
+101
+011
+01
+011
+001
+→ d→
+b
+110
+11
+111 101ł
+11 001 011
+→ d→
+01
+11
+110
+001
+011
+11
+001
+11
+11
+011
+110
+101
+011
+111
+11
+11
+011
+001
+→ d→
+br
+110
+111
+101
+001
+011
+→ d→
+br
+110
+CB
+CB
+DD
+FD
+CB
+CB
+CB
+CB
+FD
+CB
+No. of No. of M No. of T
+Bytes
+Cycles
+States
+Comments
+2
+2
+2
+4
+2
+2
+12
+20
+20
+8
+15
+23
+4
+6
+23
+Reg.
+000
+B
+001 C
+010 D
+011 E
+100 H
+101
+111
+Bit Tested
+2
+5
+111
+7
+To form new
+opcode replace
+11 of SET b, s
+with 10] Flags
+and time
+states for SET
+instruction,
+NOTE: The notation m, indicates location m, bit b (0 to 7).
+PS017801-0602
+
+===== PAGE 14 =====
+JUMP GROUP
+Symbolic
+Mnemonic Operation
+S Z
+JP nn
+PC + nn
+JP cc, nn
+Flags
+Opcode
+P/VN C
+76
+543 210
+Hex
+•x•x•
+11
+000 011
+C3
+*n→
+*n→
+• X
+11
+cc 010
++ n→
++n→
+No. of No. of M No. of T.
+Bytes
+Cycles
+States
+Comments
+JR e
+JR C, e
+JR NC, e
+JP Z, e
+JR NZ, e
+JP (HL)
+JP (IX)
+JP (IY)
+DJNZ, e
+If condition cc
+is true PC+nn,
+otherwise
+continue
+PC+ PC+e
+#C-O.
+continue
+NC- 1.
+PC + PC + e
+IFC-1,
+continue
+•X • X
+PC + PC+e
+IfZ=0
+continue
+IZ=1.
+PC + PC+ e
+IfZ=1,
+continue
+PC + PC+ e
+PC + HL
+PC + IX
+PC + IY
+B+B-1
+×
+continue
+00 011 000 18
+00 111 000 3ęšÍ
++ 0-2→
+00 100 000 20
+11
+101 001
+11
+011
+101
+11
+101 001
+11 111 101
+11
+101 001
+00
+010 000
++0-2→
+E9
+DD
+E9
+FD
+E9
+10
+2
+2
+2
+2
+2
+2
+2
+2
+2
+1
+2
+2
+2
+3
+З
+2
+2
+З
+1
+2
+2
+10
+10
+12
+12
+12
+7
+12
+7
+12
+8
+Condition
+000 NZ (non-zero)
+001 Z (zero)
+010 NC (non-carry)
+011 C (carry)
+100
+PO (parity add)
+101
+PE (parity even)
+110 P (sign positive)
+111 M (sign negative)
+If condition not met.
+If condition is met.
+If condition not met.
+If condition is met.
+If condition not met.
+If condition is met.
+If condition not met.
+If condition is met.
+IfB =0
+3 13 fB#0.
+PC + PC+ e
+NOTES: e represents the extension in the relative addressing mode.
+e is a signal two's complement number in the range < - 126, 129 >.
+e - 2 in the opcode provides an effective address of pc + e as PC is incremented by 2 prior to the addition of e.
+18
+PS017801-0602ł
+
+===== PAGE 15 =====
+CALL AND RETURN GROUP
+Symbolic
+Mnemonic Operation
+CALL nn
+(SP-2)+PCL
+PC + nn.
+CALL cc,nn If condition
+cc is false
+continue,
+otherwise
+same as
+CALL nn
+RET
+PCL + (SP)
+PCH+(SP + 1)
+RET cc
+If condition
+cc is false
+continue.
+otherwise
+same as RET
+RETI
+RETN1
+RST p
+Return from
+interrupt
+Return from
+non-maskable
+interrupt
+(SP -1)+PCH
+(SP-2)+PCL
+PCH TO
+POL-P
+Flags
+X • X
+X • X
+x • x
+NOTE: 1RETN loads 1FF2 → IFF1
+PS017801-0602
+Opcode
+11
+001 001 C9
+cc 000
+No. of No. of M No. of T
+Bytes
+Cycles
+5
+5
+3
+17
+10
+17
+10
+11
+Comments
+If cc is false.
+If cc is true.
+11
+101
+01
+001
+11
+101
+01
+000
+11
+101
+101
+101
+101
+111
+ED
+4D
+ED
+45
+2
+2
+14
+14
+If cc is false.
+If cc is true.
+cc
+Condition
+000
+NZ (non-zero)
+001
+Z (zero)
+010 NC (non-carry)
+011
+C (carry)
+100
+PO (parity odd
+101
+PE (parity even)
+110 P (sign positive)
+111 •M (sign negative)
+P
+000
+OOH
+001
+08H
+010 10H
+011 18H
+100
+20H
+101 28H
+110
+30H
+111 38H
+
+===== PAGE 16 =====
+INPUT AND OUTPUT GROUP
+Symbolic
+Mnemonic Operation
+IN A, (n)
+A*(n)
+Flags
+S Z
+P/VN C
+IN r, (C)
+r+ (C)
+if r = 110 only
+the flags will
+be affected
+* * x
+PO
+INI
+INIR
+(HL) - (C)
+B+B-1
+HL + HL+1
+(HL) + (C)
+B+B-1
+HL + HL +1
+Repeat until
+B=0
+IND
+(HL) + (C)
+B+B-1
+HL + HL - 1
+INDR
+(HL) + (C)
+B+B-1
+HL + HL-1
+Repeat until
+B-0
+OUT (n), A (n) *A
+OUT (C), r (C) +r
+OUTI
+OTIR
+(C) - (HL)
+B+B-1
+HL + HL+1
+(C) + (HL)
+B+B-1
+HL$¿HL+1
+Repeat until
+B-0
+OUTD
+(C) + (HL)
+B÷B-1
+AL + AL -1
+X * XXXX 1 X
+x 9 xx
+X X
+xIxxxx1x
+X 1 XXXX
+1 X
+• • x
+x* xxxx
+X 1 XXX
+× * XXXX 1 X
+Opcode
+543 210
+11
+11
+01
+011 01
++ n→
+101 101
+000
+11
+10
+101 101
+100 010
+11
+10
+101 101
+110 010
+11
+10
+101 101
+101 010
+11
+10
+101 101
+111 010
+11
+01
+010 011
+*n→
+101 101
+001
+11
+10
+101
+101
+100 011
+11
+101
+101
+10 110 011
+11
+10
+101 101
+101 011
+OTDR
+(C) - (HL)
+XXXX
+B+B-1
+11
+10
+101 101
+111 011
+HL + HL- 1
+Repeat until
+B = 0
+NOTES: I If the result of B - 1 is zero, the'Z flag is set; otherwise it is reset.
+@ Z flag is set upon instruction completion only.
+20
+DB
+ED
+ED
+A2
+ED
+B2
+ED
+AA
+ED
+BA
+D3
+ED
+ED
+АЗ
+ED
+B3
+ED
+AB
+ED
+No. of M No. of T
+11
+12
+2
+2
+Commente
+nto Ao~Az
+Acc. 10 Ag¿$A15
+CtoAo~A7
+B to Ag¿A15
+CtoAo~Az
+B10 Ag ~ A15
+CtoAo~Ay
+B to Ag¿$A15
+2
+2
+2
+2 ￾
+2
+(If B+O)
+4
+(If B= 0)
+4
+5
+(If B*O)
+4
+(f B = 0)
+З
+(If B+0)
+(If B-0)
+21
+16
+16
+21
+16
+11
+12
+16
+(If B*O)
+4
+(If B - 0)
+16
+21
+16
+Bto Ag~A15
+CtoAO~Az
+B 10 AgẠ&A 15)
+nto Ao~Az
+ACC. 10 Ag ~ A15
+CtoAo~Ay
+B10 Ag ~A15
+CtoAo~Az
+Bto Ag ~A15
+Bto Ag$¿‚A15łł
+Cto Ao ~Az
+Bto Ag ~A15
+C10 Ao ~ A7
+B to Ag ~A15
+PS017801-0602
+
+===== PAGE 17 =====
+SUMMARY OF FLAG OPERATION
+Instructions
+ADD A, s; ADC A, s
+SUB s; SBC A, s; CP s; NEG
+AND s
+OR s, XOR s
+INC s
+DEC &
+ADD DD, 6S
+ADC HL, ss
+SBC HL, 8s
+RLA; RLCA; RRA; RRCA
+RL m; RLC m; RR m;
+RRC m; SLA m;
+SRA m; SAL m
+RLD; RRD
+DAA
+CPL
+SCF
+COF
+IN r (C)
+INI; IND; OUTI; OUTD
+INIR; INDR; OTIR; OTDR
+LDI; LDD
+LDIR; LDDR
+CPI; CPIR; CPD; CPDR
+P
+v
+* X X X V 1
+P
+o
+• x
+xXxXx
+P
+×
+LD A; I, LD A, R
+* & X O X IFF O •
+BIT b, s
+x : X 1 X X 0 •
+SYMBOLIC NOTATION
+Comments
+8-bit add or add with carry.
+8-bit subtract, subtract with carry, compare and negate
+accumulator.
+Logical operation.
+Logical operation.
+8-bit increment.
+8-bit decrement.
+16-bit add.
+16-bit add with carry.
+16-bit subtract with carry.
+Rotate accumulator.
+Rotate and shift locations.
+Rotate digit left and right.
+Decimal adjust accumulator.
+Complement accumulator.
+Set carry.
+Complement carry.
+Input register indirect.
+Block input and output. Z = 1 if B * 0, otherwise Z = 0.
+Block input and output. Z = 1 if B * 0, otherwise Z = 0.
+Block transfer instructions. PN = 1 if BC * 0, otherwise P/V • 0.
+Block transfer instructions. PN = 1 if BC * 0, otherwise P/ • 0.
+Block search.instructions. Z = 1 if A = (HL), otherwise Z = 0.
+PN - 1 if BC * 0, otherwise PN = 0.
+IFF, the content of the interrupt enable flip-flop, (IFF2), is copied
+into the P/ flag.
+The state of bit b of location s is copied into the Z flag.
+Symbol Operation
+S
+Sign flag. S = 1 if the MSB of the result is 1.
+Z
+Zero flag. Z = 1 if the result of the operation is 0.
+Parity or overflow flag. Parity (P) and overflow (V)
+share the same flag. Logical operations affect
+this flag with the parity of the result while
+arithmetic operations affect this flag with the
+overflow of the result. If P/V holds parity: PN = 1
+if the result of the operation is even; PN = O if
+result is odd. If PM holds overflow, P/V = 1 if the
+result of the operation produced an overfiow. If
+P/V does not hold overflow, P/V = 0.
+Half-carry flag. H = 1 if the add or subtract
+operation produced a carry into, or borrow from,
+bit 4 of the accumulator.
+Add/Subtract flag. N = 1 if the previous
+operation was a subtract.
+Carry/Link flag. C = 1 if the operation produced
+a carry from the MSB of the operand or result.
+Symbol Operation
+The flag is affected according to the result of the
+operation.
+The flag is unchanged by the operation.
+The flag is reset by the operation.
+The flag is set by the operation.
+The flag is indeterminate.
+P/ flag affected according to the overfiow result
+of the operation.
+P
+P/ flag affected according to the parity result of
+the operation.
+Any one o the CPU registers A, B, C, D, E, H, L.
+Any 8-bit location for all the addressing modes
+• allowed for the particular instruction.
+Any 16-bit location for all the addressing modes
+Nº
+allowed for that instruction.
+Any one of the two index registers IX or lY.
+R
+Refresh counter.
+8-bit value in range < 0, 255 >.
+nn
+16-bit value in range < 0, 65535 >.
+ồạiH and N flags are used in conjunction with the decimal adjust instruction (DAA) to properly correct the result into packed BCD format following additon or
+subtraction usir. pe ands with packed BCD format.
+PS017801-0602
+21
+
+===== PAGE 18 =====
+CPU REGISTERS
+Figure 4 shows three groups of registers within the CPU.
+The first group consists of duplicate sets of 8-bit registers: a
+principal set and an alternate set [designated by ' (prime),
+e.g., A'). Both sets consist of the Accumulator register, the
+Flag register, and six general-purpose registers. Transfer of
+data between these duplicate sets of registers is
+accomplished by use of 'Exchange" instructions. The
+result is faster response to interrupts and easy, efficient
+implementation of such versatile programming techniques
+MAIN REGISTER SET
+A ACCUMULATOR
+F FLAG REGISTER
+B GENERAL PURPOSE
+C GENERAL PURPOSE
+O GENERAL PURPOSE
+E GENERAL PURPOSE
+H GENERAL PURPOSE
+L GENERAL PURPOSE
+8 BITS
+as background foreground data processing. The second
+set of registers consists of six registers with assigned
+functions. These are the I (Interrupt register), the R (Refresh
+register), the IX and IY (Index registers), the SP (Stack
+Pointer), and the PC (Program Counter). The thild group
+consists of two interrupt status flip-flops, plus an additional
+pair of flip-flops which assists in identifying the interrupt
+mode at any particular time. Table 1 provides further
+information on these registers.
+ALTERNATE REGISTER SET
+A' ACCUMULATOR
+F' FLAG REGISTER
+8' GENERAL PURPOSE
+C' GENERAL PURPOSE
+D' GENERAL PURPOSE
+E' GENERAL PURPOSE
+H' GENERAL PURPOSE
+L' GENERAL PURPOSE
+- 16 BITS -
+IX INDEX REGISTER
+IY INDEX REGISTER
+SP STACK POINTER
+PC PROGRAM COUNTER
+I INTERRUPT VECTOR
+R MEMORY REFRESH
+8 BITS
+INTERRUPTS: GENERAL OPERATION
+The CPU accepts two interrupt input signals: NMI and INT.
+The NMI is a non-maskable interrupt and has the highest
+priority. INT is a lower priority interrupt and it requires that
+interrupts be enabled in software in order to operate. INT
+can be connected to multiple peripheral devices in a
+wired-OR configuration.
+The Z80 has a single response mode for interrupt service
+on the non-maskable interrupt. The maskable interrupt,
+INT, has three programmable response modes available.
+These are:
+• Mode 0 - similar to the 8080 microprocessor.
+• Mode 1 - Peripheral Interrupt service, for use with
+non-8080/Z80 systems.
+INTERRUPT FLIP-FLOPS
+STATUS
+= INTERRUPTS DISABLED
+INTERRUPTS ENABLED
+INTERRUPT MODE FLIP.FLOPS
+IMFO
+IMFO
+STORES IFF1 7
+DURING NMI
+SERVICE -
+INTERRUPT MODE 0
+NOT USED
+INTERRUPT MODE 1
+INTERRUPT MODE 2
+Figure 4. CPU Registers
+• Mode 2 - a vectored interrupt scheme, usually daisy-
+chained, for use with the Z80 Family and compatible
+peripheral devices.
+The CPU services interrupts by sampling the NMI and INT
+signals at the rising edge of the last clock of an instruction.
+Further interrupt service processing depends upon the type
+of interrupt that was detected. Details on interrupt
+responses are shown in the CPU Timing Section.
+Non-Maskable Interrupt (NMI). The nonma$kable
+interrupt cannot be disabled by program control and
+therefore will be accepted at all times by the CPU. INMI is
+usually reserved for servicing only the highest priority type
+interrupts, such as that for orderly shutdown after power
+22
+PS017801-0602
+
+===== PAGE 19 =====
+PIN DESCRIPTIONS
+Ag-A15- Address Bus (output, active High, 3-state). Ao-A15
+form a 16-bit address bus. The Address Bus provides the
+address for memory data bus exchanges (up to 64K bytes)
+and for I/O device exchanges.
+BUSACK. Bus Acknowledge (output, active Low). Bus
+Acknowledge indicates to the requesting device that the
+CPU address bus, data bus, and control signals MREQ,
+TORQ, RD, and WR have entered their high-impedance
+states. The external circuitry can now control these lines.
+BUSREQ. Bus Request (input, active Low). Bus Request
+has a higher priority than NMI and is always recognized at
+the end of the current machine cycle. BUSREQ forces the
+CPU address bus, data bus, and control signals MREQ,
+IORQ, RD, and WR to go to a high-impedance state so that
+other devices can control these lines. BUSREQ is normally
+wired-OR and requires an external pullup for these
+applications. Extended BUSREQ periods due to extensive
+DMA operations can prevent the CPU from properly
+refreshing dynamic RAMs.
+Do-Dy. Data Bus (input/output, active High, 3-state). Do-D7
+constitute an 8-bit bidirectional data bus, used for data
+exchanges with memory and I/O.
+HALT. Halt State (output, active Low). HALT indicates that
+the CPU has executed a Halt instruction and is awaiting
+either a nonmaskable or a maskable interrupt (with the mask
+enabled) before operation can resume. While halted, the
+CPU executes NOPs to maintain memory refresh.
+INT. Interrupt Request (input, active Low). Interrupt Request
+is generated by I/O devices. The CPU honors a request at
+the end of the current instruction if the internal
+software-controlled interrupt enable flip-flop (IFF) is
+enabled. INT is normally wired-OR and requires an external
+pullup for these applications.
+IORQ. Input/Output Request (output, active Low, 3-state).
+IORQ indicates that the lower half of the address bus holds a
+valid I/O address for an I/O read or write operation. IORQ is
+also generated concurrently with M1 during an interrupt
+acknowledge cycle to indicate that an interrupt response
+vector can be placed on the data bus.
+PS017801-0602ł
+M1. Machine Cycle One (output, active Low). M1, together
+with MREQ, indicates that the current machine cyale is the
+opcode fetch cycle of an instruction execution. M1, together
+with IORQ, indicates an interrupt acknowledge cycle.
+MREQ. Memory Request (output, active Low, 3-state).
+MREQ indicates that the address bus holds a valid address
+for a memory read or memory write operation.
+NMI. Non-Maskable Interrupt (input,
+negative edge-
+triggered). NMI has a higher priority than INT. NMI is always
+recognized at the end of the current instruction,
+independent of the status of the interrupt enable flip-flop,
+and automatically forces the CPU to restart at location
+0066H.
+RD. Read (output, active Low, 3-state). RD indicates that the
+CPU wants to read data from memory or an I/O device. The
+addressed I/O device or memory should use this signal to
+gate data onto the CPU data bus.
+RESET. Reset (input, active Low). RESET initializes the CPU
+as follows: it resets the interrupt enable flip-flop, clears the
+PC and Registers I and R, and sets the interrupt status to
+Mode 0. During reset time, the address and data bus go to a
+high-impedance state, and all control output signals go to
+the inactive state. Note that RESET must be active for a
+minimum of three full clock cycles before the reset operation
+is complete.
+RFSH. Refresh (output, active Low). RFSH, together with
+MREQ, indicates that the lower seven bits of the $ystem's
+address bus can be used as a refresh address to the
+system's dynamic memories.
+WAIT. Wait (input, active Low). WAIT indicates to the CPU
+that the addressed memory or I/O devices are not ready for
+a data transfer. The CPU continues to enter a Wait state as
+long as this signal is active. Extended WAIT periods can
+prevent the CPU from properly refreshing dynamic
+memory.
+WR. Write (output, active Low, 3-state). WR indicates that the
+CPU data bus holds valid data to be stored at the addressed
+memory or I/O location.
+23
+
+===== PAGE 20 =====
+CPU TIMING
+The Z80 CPU executes instructions by proceeding through
+a specific sequence of operations:
+• Memory read or write
+• I/O device read or write
+• Interrupt acknowledge
+The basic clock period is referred to as a T time or cycle, and
+three or more T cycles make up a machine cycle (M1, M2 or
+M3 for instance). Machine cycles can be extended either by
+the CPU automatically inserting one or more Wait states or
+by the insertion of one or more Wait states by the user.
+Instruction Opcode Fetch. The CPU places the contents
+of the Program Counter (PC) on the address bus al the start
+of the cycle (Figure 5). Approximately one-half clock cycle
+later, MREQ goes active. When active, RD indicates that the
+memory data can be enabled onto the CPU data bus.
+The CPU samples the WAIT input with the falling edge of
+clock state T2. During clock states T3 and T4 of an M1 cycle,
+dynamic RAM refresh can occur while the CPU starts
+decoding and executing the instruction. When the Refresh
+Control signal becomes active, refreshing of dynamic
+memory can take place.
+CLOCK
+Ao-A1s
+MREG
+WAIT
+Do-DY
+X VALID DATA X
+RFSH
+Figure 5. Instruction Opcode Fetch
+24
+PS017801-0602
+
+===== PAGE 21 =====
+Memory Read or Write Cycles. Figure 6 shows the timing
+of memory read or write cycles other than an opcode fetch
+(M1) cycle. The MREQ and RD signals function exactly as in
+the fetch cycle. In a memory write cycle, MREQ also
+becomes active when the address bus is stable. The WR line
+is active when the data bus is stable, so that it can be used
+directly as an R/W pulse to most semiconductor memories.
+CLOCK
+Ao-A15
+ALID ADDRESS
+12)
+MREG
+WAIT
+READ
+OPERATION
+DO-DY
+WR
+WRITE
+OPERATION
+35
+DO-DY
+DATA OUT
+Figure 6. Memory Read or Write Cycles
+PS017801-0602
+. PS017801-0602
+25
+
+===== PAGE 22 =====
+Input or Output Cycles. Figure 7 shows the timing for an
+I/O read or I/O write operation. During I/O operations, the
+CPU automatically inserts a single Wait state (TwA). This
+extra Wait state allows sufficient time for an I/O port to
+decode the address from the port address lines.
+AO-A7
+VALID PORT ADDRESS
+FORG
+WAIT
+RD
+I/0
+READ
+OPERATION
+12
+Do-Dr
+I/O
+WRITE /
+OPERATION
+• 33)
+DATA OUT
+Twa = One wait cycle automatically inserted by CPU.
+Figure 7. Input or Output Cycles
+26
+PS017801-0602
+
+===== PAGE 23 =====
+Interrupt Request/Acknowledge Cycle. The CPU
+samples the interrupt signal with the rising edge of the last
+clock cycle at the end of any instruction (Figure 8). When an
+interrupt is accepted, a special M1 cycle is generated.
+During this Mi cycle, TORQ becomes active (instead of
+MREQ) to indicate that the interrupting device can place an
+8-bit vector on the data bus. The CPU automatically adds
+two Wait states to this cycle.
+CLOCK
+Ao-A15
+M7
+IORG
+WAIT
+Do-D7]
+PS017801-0602
+27
+
+===== PAGE 24 =====
+Non-Maskable Interrupt Request Cycle. NMI is sampled
+at the same time as the maskable interrupt input INT but has
+higher priority and cannot be disabled under software
+control. The subsequent timing is similar to that of a normal
+memory read operation except that data put on the bus by
+the memory is ignored. The CPU instead executes a restart
+(RST) operation and jumps to the NMI service routine
+located at address 0066H (Figure 9).
+CLOCK
+Ao-A1s
+PC
+REFRESH
+MREG
+RD
+RF SH
+* Although NMI is an asynchronous input, to guara
+of the clock cycle preceding the last state of any instruction cycie (Tui).
+Is being recognized on the following machine cycle, NMI's falling edge must occur no later than the rising edge
+Figure 9. Non-
+e Interrupt Request Operation
+28
+PS017801-0602
+
+===== PAGE 25 =====
+Bus Request/Acknowledge Cycle. The CPU samples
+BUSREQ with the rising edge of the last clock period of any
+machine cycle (Figure 10). If BUSREQ is active, the CPU
+sets its address, data, and MREQ, IORQ, RD, and WR lines
+to a high-impedance state with the rising edge of the next
+clock pulse. At that time, any external device can take
+control of these lines, usually to transfer data between
+memory and I/O devices.
+CLOCK
+BUSREG
+BUSACK
+Ao-A15
+Do-D7
+MREQ
+RD,WR
+JORA
+FLOAT
+M1
+RFSH
+HALT
+UNCHANGED
+NOTES: 1) T, Sher stary of ack bycle used by requesting device.
+Figure 10. BUS Request/Acknowledge Cycle
+PS017801-0602
+29
+
+===== PAGE 26 =====
+Halt Acknowledge Cycle. When the CPU receives a HALT
+instruction, it executes NOP states until either an INT or NMI
+input is received. When in the Halt state, the HALT output is
+active and remains so until an interrupt is received (Figure
+11). INT will also force a Halt exit.
+CLOCK
+HALT
+Halt Instruction
+*Although NMI Is an asynchronous input, to guarantee its being recognized on the following machine cycle, NMI's falling edge must occur no
+later than the rising edge of the clock cycle preceding the last state of any instruction cycle (TLi).
+Figure 11. Halt Acknowledge
+Reset Cycle. RESET must be active for at least three clock
+cycles for the CPU to properly accept it. As long as RESET
+remains active, the address and data buses float, and the
+control outputs are inactive. Once RESET goes inactive, two
+internal T cycles are consumed before the CPU resumes
+normal processing operation. RESET clears the PC register,
+so the first opcode fetch will be to location 0000H
+(Figure 12).
+CLOCK
+RESET
+Ao-A15
+FLOAT
+Do-D7
+MREQ
+FOD NO.
+BUSACK
+HALT
+Figure 12. Reset Cycle
+30
+PS017801-0602
+
+===== PAGE 27 =====
+Power-Down mode of operation (Only applies to CMOS
+Z80 CPU).
+CMOS Z80 CPU supports Power-Down mode of operation.
+Power-Down Acknowledge Cycle. When the clock input
+to the CPU is stopped at either a High or Low level, the CPU
+stops its operation and maintains all registers and control
+signals. However. Icc2 (standby supply current) is
+guaranteed only when the system clock is stopped at a Low
+CLK
+This mode is also referred to as the "standby mode*, and
+supply current for the CPU goes down as low as 10 uA
+(Where specified as loc,).
+level during T4 of the machine cycle following the execution
+of the HALT instruction. The timing diagram for the
+power-down function, when implemented with the HALT
+instruction, is shown in Figure 13.
+MALT
+Figure 13. Power-Down Acknowledge
+PS017801-0602
+31
+
+===== PAGE 28 =====
+Power-Down Release Cycle. The system clock must be
+supplied to the CPU to release the power-down state. When
+the system clock is supplied to the CLK input, the CPU
+restarts operations from the point at which the power-down
+state was implemented.
+The timing diagrams for the release from power-down mode
+are shown in Figure 14.
+NOTES:.
+1) When the external oscillator has been stopped to enter the power-down
+state, some warm-up time may be required to obtain a stable clock for
+the release.
+2) When the HALT instruction is executed to enter the power-down state.
+the CPU will also enter the Halt state. An interrupt signal (either NMI or
+INT) or a RESET signal must be applied to the CPU after the system
+clock is supplied in order to release the power-down state.
+CLK
+NMI
+MI
+HALT
+Figure 14a.
+CLK
+RESET
+HALT
+Figure 14b.
+ELK
+INT
+HALF
+Figure 14c.
+Figure 13. Power-Down Release
+32
+PS017801-0602
+
+===== PAGE 29 =====
+ABSOLUTE MAXIMUM RATINGS
+Voltage on Vcc with respect to Vss.
+Voltages on all inputs with respect
+to Vss ..
+Operating Ambient
+Temperature .
+Storage Temperature
+- 0.3V to + 7V
+- 0.3V to Vcc + 0.3V
+See Ordering Information
+- 65°C to + 150°C
+STANDARD TEST CONDITIONS
+The DC Characteristics and capacitance sections below
+apply for the following standard test conditions, unless
+otherwise noted. All voltages are referenced to GND (OV).
+Positive current flows into the referenced pin.
+Available operating temperature ranges are:
+• S = 0°C to +70°C
+Voltage Supply Range:
+NMOS: +4.75V ≤ VCC ≤ +5.25V
+CMOS: +4.50V ≤ VCC ≤ +5.50V
+• E= -40°C lo 100°C, +4.50V ≤ VCC ≤ +5.50V
+All ac parameters assume a load capacitance of 100 pf. Add
+10 ns delay for each 50 pf increase in load up to a maximum
+of 200 pf for the data bus and 100 pf for address and control
+lines. AC timing measurements are referenced to 1.5 volts
+(except for clock, which is referenced to the 10% and 90%
+Stresses greater than those listed under Absolute Maximum Ratings may
+cause permanent damage to the device. This is a stress rating only;
+operation of the device at any condition above those indicated in the
+operational sections of these specifications is not implied. Exposure to
+absolute maximum rating conditions for extended periods may affect
+device reliability.
+The Ordering Information section lists temperature ranges
+and product numbers. Package drawings are in the
+Package Information section. Refer to the Literature List for
+additional documentation.
+FRONDER TEST O
+100 pf :
+PS017801-0602
+33
+
+===== PAGE 30 =====
+DC CHARACTERISTICS (Z84Coo/CMOS Z80 CPU)
+Symbol
+VILC
+VIHC
+VIL
+VIH
+VOL
+VOH1
+VOH2
+ICC1
+Parameter
+Min
+Max
+Unit
+Condition
+Clock Input Low Voltage
+Clock Input High Voltage
+Input Low Voltage
+Input High Voltage
+Output Low Voltage
+Output High Voltage
+Output High Voltage
+Power Supply Current 4 MHz
+6 MHz
+8 MHz
+10 MHz
+20 MHZ
+Standby Supply Current
+- 0.3
+Vcc - .6
+- 0.3
+2.2
+0.45
+Vcc +.3
+0.8
+Vcc
+O.4
+lOL = 2.0 mA
+2.4
+Vcc - 0.8
+lOH = - 1.6 mA
+lOH = - 250 MA
+20
+30
+40
+50
+100
+10
+mA
+mA
+mA
+mA
+mA
+Vcc = 5V
+VIH - VCC - 0.2V
+VIL = 0.2V
+Voc = 5V
+Vcc = 5V
+CLK = (0)
+VIH - VCC - 0.2V
+VIL = 0.2V
+Input Leakage Current
+-10
+10
+VIN = 0.4 to VCC
+ILO
+3-State Output Leakage Current in Float
+- 10
+102
+VoUT = 0.4 to Vcc
+1. Measurements made with outputs floating.
+2. A15-Ao, D7-Do, MREG, IORQ, RD, and WR.
+3. ICC2 standby supply current is guaranteed only when the supplied clock is stopped at a low level during T4 of the machine cycle immediately following
+the execution of a HALT instruction.
+CAPACITANCE
+Symbol
+Parameter
+Min
+Max
+Unit
+CCLOCK
+CIN
+COUT
+TA = 25°C, 1 = 1 MHz.
+Unmeasured pins returned to ground.
+Clock Capacitance
+Input Capacitance
+Output Capacitance
+10
+15
+pri
+pt
+pf
+PS017801-0602
+
+===== PAGE 31 =====
+AC CHARACTERISTICST (Z84CO0/CMOS Z80 CPU)
+Vcc=5.0V ‡ 10%, unless otherwise specified
+No Symbol
+Parameter
+Z84C000iồiZ84C0006 Z84C0008 Z84C0010 Z84C0020(1] Unk Note
+Min Max
+Min Max
+Min Max
+Min Max
+Min Max
+TcC
+TwCh
+TWCI
+4 TfC
+5
+TrC
+Clock Cycle time
+Clock Pulse width (high)
+Clock Pulse width (low)
+Clock Fall time
+Clock Rise time
+TdCr(A)
+Address vaild from Clock Rise
+TdA(MREQf)
+Address valid to /MREQ Fall
+TdCI(MREQf) Clock Fall to /MREQ Fall delay
+TdCr(MREQr) Clock Rise to /MREQ Rise delay
+10 TwMREQh
+MREQ pulse width (High)
+250* DC
+110 DC
+110 DC
+30
+30
+110
+85
+162* DC
+65 DC
+65 DC
+20
+20
+90
+65*
+110°
+220*
+35*
+70
+125* DC
+55 DC
+55 DC
+10
+10
+80
+20*
+60
+100* DC
+40 DC
+40 DC
+10
+10
+65
+5*
+55
+50* DC
+20
+DC
+20 • DC
+10
+10
+57
+-15*
+40
+40
+11 TWMREQI
+MREQ pulse width (low)
+12 TdC(MERQr) Clock Fall to /MREQ Rise delay
+13 TdCI(RDI)
+Clock Fall to /RD Fall delay
+14 TdCr(RDr)
+Clock Rise to /RD Rise delay
+15 TsD(Cr)
+Data setup time to Clock Rise
+132ẠạẠ
+100*
+75*
+35
+30
+25
+16 ThD(RDr)
+17 TsWAIT(Cf)
+18 ThWAIT(CI)
+19 TdCr(M1f)
+20 TdCr(M1r)
+Data hold time after /RD Rise
+WAIT setup time to Clock Fall
+WAIT hold time after Clock Fall
+Clock Rise to /M1 Fall delay
+Clock Rise to /M1 Rise delay
+70
+10
+8 0
+10
+21 TdCr(RFSHf)
+Clock Rise to /RFSH Fall delay
+22 TdCr(RFSHr)
+Clock Rise to /RFSH Rise delay
+23 TdCf(RDr)
+Clock Fall to /RD Rise delay
+24 TdCr(RDi)
+Clock Rise to /RD Fall delay
+25 TsD(Cf)
+Data setup to Clock Fall during
+M2, M3, M4 or M5 cycles
+130
+120
+85
+85
+70
+8888
+50
+40
+30
+25
+26 TdA(IORQf)
+Address stable prior to
+180*
+107*
+75*
+50*
+AORQ Fall
+27 TdCr(IORQf)
+Clock Rise to /IORQ Fall delay
+28 TdC((IORQr)
+Clock Fall to /IORQ Rise delay
+85
+29 TdD(WRf)Mw Data stable prior to /WR Fall
+80*
+5*
+40*
+30 TdCf(WRf)
+31 TwWR
+32 TdCf(WRr)
+33 TdD(WRf)IO
+34 TdCr(WRf)
+Clock Fall to MR Fall delay
+MR pulse width
+Clock Fall to MR Rise delay
+Data stable prior to /WR Fall
+Clock Rise to /WR Fall delay
+220*
+- 10*
+80
+80
+65
+132*
+-55*
+70
+70
+60
+100*
+60
+60
+-55*
+75"
+-10*
+60
+55
+55
+50
+35
+TdWRr(D)
+Data stable from MR Rise
+36 TdCI(HALT)
+Clock Fall to /HALT 'L' or "H'
+37 TwNMI
+/NMI pulse width
+38 TsBUSREQ
+/BUSREQ setup time
+(Сг)
+60*
+80
+50
+300
+30*
+60
+50
+260
+15*
+60
+40
+10*
+225
+60
+30
+to Clock Rise
+*For clock periods other than the minimums shown. calculate parameters using the table on the following page.
+Calculated values above assumed TrC = TIC = 20 ns.
+†Units in nanoseconds (ns).
+It For loading 2 50 pf. Decrease with by 10 ns for each additional 50 pf..
+**4 MHz CMOS Z80 is obsoleted and replaced by 6 MHz
+90
+PS017801-0602
+10*
+25*
+12
+12
+0*
+- 10°
+40
+25*
+40
+-30*
+40
+70
+60
+15
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+[2]
+nS
+nS
+nS
+[3]
+[3]
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+35
+
+===== PAGE 32 =====
+AC CHARACTERISTICS† (284C00/CMOS Z80 CPU; Continued)
+Voc=5.0V + 10%, unless otherwise specified
+No Symbol
+Parameter
+Z84C000ạỊồỊZ84C0006 Z84C0008 Z84C0010 Z84C0020[1]
+Unit Note
+Min Max Min Max Min Max Min Max
+Min Max
+39 ThBUSREQ
+(Cr)
+40 TdCr
+(BUSACKI
+41 TdCf
+(BUSACKr)
+42 TdCr(Dz)
+43 TdCr(CTz)
+/BUSREQ hold time
+10
+after Clock Rise
+Clock Rise to /BASACK
+Fall delay
+Clock Fall to /BASACK
+Rise delay
+Clock Rise to Data float delay
+Clock Rise to Control Outputs
+Float Delay (/MREQ, /IORQ,
+/RD and (R)
+44 TdCrAz)
+Clock Rise to Address
+float delay
+45 TdCTI(A)
+Address Hold time from /MREQ, 80*
+MORQ, /RD or MR
+46 TsRESET(Cr) /RESET to Clock Rise setup time 60
+47 ThRESET(Cr) /RESET to Clock Rise Hold time
+10
+48 TsINTf(Cr)
+/INT Fall to Clock Rise
+80
+Setup Time
+49 ThINTr(Cr)
+/INT Rise to Clock Rise
+10
+Hold Time
+M1 Fall to /IORQ Fall delay
+565*
+10
+10
+10
+10
+100
+90
+80
+75
+40
+nS
+nS
+100
+90
+90
+80
+80
+70
+80
+90
+70
+80
+60
+70
+75
+65
+65
+75
+40
+40
+nS
+nS
+40
+40
+35*
+60
+10
+70
+10
+20*
+45
+10
+55
+20*
+40
+10
+50
+15
+10
+15
+10
+10
+10
+nS
+nS
+nS
+nS
+nS
+nS
+nS
+50 TdM1f
+(IORQI)
+51 TdCI(IORQf)
+52 TdCI(IORQr)
+53 TdC(D)
+359*
+270*
+220ẠồẠ
+100*
+/Clock Fall to /IORQ Fall delay
+Clock Rise to /IORQ Rise delay
+Clock Fall to Data Valid delay
+85
+85
+150
+70
+70
+130
+60
+60
+115
+55
+55
+110
+45
+45
+75
+nS
+nS
+nS
+nS
+Notes:
+• For Clock periods other than the minimum shown, calculate parameters using the following table.
+Calculated values above assumed TrC = TIC = maximum.
+** 4 MHz CMOS Z80 is obsoleted and replaced by 6 MHz
+[1] Z84C0020 parameters are guaranteed with 50pF load Capacitance.
+[2] If Capacitive Load is other than 50pF.. please use Figure 1. to calculate the value.
+(3] Increasing delay by 10nS for each 50pF increase in loading, 200pF max for data lines, and 100pF for control lines.
+FOOTNOTES TO AC CHARACTERISTICS
+No Symbol
+TcC
+TdA(MREQI)
+10
+11
+TwMREQh
+TWMREQI
+Parameter
+Z84C000ẠỊiZ84C0006 Z84C0008 Z84C0010 Z84C0020
+26
+29
+31
+33
+TdA(IORQf)
+TdD(WRI)
+TwWR
+TdD(WRf)
+TwCh + TwCI + TrC + TfC
+TwCh + TIC
+TwCh + TIC
+TcC
+TcC
+TcC
+TcC
+TwCI + TrC
+35
+45
+50
+TdWRr(D)
+TdCTr(A)
+TdM1((IORQf)
+TWCI + TrC
+TwCI + TrC
+2T cC + TWCh + TIC
+-65
+-20
+-30
+-70
+- 170
+-30
+-140
+-70
+-50
+-65
+AC Test Conditions: VIH = 2.0 V
+VIL = 0.8 V
+VOH = 1.5 V
+VOL = 1.5 V
+-50
+-20
+-30
+-55
+- 140
+-30
+-140
+-55
+-50
+-50
+VIHC = VCC - 0.6 V
+VILC = 0.45 V
+-45
+-20
+-25
+-50
+-120
+-25
+- 120
+-50
+-45
+-45
+-45
+-20
+-25
+-50
+-60
+-25
+-60
+-40
+-30
+-30
+FLOAT = +0.5 V
+-45
+•20
+-25
+-50
+-60
+-25
+-60
+-25
+-30
+-30
+36
+PS017801-0602
+
+===== PAGE 33 =====
+Percentage Change of Parameter 6
+@100C
+20
+40
+60
+80
+100
+120
+Load Capacitance (pf)
+Figure 1. Address Delay Characteristics
+(Parameter 6)
+DC CHARACTERISTICS (28400/NMOS 280 CPU)
+All parameters are tested unless otherwise noted.
+Symbol
+Parameter
+VILC
+Clock Input Low Voltage
+VIHC
+Clock Input High Voltage
+VIL
+Input Low Voltage
+VIH
+Input High Voltage
+VOL
+Output Low Voltage
+VOH
+Output High Voltage
+Icc
+Power Supply Current
+LI
+Input Leakage Current
+LO
+3-State Output Leakage Current in Float
+1. For military grade parts, refer to the Z80 Military Electrical Specification.
+2: A15-Ao. D7-Do, MREQ. ORQ. RD, and WR.
+3. Measurements made with outputs floating.
+CAPACITANCE
+Guaranteed by design and characterization.
+Symbol
+CCLOCK
+CIN
+COUT
+NOTES:
+TA = 25°C. 1 = 1 MHz.
+Unmeasured pins returned to ground.
+Parameter
+Clock Capacitance
+Input Capacitance
+Output Capacitance
+PS017801-0602
+Min
+- 0.3
+VcC - .6
+- 0.3
+2.01
+2.41
+- 10
+Max
+0.45
+VcC +.3
+0.8
+Vec
+0.4
+200
+10
+10°
+Min
+140
+Unit
+Test Condition
+mA
+нА
+lOL = 2.0 mA
+lOH = - 250 HA
+Note 3
+VIN = 0 to VCC
+VOUT = 0.410 VCC
+Max
+35
+5
+15
+Unit
+pf
+pr
+pf
+37
+
+===== PAGE 34 =====
+AC CHARACTERISTICS† (Z8400/NMOS Z80 CPU)
+Number Symbol
+2
+5
+7
+9
+10
+11
+12
+TeC
+TwCh
+TWCI
+TIC
+TrC
+TdCr(A)
+TdCr(MREQr)
+TwMREQh
+TWMREQI
+TdC(MREQr)
+Parameter
+Clock Cycle Time
+Clock Pulse Width (High)
+Clock Pulse Width (Low)
+Clock Fall Time
+Clock Rise Time
+Clock f to Address Valid Delay
+Address Valid to MREQ + Delay
+Clock + to MREQ + Delay
+Clock 1 to MREQ + Delay
+MREQ Pulse With (High)
+MREQ Pulse Width (Low)
+Clock f to MREQ 1 Delay
+Z0840004
+Min
+Max
+250ẠỊẠi
+110
+110
+65*
+2000
+2000
+30
+30
+110
+85
+85
+110**
+220ồẠỊtt
+Z0840006
+Min
+Max
+162ỊồỊi
+2000
+65
+2000
+20
+20
+90
+35*
+70
+70
+65 * +
+135***
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+TaCI(RDI
+TdCr(RDr)
+TsD(Cr)
+ThD(RDr)
+TsWAIT(Cf)
+ThWAIT(CO
+TdCr(M1f)
+TdCr(M1г)
+TdCr(RFSHI
+TdCr(RFSHr)
+TdC((RDr)
+TdCr(RDI)
+Clock + to RD + Delay
+Clock f to RD 1 Delay
+Data Setup Time to Clock t
+Data Hold Time to RD 1
+WAIT Setup Time to Clock
+WAIT Hold Time after Clock
+85
+95
+85
+70
+80
+70
+35
+30
+70
+60
+Clock 1 to M1 + Delay
+Clock t to Mi t Delay
+Clock 1 to RFSH + Delay
+Clock 1 to RFSH 1 Delay
+Clock + to RD 1 Delay
+Clock 1 to RD + Delay
+100
+100
+130
+120
+85
+85
+80
+80
+110
+100
+70
+70
+TsD(Cf)
+Data Setup to Clock + during M2, M3.
+50
+40
+M4, or Ms Cycles
+26
+27
+28
+29
+30
+31
+TdA(IORQf)
+TdCr(IORQf)
+TdCf(IORQr)
+TaD(WRf)
+TdC(WRf)
+TwWR
+Address Stable prior to IORQ
+180*
+110*
+Clock 1 to IORQ + Delay
+Clock + to IORQ 1 Delay
+75
+85
+65
+70
+Data Stable prior to WR
+80*
+25*
+Clock I to WR + Delay
+80
+WR Pulse Width
+220ẠỊỊi
+135*
+32
+TaCf(WRr)
+Clock + to WR 1 Delay
+80
+• 33
+TaD(WRf)
+Data Stable prior to WRa
+- 10*
+-55*
+34
+TdCr(WRi)
+Clock f to WR + Delay
+65
+35
+TdWRr(D)
+Data Stable from WR t
+60*
+30*
+36
+TaCK(HALT)
+Clock t to HALT f or t
+300
+70
+70
+60
+260
+37
+TWNMI
+NMI Pulse Width
+38
+TsBUSREQ(Cr)
+BUSREQ Setup Time to Clock t
+80
+50
+70
+50
+*For clock periods other than the minimums shown, calculate parameters using the table on the following page. Calculated values above
+assumed TrC = TIC = 20 ns.
+†Units in nanoseconds (ns).
+* For loading ≥ 50 pl., Decrease with by 10 ns for each additional 50 pl.
+Z0840008
+Min
+Max
+125ồẠỊ
+55
+55
+2000
+2000
+10
+10
+80
+20Ại
+60
+60
+45" 1T
+60
+70
+60
+30
+50
+70
+70
+95
+85
+60
+60
+30
+75*
+55
+• 60
+5*
+100*
+60
+60
+55*
+15*
+60*
+40
+55
+225
+38
+PS017801-0602
+
+===== PAGE 35 =====
+AC CHARACTERISȚICS† (Z8400/NMOS Z80 CPU; Continued)
+Number Symbol
+39
+ThBUSREQ(Cr)
+40
+TdCr(BUSACK!)
+41
+TdCI(BUSACKr)
+42
+TdCr(Dz)
+43
+TdCr(CTz)
+Parameter
+Z0840004
+Min
+Max
+44
+45
+TdCr(Az)
+TdCTr(A)
+BUSREQ Hold Time after Clock f
+Clock 1 to BUSACK + Delay
+Clock + to BUSACK 1 Delay
+Clock + to Data Float Delay
+Clock f to Control Outputs Float Delay
+(MREQ, IORQ, RD, and WR)
+Clock f to Address Float Delay
+MREQ 1, IORQ t, RD 1, and WR 1 to
+Address Hold Time
+100
+100
+90
+80
+90
+80*
+35*
+46
+47
+48
+49
+50
+51
+52
+53
+TsRESET(Cr)
+ThRESET (Cr)
+TsINTI(Cr)
+ThINTr(Cr)
+RESET to Clock t Setup Time
+60
+60
+RESET to Clock t Hold Time
+INT to Clock 1 Setup Time
+80
+70
+INT to Clock 1 Hold Time
+M1 + to FORG + Delay
+565*
+365*
+TdCI(IORQf)
+Clock + to IORQ + Delay
+TdCi(IORQr)
+Clock 1 IORQ 1 Delay
+TaCI(D)
+Clock + to Data Valid Delay
+85
+85
+150
+*For clock periods other than the minimums shown, calculate parameters using the following table. Calculated values above
+assumed TrC = TIC = 20 ns.
+†Units in nanoseconds (ns).
+FOOTNOTES TO AC CHARACTERISTICS
+Number Symbol
+General Parameter
+Z0840004
+10
+11
+26
+29
+31
+33
+35
+45
+50
+AC Test Conditions:
+VIH = 2.0V
+VIL = 0.8 V
+VIHC = VCC - 0.6 V
+VILC = 0.45 ł
+TcC
+TdA(MREQf)
+TwMREQh
+TWMREQI
+TdA(IORQf)
+TWWR
+TdD(WRf)
+TaWRr(D)
+TdCTr(A)
+TdM1fIORQ)
+TwCh + TwCI + TrC + TIC
+TwCh + TIC
+TwCh + TIC
+ToC
+ToC
+ToC
+ToC
+TwCI + TrC
+TWCI + TrC
+TwCI + TrC
+2TcC + TwCh + TfC
+- 65
+- 20
+- 30
+- 70
+- 170
+- 30
+- 140
+- 70
+- 50
+- 65
+VOH = 1.5 V
+VOL = 1.5 V
+FLOAT = ‡0.5 V
+Z0840006
+Min
+Max
+90
+90
+80
+70
+80
+70
+70
+130
+Z0840006
+- 50
+- 20
+- 30
+- 55
+- 140
+- 30
+- 140
+- 55
+- 50
+- 50
+PS017801-0602
+Z0840008
+Min
+Max
+80
+80
+70
+60
+70
+20*
+45
+55
+270*
+60
+60
+115
+Z0840008
+- 45
+- 20
+- 25
+- 50
+- 120
+- 25
+- 120
+- 50
+- 45
+-- 45
+39
+
