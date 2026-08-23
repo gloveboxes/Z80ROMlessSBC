@@ -1,5 +1,7 @@
 # Z80 ROMless SBC - WIP Engineering & Build Specification
 
+**Repository:** [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC)
+
 ## Overview
 
 This document describes a theoretical Z80 single-board computer design
@@ -1373,8 +1375,13 @@ acquisition under "Z80 Single-Step and Timed Bus Request" (Phases 7-8),
 the I/O trap ISR under "Synchronous I/O Trap Handler" (Phase 8), and the
 flash-backed image loader under "Flash Disk Image Loader" (Phase 9),
 and the queue-backed terminal bridge under "WebSocket Terminal I/O
-Bridge" (final Phase 10 integration). Use Section 8.13 as the only
-firmware source for this specification.
+Bridge" (final Phase 10 integration).
+
+The maintained, buildable firmware is now the canonical implementation:
+[browse the source tree](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src)
+or use the [complete source index](#815-source-code-index). Section 8.13
+remains a design-level reference for the safety invariants and integration
+order, but its excerpts should not be copied in place of the maintained source.
 
 ## 8. Progressive Build and Bring-Up Plan
 
@@ -1398,6 +1405,8 @@ from later phases out of their sockets.
 **Install:** Breadboards, sockets, decoupling capacitors, pull-ups,
 power wiring, and signal wiring. Install no active device, including the
 Pico 2.
+
+**Implementation:** [Phase 0 power checklist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md).
 
 **Test plan:**
 
@@ -1433,6 +1442,9 @@ SRAM WE#, and SRAM OE#; GP2 LOW to stop the clock; and GP6/GP8 LOW for
 the inactive transceiver directions. It must also provide a slow
 walking-one GPIO test selected through the USB serial console.
 
+**Implementation:** [Phase 1 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c),
+backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c).
+
 **Test plan:**
 
 1. With the Section 0.4 1N5819 fitted, USB and external power may be
@@ -1461,6 +1473,9 @@ LOW; never leave an AHCT input floating.
 **Firmware feature:** Add commands to toggle one buffered control at
 10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
 clocks on GP2.
+
+**Implementation:** [Phase 2 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c),
+using the shared [clock module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c).
 
 **Test plan:**
 
@@ -1497,6 +1512,9 @@ this wiring against the schematic before proceeding.
 write-then-read register test, and 16-bit walking-one/walking-zero tests
 that can configure both MCP ports as either inputs or outputs.
 
+**Implementation:** [Phase 3 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c),
+using the shared [MCP23S17 driver](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c).
+
 **Test plan:**
 
 1. Before fitting the MCP, pull each used LVC244 input LOW through
@@ -1525,6 +1543,9 @@ after repeating and passing the tests. Keep the Z80 and SRAM removed.
 HIGH, set DIR, set or sample the MCP ports, then OE# LOW. It must disable
 OE# before every direction change and on exit.
 
+**Implementation:** [Phase 4 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/main.c),
+using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
+
 **Test plan:**
 
 1. Before insertion, require HIGH at OE# pin 19. Verify the shared bus
@@ -1549,6 +1570,9 @@ removed. The TI datasheet permits inputs up to 5.5 V at this VCC.
 **Firmware feature:** Add an 8-bit data-bus test using the same
 disable-change-enable sequence and fixed, walking-one, and walking-zero
 patterns on the Pico data GPIOs.
+
+**Implementation:** [Phase 5 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/main.c),
+using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 **Test plan:**
 
@@ -1586,6 +1610,9 @@ walking address/data test, a two-pass full-memory pattern test, and a
 March C- or equivalent RAM test. Every failure must report its address,
 expected byte, and actual byte over USB serial.
 
+**Implementation:** [Phase 6 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/main.c),
+using the shared [SRAM DMA module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c).
+
 **Test plan:**
 
 1. With transceivers disabled, require A16 LOW, CE2 HIGH, and CE#, OE#,
@@ -1618,6 +1645,9 @@ RESET# is released with BUSACK# HIGH.
 acquisition; and a command that preloads and verifies a small test
 program before releasing reset.
 
+**Implementation:** [Phase 7 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c),
+using the shared [CPU ownership module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
+
 **Test plan:**
 
 1. Verify RESET# LOW, BUSREQ# HIGH, both transceiver OE# signals HIGH,
@@ -1646,6 +1676,11 @@ BUSREQ#/BUSACK# transfer, and no bus contention.
 image injection and readback, run control, and the synchronous IN/OUT
 trap. Maintain counters for boots, DMA failures, readback mismatches,
 trap timeouts, and unexpected RD#/WR# control states.
+
+**Implementation:** [Phase 8 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c),
+using the shared [I/O trap](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c),
+[CPU](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c), and
+[SRAM](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c) modules.
 
 **Test plan:**
 
@@ -1690,6 +1725,11 @@ controls through Section 1.2's mux. Once running, ports `0x10`-`0x14`
 provide command/status, drive, 16-bit LBA, and 128-byte data transfers.
 Reads are synchronous XIP copies; writes use the journaled core-1
 service and BUSY/READY/ERROR status defined in Section 8.13.
+
+**Implementation:** [Phase 9 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c),
+with the shared [disk device](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c),
+[flash backend](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c), and
+[flash layout](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h).
 
 **Test plan:**
 
@@ -1756,6 +1796,11 @@ exchange only terminal bytes, flash disk-write requests, and status
 through nonblocking queues, following the `pico-altair-8800` console
 bridge pattern.
 
+**Implementation:** [Phase 10 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c),
+with the shared [terminal bridge](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c),
+[network service](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp), and
+[browser terminal](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/terminal.html).
+
 **Test plan:**
 
 1. Boot with no browser connected. Verify the Z80 still runs the Phase 8
@@ -1814,6 +1859,10 @@ through the same SN74LVC244AN (Section 5.3); `io_trap_handler()` reads
 both `PIN_RD_N` and `PIN_WR_N` to resolve cycle intent.
 
 #### Safe Startup and Walking Output (Phases 1-2)
+
+**Maintained source:** [pins.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/pins.h),
+[supervisor.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/supervisor.h), and
+[supervisor.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c).
 
 Preload each output latch while the pin is still an input, then enable
 the output driver. This prevents a brief LOW pulse on active-low lines.
@@ -1882,6 +1931,9 @@ is not safe as an in-system diagnostic after Phase 3.
 
 #### Variable-Frequency Clock Generation (Phase 2, Phases 7-8 Run Modes)
 
+**Maintained source:** [clock.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/clock.h)
+and [clock.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c).
+
 Configure `PIN_CLK` as a PWM output once during Phase 2 bring-up. Reuse
 the same slice for the selectable 10 Hz/1 kHz/100 kHz/1 MHz run modes in
 Phases 7-8, and to freeze the clock during the Phase 8 I/O trap.
@@ -1943,6 +1995,9 @@ static void resume_z80_clock(void) {
 
 #### MCP23S17 Register and Port Test (Phases 3-4)
 
+**Maintained source:** [mcp23s17.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/mcp23s17.h)
+and [mcp23s17.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c).
+
 The SPI translator sits between these Pico pins and the 5 V MCP23S17;
 MISO/SO returns through the SN74LVC244AN. The register test proves
 communication before either address transceiver is enabled.
@@ -1995,6 +2050,9 @@ static bool mcp_register_test(void) {
 
 #### Contention-Safe Transceiver Changes (Phases 4-6)
 
+**Maintained source:** [bus.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/bus.h)
+and [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
+
 OE# must be HIGH before DIR changes. Keep this invariant in one helper
 instead of duplicating raw GPIO writes throughout the test firmware.
 
@@ -2014,6 +2072,9 @@ static void set_transceiver(uint oe_n, uint dir, bool direction) {
 ```
 
 #### Data and Address Bus GPIO Helpers (Phases 4-6)
+
+**Maintained source:** [bus.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/bus.h)
+and [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 `PIN_DATA_0`-`PIN_DATA_7` (GP10-GP17) carry D0-D7 through the
 SN74LVC245AN; direction and isolation reuse the existing
@@ -2064,6 +2125,9 @@ static void address_bus_drive(uint16_t address) {
 ```
 
 #### SRAM DMA Access and Pattern Test (Phase 6)
+
+**Maintained source:** [sram.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/sram.h)
+and [sram.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c).
 
 The address and data helper functions above represent the already
 tested MCP23S17 and GPIO bus operations. The control-source selector
@@ -2125,6 +2189,9 @@ static bool sram_pattern_test(bool complement) {
 
 #### Z80 Single-Step and Timed Bus Request (Phases 7-8)
 
+**Maintained source:** [cpu.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/cpu.h)
+and [cpu.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
+
 Single-step uses SIO rather than PWM. `request_cpu_bus()` and
 `release_cpu_bus()` each take an explicit `timeout_us` bound so a
 wiring fault or a missing Z80 cannot hang the supervisor waiting on
@@ -2177,6 +2244,9 @@ static bool release_cpu_bus(uint32_t timeout_us) {
 ```
 
 #### Synchronous I/O Trap Handler (Phase 8)
+
+**Maintained source:** [io_trap.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/io_trap.h)
+and [io_trap.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
 
 A falling-edge IRQ on `PIN_IORQ_N` freezes the clock, reverses the
 address transceiver with the same contention-safe helper used
@@ -2281,6 +2351,11 @@ static void disable_io_trap(void) {
 ```
 
 #### Flash Disk Image Loader (Final Phase 9 Integration)
+
+**Maintained source:** [flash_disk.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_disk.h),
+[flash_layout.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h),
+[disk_device.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c), and
+[flash_backend.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c).
 
 Loading a boot image is now a synchronous, core-0-only operation: a
 flash read is an ordinary memory access through the XIP-mapped pointer
@@ -2813,6 +2888,10 @@ erase, program, blocking queue, or flash-safe call runs inside
 
 #### WebSocket Terminal I/O Bridge (Final Phase 10 Integration)
 
+**Maintained source:** [terminal.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/terminal.h),
+[terminal_bridge.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c), and
+[terminal_network.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp).
+
 The terminal bridge follows the `pico-altair-8800` model: initialize the
 queues on core 0, load the boot image from flash (Section 6.3, entirely
 on core 0), then launch core 1 to own Wi-Fi and WebSocket work -- and,
@@ -3048,6 +3127,9 @@ cannot starve flash ownership requests.
 
 #### Required Integration Order
 
+**Maintained source:** [Stage 10 main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c)
+and [Stage 10 CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt).
+
 The command-loop application must call `diagnostic_safe_startup()` as
 its first GPIO action. After Phase 3 hardware is fitted, call
 `mcp_spi_init()` before any MCP access. Keep `enable_io_trap()` disabled
@@ -3087,3 +3169,62 @@ Z80 is held in BUSACK#.
 - [RP2350 datasheet](datasheets/RP2350-Datasheet.pdf)
 - [Raspberry Pi Pico 2 board datasheet](datasheets/Pico-2-Datasheet.pdf)
 - [BusBoard BB830 breadboard datasheet](datasheets/BB830-Datasheet.pdf)
+
+### 8.15 Source Code Index
+
+Canonical repository: [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC).
+All phase applications are cumulative: each stage links the shared modules
+proven by earlier stages, while remaining independently buildable for hardware
+bring-up.
+
+#### Project Build Files
+
+| File | Purpose |
+| --- | --- |
+| [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/CMakeLists.txt) | Pico SDK import, Pico 2 W target, project languages, and protected firmware flash linker boundary |
+| [src/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/CMakeLists.txt) | Shared firmware libraries, stage registration, and the `z80_cpm_images` artifact target |
+| [.gitignore](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.gitignore) | Generated build, Python cache, and assembler-output exclusions |
+
+#### Cumulative Stage Applications
+
+| Phase | Application | Target definition | Responsibility |
+| ---: | --- | --- | --- |
+| 0 | [Power checklist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md) | Hardware-only | Empty-socket wiring, rail, resistance, and startup-state checks |
+| 1 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/CMakeLists.txt) | Safe supervisor startup and GPIO walk |
+| 2 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/CMakeLists.txt) | Buffered controls and variable-frequency clock |
+| 3 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/CMakeLists.txt) | MCP23S17 register and port diagnostics |
+| 4 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/CMakeLists.txt) | 16-bit address-bus drive, sample, and isolation tests |
+| 5 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/CMakeLists.txt) | 8-bit data-bus drive, sample, and isolation tests |
+| 6 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/CMakeLists.txt) | SRAM DMA and full-memory validation |
+| 7 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/CMakeLists.txt) | Z80 reset, execution, clock, and BUSREQ/BUSACK tests |
+| 8 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/CMakeLists.txt) | Virtual-ROM preload and synchronous I/O trapping |
+| 9 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/CMakeLists.txt) | Manifest boot, journal recovery, and persistent flash disks |
+| 10 | [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c) | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt) | Final CP/M, flash-disk, Wi-Fi, and WebSocket integration |
+
+#### Shared Firmware Modules
+
+| Module | Public interface | Implementation | Responsibility |
+| --- | --- | --- | --- |
+| Pin map | [pins.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/pins.h) | Header-only | Authoritative Pico GPIO assignments |
+| Supervisor | [supervisor.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/supervisor.h) | [supervisor.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c) | Safe GPIO startup and fail-safe isolation defaults |
+| Clock | [clock.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/clock.h) | [clock.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c) | PWM frequency selection, stop/resume, and single-cycle clocking |
+| MCP23S17 | [mcp23s17.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/mcp23s17.h) | [mcp23s17.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c) | SPI register access and 16-bit address expansion |
+| Buses | [bus.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/bus.h) | [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c) | Contention-safe address/data direction, isolation, drive, and sample operations |
+| SRAM | [sram.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/sram.h) | [sram.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c) | DMA byte access, image load/verify, and RAM diagnostics |
+| CPU | [cpu.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/cpu.h) | [cpu.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c) | Reset-held DMA, run control, bus ownership, and fail-closed state |
+| I/O trap | [io_trap.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/io_trap.h) | [io_trap.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c) | Synchronous Z80 IN/OUT interception and fault counters |
+| Flash disk | [flash_disk.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_disk.h) | [disk_device.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c) | Z80-facing command/status, drive, LBA, and 128-byte data ports |
+| Flash layout | [flash_layout.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h) | Header-only | Firmware, journal, boot-package, and disk-slot offsets |
+| Flash backend | [flash_backend.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.h) | [flash_backend.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c) | Manifest validation, SRAM boot load, journal recovery, and core-1 commits |
+| Terminal | [terminal.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/terminal.h) | [terminal_bridge.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c), [terminal_network.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp) | Queue-backed terminal ports, Wi-Fi lifecycle, HTTP, and WebSocket service |
+
+#### CP/M, Disk, and Web Tooling
+
+| Area | Files | Purpose |
+| --- | --- | --- |
+| Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | Native BIOS, CCP/BDOS extraction, boot package, full-flash composition, and host regression tests |
+| Disk geometry and conversion | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py), [convert_altair_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/convert_altair_disks.py) | Shared CP/M geometry and deterministic Altair-media conversion |
+| Generated disk artifacts | [generated directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/generated), [manifest.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/generated/manifest.json) | Four exact 320 KiB intermediate disk slots and source/output hashes |
+| Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
+| Browser terminal | [terminal.html](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/terminal.html), [embed_html.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/embed_html.py) | Embedded Stage 10 terminal client and build-time HTML conversion |
+| Network configuration | [lwipopts.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/lwipopts.h), [wifi_config.h.in](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/wifi_config.h.in) | lwIP settings and build-time Wi-Fi credential template |
