@@ -24,7 +24,7 @@ int main(void) {
   z80_safe_startup();
   stdio_init_all();
   mcp23s17_init(4000000);
-  printf("\nStage 5: LVC245 data transceiver\n");
+  printf("\nStage 5: LVC8T245 data transceiver\n");
   printf("d=output patterns, i=sample data, x=isolate\n");
 
   while (true) {

@@ -6,14 +6,14 @@
 #include "z80sbc/supervisor.h"
 
 static const uint BUFFER_INPUT_PINS[] = {
-  PIN_CLK, PIN_RESET_N, PIN_BUSREQ_N, PIN_SRAM_CE_N,
-  PIN_SRAM_WE_N, PIN_SRAM_OE_N,
+  PIN_CLK, PIN_BUSREQ_N, PIN_SPI_CS_N, PIN_SPI_SCK,
+  PIN_SPI_MOSI, PIN_SRAM_WE_N, PIN_SRAM_OE_N, PIN_SRAM_CE_N,
 };
 
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  printf("\nStage 2: AHCT buffers and Z80 clock\n");
+  printf("\nStage 2: GAL, HCT541, and Z80 clock\n");
   printf("w=walking outputs, 1=1kHz, 2=100kHz, 3=1MHz, x=stop\n");
 
   while (true) {

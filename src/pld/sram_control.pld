@@ -1,0 +1,56 @@
+Name     Z80_SRAM_CONTROL;
+PartNo   00;
+Date     2026-08-23;
+Revision 01;
+Designer Z80ROMlessSBC;
+Company  None;
+Assembly None;
+Location U_GAL;
+Device   G22V10;
+
+PIN 1  = RESET_N;
+PIN 2  = BUSACK_N;
+PIN 3  = PICO_WE_N;
+PIN 4  = Z80_WR_N;
+PIN 5  = PICO_OE_N;
+PIN 6  = Z80_RD_N;
+PIN 7  = PICO_CE_N;
+PIN 8  = Z80_MREQ_N;
+PIN 9  = UNUSED_IN_9;
+PIN 10 = UNUSED_IN_10;
+PIN 11 = UNUSED_IN_11;
+PIN 13 = UNUSED_IN_13;
+
+PIN 14 = SRAM_WE_PRE_N;
+PIN 15 = SRAM_OE_PRE_N;
+PIN 16 = SRAM_CE_PRE_N;
+PIN 17 = UNUSED_OUT_17;
+PIN 18 = UNUSED_OUT_18;
+PIN 19 = UNUSED_OUT_19;
+PIN 20 = UNUSED_OUT_20;
+PIN 21 = UNUSED_OUT_21;
+PIN 22 = UNUSED_OUT_22;
+PIN 23 = UNUSED_OUT_23;
+
+SRAM_WE_PRE_N = (RESET_N & BUSACK_N & Z80_WR_N)
+              # (!RESET_N & PICO_WE_N)
+              # (!BUSACK_N & PICO_WE_N)
+              # (Z80_WR_N & PICO_WE_N);
+
+SRAM_OE_PRE_N = (RESET_N & BUSACK_N & Z80_RD_N)
+              # (!RESET_N & PICO_OE_N)
+              # (!BUSACK_N & PICO_OE_N)
+              # (Z80_RD_N & PICO_OE_N);
+
+SRAM_CE_PRE_N = (RESET_N & BUSACK_N & Z80_MREQ_N)
+              # (!RESET_N & PICO_CE_N)
+              # (!BUSACK_N & PICO_CE_N)
+              # (Z80_MREQ_N & PICO_CE_N);
+
+UNUSED_OUT_17 = 0;
+UNUSED_OUT_18 = 0;
+UNUSED_OUT_19 = 0;
+UNUSED_OUT_20 = 0;
+UNUSED_OUT_21 = 0;
+UNUSED_OUT_22 = 0;
+UNUSED_OUT_23 = 0;

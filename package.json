@@ -2,7 +2,9 @@
   "name": "z80-romless-sbc-docs",
   "private": true,
   "scripts": {
-    "pdf": "node scripts/build-readme-pdf.mjs"
+    "kicad": "./scripts/build-kicad.sh",
+    "layout": "node scripts/build-breadboard-layout.mjs",
+    "pdf": "npm run layout && node scripts/build-readme-pdf.mjs"
   },
   "devDependencies": {
     "mermaid": "11.17.0",

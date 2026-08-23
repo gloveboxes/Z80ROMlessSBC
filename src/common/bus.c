@@ -59,7 +59,7 @@ void z80_data_bus_drive(uint8_t value) {
     gpio_put(DATA_PINS[index], (value >> index) & 1u);
     gpio_set_dir(DATA_PINS[index], GPIO_OUT);
   }
-  z80_set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, false);
+  z80_set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, true);
 }
 
 void z80_data_bus_prepare_input(void) {
@@ -69,7 +69,7 @@ void z80_data_bus_prepare_input(void) {
     gpio_set_dir(DATA_PINS[index], GPIO_IN);
     gpio_disable_pulls(DATA_PINS[index]);
   }
-  z80_set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, true);
+  z80_set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, false);
 }
 
 uint8_t z80_data_bus_sample(void) {

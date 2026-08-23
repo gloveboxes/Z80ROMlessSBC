@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="1110" viewBox="0 0 1060 1110" role="img" aria-labelledby="title description">
+  <title id="title">Three side-by-side BB830 breadboards with chip placement and grouped connections</title>
+  <desc id="description">Memory, Core, and Peripheral breadboards share aligned row numbers. Colored lines show grouped package-level signal relationships; power and ground are omitted.</desc>
+  <style>
+    text { font-family: Avenir Next, Helvetica Neue, sans-serif; fill: #111827; }
+    .title { font-size: 25px; font-weight: 700; text-anchor: middle; }
+    .subtitle { font-size: 14px; text-anchor: middle; fill: #4b5563; }
+    .board-title { font-size: 18px; font-weight: 700; text-anchor: middle; }
+    .board-outline { fill: #fff; stroke: #111827; stroke-width: 2; }
+    .terminal-field { fill: #fff; stroke: #9ca3af; stroke-width: 1; }
+    .power-rail { fill: #fee2e2; stroke: #ef4444; stroke-width: 1.5; }
+    .center-gap { fill: #f3f4f6; stroke: #d1d5db; stroke-width: 1; }
+    .row-line { stroke: #d1d5db; stroke-width: 0.55; stroke-dasharray: 2 5; }
+    .row-number { font-size: 10px; text-anchor: end; fill: #6b7280; }
+    .chip { stroke: #111827; stroke-width: 2; fill-opacity: 0.96; }
+    .chip-label { font-size: 10px; font-weight: 650; text-anchor: middle; }
+    .narrow-label { font-size: 8.5px; }
+    .supply-label { font-size: 9px; }
+    .connection-halo { fill: none; stroke: white; stroke-width: 8; stroke-opacity: 0.85; }
+    .connection { stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
+    .legend-text { font-size: 13px; }
+    .note { font-size: 12px; text-anchor: middle; fill: #4b5563; }
+    .direct-label { font-size: 12px; font-weight: 650; text-anchor: middle; fill: #b45309; }
+  </style>
+
+  <rect width="1060" height="1110" fill="#fafafa"/>
+  <text x="530" y="38" class="title">BB830 physical placement and grouped chip connections</text>
+  <text x="530" y="64" class="subtitle">Boards are side by side with long edges parallel; equal terminal-row numbers align laterally</text>
+  <text x="530" y="91" class="direct-label">Pico to GAL: RESET# (also tapped by Z80), PICO_CE#, PICO_OE#, PICO_WE#</text>
+
+
+    <g id="board-memory">
+      <text x="200" y="145" class="board-title">Memory Board (left)</text>
+      <rect x="50" y="162" width="300" height="816" class="board-outline"/>
+      <rect x="62" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="320" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="96" y="180" width="208" height="780" class="terminal-field"/>
+      <rect x="193" y="180" width="14" height="780" class="center-gap"/>
+      <line x1="96" y1="180.00" x2="304.00" y2="180.00" class="row-line"/>
+<line x1="96" y1="192.58" x2="304.00" y2="192.58" class="row-line"/>
+<line x1="96" y1="205.16" x2="304.00" y2="205.16" class="row-line"/>
+<line x1="96" y1="217.74" x2="304.00" y2="217.74" class="row-line"/>
+<line x1="96" y1="230.32" x2="304.00" y2="230.32" class="row-line"/>
+<line x1="96" y1="242.90" x2="304.00" y2="242.90" class="row-line"/>
+<line x1="96" y1="255.48" x2="304.00" y2="255.48" class="row-line"/>
+<line x1="96" y1="268.06" x2="304.00" y2="268.06" class="row-line"/>
+<line x1="96" y1="280.65" x2="304.00" y2="280.65" class="row-line"/>
+<line x1="96" y1="293.23" x2="304.00" y2="293.23" class="row-line"/>
+<line x1="96" y1="305.81" x2="304.00" y2="305.81" class="row-line"/>
+<line x1="96" y1="318.39" x2="304.00" y2="318.39" class="row-line"/>
+<line x1="96" y1="330.97" x2="304.00" y2="330.97" class="row-line"/>
+<line x1="96" y1="343.55" x2="304.00" y2="343.55" class="row-line"/>
+<line x1="96" y1="356.13" x2="304.00" y2="356.13" class="row-line"/>
+<line x1="96" y1="368.71" x2="304.00" y2="368.71" class="row-line"/>
+<line x1="96" y1="381.29" x2="304.00" y2="381.29" class="row-line"/>
+<line x1="96" y1="393.87" x2="304.00" y2="393.87" class="row-line"/>
+<line x1="96" y1="406.45" x2="304.00" y2="406.45" class="row-line"/>
+<line x1="96" y1="419.03" x2="304.00" y2="419.03" class="row-line"/>
+<line x1="96" y1="431.61" x2="304.00" y2="431.61" class="row-line"/>
+<line x1="96" y1="444.19" x2="304.00" y2="444.19" class="row-line"/>
+<line x1="96" y1="456.77" x2="304.00" y2="456.77" class="row-line"/>
+<line x1="96" y1="469.35" x2="304.00" y2="469.35" class="row-line"/>
+<line x1="96" y1="481.94" x2="304.00" y2="481.94" class="row-line"/>
+<line x1="96" y1="494.52" x2="304.00" y2="494.52" class="row-line"/>
+<line x1="96" y1="507.10" x2="304.00" y2="507.10" class="row-line"/>
+<line x1="96" y1="519.68" x2="304.00" y2="519.68" class="row-line"/>
+<line x1="96" y1="532.26" x2="304.00" y2="532.26" class="row-line"/>
+<line x1="96" y1="544.84" x2="304.00" y2="544.84" class="row-line"/>
+<line x1="96" y1="557.42" x2="304.00" y2="557.42" class="row-line"/>
+<line x1="96" y1="570.00" x2="304.00" y2="570.00" class="row-line"/>
+<line x1="96" y1="582.58" x2="304.00" y2="582.58" class="row-line"/>
+<line x1="96" y1="595.16" x2="304.00" y2="595.16" class="row-line"/>
+<line x1="96" y1="607.74" x2="304.00" y2="607.74" class="row-line"/>
+<line x1="96" y1="620.32" x2="304.00" y2="620.32" class="row-line"/>
+<line x1="96" y1="632.90" x2="304.00" y2="632.90" class="row-line"/>
+<line x1="96" y1="645.48" x2="304.00" y2="645.48" class="row-line"/>
+<line x1="96" y1="658.06" x2="304.00" y2="658.06" class="row-line"/>
+<line x1="96" y1="670.65" x2="304.00" y2="670.65" class="row-line"/>
+<line x1="96" y1="683.23" x2="304.00" y2="683.23" class="row-line"/>
+<line x1="96" y1="695.81" x2="304.00" y2="695.81" class="row-line"/>
+<line x1="96" y1="708.39" x2="304.00" y2="708.39" class="row-line"/>
+<line x1="96" y1="720.97" x2="304.00" y2="720.97" class="row-line"/>
+<line x1="96" y1="733.55" x2="304.00" y2="733.55" class="row-line"/>
+<line x1="96" y1="746.13" x2="304.00" y2="746.13" class="row-line"/>
+<line x1="96" y1="758.71" x2="304.00" y2="758.71" class="row-line"/>
+<line x1="96" y1="771.29" x2="304.00" y2="771.29" class="row-line"/>
+<line x1="96" y1="783.87" x2="304.00" y2="783.87" class="row-line"/>
+<line x1="96" y1="796.45" x2="304.00" y2="796.45" class="row-line"/>
+<line x1="96" y1="809.03" x2="304.00" y2="809.03" class="row-line"/>
+<line x1="96" y1="821.61" x2="304.00" y2="821.61" class="row-line"/>
+<line x1="96" y1="834.19" x2="304.00" y2="834.19" class="row-line"/>
+<line x1="96" y1="846.77" x2="304.00" y2="846.77" class="row-line"/>
+<line x1="96" y1="859.35" x2="304.00" y2="859.35" class="row-line"/>
+<line x1="96" y1="871.94" x2="304.00" y2="871.94" class="row-line"/>
+<line x1="96" y1="884.52" x2="304.00" y2="884.52" class="row-line"/>
+<line x1="96" y1="897.10" x2="304.00" y2="897.10" class="row-line"/>
+<line x1="96" y1="909.68" x2="304.00" y2="909.68" class="row-line"/>
+<line x1="96" y1="922.26" x2="304.00" y2="922.26" class="row-line"/>
+<line x1="96" y1="934.84" x2="304.00" y2="934.84" class="row-line"/>
+<line x1="96" y1="947.42" x2="304.00" y2="947.42" class="row-line"/>
+<line x1="96" y1="960.00" x2="304.00" y2="960.00" class="row-line"/>
+      <text x="85" y="184.00" class="row-number">1</text>
+<text x="85" y="246.90" class="row-number">6</text>
+<text x="85" y="309.81" class="row-number">11</text>
+<text x="85" y="372.71" class="row-number">16</text>
+<text x="85" y="435.61" class="row-number">21</text>
+<text x="85" y="498.52" class="row-number">26</text>
+<text x="85" y="561.42" class="row-number">31</text>
+<text x="85" y="624.32" class="row-number">36</text>
+<text x="85" y="687.23" class="row-number">41</text>
+<text x="85" y="750.13" class="row-number">46</text>
+<text x="85" y="813.03" class="row-number">51</text>
+<text x="85" y="875.94" class="row-number">56</text>
+<text x="85" y="938.84" class="row-number">61</text>
+    </g>
+
+    <g id="board-core">
+      <text x="530" y="145" class="board-title">Core Board (center)</text>
+      <rect x="380" y="162" width="300" height="816" class="board-outline"/>
+      <rect x="392" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="650" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="426" y="180" width="208" height="780" class="terminal-field"/>
+      <rect x="523" y="180" width="14" height="780" class="center-gap"/>
+      <line x1="426" y1="180.00" x2="634.00" y2="180.00" class="row-line"/>
+<line x1="426" y1="192.58" x2="634.00" y2="192.58" class="row-line"/>
+<line x1="426" y1="205.16" x2="634.00" y2="205.16" class="row-line"/>
+<line x1="426" y1="217.74" x2="634.00" y2="217.74" class="row-line"/>
+<line x1="426" y1="230.32" x2="634.00" y2="230.32" class="row-line"/>
+<line x1="426" y1="242.90" x2="634.00" y2="242.90" class="row-line"/>
+<line x1="426" y1="255.48" x2="634.00" y2="255.48" class="row-line"/>
+<line x1="426" y1="268.06" x2="634.00" y2="268.06" class="row-line"/>
+<line x1="426" y1="280.65" x2="634.00" y2="280.65" class="row-line"/>
+<line x1="426" y1="293.23" x2="634.00" y2="293.23" class="row-line"/>
+<line x1="426" y1="305.81" x2="634.00" y2="305.81" class="row-line"/>
+<line x1="426" y1="318.39" x2="634.00" y2="318.39" class="row-line"/>
+<line x1="426" y1="330.97" x2="634.00" y2="330.97" class="row-line"/>
+<line x1="426" y1="343.55" x2="634.00" y2="343.55" class="row-line"/>
+<line x1="426" y1="356.13" x2="634.00" y2="356.13" class="row-line"/>
+<line x1="426" y1="368.71" x2="634.00" y2="368.71" class="row-line"/>
+<line x1="426" y1="381.29" x2="634.00" y2="381.29" class="row-line"/>
+<line x1="426" y1="393.87" x2="634.00" y2="393.87" class="row-line"/>
+<line x1="426" y1="406.45" x2="634.00" y2="406.45" class="row-line"/>
+<line x1="426" y1="419.03" x2="634.00" y2="419.03" class="row-line"/>
+<line x1="426" y1="431.61" x2="634.00" y2="431.61" class="row-line"/>
+<line x1="426" y1="444.19" x2="634.00" y2="444.19" class="row-line"/>
+<line x1="426" y1="456.77" x2="634.00" y2="456.77" class="row-line"/>
+<line x1="426" y1="469.35" x2="634.00" y2="469.35" class="row-line"/>
+<line x1="426" y1="481.94" x2="634.00" y2="481.94" class="row-line"/>
+<line x1="426" y1="494.52" x2="634.00" y2="494.52" class="row-line"/>
+<line x1="426" y1="507.10" x2="634.00" y2="507.10" class="row-line"/>
+<line x1="426" y1="519.68" x2="634.00" y2="519.68" class="row-line"/>
+<line x1="426" y1="532.26" x2="634.00" y2="532.26" class="row-line"/>
+<line x1="426" y1="544.84" x2="634.00" y2="544.84" class="row-line"/>
+<line x1="426" y1="557.42" x2="634.00" y2="557.42" class="row-line"/>
+<line x1="426" y1="570.00" x2="634.00" y2="570.00" class="row-line"/>
+<line x1="426" y1="582.58" x2="634.00" y2="582.58" class="row-line"/>
+<line x1="426" y1="595.16" x2="634.00" y2="595.16" class="row-line"/>
+<line x1="426" y1="607.74" x2="634.00" y2="607.74" class="row-line"/>
+<line x1="426" y1="620.32" x2="634.00" y2="620.32" class="row-line"/>
+<line x1="426" y1="632.90" x2="634.00" y2="632.90" class="row-line"/>
+<line x1="426" y1="645.48" x2="634.00" y2="645.48" class="row-line"/>
+<line x1="426" y1="658.06" x2="634.00" y2="658.06" class="row-line"/>
+<line x1="426" y1="670.65" x2="634.00" y2="670.65" class="row-line"/>
+<line x1="426" y1="683.23" x2="634.00" y2="683.23" class="row-line"/>
+<line x1="426" y1="695.81" x2="634.00" y2="695.81" class="row-line"/>
+<line x1="426" y1="708.39" x2="634.00" y2="708.39" class="row-line"/>
+<line x1="426" y1="720.97" x2="634.00" y2="720.97" class="row-line"/>
+<line x1="426" y1="733.55" x2="634.00" y2="733.55" class="row-line"/>
+<line x1="426" y1="746.13" x2="634.00" y2="746.13" class="row-line"/>
+<line x1="426" y1="758.71" x2="634.00" y2="758.71" class="row-line"/>
+<line x1="426" y1="771.29" x2="634.00" y2="771.29" class="row-line"/>
+<line x1="426" y1="783.87" x2="634.00" y2="783.87" class="row-line"/>
+<line x1="426" y1="796.45" x2="634.00" y2="796.45" class="row-line"/>
+<line x1="426" y1="809.03" x2="634.00" y2="809.03" class="row-line"/>
+<line x1="426" y1="821.61" x2="634.00" y2="821.61" class="row-line"/>
+<line x1="426" y1="834.19" x2="634.00" y2="834.19" class="row-line"/>
+<line x1="426" y1="846.77" x2="634.00" y2="846.77" class="row-line"/>
+<line x1="426" y1="859.35" x2="634.00" y2="859.35" class="row-line"/>
+<line x1="426" y1="871.94" x2="634.00" y2="871.94" class="row-line"/>
+<line x1="426" y1="884.52" x2="634.00" y2="884.52" class="row-line"/>
+<line x1="426" y1="897.10" x2="634.00" y2="897.10" class="row-line"/>
+<line x1="426" y1="909.68" x2="634.00" y2="909.68" class="row-line"/>
+<line x1="426" y1="922.26" x2="634.00" y2="922.26" class="row-line"/>
+<line x1="426" y1="934.84" x2="634.00" y2="934.84" class="row-line"/>
+<line x1="426" y1="947.42" x2="634.00" y2="947.42" class="row-line"/>
+<line x1="426" y1="960.00" x2="634.00" y2="960.00" class="row-line"/>
+      <text x="415" y="184.00" class="row-number">1</text>
+<text x="415" y="246.90" class="row-number">6</text>
+<text x="415" y="309.81" class="row-number">11</text>
+<text x="415" y="372.71" class="row-number">16</text>
+<text x="415" y="435.61" class="row-number">21</text>
+<text x="415" y="498.52" class="row-number">26</text>
+<text x="415" y="561.42" class="row-number">31</text>
+<text x="415" y="624.32" class="row-number">36</text>
+<text x="415" y="687.23" class="row-number">41</text>
+<text x="415" y="750.13" class="row-number">46</text>
+<text x="415" y="813.03" class="row-number">51</text>
+<text x="415" y="875.94" class="row-number">56</text>
+<text x="415" y="938.84" class="row-number">61</text>
+    </g>
+
+    <g id="board-peripheral">
+      <text x="860" y="145" class="board-title">Peripheral Board (right)</text>
+      <rect x="710" y="162" width="300" height="816" class="board-outline"/>
+      <rect x="722" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="980" y="180" width="18" height="780" class="power-rail"/>
+      <rect x="756" y="180" width="208" height="780" class="terminal-field"/>
+      <rect x="853" y="180" width="14" height="780" class="center-gap"/>
+      <line x1="756" y1="180.00" x2="964.00" y2="180.00" class="row-line"/>
+<line x1="756" y1="192.58" x2="964.00" y2="192.58" class="row-line"/>
+<line x1="756" y1="205.16" x2="964.00" y2="205.16" class="row-line"/>
+<line x1="756" y1="217.74" x2="964.00" y2="217.74" class="row-line"/>
+<line x1="756" y1="230.32" x2="964.00" y2="230.32" class="row-line"/>
+<line x1="756" y1="242.90" x2="964.00" y2="242.90" class="row-line"/>
+<line x1="756" y1="255.48" x2="964.00" y2="255.48" class="row-line"/>
+<line x1="756" y1="268.06" x2="964.00" y2="268.06" class="row-line"/>
+<line x1="756" y1="280.65" x2="964.00" y2="280.65" class="row-line"/>
+<line x1="756" y1="293.23" x2="964.00" y2="293.23" class="row-line"/>
+<line x1="756" y1="305.81" x2="964.00" y2="305.81" class="row-line"/>
+<line x1="756" y1="318.39" x2="964.00" y2="318.39" class="row-line"/>
+<line x1="756" y1="330.97" x2="964.00" y2="330.97" class="row-line"/>
+<line x1="756" y1="343.55" x2="964.00" y2="343.55" class="row-line"/>
+<line x1="756" y1="356.13" x2="964.00" y2="356.13" class="row-line"/>
+<line x1="756" y1="368.71" x2="964.00" y2="368.71" class="row-line"/>
+<line x1="756" y1="381.29" x2="964.00" y2="381.29" class="row-line"/>
+<line x1="756" y1="393.87" x2="964.00" y2="393.87" class="row-line"/>
+<line x1="756" y1="406.45" x2="964.00" y2="406.45" class="row-line"/>
+<line x1="756" y1="419.03" x2="964.00" y2="419.03" class="row-line"/>
+<line x1="756" y1="431.61" x2="964.00" y2="431.61" class="row-line"/>
+<line x1="756" y1="444.19" x2="964.00" y2="444.19" class="row-line"/>
+<line x1="756" y1="456.77" x2="964.00" y2="456.77" class="row-line"/>
+<line x1="756" y1="469.35" x2="964.00" y2="469.35" class="row-line"/>
+<line x1="756" y1="481.94" x2="964.00" y2="481.94" class="row-line"/>
+<line x1="756" y1="494.52" x2="964.00" y2="494.52" class="row-line"/>
+<line x1="756" y1="507.10" x2="964.00" y2="507.10" class="row-line"/>
+<line x1="756" y1="519.68" x2="964.00" y2="519.68" class="row-line"/>
+<line x1="756" y1="532.26" x2="964.00" y2="532.26" class="row-line"/>
+<line x1="756" y1="544.84" x2="964.00" y2="544.84" class="row-line"/>
+<line x1="756" y1="557.42" x2="964.00" y2="557.42" class="row-line"/>
+<line x1="756" y1="570.00" x2="964.00" y2="570.00" class="row-line"/>
+<line x1="756" y1="582.58" x2="964.00" y2="582.58" class="row-line"/>
+<line x1="756" y1="595.16" x2="964.00" y2="595.16" class="row-line"/>
+<line x1="756" y1="607.74" x2="964.00" y2="607.74" class="row-line"/>
+<line x1="756" y1="620.32" x2="964.00" y2="620.32" class="row-line"/>
+<line x1="756" y1="632.90" x2="964.00" y2="632.90" class="row-line"/>
+<line x1="756" y1="645.48" x2="964.00" y2="645.48" class="row-line"/>
+<line x1="756" y1="658.06" x2="964.00" y2="658.06" class="row-line"/>
+<line x1="756" y1="670.65" x2="964.00" y2="670.65" class="row-line"/>
+<line x1="756" y1="683.23" x2="964.00" y2="683.23" class="row-line"/>
+<line x1="756" y1="695.81" x2="964.00" y2="695.81" class="row-line"/>
+<line x1="756" y1="708.39" x2="964.00" y2="708.39" class="row-line"/>
+<line x1="756" y1="720.97" x2="964.00" y2="720.97" class="row-line"/>
+<line x1="756" y1="733.55" x2="964.00" y2="733.55" class="row-line"/>
+<line x1="756" y1="746.13" x2="964.00" y2="746.13" class="row-line"/>
+<line x1="756" y1="758.71" x2="964.00" y2="758.71" class="row-line"/>
+<line x1="756" y1="771.29" x2="964.00" y2="771.29" class="row-line"/>
+<line x1="756" y1="783.87" x2="964.00" y2="783.87" class="row-line"/>
+<line x1="756" y1="796.45" x2="964.00" y2="796.45" class="row-line"/>
+<line x1="756" y1="809.03" x2="964.00" y2="809.03" class="row-line"/>
+<line x1="756" y1="821.61" x2="964.00" y2="821.61" class="row-line"/>
+<line x1="756" y1="834.19" x2="964.00" y2="834.19" class="row-line"/>
+<line x1="756" y1="846.77" x2="964.00" y2="846.77" class="row-line"/>
+<line x1="756" y1="859.35" x2="964.00" y2="859.35" class="row-line"/>
+<line x1="756" y1="871.94" x2="964.00" y2="871.94" class="row-line"/>
+<line x1="756" y1="884.52" x2="964.00" y2="884.52" class="row-line"/>
+<line x1="756" y1="897.10" x2="964.00" y2="897.10" class="row-line"/>
+<line x1="756" y1="909.68" x2="964.00" y2="909.68" class="row-line"/>
+<line x1="756" y1="922.26" x2="964.00" y2="922.26" class="row-line"/>
+<line x1="756" y1="934.84" x2="964.00" y2="934.84" class="row-line"/>
+<line x1="756" y1="947.42" x2="964.00" y2="947.42" class="row-line"/>
+<line x1="756" y1="960.00" x2="964.00" y2="960.00" class="row-line"/>
+      <text x="745" y="184.00" class="row-number">1</text>
+<text x="745" y="246.90" class="row-number">6</text>
+<text x="745" y="309.81" class="row-number">11</text>
+<text x="745" y="372.71" class="row-number">16</text>
+<text x="745" y="435.61" class="row-number">21</text>
+<text x="745" y="498.52" class="row-number">26</text>
+<text x="745" y="561.42" class="row-number">31</text>
+<text x="745" y="624.32" class="row-number">36</text>
+<text x="745" y="687.23" class="row-number">41</text>
+<text x="745" y="750.13" class="row-number">46</text>
+<text x="745" y="813.03" class="row-number">51</text>
+<text x="745" y="875.94" class="row-number">56</text>
+<text x="745" y="938.84" class="row-number">61</text>
+    </g>
+
+    <path d="M 598.00 525.97 Q 641.00 425.32, 564.00 324.68" class="connection-halo"/>
+    <path d="M 598.00 525.97 Q 641.00 425.32, 564.00 324.68" fill="none" stroke="#d62828" stroke-width="4.5" class="connection"/>
+
+    <path d="M 598.00 525.97 Q 641.00 626.61, 564.00 727.26" class="connection-halo"/>
+    <path d="M 598.00 525.97 Q 641.00 626.61, 564.00 727.26" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 598.00 525.97 Q 641.00 695.81, 564.00 865.65" class="connection-halo"/>
+    <path d="M 598.00 525.97 Q 641.00 695.81, 564.00 865.65" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 928.00 249.19 Q 971.00 356.13, 952.00 463.06" class="connection-halo"/>
+    <path d="M 928.00 249.19 Q 971.00 356.13, 952.00 463.06" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 894.00 664.35 Q 971.00 563.71, 952.00 463.06" class="connection-halo"/>
+    <path d="M 894.00 664.35 Q 971.00 563.71, 952.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 894.00 827.90 Q 971.00 746.13, 894.00 664.35" class="connection-halo"/>
+    <path d="M 894.00 827.90 Q 971.00 746.13, 894.00 664.35" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
+
+    <path d="M 234.00 349.84 C 299.00 349.84, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
+    <path d="M 234.00 349.84 C 299.00 349.84, 397.00 525.97, 462.00 525.97" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 234.00 349.84 C 299.00 349.84, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
+    <path d="M 234.00 349.84 C 299.00 349.84, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 268.00 538.55 C 333.00 538.55, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
+    <path d="M 268.00 538.55 C 333.00 538.55, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 268.00 538.55 C 333.00 538.55, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
+    <path d="M 268.00 538.55 C 333.00 538.55, 397.00 525.97, 462.00 525.97" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
+    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d62828" stroke-width="4.5" class="connection"/>
+
+    <path d="M 564.00 324.68 C 629.00 324.68, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
+    <path d="M 564.00 324.68 C 629.00 324.68, 761.00 827.90, 826.00 827.90" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
+
+    <path d="M 564.00 727.26 C 629.00 727.26, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
+    <path d="M 564.00 727.26 C 629.00 727.26, 761.00 827.90, 826.00 827.90" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 564.00 865.65 C 629.00 865.65, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
+    <path d="M 564.00 865.65 C 629.00 865.65, 761.00 827.90, 826.00 827.90" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 564.00 727.26 C 629.00 727.26, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
+    <path d="M 564.00 727.26 C 629.00 727.26, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 564.00 865.65 C 629.00 865.65, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
+    <path d="M 564.00 865.65 C 629.00 865.65, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 664.35, 826.00 664.35" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 664.35, 826.00 664.35" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 598.00 525.97 C 663.00 525.97, 727.00 249.19, 792.00 249.19" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 727.00 249.19, 792.00 249.19" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+
+    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 234.00 349.84 C 279.00 349.84, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 463.06, 768.00 463.06" class="connection-halo"/>
+    <path d="M 234.00 349.84 C 279.00 349.84, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <g id="chip-GAL">
+      <rect x="166.00" y="274.98" width="68" height="149.71" rx="5" fill="#36a2bd" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="200" y="330.34">ATF22V10B/C</tspan><tspan x="200" y="343.34">GAL (24-pin)</tspan><tspan x="200" y="356.34">rows 9-20</tspan><tspan x="200" y="369.34">0.3in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-SRAM">
+      <rect x="132.00" y="438.53" width="136" height="200.03" rx="5" fill="#8ecae6" class="chip"/>
+      <text class="chip-label wide-label"><tspan x="200" y="519.05">AS6C1008-55PCN</tspan><tspan x="200" y="532.05">SRAM (32-pin)</tspan><tspan x="200" y="545.05">rows 22-37</tspan><tspan x="200" y="558.05">0.6in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-SUPPLY">
+      <rect x="405.00" y="174.34" width="250" height="36.48" rx="5" fill="#d2d2d2" class="chip"/>
+      <text class="chip-label supply-label"><tspan x="530" y="186.08">5V supply clearance</tspan><tspan x="530" y="199.08">rows 1-3 reserved</tspan></text>
+    </g>
+
+    <g id="chip-HCT541">
+      <rect x="496.00" y="262.40" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="530" y="305.18">SN74HCT541N</tspan><tspan x="530" y="318.18">buffer (20-pin)</tspan><tspan x="530" y="331.18">rows 8-17</tspan><tspan x="530" y="344.18">0.3in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-Z80">
+      <rect x="462.00" y="400.79" width="136" height="250.35" rx="5" fill="#fb8500" class="chip"/>
+      <text class="chip-label wide-label"><tspan x="530" y="506.47">Z84C0020PEC</tspan><tspan x="530" y="519.47">Z80 CPU (40-pin)</tspan><tspan x="530" y="532.47">rows 19-38</tspan><tspan x="530" y="545.47">0.6in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-HCT245_LO">
+      <rect x="496.00" y="664.98" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="530" y="707.76">SN74HCT245N</tspan><tspan x="530" y="720.76">low byte (20-pin)</tspan><tspan x="530" y="733.76">rows 40-49</tspan><tspan x="530" y="746.76">0.3in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-HCT245_HI">
+      <rect x="496.00" y="803.37" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="530" y="846.15">SN74HCT245N</tspan><tspan x="530" y="859.15">high byte (20-pin)</tspan><tspan x="530" y="872.15">rows 51-60</tspan><tspan x="530" y="885.15">0.3in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-CARRIER">
+      <rect x="792.00" y="174.34" width="136" height="149.71" rx="5" fill="#5fbc98" class="chip"/>
+      <text class="chip-label wide-label"><tspan x="860" y="229.69">SN74LVC8T245PW</tspan><tspan x="860" y="242.69">carrier (24-pin)</tspan><tspan x="860" y="255.69">rows 1-12</tspan><tspan x="860" y="268.69">0.6in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-PICO">
+      <rect x="768.00" y="337.89" width="184" height="250.35" rx="5" fill="#91cf35" class="chip"/>
+      <text class="chip-label pico-label"><tspan x="860" y="443.56">Raspberry Pi Pico 2</tspan><tspan x="860" y="456.56">2x20-pin module</tspan><tspan x="860" y="469.56">rows 14-33</tspan><tspan x="860" y="482.56">0.7in header span</tspan></text>
+    </g>
+
+    <g id="chip-LVC244">
+      <rect x="826.00" y="602.08" width="68" height="124.55" rx="5" fill="#5fbc98" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="860" y="644.85">SN74LVC244AN</tspan><tspan x="860" y="657.85">buffer (20-pin)</tspan><tspan x="860" y="670.85">rows 35-44</tspan><tspan x="860" y="683.85">0.3in pin-row span</tspan></text>
+    </g>
+
+    <g id="chip-MCP">
+      <rect x="826.00" y="740.47" width="68" height="174.87" rx="5" fill="#91cf35" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="860" y="808.40">MCP23S17-E/SP</tspan><tspan x="860" y="821.40">28-pin SPDIP</tspan><tspan x="860" y="834.40">rows 46-59</tspan><tspan x="860" y="847.40">0.3in pin-row span</tspan></text>
+    </g>
+
+  <g id="legend">
+    <line x1="70" y1="1012" x2="125" y2="1012" stroke="#1769e0" stroke-width="3"/><text x="138" y="1017" class="legend-text">Address/data bus group</text>
+    <line x1="335" y1="1012" x2="390" y2="1012" stroke="#d97706" stroke-width="2.5"/><text x="403" y="1017" class="legend-text">Control/status group</text>
+    <line x1="600" y1="1012" x2="655" y2="1012" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6"/><text x="668" y="1017" class="legend-text">SPI group</text>
+    <line x1="790" y1="1012" x2="845" y2="1012" stroke="#d62828" stroke-width="4.5"/><text x="858" y="1017" class="legend-text">Path containing CLK</text>
+  </g>
+  <text x="530" y="1048" class="note">One line represents a signal group. Blue paths are shared trunks; intermediate chips are taps, not series logic.</text>
+  <text x="530" y="1071" class="note">Power, ground, pull resistors, and decoupling are intentionally omitted.</text>
+  <text x="530" y="1094" class="note">DIP widths show pin-row span; Pico shows its 0.7in header span (PCB body approximately 0.83in wide).</text>
+</svg>

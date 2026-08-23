@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Z80SBC")(type "KiCad")(uri "${KIPRJMOD}/z80sbc.kicad_sym")(options "")(descr "Project-local exact symbols for the ROMless Z80 SBC"))
+)

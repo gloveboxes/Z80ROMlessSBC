@@ -148,26 +148,26 @@ Purchase quantities include a small allowance for breadboard spares.
 | 1 | Z84C0020PEC | 40-pin PDIP | CMOS Z80 CPU |
 | 1 | AS6C1008-55PCN | 32-pin PDIP | SRAM; lower 64 KB used |
 | 1 | MCP23S17-E/SP | 28-pin SPDIP | SPI-to-16-bit address interface |
-| 3 | SN74AHCT125N | 14-pin PDIP | Pico 3.3 V-to-5 V control and SPI translation |
+| 1 | ATF22V10B-15PC or ATF22V10C-15PU | 24-pin PDIP | Programmable SRAM control-source arbitration |
+| 1 | SN74HCT541N | 20-pin PDIP | Eight-channel 5 V output buffer for clock, BUSREQ#, SPI, and SRAM controls |
 | 2 | SN74HCT245N | 20-pin PDIP | Bidirectional address-bus isolation |
-| 1 | SN74LVC245AN | 20-pin PDIP | Pico data-bus interface |
+| 1 | SN74LVC8T245PW | 24-pin TSSOP on 0.6-inch DIP-24 carrier | Dual-supply 3.3 V/5 V Pico data-bus interface |
 | 1 | SN74LVC244AN | 20-pin PDIP | 5 V-to-3.3 V buffering for Z80 status/control and MCP SO |
-| 1 | 74HCT157 | 16-pin PDIP | SRAM CE#/OE#/WE# source arbitration |
-| 1 | 74HCT08 | 14-pin PDIP | AND-gates RESET# and BUSACK# to drive the 74HCT157 select line |
 | 1 | 1N5819 | Axial diode | Schottky power OR from external +5 V to Pico VSYS |
 
-> **New required additions:** The original design required SRAM control
-> arbitration but did not assign a part; the 74HCT157 implements that
-> requirement (Section 1.2). The design also needs a Pico-driven SRAM
-> CE# line and full 5 V translation of the MCP23S17 SPI inputs, which
-> together need 9 translated signals (RESET#, BUSREQ#, CLK, SRAM WE#,
-> SRAM OE#, SRAM CE#, SPI CS#, SPI SCK, SPI SI) and do not fit in the
-> original two 74AHCT125N packages (8 gates). A third SN74AHCT125N
-> (IC3) is added; see Section 4. Selecting the 74HCT157 purely from
-> BUSACK# also leaves SRAM control unreachable by the Pico whenever
-> RESET# is held (Section 8.9) or the Z80 is physically absent from its
-> socket (Section 8.7); a 74HCT08 AND gate combines RESET# and BUSACK#
-> ahead of the select input to fix both cases (Section 1.2). The
+> **Ten-package logic design:** The ATF22V10 replaces the former
+> 74HCT157, 74HCT08, and their discrete source-selection wiring. It
+> computes all three SRAM controls from RESET#, BUSACK#, the Pico DMA
+> controls, and the Z80 MREQ#/RD#/WR# outputs (Section 1.2). The
+> ATF22V10 guarantees only a TTL-level 2.4 V HIGH, so its SRAM outputs
+> pass through the SN74HCT541N rather than driving the 5 V SRAM
+> directly. The same HCT541 translates Pico CLK, BUSREQ#, and the three
+> MCP23S17 SPI inputs to guaranteed 5 V levels. Pico GP3 drives the
+> Z80 RESET# input directly because the Z84C00 specifies a 2.2 V HIGH
+> threshold for non-clock inputs; the Z80 clock retains its stricter
+> translated path. This reduces the complete system from 13 active
+> packages to 10 while retaining the MCP23S17 and all three bus
+> transceivers. The
 > SN74LVC244AN buffers RD#/WR# because Pico 2 GP27 and GP28 are
 > standard ADC-capable pads, not 5 V-tolerant FT pads. It also buffers
 > BUSACK#, IORQ#, and MCP SO: although GP0, GP1, and GP20 are FT pads,
@@ -182,9 +182,9 @@ Purchase quantities include a small allowance for breadboard spares.
 | 1 | 40-pin DIP socket |
 | 1 | 32-pin DIP socket |
 | 1 | 28-pin DIP socket |
+| 1 | 24-pin, 0.3-inch-wide DIP socket for the ATF22V10 |
+| 1 | 24-pin, 0.6-inch-wide DIP socket, or two 12-position socket strips, for the data-transceiver carrier |
 | 4 | 20-pin DIP sockets |
-| 1 | 16-pin DIP socket |
-| 4 | 14-pin DIP sockets |
 | 2 | 20-pin 0.1-inch male headers for the Pico 2, if not fitted |
 | 2 | 20-position 0.1-inch socket strips for removable Pico mounting; do not substitute DIP IC sockets |
 
@@ -192,22 +192,30 @@ Purchase quantities include a small allowance for breadboard spares.
 
 | Fitted | Purchase | Item | Purpose |
 |----:|----:|----|----|
-| 12 | 15 | 100 nF X7R ceramic capacitors, at least 10 V | One at every DIP IC supply pair |
+| 10 | 13 | 100 nF X7R ceramic capacitors, at least 10 V | One at every IC supply pair; the dual-supply data carrier needs two |
 | 3 | 5 | 10 uF capacitors, at least 10 V | One per breadboard |
 | 1 | 2 | 47 uF electrolytic capacitor, at least 10 V | 5 V supply-entry bulk capacitance |
-| 24 | 30 | 10 kOhm, 1/4 W resistors | Defined startup levels and temporary test pulls |
+| 29 | 35 | 10 kOhm, 1/4 W resistors | Defined startup levels and temporary test pulls |
 | Reused for tests | 10 | 1 kOhm, 1/4 W resistors | First-drive current limiting and manual input tests |
 
 Place each 100 nF capacitor directly across its IC supply pins with the
 shortest practical leads. On the 5 V side, fit 10 kOhm pull-ups to
-RESET#, BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, MCP SO, WAIT#, INT#,
-and NMI#. On the Pico side, use 10 kOhm pull-ups to 3.3 V on GP4
+BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, MCP SO, SRAM CE#, SRAM OE#,
+SRAM WE#, WAIT#, INT#, and NMI#. RESET# is the direct GP3 node and must
+not have a 5 V pull-up. Also pull SN74HCT541 A6, A7, and A8 up to 5 V
+so its SRAM-control outputs remain inactive if the GAL is absent or
+unpowered. On the Pico side, use 10 kOhm pull-ups to 3.3 V on GP4
 (BUSREQ#), GP5 (SRAM CE#), GP7/GP9 (transceiver OE#), GP21 (SPI CS#),
 GP22 (SRAM WE#), and GP26 (SRAM OE#). Use 10 kOhm pull-downs to GND on
 GP2 (CLK), GP3 (RESET#), GP6/GP8 (transceiver DIR), and GP18/GP19 (SPI
-SCK/SI). These external resistors establish safe levels before the
-firmware configures SIO; the 5 V pull-ups alone cannot override an
-enabled AHCT output. Tie every unused CMOS input to a defined level.
+SCK/SI). Once the Pico 3.3 V rail is valid, these external resistors
+establish safe levels before the firmware configures SIO. During a cold
+power ramp the Pico-side pull-ups cannot hold active-low controls HIGH
+while their 3.3 V rail is still at 0 V; RESET# remains asserted and SRAM
+contents are therefore treated as indeterminate until the boot image is
+loaded and verified. The HCT541-input pull-ups cover an absent GAL, and
+the final SRAM-node pull-ups cover an absent or unpowered HCT541. Tie
+every unused CMOS input to a defined level.
 
 ### 0.4 Construction and Power
 
@@ -228,13 +236,24 @@ external +5 V, banded cathode to VSYS. Pico 2 already has a Schottky
 diode from USB VBUS to VSYS, so this second diode safely ORs USB and
 external power without back-powering either source. Never link the
 external +5 V rail directly to Pico VBUS or VSYS. Feed the
-SN74LVC245AN and SN74LVC244AN only from the Pico 3.3 V rail; all other
-logic uses the regulated 5 V rail. No 5 V output connects directly to
-a Pico GPIO; the SN74LVC244AN's `Ioff` protection keeps the five
+SN74LVC8T245 VCCA and SN74LVC244AN from the Pico 3.3 V rail. Connect
+SN74LVC8T245 VCCB and all other logic to the regulated 5 V rail. No
+5 V output connects directly to a Pico GPIO; both LVC devices provide
+power-off isolation, and the SN74LVC244AN's `Ioff` protection keeps the five
 monitored inputs isolated while its 3.3 V supply is absent or ramping.
 Tie the Pico's AGND pin (pin 33) to the common digital ground: this
 design does not use the ADC function on GP26-GP29, so no separate
 analogue ground plane is needed.
+
+The plug-in supply shown on the middle breadboard may provide the 5 V
+entry point only after a load test proves 4.75 V to 5.25 V at the board
+under at least 500 mA load without regulator overheating. Do not connect
+that module's 3.3 V output to the Pico 3V3 pin or the system 3.3 V rail;
+the Pico must remain the only 3.3 V source. Reserve terminal rows 1-3
+under the module body even if its pins enter only the distribution
+strip. If the actual module obscures more than three terminal rows,
+move it off-board or to the Memory Board rather than compressing the
+Core Board placement.
 
 ### 0.5 Bring-Up Equipment
 
@@ -245,6 +264,8 @@ analogue ground plane is needed.
 - Logic analyzer with at least 16 channels; 24 or more is preferred.
 - Current-limited bench supply or an in-line 5 V current meter.
 - Fine probe hooks or test clips suitable for DIP pins.
+- A programmer explicitly supporting the selected ATF22V10B or
+  ATF22V10C device and generic 22V10 JEDEC files.
 
 ### 0.6 Optional Items
 
@@ -275,20 +296,20 @@ table for construction; the ranges preserve ascending bit order.
 |----|----:|----:|----|
 | BUSACK# monitor | GP0 | 1 | SN74LVC244AN 1Y1 |
 | IORQ# trap input | GP1 | 2 | SN74LVC244AN 1Y2 |
-| Z80 CLK | GP2 | 4 | 74AHCT125 IC1 Gate 3 input |
-| Z80 RESET# | GP3 | 5 | 74AHCT125 IC1 Gate 1 input |
-| Z80 BUSREQ# | GP4 | 6 | 74AHCT125 IC1 Gate 2 input |
-| SRAM CE# | GP5 | 7 | 74AHCT125 IC2 Gate 2 input |
-| Data DIR / OE# | GP6 / GP7 | 9 / 10 | SN74LVC245 pins 1 / 19 |
+| Z80 CLK | GP2 | 4 | SN74HCT541 A1 pin 2 |
+| Z80 RESET# | GP3 | 5 | Z80 pin 26 and ATF22V10 pin 1, direct 3.3 V logic |
+| Z80 BUSREQ# | GP4 | 6 | SN74HCT541 A2 pin 3 |
+| SRAM CE# | GP5 | 7 | ATF22V10 pin 7 |
+| Data DIR / OE# | GP6 / GP7 | 9 / 10 | SN74LVC8T245 pins 2 / 22 |
 | Address DIR / OE# | GP8 / GP9 | 11 / 12 | Both SN74HCT245 pins 1 / 19 |
-| D0-D3 | GP10-GP13 | 14-17 | SN74LVC245 B1-B4 |
-| D4-D7 | GP14-GP17 | 19-22 | SN74LVC245 B5-B8 |
-| SPI SCK / MOSI / MISO / CS# | GP18-GP21 | 24-27 | IC3 Gates 2/3, LVC244 2Y1, IC3 Gate 1 |
-| SRAM WE# | GP22 | 29 | 74AHCT125 IC1 Gate 4 input |
-| SRAM OE# | GP26 | 31 | 74AHCT125 IC2 Gate 1 input |
+| D0-D3 | GP10-GP13 | 14-17 | SN74LVC8T245 A1-A4 pins 3-6 |
+| D4-D7 | GP14-GP17 | 19-22 | SN74LVC8T245 A5-A8 pins 7-10 |
+| SPI SCK / MOSI / MISO / CS# | GP18-GP21 | 24-27 | HCT541 A4/A5, LVC244 2Y1, HCT541 A3 |
+| SRAM WE# | GP22 | 29 | ATF22V10 pin 3 |
+| SRAM OE# | GP26 | 31 | ATF22V10 pin 5 |
 | Z80 RD# monitor | GP27 | 32 | SN74LVC244AN 1Y3 |
 | Z80 WR# monitor | GP28 | 34 | SN74LVC244AN 1Y4 |
-| 3.3 V output | - | 36 | SN74LVC245/LVC244 VCC and 3.3 V pull-ups |
+| 3.3 V output | - | 36 | SN74LVC8T245 VCCA, LVC244 VCC, and 3.3 V pull-ups |
 | VSYS | - | 39 | 1N5819 banded cathode; anode to external +5 V |
 
 Connect Pico GND pins 3, 8, 13, 18, 23, 28, and 38, plus AGND pin
@@ -328,8 +349,8 @@ safely frozen indefinitely in either a HIGH or LOW state.</td>
 <tr>
 <td>MREQ#</td>
 <td>Pin 19</td>
-<td>Output. Active Low, three-state. Connects to 74HCT157 channel 3B
-for CPU-owned SRAM cycles; pulled HIGH when the CPU is absent.</td>
+<td>Output. Active Low, three-state. Connects to ATF22V10 pin 8 for
+CPU-owned SRAM cycles; pulled HIGH when the CPU is absent.</td>
 </tr>
 <tr>
 <td>RD#</td>
@@ -347,8 +368,8 @@ RD#.</td>
 <tr>
 <td>BUSACK#</td>
 <td>Pin 23</td>
-<td>Output. Active Low. Feeds 74HCT157 arbitration via the 74HCT08 AND
-gate (Section 1.2) and is buffered to 3.3 V through SN74LVC244AN
+<td>Output. Active Low. Feeds ATF22V10 pin 2 for SRAM-source arbitration
+(Section 1.2) and is buffered to 3.3 V through SN74LVC244AN
 channel 1A1/1Y1 for monitoring at Pico 2 GP0.</td>
 </tr>
 <tr>
@@ -360,9 +381,9 @@ ownership.</td>
 <tr>
 <td>RESET#</td>
 <td>Pin 26</td>
-<td>Input. Active Low. Driven by 74AHCT125 IC1 Gate 1 and also feeds
-74HCT08 Gate 1 for SRAM-source arbitration. Hold LOW for at least three
-full clock cycles.</td>
+<td>Input. Active Low. Driven directly by Pico GP3 at TTL-compatible
+3.3 V and also connected to ATF22V10 pin 1 for SRAM-source arbitration.
+Hold LOW for at least three full clock cycles.</td>
 </tr>
 <tr>
 <td>M1#</td>
@@ -421,23 +442,24 @@ floating.</td>
 <tr>
 <td>WE#</td>
 <td>Pin 29</td>
-<td>Input. Active Low. Driven through the 74HCT157 arbitration mux
-(Section 1.2): Z80 WR# during CPU ownership, Pico DMA write signal
-during DMA ownership.</td>
+<td>Input. Active Low. Driven by SN74HCT541 Y6 from the ATF22V10
+arbitration output (Section 1.2): Z80 WR# during CPU ownership, Pico
+DMA write signal during DMA ownership.</td>
 </tr>
 <tr>
 <td>OE#</td>
 <td>Pin 24</td>
-<td>Input. Active Low. Driven through the 74HCT157 arbitration mux
-(Section 1.2): Z80 RD# during CPU ownership, Pico DMA read signal
-during DMA ownership.</td>
+<td>Input. Active Low. Driven by SN74HCT541 Y7 from the ATF22V10
+arbitration output (Section 1.2): Z80 RD# during CPU ownership, Pico
+DMA read signal during DMA ownership.</td>
 </tr>
 <tr>
 <td>CE#</td>
 <td>Pin 22</td>
-<td>Input. Active Low. Driven through the 74HCT157 arbitration mux
-(Section 1.2): Z80 MREQ# during CPU ownership so I/O cycles cannot
-access SRAM, Pico DMA chip-enable signal during DMA ownership.</td>
+<td>Input. Active Low. Driven by SN74HCT541 Y8 from the ATF22V10
+arbitration output (Section 1.2): Z80 MREQ# during CPU ownership so
+I/O cycles cannot access SRAM, Pico DMA chip-enable signal during DMA
+ownership.</td>
 </tr>
 <tr>
 <td>CE2</td>
@@ -584,10 +606,15 @@ flowchart LR
     MREQ["MREQ# - pin 19"]
     RD["RD# - pin 21"]
     WR["WR# - pin 22"]
+    BUSACK["BUSACK# - pin 23"]
   end
-  subgraph MUX["74HCT157 - Section 1.2"]
+  subgraph GAL["ATF22V10 - Section 1.2"]
     direction TB
-    MB["B inputs (CPU side)"]
+    LOGIC["Reset-aware SRAM arbitration"]
+  end
+  subgraph BUFFER["SN74HCT541"]
+    direction TB
+    CTRL["Y6/Y7/Y8"]
   end
   subgraph SRAM[AS6C1008-55PCN SRAM]
     direction TB
@@ -595,12 +622,15 @@ flowchart LR
     OE["OE# - pin 24"]
     WE["WE# - pin 29"]
   end
-  MREQ --> MB
-  RD --> MB
-  WR --> MB
-  MUX --> CE
-  MUX --> OE
-  MUX --> WE
+  MREQ --> LOGIC
+  RD --> LOGIC
+  WR --> LOGIC
+  BUSACK --> LOGIC
+  PICO["Pico RESET#, CE#, OE#, WE#"] --> LOGIC
+  LOGIC --> CTRL
+  CTRL --> CE
+  CTRL --> OE
+  CTRL --> WE
 ```
 
 #### Power and Fixed Pins
@@ -626,111 +656,88 @@ flowchart LR
 ```
 
 > **SRAM control-source arbitration:** MREQ#/RD#/WR# above are the
-> CPU-owned run-mode paths and connect only to the 74HCT157 "B" inputs
-> described in Section 1.2, never directly to the SRAM. The 74HCT157
-> selects between this path and the Pico's level-shifted DMA controls
-> so the two sources are never joined.
+> CPU-owned run-mode inputs of the ATF22V10 described in Section 1.2,
+> never directly to the SRAM. The programmed equations select either
+> these inputs or the Pico DMA controls; the three results then pass
+> through dedicated SN74HCT541 channels to the SRAM.
 
-### 1.2 SRAM Control-Source Arbitration: 74HCT157 and 74HCT08
+### 1.2 SRAM Control-Source Arbitration: ATF22V10B/C
 
-The Z80 and the Pico must never drive SRAM CE#, OE#, or WE# at the same
-time. A 74HCT157 quad 2:1 multiplexer selects between the two sources.
-Per the SN74HCT157 datasheet function table, SELECT (pin 1, "A/B") =
-HIGH routes the "B" inputs to the outputs, and SELECT = LOW routes the
-"A" inputs; the strobe (pin 15, "G") forces every output LOW when HIGH,
-so it must be tied to GND to keep the mux permanently enabled.
+The Z80 and Pico must never drive SRAM CE#, OE#, or WE# simultaneously.
+The ATF22V10 implements three combinational 2:1 selectors with a shared
+ownership condition:
 
-Selecting purely on the Z80's own BUSACK# output does not cover two
-cases this design needs. First, BUSACK# is driven to its inactive HIGH
-level throughout RESET, not floated (Section 1), so a held-reset DMA
-injection per Section 8.9 would still route SRAM control to the Z80's
-own inactive MREQ#/RD#/WR# lines instead of to the Pico. Second, with
-the Z80 physically absent from its socket, as Phase 6 (Section 8.7)
-requires, BUSACK# has no driver at all and only floats HIGH through its
-pull-up (Section 0.3), again selecting the Z80 side when the Pico needs
-DMA control. A single 74HCT08 AND gate resolves both cases by combining
-RESET# and BUSACK# ahead of the mux's select input: `SELECT = RESET#
-AND BUSACK#`. Because both inputs are active-low, `SELECT` is LOW
-(Pico "A" side) whenever *either* RESET# or BUSACK# is asserted, and
-HIGH (Z80 "B" side) only once the CPU is out of reset and holds the
-bus — exactly the three states this design needs.
+```text
+CPU_OWNS_SRAM = RESET# AND BUSACK#
 
-- **74HCT08 Gate 1 inputs:** 1A (pin 1) from 74AHCT125 IC1 Gate 1
-  output (5 V RESET#, the same node driving Z80 pin 26); 1B (pin 2)
-  from Z80 BUSACK# (pin 23), direct connection.
-- **74HCT08 Gate 1 output:** 1Y (pin 3) to 74HCT157 SELECT (pin 1),
-  replacing a direct BUSACK# connection.
-- **74HCT08 unused gates:** Tie 2A/2B (pins 4-5), 3A/3B (pins 9-10),
-  and 4A/4B (pins 12-13) to GND; leave 2Y/3Y/4Y (pins 6, 8, 11) open.
-- **74HCT08 power:** VCC (pin 14) to +5 V; GND (pin 7) to ground.
-- **Select (74HCT157 pin 1):** 74HCT08 Gate 1 output (above). HIGH
-  (CPU running, out of reset) selects the Z80 "B" side; LOW (RESET#
-  asserted or DMA active) selects the Pico "A" side.
-- **Channel 1 (WE#):** 1A pin 2 from 74AHCT125 IC1 Gate 4 (Pico WE#,
-  5 V); 1B pin 3 from Z80 WR# (pin 22); 1Y pin 4 to SRAM WE# (pin 29).
-- **Channel 2 (OE#):** 2A pin 5 from 74AHCT125 IC2 Gate 1 (Pico OE#,
-  5 V); 2B pin 6 from Z80 RD# (pin 21); 2Y pin 7 to SRAM OE# (pin 24).
-- **Channel 3 (CE#):** 3A pin 11 from 74AHCT125 IC2 Gate 2 (Pico CE#,
-  5 V, new signal; Section 4); 3B pin 10 from Z80 MREQ# (pin 19); 3Y
-  pin 9 to SRAM CE# (pin 22).
-- **Channel 4:** Unused. Tie 4A (pin 14) and 4B (pin 13) to GND and
-  leave 4Y (pin 12) open.
-- **Strobe and power:** G (pin 15) to GND; VCC (pin 16) to +5V; GND
-  (pin 8) to ground.
+SRAM_WE_PRE# = CPU_OWNS_SRAM ? Z80_WR#   : PICO_WE#
+SRAM_OE_PRE# = CPU_OWNS_SRAM ? Z80_RD#   : PICO_OE#
+SRAM_CE_PRE# = CPU_OWNS_SRAM ? Z80_MREQ# : PICO_CE#
+```
 
-During Phase 6 bring-up with the Z80 absent, hold RESET# LOW (its
-Phase-1 default) so the AND gate forces the Pico "A" side regardless of
-the floating, pulled-up BUSACK# input; do not rely on BUSACK# alone
-during that phase.
+| RESET# | BUSACK# | Selected source | Required state |
+|----:|----:|----|----|
+| 0 | X | Pico | Held-reset DMA or Z80 absent |
+| 1 | 0 | Pico | BUSREQ#/BUSACK# DMA ownership |
+| 1 | 1 | Z80 | Normal CPU execution |
 
-[Texas Instruments SN74HCT157 Data Selector/Multiplexer Datasheet](https://www.ti.com/lit/ds/symlink/sn74hct157.pdf)
-[Texas Instruments SN74HCT08 Quadruple 2-Input AND Gate Datasheet](https://www.ti.com/lit/ds/symlink/sn74hct08.pdf)
+This covers the two cases that BUSACK# alone cannot distinguish. During
+RESET the Z80 drives BUSACK# inactive HIGH, and with the Z80 physically
+absent its pull-up also reads HIGH. RESET# LOW therefore selects the Pico
+in both cases. Only an out-of-reset CPU that has not granted the bus can
+select MREQ#/RD#/WR#.
+
+The PLD source adds the logically redundant consensus term
+`Z80_CONTROL# & PICO_CONTROL#` to each output. It does not change this
+truth table, but it holds an inactive HIGH continuously while RESET# or
+BUSACK# transfers ownership with both candidate controls HIGH. Without
+that term, unequal GAL product-term delays can create a static-1 hazard,
+seen externally as a short active-low SRAM control pulse. Each hardened
+equation uses four product terms, within every ATF22V10 macrocell's
+capacity.
+
+Program the selected ATF22V10B or ATF22V10C with
+[src/pld/sram_control.pld](src/pld/sram_control.pld). Use the exact
+device algorithm listed by the programmer, write the generated JEDEC
+file, read it back, and require a verify pass before installation. Do
+not enable the optional power-down mode or security fuse.
+
+| ATF22V10 pin | Signal | Connection |
+|----:|----|----|
+| 1 | RESET# | Pico GP3 and Z80 pin 26 direct node |
+| 2 | BUSACK# | Z80 pin 23 |
+| 3 | PICO_WE# | Pico GP22 |
+| 4 | Z80_WR# | Z80 pin 22 |
+| 5 | PICO_OE# | Pico GP26 |
+| 6 | Z80_RD# | Z80 pin 21 |
+| 7 | PICO_CE# | Pico GP5 |
+| 8 | Z80_MREQ# | Z80 pin 19 |
+| 9-11, 13 | Unused inputs | Tie to GND |
+| 12 | GND | Common ground |
+| 14 | SRAM_WE_PRE# | SN74HCT541 A6 pin 7 |
+| 15 | SRAM_OE_PRE# | SN74HCT541 A7 pin 8 |
+| 16 | SRAM_CE_PRE# | SN74HCT541 A8 pin 9 |
+| 17-23 | Unused outputs | Program constant LOW; leave open |
+| 24 | VCC | Regulated +5 V |
+
+The ATF22V10's guaranteed HIGH output is 2.4 V, which satisfies the
+HCT541's 2.0 V input threshold but not the AS6C1008's 5 V CMOS input
+threshold. Never bypass the HCT541 on these three paths. Fit 10 kOhm
+pull-ups at HCT541 A6-A8 and at the final SRAM CE#/OE#/WE# nodes. The
+input pull-ups keep the permanently enabled HCT541 deterministic if the
+GAL is missing; the output pull-ups keep the SRAM inactive if the
+HCT541 is missing or unpowered.
+
+During Phase 6 with the Z80 absent, hold GP3 RESET# LOW. The programmed
+logic then selects the Pico controls regardless of the pulled-up,
+undriven BUSACK# input.
 
 ```mermaid
 flowchart LR
-  subgraph CPU_SIDE["Z80 - B inputs"]
-    Z_WR["WR# pin 22"]
-    Z_RD["RD# pin 21"]
-    Z_MREQ["MREQ# pin 19"]
-    Z_BUSACK["BUSACK# pin 23"]
-  end
-  subgraph PICO_SIDE["Pico, via 74AHCT125 - A inputs"]
-    P_RESET["IC1 Gate 1: RESET#"]
-    P_WE["IC1 Gate 4: Pico WE#"]
-    P_OE["IC2 Gate 1: Pico OE#"]
-    P_CE["IC2 Gate 2: Pico CE#"]
-  end
-  subgraph ANDGATE["74HCT08 Gate 1"]
-    A_RESET["1A: RESET# from IC1 Gate 1"]
-    A_BUSACK["1B: BUSACK# pin 23"]
-    A_OUT["1Y: to mux SELECT"]
-  end
-  subgraph MUX["74HCT157"]
-    SEL["A/B select - pin 1"]
-    C1["Ch1: 1A pin2, 1B pin3, 1Y pin4"]
-    C2["Ch2: 2A pin5, 2B pin6, 2Y pin7"]
-    C3["Ch3: 3A pin11, 3B pin10, 3Y pin9"]
-    G["Strobe G - pin 15 - tied GND"]
-  end
-  subgraph SRAM_MUX["AS6C1008-55PCN SRAM"]
-    S_WE["WE# pin 29"]
-    S_OE["OE# pin 24"]
-    S_CE["CE# pin 22"]
-  end
-  P_RESET --> A_RESET
-  A_RESET --> A_OUT
-  Z_BUSACK --> A_BUSACK
-  A_BUSACK --> A_OUT
-  A_OUT --> SEL
-  P_WE --> C1
-  Z_WR --> C1
-  C1 --> S_WE
-  P_OE --> C2
-  Z_RD --> C2
-  C2 --> S_OE
-  P_CE --> C3
-  Z_MREQ --> C3
-  C3 --> S_CE
+  PICO["Pico<br/>RESET#, WE#, OE#, CE#"] --> GAL["ATF22V10<br/>three arbitration equations"]
+  Z80["Z80<br/>BUSACK#, WR#, RD#, MREQ#"] --> GAL
+  GAL -->|"three TTL-level pre-buffer controls"| HCT["SN74HCT541<br/>channels 6-8"]
+  HCT -->|"5V CE#, OE#, WE#"| SRAM["AS6C1008 SRAM"]
 ```
 
 ## 2. 16-Bit Address Expansion Interface: MCP23S17-E/SP
@@ -745,9 +752,9 @@ monitor the address bus states driven by the frozen Z80 CPU.
 |----|----|----|
 | GPA0 – GPA7 (Port A) | SN74HCT245N Transceiver \#1 (B1 – B8) | Lower Address Byte Control (\$A_0 – A_7\$) |
 | GPB0 – GPB7 (Port B) | SN74HCT245N Transceiver \#2 (B1 – B8) | Upper Address Byte Control (\$A_8 – A\_{15}\$) |
-| CS# (Pin 11) | 74AHCT125 IC3 Gate 1, from Pico GP21 | SPI Hardware Chip Select (Active Low), 5V translated |
-| CLK / SCK (Pin 12) | 74AHCT125 IC3 Gate 2, from Pico GP18 | SPI Master Clock Train Input, 5V translated |
-| SI (Pin 13) | 74AHCT125 IC3 Gate 3, from Pico GP19 | SPI Master-Out-Slave-In (MOSI Path), 5V translated |
+| CS# (Pin 11) | SN74HCT541 Y3 pin 16, from Pico GP21 via A3 | SPI Hardware Chip Select (Active Low), 5 V translated |
+| CLK / SCK (Pin 12) | SN74HCT541 Y4 pin 15, from Pico GP18 via A4 | SPI Master Clock Train Input, 5 V translated |
+| SI (Pin 13) | SN74HCT541 Y5 pin 14, from Pico GP19 via A5 | SPI Master-Out-Slave-In (MOSI Path), 5 V translated |
 | SO (Pin 14) | SN74LVC244AN channel 2A1/2Y1 to Pico 2 GP20 | SPI Master-In-Slave-Out (MISO Path), buffered from 5 V to 3.3 V; fit the Section 0.3 pull-up because SO is high-impedance while CS# is HIGH |
 | A0, A1, A2 (Pins 15-17) | Tied to GND | Hardware address = 000; matches the fixed 0x40/0x41 opcode used in firmware regardless of the IOCON.HAEN state, and prevents floating address-select inputs |
 | RESET# (Pin 18) | Tied to VCC (5V) | Hardware reset overridden for continuous software operation |
@@ -799,28 +806,94 @@ breadboards to minimize cross-talk and propagation delay across the
 distinct 3.3V and 5V power domains. Each zone below lists the specific
 chips to place on that board and where to seat them.
 
-- **Memory Board (Left Zone):** AS6C1008-55PCN SRAM, 74HCT157 SRAM
-  control mux, 74HCT08 arbitration gate, and 74AHCT125N IC2. Put IC2
-  beside the mux because it supplies the Pico-side SRAM OE#/CE# inputs.
-  Row budget: 16 (SRAM) + 8 (74HCT157) + 7 (74HCT08) + 7 (IC2) = 38
-  of 63 terminal rows.
+Place the three BB830s side by side with their long edges parallel:
+Memory on the left, Core in the center, and Peripheral on the right.
+Rows 1-63 run in the same direction on all three boards, so equal row
+numbers align across both board boundaries. The Core Board's central
+position is deliberate: the dominant Memory/Core paths are the shared
+16-bit address and 8-bit data buses, while the dominant Core/Peripheral
+paths are the MCP23S17's 16-bit address interface and the Pico's 8-bit
+data interface. Four Pico-to-GAL signals span both board boundaries
+without a buffer: PICO_CE#, PICO_OE#, PICO_WE#, and RESET#. RESET# is a
+three-way node also tapped by the Z80 on the Core Board; the other three
+simply cross the Core Board without connecting to a Core component.
+Keep this low-activity group away from CLK. Putting either outer cluster
+in the center would shorten these four wires only by forcing one of the
+much wider address/data interfaces to span two board widths.
+
+- **Memory Board (Left Zone):** AS6C1008-55PCN SRAM and the programmed
+  ATF22V10. The GAL's four CPU-side inputs (BUSACK#, MREQ#, RD#, WR#)
+  cross from the Core Board, and its three pre-buffer outputs cross
+  back to the Core Board's SN74HCT541 before the buffered result
+  returns here as SRAM CE#/OE#/WE#. This deliberate round trip keeps
+  the HCT541's clock channel local to the Z80 instead (see below), which
+  matters far more than SRAM control length since SRAM CE#/OE#/WE# only
+  toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#,
+  which already crossed this same boundary in the original design. Row
+  budget: 16 (SRAM) + 12 (ATF22V10) = 28 of 63 terminal rows.
 
 - **Core Board (Center Zone):** Z84C0020PEC CPU, both SN74HCT245N
-  address transceivers, 74AHCT125N IC1, and the SN74LVC245AN data
-  transceiver. Keep IC1 beside the Z80 so its Gate 3 CLK output never
-  crosses a board boundary. Put the address transceivers at the edge
-  facing the Peripheral Board to shorten the MCP23S17's 16-bit feed,
-  while their bus-facing side joins the local Z80 address bus and the
-  adjacent SRAM. Row budget: 20 (Z80) + 20 (2x SN74HCT245N) + 7 (IC1)
-  + 10 (SN74LVC245AN) = 57 of 63 terminal rows. *No hardware wait-state
-  latches or flip-flops are used.*
+  address transceivers, and the SN74HCT541N output buffer. Keep the
+  HCT541 beside the Z80 so its
+  Y1 clock output never crosses a board boundary, the same placement
+  rule the discrete design used for its dedicated clock buffer. Orient
+  both address transceivers with their A-side pin rows toward the Memory
+  Board and their B-side pin rows toward the Peripheral Board. Side A
+  joins the Z80/SRAM address bus and side B reaches the MCP23S17. The
+  photographed plug-in supply reserves rows 1-3, leaving 60 usable
+  terminal rows.
+  The chip budget is 20 (Z80) + 20 (2x SN74HCT245N) + 10
+  (SN74HCT541N) = 50 of those 60 rows, leaving 10 rows for socket-body
+  clearance, decoupling, and wiring. *No hardware wait-state latches
+  or flip-flops are used.*
 
 - **Peripheral Board (Right Zone):** Raspberry Pi Pico 2, MCP23S17,
-  74AHCT125N IC3, and the SN74LVC244AN input buffer. Put the MCP23S17
-  and IC3 together and the LVC244 nearest the Core Board for the four
-  Z80 status/control inputs; its fifth input, MCP SO, remains local.
-  Row budget: 20 (Pico 2) + 14 (MCP23S17) + 7 (IC3) + 10
-  (SN74LVC244AN) = 51 of 63 terminal rows.
+  the SN74LVC244AN input buffer, and the SN74LVC8T245 data-transceiver
+  carrier. Orient the carrier with its B-port pin row toward the Core
+  Board and its A-port pin row toward the outer edge; connect the A port
+  locally to the Pico below it. Orient the LVC244 so its 1A input pin
+  row faces the Core Board and its 1Y output pin row faces inward toward
+  the Pico; its fifth input, MCP SO, remains local. The HCT541's three
+  SPI outputs cross from the Core Board to reach the MCP23S17 here, a
+  second new crossing from
+  consolidating three buffer packages into one; SPI only toggles during
+  DMA/trap windows when the Z80 clock is stopped, so it never runs
+  concurrently with the timing-critical CLK path. Row budget: 20
+  (Pico 2) + 14 (MCP23S17) + 10 (SN74LVC244AN) + 12 (SN74LVC8T245
+  carrier) = 56 of 63 terminal rows, leaving seven rows for spacing,
+  decoupling, and wiring.
+
+The following row-aligned schedule was selected by evaluating every
+valid per-board package ordering and gap distribution against grouped
+signal-count weights, iterating the comparison across all three boards.
+This is a routing aid, not an instruction to equalize individual wire
+lengths:
+
+| Board | Terminal-row schedule | Unallocated rows |
+|----|----|----:|
+| Memory | Unallocated 1-8; GAL 9-20; gap 21; SRAM 22-37 | 1-8 and 38-63 (34) |
+| Core / middle | Supply clearance 1-3; unallocated 4-7; HCT541 8-17; gap 18; Z80 19-38; gap 39; HCT245 low byte 40-49; gap 50; HCT245 high byte 51-60 | 4-7 and 61-63 (7) |
+| Peripheral | LVC8T245 carrier 1-12; gap 13; Pico 14-33; gap 34; LVC244 35-44; gap 45; MCP23S17 46-59 | 60-63 (4) |
+
+This placement uses row alignment to reduce diagonal jumper length:
+
+- **Memory/Core:** SRAM rows 22-37 overlap the Z80's rows 19-38 for the
+  full A0-A15/D0-D7 trunk. GAL rows 9-20 overlap the HCT541 and the top
+  of the Z80 for its seven Core-side control signals.
+- **Core/Peripheral:** MCP23S17 rows 46-59 overlap both HCT245s for its
+  16-bit address path. Pico rows 14-33 overlap the HCT541 and Z80 for
+  CLK, BUSREQ#, RESET#, and SPI-source wiring. The LVC244 and data
+  carrier remain one local package away from the Pico while aligning
+  reasonably with the Core chips they serve.
+- **Peripheral/Memory:** Pico rows 14-33 overlap GAL rows 9-20, reducing
+  the vertical component of the four direct Pico-to-GAL paths.
+
+This schedule includes one empty row between every socket or module and
+still fits all three boards. Mark the actual supply-module overhang and
+socket outlines on the empty boards before wiring; the schedule is not
+valid if the supply consumes more than the assumed three rows.
+
+![Side-by-side BB830 placement schedule and grouped chip connections](images/breadboard-layout.svg)
 
 Use one supply-entry point and fan out +5 V and GND to each board; do
 not daisy-chain the boards' power rails end-to-end. Run the Pico 3.3 V
@@ -830,7 +903,48 @@ crossings and CLK. Verify every BB830 distribution rail end-to-end with
 a meter before fitting links; never assume visually aligned rail
 segments are internally continuous.
 
-### 3.1 High-Speed Interconnect Routing
+### 3.1 KiCad Electrical Schematic
+
+The native KiCad 10 schematic is the electrical source of truth for
+pin numbers, named nets, explicit no-connect markers, and ERC. It uses
+project-local symbols so the exact ATF22V10, Z80, SRAM, Pico, and
+translator pin definitions travel with the repository. RESET# is drawn
+as an explicit three-way Pico/Z80/GAL wire junction. Address, data,
+SPI, monitor, and control paths are shown as unfolded KiCad vector or
+group buses with every member named; matching labels on the chip-pin
+stubs provide the exact electrical connections without implying that
+signals pass through an intermediate chip as series logic.
+
+| Artifact | Purpose |
+| --- | --- |
+| [KiCad project](hardware/kicad/z80_romless_sbc.kicad_pro) and [native schematic](hardware/kicad/z80_romless_sbc.kicad_sch) | Editable KiCad 10 source |
+| [Project symbol library](hardware/kicad/z80sbc.kicad_sym) | Exact local pin names, numbers, and ERC electrical types |
+| [SVG export](hardware/kicad/exports/z80_romless_sbc.svg) and [PDF export](hardware/kicad/exports/z80_romless_sbc.pdf) | Zoomable full schematic renderings |
+| [KiCad netlist](hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
+| [ERC report](hardware/kicad/reports/z80_romless_sbc-erc.json) | KiCad 10.0.5 result: zero violations with errors, warnings, and exclusions included |
+
+The schematic contains 56 physical components, including all 29
+startup resistors and 14 fitted capacitors, plus one nonphysical
+`#FLG01` power marker used only by ERC. KiCad's exported netlist
+matches the independently generated manifest exactly: 91 real nets
+and 340 component pin endpoints. The ERC-only power marker and KiCad's
+synthetic no-connect nets are excluded from that comparison.
+
+To regenerate and validate the native source, exports, strict ERC
+report, and independent netlist comparison:
+
+```sh
+python3 -m venv .venv-kicad
+.venv-kicad/bin/pip install -r scripts/requirements-kicad.txt
+PYTHON=.venv-kicad/bin/python npm run kicad
+```
+
+The command runs [build-kicad-schematic.py](scripts/build-kicad-schematic.py),
+KiCad CLI upgrade/export/ERC, and
+[check-kicad-netlist.py](scripts/check-kicad-netlist.py). Any ERC
+violation or net/endpoint mismatch fails the build.
+
+### 3.2 High-Speed Interconnect Routing
 
 At the qualified 1-4 MHz clock rates, propagation skew from a few
 millimetres of wire-length difference is negligible compared with the
@@ -842,217 +956,142 @@ lengths equal:
 
 - **A0-A15:** keep the Z80, SRAM, and SN74HCT245N taps on one short
   trunk; avoid star branches and long unterminated stubs.
-- **D0-D7:** group the Z80, SRAM, and SN74LVC245AN runs and keep the
-  transceiver tap short.
-- **74HCT157 outputs to SRAM CE#/OE#/WE#:** keep all three local to the
-  SRAM and mux; exact length matching is unnecessary.
-- **CLK (74AHCT125 IC1 Gate 3 output to Z80 pin 6):** route this as the
+- **D0-D7:** orient the Peripheral Board's SN74LVC8T245 B side toward
+  the Core Board, cross its eight 5 V bus lines as one short group, and
+  continue the shared trunk through the Z80 to the adjacent SRAM.
+- **SN74HCT541 Y6-Y8 to SRAM CE#/OE#/WE#:** these cross from the Core
+  Board's HCT541 to the Memory Board's SRAM; route them as one grouped
+  trunk at the board boundary. Exact length matching is unnecessary.
+- **CLK (SN74HCT541 Y1 pin 18 to Z80 pin 6):** route this as the
   single shortest, most direct jumper, kept away from the address bus.
   Do not lengthen it to match other nets; clock is the most
-  edge-rate-sensitive signal in the design.
+  edge-rate-sensitive signal in the design. This is why the HCT541 is
+  seated on the Core Board rather than beside the GAL.
 
 Route a ground jumper alongside every inter-board signal group and add
 ground probe points near CLK, IORQ#, MREQ#, RD#, WR#, SRAM CE#/OE#/WE#,
 and each bus transceiver. Keep all jumpers as short as the placement
 allows.
 
-### 3.2 Major Chip Interconnection Overview
+### 3.3 Major Chip Interconnection Overview
 
 ```mermaid
 flowchart LR
   subgraph MEM[Memory Board - 5V]
     SRAM[AS6C1008 SRAM]
-    MUX[74HCT157 SRAM Control Mux]
-    ANDGATE[74HCT08 Arbitration AND Gate]
-    AHCT2[74AHCT125 IC2]
+    GAL[ATF22V10 SRAM Arbitration]
   end
 
   subgraph CORE[Core Board - mixed 5V and 3.3V]
     Z80[Z84C0020PEC CPU]
-    AHCT1[74AHCT125 IC1]
     ADDR245[2x SN74HCT245 - 5V]
-    DATA245[SN74LVC245 - 3.3V]
+    HCT541[SN74HCT541 Output Buffer]
   end
 
   subgraph PERIPH[Peripheral Board]
     PICO[Raspberry Pi Pico 2 - 3.3V]
     MCP[MCP23S17 - 5V]
-    AHCT3[74AHCT125 IC3]
     INPUT244[SN74LVC244 - 3.3V]
+    DATA245[SN74LVC8T245 - 3.3V/5V]
   end
 
   Z80 <-->|A0-A15| SRAM
   Z80 <-->|D0-D7| SRAM
-  PICO -->|3.3V SPI| AHCT3
-  AHCT3 -->|5V SPI| MCP
+  PICO -->|3.3V CLK, BUSREQ, SPI| HCT541
+  HCT541 -->|5V CLK, BUSREQ| Z80
+  HCT541 -->|5V SPI| MCP
   MCP <-->|16-bit address| ADDR245
+  PICO -->|shared DIR, OE#| ADDR245
   ADDR245 <-->|Shared A0-A15| Z80
   ADDR245 <-->|Shared A0-A15| SRAM
   PICO <-->|D0-D7| DATA245
+  PICO -->|DIR, OE#| DATA245
   DATA245 <-->|Shared D0-D7| Z80
   DATA245 <-->|Shared D0-D7| SRAM
-  PICO -->|3.3V control| AHCT1
-  PICO -->|3.3V control| AHCT2
-  AHCT1 -->|5V RESET, BUSREQ, CLK| Z80
-  Z80 -->|MREQ, RD, WR| MUX
-  Z80 -->|BUSACK#| ANDGATE
-  AHCT1 -->|5V RESET#| ANDGATE
-  ANDGATE -->|select| MUX
-  AHCT1 -->|5V WE| MUX
-  AHCT2 -->|5V OE, CE| MUX
-  MUX -->|CE, OE, WE| SRAM
+  PICO -->|3.3V RESET# direct| Z80
+  PICO -->|RESET#, CE#, OE#, WE#| GAL
+  Z80 -->|BUSACK#, MREQ#, RD#, WR#| GAL
+  GAL -->|TTL pre-buffer controls| HCT541
+  HCT541 -->|5V CE#, OE#, WE#| SRAM
   Z80 -->|BUSACK, IORQ, RD, WR| INPUT244
   MCP -->|SO| INPUT244
   INPUT244 -->|3.3V inputs| PICO
 ```
 
-## 4. Level-Shifter Gate Mapping: 74AHCT125N (DIP-14)
+## 4. Output Buffer Mapping: SN74HCT541N (DIP-20)
 
-Unidirectional signals generated by the 3.3 V Pico 2 are stepped up by
-three 5 V-powered 74AHCT125N arrays. Their TTL-compatible inputs accept
-a 3.3 V HIGH, while their lightly loaded outputs are guaranteed at
-least 4.4 V HIGH at VCC = 4.5 V, satisfying the Z80 clock input's
-stricter CMOS threshold. Nine Pico-driven signals need translation (RESET#,
-BUSREQ#, CLK, SRAM WE#/OE#/CE#, and SPI CS#/SCK/SI), which is one more
-than the two original packages could hold; IC3 was added to carry the
-remaining SRAM and SPI gates (Section 0.1).
+The 5 V-powered SN74HCT541 provides all eight required high-level
+outputs. Its TTL-compatible inputs accept both Pico 3.3 V signals and
+the ATF22V10's guaranteed 2.4 V HIGH. At the light CMOS loads used here,
+its 5 V outputs satisfy the Z80 clock's strict $V_{IHC}$ threshold, the
+MCP23S17's $0.8V_{DD}$ SPI threshold, and the SRAM's CMOS control-input
+threshold. Its worst-case propagation delay is 29 ns at 4.5 V with a
+50 pF load. Combined with the ATF22V10C-15's 15 ns combinational delay
+and the SRAM's 55 ns chip-enable access, the control-to-data path can
+approach 99 ns before breadboard interconnect allowance. This is why
+1-4 MHz is measured rather than assumed, and why this design is not a
+20 MHz system despite using a 20 MHz-rated CPU.
 
-<table>
-<colgroup>
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-</colgroup>
-<thead>
-<tr>
-<th>IC Designation</th>
-<th>Gate No.</th>
-<th>Input Pin (3.3V from Pico)</th>
-<th>Output Pin (5V to Target)</th>
-<th>Functional Block Allocation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td rowspan="4"><strong>IC1: Buffer Array A</strong></td>
-<td>Gate 1</td>
-<td>Pin 2 (from Pico GP3)</td>
-<td>Pin 3 (to Z80 Pin 26 RESET#)</td>
-<td>System Reset Generation</td>
-</tr>
-<tr>
-<td>Gate 2</td>
-<td>Pin 5 (from Pico GP4)</td>
-<td>Pin 6 (to Z80 Pin 25 BUSREQ#)</td>
-<td>DMA Request Line</td>
-</tr>
-<tr>
-<td>Gate 3</td>
-<td>Pin 9 (from Pico GP2)</td>
-<td>Pin 8 (to Z80 Pin 6 CLK)</td>
-<td>Master Clock Pulse Train</td>
-</tr>
-<tr>
-<td>Gate 4</td>
-<td>Pin 12 (from Pico GP22)</td>
-<td>Pin 11 (to 74HCT157 pin 2, channel 1 "A"; Section 1.2)</td>
-<td>SRAM Write Enable (DMA side, via mux)</td>
-</tr>
-<tr>
-<td rowspan="3"><strong>IC2: Buffer Array B</strong></td>
-<td>Gate 1</td>
-<td>Pin 2 (from Pico GP26)</td>
-<td>Pin 3 (to 74HCT157 pin 5, channel 2 "A"; Section 1.2)</td>
-<td>SRAM Output Enable (DMA side, via mux)</td>
-</tr>
-<tr>
-<td>Gate 2</td>
-<td>Pin 5 (from Pico GP5)</td>
-<td>Pin 6 (to 74HCT157 pin 11, channel 3 "A"; Section 1.2)</td>
-<td>SRAM Chip Enable (DMA side, via mux; new signal)</td>
-</tr>
-<tr>
-<td>Gates 3-4</td>
-<td>Tied to GND</td>
-<td>Leave Open</td>
-<td>Unused channels grounded to prevent oscillation</td>
-</tr>
-<tr>
-<td rowspan="4"><strong>IC3: Buffer Array C</strong></td>
-<td>Gate 1</td>
-<td>Pin 2 (from Pico GP21)</td>
-<td>Pin 3 (to MCP23S17 Pin 11 CS#)</td>
-<td>SPI Chip Select Translation</td>
-</tr>
-<tr>
-<td>Gate 2</td>
-<td>Pin 5 (from Pico GP18)</td>
-<td>Pin 6 (to MCP23S17 Pin 12 SCK)</td>
-<td>SPI Clock Translation</td>
-</tr>
-<tr>
-<td>Gate 3</td>
-<td>Pin 9 (from Pico GP19)</td>
-<td>Pin 8 (to MCP23S17 Pin 13 SI)</td>
-<td>SPI MOSI Translation</td>
-</tr>
-<tr>
-<td>Gate 4</td>
-<td>Tied to GND</td>
-<td>Leave Open</td>
-<td>Unused channel grounded to prevent oscillation</td>
-</tr>
-</tbody>
-</table>
+| Channel | HCT541 input | HCT541 output | Function |
+|----:|----|----|----|
+| 1 | A1 pin 2 from Pico GP2 | Y1 pin 18 to Z80 CLK pin 6 | Master clock |
+| 2 | A2 pin 3 from Pico GP4 | Y2 pin 17 to Z80 BUSREQ# pin 25 | DMA request |
+| 3 | A3 pin 4 from Pico GP21 | Y3 pin 16 to MCP23S17 CS# pin 11 | SPI chip select |
+| 4 | A4 pin 5 from Pico GP18 | Y4 pin 15 to MCP23S17 SCK pin 12 | SPI clock |
+| 5 | A5 pin 6 from Pico GP19 | Y5 pin 14 to MCP23S17 SI pin 13 | SPI MOSI |
+| 6 | A6 pin 7 from ATF22V10 pin 14 | Y6 pin 13 to SRAM WE# pin 29 | Arbitrated write enable |
+| 7 | A7 pin 8 from ATF22V10 pin 15 | Y7 pin 12 to SRAM OE# pin 24 | Arbitrated output enable |
+| 8 | A8 pin 9 from ATF22V10 pin 16 | Y8 pin 11 to SRAM CE# pin 22 | Arbitrated chip enable |
 
-Tie every OE# input (pins 1, 4, 10, and 13 on each IC) to GND. For an
-unused gate, also tie its data input to GND and leave its output open,
-as shown above; the grounded OE# input then enables only a harmless LOW
-on that unconnected output.
+Tie both active-low output enables, OE1# pin 1 and OE2# pin 19, to GND.
+Connect VCC pin 20 to regulated +5 V and GND pin 10 to common ground.
+The buffer is permanently enabled; the Pico-side defaults and GAL
+equations therefore establish safe inactive outputs before firmware
+enables its GPIO drivers.
 
-The Pico-side default resistors in Section 0.3 are mandatory because
-the used AHCT125 gates are permanently enabled. Pulling only their 5 V
-outputs HIGH does not prevent the RP2350 reset-state pull-downs from
-driving BUSREQ#, SRAM CE#/OE#/WE#, and SPI CS# active before firmware
-starts.
+Pico GP3 RESET# bypasses the HCT541 and connects directly to Z80 pin 26
+and ATF22V10 pin 1. Its 3.3 V HIGH exceeds the Z84C00's 2.2 V and the
+ATF22V10's 2.0 V input-HIGH minima. Keep its 10 kOhm pull-down to GND
+and never fit a 5 V pull-up on this node.
 
 ## 5. Transceiver Operating Modes & Isolation Tables
 
 The transceivers isolate the supervisor elements (Pico 2 and MCP23S17)
 from the main bus during standard execution, preventing bus contention.
 
-### 5.1 SN74LVC245AN Data Bus Transceiver (3.3V Powered)
+### 5.1 SN74LVC8T245 Dual-Supply Data Bus Transceiver
 
-The bus-facing outputs reach approximately 3.3 V HIGH. This is valid
-for the Z80's ordinary data inputs (\$V_{IH} \ge 2.2\text{ V}\$) and the
-AS6C1008 inputs; only the Z80 CLK pin uses the stricter
-\$V_{IHC}=V_{CC}-0.6\text{ V}\$ threshold and is therefore translated
-through 74AHCT125 IC1.
+The former 3.3 V-powered SN74LVC245 could not guarantee the
+AS6C1008's $0.7V_{CC}$ input-HIGH threshold. Use an SN74LVC8T245PW with
+VCCA at 3.3 V and VCCB at 5 V instead. The A port faces the Pico and
+the B port faces the shared Z80/SRAM data bus. This orientation also
+keeps DIR and OE#, which are referenced to VCCA, compatible with Pico
+GPIO levels. The device has no native DIP package; mount the 24-pin
+TSSOP device on a straight-through, 0.6-inch DIP-24 carrier that
+preserves pin numbers. The carrier must provide short power/ground
+paths and two local 100 nF capacitors at the device pads, one for VCCA
+and one for VCCB; breadboard capacitors eleven rows away are not a
+substitute for on-carrier high-frequency decoupling.
 
-Wire side A to the shared 5 V data bus and side B to the Pico. This
-orientation is required by the DIR values used below and in Section
-8.13; preserve bit order exactly:
+| Bus bit | Pico GPIO / A port | 5 V bus / B port |
+|----|----|----|
+| D0 | GP10 / A1 pin 3 | B1 pin 21 |
+| D1 | GP11 / A2 pin 4 | B2 pin 20 |
+| D2 | GP12 / A3 pin 5 | B3 pin 19 |
+| D3 | GP13 / A4 pin 6 | B4 pin 18 |
+| D4 | GP14 / A5 pin 7 | B5 pin 17 |
+| D5 | GP15 / A6 pin 8 | B6 pin 16 |
+| D6 | GP16 / A7 pin 9 | B7 pin 15 |
+| D7 | GP17 / A8 pin 10 | B8 pin 14 |
 
-| Bus bit | LVC245 side A | LVC245 side B | Pico GPIO |
-|----|----:|----:|----:|
-| D0 | A1 pin 2 | B1 pin 18 | GP10 |
-| D1 | A2 pin 3 | B2 pin 17 | GP11 |
-| D2 | A3 pin 4 | B3 pin 16 | GP12 |
-| D3 | A4 pin 5 | B4 pin 15 | GP13 |
-| D4 | A5 pin 6 | B5 pin 14 | GP14 |
-| D5 | A6 pin 7 | B6 pin 13 | GP15 |
-| D6 | A7 pin 8 | B7 pin 12 | GP16 |
-| D7 | A8 pin 9 | B8 pin 11 | GP17 |
-
-Connect DIR pin 1 to GP6, OE# pin 19 to GP7, VCC pin 20 to the Pico
-3.3 V rail, and GND pin 10 to common ground.
+Connect VCCA pin 1 to Pico 3.3 V, DIR pin 2 to GP6, GND pins 11-13
+to common ground, OE# pin 22 to GP7, and both VCCB pins 23-24 to the
+regulated 5 V rail. Preserve this pin numbering on the carrier.
 
 | System Operating State | OE# (GP7) | DIR (GP6) | Signal Direction | Functional Role |
 |----|----|----|----|----|
-| **Boot / Write Mode** | 0 (Low) | 0 (Low) | Side B → Side A (Pico → Bus) | Pico streams virtual ROM blocks into the SRAM. |
-| **Readback / Trap Mode** | 0 (Low) | 1 (High) | Side A → Side B (Bus → Pico) | Pico reads data bus during verification or OUT traps. |
+| **Boot / Write Mode** | 0 (Low) | 1 (High) | Side A → Side B (Pico → Bus) | Pico streams virtual ROM blocks into the SRAM. |
+| **Readback / Trap Mode** | 0 (Low) | 0 (Low) | Side B → Side A (Bus → Pico) | Pico reads data bus during verification or OUT traps. |
 | **Active Execution (Run)** | 1 (High) | X (Don't Care) | High-Impedance (High-Z) | Z80 and SRAM handle data operations directly; Pico data bus isolated. |
 
 ### 5.2 SN74HCT245N Address Bus Transceivers (5V Powered)
@@ -1100,19 +1139,17 @@ flowchart LR
   MCP[MCP23S17]
   HCTLOW[SN74HCT245 - A0-A7]
   HCTHIGH[SN74HCT245 - A8-A15]
-  LVC[SN74LVC245 - D0-D7]
+  LVC[SN74LVC8T245 - D0-D7]
   ABUS((5V Address Bus))
   DBUS((5V Data Bus))
   Z80[Z84C00 CPU]
   SRAM[AS6C1008 SRAM]
-  AHCT[74AHCT125 IC1 and IC2]
-  AHCT3[74AHCT125 IC3]
-  MUX[74HCT157 SRAM Control Mux]
-  ANDGATE[74HCT08 Arbitration AND Gate]
+  GAL[ATF22V10 SRAM Arbitration]
+  BUFFER[SN74HCT541 Output Buffer]
   INPUT244[SN74LVC244 Input Buffer]
 
-  PICO -->|GP18 SCK, GP19 MOSI, GP21 CS| AHCT3
-  AHCT3 -->|5V SCK, MOSI, CS| MCP
+  PICO -->|GP18 SCK, GP19 MOSI, GP21 CS| BUFFER
+  BUFFER -->|5V SCK, MOSI, CS| MCP
   MCP -->|5V SO| INPUT244
   INPUT244 -->|3.3V MISO GP20| PICO
   MCP <-->|GPA0-GPA7| HCTLOW
@@ -1129,15 +1166,13 @@ flowchart LR
   Z80 <-->|D0-D7| DBUS
   SRAM <-->|D0-D7| DBUS
 
-  PICO -->|GP2 CLK, GP3 RESET, GP4 BUSREQ| AHCT
-  PICO -->|GP22 WE, GP26 OE, GP5 CE| AHCT
-  AHCT -->|CLK, RESET, BUSREQ| Z80
-  AHCT -->|WE, OE, CE - DMA side| MUX
-  Z80 -->|MREQ, RD, WR - CPU side| MUX
-  AHCT -->|RESET#| ANDGATE
-  Z80 -->|BUSACK#| ANDGATE
-  ANDGATE -->|select| MUX
-  MUX -->|CE, OE, WE| SRAM
+  PICO -->|GP2 CLK, GP4 BUSREQ#| BUFFER
+  BUFFER -->|5V CLK, BUSREQ#| Z80
+  PICO -->|GP3 RESET# direct| Z80
+  PICO -->|RESET#, WE#, OE#, CE#| GAL
+  Z80 -->|BUSACK#, MREQ#, RD#, WR#| GAL
+  GAL -->|pre-buffer controls| BUFFER
+  BUFFER -->|5V CE#, OE#, WE#| SRAM
   Z80 -->|5V IORQ, RD, WR, BUSACK| INPUT244
   INPUT244 -->|3.3V GP1, GP27, GP28, GP0| PICO
 ```
@@ -1387,6 +1422,14 @@ GPIO.
     on faster firmware. Operation above 4 MHz is outside this design's
     qualification plan.
 
+  - *20 MHz CPU Rating:* The `Z84C0020PEC` rating applies to the CPU,
+    not this no-wait-state breadboard system. At 20 MHz a clock period
+    is 50 ns, shorter than the approximately 99 ns worst-case GAL +
+    HCT541 + SRAM select-to-data path. Reaching 20 MHz requires a
+    redesigned control path, hardware-generated memory and I/O wait
+    states (or deterministic clock gating), and a PCB-level signal-
+    integrity review; changing the Pico PWM frequency is insufficient.
+
 ## 7. Reference Firmware Implementations
 
 This section previously duplicated firmware code with its own,
@@ -1440,9 +1483,15 @@ Pico 2.
   continuity between neighboring bus lines.
 3. Apply 5 V and measure every 5 V-powered DIP socket supply pin.
   Require 4.75 V to 5.25 V at VCC and less than 50 mV at each ground
-  pin. The SN74LVC245AN and SN74LVC244AN VCC pins must remain at 0 V
-  because their 3.3 V source, the absent Pico, is not yet installed.
-4. Verify the external +5 V rail reaches Pico VSYS only through the
+  pin. The SN74LVC8T245 VCCB contacts must read 5 V, while its VCCA
+  contact and the SN74LVC244AN VCC contact must remain at 0 V because
+  their 3.3 V source, the absent Pico, is not yet installed.
+4. If using the photographed plug-in supply, confirm that its body
+  obscures no more than Core Board rows 1-3. Load its 5 V output to at
+  least 500 mA, require 4.75 V to 5.25 V at the farthest board, and
+  confirm no regulator becomes too hot to touch. Leave its 3.3 V output
+  disconnected.
+5. Verify the external +5 V rail reaches Pico VSYS only through the
   1N5819 and does not reach Pico VBUS, the 3.3 V rail, or any GPIO
   contact. With external power applied, VSYS must be one Schottky drop
   below the +5 V rail. Verify each 5 V-side active-low control is pulled
@@ -1473,14 +1522,15 @@ backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMles
 
 1. With the Section 0.4 1N5819 fitted, USB and external power may be
   connected together. Confirm neither source back-powers the other,
-  then require 3.20 V to 3.40 V on the Pico 3.3 V rail and at the VCC
-  socket contacts for the still-absent SN74LVC245AN and
-  SN74LVC244AN.
+  then require 3.20 V to 3.40 V on the Pico 3.3 V rail, at the
+  SN74LVC8T245 carrier's VCCA contact, and at the still-absent
+  SN74LVC244AN VCC contact.
 2. Scope GP7 and GP9 through reset and startup; both must remain HIGH.
-3. Verify GP3 (the future RESET# buffer input) is LOW and all other
+3. Verify GP3 and the directly connected Z80 RESET# socket pin are LOW,
+  and all other
   Pico control pins have the inactive levels listed above before,
-  during, and after startup. The 5 V RESET# destination cannot be
-  asserted until IC1 is installed in Phase 2.
+  during, and after startup. Verify the RESET# node never exceeds the
+  Pico 3.3 V rail; no 5 V pull-up is permitted on it.
 4. Run the walking-one test and probe each destination socket. Require
   one-to-one routing, 0 V/3.3 V levels, and no change on neighboring
   pins. Restore safe levels when the test ends or the USB link drops.
@@ -1488,13 +1538,15 @@ backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMles
 **Pass gate:** Stable 3.3 V, safe startup levels, and correct routing
 for every Pico signal.
 
-### 8.3 Phase 2 - 74AHCT125N Buffers
+### 8.3 Phase 2 - ATF22V10 Arbitration and SN74HCT541 Buffer
 
-**Install:** IC1 first. Install IC2 only after IC1 passes. Keep the Z80
-and SRAM removed. Tie every gate OE# pin LOW and every unused data input
-LOW; never leave an AHCT input floating.
+**Install:** Program and verify the ATF22V10 outside the circuit, then
+install it with the SN74HCT541 and SRAM still removed. After the GAL
+truth-table tests pass, install the HCT541. Keep the Z80, MCP23S17, and
+SRAM removed. Tie GAL pins 9-11 and 13 to GND, and tie both HCT541
+output-enable pins LOW.
 
-**Firmware feature:** Add commands to toggle one buffered control at
+**Firmware feature:** Add commands to toggle each supervisor output at
 10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
 clocks on GP2.
 
@@ -1503,32 +1555,49 @@ using the shared [clock module](https://github.com/gloveboxes/Z80ROMlessSBC/blob
 
 **Test plan:**
 
-1. Toggle one Pico source at a time. At its buffer output require LOW
-  below 0.3 V, HIGH at or above 4.4 V, correct polarity, and no activity on
-  adjacent outputs.
-2. Test IC1 gate 3 at each clock frequency. Require 45% to 55% duty
-  cycle and clean transitions at Z80 socket pin 6.
-3. Verify RESET# becomes and remains LOW while BUSREQ#, SRAM CE#/WE#/
-  OE#, and SPI CS# remain HIGH for at least 100 ms after startup.
-4. Power-cycle ten times while monitoring these signals. Any unintended
-  transition fails the phase.
+1. Require a successful programmer readback/verify of the exact
+  `src/pld/sram_control.pld` JEDEC image before inserting the GAL.
+2. With RESET# LOW, toggle Pico CE#/OE#/WE# one at a time and require
+  the corresponding GAL pin 16/15/14 to follow while the other two
+  remain HIGH. Then set RESET# HIGH and manually exercise pulled-up
+  BUSACK#/MREQ#/RD#/WR# through 1 kOhm; verify all three CPU-side truth
+  table paths and the BUSACK# LOW override.
+3. With each Pico and Z80 candidate control held HIGH, toggle RESET#
+  and BUSACK# separately while observing GAL pins 14-16 on the scope.
+  The consensus terms must hold every output continuously HIGH; any
+  active-low pulse fails the programmed image.
+4. Install the HCT541. Use the Stage 2 walking command to toggle its
+  eight functional input paths independently; RESET# was already tested
+  in Phase 1 and is not an HCT541 input. At the selected output require
+  LOW below 0.3 V, HIGH at or above 4.4 V, correct polarity, and no
+  activity on adjacent outputs.
+5. Test HCT541 channel 1 at each clock frequency. Require 45% to 55%
+  duty cycle and clean transitions at Z80 socket pin 6.
+6. After the Pico 3.3 V rail reaches 3.20 V, verify RESET# remains LOW
+  while BUSREQ#, SRAM CE#/WE#/OE#, and SPI CS# remain HIGH for at least
+  100 ms. Before 3.3 V is valid, RESET# must remain LOW but SRAM control
+  levels are not used as a retention guarantee.
+7. Power-cycle ten times while monitoring these signals. Any active-low
+  transition after 3.3 V becomes valid fails the phase.
 
-**Pass gate:** All translated outputs have valid 5 V levels and correct
+**Pass gate:** Programmer verification and every GAL truth-table case
+pass, all eight HCT541 outputs have valid 5 V levels and correct
 polarity, the 1 MHz clock is clean, and startup creates no active-low
 glitch.
 
 ### 8.4 Phase 3 - MCP23S17 SPI Address Generator
 
-**Install:** The 3.3 V-powered SN74LVC244AN first, then 74AHCT125 IC3,
-then the MCP23S17-E/SP. Keep both SN74HCT245N devices removed so the
+**Install:** The 3.3 V-powered SN74LVC244AN first, then the
+MCP23S17-E/SP. The already-tested HCT541 supplies all three SPI inputs.
+Keep both SN74HCT245N devices removed so the
 MCP ports cannot drive the shared address bus.
 
 **Electrical hold point:** Fit level translation on all SPI inputs. The
 MCP23S17 datasheet specifies $V_{IH} \ge 0.8V_{DD}$ for CS#, SCK, and
 SI, which is 4.0 V with a 5 V supply; a Pico 3.3 V HIGH is therefore
-not compliant. Translate Pico CS#, SCK, and MOSI up with 74AHCT125 IC3
-(Section 4). Buffer MCP SO/MISO down through SN74LVC244AN channel
-2A1/2Y1 (Section 5.3); do not connect it directly to GP20. Tie the
+not compliant. Translate Pico CS#, SCK, and MOSI through SN74HCT541
+channels 3-5 (Section 4). Buffer MCP SO/MISO down through SN74LVC244AN
+channel 2A1/2Y1 (Section 5.3); do not connect it directly to GP20. Tie the
 MCP23S17 A0/A1/A2 hardware address pins to GND (Section 2). Confirm
 this wiring against the schematic before proceeding.
 
@@ -1586,10 +1655,11 @@ using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
 **Pass gate:** Every address bit passes in both directions and both
 devices reliably enter high-impedance mode before DIR changes.
 
-### 8.6 Phase 5 - SN74LVC245AN Data Transceiver
+### 8.6 Phase 5 - SN74LVC8T245 Data Transceiver
 
-**Install:** SN74LVC245AN powered at 3.3 V. Keep the Z80 and SRAM
-removed. The TI datasheet permits inputs up to 5.5 V at this VCC.
+**Install:** The SN74LVC8T245 carrier with VCCA at 3.3 V and VCCB at
+5 V. Keep the Z80 and SRAM removed. Confirm continuity and absence of
+bridges on every TSSOP-to-DIP carrier pin before insertion.
 
 **Firmware feature:** Add an 8-bit data-bus test using the same
 disable-change-enable sequence and fixed, walking-one, and walking-zero
@@ -1600,8 +1670,8 @@ using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
 
 **Test plan:**
 
-1. Require OE# HIGH before insertion and verify the bus-facing pins are
-  high-impedance afterward.
+1. Require OE# HIGH before insertion. Verify VCCA and VCCB independently,
+  then verify both ports are high-impedance afterward.
 2. Select Pico-to-bus direction and test 0x00, 0xFF, 0x55, 0xAA,
   walking-one, and walking-zero. Verify levels and bit order.
 3. Disable OE#, reverse DIR, and re-enable. Drive each bus input with
@@ -1614,20 +1684,18 @@ direction change causes contention or unexpected current.
 
 ### 8.7 Phase 6 - AS6C1008 SRAM and DMA Path
 
-**Install:** The 74HCT08 arbitration gate first, then the 74HCT157 mux
-(Section 1.2), then the AS6C1008-55PCN. Keep the Z80 removed.
+**Install:** The AS6C1008-55PCN only after the programmed ATF22V10,
+HCT541 channels 6-8, and final SRAM-side pull-ups have passed Phase 2.
+Keep the Z80 removed.
 
-**Electrical hold point:** Confirm the 74HCT157 and 74HCT08
-control-source arbitration from Section 1.2 is fitted. During DMA the
-Pico must exclusively control SRAM CE#, OE#, and WE# through the mux's
-"A" channels; during execution the Z80 must exclusively control them
-through MREQ#, RD#, and WR# on the mux's "B" channels. CE# must not be
-tied LOW in the finished system, and Pico and Z80 outputs must never be
-joined. With the Z80 removed for this phase, BUSACK# floats HIGH via
-its pull-up (Section 0.3); hold RESET# LOW (its Phase-1 default) so the
-74HCT08 AND gate still forces the Pico "A" side regardless. Do not
-install SRAM until the mux and AND gate have passed static continuity
-and select-line tests.
+**Electrical hold point:** During DMA the GAL must select only Pico
+CE#/OE#/WE#; during execution it must select only Z80 MREQ#/RD#/WR#.
+CE# must not be tied LOW, and no Pico output is joined directly to a
+Z80 output. With the Z80 removed, BUSACK# floats HIGH via its pull-up;
+hold RESET# LOW so the programmed equations select the Pico side
+regardless. Do not install SRAM until all three GAL outputs and all
+three corresponding HCT541 outputs have passed static truth-table,
+continuity, and voltage-level tests.
 
 **Firmware feature:** Add single-byte DMA read/write primitives, a
 walking address/data test, a two-pass full-memory pattern test, and a
@@ -1660,9 +1728,9 @@ errors and no overlap between CPU and Pico SRAM control sources.
 **Install:** Z84C0020PEC. Preload SRAM first. Disable both bus
 transceivers, drive the Pico-side SRAM CE#/OE#/WE# controls inactive,
 hold RESET# LOW and BUSREQ# HIGH, and stop the clock LOW before
-insertion and power-up. RESET# LOW deliberately keeps the mux on the
-inactive Pico side; it switches to CPU controls automatically only when
-RESET# is released with BUSACK# HIGH.
+insertion and power-up. RESET# LOW deliberately keeps the programmed
+logic on the inactive Pico side; the GAL equations switch to CPU controls
+automatically only when RESET# is released with BUSACK# HIGH.
 
 **Firmware feature:** Add clock single-step and selectable 10 Hz, 1 kHz,
 100 kHz, and 1 MHz run modes; reset pulse control; timed BUSREQ#/BUSACK#
@@ -1745,7 +1813,7 @@ Section 6.3. Provision the manifest-backed boot package and all four
 validate the boot manifest and CRC32, DMA-write its payload to SRAM,
 and compare every byte before RESET# release. Do not wait for BUSACK#
 during this cold-boot path: RESET# itself selects the Pico's SRAM
-controls through Section 1.2's mux. Once running, ports `0x10`-`0x14`
+controls through Section 1.2's GAL equations. Once running, ports `0x10`-`0x14`
 provide command/status, drive, 16-bit LBA, and 128-byte data transfers.
 Reads are synchronous XIP copies; writes use the journaled core-1
 service and BUSY/READY/ERROR status defined in Section 8.13.
@@ -1856,6 +1924,9 @@ the CPU trap.
 Begin only after Phase 10 passes at 1 MHz. Test 2 MHz, then increase in
 500 kHz steps to 4 MHz. At each step repeat SRAM readback, the one-hour
 memory loop, and continuous IN/OUT tests while measuring stop latency.
+Also capture CLK, MREQ#, RD#/WR#, SRAM CE#/OE#/WE#, and D0-D7; require
+valid read data before the Z80 setup deadline and every SRAM write pulse
+to meet the 45 ns minimum after propagation through the GAL and HCT541.
 The qualified frequency is the highest error-free step for which the
 logic analyzer proves the clock always stops before the Z80 advances
 beyond the safe trap point. Do not claim operation above 4 MHz without
@@ -1871,13 +1942,13 @@ detailed failure and call `isolate_buses()` before returning.
 `PIN_BUSACK_N` is GP0, driven from Z80 BUSACK#
 (pin 23) through the SN74LVC244AN input buffer (Section 5.3); IORQ#,
 RD#, and MCP SO use the same buffer, so no 5 V output reaches the
-Pico directly. `PIN_SRAM_CE_N` is fixed at GP5 (74AHCT125
-IC2 Gate 2; Section 4), moved off GP23, which on the Pico 2 W is
+Pico directly. `PIN_SRAM_CE_N` is fixed at GP5 (ATF22V10 pin 7;
+Section 1.2), moved off GP23, which on the Pico 2 W is
 dedicated to the CYW43439 wireless module's control interface (shared
 with GP24/GP25/GP29) and must never be repurposed. `PIN_DATA_0`-
 `PIN_DATA_7` occupy GP10-GP17. There is no `PIN_SRAM_SOURCE_SELECT`
-GPIO: the 74HCT157 select input is driven by a 74HCT08 AND gate
-combining RESET# and BUSACK# (Section 1.2), so it still switches
+GPIO: the ATF22V10 combines RESET# and BUSACK# inside each programmed
+SRAM-control equation (Section 1.2), so ownership still switches
 automatically with no extra Pico pin. `PIN_WR_N` is GP28, buffered
 through the same SN74LVC244AN (Section 5.3); `io_trap_handler()` reads
 both `PIN_RD_N` and `PIN_WR_N` to resolve cycle intent.
@@ -2101,7 +2172,7 @@ static void set_transceiver(uint oe_n, uint dir, bool direction) {
 and [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 `PIN_DATA_0`-`PIN_DATA_7` (GP10-GP17) carry D0-D7 through the
-SN74LVC245AN; direction and isolation reuse the existing
+SN74LVC8T245; direction and isolation reuse the existing
 `PIN_DATA_DIR`/`PIN_DATA_OE_N` pair and `set_transceiver()`/
 `isolate_buses()`. Address bytes reach the shared bus through the
 MCP23S17's own output latches, already exercised in the Phase 3-4
@@ -2121,14 +2192,14 @@ static void data_bus_drive(uint8_t value) {
     gpio_put(DATA_PINS[i], (value >> i) & 1);  // Preload before enabling output.
     gpio_set_dir(DATA_PINS[i], GPIO_OUT);
   }
-  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 0); // Pico -> Bus.
+  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 1); // A (Pico) -> B (Bus).
 }
 
 static void data_bus_prepare_input(void) {
   gpio_put(PIN_DATA_OE_N, 1);
   for (size_t i = 0; i < 8; ++i)
     gpio_set_dir(DATA_PINS[i], GPIO_IN);
-  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 1); // Bus -> Pico.
+  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 0); // B (Bus) -> A (Pico).
 }
 
 static uint8_t data_bus_sample(void) {
@@ -2163,7 +2234,7 @@ static void dma_write_byte(uint16_t address, uint8_t value) {
   gpio_put(PIN_SRAM_OE_N, 1);
   gpio_put(PIN_SRAM_WE_N, 1);
   address_bus_drive(address);       // MCP -> HCT245 -> A0-A15.
-  data_bus_drive(value);            // Pico -> LVC245 -> D0-D7.
+  data_bus_drive(value);            // Pico -> LVC8T245 -> D0-D7.
   gpio_put(PIN_SRAM_CE_N, 0);
   busy_wait_us_32(1);
   gpio_put(PIN_SRAM_WE_N, 0);
@@ -3178,17 +3249,16 @@ before core 1 launch; all runtime writes execute on core 1 while the
 Z80 is held in BUSACK#.
 
 
-### 8.14 Local Datasheet Set
+### 8.14 Datasheet References
 
 - [Z84C00 CPU datasheet](datasheets/Z8400.PDF)
 - [AS6C1008 SRAM datasheet](datasheets/AS6C1008_Mar_2023V1.2.pdf)
 - [MCP23017/MCP23S17 datasheet](datasheets/MCP23017-MCP23S17-Data-Sheet-DS20001952.pdf)
-- [SN74AHCT125 datasheet](datasheets/SN74AHCT125.pdf)
+- [ATF22V10C datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/doc0735.pdf)
+- [SN74HCT541 datasheet](https://www.ti.com/lit/ds/symlink/sn74hct541.pdf)
 - [SN74HCT245 datasheet](datasheets/SN74HCT245.pdf)
-- [SN74LVC245A datasheet](datasheets/SN74LVC245A.pdf)
+- [SN74LVC8T245 datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf)
 - [SN74LVC244A datasheet](datasheets/SN74LVC244A.pdf)
-- [SN74HCT157 datasheet](datasheets/SN74HCT157.pdf)
-- [SN74HCT08 datasheet](datasheets/SN74HCT08.pdf)
 - [1N5817/1N5818/1N5819 Schottky diode datasheet](datasheets/1N5817-D.pdf)
 - [RP2350 datasheet](datasheets/RP2350-Datasheet.pdf)
 - [Raspberry Pi Pico 2 board datasheet](datasheets/Pico-2-Datasheet.pdf)
