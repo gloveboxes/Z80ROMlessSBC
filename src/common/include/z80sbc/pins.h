@@ -1,0 +1,33 @@
+#ifndef Z80SBC_PINS_H
+#define Z80SBC_PINS_H
+
+enum {
+  PIN_BUSACK_N = 0,
+  PIN_IORQ_N = 1,
+  PIN_CLK = 2,
+  PIN_RESET_N = 3,
+  PIN_BUSREQ_N = 4,
+  PIN_SRAM_CE_N = 5,
+  PIN_DATA_DIR = 6,
+  PIN_DATA_OE_N = 7,
+  PIN_ADDR_DIR = 8,
+  PIN_ADDR_OE_N = 9,
+  PIN_DATA_0 = 10,
+  PIN_DATA_1 = 11,
+  PIN_DATA_2 = 12,
+  PIN_DATA_3 = 13,
+  PIN_DATA_4 = 14,
+  PIN_DATA_5 = 15,
+  PIN_DATA_6 = 16,
+  PIN_DATA_7 = 17,
+  PIN_SPI_SCK = 18,
+  PIN_SPI_MOSI = 19,
+  PIN_SPI_MISO = 20,
+  PIN_SPI_CS_N = 21,
+  PIN_SRAM_WE_N = 22,
+  PIN_SRAM_OE_N = 26,
+  PIN_RD_N = 27,
+  PIN_WR_N = 28,
+};
+
+#endif

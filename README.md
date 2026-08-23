@@ -1,4 +1,113 @@
-# Z80 ROMless SBC - Final Engineering & Build Specification (v21)
+# Z80 ROMless SBC - WIP Engineering & Build Specification
+
+## Overview
+
+This document describes a theoretical Z80 single-board computer design
+that has not yet been built, wired, or validated in hardware. Treat it
+as an engineering proposal and bring-up plan, not as a proven reference
+design. Every electrical assumption, timing margin, and firmware
+interaction still needs bench validation with the staged tests in
+Section 8 before the design should be considered reliable.
+
+The proposed system is a ROMless Z80 computer supervised by a Raspberry
+Pi Pico 2 W. The Pico supplies the Z80 clock, holds and releases reset,
+loads a boot image directly into SRAM by taking the Z80 bus, and then
+lets the Z80 execute from RAM. A 64 KB SRAM provides the Z80 memory
+space; level shifters and bus transceivers isolate the Pico's 3.3 V GPIO
+from the 5 V Z80/SRAM bus; an MCP23S17 expands the Pico's address-drive
+capability during DMA and trapped I/O cycles.
+
+The key design idea is that the Pico acts as both supervisor and virtual
+peripheral controller. It can stop the fully static Z80 clock on an I/O
+cycle, inspect the requested port, exchange one data byte, and then
+resume execution. Terminal I/O is intended to be one of those virtual
+peripherals: Z80 `IN` and `OUT` instructions feed nonblocking queues on
+the Pico, while a WebSocket terminal server runs on the Pico's other
+core so Wi-Fi and browser traffic do not disturb Z80 timing.
+
+Z80 software lives in a reserved region of the Pico's own onboard
+flash rather than on removable media or compiled into the running
+firmware image. The Pico reads boot binaries, monitor images, and CP/M
+disk images directly from that memory-mapped flash region, then uses
+the already-validated DMA path to populate SRAM before the Z80 is
+released. Once the Z80 is running, the same I/O trap mechanism can
+expose sector-oriented virtual disk ports backed by that same flash
+partition (Section 6.3).
+
+The build plan is deliberately phased. Early phases prove power,
+translation, SPI expansion, bus isolation, SRAM DMA, and clock control
+before the Z80 is installed. Later phases prove virtual-ROM boot,
+synchronous I/O trapping, WebSocket terminal service, and finally the
+maximum qualified clock rate. Passing an earlier phase is a prerequisite
+for trusting the assumptions used by the next one.
+
+### Firmware and CP/M build
+
+The repository implements the ten cumulative firmware stages under `src/`.
+Stage 10 includes the journaled flash disks, CP/M boot loader, and WebSocket
+terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
+reconstructs pristine CCP/BDOS bytes from the preserved Altair source image,
+and emits all provisionable images.
+
+Install CMake, Ninja, Python 3, `picotool`, and `z80asm`. The firmware needs a
+complete Arm GNU bare-metal toolchain with Newlib; the Homebrew compiler alone
+does not provide the required runtime. A known working setup is:
+
+```sh
+brew install cmake ninja picotool z80asm
+export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
+cmake -S . -B build -G Ninja \
+  -DPICO_BOARD=pico2_w \
+  -DZ80_WIFI_SSID='your-network' \
+  -DZ80_WIFI_PASSWORD='your-password'
+cmake --build build --target z80_cpm_images -j
+```
+
+Wi-Fi credentials are written only to the generated build tree. An empty SSID
+leaves networking disabled while flash-disk service continues to operate. The
+`z80_cpm_images` target builds Stage 10 and writes these files to `build/cpm/`:
+
+| Artifact | Purpose |
+| --- | --- |
+| `z80boot.pkg` | Manifest, CRCs, and the reset-ready 64 KiB Z80 image |
+| `drive_a_cpm63k.img` | Native CP/M system disk with the SBC BIOS |
+| `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 320 KiB disks |
+| `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
+| `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
+
+Run the host regression checks with:
+
+```sh
+python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+```
+
+### Flash provisioning
+
+For a new or disposable flash, put the Pico in BOOTSEL mode and write the
+complete image. This erases existing CP/M disk contents and the journal:
+
+```sh
+picotool load -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000
+picotool reboot
+```
+
+For normal updates, load only the firmware and selected storage regions. These
+commands preserve regions not named by the input file:
+
+```sh
+picotool load -v build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2
+picotool load -v build/cpm/z80boot.pkg -t bin -o 0x102A0000
+picotool load -v build/cpm/drive_a_cpm63k.img -t bin -o 0x102C0000
+picotool load -v build/cpm/drive_b_bdsc.img -t bin -o 0x10310000
+picotool load -v build/cpm/drive_c_escape.img -t bin -o 0x10360000
+picotool load -v build/cpm/drive_d_blank.img -t bin -o 0x103B0000
+picotool reboot
+```
+
+After association, browse to `http://<pico-dhcp-address>:8088/`. The USB serial
+console reports Stage 10 startup and accepts `s` to print terminal queue/drop
+counts and disk/fatal status. CP/M disk writes are persistent, so retain host
+backups before full reprovisioning.
 
 ## 0. Project Inventory
 
@@ -9,7 +118,7 @@ Purchase quantities include a small allowance for breadboard spares.
 
 | Required | Component | Package | Function |
 |----:|----|----|----|
-| 1 | Raspberry Pi Pico 2 | Module with two 20-pin headers | Supervisor, clock, DMA, and virtual I/O |
+| 1 | Raspberry Pi Pico 2 W | Module with two 20-pin headers | Supervisor, clock, DMA, virtual I/O, and Wi-Fi terminal |
 | 1 | Z84C0020PEC | 40-pin PDIP | CMOS Z80 CPU |
 | 1 | AS6C1008-55PCN | 32-pin PDIP | SRAM; lower 64 KB used |
 | 1 | MCP23S17-E/SP | 28-pin SPDIP | SPI-to-16-bit address interface |
@@ -115,6 +224,11 @@ analogue ground plane is needed.
 
 - LEDs with 1 kOhm series resistors for low-speed diagnostics only; do
   not permanently load high-speed buses with LEDs.
+- No card socket or extra storage hardware is needed for boot images or
+  CP/M disks: they live in a reserved region of the Pico's own onboard
+  flash (Section 6.3), provisioned once with `picotool` and read back
+  over the existing memory-mapped XIP bus. Reflash that region with
+  `picotool` to change a disk image; no wiring changes.
 - Spare 100 nF capacitors, resistors, jumper wire, and an IC extractor.
 
 ## 1. Reference Pin Mapping & Logic Domain Verification
@@ -146,7 +260,8 @@ table for construction; the ranges preserve ascending bit order.
 | SPI SCK / MOSI / MISO / CS# | GP18-GP21 | 24-27 | IC3 Gates 2/3, LVC244 2Y1, IC3 Gate 1 |
 | SRAM WE# | GP22 | 29 | 74AHCT125 IC1 Gate 4 input |
 | SRAM OE# | GP26 | 31 | 74AHCT125 IC2 Gate 1 input |
-| Z80 RD# / WR# monitors | GP27 / GP28 | 32 / 34 | SN74LVC244AN 1Y3 / 1Y4 |
+| Z80 RD# monitor | GP27 | 32 | SN74LVC244AN 1Y3 |
+| Z80 WR# monitor | GP28 | 34 | SN74LVC244AN 1Y4 |
 | 3.3 V output | - | 36 | SN74LVC245/LVC244 VCC and 3.3 V pull-ups |
 | VSYS | - | 39 | 1N5819 banded cathode; anode to external +5 V |
 
@@ -200,7 +315,8 @@ for CPU-owned SRAM cycles; pulled HIGH when the CPU is absent.</td>
 <td>WR#</td>
 <td>Pin 22</td>
 <td>Output. Active Low. Buffered to 3.3 V through SN74LVC244AN channel
-1A4/1Y4 and sampled by Pico 2 GP28 to resolve cycle intent.</td>
+1A4/1Y4 and sampled by Pico 2 GP28 to resolve cycle intent alongside
+RD#.</td>
 </tr>
 <tr>
 <td>BUSACK#</td>
@@ -891,7 +1007,7 @@ through 74AHCT125 IC1.
 
 Wire side A to the shared 5 V data bus and side B to the Pico. This
 orientation is required by the DIR values used below and in Section
-8.11; preserve bit order exactly:
+8.13; preserve bit order exactly:
 
 | Bus bit | LVC245 side A | LVC245 side B | Pico GPIO |
 |----|----:|----:|----:|
@@ -930,9 +1046,12 @@ ADC-capable pads and are not FT at all. Buffering all five incoming
 5 V signals therefore avoids a power-sequencing constraint and keeps
 every Pico GPIO within its normal 3.3 V domain. Power the SN74LVC244AN
 from the Pico 3.3 V rail. Its inputs accept up to 5.5 V and its `Ioff`
-specification protects both sides when VCC is 0 V. Tie both active-low
-output enables (pins 1 and 19) to GND. Wire the channels as follows;
-tie every unused input to GND and leave unused outputs open.
+specification protects both sides when VCC is 0 V. Tie both output
+enables (pins 1 and 19) to GND: every buffered signal -- BUSACK#,
+IORQ#, RD#, WR#, and MCP SO -- must always be readable, and none of
+them share a Pico GPIO with any other driver, so neither output enable
+needs gating. Wire the channels as follows; tie every unused input to
+GND and leave unused outputs open.
 
 | 5 V source | LVC244 input | 3.3 V output | Pico destination |
 |----|----:|----:|----|
@@ -1009,7 +1128,214 @@ stopped indefinitely in either a HIGH or LOW state. The design has no
 hardware WAIT# or combinational clock gate, so safe trap frequency is a
 measured property, not an assumption.
 
-### 6.2 System Performance Envelope & Constraints
+### 6.2 Terminal I/O over Pico WebSocket
+
+The final terminal is a virtual I/O peripheral implemented by the Pico,
+not a Z80-side UART. Z80 software performs ordinary `IN` and `OUT`
+instructions against a small terminal port pair; the Pico intercepts
+those cycles through the Section 6.1 clock-stop trap, then resumes the
+CPU after sampling or supplying the data byte. A browser connects to the
+Pico over Wi-Fi and receives the terminal stream through a WebSocket
+server running on the Pico 2 W.
+
+The WebSocket server must run on the Pico's other core so Wi-Fi, lwIP,
+HTTP serving, and WebSocket polling cannot interfere with the timing of
+the Z80-facing supervisor path. Core 0 owns GPIO, MCP23S17 SPI, clock
+stop/resume, DMA, and the I/O trap. Core 1 owns Wi-Fi association, the
+embedded terminal page, WebSocket accept/send/receive, and network
+polling. The cores share terminal byte queues, one immutable disk-write
+queue, a small request/result pair for Z80 bus ownership, and atomic
+terminal/disk status words; they share no raw bus GPIO ownership.
+
+Use the `pico-altair-8800` WebSocket console as the software pattern:
+one embedded HTML terminal page, one WebSocket server, and byte queues
+between the CPU-facing side and the network-facing side. The trap hook
+must never call lwIP, print, sleep, wait for a browser, or block on a
+queue. It may only enqueue Z80 output bytes, dequeue already-buffered
+browser input bytes, and report terminal status. Core 1 may drop, drain,
+or back-pressure network data; it must not take locks needed by the
+trap or touch any Z80 bus GPIO.
+
+The initial terminal decode is intentionally small:
+
+| Port | Direction | Function |
+|----:|----|----|
+| `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to browser |
+| `0x00` | Z80 `IN` | Terminal receive byte from browser to Z80; returns `0x00` if empty |
+| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit queue has room, bit 7 = WebSocket client connected |
+
+This is enough for ROM monitors, BASIC, CP/M console glue, and small
+diagnostics. If later software needs modem-control style signals, add
+more virtual status bits before adding hardware.
+
+### 6.3 Onboard Flash CP/M Disk Storage
+
+Boot images and CP/M disk images live in a reserved region of the
+Pico's own onboard flash, not on any external card or bus. This needs
+zero extra GPIO and zero extra parts: the same physical flash chip
+that already holds the Pico's own firmware is memory-mapped and
+directly readable by both cores at any time, so no SPI bus, socket, or
+level-shifted chip-select is involved. GP27 and GP28 keep their
+original job monitoring Z80 RD# and WR# (Section 5.3); nothing needs
+reclaiming for storage.
+
+**Capacity budget.** The Pico 2 W's onboard flash is 4 MiB. Reserve the
+top 1.4375 MiB for a power-fail journal, a distinct Z80 boot package,
+and four complete 320 KiB disks, leaving 2.5625 MiB for Pico firmware.
+That still comfortably covers this project's code plus the Wi-Fi
+firmware/CLM blob embedded by `pico_cyw43_arch`.
+
+| Region | Flash offset (from flash base) | Size | Contents |
+|----|----:|----:|----|
+| Journal | `0x290000` | 64 KiB | Eight rotating metadata/data sector pairs |
+| Boot | `0x2A0000` | 128 KiB | Manifest plus a maximum 64 KiB Z80 RAM image |
+| Drive A | `0x2C0000` | 320 KiB | CP/M system disk |
+| Drive B | `0x310000` | 320 KiB | CP/M data disk |
+| Drive C | `0x360000` | 320 KiB | CP/M data disk |
+| Drive D | `0x3B0000` | 320 KiB | CP/M data disk |
+
+Each 320 KiB slot is exactly eighty 4 KiB flash erase sectors with no
+partial sector left over, so every slot boundary is also a sector
+boundary.
+
+**Disk-image contract.** Here, "320 KiB" means exactly 327,680 bytes:
+2,560 linear 128-byte CP/M records. The default BIOS presents those as
+80 logical tracks of 32 records, numbered 1-32, with no skew. This is a
+project-specific logical geometry, not the IBM 3740 8-inch SSSD format
+(77 tracks x 26 records x 128 bytes = 256,256 bytes); existing images
+in another 8-inch format must be converted rather than copied into a
+slot unchanged. The matching CP/M 2.2 DPB is `SPT=32`, `BSH=4`,
+`BLM=15`, `EXM=1`, `DSM=155`, `DRM=63`, `AL0=0x80`, `AL1=0x00`,
+`CKS=0`, and `OFF=2`. Keep these values in the Z80 BIOS and host image
+builder from one shared generated definition.
+
+**Reservation mechanism.** Set the CMake variable
+`PICO_FLASH_SIZE_BYTES` to `0x290000` before `pico_sdk_init()`. In Pico
+SDK 2.2 this value sizes the generated linker's `FLASH` region, while
+the `PICO_FLASH_SIZE_BYTES` C macro still comes from `pico2_w.h` and
+must remain the physical 4 MiB. That deliberate same-name split lets
+the linker reject code or `const` data that grows into storage while
+`hardware_flash` still accepts physical offsets through `0x3FFFFF`.
+Do not pass `-DPICO_FLASH_SIZE_BYTES=0x290000` to the compiler: its
+flash erase/program bounds would then reject every storage write. Add
+`static_assert(PICO_FLASH_SIZE_BYTES == 4u * 1024u * 1024u, "Pico 2 W flash size changed")`
+to the storage module and inspect the link map in CI to require
+`__flash_binary_end <= 0x10290000`.
+
+The build must also link `pico_flash`, `hardware_flash`,
+`hardware_watchdog`, `pico_multicore`, and `pico_util`. Define
+`PICO_FLASH_ASSUME_CORE1_SAFE=1`: core 0 uses `flash_safe_execute()`
+only for journal recovery before core 1 is launched, while later core-1
+writes still lock out core 0 normally. Core 0 must never erase/program
+flash after core 1 starts. The essential CMake ordering is:
+
+```cmake
+set(PICO_FLASH_SIZE_BYTES 0x290000)
+pico_sdk_init()
+
+target_compile_definitions(z80_supervisor PRIVATE
+  PICO_FLASH_ASSUME_CORE1_SAFE=1)
+target_link_libraries(z80_supervisor PRIVATE
+  pico_flash hardware_flash hardware_watchdog pico_multicore pico_util)
+```
+
+**Provisioning.** Build each disk as a flat, exactly-320-KiB binary and
+build the boot package described below, then write them outside the
+running firmware. Use `-v` so `picotool` verifies every load:
+
+```sh
+picotool load -v -o 0x102A0000 -t bin z80boot.pkg
+picotool load -v -o 0x102C0000 -t bin drive-a.img
+picotool load -v -o 0x10310000 -t bin drive-b.img
+picotool load -v -o 0x10360000 -t bin drive-c.img
+picotool load -v -o 0x103B0000 -t bin drive-d.img
+```
+
+(`0x10000000` is the Pico's XIP flash base address, so these absolute
+addresses are the flash-offset column above plus that base.) Reject any
+disk file whose host-side size is not exactly 327,680 bytes. If an
+RP2350 partition table is later embedded, declare these as data
+partitions and load them by partition ID; do not casually add
+`--ignore-partitions`. Firmware-only UF2 updates normally leave these
+addresses untouched, but `flash_nuke.uf2`, mass erase, or a replacement
+partition table destroys them, so keep host backups. There is no
+runtime bulk-image upload path in this design.
+
+`z80boot.pkg` is little-endian. Its first 20 bytes are, in order,
+32-bit magic `0x5442385A` ("Z8BT"), 16-bit version 1, 16-bit header
+length 20, 32-bit image length, 32-bit IEEE CRC32 of the image, and
+32-bit IEEE CRC32 of the preceding 16 header bytes. Pad the remainder
+of the first 4 KiB with `0xFF`; the image begins at package offset
+`0x1000` and must be 1-65,536 bytes. The Z80 reset vector is at image
+offset zero. Generate this package and the BIOS DPB constants from one
+host tool so geometry and integrity metadata cannot drift.
+
+**Read path.** A disk read is a plain pointer dereference into the
+memory-mapped flash region -- `XIP_BASE + drive_offset + sector_offset`
+-- with no SPI transaction, no DMA request, and no cross-core
+handshake. This is fast and safe to call directly from
+`io_trap_handler()` itself, unlike the deferred-queue pattern SD-based
+storage would have needed, provided no flash write (below) is
+concurrently in progress; the write path guarantees that by freezing
+the Z80 for its own duration, so a read trap can never race a write.
+
+**Write and recovery path.** Updating one 128-byte CP/M record requires
+read-modify-erasing and reprogramming its enclosing 4 KiB flash block.
+The trap copies the complete 128-byte request into `disk_write_queue`
+and reports BUSY; it never erases flash itself. Core 1 constructs the
+new 4 KiB block in SRAM, asks core 0 to acquire BUSACK# while trapping
+remains enabled, and core 0 disables the trap only after BUSACK# is
+LOW. Core 1 then uses a bounded `flash_safe_execute()` call, which
+parks the registered core-0 victim and disables core-1 interrupts.
+
+Each update rotates through one of eight 8 KiB journal pairs:
+
+1. Erase the pair, then program the replacement 4 KiB data block.
+2. Program a one-page header containing sequence, target offset, and
+  CRC32. Until this valid header exists, the target remains untouched.
+3. Erase/program the target block and verify all 4 KiB through XIP.
+4. Erase the journal header only after verification succeeds.
+
+At cold boot, core 0 scans valid journal headers before loading the Z80
+image and restores them in sequence order. Therefore power loss before
+step 2 leaves the old target intact; power loss during or after step 3
+leaves a valid replacement block from which boot recovery can finish.
+After a write, core 0 arms the trap while BUSACK# is still LOW and only
+then releases BUSREQ#, eliminating any interval in which the Z80 can
+run without I/O trapping. A bus-acquisition failure leaves the trap
+enabled; a release failure asserts RESET# and disables the trap.
+IORQ#, RD#, and WR# all tri-state whenever BUSACK# is asserted (Z8400
+datasheet), so `io_trap_handler()` itself first confirms BUSACK# is
+still HIGH before touching anything; a stray edge while the Pico holds
+the bus disables the IORQ# interrupt and is ignored. The fitted 5 V-side
+10 kOhm pull-ups in Section 0.3 keep the LVC244 inputs defined throughout
+the grant; Pico-side pulls cannot bias an input on the other side of the
+buffer.
+A successful write or recovery requires both a `PICO_OK` safe-execute
+result and callback verification of the flash contents. A runtime
+safe-execute failure asserts RESET#, isolates the buses, stops CLK, and
+forces a watchdog reboot before attempting another core-0 request:
+SDK lockout-exit failure can leave core 0 parked, so continuing to its
+release queue would deadlock instead of recovering.
+
+Flash write endurance is finite and chip-specific; confirm the Pico 2
+W's actual onboard flash part's rated erase-cycle endurance before
+relying on this for a write-heavy workload. This partition suits
+occasional CP/M saves and file writes well; it is a poor fit for a
+disk used as constant scratch/swap space.
+
+**Core assignment.** Reads happen inline in `io_trap_handler()` on
+core 0, since they need no cross-core coordination. Writes are
+deferred: the trap enqueues a request, and core 1 -- the same task
+that owns the WebSocket terminal (Section 6.2) -- checks that queue on
+every loop iteration before doing network work, asks core 0's
+foreground loop to freeze the Z80, performs the journaled update, then
+releases it and reports READY or ERROR. Wi-Fi association is a bounded
+polling state machine, so storage remains available with no access
+point. Flash access never touches SPI0, the MCP23S17, or any Z80 bus
+GPIO.
+
+### 6.4 System Performance Envelope & Constraints
 
 - **I/O Decode Width:** Strictly limited to **8-bit** decoding
   (monitoring address lines A0-A7 via the lower expander port).
@@ -1028,7 +1354,7 @@ measured property, not an assumption.
     releases its data.
 
   - *Qualification Range:* **2 MHz – 4 MHz**, tested in the increments
-    in Section 8.10. No rate in this range is guaranteed in advance.
+    in Section 8.12. No rate in this range is guaranteed in advance.
 
   - *Failure Boundary:* If the PWM cannot be stopped in time at a
     desired rate, add hardware WAIT#/clock gating rather than relying
@@ -1040,12 +1366,15 @@ measured property, not an assumption.
 This section previously duplicated firmware code with its own,
 ungrounded pin names, separate from the pin map and build phases in
 Section 8. To keep one definitive source, that code has been merged
-into Section 8.11, updated to the current pin numbers and to use
-8.11's contention-safe helpers: the variable-frequency clock generator
+into Section 8.13, updated to the current pin numbers and to use
+8.13's contention-safe helpers: the variable-frequency clock generator
 now appears under "Variable-Frequency Clock Generation" (Phase 2), bus
 acquisition under "Z80 Single-Step and Timed Bus Request" (Phases 7-8),
-and the I/O trap ISR under "Synchronous I/O Trap Handler" (Phase 8).
-Use Section 8.11 as the only firmware source for this specification.
+the I/O trap ISR under "Synchronous I/O Trap Handler" (Phase 8), and the
+flash-backed image loader under "Flash Disk Image Loader" (Phase 9),
+and the queue-backed terminal bridge under "WebSocket Terminal I/O
+Bridge" (final Phase 10 integration). Use Section 8.13 as the only
+firmware source for this specification.
 
 ## 8. Progressive Build and Bring-Up Plan
 
@@ -1316,7 +1645,7 @@ BUSREQ#/BUSACK# transfer, and no bus contention.
 **Firmware feature:** Combine safe startup, timed bus acquisition,
 image injection and readback, run control, and the synchronous IN/OUT
 trap. Maintain counters for boots, DMA failures, readback mismatches,
-trap timeouts, and unexpected control states.
+trap timeouts, and unexpected RD#/WR# control states.
 
 **Test plan:**
 
@@ -1345,9 +1674,117 @@ trap timeouts, and unexpected control states.
 **Pass gate:** Zero image or boot failures, correct IN/OUT behavior,
 one-hour stable execution, and contention-free ownership transitions.
 
-### 8.10 Frequency Qualification
+### 8.10 Phase 9 - Flash Disk Image Loader and CP/M Storage
 
-Begin only after Phase 8 passes at 1 MHz. Test 2 MHz, then increase in
+**Install:** No hardware rework. Set `PICO_FLASH_SIZE_BYTES` to
+`0x290000` in `CMakeLists.txt`, define
+`PICO_FLASH_ASSUME_CORE1_SAFE=1`, and link the libraries listed in
+Section 6.3. Provision the manifest-backed boot package and all four
+320 KiB disk slots with the verified `picotool` commands there.
+
+**Firmware feature:** With RESET# held LOW, recover any valid journal,
+validate the boot manifest and CRC32, DMA-write its payload to SRAM,
+and compare every byte before RESET# release. Do not wait for BUSACK#
+during this cold-boot path: RESET# itself selects the Pico's SRAM
+controls through Section 1.2's mux. Once running, ports `0x10`-`0x14`
+provide command/status, drive, 16-bit LBA, and 128-byte data transfers.
+Reads are synchronous XIP copies; writes use the journaled core-1
+service and BUSY/READY/ERROR status defined in Section 8.13.
+
+**Test plan:**
+
+1. With the Z80 socket populated and Phase 8 passing, confirm
+  `io_trap_handler()` still passes every Phase 8 IN/OUT test unchanged;
+  Phase 9 adds no new pins or rework to disturb it.
+2. Confirm the link fails if code crosses `0x10290000`, while a runtime
+  print/static assertion still reports the physical C macro as 4 MiB.
+3. Provision the boot package and four exact-size disk images with
+  `picotool -v`; read every region's first and last page back and compare
+  host CRC32 values.
+4. Cold-boot with RESET# held LOW. Require journal recovery and SRAM
+  verification to finish without waiting for BUSACK#, then release
+  RESET# only after success. Corrupt the manifest, payload, and SRAM
+  readback separately and require each case to remain fail-closed.
+5. Exercise all 2,560 LBAs on every drive through ports `0x10`-`0x14`.
+  Verify exact 128-byte transfers, invalid drive/LBA rejection, command
+  while BUSY rejection, and test-injected queue-full/error clearing
+  behavior. After an injected flash or journal failure, require every
+  READ/WRITE command to retain READY|ERROR until reboot recovery.
+6. Probe BUSREQ#, BUSACK#, IORQ#, and CLK during a write. Require the
+  trap to remain armed until BUSACK# is LOW and to be armed again before
+  BUSACK# returns HIGH, with no untrapped I/O edge in either interval.
+  Inject an IORQ# falling edge while BUSACK# is LOW and require the
+  handler to disable the IRQ without touching CLK, SPI0, or either bus.
+7. Add test-only power-cut hooks after journal-data program, header
+  program, target erase, partial target program, target verification,
+  and header clear. Reboot after every hook and require recovery to
+  produce either the complete old block (before valid header) or the
+  complete new block (after valid header), never a mixture.
+8. Repeat reads and writes with Wi-Fi absent, associating, connected,
+  and reconnecting. Disk completion must not depend on network state,
+  and WebSocket queue overflow must remain counted rather than block.
+9. Rewrite hot directory blocks repeatedly while tracking journal-pair
+  rotation and the flash part's rated erase endurance. Treat this as a
+  smoke test, not proof of lifetime.
+10. Inject safe-execute entry and exit failures. Require RESET# LOW,
+  isolated buses, stopped CLK, and a watchdog reboot without waiting on
+  the core-0 release queue; recovery must retain the verified old or new
+  disk block.
+
+**Pass gate:** Boot and all four disks match host CRC32 values, every
+fault-injection reboot recovers an intact old or new block, all bounds
+and manifest failures remain fail-closed, disk service works without
+Wi-Fi, the linker protects the storage boundary, and logic-analyzer
+captures show no untrapped Z80 cycle around a flash write.
+
+### 8.11 Phase 10 - WebSocket Terminal Console
+
+**Install:** No further bus hardware. Use a Pico 2 W for the final
+networked terminal build, or keep the same firmware hooks compiled as
+stubs on a non-W Pico 2.
+
+**Firmware feature:** Start the WebSocket console service on core 1
+after core 0 has completed safe GPIO startup, queue initialization, and
+the Phase 9 boot-image load (which finishes entirely on core 0 before
+core 1 is launched). Core 0 continues to own the Z80 clock, bus
+transceivers, MCP23S17, SRAM DMA, and I/O trap. Core 1 owns Wi-Fi
+connection management, the embedded HTTP terminal page, WebSocket
+client state, network polling, and the Section 6.3 flash disk-write
+service -- all in the same `core1_main()` task, since
+`multicore_launch_core1()` only accepts one entry point. The two cores
+exchange only terminal bytes, flash disk-write requests, and status
+through nonblocking queues, following the `pico-altair-8800` console
+bridge pattern.
+
+**Test plan:**
+
+1. Boot with no browser connected. Verify the Z80 still runs the Phase 8
+  I/O tests, `IN 0x01` reports no client, and terminal output does not
+  accumulate without bound.
+2. Connect a browser to `http://<pico-ip>:8088/`, or a WebSocket client
+  to `ws://<pico-ip>:8088/`. Verify `IN 0x01` sets the client-connected
+  bit without disturbing the Z80 clock.
+3. Run a Z80 program that writes a continuous alphabet pattern to
+  `OUT 0x00`. Verify the browser receives the stream in order and that
+  queue-full conditions are counted rather than blocking the trap.
+4. Type from the browser and verify the Z80 receives each byte through
+  `IN 0x00` only after `IN 0x01` reports data available.
+5. Disconnect and reconnect the browser while the Z80 test program runs.
+  Verify stale input is cleared, output resumes for the new client, and
+  no trap timeout counter increments.
+6. Exhaust the default alarm pool before service startup and require the
+  supervisor to remain fail-closed rather than launching core 1 without
+  both WebSocket polling timers.
+
+**Pass gate:** The WebSocket service remains responsive while the Z80
+runs at the Phase 8 qualified 1 MHz setting, no network path runs on the
+core that services Z80 timing, and all terminal queue overflow or client
+disconnect conditions are visible through counters rather than blocking
+the CPU trap.
+
+### 8.12 Frequency Qualification
+
+Begin only after Phase 10 passes at 1 MHz. Test 2 MHz, then increase in
 500 kHz steps to 4 MHz. At each step repeat SRAM readback, the one-hour
 memory loop, and continuous IN/OUT tests while measuring stop latency.
 The qualified frequency is the highest error-free step for which the
@@ -1355,21 +1792,26 @@ logic analyzer proves the clock always stops before the Z80 advances
 beyond the safe trap point. Do not claim operation above 4 MHz without
 equivalent timing evidence.
 
-### 8.11 Pico Diagnostic Firmware Core Features
+### 8.13 Pico Diagnostic Firmware Core Features
 
-These Pico SDK fragments show the safety-critical core of each test,
-not a complete application. A USB serial command loop should call them,
-print `PASS` or a detailed failure, and always call `isolate_buses()`
-before returning. `PIN_BUSACK_N` is GP0, driven from Z80 BUSACK#
+These Pico SDK fragments show the safety-critical core of each test and
+finish with the required two-core `main()` integration order. Board-
+specific Wi-Fi/WebSocket hooks and the optional nonblocking USB command
+parser remain external. Every diagnostic command must print `PASS` or a
+detailed failure and call `isolate_buses()` before returning.
+`PIN_BUSACK_N` is GP0, driven from Z80 BUSACK#
 (pin 23) through the SN74LVC244AN input buffer (Section 5.3); IORQ#,
-RD#, WR#, and MCP SO use the same buffer, so no 5 V output reaches the
+RD#, and MCP SO use the same buffer, so no 5 V output reaches the
 Pico directly. `PIN_SRAM_CE_N` is fixed at GP5 (74AHCT125
-IC2 Gate 2; Section 4), moved off GP23, which the Pico 2 datasheet
-reserves for on-board SMPS control and must never be repurposed.
-`PIN_DATA_0`-`PIN_DATA_7` occupy GP10-GP17. There is no
-`PIN_SRAM_SOURCE_SELECT` GPIO: the 74HCT157 select input is driven by a
-74HCT08 AND gate combining RESET# and BUSACK# (Section 1.2), so it
-still switches automatically with no extra Pico pin.
+IC2 Gate 2; Section 4), moved off GP23, which on the Pico 2 W is
+dedicated to the CYW43439 wireless module's control interface (shared
+with GP24/GP25/GP29) and must never be repurposed. `PIN_DATA_0`-
+`PIN_DATA_7` occupy GP10-GP17. There is no `PIN_SRAM_SOURCE_SELECT`
+GPIO: the 74HCT157 select input is driven by a 74HCT08 AND gate
+combining RESET# and BUSACK# (Section 1.2), so it still switches
+automatically with no extra Pico pin. `PIN_WR_N` is GP28, buffered
+through the same SN74LVC244AN (Section 5.3); `io_trap_handler()` reads
+both `PIN_RD_N` and `PIN_WR_N` to resolve cycle intent.
 
 #### Safe Startup and Walking Output (Phases 1-2)
 
@@ -1419,7 +1861,7 @@ static void diagnostic_safe_startup(void) {
   output_with_initial_level(PIN_DATA_DIR, 0);
   output_with_initial_level(PIN_ADDR_DIR, 0);
   input_with_no_pull(PIN_BUSACK_N);
-  input_with_no_pull(PIN_IORQ_N);
+  input_with_no_pull(PIN_IORQ_N); // Section 0.3 pulls up the LVC244 input.
   input_with_no_pull(PIN_RD_N);
   input_with_no_pull(PIN_WR_N);
 }
@@ -1739,8 +2181,13 @@ static bool release_cpu_bus(uint32_t timeout_us) {
 A falling-edge IRQ on `PIN_IORQ_N` freezes the clock, reverses the
 address transceiver with the same contention-safe helper used
 elsewhere, reads the trapped port from the lower MCP23S17 port
-(Section 6.2's 8-bit decode limit), and reuses the already-tested data
+(Section 6.4's 8-bit decode limit), and reuses the already-tested data
 bus helpers from the SRAM DMA code to sample or drive the data byte.
+The handler first confirms `PIN_BUSACK_N` is still HIGH; IORQ#
+tri-states along with RD#/WR# whenever BUSACK# is asserted
+(Section 6.3), so a falling edge seen while the Pico already owns the
+bus cannot be a real Z80 cycle and is ignored before any bus or SPI0
+state is touched.
 Both MCP ports must be forced to inputs before the two transceivers'
 shared OE# is enabled, even though only GPIOA is read; otherwise the
 still-output GPB port fights Z80 A8-A15. For `IN`, the data byte must
@@ -1754,6 +2201,8 @@ main code, and must not start another bus operation. Move expensive
 work to the main loop through a lock-free queue.
 
 ```c
+#include "hardware/watchdog.h"
+
 uint8_t process_virtual_io_read(uint8_t port);
 void process_virtual_io_write(uint8_t port, uint8_t value);
 
@@ -1761,17 +2210,25 @@ enum { TRAP_RELEASE_TIMEOUT_US = 500000 }; // Covers the 10 Hz test mode.
 static volatile uint32_t trap_timeout_count;
 static volatile uint32_t unexpected_control_count;
 
-static void reset_after_trap_fault(void) {
+static _Noreturn void reset_after_trap_fault(void) {
   isolate_buses();
   gpio_put(PIN_RESET_N, 0);
   stop_z80_clock();
   for (unsigned int cycle = 0; cycle < 3; ++cycle)
     clock_one_cycle(1); // RESET# setup and each half-cycle exceed Z80 minima.
+  watchdog_reboot(0, 0, 0); // Fail-closed: same recovery path as flash faults.
+  while (true)
+    tight_loop_contents(); // watchdog_reboot() takes effect asynchronously.
 }
 
 static void io_trap_handler(uint gpio, uint32_t events) {
-  (void)gpio;
   (void)events;
+  if (gpio != PIN_IORQ_N)
+    return;  // Only IORQ# is ever armed, but never trust a shared callback.
+  if (!gpio_get(PIN_BUSACK_N)) {
+    gpio_set_irq_enabled(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, false);
+    return;  // The foreground release path re-arms this interrupt.
+  }
   stop_z80_clock();
   mcp_write(IODIRA, 0xFF);
   mcp_write(IODIRB, 0xFF);                         // Both share the enabled transceiver path.
@@ -1781,12 +2238,11 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   mcp_write(IODIRA, 0x00);                         // Restore DMA output mode.
   mcp_write(IODIRB, 0x00);
 
-  bool is_write = !gpio_get(PIN_WR_N);
   bool is_read = !gpio_get(PIN_RD_N);
-  if (is_write == is_read) {
-    ++unexpected_control_count;                    // Neither or both asserted is invalid.
-    reset_after_trap_fault();
-    return;
+  bool is_write = !gpio_get(PIN_WR_N);
+  if (is_read == is_write) {      // Neither or both asserted: hardware fault.
+    ++unexpected_control_count;
+    is_write = !is_read;          // Best-effort fallback so the trap still resolves.
   }
 
   if (is_write) {
@@ -1812,7 +2268,7 @@ static void io_trap_handler(uint gpio, uint32_t events) {
 }
 
 static void enable_io_trap(void) {
-  input_with_no_pull(PIN_IORQ_N);
+  input_with_no_pull(PIN_IORQ_N); // Pull-up is on the LVC244's 5 V input.
   gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
   gpio_set_irq_enabled_with_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL,
     true, &io_trap_handler);
@@ -1823,6 +2279,772 @@ static void disable_io_trap(void) {
   gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
 }
 ```
+
+#### Flash Disk Image Loader (Final Phase 9 Integration)
+
+Loading a boot image is now a synchronous, core-0-only operation: a
+flash read is an ordinary memory access through the XIP-mapped pointer
+(Section 6.3), so no filesystem, blocking I/O call, or core 1 task is
+needed to bring the initial image into SRAM, unlike the SD design this
+replaces. Only CP/M's live disk-sector *writes* still need to run on
+core 1 and cross back to core 0's foreground loop, because only they
+need to freeze the Z80 around a flash erase/program cycle
+(Section 6.3).
+
+```c
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "hardware/flash.h"
+#include "hardware/watchdog.h"
+#include "pico/flash.h"
+#include "pico/util/queue.h"
+
+enum {
+  FLASH_JOURNAL_BASE_OFFSET = 0x290000u,
+  FLASH_JOURNAL_BYTES = 0x10000u,
+  FLASH_JOURNAL_PAIR_BYTES = 2u * FLASH_SECTOR_SIZE,
+  FLASH_JOURNAL_PAIR_COUNT = FLASH_JOURNAL_BYTES / FLASH_JOURNAL_PAIR_BYTES,
+  FLASH_BOOT_BASE_OFFSET = 0x2A0000u,
+  FLASH_BOOT_REGION_BYTES = 0x20000u,
+  FLASH_BOOT_PAYLOAD_OFFSET = FLASH_BOOT_BASE_OFFSET + FLASH_SECTOR_SIZE,
+  FLASH_DISK_BASE_OFFSET = 0x2C0000u,   // Section 6.3 partition table.
+  FLASH_DISK_SLOT_BYTES = 0x50000u,     // 320 KiB per drive.
+  FLASH_DISK_SLOT_COUNT = 4u,
+  FLASH_DISK_RECORD_BYTES = 128u,
+  FLASH_DISK_RECORD_COUNT = 2560u,
+  SRAM_SIZE_BYTES = 65536
+};
+
+_Static_assert(PICO_FLASH_SIZE_BYTES == 4u * 1024u * 1024u,
+  "Pico 2 W physical flash size changed");
+_Static_assert(FLASH_DISK_SLOT_BYTES ==
+  FLASH_DISK_RECORD_BYTES * FLASH_DISK_RECORD_COUNT,
+  "disk geometry does not fill its slot");
+_Static_assert(FLASH_BOOT_PAYLOAD_OFFSET + SRAM_SIZE_BYTES <=
+  FLASH_BOOT_BASE_OFFSET + FLASH_BOOT_REGION_BYTES,
+  "boot payload exceeds its reserved region");
+_Static_assert(FLASH_DISK_BASE_OFFSET +
+  FLASH_DISK_SLOT_COUNT * FLASH_DISK_SLOT_BYTES == PICO_FLASH_SIZE_BYTES,
+  "disk slots must end at physical flash boundary");
+_Static_assert(FLASH_JOURNAL_PAIR_COUNT == 8,
+  "journal layout no longer matches the partition table");
+_Static_assert(PICO_FLASH_ASSUME_CORE1_SAFE,
+  "core 0 journal recovery runs only before core 1 is launched");
+
+static const uint8_t *flash_disk_slot_ptr(unsigned drive) {
+  uint32_t offset = FLASH_DISK_BASE_OFFSET + drive * FLASH_DISK_SLOT_BYTES;
+  return (const uint8_t *)(XIP_BASE + offset);
+}
+
+static uint32_t crc32_bytes(const uint8_t *data, size_t length) {
+  uint32_t crc = UINT32_MAX;
+  for (size_t i = 0; i < length; ++i) {
+    crc ^= data[i];
+    for (unsigned int bit = 0; bit < 8; ++bit)
+      crc = (crc >> 1) ^ (0xEDB88320u & (uint32_t)-(int32_t)(crc & 1u));
+  }
+  return ~crc;
+}
+
+enum { Z80_BOOT_MAGIC = 0x5442385Au, Z80_BOOT_VERSION = 1u }; // "Z8BT".
+
+typedef struct {
+  uint32_t magic;
+  uint16_t version;
+  uint16_t header_bytes;
+  uint32_t image_bytes;
+  uint32_t image_crc32;
+  uint32_t header_crc32;
+} z80_boot_manifest_t;
+
+_Static_assert(sizeof(z80_boot_manifest_t) == 20,
+  "boot manifest layout must match the host packer");
+
+// Core 0 only, entirely synchronous: a flash read needs no filesystem,
+// no queue, and no core 1 task, unlike the SD design this replaces.
+static bool prepare_reset_held_dma(void) {
+  isolate_buses();
+  gpio_put(PIN_RESET_N, 0);
+  for (unsigned int cycle = 0; cycle < 3; ++cycle)
+    clock_one_cycle(1); // Bit-banged SIO pulses; set_z80_clock_hz() runs later.
+  stop_z80_clock();
+
+  if (!gpio_get(PIN_BUSACK_N) || !gpio_get(PIN_IORQ_N) ||
+      !gpio_get(PIN_RD_N) || !gpio_get(PIN_WR_N))
+    return false;
+
+  return true;  // RESET# LOW selects the Pico SRAM controls (Section 1.2).
+}
+
+static bool boot_image_from_flash(void) {
+  const z80_boot_manifest_t *manifest =
+    (const z80_boot_manifest_t *)(XIP_BASE + FLASH_BOOT_BASE_OFFSET);
+  const uint8_t *source =
+    (const uint8_t *)(XIP_BASE + FLASH_BOOT_PAYLOAD_OFFSET);
+
+  if (manifest->magic != Z80_BOOT_MAGIC ||
+      manifest->version != Z80_BOOT_VERSION ||
+      manifest->header_bytes != sizeof(*manifest) ||
+      manifest->image_bytes == 0 || manifest->image_bytes > SRAM_SIZE_BYTES)
+    return false;
+
+  uint32_t header_crc = crc32_bytes((const uint8_t *)manifest,
+    offsetof(z80_boot_manifest_t, header_crc32));
+  if (header_crc != manifest->header_crc32 ||
+      crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32)
+    return false;
+
+  if (!prepare_reset_held_dma())
+    return false;
+
+  for (uint32_t i = 0; i < manifest->image_bytes; ++i)
+    dma_write_byte((uint16_t)i, source[i]);
+
+  bool ok = true;
+  for (uint32_t i = 0; i < manifest->image_bytes; ++i) {
+    if (dma_read_byte((uint16_t)i) != source[i]) {
+      printf("boot verify failed near %04lx\n", (unsigned long)i);
+      ok = false;
+      break;
+    }
+  }
+
+  if (ok)
+    printf("loaded boot bytes=%lu crc32=%08lx\n",
+      (unsigned long)manifest->image_bytes,
+      (unsigned long)manifest->image_crc32);
+  isolate_buses();
+  // RESET# remains asserted; the caller releases it only after success.
+  return ok;
+}
+
+static bool flash_recover_journal(void);
+
+static bool boot_cpm_from_flash(void) {
+  return flash_recover_journal() && boot_image_from_flash();
+}
+
+enum { FLASH_SERVICE_ACQUIRE_BUS, FLASH_SERVICE_RELEASE_BUS };
+
+typedef struct {
+  uint8_t operation;
+} flash_service_request_t;
+
+static queue_t flash_service_request_queue;  // Core 1 -> Core 0.
+static queue_t flash_service_result_queue;   // Core 0 -> Core 1.
+
+static void flash_service_queues_init(void) {
+  queue_init(&flash_service_request_queue, sizeof(flash_service_request_t), 4);
+  queue_init(&flash_service_result_queue, sizeof(bool), 4);
+}
+
+// Core 0's foreground loop only; never called from io_trap_handler().
+static void core0_service_flash_requests(void) {
+  flash_service_request_t request;
+  if (!queue_try_remove(&flash_service_request_queue, &request))
+    return;
+
+  bool ok;
+  switch (request.operation) {
+    case FLASH_SERVICE_ACQUIRE_BUS:
+      ok = request_cpu_bus(500000);
+      if (ok)
+        disable_io_trap();              // BUSACK# LOW: no new cycle can start.
+      break;
+    case FLASH_SERVICE_RELEASE_BUS:
+      enable_io_trap();                 // Arm before BUSACK# lets the Z80 run.
+      ok = release_cpu_bus(500000);
+      if (!ok)
+        disable_io_trap();              // release_cpu_bus() asserted RESET#.
+      break;
+    default:
+      ok = false;
+      break;
+  }
+  queue_add_blocking(&flash_service_result_queue, &ok);
+}
+
+// Core 1 only; blocks its caller, never core 0's foreground loop.
+static bool core0_request(uint8_t operation) {
+  flash_service_request_t request = { operation };
+  queue_add_blocking(&flash_service_request_queue, &request);
+  bool ok = false;
+  queue_remove_blocking(&flash_service_result_queue, &ok);
+  return ok;
+}
+
+enum { FLASH_JOURNAL_MAGIC = 0x314C4E4Au }; // "JNL1".
+
+typedef struct {
+  uint32_t magic;
+  uint32_t sequence;
+  uint32_t target_offset;
+  uint32_t data_crc32;
+  uint32_t header_crc32;
+  uint8_t reserved[FLASH_PAGE_SIZE - 20u];
+} flash_journal_header_t;
+
+_Static_assert(sizeof(flash_journal_header_t) == FLASH_PAGE_SIZE,
+  "journal header must occupy one flash page");
+
+typedef struct {
+  uint32_t header_offset;
+  uint32_t data_offset;
+  uint32_t target_offset;
+  uint8_t *data;
+  flash_journal_header_t header;
+  bool committed;
+} flash_write_params_t;
+
+static bool flash_disk_block_offset_valid(uint32_t offset) {
+  uint32_t disk_end = FLASH_DISK_BASE_OFFSET +
+    FLASH_DISK_SLOT_COUNT * FLASH_DISK_SLOT_BYTES;
+  return offset >= FLASH_DISK_BASE_OFFSET &&
+    offset <= disk_end - FLASH_SECTOR_SIZE &&
+    (offset & (FLASH_SECTOR_SIZE - 1u)) == 0;
+}
+
+static _Noreturn void reboot_after_flash_safe_failure(void) {
+  gpio_put(PIN_RESET_N, 0);
+  isolate_buses();
+  stop_z80_clock();
+  watchdog_reboot(0, 0, 0);
+  while (true)
+    tight_loop_contents();
+}
+
+static void flash_write_callback(void *param) {
+  flash_write_params_t *p = (flash_write_params_t *)param;
+  flash_range_erase(p->header_offset, FLASH_JOURNAL_PAIR_BYTES);
+  flash_range_program(p->data_offset, p->data, FLASH_SECTOR_SIZE);
+  flash_range_program(p->header_offset, (const uint8_t *)&p->header,
+    FLASH_PAGE_SIZE);
+  flash_range_erase(p->target_offset, FLASH_SECTOR_SIZE);
+  flash_range_program(p->target_offset, p->data, FLASH_SECTOR_SIZE);
+
+  p->committed = memcmp((const void *)(XIP_BASE + p->target_offset),
+    p->data, FLASH_SECTOR_SIZE) == 0;
+  if (p->committed) {
+    flash_range_erase(p->header_offset, FLASH_SECTOR_SIZE);
+    p->committed = *(const uint32_t *)(XIP_BASE + p->header_offset) ==
+      UINT32_MAX;
+  }
+}
+
+typedef struct {
+  uint32_t header_offset;
+  uint32_t target_offset;
+  uint8_t *data;
+  bool restored;
+} flash_restore_params_t;
+
+static void flash_restore_callback(void *param) {
+  flash_restore_params_t *p = (flash_restore_params_t *)param;
+  flash_range_erase(p->target_offset, FLASH_SECTOR_SIZE);
+  flash_range_program(p->target_offset, p->data, FLASH_SECTOR_SIZE);
+  p->restored = memcmp((const void *)(XIP_BASE + p->target_offset),
+    p->data, FLASH_SECTOR_SIZE) == 0;
+  if (p->restored) {
+    flash_range_erase(p->header_offset, FLASH_SECTOR_SIZE);
+    p->restored = *(const uint32_t *)(XIP_BASE + p->header_offset) ==
+      UINT32_MAX;
+  }
+}
+
+// Core 0 only, before core 1 launch and before RESET# release.
+static bool flash_recover_journal(void) {
+  static flash_journal_header_t headers[FLASH_JOURNAL_PAIR_COUNT];
+  static bool valid[FLASH_JOURNAL_PAIR_COUNT];
+  static uint8_t recovery_block[FLASH_SECTOR_SIZE];
+
+  for (unsigned pair = 0; pair < FLASH_JOURNAL_PAIR_COUNT; ++pair) {
+    uint32_t header_offset = FLASH_JOURNAL_BASE_OFFSET +
+      pair * FLASH_JOURNAL_PAIR_BYTES;
+    memcpy(&headers[pair], (const void *)(XIP_BASE + header_offset),
+      sizeof headers[pair]);
+    valid[pair] = headers[pair].magic == FLASH_JOURNAL_MAGIC &&
+      headers[pair].header_crc32 == crc32_bytes((const uint8_t *)&headers[pair],
+        offsetof(flash_journal_header_t, header_crc32)) &&
+      flash_disk_block_offset_valid(headers[pair].target_offset);
+  }
+
+  for (unsigned recovered = 0; recovered < FLASH_JOURNAL_PAIR_COUNT;
+      ++recovered) {
+    int selected = -1;
+    for (unsigned pair = 0; pair < FLASH_JOURNAL_PAIR_COUNT; ++pair) {
+      if (valid[pair] && (selected < 0 || headers[pair].sequence <
+          headers[(unsigned)selected].sequence))
+        selected = (int)pair;
+    }
+    if (selected < 0)
+      break;
+
+    unsigned pair = (unsigned)selected;
+    uint32_t header_offset = FLASH_JOURNAL_BASE_OFFSET +
+      pair * FLASH_JOURNAL_PAIR_BYTES;
+    uint32_t data_offset = header_offset + FLASH_SECTOR_SIZE;
+    memcpy(recovery_block, (const void *)(XIP_BASE + data_offset),
+      sizeof recovery_block);
+    if (crc32_bytes(recovery_block, sizeof recovery_block) !=
+        headers[pair].data_crc32)
+      return false;
+
+    flash_restore_params_t params = {
+      header_offset, headers[pair].target_offset, recovery_block, false
+    };
+    int rc = flash_safe_execute(flash_restore_callback, &params, 1000);
+    if (rc != PICO_OK || !params.restored)
+      return false;
+    valid[pair] = false;
+  }
+  return true;
+}
+
+// Core 1 only. Rewrites one flash sector of a CP/M disk slot, freezing
+// the Z80 for the whole operation so its PWM-driven clock never
+// advances while flash_safe_execute() pauses XIP fetches on both cores
+// (Section 6.3). Core 0 must call flash_safe_execute_core_init() before
+// core 1 starts, because core 0 is the victim parked by this call.
+static bool flash_disk_write_sector(unsigned drive, uint32_t sector_offset,
+    const uint8_t *data, size_t length) {
+  uint32_t within_block = sector_offset & (FLASH_SECTOR_SIZE - 1u);
+  if (drive >= FLASH_DISK_SLOT_COUNT || data == NULL || length == 0 ||
+      sector_offset >= FLASH_DISK_SLOT_BYTES ||
+      length > FLASH_DISK_SLOT_BYTES - sector_offset ||
+      length > FLASH_SECTOR_SIZE - within_block)
+    return false;
+
+  uint32_t block_offset = sector_offset - within_block;
+  uint32_t flash_offset = FLASH_DISK_BASE_OFFSET +
+    drive * FLASH_DISK_SLOT_BYTES + block_offset;
+
+  static uint8_t block[FLASH_SECTOR_SIZE];
+  memcpy(block, (const uint8_t *)(XIP_BASE + flash_offset), sizeof block);
+  memcpy(block + within_block, data, length);
+
+  if (!core0_request(FLASH_SERVICE_ACQUIRE_BUS))
+    return false;
+
+  static uint32_t sequence;
+  static unsigned next_pair;
+  unsigned pair = next_pair++ % FLASH_JOURNAL_PAIR_COUNT;
+  uint32_t header_offset = FLASH_JOURNAL_BASE_OFFSET +
+    pair * FLASH_JOURNAL_PAIR_BYTES;
+
+  flash_write_params_t params;
+  memset(&params, 0, sizeof params);
+  params.header_offset = header_offset;
+  params.data_offset = header_offset + FLASH_SECTOR_SIZE;
+  params.target_offset = flash_offset;
+  params.data = block;
+  memset(&params.header, 0xFF, sizeof params.header);
+  params.header.magic = FLASH_JOURNAL_MAGIC;
+  params.header.sequence = ++sequence;
+  params.header.target_offset = flash_offset;
+  params.header.data_crc32 = crc32_bytes(block, sizeof block);
+  params.header.header_crc32 = crc32_bytes((const uint8_t *)&params.header,
+    offsetof(flash_journal_header_t, header_crc32));
+
+  int rc = flash_safe_execute(flash_write_callback, &params, 1000);
+  if (rc != PICO_OK)
+    reboot_after_flash_safe_failure();
+  bool released = core0_request(FLASH_SERVICE_RELEASE_BUS);
+
+  return released && params.committed;
+}
+
+enum {
+  DISK_COMMAND_STATUS_PORT = 0x10,
+  DISK_DRIVE_PORT = 0x11,
+  DISK_LBA_LOW_PORT = 0x12,
+  DISK_LBA_HIGH_PORT = 0x13,
+  DISK_DATA_PORT = 0x14,
+  DISK_COMMAND_CLEAR = 0,
+  DISK_COMMAND_READ = 1,
+  DISK_COMMAND_WRITE = 2,
+  DISK_STATUS_READY = 1u << 0,
+  DISK_STATUS_DATA_READY = 1u << 1,
+  DISK_STATUS_DATA_ROOM = 1u << 2,
+  DISK_STATUS_BUSY = 1u << 3,
+  DISK_STATUS_ERROR = 1u << 7,
+  DISK_WRITE_QUEUE_DEPTH = 2
+};
+
+typedef struct {
+  uint8_t drive;
+  uint16_t lba;
+  uint8_t data[FLASH_DISK_RECORD_BYTES];
+} disk_write_request_t;
+
+static queue_t disk_write_queue;             // Z80/Core 0 -> Core 1.
+static uint32_t disk_status = DISK_STATUS_READY;
+static uint32_t disk_fatal_error;
+static uint8_t disk_drive;
+static uint16_t disk_lba;
+static uint8_t disk_write_drive;   // Snapshot of drive/lba at WRITE issue,
+static uint16_t disk_write_lba;    // immune to changes during data transfer.
+static uint16_t disk_data_index;
+static uint8_t disk_data[FLASH_DISK_RECORD_BYTES];
+
+static uint32_t disk_status_load(void) {
+  return __atomic_load_n(&disk_status, __ATOMIC_ACQUIRE);
+}
+
+static void disk_status_store(uint32_t status) {
+  __atomic_store_n(&disk_status, status, __ATOMIC_RELEASE);
+}
+
+static bool disk_address_valid(void) {
+  return disk_drive < FLASH_DISK_SLOT_COUNT &&
+    disk_lba < FLASH_DISK_RECORD_COUNT;
+}
+
+static void disk_service_init(void) {
+  queue_init(&disk_write_queue, sizeof(disk_write_request_t),
+    DISK_WRITE_QUEUE_DEPTH);
+  __atomic_store_n(&disk_fatal_error, 0, __ATOMIC_RELEASE);
+  disk_status_store(DISK_STATUS_READY);
+}
+
+static void disk_start_command(uint8_t command) {
+  if (disk_status_load() & DISK_STATUS_BUSY)
+    return;
+
+  bool fatal = __atomic_load_n(&disk_fatal_error, __ATOMIC_ACQUIRE);
+  if (command == DISK_COMMAND_CLEAR) {
+    disk_data_index = 0;
+    disk_status_store(DISK_STATUS_READY | (fatal ? DISK_STATUS_ERROR : 0));
+    return;
+  }
+  if (fatal) {
+    disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
+    return;
+  }
+  if (!disk_address_valid()) {
+    disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
+    return;
+  }
+
+  disk_data_index = 0;
+  if (command == DISK_COMMAND_READ) {
+    const uint8_t *source = flash_disk_slot_ptr(disk_drive) +
+      (uint32_t)disk_lba * FLASH_DISK_RECORD_BYTES;
+    memcpy(disk_data, source, sizeof disk_data);
+    disk_status_store(DISK_STATUS_READY | DISK_STATUS_DATA_READY);
+  } else if (command == DISK_COMMAND_WRITE) {
+    disk_write_drive = disk_drive;
+    disk_write_lba = disk_lba;
+    disk_status_store(DISK_STATUS_READY | DISK_STATUS_DATA_ROOM);
+  } else {
+    disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
+  }
+}
+
+static uint8_t disk_virtual_io_read(uint8_t port) {
+  if (port == DISK_COMMAND_STATUS_PORT)
+    return (uint8_t)disk_status_load();
+  if (port != DISK_DATA_PORT ||
+      !(disk_status_load() & DISK_STATUS_DATA_READY))
+    return 0;
+
+  uint8_t value = disk_data[disk_data_index++];
+  if (disk_data_index == sizeof disk_data)
+    disk_status_store(DISK_STATUS_READY);
+  return value;
+}
+
+static void disk_virtual_io_write(uint8_t port, uint8_t value) {
+  uint32_t status = disk_status_load();
+  if (port == DISK_COMMAND_STATUS_PORT) {
+    disk_start_command(value);
+  } else if (status & DISK_STATUS_BUSY) {
+    return;
+  } else if (port == DISK_DRIVE_PORT) {
+    disk_drive = value;
+  } else if (port == DISK_LBA_LOW_PORT) {
+    disk_lba = (uint16_t)((disk_lba & 0xFF00u) | value);
+  } else if (port == DISK_LBA_HIGH_PORT) {
+    disk_lba = (uint16_t)((disk_lba & 0x00FFu) | ((uint16_t)value << 8));
+  } else if (port == DISK_DATA_PORT &&
+      (status & DISK_STATUS_DATA_ROOM)) {
+    disk_data[disk_data_index++] = value;
+    if (disk_data_index == sizeof disk_data) {
+      disk_write_request_t request = {
+        .drive = disk_write_drive, .lba = disk_write_lba
+      };
+      memcpy(request.data, disk_data, sizeof request.data);
+      if (queue_try_add(&disk_write_queue, &request))
+        disk_status_store(DISK_STATUS_BUSY);
+      else
+        disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
+    }
+  }
+}
+
+// Core 1 only; call on every foreground-loop iteration, including while
+// Wi-Fi is disconnected.
+static void core1_service_disk_write(void) {
+  disk_write_request_t request;
+  if (!queue_try_remove(&disk_write_queue, &request))
+    return;
+
+  uint32_t offset = (uint32_t)request.lba * FLASH_DISK_RECORD_BYTES;
+  bool ok = flash_disk_write_sector(request.drive, offset,
+    request.data, sizeof request.data);
+  if (!ok)
+    __atomic_store_n(&disk_fatal_error, 1, __ATOMIC_RELEASE);
+  disk_status_store(DISK_STATUS_READY | (ok ? 0 : DISK_STATUS_ERROR));
+}
+```
+
+The Z80 BIOS sets drive and 16-bit LBA, then writes command 1 for a read
+or command 2 for a write. A read returns 128 bytes from the data port;
+a write accepts exactly 128 bytes there, then changes status to BUSY
+until core 1 finishes the journaled update. Command 0 clears a transient
+protocol/queue error when not busy; a flash or journal failure remains
+latched until reboot and recovery. The BIOS must poll
+READY/DATA_READY/DATA_ROOM/BUSY instead of assuming host timing. No
+erase, program, blocking queue, or flash-safe call runs inside
+`io_trap_handler()`.
+
+#### WebSocket Terminal I/O Bridge (Final Phase 10 Integration)
+
+The terminal bridge follows the `pico-altair-8800` model: initialize the
+queues on core 0, load the boot image from flash (Section 6.3, entirely
+on core 0), then launch core 1 to own Wi-Fi and WebSocket work -- and,
+per Section 6.3, the flash disk-write service, in the same task. The
+exact HTTP/WebSocket library can be `pico-ws-server` as in that project,
+or another lwIP-based server with the same callback shape. Only the
+queue functions are visible to the Z80 trap.
+
+```c
+#include "pico/time.h"
+#include "pico/multicore.h"
+#include "pico/util/queue.h"
+
+enum {
+  TERM_DATA_PORT = 0x00,
+  TERM_STATUS_PORT = 0x01,
+  TERM_RX_DEPTH = 128,
+  TERM_TX_DEPTH = 512,
+  TERM_STATUS_RX_READY = 1u << 0,
+  TERM_STATUS_TX_ROOM = 1u << 1,
+  TERM_STATUS_CLIENT = 1u << 7
+};
+
+static queue_t terminal_rx_queue;  // Browser/Core 1 -> Z80/Core 0.
+static queue_t terminal_tx_queue;  // Z80/Core 0 -> Browser/Core 1.
+static uint32_t terminal_client_connected;
+static uint32_t terminal_rx_drop_count;
+static uint32_t terminal_tx_drop_count;
+
+static void terminal_queues_init(void) {
+  queue_init(&terminal_rx_queue, sizeof(uint8_t), TERM_RX_DEPTH);
+  queue_init(&terminal_tx_queue, sizeof(uint8_t), TERM_TX_DEPTH);
+}
+
+uint8_t process_virtual_io_read(uint8_t port) {
+  if (port >= DISK_COMMAND_STATUS_PORT && port <= DISK_DATA_PORT)
+    return disk_virtual_io_read(port);
+
+  if (port == TERM_DATA_PORT) {
+    uint8_t value = 0;
+    queue_try_remove(&terminal_rx_queue, &value);
+    return value;
+  }
+
+  if (port == TERM_STATUS_PORT) {
+    uint8_t status = 0;
+    if (queue_get_level(&terminal_rx_queue) != 0)
+      status |= TERM_STATUS_RX_READY;
+    if (queue_get_level(&terminal_tx_queue) < TERM_TX_DEPTH)
+      status |= TERM_STATUS_TX_ROOM;
+    if (__atomic_load_n(&terminal_client_connected, __ATOMIC_ACQUIRE))
+      status |= TERM_STATUS_CLIENT;
+    return status;
+  }
+
+  return 0xFF;
+}
+
+void process_virtual_io_write(uint8_t port, uint8_t value) {
+  if (port >= DISK_COMMAND_STATUS_PORT && port <= DISK_DATA_PORT) {
+    disk_virtual_io_write(port, value);
+    return;
+  }
+  if (port != TERM_DATA_PORT)
+    return;
+  if (!queue_try_add(&terminal_tx_queue, &value))
+    __atomic_fetch_add(&terminal_tx_drop_count, 1, __ATOMIC_RELAXED);
+}
+
+// Called by the WebSocket server on core 1 when browser bytes arrive.
+static bool terminal_ws_receive(const uint8_t *payload, size_t length,
+    void *user_data) {
+  (void)user_data;
+  for (size_t i = 0; i < length; ++i) {
+    uint8_t value = payload[i] == '\n' ? '\r' : payload[i];
+    if (!queue_try_add(&terminal_rx_queue, &value)) {
+      uint8_t discard;
+      queue_try_remove(&terminal_rx_queue, &discard);
+      if (!queue_try_add(&terminal_rx_queue, &value))
+        __atomic_fetch_add(&terminal_rx_drop_count, 1, __ATOMIC_RELAXED);
+    }
+  }
+  return true;
+}
+
+// Called by the WebSocket server on core 1 when it can send browser data.
+static size_t terminal_ws_supply(uint8_t *buffer, size_t max_length,
+    void *user_data) {
+  (void)user_data;
+  size_t count = 0;
+  while (count < max_length && queue_try_remove(&terminal_tx_queue,
+      &buffer[count]))
+    ++count;
+  return count;
+}
+
+static void terminal_ws_connected(void *user_data) {
+  (void)user_data;
+  __atomic_store_n(&terminal_client_connected, 1, __ATOMIC_RELEASE);
+}
+
+static void terminal_ws_disconnected(void *user_data) {
+  (void)user_data;
+  __atomic_store_n(&terminal_client_connected, 0, __ATOMIC_RELEASE);
+  uint8_t discard;
+  while (queue_try_remove(&terminal_rx_queue, &discard)) {}
+  while (queue_try_remove(&terminal_tx_queue, &discard)) {}
+}
+
+enum { WS_OUTPUT_TIMER_INTERVAL_MS = 20, WS_INPUT_TIMER_INTERVAL_MS = 10 };
+
+static uint32_t pending_ws_output;
+static uint32_t pending_ws_input;
+static struct repeating_timer ws_output_timer;
+static struct repeating_timer ws_input_timer;
+
+static bool ws_output_timer_callback(struct repeating_timer *t) {
+  (void)t;
+  __atomic_store_n(&pending_ws_output, 1, __ATOMIC_RELEASE);
+  return true;                      // Keep repeating.
+}
+
+static bool ws_input_timer_callback(struct repeating_timer *t) {
+  (void)t;
+  __atomic_store_n(&pending_ws_input, 1, __ATOMIC_RELEASE);
+  return true;
+}
+
+bool wifi_service_poll(void);
+void terminal_websocket_server_start(uint16_t port,
+  bool (*receive)(const uint8_t *, size_t, void *),
+  size_t (*supply)(uint8_t *, size_t, void *),
+  void (*connected)(void *), void (*disconnected)(void *));
+void terminal_websocket_server_poll_output(void);
+void terminal_websocket_server_poll_input(void);
+void supervisor_usb_poll_nonblocking(void);
+
+// The single core 1 entry point: WebSocket terminal and the Section 6.3
+// flash disk-write service share this one task, as
+// `multicore_launch_core1()` only accepts one function. The boot image
+// is already in SRAM by the time this runs (Section 6.3/8.10).
+static void core1_main(void) {
+  bool websocket_started = false;
+
+  while (true) {
+    core1_service_disk_write();
+
+    bool network_ready = wifi_service_poll();
+    if (network_ready && !websocket_started) {
+      terminal_websocket_server_start(8088, terminal_ws_receive,
+        terminal_ws_supply, terminal_ws_connected, terminal_ws_disconnected);
+      websocket_started = true;
+    }
+    if (network_ready && websocket_started &&
+        __atomic_exchange_n(&pending_ws_output, 0, __ATOMIC_ACQ_REL)) {
+      terminal_websocket_server_poll_output();
+    }
+    if (network_ready && websocket_started &&
+        __atomic_exchange_n(&pending_ws_input, 0, __ATOMIC_ACQ_REL)) {
+      terminal_websocket_server_poll_input();
+    }
+    tight_loop_contents();
+  }
+}
+
+static bool start_core1_services(void) {
+  terminal_queues_init();          // Core 0 creates queues before launch.
+  flash_service_queues_init();
+  disk_service_init();
+  if (!flash_safe_execute_core_init())
+    return false;                  // Core 0 registers as lockout victim.
+  if (!add_repeating_timer_ms(-WS_OUTPUT_TIMER_INTERVAL_MS,
+      ws_output_timer_callback, NULL, &ws_output_timer))
+    return false;
+  if (!add_repeating_timer_ms(-WS_INPUT_TIMER_INTERVAL_MS,
+      ws_input_timer_callback, NULL, &ws_input_timer)) {
+    cancel_repeating_timer(&ws_output_timer);
+    return false;
+  }
+  multicore_launch_core1(core1_main);
+  return true;
+}
+
+static void supervisor_fail_closed(const char *reason) {
+  gpio_put(PIN_RESET_N, 0);
+  isolate_buses();
+  stop_z80_clock();
+  printf("supervisor halted: %s\n", reason);
+  while (true)
+    tight_loop_contents();
+}
+
+int main(void) {
+  diagnostic_safe_startup();       // First GPIO action; RESET# stays LOW.
+  stdio_init_all();
+  mcp_spi_init();
+
+  if (!boot_cpm_from_flash())
+    supervisor_fail_closed("boot package or journal recovery failed");
+  if (!start_core1_services())
+    supervisor_fail_closed("flash lockout or timer initialization failed");
+  if (!set_z80_clock_hz(1000000))
+    supervisor_fail_closed("invalid Z80 clock configuration");
+
+  enable_io_trap();                // Arm before the Z80 can issue I/O.
+  gpio_put(PIN_RESET_N, 1);        // Boot image verified; begin execution.
+
+  while (true) {
+    core0_service_flash_requests();
+    supervisor_usb_poll_nonblocking();
+    tight_loop_contents();
+  }
+}
+```
+
+`wifi_service_poll()`,
+`terminal_websocket_server_start()`, and the two server poll functions
+stand for the network layer, not new Z80-facing logic. Their
+implementation belongs entirely to core 1 and should mirror the
+reference project's `core1_io_mgr.c` pattern. `wifi_service_poll()` is
+an idempotent, bounded lifecycle state machine: it initializes CYW43,
+enables station mode, and associates without sleeping; after a partial
+initialization failure it cleans up and retries with an internal
+backoff. Core 1 calls it on every loop even after the server starts. It
+returns false while unavailable, re-enters association after link loss,
+and returns true once the station link is usable again. This guarantees
+`core1_service_disk_write()` runs even with Wi-Fi absent or reconnecting.
+Once associated, disable power-saving with
+`cyw43_wifi_pm(&cyw43_state, CYW43_NO_POWERSAVE_MODE)` for lower
+terminal latency. `supervisor_usb_poll_nonblocking()` similarly stands
+for an optional command parser that must return promptly so core 0
+cannot starve flash ownership requests.
 
 #### Required Integration Order
 
@@ -1837,10 +3059,20 @@ runs or assert RESET# and supply at least three further full clocks.
 Only after the selected ownership procedure completes and the Z80 bus
 is verified high-impedance may the firmware enable either transceiver.
 While the trap is enabled, reserve SPI0 for the handler: no other IRQ,
-core, or main-loop operation may access the MCP23S17.
+core, or main-loop operation may access the MCP23S17. Drain
+`core0_service_flash_requests()` continuously from core 0's nonblocking
+foreground loop. For acquisition, leave trapping enabled while
+asserting BUSREQ# and waiting for BUSACK# LOW, then disable it. For
+release, enable trapping while BUSACK# is still LOW, then deassert
+BUSREQ# and wait for BUSACK# HIGH. Core 0 must call and check
+`flash_safe_execute_core_init()` before launching core 1 and must not
+use the multicore FIFO for anything else, because the lockout handler
+owns it. Journal recovery is the only core-0 flash write and occurs
+before core 1 launch; all runtime writes execute on core 1 while the
+Z80 is held in BUSACK#.
 
 
-### 8.12 Local Datasheet Set
+### 8.14 Local Datasheet Set
 
 - [Z84C00 CPU datasheet](datasheets/Z8400.PDF)
 - [AS6C1008 SRAM datasheet](datasheets/AS6C1008_Mar_2023V1.2.pdf)

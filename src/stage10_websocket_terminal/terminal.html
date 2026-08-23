@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Z80 Terminal</title>
+  <style>
+    :root { color-scheme: dark; background: #07110d; color: #b9f8cf; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 50% 20%, #10271c, #07110d 58%); }
+    header { height: 42px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #26543a; font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #status { color: #f2cc60; }
+    #screen { margin: 0; padding: 14px; width: 100%; height: calc(100vh - 42px); overflow: auto; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; font: 16px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; text-shadow: 0 0 8px #3bd17766; caret-color: #b9f8cf; }
+  </style>
+</head>
+<body>
+  <header><span>Z80 ROMless SBC</span><span id="status">connecting</span></header>
+  <pre id="screen" tabindex="0" aria-label="Z80 terminal"></pre>
+  <script>
+    const screen = document.querySelector('#screen');
+    const status = document.querySelector('#status');
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    let socket;
+    function connect() {
+      socket = new WebSocket(`ws://${location.host}/`);
+      socket.binaryType = 'arraybuffer';
+      socket.onopen = () => { status.textContent = 'connected'; screen.focus(); };
+      socket.onclose = () => { status.textContent = 'reconnecting'; setTimeout(connect, 1500); };
+      socket.onmessage = event => {
+        screen.textContent += typeof event.data === 'string' ? event.data : decoder.decode(event.data);
+        if (screen.textContent.length > 65536) screen.textContent = screen.textContent.slice(-49152);
+        screen.scrollTop = screen.scrollHeight;
+      };
+    }
+    screen.addEventListener('keydown', event => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      const special = { Enter: '\r', Backspace: '\b', Tab: '\t', ArrowUp: '\x1b[A', ArrowDown: '\x1b[B', ArrowRight: '\x1b[C', ArrowLeft: '\x1b[D' };
+      const text = special[event.key] ?? (event.key.length === 1 ? event.key : '');
+      if (text) { event.preventDefault(); socket.send(encoder.encode(text)); }
+    });
+    connect();
+  </script>
+</body>
+</html>

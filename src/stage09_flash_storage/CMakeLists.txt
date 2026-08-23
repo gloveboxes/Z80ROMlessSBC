@@ -1,0 +1,1 @@
+add_z80_stage(z80_stage09_flash_storage main.c z80_flash_disk pico_multicore)
