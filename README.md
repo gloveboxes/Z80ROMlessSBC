@@ -1,6 +1,7 @@
 # Z80 ROMless SBC - WIP Engineering & Build Specification
 
 **Repository:** [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC)
+**PDF edition:** [README.pdf](README.pdf)
 
 ## Overview
 
@@ -81,6 +82,29 @@ Run the host regression checks with:
 
 ```sh
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+```
+
+### PDF edition
+
+The checked-in `README.pdf` is generated from this file. The renderer preserves
+tables, highlighted code, local images, links, and MathML. Each Mermaid diagram
+gets a dedicated page; wide diagrams use A4 landscape pages and are rendered as
+vector graphics without the interactive preview controls.
+
+Install Node.js, Pandoc, and a Chromium-family browser, then run:
+
+```sh
+brew install node pandoc
+npm ci
+npm run pdf
+```
+
+The script searches for Microsoft Edge, Google Chrome, or Chromium. Set
+`BROWSER_EXECUTABLE` to use another installation. Optional input and output
+paths may be passed after `--`, for example:
+
+```sh
+npm run pdf -- README.md README.pdf
 ```
 
 ### Flash provisioning
@@ -446,7 +470,7 @@ Manufacturer datasheets:
 #### Address Bus A0-A7
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph CPU[Z84C0020PEC CPU]
     direction TB
     CA0["A0 - pin 30"]
@@ -482,7 +506,7 @@ flowchart LR
 #### Address Bus A8-A15
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph CPU[Z84C0020PEC CPU]
     direction TB
     CA8["A8 - pin 38"]
@@ -518,7 +542,7 @@ flowchart LR
 #### Data Bus D0-D7
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph CPU[Z84C0020PEC CPU]
     direction TB
     CD0["D0 - pin 14"]
@@ -3184,6 +3208,8 @@ bring-up.
 | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/CMakeLists.txt) | Pico SDK import, Pico 2 W target, project languages, and protected firmware flash linker boundary |
 | [src/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/CMakeLists.txt) | Shared firmware libraries, stage registration, and the `z80_cpm_images` artifact target |
 | [.gitignore](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.gitignore) | Generated build, Python cache, and assembler-output exclusions |
+| [package.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/package.json), [package-lock.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/package-lock.json) | Locked Mermaid and browser-automation dependencies plus the `npm run pdf` command |
+| [scripts/build-readme-pdf.mjs](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-readme-pdf.mjs) | Pandoc, Mermaid, and Chromium PDF renderer with full-page diagram layout |
 
 #### Cumulative Stage Applications
 
@@ -3228,3 +3254,37 @@ bring-up.
 | Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
 | Browser terminal | [terminal.html](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/terminal.html), [embed_html.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/embed_html.py) | Embedded Stage 10 terminal client and build-time HTML conversion |
 | Network configuration | [lwipopts.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/lwipopts.h), [wifi_config.h.in](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/wifi_config.h.in) | lwIP settings and build-time Wi-Fi credential template |
+
+## Generate the PDF
+
+The PDF renderer requires Node.js, Pandoc, and Microsoft Edge, Google Chrome,
+or Chromium. On macOS, install the command-line prerequisites with:
+
+```sh
+brew install node pandoc
+```
+
+From the repository root, install the locked dependencies and generate
+`README.pdf`:
+
+```sh
+npm ci
+npm run pdf
+```
+
+The renderer preserves tables, code highlighting, local images, links, and
+MathML. Mermaid diagrams are emitted as vector graphics on dedicated pages;
+wide diagrams automatically use A4 landscape orientation.
+
+Set `BROWSER_EXECUTABLE` if the browser is installed in a nonstandard location:
+
+```sh
+BROWSER_EXECUTABLE="/path/to/chrome" npm run pdf
+```
+
+To render another Markdown file or choose another output path, pass both paths
+after `--`:
+
+```sh
+npm run pdf -- README.md README.pdf
+```
