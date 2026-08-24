@@ -53,7 +53,7 @@ const css = String.raw`
 
 :root {
   color: #1f2933;
-  font-family: "Aptos", "Segoe UI", sans-serif;
+  font-family: Verdana, sans-serif;
   font-size: 9.4pt;
   line-height: 1.38;
 }
@@ -66,6 +66,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   color: #12263a;
   break-after: avoid-page;
+  font-family: "Aptos", "Segoe UI", sans-serif;
   line-height: 1.18;
 }
 
@@ -152,6 +153,8 @@ nav#TOC::before {
 
 nav#TOC ul { list-style: none; padding-left: 4mm; }
 nav#TOC > ul { padding-left: 0; }
+
+.web-toc { display: none; }
 
 .diagram-sheet {
   align-items: stretch;
