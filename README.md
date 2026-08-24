@@ -1160,9 +1160,11 @@ MCP23S17's $0.8V_{DD}$ SPI threshold, and the SRAM's CMOS control-input
 threshold. Its current TI datasheet specifies a worst-case 9.5 ns
 A-to-Y delay at 5 V with a 50 pF load over -40°C to 85°C. Combined
 with the ATF22V10C-15's 15 ns combinational delay and the SRAM's 55 ns
-chip-enable access, the control-to-data path can approach 79.5 ns before
-breadboard interconnect and Z80 setup allowance. This is why 1-6 MHz is
-measured rather than assumed, and why this design is not a
+chip-enable access, these datasheet maxima give a conservative 79.5 ns
+component-delay sum for the control-to-data path. This is not complete
+timing closure: breadboard interconnect and Z80 setup allowance are
+additional. This is why 1-6 MHz is measured rather than assumed, and
+why this design is not a
 20 MHz system despite using a 20 MHz-rated CPU.
 
 | Channel | AHCT244 input | AHCT244 output | Function |
@@ -1603,9 +1605,9 @@ GPIO.
 
   - *20 MHz CPU Rating:* The `Z84C0020PEC` rating applies to the CPU,
     not this no-wait-state breadboard system. At 20 MHz a clock period
-    is 50 ns, shorter than the approximately 79.5 ns worst-case GAL +
-    AHCT244 + SRAM select-to-data path before Z80 setup and breadboard
-    delay. Reaching 20 MHz requires a
+    is 50 ns, shorter than the conservative 79.5 ns component-delay sum
+    for the worst-case GAL + AHCT244 + SRAM select-to-data path. That sum
+    excludes Z80 setup and breadboard delay. Reaching 20 MHz requires a
     redesigned control path, hardware-generated memory and I/O wait
     states (or deterministic clock gating), and a PCB-level signal-
     integrity review; changing the Pico PWM frequency is insufficient.
@@ -2344,19 +2346,29 @@ static bool sram_pattern_test(bool complement) {
 
 1. With transceivers disabled, require A16 LOW, CE2 HIGH, and CE#, OE#,
   and WE# HIGH directly at the SRAM.
-2. In DMA mode, write and read one byte. Require WE# HIGH before address
+2. **GAL -> AHCT244 -> SRAM end-to-end:** Keep the data transceivers
+  disabled. With RESET# LOW, toggle one Pico CE#/OE#/WE# candidate at a
+  time and probe the corresponding GAL pre-buffer pin, AHCT244 output,
+  and final SRAM pin. Keep CE# HIGH while testing OE#/WE#; test CE# only
+  with OE#/WE# HIGH. Then set RESET# and pulled-up BUSACK# HIGH and repeat
+  by pulling MREQ#/RD#/WR# LOW individually through 1 kOhm. Require the
+  selected path to reach below 0.3 V at the SRAM, return to at least
+  4.4 V, preserve polarity, and leave the other two SRAM controls HIGH.
+3. In DMA mode, write and read one byte. Require WE# HIGH before address
   or data changes, and disable the Pico data driver before asserting
   OE# for readback.
-3. Write unique values at 0x0000 and each power-of-two address from
+4. Write unique values at 0x0000 and each power-of-two address from
   0x0001 through 0x8000. Verify every value remains independent.
-4. At several addresses test 0x00, 0xFF, 0x55, 0xAA, walking-one, and
+5. At several addresses test 0x00, 0xFF, 0x55, 0xAA, walking-one, and
   walking-zero data.
-5. Fill all 65,536 bytes with the XOR of the address bytes, verify it,
+6. Fill all 65,536 bytes with the XOR of the address bytes, verify it,
   then repeat with the complement. Run the March test afterward.
-6. Repeat after ten power cycles and with the intended 1 MHz timing.
+7. Repeat after ten power cycles and with the intended 1 MHz timing.
 
-**Pass gate:** Zero address, data, full-range pattern, or March-test
-errors and no overlap between CPU and Pico SRAM control sources.
+**Pass gate:** Every end-to-end control path reaches the correct SRAM
+pin with no adjacent-control activity, zero address/data/full-range
+pattern or March-test errors, and no overlap between CPU and Pico SRAM
+control sources.
 
 ### 8.8 Phase 7 - Z84C0020PEC CPU, Installed Last
 
@@ -2642,9 +2654,9 @@ with the shared [disk device](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
 
 Loading a boot image is now a synchronous, core-0-only operation: a
 flash read is an ordinary memory access through the XIP-mapped pointer
-(Section 6.3), so no filesystem, blocking I/O call, or core 1 task is
-needed to bring the initial image into SRAM, unlike the SD design this
-replaces. Only CP/M's live disk-sector *writes* still need to run on
+(Section 6.3), so bringing the initial image into SRAM needs no
+filesystem, blocking I/O call, or core 1 task. Only CP/M's live
+disk-sector *writes* still need to run on
 core 1 and cross back to core 0's foreground loop, because only they
 need to freeze the Z80 around a flash erase/program cycle
 (Section 6.3).
@@ -2723,7 +2735,7 @@ _Static_assert(sizeof(z80_boot_manifest_t) == 20,
   "boot manifest layout must match the host packer");
 
 // Core 0 only, entirely synchronous: a flash read needs no filesystem,
-// no queue, and no core 1 task, unlike the SD design this replaces.
+// queue, or core 1 task.
 static bool prepare_reset_held_dma(void) {
   isolate_buses();
   gpio_put(PIN_RESET_N, 0);
