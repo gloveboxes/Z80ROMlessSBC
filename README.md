@@ -156,26 +156,25 @@ Purchase quantities include a small allowance for breadboard spares.
 | 1 | 2N3904 | TO-92 | Pulls MCP23S17 RESET# LOW whenever GAL address access is disabled |
 | 1 | 1N5819 | Axial diode | Schottky power OR from external +5 V to Pico VSYS |
 
-> **Nine-package all-through-hole design:** The ATF22V10 replaces the former
-> 74HCT157, 74HCT08, and their discrete source-selection wiring. It
-> computes all three SRAM controls from RESET#, BUSACK#, the Pico DMA
+> **Nine-package all-through-hole design:** The ATF22V10 computes all
+> three SRAM controls from RESET#, BUSACK#, the Pico DMA
 > controls, and the Z80 MREQ#/RD#/WR# outputs (Section 1.2). The
 > ATF22V10 guarantees only a TTL-level 2.4 V HIGH, so its SRAM outputs
 > pass through the SN74HCT541N rather than driving the 5 V SRAM
 > directly. The same HCT541 translates Pico CLK, BUSREQ#, and the three
 > MCP23S17 SPI inputs to guaranteed 5 V levels. Pico GP3 drives the
 > Z80 RESET# input directly because the Z84C00 specifies a 2.2 V HIGH
-> threshold for non-clock inputs; the Z80 clock retains its stricter
-> translated path. The data bus uses separate fixed-direction
+> threshold for non-clock inputs; the Z80 clock uses the HCT541 path to
+> satisfy its stricter threshold. The data bus uses separate fixed-direction
 > SN74AHCT245N and SN74LVC245AN devices because no single PDIP part
-> provides the original dual-supply, bidirectional, power-off-safe
+> provides a dual-supply, bidirectional, power-off-safe
 > function. Two spare GAL inputs accept the existing DIR and
 > master-enable controls, and two spare GAL outputs generate mutually
 > exclusive active-low OEs. A third spare GAL output and one 2N3904
 > hold the MCP23S17 in reset outside DMA/trap access, allowing its
 > reset-default input ports to connect directly to pulled-up A0-A15 and
-> eliminating both address transceivers. This produces 9 active packages
-> while retaining deterministic isolation and safe power sequencing. The
+> safely share the address bus. The design uses 9 active packages with
+> deterministic isolation and safe power sequencing. The
 > SN74LVC244AN buffers RD#/WR# because Pico 2 GP27 and GP28 are
 > standard ADC-capable pads, not 5 V-tolerant FT pads. It also buffers
 > BUSACK#, IORQ#, and MCP SO: although GP0, GP1, and GP20 are FT pads,
@@ -896,8 +895,7 @@ much wider address/data interfaces to span two board widths.
   returns here as SRAM CE#/OE#/WE#. This deliberate round trip keeps
   the HCT541's clock channel local to the Z80 instead (see below), which
   matters far more than SRAM control length since SRAM CE#/OE#/WE# only
-  toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#,
-  which already crossed this same boundary in the original design. The
+  toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#. The
   MCP23S17 now sits here so its 16 port lines join the pulled-up shared
   address bus at the Memory/Core boundary. Q1 beside it provides
   reset-based hardware isolation. HCT541 SPI outputs also cross only
@@ -1582,23 +1580,13 @@ GPIO.
 
 ## 7. Reference Firmware Implementations
 
-This section previously duplicated firmware code with its own,
-ungrounded pin names, separate from the pin map and build phases in
-Section 8. To keep one definitive source, that code has been merged
-into Section 8.13, updated to the current pin numbers and to use
-8.13's contention-safe helpers: the variable-frequency clock generator
-now appears under "Variable-Frequency Clock Generation" (Phase 2), bus
-acquisition under "Z80 Single-Step and Timed Bus Request" (Phases 7-8),
-the I/O trap ISR under "Synchronous I/O Trap Handler" (Phase 8), and the
-flash-backed image loader under "Flash Disk Image Loader" (Phase 9),
-and the queue-backed terminal bridge under "WebSocket Terminal I/O
-Bridge" (final Phase 10 integration).
-
-The maintained, buildable firmware is now the canonical implementation:
+The maintained, buildable firmware is the canonical implementation:
 [browse the source tree](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src)
 or use the [complete source index](#815-source-code-index). Section 8.13
-remains a design-level reference for the safety invariants and integration
-order, but its excerpts should not be copied in place of the maintained source.
+provides design-level excerpts for the safety invariants and integration
+order: variable-frequency clock generation, bus acquisition, synchronous
+I/O trapping, flash image loading, and terminal integration. Do not copy
+those excerpts in place of the maintained source.
 
 ## 8. Progressive Build and Bring-Up Plan
 
@@ -2133,8 +2121,8 @@ detailed failure and call `isolate_buses()` before returning.
 (pin 23) through the SN74LVC244AN input buffer (Section 5.3); IORQ#,
 RD#, and MCP SO use the same buffer, so no 5 V output reaches the
 Pico directly. `PIN_SRAM_CE_N` is fixed at GP5 (ATF22V10 pin 7;
-Section 1.2), moved off GP23, which on the Pico 2 W is
-dedicated to the CYW43439 wireless module's control interface (shared
+Section 1.2). GP23 on the Pico 2 W is dedicated to the CYW43439
+wireless module's control interface (shared
 with GP24/GP25/GP29) and must never be repurposed. `PIN_DATA_0`-
 `PIN_DATA_7` occupy GP10-GP17. There is no `PIN_SRAM_SOURCE_SELECT`
 GPIO: the ATF22V10 combines RESET# and BUSACK# inside each programmed
