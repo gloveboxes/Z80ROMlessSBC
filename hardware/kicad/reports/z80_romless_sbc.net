@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-08-23T20:41:50")
+		(date "2026-08-24T16:01:16")
 		(tool "Eeschema 10.0.5")
 		(sheet
 			(number "1")
@@ -400,9 +400,9 @@
 		)
 		(comp
 			(ref "C5")
-			(value "100n U5 HCT245")
+			(value "100n U7 LVC244")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U5 HCT245")
+			(description "Z80ROMlessSBC 100n U7 LVC244")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -410,7 +410,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U5 HCT245")
+					(name "Description") "Z80ROMlessSBC 100n U7 LVC244")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -446,9 +446,9 @@
 		)
 		(comp
 			(ref "C6")
-			(value "100n U6 HCT245")
+			(value "100n U8 MCP")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U6 HCT245")
+			(description "Z80ROMlessSBC 100n U8 MCP")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -456,7 +456,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U6 HCT245")
+					(name "Description") "Z80ROMlessSBC 100n U8 MCP")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -492,9 +492,9 @@
 		)
 		(comp
 			(ref "C7")
-			(value "100n U7 LVC244")
+			(value "100n U9 AHCT245")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U7 LVC244")
+			(description "Z80ROMlessSBC 100n U9 AHCT245")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -502,7 +502,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U7 LVC244")
+					(name "Description") "Z80ROMlessSBC 100n U9 AHCT245")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -538,9 +538,9 @@
 		)
 		(comp
 			(ref "C8")
-			(value "100n U8 MCP")
+			(value "100n U10 LVC245")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U8 MCP")
+			(description "Z80ROMlessSBC 100n U10 LVC245")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -548,7 +548,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U8 MCP")
+					(name "Description") "Z80ROMlessSBC 100n U10 LVC245")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -584,9 +584,9 @@
 		)
 		(comp
 			(ref "C9")
-			(value "100n U9 VCCA")
+			(value "22u Memory Board")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U9 VCCA")
+			(description "Z80ROMlessSBC 22u Memory Board")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -594,7 +594,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U9 VCCA")
+					(name "Description") "Z80ROMlessSBC 22u Memory Board")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -630,9 +630,9 @@
 		)
 		(comp
 			(ref "C10")
-			(value "100n U9 VCCB")
+			(value "22u Core Board")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U9 VCCB")
+			(description "Z80ROMlessSBC 22u Core Board")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -640,7 +640,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U9 VCCB")
+					(name "Description") "Z80ROMlessSBC 22u Core Board")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -676,9 +676,9 @@
 		)
 		(comp
 			(ref "C11")
-			(value "10u Memory Board")
+			(value "22u Peripheral Board")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 10u Memory Board")
+			(description "Z80ROMlessSBC 22u Peripheral Board")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -686,7 +686,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10u Memory Board")
+					(name "Description") "Z80ROMlessSBC 22u Peripheral Board")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -722,9 +722,9 @@
 		)
 		(comp
 			(ref "C12")
-			(value "10u Core Board")
+			(value "100u Supply Entry")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 10u Core Board")
+			(description "Z80ROMlessSBC 100u Supply Entry")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -732,7 +732,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10u Core Board")
+					(name "Description") "Z80ROMlessSBC 100u Supply Entry")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -752,98 +752,6 @@
 				(tstamps "/")
 			)
 			(tstamps "4c8b7a16-a1da-5b5c-838d-9cb0f0285799")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "2")
-						)
-						(pin
-							(num "1")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "C13")
-			(value "10u Peripheral Board")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 10u Peripheral Board")
-			(fields
-				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC 10u Peripheral Board")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "CAPACITOR")
-				(description "Z80ROMlessSBC project symbol: C")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "c2251ae2-6edf-558b-a3b2-046e356fd35c")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "2")
-						)
-						(pin
-							(num "1")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "C14")
-			(value "47u Supply Entry")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 47u Supply Entry")
-			(fields
-				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC 47u Supply Entry")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "CAPACITOR")
-				(description "Z80ROMlessSBC project symbol: C")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "d6c416ea-293f-55f6-80b1-d231d766cac9")
 			(units
 				(unit
 					(name "A")
@@ -945,6 +853,55 @@
 						)
 						(pin
 							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "Q1")
+			(value "2N3904 MCP RESET")
+			(footprint "Package_TO_SOT_THT:TO-92_Inline")
+			(description "Z80ROMlessSBC 2N3904 MCP RESET")
+			(fields
+				(field
+					(name "Footprint") "Package_TO_SOT_THT:TO-92_Inline")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 2N3904 MCP RESET")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "NPN")
+				(description "Z80ROMlessSBC project symbol: 2N3904")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "85bca9f6-838a-592b-a8cd-6737068e9827")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "3")
 						)
 					)
 				)
@@ -1780,9 +1737,9 @@
 		)
 		(comp
 			(ref "R19")
-			(value "10k DATA_OE_N")
+			(value "10k PICO_SPI_CS_N")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k DATA_OE_N")
+			(description "Z80ROMlessSBC 10k PICO_SPI_CS_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1790,7 +1747,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k DATA_OE_N")
+					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_CS_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1826,9 +1783,9 @@
 		)
 		(comp
 			(ref "R20")
-			(value "10k ADDR_OE_N")
+			(value "10k PICO_WE_N")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k ADDR_OE_N")
+			(description "Z80ROMlessSBC 10k PICO_WE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1836,7 +1793,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k ADDR_OE_N")
+					(name "Description") "Z80ROMlessSBC 10k PICO_WE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1872,9 +1829,9 @@
 		)
 		(comp
 			(ref "R21")
-			(value "10k PICO_SPI_CS_N")
+			(value "10k PICO_OE_N")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_CS_N")
+			(description "Z80ROMlessSBC 10k PICO_OE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1882,7 +1839,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_CS_N")
+					(name "Description") "Z80ROMlessSBC 10k PICO_OE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1918,9 +1875,9 @@
 		)
 		(comp
 			(ref "R22")
-			(value "10k PICO_WE_N")
+			(value "10k PICO_CLK")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_WE_N")
+			(description "Z80ROMlessSBC 10k PICO_CLK")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1928,7 +1885,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_WE_N")
+					(name "Description") "Z80ROMlessSBC 10k PICO_CLK")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1964,9 +1921,9 @@
 		)
 		(comp
 			(ref "R23")
-			(value "10k PICO_OE_N")
+			(value "10k RESET_N")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_OE_N")
+			(description "Z80ROMlessSBC 10k RESET_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1974,7 +1931,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_OE_N")
+					(name "Description") "Z80ROMlessSBC 10k RESET_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2010,9 +1967,9 @@
 		)
 		(comp
 			(ref "R24")
-			(value "10k PICO_CLK")
+			(value "10k DATA_ENABLE")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_CLK")
+			(description "Z80ROMlessSBC 10k DATA_ENABLE")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2020,7 +1977,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_CLK")
+					(name "Description") "Z80ROMlessSBC 10k DATA_ENABLE")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2056,9 +2013,9 @@
 		)
 		(comp
 			(ref "R25")
-			(value "10k RESET_N")
+			(value "10k DATA_DIR")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k RESET_N")
+			(description "Z80ROMlessSBC 10k DATA_DIR")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2066,7 +2023,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k RESET_N")
+					(name "Description") "Z80ROMlessSBC 10k DATA_DIR")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2102,9 +2059,9 @@
 		)
 		(comp
 			(ref "R26")
-			(value "10k DATA_DIR")
+			(value "10k ADDR_ENABLE")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k DATA_DIR")
+			(description "Z80ROMlessSBC 10k ADDR_ENABLE")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2112,7 +2069,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k DATA_DIR")
+					(name "Description") "Z80ROMlessSBC 10k ADDR_ENABLE")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2148,9 +2105,9 @@
 		)
 		(comp
 			(ref "R27")
-			(value "10k ADDR_DIR")
+			(value "10k PICO_SPI_SCK")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k ADDR_DIR")
+			(description "Z80ROMlessSBC 10k PICO_SPI_SCK")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2158,7 +2115,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k ADDR_DIR")
+					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_SCK")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2194,9 +2151,9 @@
 		)
 		(comp
 			(ref "R28")
-			(value "10k PICO_SPI_SCK")
+			(value "10k PICO_SPI_MOSI")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_SCK")
+			(description "Z80ROMlessSBC 10k PICO_SPI_MOSI")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2204,7 +2161,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_SCK")
+					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_MOSI")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2240,9 +2197,9 @@
 		)
 		(comp
 			(ref "R29")
-			(value "10k PICO_SPI_MOSI")
+			(value "4.7k MCP reset base")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_MOSI")
+			(description "Z80ROMlessSBC 4.7k MCP reset base")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2250,7 +2207,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_MOSI")
+					(name "Description") "Z80ROMlessSBC 4.7k MCP reset base")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2276,6 +2233,299 @@
 					(pins
 						(pin
 							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R30")
+			(value "47k MCP reset base pull-down")
+			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+			(description "Z80ROMlessSBC 47k MCP reset base pull-down")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 47k MCP reset base pull-down")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RESISTOR")
+				(description "Z80ROMlessSBC project symbol: 10k")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "94d52265-df57-53e0-9214-f7c0a73c71f9")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R31")
+			(value "10k MCP RESET# pull-up")
+			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+			(description "Z80ROMlessSBC 10k MCP RESET# pull-up")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 10k MCP RESET# pull-up")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RESISTOR")
+				(description "Z80ROMlessSBC project symbol: 10k")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "53036fe8-1457-5ef8-a01c-37c2c81ec6cf")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "RN1")
+			(value "8x10k A0-A7 pull-up")
+			(description "Z80ROMlessSBC 8x10k A0-A7 pull-up")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 8x10k A0-A7 pull-up")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RN8")
+				(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "0f20059a-3717-5e6c-b695-4dd6ac20227f")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "RN2")
+			(value "8x10k A8-A15 pull-up")
+			(description "Z80ROMlessSBC 8x10k A8-A15 pull-up")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 8x10k A8-A15 pull-up")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RN8")
+				(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "5dc49cbb-1936-5de1-8764-40ccdb3434e0")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "RN3")
+			(value "8x10k Pico D0-D7 pull-down")
+			(description "Z80ROMlessSBC 8x10k Pico D0-D7 pull-down")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC 8x10k Pico D0-D7 pull-down")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RN8")
+				(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "1d9c570d-4678-508e-bbbd-768d5ed18a2e")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
 						)
 						(pin
 							(num "2")
@@ -2836,206 +3086,6 @@
 			)
 		)
 		(comp
-			(ref "U5")
-			(value "SN74HCT245N LOW")
-			(footprint "Package_DIP:DIP-20_W7.62mm")
-			(description "Z80ROMlessSBC SN74HCT245N LOW")
-			(fields
-				(field
-					(name "Footprint") "Package_DIP:DIP-20_W7.62mm")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC SN74HCT245N LOW")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "HCT245")
-				(description "Z80ROMlessSBC project symbol: SN74HCT245N")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "408fd0f0-29a6-5e87-ac8a-c5d424c4a415")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "19")
-						)
-						(pin
-							(num "9")
-						)
-						(pin
-							(num "8")
-						)
-						(pin
-							(num "7")
-						)
-						(pin
-							(num "6")
-						)
-						(pin
-							(num "5")
-						)
-						(pin
-							(num "4")
-						)
-						(pin
-							(num "3")
-						)
-						(pin
-							(num "2")
-						)
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "10")
-						)
-						(pin
-							(num "20")
-						)
-						(pin
-							(num "11")
-						)
-						(pin
-							(num "12")
-						)
-						(pin
-							(num "13")
-						)
-						(pin
-							(num "14")
-						)
-						(pin
-							(num "15")
-						)
-						(pin
-							(num "16")
-						)
-						(pin
-							(num "17")
-						)
-						(pin
-							(num "18")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "U6")
-			(value "SN74HCT245N HIGH")
-			(footprint "Package_DIP:DIP-20_W7.62mm")
-			(description "Z80ROMlessSBC SN74HCT245N HIGH")
-			(fields
-				(field
-					(name "Footprint") "Package_DIP:DIP-20_W7.62mm")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC SN74HCT245N HIGH")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "HCT245")
-				(description "Z80ROMlessSBC project symbol: SN74HCT245N")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "67082496-adfe-5d45-b00e-55a2889334e8")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "19")
-						)
-						(pin
-							(num "9")
-						)
-						(pin
-							(num "8")
-						)
-						(pin
-							(num "7")
-						)
-						(pin
-							(num "6")
-						)
-						(pin
-							(num "5")
-						)
-						(pin
-							(num "4")
-						)
-						(pin
-							(num "3")
-						)
-						(pin
-							(num "2")
-						)
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "10")
-						)
-						(pin
-							(num "20")
-						)
-						(pin
-							(num "11")
-						)
-						(pin
-							(num "12")
-						)
-						(pin
-							(num "13")
-						)
-						(pin
-							(num "14")
-						)
-						(pin
-							(num "15")
-						)
-						(pin
-							(num "16")
-						)
-						(pin
-							(num "17")
-						)
-						(pin
-							(num "18")
-						)
-					)
-				)
-			)
-		)
-		(comp
 			(ref "U7")
 			(value "SN74LVC244AN")
 			(footprint "Package_DIP:DIP-20_W7.62mm")
@@ -3261,22 +3311,22 @@
 		)
 		(comp
 			(ref "U9")
-			(value "SN74LVC8T245PW")
-			(footprint "Package_DIP:DIP-24_W15.24mm")
-			(description "Z80ROMlessSBC SN74LVC8T245PW")
+			(value "SN74AHCT245N Pico-to-bus")
+			(footprint "Package_DIP:DIP-20_W7.62mm")
+			(description "Z80ROMlessSBC SN74AHCT245N Pico-to-bus")
 			(fields
 				(field
-					(name "Footprint") "Package_DIP:DIP-24_W15.24mm")
+					(name "Footprint") "Package_DIP:DIP-20_W7.62mm")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC SN74LVC8T245PW")
+					(name "Description") "Z80ROMlessSBC SN74AHCT245N Pico-to-bus")
 			)
 			(libsource
 				(lib "Z80SBC")
-				(part "LVC8T245")
-				(description "Z80ROMlessSBC project symbol: SN74LVC8T245PW")
+				(part "AHCT245")
+				(description "Z80ROMlessSBC project symbol: SN74AHCT245N")
 			)
 			(property
 				(name "Sheetname")
@@ -3296,10 +3346,7 @@
 					(name "A")
 					(pins
 						(pin
-							(num "22")
-						)
-						(pin
-							(num "10")
+							(num "19")
 						)
 						(pin
 							(num "9")
@@ -3326,22 +3373,22 @@
 							(num "2")
 						)
 						(pin
-							(num "11")
+							(num "1")
 						)
 						(pin
-							(num "1")
+							(num "10")
+						)
+						(pin
+							(num "20")
+						)
+						(pin
+							(num "11")
 						)
 						(pin
 							(num "12")
 						)
 						(pin
-							(num "23")
-						)
-						(pin
 							(num "13")
-						)
-						(pin
-							(num "24")
 						)
 						(pin
 							(num "14")
@@ -3358,14 +3405,105 @@
 						(pin
 							(num "18")
 						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U10")
+			(value "SN74LVC245AN bus-to-Pico")
+			(footprint "Package_DIP:DIP-20_W7.62mm")
+			(description "Z80ROMlessSBC SN74LVC245AN bus-to-Pico")
+			(fields
+				(field
+					(name "Footprint") "Package_DIP:DIP-20_W7.62mm")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC SN74LVC245AN bus-to-Pico")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "LVC245")
+				(description "Z80ROMlessSBC project symbol: SN74LVC245AN")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "989c0815-8fb0-5f2c-90f3-8e4c4cb83240")
+			(units
+				(unit
+					(name "A")
+					(pins
 						(pin
 							(num "19")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "10")
 						)
 						(pin
 							(num "20")
 						)
 						(pin
-							(num "21")
+							(num "11")
+						)
+						(pin
+							(num "12")
+						)
+						(pin
+							(num "13")
+						)
+						(pin
+							(num "14")
+						)
+						(pin
+							(num "15")
+						)
+						(pin
+							(num "16")
+						)
+						(pin
+							(num "17")
+						)
+						(pin
+							(num "18")
 						)
 					)
 				)
@@ -3377,13 +3515,13 @@
 	(libparts
 		(libpart
 			(lib "Z80SBC")
-			(part "ATF22V10")
-			(description "Z80ROMlessSBC project symbol: ATF22V10B/C")
+			(part "AHCT245")
+			(description "Z80ROMlessSBC project symbol: SN74AHCT245N")
 			(fields
 				(field
 					(name "Reference") "U")
 				(field
-					(name "Value") "ATF22V10B/C")
+					(name "Value") "SN74AHCT245N")
 				(field
 					(name "Footprint")
 				)
@@ -3391,210 +3529,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC project symbol: ATF22V10B/C")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "RESET#")
-					(type "input")
-				)
-				(pin
-					(num "2")
-					(name "BUSACK#")
-					(type "input")
-				)
-				(pin
-					(num "3")
-					(name "PICO_WE#")
-					(type "input")
-				)
-				(pin
-					(num "4")
-					(name "Z80_WR#")
-					(type "input")
-				)
-				(pin
-					(num "5")
-					(name "PICO_OE#")
-					(type "input")
-				)
-				(pin
-					(num "6")
-					(name "Z80_RD#")
-					(type "input")
-				)
-				(pin
-					(num "7")
-					(name "PICO_CE#")
-					(type "input")
-				)
-				(pin
-					(num "8")
-					(name "Z80_MREQ#")
-					(type "input")
-				)
-				(pin
-					(num "9")
-					(name "UNUSED_IN1")
-					(type "input")
-				)
-				(pin
-					(num "10")
-					(name "UNUSED_IN2")
-					(type "input")
-				)
-				(pin
-					(num "11")
-					(name "UNUSED_IN3")
-					(type "input")
-				)
-				(pin
-					(num "12")
-					(name "GND")
-					(type "power_in")
-				)
-				(pin
-					(num "13")
-					(name "UNUSED_IN4")
-					(type "input")
-				)
-				(pin
-					(num "14")
-					(name "SRAM_WE_PRE#")
-					(type "output")
-				)
-				(pin
-					(num "15")
-					(name "SRAM_OE_PRE#")
-					(type "output")
-				)
-				(pin
-					(num "16")
-					(name "SRAM_CE_PRE#")
-					(type "output")
-				)
-				(pin
-					(num "17")
-					(name "CONST_LOW1")
-					(type "output")
-				)
-				(pin
-					(num "18")
-					(name "CONST_LOW2")
-					(type "output")
-				)
-				(pin
-					(num "19")
-					(name "CONST_LOW3")
-					(type "output")
-				)
-				(pin
-					(num "20")
-					(name "CONST_LOW4")
-					(type "output")
-				)
-				(pin
-					(num "21")
-					(name "CONST_LOW5")
-					(type "output")
-				)
-				(pin
-					(num "22")
-					(name "CONST_LOW6")
-					(type "output")
-				)
-				(pin
-					(num "23")
-					(name "CONST_LOW7")
-					(type "output")
-				)
-				(pin
-					(num "24")
-					(name "VCC")
-					(type "power_in")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
-			(part "CAPACITOR")
-			(description "Z80ROMlessSBC project symbol: C")
-			(fields
-				(field
-					(name "Reference") "C")
-				(field
-					(name "Value") "C")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: C")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "+")
-					(type "passive")
-				)
-				(pin
-					(num "2")
-					(name "-")
-					(type "passive")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
-			(part "DIODE")
-			(description "Z80ROMlessSBC project symbol: 1N5819")
-			(fields
-				(field
-					(name "Reference") "D")
-				(field
-					(name "Value") "1N5819")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: 1N5819")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "K")
-					(type "passive")
-				)
-				(pin
-					(num "2")
-					(name "A")
-					(type "passive")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
-			(part "HCT245")
-			(description "Z80ROMlessSBC project symbol: SN74HCT245N")
-			(fields
-				(field
-					(name "Reference") "U")
-				(field
-					(name "Value") "SN74HCT245N")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: SN74HCT245N")
+					(name "Description") "Z80ROMlessSBC project symbol: SN74AHCT245N")
 			)
 			(pins
 				(pin
@@ -3696,6 +3631,209 @@
 					(num "20")
 					(name "VCC")
 					(type "power_in")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "ATF22V10")
+			(description "Z80ROMlessSBC project symbol: ATF22V10B/C")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "ATF22V10B/C")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: ATF22V10B/C")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "RESET#")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "BUSACK#")
+					(type "input")
+				)
+				(pin
+					(num "3")
+					(name "PICO_WE#")
+					(type "input")
+				)
+				(pin
+					(num "4")
+					(name "Z80_WR#")
+					(type "input")
+				)
+				(pin
+					(num "5")
+					(name "PICO_OE#")
+					(type "input")
+				)
+				(pin
+					(num "6")
+					(name "Z80_RD#")
+					(type "input")
+				)
+				(pin
+					(num "7")
+					(name "PICO_CE#")
+					(type "input")
+				)
+				(pin
+					(num "8")
+					(name "Z80_MREQ#")
+					(type "input")
+				)
+				(pin
+					(num "9")
+					(name "DATA_ENABLE")
+					(type "input")
+				)
+				(pin
+					(num "10")
+					(name "ADDR_ENABLE")
+					(type "input")
+				)
+				(pin
+					(num "11")
+					(name "DATA_DIR")
+					(type "input")
+				)
+				(pin
+					(num "12")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "13")
+					(name "UNUSED_IN4")
+					(type "input")
+				)
+				(pin
+					(num "14")
+					(name "SRAM_WE_PRE#")
+					(type "output")
+				)
+				(pin
+					(num "15")
+					(name "SRAM_OE_PRE#")
+					(type "output")
+				)
+				(pin
+					(num "16")
+					(name "SRAM_CE_PRE#")
+					(type "output")
+				)
+				(pin
+					(num "17")
+					(name "DATA_UP_OE#")
+					(type "output")
+				)
+				(pin
+					(num "18")
+					(name "DATA_DOWN_OE#")
+					(type "output")
+				)
+				(pin
+					(num "19")
+					(name "MCP_RESET_DRIVE")
+					(type "output")
+				)
+				(pin
+					(num "20")
+					(name "CONST_LOW1")
+					(type "output")
+				)
+				(pin
+					(num "21")
+					(name "CONST_LOW2")
+					(type "output")
+				)
+				(pin
+					(num "22")
+					(name "CONST_LOW3")
+					(type "output")
+				)
+				(pin
+					(num "23")
+					(name "CONST_LOW4")
+					(type "output")
+				)
+				(pin
+					(num "24")
+					(name "VCC")
+					(type "power_in")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "CAPACITOR")
+			(description "Z80ROMlessSBC project symbol: C")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "C")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: C")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "+")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "-")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "DIODE")
+			(description "Z80ROMlessSBC project symbol: 1N5819")
+			(fields
+				(field
+					(name "Reference") "D")
+				(field
+					(name "Value") "1N5819")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: 1N5819")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "K")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "A")
+					(type "passive")
 				)
 			)
 		)
@@ -3943,13 +4081,13 @@
 		)
 		(libpart
 			(lib "Z80SBC")
-			(part "LVC8T245")
-			(description "Z80ROMlessSBC project symbol: SN74LVC8T245PW")
+			(part "LVC245")
+			(description "Z80ROMlessSBC project symbol: SN74LVC245AN")
 			(fields
 				(field
 					(name "Reference") "U")
 				(field
-					(name "Value") "SN74LVC8T245PW")
+					(name "Value") "SN74LVC245AN")
 				(field
 					(name "Footprint")
 				)
@@ -3957,127 +4095,107 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC project symbol: SN74LVC8T245PW")
+					(name "Description") "Z80ROMlessSBC project symbol: SN74LVC245AN")
 			)
 			(pins
 				(pin
 					(num "1")
-					(name "VCCA")
-					(type "power_in")
-				)
-				(pin
-					(num "2")
 					(name "DIR")
 					(type "input")
 				)
 				(pin
-					(num "3")
+					(num "2")
 					(name "A1")
 					(type "bidirectional")
 				)
 				(pin
-					(num "4")
+					(num "3")
 					(name "A2")
 					(type "bidirectional")
 				)
 				(pin
-					(num "5")
+					(num "4")
 					(name "A3")
 					(type "bidirectional")
 				)
 				(pin
-					(num "6")
+					(num "5")
 					(name "A4")
 					(type "bidirectional")
 				)
 				(pin
-					(num "7")
+					(num "6")
 					(name "A5")
 					(type "bidirectional")
 				)
 				(pin
-					(num "8")
+					(num "7")
 					(name "A6")
 					(type "bidirectional")
 				)
 				(pin
-					(num "9")
+					(num "8")
 					(name "A7")
 					(type "bidirectional")
 				)
 				(pin
-					(num "10")
+					(num "9")
 					(name "A8")
 					(type "bidirectional")
 				)
 				(pin
+					(num "10")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
 					(num "11")
-					(name "GND1")
-					(type "power_in")
-				)
-				(pin
-					(num "12")
-					(name "GND2")
-					(type "power_in")
-				)
-				(pin
-					(num "13")
-					(name "GND3")
-					(type "power_in")
-				)
-				(pin
-					(num "14")
 					(name "B8")
 					(type "bidirectional")
 				)
 				(pin
-					(num "15")
+					(num "12")
 					(name "B7")
 					(type "bidirectional")
 				)
 				(pin
-					(num "16")
+					(num "13")
 					(name "B6")
 					(type "bidirectional")
 				)
 				(pin
-					(num "17")
+					(num "14")
 					(name "B5")
 					(type "bidirectional")
 				)
 				(pin
-					(num "18")
+					(num "15")
 					(name "B4")
 					(type "bidirectional")
 				)
 				(pin
-					(num "19")
+					(num "16")
 					(name "B3")
 					(type "bidirectional")
 				)
 				(pin
-					(num "20")
+					(num "17")
 					(name "B2")
 					(type "bidirectional")
 				)
 				(pin
-					(num "21")
+					(num "18")
 					(name "B1")
 					(type "bidirectional")
 				)
 				(pin
-					(num "22")
+					(num "19")
 					(name "OE#")
 					(type "input")
 				)
 				(pin
-					(num "23")
-					(name "VCCB1")
-					(type "power_in")
-				)
-				(pin
-					(num "24")
-					(name "VCCB2")
+					(num "20")
+					(name "VCC")
 					(type "power_in")
 				)
 			)
@@ -4240,6 +4358,42 @@
 					(num "28")
 					(name "GPA7")
 					(type "bidirectional")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "NPN")
+			(description "Z80ROMlessSBC project symbol: 2N3904")
+			(fields
+				(field
+					(name "Reference") "Q")
+				(field
+					(name "Value") "2N3904")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: 2N3904")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "E")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "B")
+					(type "input")
+				)
+				(pin
+					(num "3")
+					(name "C")
+					(type "open_collector")
 				)
 			)
 		)
@@ -4491,6 +4645,72 @@
 				(pin
 					(num "2")
 					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "RN8")
+			(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			(fields
+				(field
+					(name "Reference") "RN")
+				(field
+					(name "Value") "8x10k bussed")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "COMMON")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "R1")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "R2")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "R3")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "R4")
+					(type "passive")
+				)
+				(pin
+					(num "6")
+					(name "R5")
+					(type "passive")
+				)
+				(pin
+					(num "7")
+					(name "R6")
+					(type "passive")
+				)
+				(pin
+					(num "8")
+					(name "R7")
+					(type "passive")
+				)
+				(pin
+					(num "9")
+					(name "R8")
 					(type "passive")
 				)
 			)
@@ -4973,13 +5193,13 @@
 				(pintype "power_out")
 			)
 			(node
-				(ref "C7")
+				(ref "C5")
 				(pin "1")
 				(pinfunction "+_1")
 				(pintype "passive")
 			)
 			(node
-				(ref "C9")
+				(ref "C8")
 				(pin "1")
 				(pinfunction "+_1")
 				(pintype "passive")
@@ -5015,27 +5235,15 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "R22")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R23")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "U7")
+				(ref "U10")
 				(pin "20")
 				(pinfunction "VCC_20")
 				(pintype "power_in")
 			)
 			(node
-				(ref "U9")
-				(pin "1")
-				(pinfunction "VCCA_1")
+				(ref "U7")
+				(pin "20")
+				(pinfunction "VCC_20")
 				(pintype "power_in")
 			)
 		)
@@ -5068,18 +5276,6 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "C13")
-				(pin "1")
-				(pinfunction "+_1")
-				(pintype "passive")
-			)
-			(node
-				(ref "C14")
-				(pin "1")
-				(pinfunction "+_1")
-				(pintype "passive")
-			)
-			(node
 				(ref "C2")
 				(pin "1")
 				(pinfunction "+_1")
@@ -5098,19 +5294,19 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "C5")
-				(pin "1")
-				(pinfunction "+_1")
-				(pintype "passive")
-			)
-			(node
 				(ref "C6")
 				(pin "1")
 				(pinfunction "+_1")
 				(pintype "passive")
 			)
 			(node
-				(ref "C8")
+				(ref "C7")
+				(pin "1")
+				(pinfunction "+_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "C9")
 				(pin "1")
 				(pinfunction "+_1")
 				(pintype "passive")
@@ -5188,6 +5384,12 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "R31")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
 				(ref "R4")
 				(pin "2")
 				(pinfunction "2_2")
@@ -5224,6 +5426,18 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "RN1")
+				(pin "1")
+				(pinfunction "COMMON_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "RN2")
+				(pin "1")
+				(pinfunction "COMMON_1")
+				(pintype "passive")
+			)
+			(node
 				(ref "U1")
 				(pin "11")
 				(pinfunction "VCC_11")
@@ -5254,24 +5468,6 @@
 				(pintype "power_in")
 			)
 			(node
-				(ref "U5")
-				(pin "20")
-				(pinfunction "VCC_20")
-				(pintype "power_in")
-			)
-			(node
-				(ref "U6")
-				(pin "20")
-				(pinfunction "VCC_20")
-				(pintype "power_in")
-			)
-			(node
-				(ref "U8")
-				(pin "18")
-				(pinfunction "RESET#_18")
-				(pintype "input")
-			)
-			(node
 				(ref "U8")
 				(pin "9")
 				(pinfunction "VDD_9")
@@ -5279,14 +5475,14 @@
 			)
 			(node
 				(ref "U9")
-				(pin "23")
-				(pinfunction "VCCB1_23")
-				(pintype "power_in")
+				(pin "1")
+				(pinfunction "DIR_1")
+				(pintype "input")
 			)
 			(node
 				(ref "U9")
-				(pin "24")
-				(pinfunction "VCCB2_24")
+				(pin "20")
+				(pinfunction "VCC_20")
 				(pintype "power_in")
 			)
 		)
@@ -5294,6 +5490,12 @@
 			(code "3")
 			(name "/A0")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "2")
+				(pinfunction "R1_2")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "30")
@@ -5307,9 +5509,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "2")
-				(pinfunction "A1_2")
+				(ref "U8")
+				(pin "21")
+				(pinfunction "GPA0_21")
 				(pintype "bidirectional")
 			)
 		)
@@ -5317,6 +5519,12 @@
 			(code "4")
 			(name "/A1")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "3")
+				(pinfunction "R2_3")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "31")
@@ -5330,9 +5538,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "3")
-				(pinfunction "A2_3")
+				(ref "U8")
+				(pin "22")
+				(pinfunction "GPA1_22")
 				(pintype "bidirectional")
 			)
 		)
@@ -5340,6 +5548,12 @@
 			(code "5")
 			(name "/A2")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "4")
+				(pinfunction "R3_4")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "32")
@@ -5353,9 +5567,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "4")
-				(pinfunction "A3_4")
+				(ref "U8")
+				(pin "23")
+				(pinfunction "GPA2_23")
 				(pintype "bidirectional")
 			)
 		)
@@ -5363,6 +5577,12 @@
 			(code "6")
 			(name "/A3")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "5")
+				(pinfunction "R4_5")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "33")
@@ -5376,9 +5596,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "5")
-				(pinfunction "A4_5")
+				(ref "U8")
+				(pin "24")
+				(pinfunction "GPA3_24")
 				(pintype "bidirectional")
 			)
 		)
@@ -5386,6 +5606,12 @@
 			(code "7")
 			(name "/A4")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "6")
+				(pinfunction "R5_6")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "34")
@@ -5399,9 +5625,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "6")
-				(pinfunction "A5_6")
+				(ref "U8")
+				(pin "25")
+				(pinfunction "GPA4_25")
 				(pintype "bidirectional")
 			)
 		)
@@ -5409,6 +5635,12 @@
 			(code "8")
 			(name "/A5")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "7")
+				(pinfunction "R6_7")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "35")
@@ -5422,9 +5654,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "7")
-				(pinfunction "A6_7")
+				(ref "U8")
+				(pin "26")
+				(pinfunction "GPA5_26")
 				(pintype "bidirectional")
 			)
 		)
@@ -5432,6 +5664,12 @@
 			(code "9")
 			(name "/A6")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "8")
+				(pinfunction "R7_8")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "36")
@@ -5445,9 +5683,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "8")
-				(pinfunction "A7_8")
+				(ref "U8")
+				(pin "27")
+				(pinfunction "GPA6_27")
 				(pintype "bidirectional")
 			)
 		)
@@ -5455,6 +5693,12 @@
 			(code "10")
 			(name "/A7")
 			(class "Default")
+			(node
+				(ref "RN1")
+				(pin "9")
+				(pinfunction "R8_9")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "37")
@@ -5468,9 +5712,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U5")
-				(pin "9")
-				(pinfunction "A8_9")
+				(ref "U8")
+				(pin "28")
+				(pinfunction "GPA7_28")
 				(pintype "bidirectional")
 			)
 		)
@@ -5478,6 +5722,12 @@
 			(code "11")
 			(name "/A8")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "2")
+				(pinfunction "R1_2")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "38")
@@ -5491,9 +5741,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "2")
-				(pinfunction "A1_2")
+				(ref "U8")
+				(pin "1")
+				(pinfunction "GPB0_1")
 				(pintype "bidirectional")
 			)
 		)
@@ -5501,6 +5751,12 @@
 			(code "12")
 			(name "/A9")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "3")
+				(pinfunction "R2_3")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "39")
@@ -5514,9 +5770,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "3")
-				(pinfunction "A2_3")
+				(ref "U8")
+				(pin "2")
+				(pinfunction "GPB1_2")
 				(pintype "bidirectional")
 			)
 		)
@@ -5524,6 +5780,12 @@
 			(code "13")
 			(name "/A10")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "4")
+				(pinfunction "R3_4")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "40")
@@ -5537,9 +5799,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "4")
-				(pinfunction "A3_4")
+				(ref "U8")
+				(pin "3")
+				(pinfunction "GPB2_3")
 				(pintype "bidirectional")
 			)
 		)
@@ -5547,6 +5809,12 @@
 			(code "14")
 			(name "/A11")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "5")
+				(pinfunction "R4_5")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "1")
@@ -5560,9 +5828,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "5")
-				(pinfunction "A4_5")
+				(ref "U8")
+				(pin "4")
+				(pinfunction "GPB3_4")
 				(pintype "bidirectional")
 			)
 		)
@@ -5570,6 +5838,12 @@
 			(code "15")
 			(name "/A12")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "6")
+				(pinfunction "R5_6")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "2")
@@ -5583,9 +5857,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "6")
-				(pinfunction "A5_6")
+				(ref "U8")
+				(pin "5")
+				(pinfunction "GPB4_5")
 				(pintype "bidirectional")
 			)
 		)
@@ -5593,6 +5867,12 @@
 			(code "16")
 			(name "/A13")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "7")
+				(pinfunction "R6_7")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "4")
@@ -5606,9 +5886,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "7")
-				(pinfunction "A6_7")
+				(ref "U8")
+				(pin "6")
+				(pinfunction "GPB5_6")
 				(pintype "bidirectional")
 			)
 		)
@@ -5616,6 +5896,12 @@
 			(code "17")
 			(name "/A14")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "8")
+				(pinfunction "R7_8")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "3")
@@ -5629,9 +5915,9 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "8")
-				(pinfunction "A7_8")
+				(ref "U8")
+				(pin "7")
+				(pinfunction "GPB6_7")
 				(pintype "bidirectional")
 			)
 		)
@@ -5639,6 +5925,12 @@
 			(code "18")
 			(name "/A15")
 			(class "Default")
+			(node
+				(ref "RN2")
+				(pin "9")
+				(pinfunction "R8_9")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "5")
@@ -5652,44 +5944,15 @@
 				(pintype "input")
 			)
 			(node
-				(ref "U6")
-				(pin "9")
-				(pinfunction "A8_9")
+				(ref "U8")
+				(pin "8")
+				(pinfunction "GPB7_8")
 				(pintype "bidirectional")
 			)
 		)
 		(net
 			(code "19")
-			(name "/ADDR_DIR")
-			(class "Default")
-			(node
-				(ref "A1")
-				(pin "11")
-				(pinfunction "GP8_11")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "R27")
-				(pin "1")
-				(pinfunction "1_1")
-				(pintype "passive")
-			)
-			(node
-				(ref "U5")
-				(pin "1")
-				(pinfunction "DIR_1")
-				(pintype "input")
-			)
-			(node
-				(ref "U6")
-				(pin "1")
-				(pinfunction "DIR_1")
-				(pintype "input")
-			)
-		)
-		(net
-			(code "20")
-			(name "/ADDR_OE_N")
+			(name "/ADDR_ENABLE")
 			(class "Default")
 			(node
 				(ref "A1")
@@ -5698,26 +5961,20 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R20")
+				(ref "R26")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
 			)
 			(node
-				(ref "U5")
-				(pin "19")
-				(pinfunction "OE#_19")
-				(pintype "input")
-			)
-			(node
-				(ref "U6")
-				(pin "19")
-				(pinfunction "OE#_19")
+				(ref "U3")
+				(pin "10")
+				(pinfunction "ADDR_ENABLE_10")
 				(pintype "input")
 			)
 		)
 		(net
-			(code "22")
+			(code "21")
 			(name "/BUSACK_N")
 			(class "Default")
 			(node
@@ -5746,7 +6003,7 @@
 			)
 		)
 		(net
-			(code "23")
+			(code "22")
 			(name "/BUSREQ_N")
 			(class "Default")
 			(node
@@ -5769,13 +6026,19 @@
 			)
 		)
 		(net
-			(code "24")
+			(code "23")
 			(name "/D0")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "14")
 				(pinfunction "D0_14")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "18")
+				(pinfunction "B1_18")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5786,19 +6049,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "21")
-				(pinfunction "B1_21")
+				(pin "18")
+				(pinfunction "B1_18")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "25")
+			(code "24")
 			(name "/D1")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "15")
 				(pinfunction "D1_15")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "17")
+				(pinfunction "B2_17")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5809,19 +6078,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "20")
-				(pinfunction "B2_20")
+				(pin "17")
+				(pinfunction "B2_17")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "26")
+			(code "25")
 			(name "/D2")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "12")
 				(pinfunction "D2_12")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "16")
+				(pinfunction "B3_16")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5832,19 +6107,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "19")
-				(pinfunction "B3_19")
+				(pin "16")
+				(pinfunction "B3_16")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "27")
+			(code "26")
 			(name "/D3")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "8")
 				(pinfunction "D3_8")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "15")
+				(pinfunction "B4_15")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5855,19 +6136,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "18")
-				(pinfunction "B4_18")
+				(pin "15")
+				(pinfunction "B4_15")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "28")
+			(code "27")
 			(name "/D4")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "7")
 				(pinfunction "D4_7")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "14")
+				(pinfunction "B5_14")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5878,19 +6165,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "17")
-				(pinfunction "B5_17")
+				(pin "14")
+				(pinfunction "B5_14")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "29")
+			(code "28")
 			(name "/D5")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "9")
 				(pinfunction "D5_9")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "13")
+				(pinfunction "B6_13")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5901,19 +6194,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "16")
-				(pinfunction "B6_16")
+				(pin "13")
+				(pinfunction "B6_13")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "30")
+			(code "29")
 			(name "/D6")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "10")
 				(pinfunction "D6_10")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "12")
+				(pinfunction "B7_12")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5924,19 +6223,25 @@
 			)
 			(node
 				(ref "U9")
-				(pin "15")
-				(pinfunction "B7_15")
+				(pin "12")
+				(pinfunction "B7_12")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "31")
+			(code "30")
 			(name "/D7")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "13")
 				(pinfunction "D7_13")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U10")
+				(pin "11")
+				(pinfunction "B8_11")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5947,13 +6252,13 @@
 			)
 			(node
 				(ref "U9")
-				(pin "14")
-				(pinfunction "B8_14")
+				(pin "11")
+				(pinfunction "B8_11")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "32")
+			(code "31")
 			(name "/DATA_DIR")
 			(class "Default")
 			(node
@@ -5963,21 +6268,38 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R26")
+				(ref "R25")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
 			)
 			(node
-				(ref "U9")
-				(pin "2")
-				(pinfunction "DIR_2")
+				(ref "U3")
+				(pin "11")
+				(pinfunction "DATA_DIR_11")
 				(pintype "input")
 			)
 		)
 		(net
+			(code "32")
+			(name "/DATA_DOWN_OE_N")
+			(class "Default")
+			(node
+				(ref "U10")
+				(pin "19")
+				(pinfunction "OE#_19")
+				(pintype "input")
+			)
+			(node
+				(ref "U3")
+				(pin "18")
+				(pinfunction "DATA_DOWN_OE#_18")
+				(pintype "output")
+			)
+		)
+		(net
 			(code "33")
-			(name "/DATA_OE_N")
+			(name "/DATA_ENABLE")
 			(class "Default")
 			(node
 				(ref "A1")
@@ -5986,20 +6308,37 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R19")
+				(ref "R24")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
 			)
 			(node
-				(ref "U9")
-				(pin "22")
-				(pinfunction "OE#_22")
+				(ref "U3")
+				(pin "9")
+				(pinfunction "DATA_ENABLE_9")
 				(pintype "input")
 			)
 		)
 		(net
-			(code "35")
+			(code "34")
+			(name "/DATA_UP_OE_N")
+			(class "Default")
+			(node
+				(ref "U3")
+				(pin "17")
+				(pinfunction "DATA_UP_OE#_17")
+				(pintype "output")
+			)
+			(node
+				(ref "U9")
+				(pin "19")
+				(pinfunction "OE#_19")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "36")
 			(name "/GND")
 			(class "Default")
 			(node
@@ -6075,18 +6414,6 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "C13")
-				(pin "2")
-				(pinfunction "-_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "C14")
-				(pin "2")
-				(pinfunction "-_2")
-				(pintype "passive")
-			)
-			(node
 				(ref "C2")
 				(pin "2")
 				(pinfunction "-_2")
@@ -6141,6 +6468,24 @@
 				(pintype "power_out")
 			)
 			(node
+				(ref "Q1")
+				(pin "1")
+				(pinfunction "E_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R22")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "R23")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
 				(ref "R24")
 				(pin "2")
 				(pinfunction "2_2")
@@ -6171,15 +6516,33 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "R29")
+				(ref "R30")
 				(pin "2")
 				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "RN3")
+				(pin "1")
+				(pinfunction "COMMON_1")
 				(pintype "passive")
 			)
 			(node
 				(ref "U1")
 				(pin "29")
 				(pinfunction "GND_29")
+				(pintype "power_in")
+			)
+			(node
+				(ref "U10")
+				(pin "1")
+				(pinfunction "DIR_1")
+				(pintype "input")
+			)
+			(node
+				(ref "U10")
+				(pin "10")
+				(pinfunction "GND_10")
 				(pintype "power_in")
 			)
 			(node
@@ -6196,18 +6559,6 @@
 			)
 			(node
 				(ref "U3")
-				(pin "10")
-				(pinfunction "UNUSED_IN2_10")
-				(pintype "input")
-			)
-			(node
-				(ref "U3")
-				(pin "11")
-				(pinfunction "UNUSED_IN3_11")
-				(pintype "input")
-			)
-			(node
-				(ref "U3")
 				(pin "12")
 				(pinfunction "GND_12")
 				(pintype "power_in")
@@ -6216,12 +6567,6 @@
 				(ref "U3")
 				(pin "13")
 				(pinfunction "UNUSED_IN4_13")
-				(pintype "input")
-			)
-			(node
-				(ref "U3")
-				(pin "9")
-				(pinfunction "UNUSED_IN1_9")
 				(pintype "input")
 			)
 			(node
@@ -6241,18 +6586,6 @@
 				(pin "19")
 				(pinfunction "OE2#_19")
 				(pintype "input")
-			)
-			(node
-				(ref "U5")
-				(pin "10")
-				(pinfunction "GND_10")
-				(pintype "power_in")
-			)
-			(node
-				(ref "U6")
-				(pin "10")
-				(pinfunction "GND_10")
-				(pintype "power_in")
 			)
 			(node
 				(ref "U7")
@@ -6316,25 +6649,13 @@
 			)
 			(node
 				(ref "U9")
-				(pin "11")
-				(pinfunction "GND1_11")
-				(pintype "power_in")
-			)
-			(node
-				(ref "U9")
-				(pin "12")
-				(pinfunction "GND2_12")
-				(pintype "power_in")
-			)
-			(node
-				(ref "U9")
-				(pin "13")
-				(pinfunction "GND3_13")
+				(pin "10")
+				(pinfunction "GND_10")
 				(pintype "power_in")
 			)
 		)
 		(net
-			(code "36")
+			(code "37")
 			(name "/INT_N")
 			(class "Default")
 			(node
@@ -6351,7 +6672,7 @@
 			)
 		)
 		(net
-			(code "37")
+			(code "38")
 			(name "/IORQ_N")
 			(class "Default")
 			(node
@@ -6374,7 +6695,7 @@
 			)
 		)
 		(net
-			(code "38")
+			(code "39")
 			(name "/M1_N")
 			(class "Default")
 			(node
@@ -6391,7 +6712,7 @@
 			)
 		)
 		(net
-			(code "39")
+			(code "40")
 			(name "/MCP_CS_N")
 			(class "Default")
 			(node
@@ -6408,279 +6729,70 @@
 			)
 		)
 		(net
-			(code "40")
-			(name "/MCP_GPA0")
-			(class "Default")
-			(node
-				(ref "U5")
-				(pin "18")
-				(pinfunction "B1_18")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "21")
-				(pinfunction "GPA0_21")
-				(pintype "bidirectional")
-			)
-		)
-		(net
 			(code "41")
-			(name "/MCP_GPA1")
+			(name "/MCP_RESET_BASE")
 			(class "Default")
 			(node
-				(ref "U5")
-				(pin "17")
-				(pinfunction "B2_17")
-				(pintype "bidirectional")
+				(ref "Q1")
+				(pin "2")
+				(pinfunction "B_2")
+				(pintype "input")
 			)
 			(node
-				(ref "U8")
-				(pin "22")
-				(pinfunction "GPA1_22")
-				(pintype "bidirectional")
+				(ref "R29")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "R30")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
 			)
 		)
 		(net
 			(code "42")
-			(name "/MCP_GPA2")
+			(name "/MCP_RESET_DRIVE")
 			(class "Default")
 			(node
-				(ref "U5")
-				(pin "16")
-				(pinfunction "B3_16")
-				(pintype "bidirectional")
+				(ref "R29")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
 			)
 			(node
-				(ref "U8")
-				(pin "23")
-				(pinfunction "GPA2_23")
-				(pintype "bidirectional")
+				(ref "U3")
+				(pin "19")
+				(pinfunction "MCP_RESET_DRIVE_19")
+				(pintype "output")
 			)
 		)
 		(net
 			(code "43")
-			(name "/MCP_GPA3")
+			(name "/MCP_RESET_N")
 			(class "Default")
 			(node
-				(ref "U5")
-				(pin "15")
-				(pinfunction "B4_15")
-				(pintype "bidirectional")
+				(ref "Q1")
+				(pin "3")
+				(pinfunction "C_3")
+				(pintype "open_collector")
+			)
+			(node
+				(ref "R31")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
 			)
 			(node
 				(ref "U8")
-				(pin "24")
-				(pinfunction "GPA3_24")
-				(pintype "bidirectional")
+				(pin "18")
+				(pinfunction "RESET#_18")
+				(pintype "input")
 			)
 		)
 		(net
 			(code "44")
-			(name "/MCP_GPA4")
-			(class "Default")
-			(node
-				(ref "U5")
-				(pin "14")
-				(pinfunction "B5_14")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "25")
-				(pinfunction "GPA4_25")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "45")
-			(name "/MCP_GPA5")
-			(class "Default")
-			(node
-				(ref "U5")
-				(pin "13")
-				(pinfunction "B6_13")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "26")
-				(pinfunction "GPA5_26")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "46")
-			(name "/MCP_GPA6")
-			(class "Default")
-			(node
-				(ref "U5")
-				(pin "12")
-				(pinfunction "B7_12")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "27")
-				(pinfunction "GPA6_27")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "47")
-			(name "/MCP_GPA7")
-			(class "Default")
-			(node
-				(ref "U5")
-				(pin "11")
-				(pinfunction "B8_11")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "28")
-				(pinfunction "GPA7_28")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "49")
-			(name "/MCP_GPB0")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "18")
-				(pinfunction "B1_18")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "1")
-				(pinfunction "GPB0_1")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "50")
-			(name "/MCP_GPB1")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "17")
-				(pinfunction "B2_17")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "2")
-				(pinfunction "GPB1_2")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "51")
-			(name "/MCP_GPB2")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "16")
-				(pinfunction "B3_16")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "3")
-				(pinfunction "GPB2_3")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "52")
-			(name "/MCP_GPB3")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "15")
-				(pinfunction "B4_15")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "4")
-				(pinfunction "GPB3_4")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "53")
-			(name "/MCP_GPB4")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "14")
-				(pinfunction "B5_14")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "5")
-				(pinfunction "GPB4_5")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "54")
-			(name "/MCP_GPB5")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "13")
-				(pinfunction "B6_13")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "6")
-				(pinfunction "GPB5_6")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "55")
-			(name "/MCP_GPB6")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "12")
-				(pinfunction "B7_12")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "7")
-				(pinfunction "GPB6_7")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "56")
-			(name "/MCP_GPB7")
-			(class "Default")
-			(node
-				(ref "U6")
-				(pin "11")
-				(pinfunction "B8_11")
-				(pintype "bidirectional")
-			)
-			(node
-				(ref "U8")
-				(pin "8")
-				(pinfunction "GPB7_8")
-				(pintype "bidirectional")
-			)
-		)
-		(net
-			(code "58")
 			(name "/MCP_SCK")
 			(class "Default")
 			(node
@@ -6697,7 +6809,7 @@
 			)
 		)
 		(net
-			(code "59")
+			(code "45")
 			(name "/MCP_SI")
 			(class "Default")
 			(node
@@ -6714,7 +6826,7 @@
 			)
 		)
 		(net
-			(code "60")
+			(code "46")
 			(name "/MCP_SO")
 			(class "Default")
 			(node
@@ -6737,7 +6849,7 @@
 			)
 		)
 		(net
-			(code "61")
+			(code "47")
 			(name "/MREQ_N")
 			(class "Default")
 			(node
@@ -6760,7 +6872,7 @@
 			)
 		)
 		(net
-			(code "62")
+			(code "48")
 			(name "/NMI_N")
 			(class "Default")
 			(node
@@ -6777,7 +6889,7 @@
 			)
 		)
 		(net
-			(code "63")
+			(code "49")
 			(name "/PICO_BUSACK_N")
 			(class "Default")
 			(node
@@ -6794,7 +6906,7 @@
 			)
 		)
 		(net
-			(code "64")
+			(code "50")
 			(name "/PICO_BUSREQ_N")
 			(class "Default")
 			(node
@@ -6817,7 +6929,7 @@
 			)
 		)
 		(net
-			(code "65")
+			(code "51")
 			(name "/PICO_CE_N")
 			(class "Default")
 			(node
@@ -6840,7 +6952,7 @@
 			)
 		)
 		(net
-			(code "66")
+			(code "52")
 			(name "/PICO_CLK")
 			(class "Default")
 			(node
@@ -6850,7 +6962,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R24")
+				(ref "R22")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -6863,7 +6975,7 @@
 			)
 		)
 		(net
-			(code "67")
+			(code "53")
 			(name "/PICO_D0")
 			(class "Default")
 			(node
@@ -6873,14 +6985,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "2")
+				(pinfunction "R1_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "2")
+				(pinfunction "A1_2")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "3")
-				(pinfunction "A1_3")
+				(pin "2")
+				(pinfunction "A1_2")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "68")
+			(code "54")
 			(name "/PICO_D1")
 			(class "Default")
 			(node
@@ -6890,14 +7014,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "3")
+				(pinfunction "R2_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "3")
+				(pinfunction "A2_3")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "4")
-				(pinfunction "A2_4")
+				(pin "3")
+				(pinfunction "A2_3")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "69")
+			(code "55")
 			(name "/PICO_D2")
 			(class "Default")
 			(node
@@ -6907,14 +7043,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "4")
+				(pinfunction "R3_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "4")
+				(pinfunction "A3_4")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "5")
-				(pinfunction "A3_5")
+				(pin "4")
+				(pinfunction "A3_4")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "70")
+			(code "56")
 			(name "/PICO_D3")
 			(class "Default")
 			(node
@@ -6924,14 +7072,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "5")
+				(pinfunction "R4_5")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "5")
+				(pinfunction "A4_5")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "6")
-				(pinfunction "A4_6")
+				(pin "5")
+				(pinfunction "A4_5")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "71")
+			(code "57")
 			(name "/PICO_D4")
 			(class "Default")
 			(node
@@ -6941,14 +7101,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "6")
+				(pinfunction "R5_6")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "6")
+				(pinfunction "A5_6")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "7")
-				(pinfunction "A5_7")
+				(pin "6")
+				(pinfunction "A5_6")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "72")
+			(code "58")
 			(name "/PICO_D5")
 			(class "Default")
 			(node
@@ -6958,14 +7130,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "7")
+				(pinfunction "R6_7")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "7")
+				(pinfunction "A6_7")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "8")
-				(pinfunction "A6_8")
+				(pin "7")
+				(pinfunction "A6_7")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "73")
+			(code "59")
 			(name "/PICO_D6")
 			(class "Default")
 			(node
@@ -6975,14 +7159,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "8")
+				(pinfunction "R7_8")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "8")
+				(pinfunction "A7_8")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "9")
-				(pinfunction "A7_9")
+				(pin "8")
+				(pinfunction "A7_8")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "74")
+			(code "60")
 			(name "/PICO_D7")
 			(class "Default")
 			(node
@@ -6992,14 +7188,26 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "RN3")
+				(pin "9")
+				(pinfunction "R8_9")
+				(pintype "passive")
+			)
+			(node
+				(ref "U10")
+				(pin "9")
+				(pinfunction "A8_9")
+				(pintype "bidirectional")
+			)
+			(node
 				(ref "U9")
-				(pin "10")
-				(pinfunction "A8_10")
+				(pin "9")
+				(pinfunction "A8_9")
 				(pintype "bidirectional")
 			)
 		)
 		(net
-			(code "76")
+			(code "62")
 			(name "/PICO_IORQ_N")
 			(class "Default")
 			(node
@@ -7016,7 +7224,7 @@
 			)
 		)
 		(net
-			(code "77")
+			(code "63")
 			(name "/PICO_OE_N")
 			(class "Default")
 			(node
@@ -7026,7 +7234,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R23")
+				(ref "R21")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7039,7 +7247,7 @@
 			)
 		)
 		(net
-			(code "78")
+			(code "64")
 			(name "/PICO_RD_N")
 			(class "Default")
 			(node
@@ -7056,7 +7264,7 @@
 			)
 		)
 		(net
-			(code "79")
+			(code "65")
 			(name "/PICO_SPI_CS_N")
 			(class "Default")
 			(node
@@ -7066,7 +7274,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R21")
+				(ref "R19")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7079,7 +7287,7 @@
 			)
 		)
 		(net
-			(code "80")
+			(code "66")
 			(name "/PICO_SPI_MISO")
 			(class "Default")
 			(node
@@ -7096,7 +7304,7 @@
 			)
 		)
 		(net
-			(code "81")
+			(code "67")
 			(name "/PICO_SPI_MOSI")
 			(class "Default")
 			(node
@@ -7106,7 +7314,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R29")
+				(ref "R28")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7119,7 +7327,7 @@
 			)
 		)
 		(net
-			(code "82")
+			(code "68")
 			(name "/PICO_SPI_SCK")
 			(class "Default")
 			(node
@@ -7129,7 +7337,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R28")
+				(ref "R27")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7142,7 +7350,7 @@
 			)
 		)
 		(net
-			(code "83")
+			(code "69")
 			(name "/PICO_WE_N")
 			(class "Default")
 			(node
@@ -7152,7 +7360,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R22")
+				(ref "R20")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7165,7 +7373,7 @@
 			)
 		)
 		(net
-			(code "84")
+			(code "70")
 			(name "/PICO_WR_N")
 			(class "Default")
 			(node
@@ -7182,7 +7390,7 @@
 			)
 		)
 		(net
-			(code "85")
+			(code "71")
 			(name "/RD_N")
 			(class "Default")
 			(node
@@ -7211,7 +7419,7 @@
 			)
 		)
 		(net
-			(code "86")
+			(code "72")
 			(name "/RESET_N")
 			(class "Default")
 			(node
@@ -7221,7 +7429,7 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R25")
+				(ref "R23")
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
@@ -7240,7 +7448,7 @@
 			)
 		)
 		(net
-			(code "87")
+			(code "73")
 			(name "/SRAM_CE_N")
 			(class "Default")
 			(node
@@ -7263,7 +7471,7 @@
 			)
 		)
 		(net
-			(code "88")
+			(code "74")
 			(name "/SRAM_CE_PRE_N")
 			(class "Default")
 			(node
@@ -7286,7 +7494,7 @@
 			)
 		)
 		(net
-			(code "89")
+			(code "75")
 			(name "/SRAM_OE_N")
 			(class "Default")
 			(node
@@ -7309,7 +7517,7 @@
 			)
 		)
 		(net
-			(code "90")
+			(code "76")
 			(name "/SRAM_OE_PRE_N")
 			(class "Default")
 			(node
@@ -7332,7 +7540,7 @@
 			)
 		)
 		(net
-			(code "91")
+			(code "77")
 			(name "/SRAM_WE_N")
 			(class "Default")
 			(node
@@ -7355,7 +7563,7 @@
 			)
 		)
 		(net
-			(code "92")
+			(code "78")
 			(name "/SRAM_WE_PRE_N")
 			(class "Default")
 			(node
@@ -7378,7 +7586,7 @@
 			)
 		)
 		(net
-			(code "93")
+			(code "79")
 			(name "/VSYS")
 			(class "Default")
 			(node
@@ -7395,7 +7603,7 @@
 			)
 		)
 		(net
-			(code "94")
+			(code "80")
 			(name "/WAIT_N")
 			(class "Default")
 			(node
@@ -7412,7 +7620,7 @@
 			)
 		)
 		(net
-			(code "95")
+			(code "81")
 			(name "/WR_N")
 			(class "Default")
 			(node
@@ -7441,7 +7649,7 @@
 			)
 		)
 		(net
-			(code "96")
+			(code "82")
 			(name "/Z80_CLK")
 			(class "Default")
 			(node
@@ -7458,7 +7666,7 @@
 			)
 		)
 		(net
-			(code "108")
+			(code "94")
 			(name "unconnected-(A1-3V3_EN-Pad37)")
 			(class "Default")
 			(node
@@ -7469,7 +7677,7 @@
 			)
 		)
 		(net
-			(code "109")
+			(code "95")
 			(name "unconnected-(A1-ADC_VREF-Pad35)")
 			(class "Default")
 			(node
@@ -7480,7 +7688,18 @@
 			)
 		)
 		(net
-			(code "110")
+			(code "96")
+			(name "unconnected-(A1-GP8-Pad11)")
+			(class "Default")
+			(node
+				(ref "A1")
+				(pin "11")
+				(pinfunction "GP8_11")
+				(pintype "bidirectional+no_connect")
+			)
+		)
+		(net
+			(code "97")
 			(name "unconnected-(A1-RUN-Pad30)")
 			(class "Default")
 			(node
@@ -7491,7 +7710,7 @@
 			)
 		)
 		(net
-			(code "111")
+			(code "98")
 			(name "unconnected-(A1-VBUS-Pad40)")
 			(class "Default")
 			(node
@@ -7502,7 +7721,7 @@
 			)
 		)
 		(net
-			(code "112")
+			(code "99")
 			(name "unconnected-(U1-HALT#-Pad18)")
 			(class "Default")
 			(node
@@ -7513,7 +7732,7 @@
 			)
 		)
 		(net
-			(code "113")
+			(code "100")
 			(name "unconnected-(U1-RFSH#-Pad28)")
 			(class "Default")
 			(node
@@ -7524,7 +7743,7 @@
 			)
 		)
 		(net
-			(code "114")
+			(code "101")
 			(name "unconnected-(U2-NC-Pad1)")
 			(class "Default")
 			(node
@@ -7535,84 +7754,51 @@
 			)
 		)
 		(net
-			(code "115")
-			(name "unconnected-(U3-CONST_LOW1-Pad17)")
-			(class "Default")
-			(node
-				(ref "U3")
-				(pin "17")
-				(pinfunction "CONST_LOW1_17")
-				(pintype "output+no_connect")
-			)
-		)
-		(net
-			(code "116")
-			(name "unconnected-(U3-CONST_LOW2-Pad18)")
-			(class "Default")
-			(node
-				(ref "U3")
-				(pin "18")
-				(pinfunction "CONST_LOW2_18")
-				(pintype "output+no_connect")
-			)
-		)
-		(net
-			(code "117")
-			(name "unconnected-(U3-CONST_LOW3-Pad19)")
-			(class "Default")
-			(node
-				(ref "U3")
-				(pin "19")
-				(pinfunction "CONST_LOW3_19")
-				(pintype "output+no_connect")
-			)
-		)
-		(net
-			(code "118")
-			(name "unconnected-(U3-CONST_LOW4-Pad20)")
+			(code "102")
+			(name "unconnected-(U3-CONST_LOW1-Pad20)")
 			(class "Default")
 			(node
 				(ref "U3")
 				(pin "20")
-				(pinfunction "CONST_LOW4_20")
+				(pinfunction "CONST_LOW1_20")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
-			(code "119")
-			(name "unconnected-(U3-CONST_LOW5-Pad21)")
+			(code "103")
+			(name "unconnected-(U3-CONST_LOW2-Pad21)")
 			(class "Default")
 			(node
 				(ref "U3")
 				(pin "21")
-				(pinfunction "CONST_LOW5_21")
+				(pinfunction "CONST_LOW2_21")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
-			(code "120")
-			(name "unconnected-(U3-CONST_LOW6-Pad22)")
+			(code "104")
+			(name "unconnected-(U3-CONST_LOW3-Pad22)")
 			(class "Default")
 			(node
 				(ref "U3")
 				(pin "22")
-				(pinfunction "CONST_LOW6_22")
+				(pinfunction "CONST_LOW3_22")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
-			(code "121")
-			(name "unconnected-(U3-CONST_LOW7-Pad23)")
+			(code "105")
+			(name "unconnected-(U3-CONST_LOW4-Pad23)")
 			(class "Default")
 			(node
 				(ref "U3")
 				(pin "23")
-				(pinfunction "CONST_LOW7_23")
+				(pinfunction "CONST_LOW4_23")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
-			(code "122")
+			(code "106")
 			(name "unconnected-(U7-2Y2-Pad7)")
 			(class "Default")
 			(node
@@ -7623,7 +7809,7 @@
 			)
 		)
 		(net
-			(code "123")
+			(code "107")
 			(name "unconnected-(U7-2Y3-Pad5)")
 			(class "Default")
 			(node
@@ -7634,7 +7820,7 @@
 			)
 		)
 		(net
-			(code "124")
+			(code "108")
 			(name "unconnected-(U7-2Y4-Pad3)")
 			(class "Default")
 			(node
@@ -7645,7 +7831,7 @@
 			)
 		)
 		(net
-			(code "125")
+			(code "109")
 			(name "unconnected-(U8-INTA-Pad20)")
 			(class "Default")
 			(node
@@ -7656,7 +7842,7 @@
 			)
 		)
 		(net
-			(code "126")
+			(code "110")
 			(name "unconnected-(U8-INTB-Pad19)")
 			(class "Default")
 			(node

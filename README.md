@@ -150,12 +150,13 @@ Purchase quantities include a small allowance for breadboard spares.
 | 1 | MCP23S17-E/SP | 28-pin SPDIP | SPI-to-16-bit address interface |
 | 1 | ATF22V10B-15PC or ATF22V10C-15PU | 24-pin PDIP | Programmable SRAM control-source arbitration |
 | 1 | SN74HCT541N | 20-pin PDIP | Eight-channel 5 V output buffer for clock, BUSREQ#, SPI, and SRAM controls |
-| 2 | SN74HCT245N | 20-pin PDIP | Bidirectional address-bus isolation |
-| 1 | SN74LVC8T245PW | 24-pin TSSOP on 0.6-inch DIP-24 carrier | Dual-supply 3.3 V/5 V Pico data-bus interface |
+| 1 | SN74AHCT245N | 20-pin PDIP | Fixed Pico-to-5 V data-bus path; A side faces Pico, B side faces bus |
+| 1 | SN74LVC245AN | 20-pin PDIP | Fixed 5 V-to-Pico data-bus path with 5 V-tolerant inputs and `Ioff` protection |
 | 1 | SN74LVC244AN | 20-pin PDIP | 5 V-to-3.3 V buffering for Z80 status/control and MCP SO |
+| 1 | 2N3904 | TO-92 | Pulls MCP23S17 RESET# LOW whenever GAL address access is disabled |
 | 1 | 1N5819 | Axial diode | Schottky power OR from external +5 V to Pico VSYS |
 
-> **Ten-package logic design:** The ATF22V10 replaces the former
+> **Nine-package all-through-hole design:** The ATF22V10 replaces the former
 > 74HCT157, 74HCT08, and their discrete source-selection wiring. It
 > computes all three SRAM controls from RESET#, BUSACK#, the Pico DMA
 > controls, and the Z80 MREQ#/RD#/WR# outputs (Section 1.2). The
@@ -165,9 +166,16 @@ Purchase quantities include a small allowance for breadboard spares.
 > MCP23S17 SPI inputs to guaranteed 5 V levels. Pico GP3 drives the
 > Z80 RESET# input directly because the Z84C00 specifies a 2.2 V HIGH
 > threshold for non-clock inputs; the Z80 clock retains its stricter
-> translated path. This reduces the complete system from 13 active
-> packages to 10 while retaining the MCP23S17 and all three bus
-> transceivers. The
+> translated path. The data bus uses separate fixed-direction
+> SN74AHCT245N and SN74LVC245AN devices because no single PDIP part
+> provides the original dual-supply, bidirectional, power-off-safe
+> function. Two spare GAL inputs accept the existing DIR and
+> master-enable controls, and two spare GAL outputs generate mutually
+> exclusive active-low OEs. A third spare GAL output and one 2N3904
+> hold the MCP23S17 in reset outside DMA/trap access, allowing its
+> reset-default input ports to connect directly to pulled-up A0-A15 and
+> eliminating both address transceivers. This produces 9 active packages
+> while retaining deterministic isolation and safe power sequencing. The
 > SN74LVC244AN buffers RD#/WR# because Pico 2 GP27 and GP28 are
 > standard ADC-capable pads, not 5 V-tolerant FT pads. It also buffers
 > BUSACK#, IORQ#, and MCP SO: although GP0, GP1, and GP20 are FT pads,
@@ -183,7 +191,6 @@ Purchase quantities include a small allowance for breadboard spares.
 | 1 | 32-pin DIP socket |
 | 1 | 28-pin DIP socket |
 | 1 | 24-pin, 0.3-inch-wide DIP socket for the ATF22V10 |
-| 1 | 24-pin, 0.6-inch-wide DIP socket, or two 12-position socket strips, for the data-transceiver carrier |
 | 4 | 20-pin DIP sockets |
 | 2 | 20-pin 0.1-inch male headers for the Pico 2, if not fitted |
 | 2 | 20-position 0.1-inch socket strips for removable Pico mounting; do not substitute DIP IC sockets |
@@ -192,30 +199,43 @@ Purchase quantities include a small allowance for breadboard spares.
 
 | Fitted | Purchase | Item | Purpose |
 |----:|----:|----|----|
-| 10 | 13 | 100 nF X7R ceramic capacitors, at least 10 V | One at every IC supply pair; the dual-supply data carrier needs two |
-| 3 | 5 | 10 uF capacitors, at least 10 V | One per breadboard |
-| 1 | 2 | 47 uF electrolytic capacitor, at least 10 V | 5 V supply-entry bulk capacitance |
+| 8 | 11 | 100 nF X7R ceramic capacitors, at least 10 V | One at every DIP logic supply pair |
+| 3 | 5 | 22 uF capacitors, at least 10 V | One per breadboard |
+| 1 | 2 | 100 uF electrolytic capacitor, at least 10 V | 5 V supply-entry bulk capacitance |
 | 29 | 35 | 10 kOhm, 1/4 W resistors | Defined startup levels and temporary test pulls |
+| 1 | 3 | 4.7 kOhm, 1/4 W resistor | GAL-to-2N3904 base current limiting |
+| 1 | 3 | 47 kOhm, 1/4 W resistor | 2N3904 base-emitter pull-down |
+| 3 | 4 | 8x10 kOhm bussed SIP resistor networks, 9-pin | Two A0-A15 pull-ups (common to +5 V) and one Pico D0-D7 pull-down (common to GND) |
 | Reused for tests | 10 | 1 kOhm, 1/4 W resistors | First-drive current limiting and manual input tests |
 
 Place each 100 nF capacitor directly across its IC supply pins with the
-shortest practical leads. On the 5 V side, fit 10 kOhm pull-ups to
+shortest practical leads. If scope captures show more than 250 mV rail
+excursion at the farthest board, add 47-100 uF there and repeat the
+capture; bulk capacitance does not replace local 100 nF capacitors. On
+the 5 V side, fit 10 kOhm pull-ups to
 BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, MCP SO, SRAM CE#, SRAM OE#,
 SRAM WE#, WAIT#, INT#, and NMI#. RESET# is the direct GP3 node and must
 not have a 5 V pull-up. Also pull SN74HCT541 A6, A7, and A8 up to 5 V
-so its SRAM-control outputs remain inactive if the GAL is absent or
-unpowered. On the Pico side, use 10 kOhm pull-ups to 3.3 V on GP4
-(BUSREQ#), GP5 (SRAM CE#), GP7/GP9 (transceiver OE#), GP21 (SPI CS#),
+so its SRAM-control outputs remain inactive if the GAL is physically
+absent. Fit 10 kOhm pull-ups on A0-A15 using two 9-pin bussed SIP
+networks. On the Pico side, use 10 kOhm pull-ups to 3.3 V on GP4
+(BUSREQ#), GP5 (SRAM CE#), GP21 (SPI CS#),
 GP22 (SRAM WE#), and GP26 (SRAM OE#). Use 10 kOhm pull-downs to GND on
-GP2 (CLK), GP3 (RESET#), GP6/GP8 (transceiver DIR), and GP18/GP19 (SPI
-SCK/SI). Once the Pico 3.3 V rail is valid, these external resistors
+GP2 (CLK), GP3 (RESET#), GP6 (DATA_DIR), GP7 (DATA_ENABLE), GP9
+(ADDR_ENABLE), and GP18/GP19 (SPI SCK/SI). Leave GP8 unconnected. Connect GP7 and GP6 directly
+to ATF22V10 pins 9 and 11; its TTL-compatible inputs accept 3.3 V.
+Fit the third 8x10 kOhm bussed SIP network from GP10-GP17 to GND so
+the SN74AHCT245N A inputs stay defined while Pico GPIOs are inputs or
+the Pico is absent. It loads each active HIGH by only 0.33 mA at 3.3 V.
+Once the Pico 3.3 V rail is valid, these external resistors
 establish safe levels before the firmware configures SIO. During a cold
 power ramp the Pico-side pull-ups cannot hold active-low controls HIGH
 while their 3.3 V rail is still at 0 V; RESET# remains asserted and SRAM
 contents are therefore treated as indeterminate until the boot image is
 loaded and verified. The HCT541-input pull-ups cover an absent GAL, and
-the final SRAM-node pull-ups cover an absent or unpowered HCT541. Tie
-every unused CMOS input to a defined level.
+the final SRAM-node pull-ups cover an absent HCT541. They do not provide
+power-off isolation for an installed source IC. Tie every unused CMOS
+input to a defined level.
 
 ### 0.4 Construction and Power
 
@@ -236,14 +256,25 @@ external +5 V, banded cathode to VSYS. Pico 2 already has a Schottky
 diode from USB VBUS to VSYS, so this second diode safely ORs USB and
 external power without back-powering either source. Never link the
 external +5 V rail directly to Pico VBUS or VSYS. Feed the
-SN74LVC8T245 VCCA and SN74LVC244AN from the Pico 3.3 V rail. Connect
-SN74LVC8T245 VCCB and all other logic to the regulated 5 V rail. No
-5 V output connects directly to a Pico GPIO; both LVC devices provide
-power-off isolation, and the SN74LVC244AN's `Ioff` protection keeps the five
+SN74LVC245AN and SN74LVC244AN from the Pico 3.3 V rail. Connect the
+SN74AHCT245N and all other logic to the regulated 5 V
+rail. No 5 V output connects directly to a Pico GPIO; both LVC devices
+provide power-off isolation. The GAL inputs do not source 5 V into
+GP6/GP7, and
+the SN74LVC244AN's `Ioff` protection keeps the five
 monitored inputs isolated while its 3.3 V supply is absent or ramping.
 Tie the Pico's AGND pin (pin 33) to the common digital ground: this
 design does not use the ADC function on GP26-GP29, so no separate
 analogue ground plane is needed.
+
+All installed 5 V logic devices must be powered from the same 5 V rail
+whenever that rail is energized. In particular, do not apply 5 V with
+an installed ATF22V10 or SN74HCT541 unpowered: downstream pull-ups can
+otherwise raise an output above its `VCC + 0.75 V` GAL limit or the
+corresponding logic-family absolute maximum. The absent-device pull-up
+behavior is valid only when that device is physically removed from its
+socket. Verify 5 V continuity at every installed IC before power-up; a
+missing VCC socket contact is a fault, not a supported operating mode.
 
 The plug-in supply shown on the middle breadboard may provide the 5 V
 entry point only after a load test proves 4.75 V to 5.25 V at the board
@@ -300,16 +331,17 @@ table for construction; the ranges preserve ascending bit order.
 | Z80 RESET# | GP3 | 5 | Z80 pin 26 and ATF22V10 pin 1, direct 3.3 V logic |
 | Z80 BUSREQ# | GP4 | 6 | SN74HCT541 A2 pin 3 |
 | SRAM CE# | GP5 | 7 | ATF22V10 pin 7 |
-| Data DIR / OE# | GP6 / GP7 | 9 / 10 | SN74LVC8T245 pins 2 / 22 |
-| Address DIR / OE# | GP8 / GP9 | 11 / 12 | Both SN74HCT245 pins 1 / 19 |
-| D0-D3 | GP10-GP13 | 14-17 | SN74LVC8T245 A1-A4 pins 3-6 |
-| D4-D7 | GP14-GP17 | 19-22 | SN74LVC8T245 A5-A8 pins 7-10 |
+| Data DIR / ENABLE | GP6 / GP7 | 9 / 10 | ATF22V10 pins 11 / 9; GAL pins 17 / 18 generate mutually exclusive data OE# signals |
+| Unused | GP8 | 11 | Leave open; no address transceivers are fitted |
+| Address enable | GP9 | 12 | ATF22V10 pin 10; HIGH releases MCP RESET# through GAL pin 19 and Q1 |
+| D0-D3 | GP10-GP13 | 14-17 | SN74AHCT245N and SN74LVC245AN A1-A4 pins 2-5 |
+| D4-D7 | GP14-GP17 | 19-22 | SN74AHCT245N and SN74LVC245AN A5-A8 pins 6-9 |
 | SPI SCK / MOSI / MISO / CS# | GP18-GP21 | 24-27 | HCT541 A4/A5, LVC244 2Y1, HCT541 A3 |
 | SRAM WE# | GP22 | 29 | ATF22V10 pin 3 |
 | SRAM OE# | GP26 | 31 | ATF22V10 pin 5 |
 | Z80 RD# monitor | GP27 | 32 | SN74LVC244AN 1Y3 |
 | Z80 WR# monitor | GP28 | 34 | SN74LVC244AN 1Y4 |
-| 3.3 V output | - | 36 | SN74LVC8T245 VCCA, LVC244 VCC, and 3.3 V pull-ups |
+| 3.3 V output | - | 36 | SN74LVC245AN VCC, LVC244 VCC, and 3.3 V pull-ups |
 | VSYS | - | 39 | 1N5819 banded cathode; anode to external +5 V |
 
 Connect Pico GND pins 3, 8, 13, 18, 23, 28, and 38, plus AGND pin
@@ -712,12 +744,18 @@ not enable the optional power-down mode or security fuse.
 | 6 | Z80_RD# | Z80 pin 21 |
 | 7 | PICO_CE# | Pico GP5 |
 | 8 | Z80_MREQ# | Z80 pin 19 |
-| 9-11, 13 | Unused inputs | Tie to GND |
+| 9 | DATA_ENABLE | Pico GP7; 10 kOhm pull-down to GND |
+| 10 | ADDR_ENABLE | Pico GP9; 10 kOhm pull-down to GND |
+| 13 | Unused input | Tie to GND |
+| 11 | DATA_DIR | Pico GP6; 10 kOhm pull-down to GND |
 | 12 | GND | Common ground |
 | 14 | SRAM_WE_PRE# | SN74HCT541 A6 pin 7 |
 | 15 | SRAM_OE_PRE# | SN74HCT541 A7 pin 8 |
 | 16 | SRAM_CE_PRE# | SN74HCT541 A8 pin 9 |
-| 17-23 | Unused outputs | Program constant LOW; leave open |
+| 17 | DATA_UP_OE# | SN74AHCT245N OE# pin 19 |
+| 18 | DATA_DOWN_OE# | SN74LVC245AN OE# pin 19 |
+| 19 | MCP_RESET_DRIVE | 4.7 kOhm to Q1 base; Q1 collector drives MCP RESET# |
+| 20-23 | Unused outputs | Program constant LOW; leave open |
 | 24 | VCC | Regulated +5 V |
 
 The ATF22V10's guaranteed HIGH output is 2.4 V, which satisfies the
@@ -726,7 +764,33 @@ threshold. Never bypass the HCT541 on these three paths. Fit 10 kOhm
 pull-ups at HCT541 A6-A8 and at the final SRAM CE#/OE#/WE# nodes. The
 input pull-ups keep the permanently enabled HCT541 deterministic if the
 GAL is missing; the output pull-ups keep the SRAM inactive if the
-HCT541 is missing or unpowered.
+HCT541 is physically missing. All installed source devices must be
+powered as required by Section 0.4.
+
+The same 2.4 V guaranteed HIGH exceeds the 2.0 V input-HIGH minimum of
+both data-transceiver OE# inputs. Two additional equations use two
+product terms each:
+
+```text
+DATA_UP_OE#   = NOT DATA_ENABLE OR NOT DATA_DIR
+DATA_DOWN_OE# = NOT DATA_ENABLE OR DATA_DIR
+MCP_RESET_DRIVE = NOT ADDR_ENABLE
+```
+
+Both paths are disabled whenever DATA_ENABLE is LOW. When it is HIGH,
+exactly one path is enabled. Firmware changes DATA_DIR only while
+DATA_ENABLE is LOW, so the shared `NOT DATA_ENABLE` product term holds
+both OE# outputs inactive throughout the transition. SN74LVC245A `Ioff`
+permits its OE# pin to remain driven from the 5 V GAL while the LVC
+device's 3.3 V supply is absent.
+
+For address isolation, connect GAL pin 19 through 4.7 kOhm to the base
+of Q1 (2N3904), add 47 kOhm base-to-emitter, ground the emitter, pull
+MCP RESET# up to 5 V through 10 kOhm, and connect the collector to
+RESET#. ADDR_ENABLE LOW makes GAL pin 19 HIGH and Q1 asserts reset,
+which forces all MCP GPIO registers back to input mode. ADDR_ENABLE
+HIGH releases reset; firmware then configures IODIR before using the
+address bus.
 
 During Phase 6 with the Z80 absent, hold GP3 RESET# LOW. The programmed
 logic then selects the Pico controls regardless of the pulled-up,
@@ -745,30 +809,38 @@ flowchart LR
 The MCP23S17 acts as the dedicated 16-bit register shifter interfacing
 the Pico 2's SPI bus with the shared 5V address bus. During DMA block
 injection, it drives the target SRAM locations. During an active I/O
-trap, the transceiver directions are reversed, allowing the MCP23S17 to
-monitor the address bus states driven by the frozen Z80 CPU.
+trap, its GPIO ports remain inputs, allowing the MCP23S17 to monitor the
+address bus states driven by the frozen Z80 CPU.
 
 | MCP23S17 Pin Designation | Target Connection | System Logic Role |
 |----|----|----|
-| GPA0 – GPA7 (Port A) | SN74HCT245N Transceiver \#1 (B1 – B8) | Lower Address Byte Control (\$A_0 – A_7\$) |
-| GPB0 – GPB7 (Port B) | SN74HCT245N Transceiver \#2 (B1 – B8) | Upper Address Byte Control (\$A_8 – A\_{15}\$) |
+| GPA0 – GPA7 (Port A) | Shared A0-A7 directly | Lower address byte drive/sample |
+| GPB0 – GPB7 (Port B) | Shared A8-A15 directly | Upper address byte drive/sample |
 | CS# (Pin 11) | SN74HCT541 Y3 pin 16, from Pico GP21 via A3 | SPI Hardware Chip Select (Active Low), 5 V translated |
 | CLK / SCK (Pin 12) | SN74HCT541 Y4 pin 15, from Pico GP18 via A4 | SPI Master Clock Train Input, 5 V translated |
 | SI (Pin 13) | SN74HCT541 Y5 pin 14, from Pico GP19 via A5 | SPI Master-Out-Slave-In (MOSI Path), 5 V translated |
 | SO (Pin 14) | SN74LVC244AN channel 2A1/2Y1 to Pico 2 GP20 | SPI Master-In-Slave-Out (MISO Path), buffered from 5 V to 3.3 V; fit the Section 0.3 pull-up because SO is high-impedance while CS# is HIGH |
 | A0, A1, A2 (Pins 15-17) | Tied to GND | Hardware address = 000; matches the fixed 0x40/0x41 opcode used in firmware regardless of the IOCON.HAEN state, and prevents floating address-select inputs |
-| RESET# (Pin 18) | Tied to VCC (5V) | Hardware reset overridden for continuous software operation |
+| RESET# (Pin 18) | 10 kOhm pull-up to 5 V and Q1 collector | LOW outside address access; reset default makes all GPIO inputs |
 
 [Microchip MCP23017/MCP23S17 16-Bit I/O Expander with Serial Interface Datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20001952C.pdf)
 
 ### 2.1 MCP23S17-to-SRAM Address Wiring
 
-The MCP23S17 connects to the SRAM address inputs through two
-SN74HCT245N transceivers; it must not be connected directly to the
-shared address bus. Both transceivers share the Pico's GP8 direction
-control and GP9 active-low output-enable control described in Section
-5.2. Side B faces the MCP23S17 and side A faces the SRAM and shared Z80
-address bus.
+The MCP23S17 connects directly to the shared address bus: GPA0-GPA7 to
+A0-A7 and GPB0-GPB7 to A8-A15. Fit one 8x10 kOhm bussed pull-up network
+per byte, with each common pin at 5 V. The Z84C00 guarantees 4.2 V at
+its light-load VOH2 point against the MCP's 4.0 V input minimum; the
+external pull-ups improve the static HIGH level and add at most about
+0.5 mA load per LOW bit. MCP GPIO outputs guarantee at least 4.3 V at
+5 V, exceeding the SRAM's 3.5 V input minimum.
+
+Hardware isolation comes from RESET#, not a bus transceiver. GP9
+ADDR_ENABLE feeds GAL pin 10. When LOW, GAL pin 19 drives Q1 and holds
+MCP RESET# LOW, forcing IODIRA/IODIRB to their all-input reset values.
+When HIGH, Q1 releases RESET#; firmware waits, then programs OLAT before
+changing IODIR to outputs. It reasserts reset before releasing the Z80.
+GP9 has a 10 kOhm pull-down, so Pico reset or power loss fails closed.
 
 ```mermaid
 flowchart LR
@@ -778,25 +850,18 @@ flowchart LR
     GPB["Port B<br/>GPB0 pin 1<br/>GPB1 pin 2<br/>GPB2 pin 3<br/>GPB3 pin 4<br/>GPB4 pin 5<br/>GPB5 pin 6<br/>GPB6 pin 7<br/>GPB7 pin 8"]
   end
 
-  subgraph XCVR[Two SN74HCT245N Address Transceivers]
-    direction TB
-    LOW["Low byte transceiver<br/>B1-B8 pins 18-11<br/>A1-A8 pins 2-9"]
-    HIGH["High byte transceiver<br/>B1-B8 pins 18-11<br/>A1-A8 pins 2-9"]
-  end
-
   subgraph RAM[AS6C1008-55PCN SRAM]
     direction TB
     RLOW["Lower address byte<br/>A0 pin 12<br/>A1 pin 11<br/>A2 pin 10<br/>A3 pin 9<br/>A4 pin 8<br/>A5 pin 7<br/>A6 pin 6<br/>A7 pin 5"]
     RHIGH["Upper address byte<br/>A8 pin 27<br/>A9 pin 26<br/>A10 pin 23<br/>A11 pin 25<br/>A12 pin 4<br/>A13 pin 28<br/>A14 pin 3<br/>A15 pin 31"]
   end
 
-  GPA <-->|"GPA0-GPA7 to B1-B8"| LOW
-  GPB <-->|"GPB0-GPB7 to B1-B8"| HIGH
-  LOW <-->|"A1-A8 to A0-A7"| RLOW
-  HIGH <-->|"A1-A8 to A8-A15"| RHIGH
+  GPA <-->|"direct, pulled-up A0-A7"| RLOW
+  GPB <-->|"direct, pulled-up A8-A15"| RHIGH
 
-  PICO["Pico 2<br/>GP8 DIR<br/>GP9 OE#"] -->|"shared controls"| LOW
-  PICO -->|"shared controls"| HIGH
+  PICO["Pico GP9 ADDR_ENABLE"] --> GAL["ATF22V10 pin 10/19"]
+  GAL --> Q1["2N3904 reset pull-down"]
+  Q1 -->|"MCP RESET#"| MCP
 ```
 
 ## 3. Physical Partitioning & Breadboard Topology
@@ -811,57 +876,58 @@ Memory on the left, Core in the center, and Peripheral on the right.
 Rows 1-63 run in the same direction on all three boards, so equal row
 numbers align across both board boundaries. The Core Board's central
 position is deliberate: the dominant Memory/Core paths are the shared
-16-bit address and 8-bit data buses, while the dominant Core/Peripheral
-paths are the MCP23S17's 16-bit address interface and the Pico's 8-bit
-data interface. Four Pico-to-GAL signals span both board boundaries
-without a buffer: PICO_CE#, PICO_OE#, PICO_WE#, and RESET#. RESET# is a
-three-way node also tapped by the Z80 on the Core Board; the other three
+16-bit address and 8-bit data buses plus the MCP23S17 address/SPI
+interface, while the dominant Core/Peripheral paths are the Pico's
+8-bit data interface and supervisor controls. Seven Pico-to-GAL signals span both board boundaries
+without a buffer: PICO_CE#, PICO_OE#, PICO_WE#, RESET#, DATA_ENABLE,
+DATA_DIR, and ADDR_ENABLE. RESET# is a
+three-way node also tapped by the Z80 on the Core Board; the others
 simply cross the Core Board without connecting to a Core component.
-Keep this low-activity group away from CLK. Putting either outer cluster
+MCP SO also crosses both boundaries to the Peripheral Board's LVC244.
+Keep these low-activity paths away from CLK. Putting either outer cluster
 in the center would shorten these four wires only by forcing one of the
 much wider address/data interfaces to span two board widths.
 
-- **Memory Board (Left Zone):** AS6C1008-55PCN SRAM and the programmed
-  ATF22V10. The GAL's four CPU-side inputs (BUSACK#, MREQ#, RD#, WR#)
+- **Memory Board (Left Zone):** AS6C1008-55PCN SRAM, the programmed
+  ATF22V10, and MCP23S17. The GAL's four CPU-side inputs (BUSACK#,
+  MREQ#, RD#, WR#)
   cross from the Core Board, and its three pre-buffer outputs cross
   back to the Core Board's SN74HCT541 before the buffered result
   returns here as SRAM CE#/OE#/WE#. This deliberate round trip keeps
   the HCT541's clock channel local to the Z80 instead (see below), which
   matters far more than SRAM control length since SRAM CE#/OE#/WE# only
   toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#,
-  which already crossed this same boundary in the original design. Row
-  budget: 16 (SRAM) + 12 (ATF22V10) = 28 of 63 terminal rows.
+  which already crossed this same boundary in the original design. The
+  MCP23S17 now sits here so its 16 port lines join the pulled-up shared
+  address bus at the Memory/Core boundary. Q1 beside it provides
+  reset-based hardware isolation. HCT541 SPI outputs also cross only
+  the Memory/Core boundary. Its SO output is
+  the one MCP signal that continues across Core to the LVC244. Row
+  budget: 16 (SRAM) + 12 (ATF22V10) + 14 (MCP23S17) = 42 of 63 rows.
 
-- **Core Board (Center Zone):** Z84C0020PEC CPU, both SN74HCT245N
-  address transceivers, and the SN74HCT541N output buffer. Keep the
+- **Core Board (Center Zone):** Z84C0020PEC CPU and the SN74HCT541N
+  output buffer. Keep the
   HCT541 beside the Z80 so its
   Y1 clock output never crosses a board boundary, the same placement
-  rule the discrete design used for its dedicated clock buffer. Orient
-  both address transceivers with their A-side pin rows toward the Memory
-  Board and their B-side pin rows toward the Peripheral Board. Side A
-  joins the Z80/SRAM address bus and side B reaches the MCP23S17. The
+  rule the discrete design used for its dedicated clock buffer. The
+  Z80 address pins join the SRAM/MCP address trunk directly. The
   photographed plug-in supply reserves rows 1-3, leaving 60 usable
   terminal rows.
-  The chip budget is 20 (Z80) + 20 (2x SN74HCT245N) + 10
-  (SN74HCT541N) = 50 of those 60 rows, leaving 10 rows for socket-body
+  The chip budget is 20 (Z80) + 10 (SN74HCT541N) = 30 of those 60
+  rows, leaving 30 rows for socket-body
   clearance, decoupling, and wiring. *No hardware wait-state latches
   or flip-flops are used.*
 
-- **Peripheral Board (Right Zone):** Raspberry Pi Pico 2, MCP23S17,
-  the SN74LVC244AN input buffer, and the SN74LVC8T245 data-transceiver
-  carrier. Orient the carrier with its B-port pin row toward the Core
-  Board and its A-port pin row toward the outer edge; connect the A port
-  locally to the Pico below it. Orient the LVC244 so its 1A input pin
+- **Peripheral Board (Right Zone):** Raspberry Pi Pico 2,
+  SN74LVC244AN monitor buffer, SN74AHCT245N upward data path,
+  and SN74LVC245AN downward data path. The ATF22V10 on Memory provides
+  the mutually exclusive enables. Rotate both data transceivers so
+  their B-port pin rows face the Core Board and their A-port pin rows
+  face the Pico; tie AHCT DIR HIGH and LVC DIR LOW. Orient the LVC244 so its 1A input pin
   row faces the Core Board and its 1Y output pin row faces inward toward
-  the Pico; its fifth input, MCP SO, remains local. The HCT541's three
-  SPI outputs cross from the Core Board to reach the MCP23S17 here, a
-  second new crossing from
-  consolidating three buffer packages into one; SPI only toggles during
-  DMA/trap windows when the Z80 clock is stopped, so it never runs
-  concurrently with the timing-critical CLK path. Row budget: 20
-  (Pico 2) + 14 (MCP23S17) + 10 (SN74LVC244AN) + 12 (SN74LVC8T245
-  carrier) = 56 of 63 terminal rows, leaving seven rows for spacing,
-  decoupling, and wiring.
+  the Pico; its fifth input, MCP SO, arrives from Memory across Core.
+  Row budget: 20 (Pico) + 10 (LVC244) + 10 (AHCT245) + 10 (LVC245) =
+  50 of 63 rows.
 
 The following row-aligned schedule was selected by evaluating every
 valid per-board package ordering and gap distribution against grouped
@@ -871,22 +937,76 @@ lengths:
 
 | Board | Terminal-row schedule | Unallocated rows |
 |----|----|----:|
-| Memory | Unallocated 1-8; GAL 9-20; gap 21; SRAM 22-37 | 1-8 and 38-63 (34) |
-| Core / middle | Supply clearance 1-3; unallocated 4-7; HCT541 8-17; gap 18; Z80 19-38; gap 39; HCT245 low byte 40-49; gap 50; HCT245 high byte 51-60 | 4-7 and 61-63 (7) |
-| Peripheral | LVC8T245 carrier 1-12; gap 13; Pico 14-33; gap 34; LVC244 35-44; gap 45; MCP23S17 46-59 | 60-63 (4) |
+| Memory | Unallocated 1-4; GAL 5-16; gap 17; SRAM 18-33; gap 34; MCP23S17 35-48 | 1-4 and 49-63 (19) |
+| Core / middle | Supply clearance 1-3; unallocated 4-7; HCT541 8-17; gap 18; Z80 19-38 | 4-7 and 39-63 (29) |
+| Peripheral | Pico 1-20; gap 21; LVC244 22-31; gap 32; AHCT245 33-42; gap 43; LVC245 44-53 | 54-63 (10) |
+
+### 3.1 Package Orientation and Pin 1
+
+Use this convention for both the table and the placement image: view
+each BB830 from above and rotate it 90 degrees counter-clockwise from
+the manufacturer's landscape drawing, so **row 1 is at the top, row 63
+is at the bottom, A-E are on the left, and F-J are on the right**.
+Memory, Core, and Peripheral then sit left-to-right. Do not mirror any
+board.
+
+Seat every DIP socket across the center ravine before wiring it. A
+0.3-inch DIP uses the E/F holes immediately beside the ravine. The Z80
+and SRAM are 0.6-inch-wide DIPs: dry-fit their specified 0.6-inch
+sockets in two terminal columns matching the actual 15.24 mm lead-row
+span; do not force or bend them into E/F. Both pin rows must remain on
+opposite, electrically isolated sides of the ravine. Install the IC
+only after marking the socket's pin-1 corner and matching the IC notch
+or dot to the socket.
+
+| Board / device | Occupied rows | Body orientation | Pin 1 location (top view) | Opposite corner check |
+| --- | ---: | --- | --- | --- |
+| Memory / ATF22V10 | 5-16 | Notch toward row 1 | E5 | Pin 24 at F5 |
+| Memory / AS6C1008 SRAM | 18-33 | Notch toward row 1 | A-E pin-row side at row 18 | Pin 32 on F-J side at row 18 |
+| Memory / MCP23S17 | 35-48 | Notch toward row 63 | F48 | Pin 28 at E48 |
+| Core / SN74HCT541 | 8-17 | Notch toward row 63 | F17 | Pin 20 at E17; Y1 pin 18 is then close to Z80 CLK |
+| Core / Z84C0020 | 19-38 | Notch toward row 1 | A-E pin-row side at row 19 | Pin 40 on F-J side at row 19 |
+| Peripheral / Pico 2 W | 1-20 | USB connector toward row 1 | Header pin 1 on A-E side at row 1 | Header pin 40 on F-J side at row 1 |
+| Peripheral / SN74LVC244 | 22-31 | Notch toward row 1 | E22 | Pin 20 at F22; 1A inputs face Core |
+| Peripheral / SN74AHCT245 | 33-42 | Notch toward row 63 | F42 | Pin 20 at E42; B1-B8 face Core |
+| Peripheral / SN74LVC245 | 44-53 | Notch toward row 63 | F53 | Pin 20 at E53; B1-B8 face Core |
+
+For the non-DIP keyed parts:
+
+- **Q1 (2N3904):** place beside the MCP, not across the ravine. TO-92
+  lead order can vary by manufacturer; use the purchased part's
+  datasheet to identify emitter/base/collector and mark `E-B-C` beside
+  its holes. Do not rely on flat-face orientation alone.
+- **RN1/RN2:** place as single-row SIPs near SRAM/MCP, parallel to the
+  ravine, with the dot/common pin toward row 1 and wired to +5 V.
+- **RN3:** place beside the AHCT/LVC A-port node with its dot/common pin
+  toward row 1 and wired to GND.
+- **1N5819 and electrolytics:** the diode band faces Pico VSYS; every
+  electrolytic `+` lead goes to its positive rail. Mark polarity on the
+  breadboard before insertion.
+- **Plug-in supply module:** orient it only from its printed `+`, `-`,
+  input, and output labels, then confirm every rail with a meter while
+  unloaded. There is no generic module orientation; never infer
+  polarity from USB-jack position or board color.
+
+Before applying power, inspect every socket from above and verify the
+pin-1 location against this table. Then use continuity mode to prove
+that opposite-side pins at the same row are not shorted through a
+terminal strip.
 
 This placement uses row alignment to reduce diagonal jumper length:
 
-- **Memory/Core:** SRAM rows 22-37 overlap the Z80's rows 19-38 for the
-  full A0-A15/D0-D7 trunk. GAL rows 9-20 overlap the HCT541 and the top
-  of the Z80 for its seven Core-side control signals.
-- **Core/Peripheral:** MCP23S17 rows 46-59 overlap both HCT245s for its
-  16-bit address path. Pico rows 14-33 overlap the HCT541 and Z80 for
-  CLK, BUSREQ#, RESET#, and SPI-source wiring. The LVC244 and data
-  carrier remain one local package away from the Pico while aligning
-  reasonably with the Core chips they serve.
-- **Peripheral/Memory:** Pico rows 14-33 overlap GAL rows 9-20, reducing
-  the vertical component of the four direct Pico-to-GAL paths.
+- **Memory/Core:** SRAM rows 18-33 overlap the Z80's rows 19-38 for the
+  full A0-A15/D0-D7 trunk. GAL rows 5-16 overlap the HCT541, while
+  MCP23S17 rows 35-48 meet the lower end of the direct Z80 address trunk.
+- **Core/Peripheral:** Pico rows 1-20 overlap HCT541 and the top of the
+  Z80. LVC244 rows 22-31 overlap the Z80 monitor sources. Both data
+  transceivers overlap the lower Z80 region while remaining
+  directly adjacent to the Pico on the same board.
+- **Peripheral/Memory:** Pico rows 1-20 overlap GAL rows 5-16, reducing
+  the vertical component of the seven Pico-to-GAL paths and two OE#
+  returns. MCP SO
+  remains one grouped low-activity crossing to the LVC244.
 
 This schedule includes one empty row between every socket or module and
 still fits all three boards. Mark the actual supply-module overhang and
@@ -903,7 +1023,7 @@ crossings and CLK. Verify every BB830 distribution rail end-to-end with
 a meter before fitting links; never assume visually aligned rail
 segments are internally continuous.
 
-### 3.1 KiCad Electrical Schematic
+### 3.2 KiCad Electrical Schematic
 
 The native KiCad 10 schematic is the electrical source of truth for
 pin numbers, named nets, explicit no-connect markers, and ERC. It uses
@@ -923,11 +1043,11 @@ signals pass through an intermediate chip as series logic.
 | [KiCad netlist](hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
 | [ERC report](hardware/kicad/reports/z80_romless_sbc-erc.json) | KiCad 10.0.5 result: zero violations with errors, warnings, and exclusions included |
 
-The schematic contains 56 physical components, including all 29
-startup resistors and 14 fitted capacitors, plus one nonphysical
+The schematic contains 59 physical components, including 31 discrete
+resistors, three SIP networks, and 12 fitted capacitors, plus one nonphysical
 `#FLG01` power marker used only by ERC. KiCad's exported netlist
-matches the independently generated manifest exactly: 91 real nets
-and 340 component pin endpoints. The ERC-only power marker and KiCad's
+matches the independently generated manifest exactly: 79 real nets
+and 348 component pin endpoints. The ERC-only power marker and KiCad's
 synthetic no-connect nets are excluded from that comparison.
 
 To regenerate and validate the native source, exports, strict ERC
@@ -944,7 +1064,7 @@ KiCad CLI upgrade/export/ERC, and
 [check-kicad-netlist.py](scripts/check-kicad-netlist.py). Any ERC
 violation or net/endpoint mismatch fails the build.
 
-### 3.2 High-Speed Interconnect Routing
+### 3.3 High-Speed Interconnect Routing
 
 At the qualified 1-4 MHz clock rates, propagation skew from a few
 millimetres of wire-length difference is negligible compared with the
@@ -954,11 +1074,15 @@ and fast-edge ringing. Route each bus as a short grouped trunk with
 roughly similar paths, but do not add serpentine wire merely to make
 lengths equal:
 
-- **A0-A15:** keep the Z80, SRAM, and SN74HCT245N taps on one short
-  trunk; avoid star branches and long unterminated stubs.
-- **D0-D7:** orient the Peripheral Board's SN74LVC8T245 B side toward
-  the Core Board, cross its eight 5 V bus lines as one short group, and
-  continue the shared trunk through the Z80 to the adjacent SRAM.
+- **A0-A15 (hard construction rule):** keep the Z80, SRAM, MCP23S17,
+  and both SIP pull-up networks on one short common trunk. Do not build
+  this as a star and do not leave long branches to any device. A layout
+  that cannot satisfy this rule fails the placement review and must be
+  rearranged before wiring the remaining signals.
+- **D0-D7:** join both Peripheral data-transceiver B ports to one short
+  5 V trunk crossing to the Core Board, then continue that shared trunk
+  through the Z80 to the adjacent SRAM. Keep the two A-port taps to the
+  Pico short and parallel; never route one translator through the other.
 - **SN74HCT541 Y6-Y8 to SRAM CE#/OE#/WE#:** these cross from the Core
   Board's HCT541 to the Memory Board's SRAM; route them as one grouped
   trunk at the board boundary. Exact length matching is unnecessary.
@@ -973,26 +1097,26 @@ ground probe points near CLK, IORQ#, MREQ#, RD#, WR#, SRAM CE#/OE#/WE#,
 and each bus transceiver. Keep all jumpers as short as the placement
 allows.
 
-### 3.3 Major Chip Interconnection Overview
+### 3.4 Major Chip Interconnection Overview
 
 ```mermaid
 flowchart LR
   subgraph MEM[Memory Board - 5V]
     SRAM[AS6C1008 SRAM]
     GAL[ATF22V10 SRAM Arbitration]
+    MCP[MCP23S17 - 5V]
   end
 
   subgraph CORE[Core Board - mixed 5V and 3.3V]
     Z80[Z84C0020PEC CPU]
-    ADDR245[2x SN74HCT245 - 5V]
     HCT541[SN74HCT541 Output Buffer]
   end
 
   subgraph PERIPH[Peripheral Board]
     PICO[Raspberry Pi Pico 2 - 3.3V]
-    MCP[MCP23S17 - 5V]
     INPUT244[SN74LVC244 - 3.3V]
-    DATA245[SN74LVC8T245 - 3.3V/5V]
+    UP245[SN74AHCT245 - Pico to 5V]
+    DOWN245[SN74LVC245 - 5V to Pico]
   end
 
   Z80 <-->|A0-A15| SRAM
@@ -1000,14 +1124,19 @@ flowchart LR
   PICO -->|3.3V CLK, BUSREQ, SPI| HCT541
   HCT541 -->|5V CLK, BUSREQ| Z80
   HCT541 -->|5V SPI| MCP
-  MCP <-->|16-bit address| ADDR245
-  PICO -->|shared DIR, OE#| ADDR245
-  ADDR245 <-->|Shared A0-A15| Z80
-  ADDR245 <-->|Shared A0-A15| SRAM
-  PICO <-->|D0-D7| DATA245
-  PICO -->|DIR, OE#| DATA245
-  DATA245 <-->|Shared D0-D7| Z80
-  DATA245 <-->|Shared D0-D7| SRAM
+  MCP <-->|pulled-up A0-A15| Z80
+  MCP <-->|pulled-up A0-A15| SRAM
+  PICO -->|ADDR_ENABLE| GAL
+  GAL -->|reset pull-down control| MCP
+  PICO -->|D0-D7| UP245
+  UP245 -->|Shared D0-D7| Z80
+  UP245 -->|Shared D0-D7| SRAM
+  Z80 -->|Shared D0-D7| DOWN245
+  SRAM -->|Shared D0-D7| DOWN245
+  DOWN245 -->|D0-D7| PICO
+  PICO -->|DIR, ENABLE| GAL
+  GAL -->|mutually exclusive OE#| UP245
+  GAL -->|mutually exclusive OE#| DOWN245
   PICO -->|3.3V RESET# direct| Z80
   PICO -->|RESET#, CE#, OE#, WE#| GAL
   Z80 -->|BUSACK#, MREQ#, RD#, WR#| GAL
@@ -1059,48 +1188,68 @@ and never fit a 5 V pull-up on this node.
 The transceivers isolate the supervisor elements (Pico 2 and MCP23S17)
 from the main bus during standard execution, preventing bus contention.
 
-### 5.1 SN74LVC8T245 Dual-Supply Data Bus Transceiver
+### 5.1 All-PDIP Data-Bus Translation and Interlock
 
-The former 3.3 V-powered SN74LVC245 could not guarantee the
-AS6C1008's $0.7V_{CC}$ input-HIGH threshold. Use an SN74LVC8T245PW with
-VCCA at 3.3 V and VCCB at 5 V instead. The A port faces the Pico and
-the B port faces the shared Z80/SRAM data bus. This orientation also
-keeps DIR and OE#, which are referenced to VCCA, compatible with Pico
-GPIO levels. The device has no native DIP package; mount the 24-pin
-TSSOP device on a straight-through, 0.6-inch DIP-24 carrier that
-preserves pin numbers. The carrier must provide short power/ground
-paths and two local 100 nF capacitors at the device pads, one for VCCA
-and one for VCCB; breadboard capacitors eleven rows away are not a
-substitute for on-carrier high-frequency decoupling.
+No single PDIP part provides an SN74LVC8T245-equivalent combination of
+dual supplies, bidirectional translation, deterministic direction,
+three-state isolation, and partial-power-down safety. The breadboard
+design therefore uses two fixed-direction transceivers:
 
-| Bus bit | Pico GPIO / A port | 5 V bus / B port |
+- **SN74AHCT245N (5 V):** A port is Pico D0-D7, B port is the 5 V bus,
+  and DIR pin 1 is tied HIGH. Its TTL-compatible A inputs accept 3.3 V
+  and its B outputs provide full 5 V CMOS levels.
+- **SN74LVC245AN (3.3 V):** A port is Pico D0-D7, B port is the 5 V bus,
+  and DIR pin 1 is tied LOW. Its B inputs tolerate 5.5 V, A outputs stay
+  in the Pico domain, and `Ioff` prevents back-powering while 3.3 V is
+  absent.
+
+| Bus bit | Pico GPIO / both A ports | 5 V bus / both B ports |
 |----|----|----|
-| D0 | GP10 / A1 pin 3 | B1 pin 21 |
-| D1 | GP11 / A2 pin 4 | B2 pin 20 |
-| D2 | GP12 / A3 pin 5 | B3 pin 19 |
-| D3 | GP13 / A4 pin 6 | B4 pin 18 |
-| D4 | GP14 / A5 pin 7 | B5 pin 17 |
-| D5 | GP15 / A6 pin 8 | B6 pin 16 |
-| D6 | GP16 / A7 pin 9 | B7 pin 15 |
-| D7 | GP17 / A8 pin 10 | B8 pin 14 |
+| D0 | GP10 / A1 pin 2 | B1 pin 18 |
+| D1 | GP11 / A2 pin 3 | B2 pin 17 |
+| D2 | GP12 / A3 pin 4 | B3 pin 16 |
+| D3 | GP13 / A4 pin 5 | B4 pin 15 |
+| D4 | GP14 / A5 pin 6 | B5 pin 14 |
+| D5 | GP15 / A6 pin 7 | B6 pin 13 |
+| D6 | GP16 / A7 pin 8 | B7 pin 12 |
+| D7 | GP17 / A8 pin 9 | B8 pin 11 |
 
-Connect VCCA pin 1 to Pico 3.3 V, DIR pin 2 to GP6, GND pins 11-13
-to common ground, OE# pin 22 to GP7, and both VCCB pins 23-24 to the
-regulated 5 V rail. Preserve this pin numbering on the carrier.
+Connect both pin 10s to GND. Connect AHCT pin 20 to 5 V and LVC pin
+20 to 3.3 V. Each device needs its own local 100 nF capacitor.
 
-| System Operating State | OE# (GP7) | DIR (GP6) | Signal Direction | Functional Role |
-|----|----|----|----|----|
-| **Boot / Write Mode** | 0 (Low) | 1 (High) | Side A → Side B (Pico → Bus) | Pico streams virtual ROM blocks into the SRAM. |
-| **Readback / Trap Mode** | 0 (Low) | 0 (Low) | Side B → Side A (Bus → Pico) | Pico reads data bus during verification or OUT traps. |
-| **Active Execution (Run)** | 1 (High) | X (Don't Care) | High-Impedance (High-Z) | Z80 and SRAM handle data operations directly; Pico data bus isolated. |
+The existing ATF22V10 provides the hardware interlock using spare pins
+and product terms. Connect GP7 DATA_ENABLE to GAL pin 9 and GP6
+DATA_DIR to pin 11. GAL pin 17 drives AHCT245 OE# pin 19; pin 18 drives
+LVC245 OE# pin 19. The two equations are documented in Section 1.2.
+No 5 V output drives GP6/GP7: they are GAL inputs with 10 kOhm
+pull-downs. During Pico power-off both inputs read LOW, so both GAL OE#
+outputs are HIGH. The LVC245's `Ioff` specification protects its
+3.3 V-powered side while GAL pin 18 remains at a 5 V-domain HIGH.
 
-### 5.2 SN74HCT245N Address Bus Transceivers (5V Powered)
+| System state | DATA_ENABLE GP7 | DATA_DIR GP6 | AHCT OE# | LVC OE# | Result |
+|----|----:|----:|----:|----:|----|
+| Isolated / run | 0 | X | 1 | 1 | Both Pico data paths high-impedance |
+| DMA write | 1 | 1 | 0 | 1 | Pico → AHCT245 → 5 V bus |
+| Readback / OUT trap | 1 | 0 | 1 | 0 | 5 V bus → LVC245 → Pico |
 
-| System Operating State | OE# (GP9) | DIR (GP8) | Signal Direction | Functional Role |
-|----|----|----|----|----|
-| **DMA Injection Mode** | 0 (Low) | 0 (Low) | Side B → Side A (Expander → Bus) | MCP23S17 dictates memory-injected target address variables. |
-| **Trap Address Read Mode** | 0 (Low) | 1 (High) | Side A → Side B (Bus → Expander) | Reverses transceivers so MCP23S17 can read the active port. |
-| **Active Execution (Run)** | 1 (High) | X (Don't Care) | High-Impedance (High-Z) | Z80 drives system address lines directly; expander isolated. |
+Firmware always drives DATA_ENABLE LOW, waits, changes DATA_DIR, waits,
+and only then drives DATA_ENABLE HIGH. The GAL truth table also
+makes simultaneous enables impossible for every static GP6/GP7 state.
+Do not substitute TXS0108E, TXB0108, BSS138, or resistor-divider
+breakouts: their automatic/pass-device behavior and loading assumptions
+are not equivalent to this controlled, multi-load push-pull bus.
+
+### 5.2 Direct MCP23S17 Address-Bus Modes
+
+| System state | ADDR_ENABLE GP9 | MCP RESET# | IODIRA/B | Functional role |
+|----|----:|----:|----|----|
+| **DMA injection** | 1 | 1 | `0x00/0x00` after OLAT preload | MCP drives A0-A15 |
+| **Trap address read** | 1 | 1 | `0xFF/0xFF` | MCP samples the frozen Z80 address |
+| **Active execution / isolated** | 0 | 0 | Reset default `0xFF/0xFF` | MCP pins are inputs; Z80 owns A0-A15 |
+
+Always assert ADDR_ENABLE LOW before releasing the CPU. Releasing MCP
+reset is not itself permission to drive: firmware must preload OLAT and
+hold Z80 RESET# or BUSACK# before writing IODIR outputs.
 
 ### 5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer
 
@@ -1137,9 +1286,8 @@ source is absent or high-impedance.
 flowchart LR
   PICO[Raspberry Pi Pico 2]
   MCP[MCP23S17]
-  HCTLOW[SN74HCT245 - A0-A7]
-  HCTHIGH[SN74HCT245 - A8-A15]
-  LVC[SN74LVC8T245 - D0-D7]
+  UP245[SN74AHCT245 - Pico to 5V]
+  DOWN245[SN74LVC245 - 5V to Pico]
   ABUS((5V Address Bus))
   DBUS((5V Data Bus))
   Z80[Z84C00 CPU]
@@ -1152,17 +1300,19 @@ flowchart LR
   BUFFER -->|5V SCK, MOSI, CS| MCP
   MCP -->|5V SO| INPUT244
   INPUT244 -->|3.3V MISO GP20| PICO
-  MCP <-->|GPA0-GPA7| HCTLOW
-  MCP <-->|GPB0-GPB7| HCTHIGH
-  PICO -->|GP8 DIR, GP9 OE| HCTLOW
-  PICO -->|GP8 DIR, GP9 OE| HCTHIGH
-  HCTLOW <-->|A0-A7| ABUS
-  HCTHIGH <-->|A8-A15| ABUS
+  MCP <-->|GPA/GPB, pulled-up| ABUS
+  PICO -->|GP9 ADDR_ENABLE| GAL
+  GAL -->|MCP RESET# pull-down| MCP
   Z80 -->|A0-A15| ABUS
   ABUS -->|A0-A15| SRAM
 
-  PICO <-->|GPIO data, GP6 DIR, GP7 OE| LVC
-  LVC <-->|D0-D7| DBUS
+  PICO -->|GPIO data| UP245
+  UP245 -->|D0-D7| DBUS
+  DBUS -->|D0-D7| DOWN245
+  DOWN245 -->|GPIO data| PICO
+  PICO -->|GP6 DIR, GP7 ENABLE| GAL
+  GAL -->|exclusive OE#| UP245
+  GAL -->|exclusive OE#| DOWN245
   Z80 <-->|D0-D7| DBUS
   SRAM <-->|D0-D7| DBUS
 
@@ -1455,7 +1605,7 @@ order, but its excerpts should not be copied in place of the maintained source.
 Build and test one functional block at a time. Do not install the next
 chip until the current phase passes. Use sockets for all DIP devices,
 place a 100 nF ceramic capacitor directly across each IC's supply pins,
-and fit at least one 10 uF bulk capacitor per breadboard. Use a
+and fit at least one 22 uF bulk capacitor per breadboard. Use a
 current-limited 5 V supply, multimeter, oscilloscope, and preferably a
 logic analyzer. Start each first power-up at a 100 mA current limit and
 remove power immediately if a rail falls by more than 5%, current rises
@@ -1477,28 +1627,40 @@ Pico 2.
 
 **Test plan:**
 
-1. With power disconnected, check resistance from each supply rail to
+1. With every IC still removed, verify each socket's occupied rows,
+  notch direction, pin-1 corner, and width against Section 3.1. Mark
+  pin 1 on the breadboard and socket with a paint pen, and photograph
+  the empty-board orientation before wiring over the socket outlines.
+2. With power disconnected, check resistance from each supply rail to
   ground. Investigate readings below 1 kOhm after capacitors charge.
-2. Check every address, data, and control net end-to-end, then verify no
-  continuity between neighboring bus lines.
-3. Apply 5 V and measure every 5 V-powered DIP socket supply pin.
+3. **GAL removed:** Check every address, data, and control net
+  end-to-end, then verify no continuity between neighboring bus lines.
+  At the empty GAL socket, verify each signal has no unintended short
+  to GND, 5 V, or an adjacent pin. Do not attempt to verify GAL output
+  levels while the GAL is removed.
+4. Apply 5 V and measure every 5 V-powered DIP socket supply pin.
   Require 4.75 V to 5.25 V at VCC and less than 50 mV at each ground
-  pin. The SN74LVC8T245 VCCB contacts must read 5 V, while its VCCA
-  contact and the SN74LVC244AN VCC contact must remain at 0 V because
-  their 3.3 V source, the absent Pico, is not yet installed.
-4. If using the photographed plug-in supply, confirm that its body
+  pin. The AHCT245 and GAL VCC socket contacts must read 5 V, while the
+  LVC245 and LVC244 VCC contacts must remain at 0 V because their 3.3 V
+  source, the absent Pico, is not yet installed. With the GAL removed,
+  do not test GAL output levels. Verify the GAL socket and associated
+  nets have no unintended continuity to GND, 5 V, or adjacent signals.
+  GAL output-level verification is performed in Phase 2 after the GAL
+  is installed.
+5. If using the photographed plug-in supply, confirm that its body
   obscures no more than Core Board rows 1-3. Load its 5 V output to at
   least 500 mA, require 4.75 V to 5.25 V at the farthest board, and
   confirm no regulator becomes too hot to touch. Leave its 3.3 V output
   disconnected.
-5. Verify the external +5 V rail reaches Pico VSYS only through the
+6. Verify the external +5 V rail reaches Pico VSYS only through the
   1N5819 and does not reach Pico VBUS, the 3.3 V rail, or any GPIO
   contact. With external power applied, VSYS must be one Schottky drop
   below the +5 V rail. Verify each 5 V-side active-low control is pulled
   HIGH. With power removed, measure approximately 10 kOhm from every
   Pico-side pull-up contact to the unpowered 3.3 V rail and from every
   pull-down contact to GND, as listed in Section 0.3; powered Pico-side
-  logic levels are checked in Phase 1.
+  logic levels are checked in Phase 1. Measure approximately 10 kOhm
+  from each GP10-GP17 contact to GND through the data SIP network.
 
 **Pass gate:** No shorts or crossed nets, correct supply voltage at
 every socket, and negligible current with all devices removed.
@@ -1508,11 +1670,11 @@ every socket, and negligible current with all devices removed.
 **Install:** Pico 2 only.
 
 **Firmware feature:** A diagnostic image must establish safe output
-levels before enabling any GPIO output: GP7 and GP9 HIGH to isolate the
-data and address transceivers; GP3 LOW to assert RESET#; GP4, GP5,
+levels before enabling any GPIO output: GP7 and GP9 LOW to isolate
+the data path and hold MCP RESET# asserted; GP3 LOW to assert Z80 RESET#; GP4, GP5,
 GP21, GP22, and GP26 HIGH to deassert BUSREQ#, SRAM CE#, SPI CS#,
-SRAM WE#, and SRAM OE#; GP2 LOW to stop the clock; and GP6/GP8 LOW for
-the inactive transceiver directions. It must also provide a slow
+SRAM WE#, and SRAM OE#; GP2 LOW to stop the clock; and GP6 LOW for
+the inactive data direction. GP8 remains an input. It must also provide a slow
 walking-one GPIO test selected through the USB serial console.
 
 **Implementation:** [Phase 1 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c),
@@ -1523,15 +1685,18 @@ backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMles
 1. With the Section 0.4 1N5819 fitted, USB and external power may be
   connected together. Confirm neither source back-powers the other,
   then require 3.20 V to 3.40 V on the Pico 3.3 V rail, at the
-  SN74LVC8T245 carrier's VCCA contact, and at the still-absent
-  SN74LVC244AN VCC contact.
-2. Scope GP7 and GP9 through reset and startup; both must remain HIGH.
+  still-absent SN74LVC245AN and SN74LVC244AN VCC contacts.
+2. Scope GP7 and GP9 through reset and startup; GP7 must remain LOW and
+  GP9 must remain LOW so both bus interfaces stay isolated.
 3. Verify GP3 and the directly connected Z80 RESET# socket pin are LOW,
   and all other
   Pico control pins have the inactive levels listed above before,
   during, and after startup. Verify the RESET# node never exceeds the
   Pico 3.3 V rail; no 5 V pull-up is permitted on it.
-4. Run the walking-one test and probe each destination socket. Require
+4. Before configuring GP10-GP17 as outputs, require all eight to read
+  LOW from the external SIP network. Drive each HIGH in turn and verify
+  3.20-3.40 V while the other seven remain LOW.
+5. Run the walking-one test and probe each destination socket. Require
   one-to-one routing, 0 V/3.3 V levels, and no change on neighboring
   pins. Restore safe levels when the test ends or the USB link drops.
 
@@ -1543,8 +1708,10 @@ for every Pico signal.
 **Install:** Program and verify the ATF22V10 outside the circuit, then
 install it with the SN74HCT541 and SRAM still removed. After the GAL
 truth-table tests pass, install the HCT541. Keep the Z80, MCP23S17, and
-SRAM removed. Tie GAL pins 9-11 and 13 to GND, and tie both HCT541
-output-enable pins LOW.
+SRAM removed. Connect GAL pins 9/10/11 to GP7/GP9/GP6 with their fitted
+pull-downs, tie only unused pin 13 to GND, and tie both HCT541
+output-enable pins LOW. Require 4.75 V to 5.25 V at GAL VCC before
+testing any pulled-up GAL output.
 
 **Firmware feature:** Add commands to toggle each supervisor output at
 10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
@@ -1566,18 +1733,24 @@ using the shared [clock module](https://github.com/gloveboxes/Z80ROMlessSBC/blob
   and BUSACK# separately while observing GAL pins 14-16 on the scope.
   The consensus terms must hold every output continuously HIGH; any
   active-low pulse fails the programmed image.
-4. Install the HCT541. Use the Stage 2 walking command to toggle its
+4. **GAL installed; data transceivers removed:** Hold DATA_ENABLE pin 9
+  LOW and toggle DATA_DIR pin 11; GAL pins 17
+  and 18 must both remain HIGH. Drive DATA_ENABLE HIGH: pin 17 must be
+  LOW only when DATA_DIR is HIGH, and pin 18 must be LOW only when
+  DATA_DIR is LOW. Scope both outputs while changing DATA_DIR with
+  DATA_ENABLE LOW; neither may pulse LOW.
+5. Install the HCT541. Use the Stage 2 walking command to toggle its
   eight functional input paths independently; RESET# was already tested
   in Phase 1 and is not an HCT541 input. At the selected output require
   LOW below 0.3 V, HIGH at or above 4.4 V, correct polarity, and no
   activity on adjacent outputs.
-5. Test HCT541 channel 1 at each clock frequency. Require 45% to 55%
+6. Test HCT541 channel 1 at each clock frequency. Require 45% to 55%
   duty cycle and clean transitions at Z80 socket pin 6.
-6. After the Pico 3.3 V rail reaches 3.20 V, verify RESET# remains LOW
+7. After the Pico 3.3 V rail reaches 3.20 V, verify RESET# remains LOW
   while BUSREQ#, SRAM CE#/WE#/OE#, and SPI CS# remain HIGH for at least
   100 ms. Before 3.3 V is valid, RESET# must remain LOW but SRAM control
   levels are not used as a retention guarantee.
-7. Power-cycle ten times while monitoring these signals. Any active-low
+8. Power-cycle ten times while monitoring these signals. Any active-low
   transition after 3.3 V becomes valid fails the phase.
 
 **Pass gate:** Programmer verification and every GAL truth-table case
@@ -1587,10 +1760,10 @@ glitch.
 
 ### 8.4 Phase 3 - MCP23S17 SPI Address Generator
 
-**Install:** The 3.3 V-powered SN74LVC244AN first, then the
+**Install:** The 3.3 V-powered SN74LVC244AN first, then Q1 and the
 MCP23S17-E/SP. The already-tested HCT541 supplies all three SPI inputs.
-Keep both SN74HCT245N devices removed so the
-MCP ports cannot drive the shared address bus.
+Keep Z80 and SRAM removed; their empty sockets expose the pulled-up
+shared address bus for probing.
 
 **Electrical hold point:** Fit level translation on all SPI inputs. The
 MCP23S17 datasheet specifies $V_{IH} \ge 0.8V_{DD}$ for CS#, SCK, and
@@ -1614,12 +1787,13 @@ using the shared [MCP23S17 driver](https://github.com/gloveboxes/Z80ROMlessSBC/b
   1 kOhm, then release it HIGH through its fitted 10 kOhm pull-up.
   Verify the matching Pico input reads LOW and HIGH at 3.3 V levels
   and unused channels do not change.
-2. With SPI disconnected, verify MCP VDD, VSS, RESET#, and hardware
-  address levels at the package.
+2. With GP9 LOW, verify Q1 holds MCP RESET# LOW and all A0-A15 nodes
+  read HIGH through the two SIP networks. Drive GP9 HIGH and require a
+  clean 5 V RESET# release.
 3. With compliant translation fitted, write and read back 0x55 and 0xAA
   in IODIRA, IODIRB, OLATA, and OLATB.
 4. Configure outputs and probe walking-one and walking-zero patterns at
-  the empty SN74HCT245N sockets.
+  the empty Z80 and SRAM sockets.
 5. Configure inputs, apply 0 V or 5 V through 10 kOhm to each pin, and
   verify only the corresponding GPIO register bit changes.
 6. Run 10,000 alternating register writes and reads with zero errors.
@@ -1627,39 +1801,43 @@ using the shared [MCP23S17 driver](https://github.com/gloveboxes/Z80ROMlessSBC/b
 **Pass gate:** Compliant SPI levels, error-free register access, and
 correct operation of all 16 port bits in both directions.
 
-### 8.5 Phase 4 - SN74HCT245N Address Transceivers
+### 8.5 Phase 4 - Direct Address Bus and Reset Isolation
 
-**Install:** The low-byte SN74HCT245N first, then the high-byte device
-after repeating and passing the tests. Keep the Z80 and SRAM removed.
+**Install:** No additional IC. Keep Z80 and SRAM removed.
 
-**Firmware feature:** Add an address-bus test that always performs OE#
-HIGH, set DIR, set or sample the MCP ports, then OE# LOW. It must disable
-OE# before every direction change and on exit.
+**Firmware feature:** Address helpers must assert ADDR_ENABLE LOW,
+release MCP reset, wait, preload OLAT, and only then set IODIR outputs.
+On every exit they must assert reset again.
 
 **Implementation:** [Phase 4 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/main.c),
 using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 **Test plan:**
 
-1. Before insertion, require HIGH at OE# pin 19. Verify the shared bus
-  remains high-impedance after insertion.
-2. Select MCP-to-bus direction and test 0x55, 0xAA, walking-one, and
+1. With ADDR_ENABLE LOW, verify RESET# LOW and all 16 MCP pins
+  high-impedance; each bus line must sit HIGH through its 10 kOhm pull-up.
+2. Release reset, select MCP output direction, and test 0x55, 0xAA, walking-one, and
   walking-zero patterns on every shared address line.
-3. Disable OE#. Use a 10 kOhm test pull-up or pull-down to prove each
-  bus line moves independently while the transceiver is disabled.
-4. Select bus-to-MCP direction. Drive each bus line through 1 kOhm and
+3. Assert reset and use a 1 kOhm test pull-down to prove each bus line
+  moves independently while MCP is isolated.
+4. Release reset with IODIR inputs. Drive each bus line through 1 kOhm and
   verify the MCP reads it without driving back.
-5. Repeat for the high byte, then test 0x0000, 0xFFFF, 0x5555, 0xAAAA,
-  and a walking one across A0-A15.
+5. Test 0x0000, 0xFFFF, 0x5555, 0xAAAA, and a walking one across A0-A15,
+  repeat with a walking zero, then run 1,000 release/configure/reset
+  cycles while checking current. Scope A0, A7, A8, and A15 at their
+  SRAM socket contacts during 0x0000, 0xFFFF, 0x5555, and 0xAAAA;
+  require valid levels without double-clocking, sustained mid-rail
+  plateaus, or ringing that crosses the MCP/SRAM input thresholds.
 
-**Pass gate:** Every address bit passes in both directions and both
-devices reliably enter high-impedance mode before DIR changes.
+**Pass gate:** Every address bit passes in both directions and MCP reset
+reliably returns every port to high-impedance input mode.
 
-### 8.6 Phase 5 - SN74LVC8T245 Data Transceiver
+### 8.6 Phase 5 - All-PDIP Data Transceivers and Interlock
 
-**Install:** The SN74LVC8T245 carrier with VCCA at 3.3 V and VCCB at
-5 V. Keep the Z80 and SRAM removed. Confirm continuity and absence of
-bridges on every TSSOP-to-DIP carrier pin before insertion.
+**Install sequence:** Start with the verified GAL installed and both
+data transceivers removed. Perform test 1, power off, then install the
+SN74AHCT245N and SN74LVC245AN in that order. Keep Z80 and SRAM removed.
+Tie AHCT DIR HIGH and LVC DIR LOW before insertion.
 
 **Firmware feature:** Add an 8-bit data-bus test using the same
 disable-change-enable sequence and fixed, walking-one, and walking-zero
@@ -1670,13 +1848,22 @@ using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
 
 **Test plan:**
 
-1. Require OE# HIGH before insertion. Verify VCCA and VCCB independently,
-  then verify both ports are high-impedance afterward.
-2. Select Pico-to-bus direction and test 0x00, 0xFF, 0x55, 0xAA,
+1. **GAL installed; data transceivers removed:** With GP6/GP7 LOW,
+  verify GAL pins 17 and 18 are both HIGH. Toggle
+  GP7 HIGH and GP6 LOW/HIGH; require exactly one GAL OE# output to go
+  LOW and verify the other remains HIGH.
+2. **GAL and data transceivers installed:** With GP7 LOW, verify GAL
+  pins 17/18 and both transceiver OE# pin 19 contacts are HIGH. Confirm
+  both A and B buses remain high-impedance and neither supply current
+  changes abnormally. This is the end-to-end safety-property check:
+  DATA_ENABLE LOW must disable both physical data drivers.
+  Verify the AHCT A1-A8 pins remain below 0.8 V while Pico data GPIOs
+  are inputs.
+3. Select Pico-to-bus direction and test 0x00, 0xFF, 0x55, 0xAA,
   walking-one, and walking-zero. Verify levels and bit order.
-3. Disable OE#, reverse DIR, and re-enable. Drive each bus input with
+4. Drive GP7 LOW, change GP6 LOW, and drive GP7 HIGH. Drive each bus input with
   0 V and 5 V through 1 kOhm and verify the Pico reading.
-4. Run 1,000 disable-change-enable cycles while checking readback and
+5. Run 1,000 disable-change-enable cycles while checking readback and
   supply current.
 
 **Pass gate:** All eight bits pass both ways, isolation works, and no
@@ -1924,7 +2111,10 @@ the CPU trap.
 Begin only after Phase 10 passes at 1 MHz. Test 2 MHz, then increase in
 500 kHz steps to 4 MHz. At each step repeat SRAM readback, the one-hour
 memory loop, and continuous IN/OUT tests while measuring stop latency.
-Also capture CLK, MREQ#, RD#/WR#, SRAM CE#/OE#/WE#, and D0-D7; require
+At 1, 2, 3, and 4 MHz also apply address patterns 0x0000, 0xFFFF,
+0x5555, 0xAAAA, walking one, and walking zero while capturing A0, A7,
+A8, and A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM
+CE#/OE#/WE#, and D0-D7 as well; require
 valid read data before the Z80 setup deadline and every SRAM write pulse
 to meet the 45 ns minimum after propagation through the GAL and HCT541.
 The qualified frequency is the highest error-free step for which the
@@ -1970,8 +2160,8 @@ the output driver. This prevents a brief LOW pulse on active-low lines.
 enum {
   PIN_IORQ_N = 1, PIN_CLK = 2, PIN_RESET_N = 3,
   PIN_BUSREQ_N = 4, PIN_BUSACK_N = 0,
-  PIN_DATA_DIR = 6, PIN_DATA_OE_N = 7,
-  PIN_ADDR_DIR = 8, PIN_ADDR_OE_N = 9,
+  PIN_DATA_DIR = 6, PIN_DATA_ENABLE = 7,
+  PIN_UNUSED_8 = 8, PIN_ADDR_ENABLE = 9,
   PIN_DATA_0 = 10, PIN_DATA_1 = 11, PIN_DATA_2 = 12, PIN_DATA_3 = 13,
   PIN_DATA_4 = 14, PIN_DATA_5 = 15, PIN_DATA_6 = 16, PIN_DATA_7 = 17,
   PIN_SPI_SCK = 18, PIN_SPI_MOSI = 19, PIN_SPI_MISO = 20,
@@ -1993,8 +2183,8 @@ static void input_with_no_pull(uint pin) {
 }
 
 static void diagnostic_safe_startup(void) {
-  output_with_initial_level(PIN_DATA_OE_N, 1);
-  output_with_initial_level(PIN_ADDR_OE_N, 1);
+  output_with_initial_level(PIN_DATA_ENABLE, 0);
+  output_with_initial_level(PIN_ADDR_ENABLE, 0);
   output_with_initial_level(PIN_RESET_N, 0); // Hold CPU reset.
   output_with_initial_level(PIN_BUSREQ_N, 1);
   output_with_initial_level(PIN_SRAM_WE_N, 1);
@@ -2003,7 +2193,6 @@ static void diagnostic_safe_startup(void) {
   output_with_initial_level(PIN_SPI_CS_N, 1);
   output_with_initial_level(PIN_CLK, 0);
   output_with_initial_level(PIN_DATA_DIR, 0);
-  output_with_initial_level(PIN_ADDR_DIR, 0);
   input_with_no_pull(PIN_BUSACK_N);
   input_with_no_pull(PIN_IORQ_N); // Section 0.3 pulls up the LVC244 input.
   input_with_no_pull(PIN_RD_N);
@@ -2143,26 +2332,18 @@ static bool mcp_register_test(void) {
 }
 ```
 
-#### Contention-Safe Transceiver Changes (Phases 4-6)
+#### Contention-Safe Bus Isolation (Phases 4-6)
 
 **Maintained source:** [bus.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/bus.h)
 and [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
-OE# must be HIGH before DIR changes. Keep this invariant in one helper
-instead of duplicating raw GPIO writes throughout the test firmware.
+ADDR_ENABLE and DATA_ENABLE must both be LOW for isolation. DATA_ENABLE
+must remain LOW before DATA_DIR changes.
 
 ```c
 static void isolate_buses(void) {
-  gpio_put(PIN_ADDR_OE_N, 1);
-  gpio_put(PIN_DATA_OE_N, 1);
-}
-
-static void set_transceiver(uint oe_n, uint dir, bool direction) {
-  gpio_put(oe_n, 1);
-  busy_wait_us_32(1);
-  gpio_put(dir, direction);
-  busy_wait_us_32(1);
-  gpio_put(oe_n, 0);
+  gpio_put(PIN_ADDR_ENABLE, 0);
+  gpio_put(PIN_DATA_ENABLE, 0);
 }
 ```
 
@@ -2171,10 +2352,9 @@ static void set_transceiver(uint oe_n, uint dir, bool direction) {
 **Maintained source:** [bus.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/bus.h)
 and [bus.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
-`PIN_DATA_0`-`PIN_DATA_7` (GP10-GP17) carry D0-D7 through the
-SN74LVC8T245; direction and isolation reuse the existing
-`PIN_DATA_DIR`/`PIN_DATA_OE_N` pair and `set_transceiver()`/
-`isolate_buses()`. Address bytes reach the shared bus through the
+`PIN_DATA_0`-`PIN_DATA_7` (GP10-GP17) connect to both fixed-direction
+data transceivers. `PIN_DATA_DIR` and `PIN_DATA_ENABLE` feed the GAL,
+which enables exactly one selected path. Address bytes reach the shared bus through the
 MCP23S17's own output latches, already exercised in the Phase 3-4
 register test. Call these helpers only while RESET# is asserted or
 `request_cpu_bus()` has returned true, and keep SRAM CE# HIGH while
@@ -2187,19 +2367,23 @@ static const uint DATA_PINS[8] = {
 };
 
 static void data_bus_drive(uint8_t value) {
-  gpio_put(PIN_DATA_OE_N, 1);
+  gpio_put(PIN_DATA_ENABLE, 0);
   for (size_t i = 0; i < 8; ++i) {
     gpio_put(DATA_PINS[i], (value >> i) & 1);  // Preload before enabling output.
     gpio_set_dir(DATA_PINS[i], GPIO_OUT);
   }
-  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 1); // A (Pico) -> B (Bus).
+  gpio_put(PIN_DATA_DIR, 1); // Select AHCT Pico-to-bus path.
+  busy_wait_us_32(1);
+  gpio_put(PIN_DATA_ENABLE, 1);
 }
 
 static void data_bus_prepare_input(void) {
-  gpio_put(PIN_DATA_OE_N, 1);
+  gpio_put(PIN_DATA_ENABLE, 0);
   for (size_t i = 0; i < 8; ++i)
     gpio_set_dir(DATA_PINS[i], GPIO_IN);
-  set_transceiver(PIN_DATA_OE_N, PIN_DATA_DIR, 0); // B (Bus) -> A (Pico).
+  gpio_put(PIN_DATA_DIR, 0); // Select LVC bus-to-Pico path.
+  busy_wait_us_32(1);
+  gpio_put(PIN_DATA_ENABLE, 1);
 }
 
 static uint8_t data_bus_sample(void) {
@@ -2210,12 +2394,14 @@ static uint8_t data_bus_sample(void) {
 }
 
 static void address_bus_drive(uint16_t address) {
-  gpio_put(PIN_ADDR_OE_N, 1);
+  gpio_put(PIN_ADDR_ENABLE, 0);
+  busy_wait_us_32(1);            // MCP RESET# low-pulse minimum.
+  gpio_put(PIN_ADDR_ENABLE, 1); // Release MCP reset; ports default to inputs.
+  busy_wait_us_32(1);
   mcp_write(OLATA, (uint8_t)address);
   mcp_write(OLATB, (uint8_t)(address >> 8));
   mcp_write(IODIRA, 0x00);
   mcp_write(IODIRB, 0x00);
-  set_transceiver(PIN_ADDR_OE_N, PIN_ADDR_DIR, 0); // Expander -> Bus.
 }
 ```
 
@@ -2233,8 +2419,8 @@ static void dma_write_byte(uint16_t address, uint8_t value) {
   gpio_put(PIN_SRAM_CE_N, 1);
   gpio_put(PIN_SRAM_OE_N, 1);
   gpio_put(PIN_SRAM_WE_N, 1);
-  address_bus_drive(address);       // MCP -> HCT245 -> A0-A15.
-  data_bus_drive(value);            // Pico -> LVC8T245 -> D0-D7.
+  address_bus_drive(address);       // MCP directly drives A0-A15.
+  data_bus_drive(value);            // Pico -> AHCT245 -> D0-D7.
   gpio_put(PIN_SRAM_CE_N, 0);
   busy_wait_us_32(1);
   gpio_put(PIN_SRAM_WE_N, 0);
@@ -2255,7 +2441,7 @@ static uint8_t dma_read_byte(uint16_t address) {
   value = data_bus_sample();
   gpio_put(PIN_SRAM_OE_N, 1);
   gpio_put(PIN_SRAM_CE_N, 1);
-  gpio_put(PIN_DATA_OE_N, 1);
+  gpio_put(PIN_DATA_ENABLE, 0);
   return value;
 }
 
@@ -2395,13 +2581,12 @@ static void io_trap_handler(uint gpio, uint32_t events) {
     return;  // The foreground release path re-arms this interrupt.
   }
   stop_z80_clock();
+  gpio_put(PIN_ADDR_ENABLE, 1);                     // Release MCP reset.
+  busy_wait_us_32(1);
   mcp_write(IODIRA, 0xFF);
-  mcp_write(IODIRB, 0xFF);                         // Both share the enabled transceiver path.
-  set_transceiver(PIN_ADDR_OE_N, PIN_ADDR_DIR, 1); // Bus -> Expander.
+  mcp_write(IODIRB, 0xFF);
   uint8_t port = mcp_read(GPIOA);                  // 8-bit I/O decode.
-  gpio_put(PIN_ADDR_OE_N, 1);                      // Address captured; isolate now.
-  mcp_write(IODIRA, 0x00);                         // Restore DMA output mode.
-  mcp_write(IODIRB, 0x00);
+  gpio_put(PIN_ADDR_ENABLE, 0);                    // Reset makes all ports inputs.
 
   bool is_read = !gpio_get(PIN_RD_N);
   bool is_write = !gpio_get(PIN_WR_N);
@@ -3256,8 +3441,8 @@ Z80 is held in BUSACK#.
 - [MCP23017/MCP23S17 datasheet](datasheets/MCP23017-MCP23S17-Data-Sheet-DS20001952.pdf)
 - [ATF22V10C datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/doc0735.pdf)
 - [SN74HCT541 datasheet](https://www.ti.com/lit/ds/symlink/sn74hct541.pdf)
-- [SN74HCT245 datasheet](datasheets/SN74HCT245.pdf)
-- [SN74LVC8T245 datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf)
+- [SN74AHCT245 datasheet](https://www.ti.com/lit/ds/symlink/sn74ahct245.pdf)
+- [SN74LVC245A datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc245a.pdf)
 - [SN74LVC244A datasheet](datasheets/SN74LVC244A.pdf)
 - [1N5817/1N5818/1N5819 Schottky diode datasheet](datasheets/1N5817-D.pdf)
 - [RP2350 datasheet](datasheets/RP2350-Datasheet.pdf)

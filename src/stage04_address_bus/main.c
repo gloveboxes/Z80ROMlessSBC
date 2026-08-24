@@ -25,7 +25,7 @@ int main(void) {
   z80_safe_startup();
   stdio_init_all();
   mcp23s17_init(4000000);
-  printf("\nStage 4: HCT245 address transceivers\n");
+  printf("\nStage 4: direct MCP address bus and reset isolation\n");
   printf("m=MCP test, a=output patterns, i=sample address, x=isolate\n");
 
   while (true) {

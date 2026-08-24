@@ -151,11 +151,13 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(3, "PICO_WE#", "input", "left"), pin(4, "Z80_WR#", "input", "left"),
             pin(5, "PICO_OE#", "input", "left"), pin(6, "Z80_RD#", "input", "left"),
             pin(7, "PICO_CE#", "input", "left"), pin(8, "Z80_MREQ#", "input", "left"),
-            pin(9, "UNUSED_IN1", "input", "left"), pin(10, "UNUSED_IN2", "input", "left"),
-            pin(11, "UNUSED_IN3", "input", "left"), pin(12, "GND", "power_in", "bottom"),
+            pin(9, "DATA_ENABLE", "input", "left"), pin(10, "ADDR_ENABLE", "input", "left"),
+            pin(11, "DATA_DIR", "input", "left"), pin(12, "GND", "power_in", "bottom"),
             pin(13, "UNUSED_IN4", "input", "left"), pin(14, "SRAM_WE_PRE#", "output", "right"),
             pin(15, "SRAM_OE_PRE#", "output", "right"), pin(16, "SRAM_CE_PRE#", "output", "right"),
-            *[pin(number, f"CONST_LOW{number - 16}", "output", "right") for number in range(17, 24)],
+            pin(17, "DATA_UP_OE#", "output", "right"), pin(18, "DATA_DOWN_OE#", "output", "right"),
+            pin(19, "MCP_RESET_DRIVE", "output", "right"),
+            *[pin(number, f"CONST_LOW{number - 19}", "output", "right") for number in range(20, 24)],
             pin(24, "VCC", "power_in", "top"),
         ],
     ),
@@ -170,15 +172,42 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(19, "OE2#", "input", "left"), pin(20, "VCC", "power_in", "top"),
         ],
     ),
-    "HCT245": (
+    "AHCT245": (
         "U",
-        "SN74HCT245N",
+        "SN74AHCT245N",
         [
             pin(1, "DIR", "input", "left"),
             *[pin(number + 1, f"A{number}", "bidirectional", "left") for number in range(1, 9)],
             pin(10, "GND", "power_in", "bottom"),
             *[pin(19 - number, f"B{number}", "bidirectional", "right") for number in range(1, 9)],
             pin(19, "OE#", "input", "left"), pin(20, "VCC", "power_in", "top"),
+        ],
+    ),
+    "LVC245": (
+        "U",
+        "SN74LVC245AN",
+        [
+            pin(1, "DIR", "input", "left"),
+            *[pin(number + 1, f"A{number}", "bidirectional", "left") for number in range(1, 9)],
+            pin(10, "GND", "power_in", "bottom"),
+            *[pin(19 - number, f"B{number}", "bidirectional", "right") for number in range(1, 9)],
+            pin(19, "OE#", "input", "left"), pin(20, "VCC", "power_in", "top"),
+        ],
+    ),
+    "NPN": (
+        "Q",
+        "2N3904",
+        [
+            pin(1, "E", "passive", "bottom"), pin(2, "B", "input", "left"),
+            pin(3, "C", "open_collector", "top"),
+        ],
+    ),
+    "RN8": (
+        "RN",
+        "8x10k bussed",
+        [
+            pin(1, "COMMON", "passive", "top"),
+            *[pin(number + 2, f"R{number + 1}", "passive", "right") for number in range(8)],
         ],
     ),
     "LVC244": (
@@ -209,19 +238,6 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(17, "A2", "input", "left"), pin(18, "RESET#", "input", "left"),
             pin(19, "INTB", "open_collector", "left"), pin(20, "INTA", "open_collector", "left"),
             *[pin(number + 21, f"GPA{number}", "bidirectional", "right") for number in range(8)],
-        ],
-    ),
-    "LVC8T245": (
-        "U",
-        "SN74LVC8T245PW",
-        [
-            pin(1, "VCCA", "power_in", "top"), pin(2, "DIR", "input", "left"),
-            *[pin(number + 2, f"A{number}", "bidirectional", "left") for number in range(1, 9)],
-            pin(11, "GND1", "power_in", "bottom"), pin(12, "GND2", "power_in", "bottom"),
-            pin(13, "GND3", "power_in", "bottom"),
-            *[pin(22 - number, f"B{number}", "bidirectional", "right") for number in range(1, 9)],
-            pin(22, "OE#", "input", "left"), pin(23, "VCCB1", "power_in", "top"),
-            pin(24, "VCCB2", "power_in", "top"),
         ],
     ),
     "PICO2": (
@@ -509,9 +525,10 @@ add_component("U2", "SRAM", "AS6C1008-55PCN", 152.4, 152.4, sram_nets, footprint
 gal_nets = {
     1: "@RESET_JUNCTION", 2: "BUSACK_N", 3: "PICO_WE_N", 4: "WR_N",
     5: "PICO_OE_N", 6: "RD_N", 7: "PICO_CE_N", 8: "MREQ_N",
-    9: "GND", 10: "GND", 11: "GND", 12: "GND", 13: "GND",
+    9: "DATA_ENABLE", 10: "ADDR_ENABLE", 11: "DATA_DIR", 12: "GND", 13: "GND",
     14: "SRAM_WE_PRE_N", 15: "SRAM_OE_PRE_N", 16: "SRAM_CE_PRE_N",
-    17: None, 18: None, 19: None, 20: None, 21: None, 22: None, 23: None, 24: "+5V",
+    17: "DATA_UP_OE_N", 18: "DATA_DOWN_OE_N",
+    19: "MCP_RESET_DRIVE", 20: None, 21: None, 22: None, 23: None, 24: "+5V",
 }
 add_component("U3", "ATF22V10", "ATF22V10B/C", 152.4, 330.2, gal_nets, footprint="Package_DIP:DIP-24_W7.62mm")
 
@@ -524,16 +541,6 @@ hct541_nets = {
 }
 add_component("U4", "HCT541", "SN74HCT541N", 508.0, 330.2, hct541_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
-def hct245_nets(address_start: int, mcp_port: str) -> dict[int, str]:
-    result = {1: "ADDR_DIR", 10: "GND", 19: "ADDR_OE_N", 20: "+5V"}
-    for bit in range(8):
-        result[2 + bit] = f"A{address_start + bit}"
-        result[18 - bit] = f"MCP_{mcp_port}{bit}"
-    return result
-
-add_component("U5", "HCT245", "SN74HCT245N LOW", 457.2, 482.6, hct245_nets(0, "GPA"), footprint="Package_DIP:DIP-20_W7.62mm")
-add_component("U6", "HCT245", "SN74HCT245N HIGH", 558.8, 482.6, hct245_nets(8, "GPB"), footprint="Package_DIP:DIP-20_W7.62mm")
-
 lvc244_nets = {
     1: "GND", 2: "BUSACK_N", 3: None, 4: "IORQ_N", 5: None, 6: "RD_N",
     7: None, 8: "WR_N", 9: "PICO_SPI_MISO", 10: "GND", 11: "MCP_SO",
@@ -542,24 +549,32 @@ lvc244_nets = {
 }
 add_component("U7", "LVC244", "SN74LVC244AN", 812.8, 482.6, lvc244_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
-mcp_nets = {number + 1: f"MCP_GPB{number}" for number in range(8)}
+mcp_nets = {number + 1: f"A{number + 8}" for number in range(8)}
 mcp_nets.update({
     9: "+5V", 10: "GND", 11: "MCP_CS_N", 12: "MCP_SCK", 13: "MCP_SI",
-    14: "MCP_SO", 15: "GND", 16: "GND", 17: "GND", 18: "+5V", 19: None, 20: None,
+    14: "MCP_SO", 15: "GND", 16: "GND", 17: "GND", 18: "MCP_RESET_N", 19: None, 20: None,
 })
-mcp_nets.update({number + 21: f"MCP_GPA{number}" for number in range(8)})
-add_component("U8", "MCP23S17", "MCP23S17-E/SP", 914.4, 482.6, mcp_nets, footprint="Package_DIP:DIP-28_W7.62mm")
+mcp_nets.update({number + 21: f"A{number}" for number in range(8)})
+add_component("U8", "MCP23S17", "MCP23S17-E/SP", 254.0, 482.6, mcp_nets, footprint="Package_DIP:DIP-28_W7.62mm")
+add_component("Q1", "NPN", "2N3904 MCP RESET", 355.6, 482.6, {1: "GND", 2: "MCP_RESET_BASE", 3: "MCP_RESET_N"}, footprint="Package_TO_SOT_THT:TO-92_Inline")
+add_component("RN1", "RN8", "8x10k A0-A7 pull-up", 152.4, 533.4, {1: "+5V", **{number + 2: f"A{number}" for number in range(8)}})
+add_component("RN2", "RN8", "8x10k A8-A15 pull-up", 254.0, 533.4, {1: "+5V", **{number + 2: f"A{number + 8}" for number in range(8)}})
+add_component("RN3", "RN8", "8x10k Pico D0-D7 pull-down", 914.4, 355.6, {1: "GND", **{number + 2: f"PICO_D{number}" for number in range(8)}})
 
-lvc8_nets = {1: "+3V3", 2: "DATA_DIR", 11: "GND", 12: "GND", 13: "GND", 22: "DATA_OE_N", 23: "+5V", 24: "+5V"}
+up_nets = {1: "+5V", 10: "GND", 19: "DATA_UP_OE_N", 20: "+5V"}
+down_nets = {1: "GND", 10: "GND", 19: "DATA_DOWN_OE_N", 20: "+3V3"}
 for bit in range(8):
-    lvc8_nets[3 + bit] = f"PICO_D{bit}"
-    lvc8_nets[21 - bit] = f"D{bit}"
-add_component("U9", "LVC8T245", "SN74LVC8T245PW", 863.6, 330.2, lvc8_nets, footprint="Package_DIP:DIP-24_W15.24mm")
+    up_nets[2 + bit] = f"PICO_D{bit}"
+    up_nets[18 - bit] = f"D{bit}"
+    down_nets[2 + bit] = f"PICO_D{bit}"
+    down_nets[18 - bit] = f"D{bit}"
+add_component("U9", "AHCT245", "SN74AHCT245N Pico-to-bus", 812.8, 304.8, up_nets, footprint="Package_DIP:DIP-20_W7.62mm")
+add_component("U10", "LVC245", "SN74LVC245AN bus-to-Pico", 914.4, 304.8, down_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
 pico_nets = {
     1: "PICO_BUSACK_N", 2: "PICO_IORQ_N", 3: "GND", 4: "PICO_CLK",
     5: "@RESET_JUNCTION", 6: "PICO_BUSREQ_N", 7: "PICO_CE_N", 8: "GND",
-    9: "DATA_DIR", 10: "DATA_OE_N", 11: "ADDR_DIR", 12: "ADDR_OE_N", 13: "GND",
+    9: "DATA_DIR", 10: "DATA_ENABLE", 11: None, 12: "ADDR_ENABLE", 13: "GND",
     14: "PICO_D0", 15: "PICO_D1", 16: "PICO_D2", 17: "PICO_D3", 18: "GND",
     19: "PICO_D4", 20: "PICO_D5", 21: "PICO_D6", 22: "PICO_D7", 23: "GND",
     24: "PICO_SPI_SCK", 25: "PICO_SPI_MOSI", 26: "PICO_SPI_MISO",
@@ -582,13 +597,12 @@ PULLS = [
     ("WAIT_N", "+5V"), ("INT_N", "+5V"), ("NMI_N", "+5V"),
     ("SRAM_WE_PRE_N", "+5V"), ("SRAM_OE_PRE_N", "+5V"), ("SRAM_CE_PRE_N", "+5V"),
     ("PICO_BUSREQ_N", "+3V3"), ("PICO_CE_N", "+3V3"),
-    ("DATA_OE_N", "+3V3"), ("ADDR_OE_N", "+3V3"),
     ("PICO_SPI_CS_N", "+3V3"), ("PICO_WE_N", "+3V3"), ("PICO_OE_N", "+3V3"),
-    ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("DATA_DIR", "GND"),
-    ("ADDR_DIR", "GND"), ("PICO_SPI_SCK", "GND"), ("PICO_SPI_MOSI", "GND"),
+    ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("DATA_ENABLE", "GND"), ("DATA_DIR", "GND"),
+    ("ADDR_ENABLE", "GND"), ("PICO_SPI_SCK", "GND"), ("PICO_SPI_MOSI", "GND"),
 ]
-if len(PULLS) != 29:
-    raise AssertionError(f"expected 29 startup resistors, got {len(PULLS)}")
+if len(PULLS) != 28:
+    raise AssertionError(f"expected 28 startup resistors, got {len(PULLS)}")
 for index, (signal, rail) in enumerate(PULLS, start=1):
     row = (index - 1) // 15
     column = (index - 1) % 15
@@ -598,19 +612,21 @@ for index, (signal, rail) in enumerate(PULLS, start=1):
         {1: signal, 2: rail},
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
     )
+add_component("R29", "RESISTOR", "4.7k MCP reset base", 50.8, 736.6, {1: "MCP_RESET_DRIVE", 2: "MCP_RESET_BASE"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+add_component("R30", "RESISTOR", "47k MCP reset base pull-down", 127.0, 736.6, {1: "MCP_RESET_BASE", 2: "GND"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+add_component("R31", "RESISTOR", "10k MCP RESET# pull-up", 203.2, 736.6, {1: "MCP_RESET_N", 2: "+5V"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
 
 
 CAPACITORS = [
     ("100n U1 Z80", "+5V"), ("100n U2 SRAM", "+5V"),
     ("100n U3 GAL", "+5V"), ("100n U4 HCT541", "+5V"),
-    ("100n U5 HCT245", "+5V"), ("100n U6 HCT245", "+5V"),
     ("100n U7 LVC244", "+3V3"), ("100n U8 MCP", "+5V"),
-    ("100n U9 VCCA", "+3V3"), ("100n U9 VCCB", "+5V"),
-    ("10u Memory Board", "+5V"), ("10u Core Board", "+5V"),
-    ("10u Peripheral Board", "+5V"), ("47u Supply Entry", "+5V"),
+    ("100n U9 AHCT245", "+5V"), ("100n U10 LVC245", "+3V3"),
+    ("22u Memory Board", "+5V"), ("22u Core Board", "+5V"),
+    ("22u Peripheral Board", "+5V"), ("100u Supply Entry", "+5V"),
 ]
-if sum(value.startswith("100n") for value, _ in CAPACITORS) != 10:
-    raise AssertionError("decoupling count must remain 10")
+if sum(value.startswith("100n") for value, _ in CAPACITORS) != 8:
+    raise AssertionError("decoupling count must remain 8")
 for index, (value, rail) in enumerate(CAPACITORS, start=1):
     add_component(
         f"C{index}", "CAPACITOR", value,
@@ -630,20 +646,16 @@ BUS_ROUTES = [
     ("HCT_TO_CPU", ["Z80_CLK", "BUSREQ_N"], [(457.2, 261.62), (558.8, 261.62)]),
     ("PICO_DATA", [f"PICO_D{bit}" for bit in range(8)], [(617.22, 208.28), (779.78, 208.28)]),
     ("PICO_TO_HCT", ["PICO_CLK", "PICO_BUSREQ_N", "PICO_SPI_CS_N", "PICO_SPI_SCK", "PICO_SPI_MOSI"], [(617.22, 279.4), (779.78, 279.4)]),
-    ("HCT_TO_MCP", ["MCP_CS_N", "MCP_SCK", "MCP_SI"], [(617.22, 327.66), (779.78, 327.66)]),
+    ("HCT_TO_MCP", ["MCP_CS_N", "MCP_SCK", "MCP_SI"], [(220.98, 584.2), (558.8, 584.2)]),
     ("CPU_MONITOR", ["BUSACK_N", "IORQ_N", "RD_N", "WR_N"], [(617.22, 375.92), (779.78, 375.92)]),
     ("PICO_MONITOR", ["PICO_BUSACK_N", "PICO_IORQ_N", "PICO_RD_N", "PICO_WR_N", "PICO_SPI_MISO"], [(617.22, 403.86), (779.78, 403.86)]),
-    ("ADDRESS_CONTROL", ["ADDR_DIR", "ADDR_OE_N"], [(617.22, 431.8), (779.78, 431.8)]),
-    ("DATA_CONTROL", ["DATA_DIR", "DATA_OE_N"], [(617.22, 457.2), (779.78, 457.2)]),
-    ("MCP_GPA", [f"MCP_GPA{bit}" for bit in range(8)], [(617.22, 525.78), (779.78, 525.78)]),
-    ("MCP_GPB", [f"MCP_GPB{bit}" for bit in range(8)], [(617.22, 553.72), (779.78, 553.72)]),
+    ("ADDRESS_RESET", ["ADDR_ENABLE", "MCP_RESET_DRIVE", "MCP_RESET_N"], [(220.98, 431.8), (779.78, 431.8)]),
+    ("DATA_CONTROL", ["DATA_DIR", "DATA_ENABLE", "DATA_UP_OE_N", "DATA_DOWN_OE_N"], [(220.98, 457.2), (779.78, 457.2)]),
 ]
 VECTOR_BUS_LABELS = {
     "ADDRESS": "A[0..15]",
     "DATA": "D[0..7]",
     "PICO_DATA": "PICO_D[0..7]",
-    "MCP_GPA": "MCP_GPA[0..7]",
-    "MCP_GPB": "MCP_GPB[0..7]",
 }
 for alias_name, members, points in BUS_ROUTES:
     for segment_index, (start, end) in enumerate(zip(points, points[1:]), start=1):
@@ -739,7 +751,7 @@ schematic.texts.extend([
         uuid=uid("text:reset-note"),
     ),
     Text(
-        text="Startup pulls: R1-R16 = 5V pull-ups, R17-R23 = 3V3 pull-ups, R24-R29 = 3V3-side pull-downs.",
+        text="R1-R16: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias.",
         position=pos(50.8, 622.3, 0),
         effects=effects(1.27),
         uuid=uid("text:pull-note"),
@@ -748,11 +760,19 @@ schematic.texts.extend([
 
 
 required_endpoints = {
-    "A0": {"U1.30", "U2.12", "U5.2"},
-    "D0": {"U1.14", "U2.13", "U9.21"},
-    "RESET_N": {"U1.26", "U3.1", "A1.5", "R25.1"},
-    "MCP_GPA0": {"U5.18", "U8.21"},
-    "MCP_GPB0": {"U6.18", "U8.1"},
+    "A0": {"U1.30", "U2.12", "U8.21", "RN1.2"},
+    "A8": {"U1.38", "U2.27", "U8.1", "RN2.2"},
+    "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},
+    "PICO_D0": {"A1.14", "U9.2", "U10.2", "RN3.2"},
+    "DATA_ENABLE": {"A1.10", "R24.1", "U3.9"},
+    "DATA_DIR": {"A1.9", "R25.1", "U3.11"},
+    "DATA_UP_OE_N": {"U3.17", "U9.19"},
+    "DATA_DOWN_OE_N": {"U3.18", "U10.19"},
+    "ADDR_ENABLE": {"A1.12", "R26.1", "U3.10"},
+    "MCP_RESET_DRIVE": {"U3.19", "R29.1"},
+    "MCP_RESET_BASE": {"Q1.2", "R29.2", "R30.1"},
+    "MCP_RESET_N": {"Q1.3", "R31.1", "U8.18"},
+    "RESET_N": {"U1.26", "U3.1", "A1.5", "R23.1"},
 }
 for net, required in required_endpoints.items():
     actual = set(net_endpoints.get(net, []))

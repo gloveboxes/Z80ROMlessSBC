@@ -349,6 +349,12 @@ async function buildPdf() {
     await page.emulateMediaType("print");
     await page.pdf({
       path: outputPath,
+      displayHeaderFooter: true,
+      headerTemplate: "<div></div>",
+      footerTemplate: String.raw`
+        <div style="box-sizing:border-box;color:#52606d;font-family:Aptos,Segoe UI,sans-serif;font-size:8px;text-align:center;width:100%;">
+          Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+        </div>`,
       printBackground: true,
       preferCSSPageSize: true,
       tagged: true,

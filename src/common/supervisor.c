@@ -16,13 +16,13 @@ void input_with_no_pull(uint pin) {
 }
 
 void z80_isolate_buses(void) {
-  gpio_put(PIN_ADDR_OE_N, 1);
-  gpio_put(PIN_DATA_OE_N, 1);
+  gpio_put(PIN_ADDR_ENABLE, 0);
+  gpio_put(PIN_DATA_ENABLE, 0);
 }
 
 void z80_safe_startup(void) {
-  output_with_initial_level(PIN_DATA_OE_N, 1);
-  output_with_initial_level(PIN_ADDR_OE_N, 1);
+  output_with_initial_level(PIN_DATA_ENABLE, 0);
+  output_with_initial_level(PIN_ADDR_ENABLE, 0);
   output_with_initial_level(PIN_RESET_N, 0);
   output_with_initial_level(PIN_BUSREQ_N, 1);
   output_with_initial_level(PIN_SRAM_WE_N, 1);
@@ -31,7 +31,6 @@ void z80_safe_startup(void) {
   output_with_initial_level(PIN_SPI_CS_N, 1);
   output_with_initial_level(PIN_CLK, 0);
   output_with_initial_level(PIN_DATA_DIR, 0);
-  output_with_initial_level(PIN_ADDR_DIR, 0);
   input_with_no_pull(PIN_BUSACK_N);
   input_with_no_pull(PIN_IORQ_N);
   input_with_no_pull(PIN_RD_N);

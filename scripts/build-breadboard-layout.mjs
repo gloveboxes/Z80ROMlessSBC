@@ -26,28 +26,28 @@ const WIDTHS = {
 };
 
 const chips = [
-  { key: "GAL", board: "memory", label: ["ATF22V10B/C", "GAL (24-pin)"], start: 9, end: 20, width: "narrow", color: "#36a2bd" },
-  { key: "SRAM", board: "memory", label: ["AS6C1008-55PCN", "SRAM (32-pin)"], start: 22, end: 37, width: "wide", color: "#8ecae6" },
+  { key: "GAL", board: "memory", label: ["ATF22V10B/C", "GAL (24-pin)"], start: 5, end: 16, width: "narrow", color: "#36a2bd", orientation: "up" },
+  { key: "SRAM", board: "memory", label: ["AS6C1008-55PCN", "SRAM (32-pin)"], start: 18, end: 33, width: "wide", color: "#8ecae6", orientation: "up" },
+  { key: "MCP", board: "memory", label: ["MCP23S17-E/SP", "28-pin SPDIP", "+ Q1 / 2x SIP pulls"], start: 35, end: 48, width: "narrow", color: "#91cf35", orientation: "down" },
 
   { key: "SUPPLY", board: "core", label: ["5V supply clearance", "rows 1-3 reserved"], start: 1, end: 3, width: "supply", color: "#d2d2d2", compact: true },
-  { key: "HCT541", board: "core", label: ["SN74HCT541N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20" },
-  { key: "Z80", board: "core", label: ["Z84C0020PEC", "Z80 CPU (40-pin)"], start: 19, end: 38, width: "wide", color: "#fb8500" },
-  { key: "HCT245_LO", board: "core", label: ["SN74HCT245N", "low byte (20-pin)"], start: 40, end: 49, width: "narrow", color: "#ffbd20" },
-  { key: "HCT245_HI", board: "core", label: ["SN74HCT245N", "high byte (20-pin)"], start: 51, end: 60, width: "narrow", color: "#ffbd20" },
+  { key: "HCT541", board: "core", label: ["SN74HCT541N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20", orientation: "down" },
+  { key: "Z80", board: "core", label: ["Z84C0020PEC", "Z80 CPU (40-pin)"], start: 19, end: 38, width: "wide", color: "#fb8500", orientation: "up" },
 
-  { key: "CARRIER", board: "peripheral", label: ["SN74LVC8T245PW", "carrier (24-pin)"], start: 1, end: 12, width: "wide", color: "#5fbc98" },
-  { key: "PICO", board: "peripheral", label: ["Raspberry Pi Pico 2", "2x20-pin module"], start: 14, end: 33, width: "pico", color: "#91cf35" },
-  { key: "LVC244", board: "peripheral", label: ["SN74LVC244AN", "buffer (20-pin)"], start: 35, end: 44, width: "narrow", color: "#5fbc98" },
-  { key: "MCP", board: "peripheral", label: ["MCP23S17-E/SP", "28-pin SPDIP"], start: 46, end: 59, width: "narrow", color: "#91cf35" },
+  { key: "PICO", board: "peripheral", label: ["Raspberry Pi Pico 2", "2x20-pin module"], start: 1, end: 20, width: "pico", color: "#91cf35", orientation: "usb-up" },
+  { key: "LVC244", board: "peripheral", label: ["SN74LVC244AN", "monitor (20-pin)"], start: 22, end: 31, width: "narrow", color: "#5fbc98", orientation: "up" },
+  { key: "UP245", board: "peripheral", label: ["SN74AHCT245N", "Pico -> 5V bus", "+ RN3 data pulls"], start: 33, end: 42, width: "narrow", color: "#52b788", orientation: "down" },
+  { key: "DOWN245", board: "peripheral", label: ["SN74LVC245AN", "5V bus -> Pico"], start: 44, end: 53, width: "narrow", color: "#52b788", orientation: "down" },
 ];
 
 const connections = [
   { a: "Z80", b: "HCT541", kind: "clock" },
-  { a: "Z80", b: "HCT245_LO", kind: "bus" },
-  { a: "Z80", b: "HCT245_HI", kind: "bus" },
-  { a: "CARRIER", b: "PICO", kind: "bus" },
+  { a: "UP245", b: "PICO", kind: "bus" },
+  { a: "DOWN245", b: "PICO", kind: "bus" },
+  { a: "GAL", b: "UP245", kind: "control" },
+  { a: "GAL", b: "DOWN245", kind: "control" },
   { a: "LVC244", b: "PICO", kind: "control" },
-  { a: "MCP", b: "LVC244", kind: "spi" },
+  { a: "MCP", b: "LVC244", kind: "spi", long: true, longLane: 1 },
 
   { a: "GAL", b: "Z80", kind: "control" },
   { a: "GAL", b: "HCT541", kind: "control" },
@@ -56,12 +56,12 @@ const connections = [
 
   { a: "HCT541", b: "PICO", kind: "clock" },
   { a: "HCT541", b: "MCP", kind: "spi" },
-  { a: "HCT245_LO", b: "MCP", kind: "bus" },
-  { a: "HCT245_HI", b: "MCP", kind: "bus" },
-  { a: "HCT245_LO", b: "PICO", kind: "control" },
-  { a: "HCT245_HI", b: "PICO", kind: "control" },
+  { a: "MCP", b: "Z80", kind: "bus" },
+  { a: "MCP", b: "SRAM", kind: "bus" },
+  { a: "GAL", b: "MCP", kind: "control" },
   { a: "Z80", b: "LVC244", kind: "control" },
-  { a: "Z80", b: "CARRIER", kind: "bus" },
+  { a: "Z80", b: "UP245", kind: "bus" },
+  { a: "Z80", b: "DOWN245", kind: "bus" },
   { a: "Z80", b: "PICO", kind: "control" },
 
   { a: "GAL", b: "PICO", kind: "control", long: true },
@@ -114,6 +114,7 @@ function boardSvg(board) {
   return `
     <g id="board-${board}">
       <text x="${centerX}" y="145" class="board-title">${BOARD_NAMES[board]}</text>
+      <text x="${centerX}" y="159" class="board-axis">row 1 ↑ · A-E left · F-J right</text>
       <rect x="${x}" y="${BOARD_TOP - 18}" width="${BOARD_WIDTH}" height="${BOARD_HEIGHT + 36}" class="board-outline"/>
       <rect x="${x + 12}" y="${BOARD_TOP}" width="${railWidth}" height="${BOARD_HEIGHT}" class="power-rail"/>
       <rect x="${x + BOARD_WIDTH - 30}" y="${BOARD_TOP}" width="${railWidth}" height="${BOARD_HEIGHT}" class="power-rail"/>
@@ -133,10 +134,30 @@ function chipSvg(chip) {
   const text = lines.map((line, index) =>
     `<tspan x="${box.centerX}" y="${(firstY + index * 13).toFixed(2)}">${escapeXml(line)}</tspan>`
   ).join("");
+  let orientation = "";
+  if (chip.orientation === "usb-up") {
+    orientation = `
+      <rect x="${box.centerX - 13}" y="${box.y + 2}" width="26" height="8" rx="2" class="usb-marker"/>
+      <text x="${box.centerX}" y="${box.y + 9}" class="marker-label">USB ↑</text>
+      <circle cx="${box.x + 7}" cy="${box.y + 8}" r="4" class="pin-one"/><text x="${box.x + 7}" y="${box.y + 10.5}" class="pin-one-label">1</text>`;
+  } else if (chip.orientation) {
+    const pointsUp = chip.orientation === "up";
+    const notchY = pointsUp ? box.y + 1 : box.y + box.height - 1;
+    const controlY = pointsUp ? box.y + 8 : box.y + box.height - 8;
+    const pinX = pointsUp ? box.x + 7 : box.x + box.width - 7;
+    const pinY = pointsUp ? box.y + 8 : box.y + box.height - 8;
+    const notchPath = pointsUp
+      ? `M ${box.centerX - 9} ${notchY} Q ${box.centerX} ${controlY} ${box.centerX + 9} ${notchY}`
+      : `M ${box.centerX - 9} ${notchY} Q ${box.centerX} ${controlY} ${box.centerX + 9} ${notchY}`;
+    orientation = `
+      <path d="${notchPath}" class="notch-marker"/>
+      <circle cx="${pinX}" cy="${pinY}" r="4" class="pin-one"/><text x="${pinX}" y="${pinY + 2.5}" class="pin-one-label">1</text>`;
+  }
   return `
     <g id="chip-${chip.key}">
       <rect x="${box.x.toFixed(2)}" y="${box.y.toFixed(2)}" width="${box.width}" height="${box.height.toFixed(2)}" rx="5" fill="${chip.color}" class="chip"/>
       <text class="chip-label ${chip.width}-label">${text}</text>
+      ${orientation}
     </g>`;
 }
 
@@ -151,7 +172,8 @@ function connectionPath(connection) {
   if (connection.long) {
     const startX = a.x + a.width;
     const endX = b.x;
-    d = `M ${startX.toFixed(2)} ${a.centerY.toFixed(2)} C ${(startX + 45).toFixed(2)} ${a.centerY.toFixed(2)}, ${(startX + 45).toFixed(2)} 112, ${(startX + 110).toFixed(2)} 112 L ${(endX - 110).toFixed(2)} 112 C ${(endX - 45).toFixed(2)} 112, ${(endX - 45).toFixed(2)} ${b.centerY.toFixed(2)}, ${endX.toFixed(2)} ${b.centerY.toFixed(2)}`;
+    const routeY = 112 + (connection.longLane ?? 0) * 18;
+    d = `M ${startX.toFixed(2)} ${a.centerY.toFixed(2)} C ${(startX + 45).toFixed(2)} ${a.centerY.toFixed(2)}, ${(startX + 45).toFixed(2)} ${routeY}, ${(startX + 110).toFixed(2)} ${routeY} L ${(endX - 110).toFixed(2)} ${routeY} C ${(endX - 45).toFixed(2)} ${routeY}, ${(endX - 45).toFixed(2)} ${b.centerY.toFixed(2)}, ${endX.toFixed(2)} ${b.centerY.toFixed(2)}`;
   } else if (aChip.board === bChip.board) {
     const boardRight = BOARD_X[aChip.board] + BOARD_WIDTH - 39;
     const startX = a.x + a.width;
@@ -189,6 +211,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     .title { font-size: 25px; font-weight: 700; text-anchor: middle; }
     .subtitle { font-size: 14px; text-anchor: middle; fill: #4b5563; }
     .board-title { font-size: 18px; font-weight: 700; text-anchor: middle; }
+    .board-axis { font-size: 9px; font-weight: 650; text-anchor: middle; fill: #4b5563; }
     .board-outline { fill: #fff; stroke: #111827; stroke-width: 2; }
     .terminal-field { fill: #fff; stroke: #9ca3af; stroke-width: 1; }
     .power-rail { fill: #fee2e2; stroke: #ef4444; stroke-width: 1.5; }
@@ -199,6 +222,11 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     .chip-label { font-size: 10px; font-weight: 650; text-anchor: middle; }
     .narrow-label { font-size: 8.5px; }
     .supply-label { font-size: 9px; }
+    .notch-marker { fill: none; stroke: #111827; stroke-width: 2.5; }
+    .pin-one { fill: #fde047; stroke: #111827; stroke-width: 1; }
+    .pin-one-label { font-size: 7px; font-weight: 800; text-anchor: middle; fill: #111827; }
+    .usb-marker { fill: #e5e7eb; stroke: #111827; stroke-width: 1.2; }
+    .marker-label { font-size: 7px; font-weight: 800; text-anchor: middle; fill: #111827; }
     .connection-halo { fill: none; stroke: white; stroke-width: 8; stroke-opacity: 0.85; }
     .connection { stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
     .legend-text { font-size: 13px; }
@@ -209,7 +237,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <rect width="${VIEW_WIDTH}" height="1110" fill="#fafafa"/>
   <text x="${VIEW_WIDTH / 2}" y="38" class="title">BB830 physical placement and grouped chip connections</text>
   <text x="${VIEW_WIDTH / 2}" y="64" class="subtitle">Boards are side by side with long edges parallel; equal terminal-row numbers align laterally</text>
-  <text x="${VIEW_WIDTH / 2}" y="91" class="direct-label">Pico to GAL: RESET# (also tapped by Z80), PICO_CE#, PICO_OE#, PICO_WE#</text>
+  <text x="${VIEW_WIDTH / 2}" y="91" class="direct-label">GAL controls data OE# and MCP RESET#; MCP ports connect directly to pulled-up A0-A15</text>
 
   ${Object.keys(BOARD_X).map(boardSvg).join("\n")}
   ${connections.map(connectionPath).join("\n")}
@@ -223,7 +251,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   </g>
   <text x="${VIEW_WIDTH / 2}" y="1048" class="note">One line represents a signal group. Blue paths are shared trunks; intermediate chips are taps, not series logic.</text>
   <text x="${VIEW_WIDTH / 2}" y="1071" class="note">Power, ground, pull resistors, and decoupling are intentionally omitted.</text>
-  <text x="${VIEW_WIDTH / 2}" y="1094" class="note">DIP widths show pin-row span; Pico shows its 0.7in header span (PCB body approximately 0.83in wide).</text>
+  <text x="${VIEW_WIDTH / 2}" y="1094" class="note">Yellow dot = pin 1. Curved edge = DIP notch. Pico USB and all notch directions must match the mounting table.</text>
 </svg>
 `;
 

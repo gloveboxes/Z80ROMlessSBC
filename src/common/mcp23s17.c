@@ -25,6 +25,8 @@ bool mcp23s17_init(uint32_t spi_hz) {
   gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
   gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
   gpio_set_function(PIN_SPI_MISO, GPIO_FUNC_SPI);
+  gpio_put(PIN_ADDR_ENABLE, 1);
+  busy_wait_us_32(1);
   return true;
 }
 
@@ -68,10 +70,9 @@ bool mcp23s17_read_ports(uint8_t *port_a, uint8_t *port_b) {
 
 bool mcp23s17_register_test(void) {
   static const uint8_t patterns[] = {0x55, 0xAA};
-  if (!mcp23s17_set_directions(0x00, 0x00))
-    return false;
+  bool passed = mcp23s17_set_directions(0x00, 0x00);
 
-  for (size_t index = 0; index < sizeof(patterns); ++index) {
+  for (size_t index = 0; passed && index < sizeof(patterns); ++index) {
     uint8_t actual_a;
     uint8_t actual_b;
     if (!mcp23s17_write_ports(patterns[index],
@@ -80,7 +81,10 @@ bool mcp23s17_register_test(void) {
         !mcp23s17_read_register(MCP_OLATB, &actual_b) ||
         actual_a != patterns[index] ||
         actual_b != (uint8_t)~patterns[index])
-      return false;
+      passed = false;
   }
-  return true;
+
+  bool restored = mcp23s17_set_directions(0xFF, 0xFF);
+  gpio_put(PIN_ADDR_ENABLE, 0);
+  return passed && restored;
 }

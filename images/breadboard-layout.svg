@@ -7,6 +7,7 @@
     .title { font-size: 25px; font-weight: 700; text-anchor: middle; }
     .subtitle { font-size: 14px; text-anchor: middle; fill: #4b5563; }
     .board-title { font-size: 18px; font-weight: 700; text-anchor: middle; }
+    .board-axis { font-size: 9px; font-weight: 650; text-anchor: middle; fill: #4b5563; }
     .board-outline { fill: #fff; stroke: #111827; stroke-width: 2; }
     .terminal-field { fill: #fff; stroke: #9ca3af; stroke-width: 1; }
     .power-rail { fill: #fee2e2; stroke: #ef4444; stroke-width: 1.5; }
@@ -17,6 +18,11 @@
     .chip-label { font-size: 10px; font-weight: 650; text-anchor: middle; }
     .narrow-label { font-size: 8.5px; }
     .supply-label { font-size: 9px; }
+    .notch-marker { fill: none; stroke: #111827; stroke-width: 2.5; }
+    .pin-one { fill: #fde047; stroke: #111827; stroke-width: 1; }
+    .pin-one-label { font-size: 7px; font-weight: 800; text-anchor: middle; fill: #111827; }
+    .usb-marker { fill: #e5e7eb; stroke: #111827; stroke-width: 1.2; }
+    .marker-label { font-size: 7px; font-weight: 800; text-anchor: middle; fill: #111827; }
     .connection-halo { fill: none; stroke: white; stroke-width: 8; stroke-opacity: 0.85; }
     .connection { stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
     .legend-text { font-size: 13px; }
@@ -27,11 +33,12 @@
   <rect width="1060" height="1110" fill="#fafafa"/>
   <text x="530" y="38" class="title">BB830 physical placement and grouped chip connections</text>
   <text x="530" y="64" class="subtitle">Boards are side by side with long edges parallel; equal terminal-row numbers align laterally</text>
-  <text x="530" y="91" class="direct-label">Pico to GAL: RESET# (also tapped by Z80), PICO_CE#, PICO_OE#, PICO_WE#</text>
+  <text x="530" y="91" class="direct-label">GAL controls data OE# and MCP RESET#; MCP ports connect directly to pulled-up A0-A15</text>
 
 
     <g id="board-memory">
       <text x="200" y="145" class="board-title">Memory Board (left)</text>
+      <text x="200" y="159" class="board-axis">row 1 ↑ · A-E left · F-J right</text>
       <rect x="50" y="162" width="300" height="816" class="board-outline"/>
       <rect x="62" y="180" width="18" height="780" class="power-rail"/>
       <rect x="320" y="180" width="18" height="780" class="power-rail"/>
@@ -117,6 +124,7 @@
 
     <g id="board-core">
       <text x="530" y="145" class="board-title">Core Board (center)</text>
+      <text x="530" y="159" class="board-axis">row 1 ↑ · A-E left · F-J right</text>
       <rect x="380" y="162" width="300" height="816" class="board-outline"/>
       <rect x="392" y="180" width="18" height="780" class="power-rail"/>
       <rect x="650" y="180" width="18" height="780" class="power-rail"/>
@@ -202,6 +210,7 @@
 
     <g id="board-peripheral">
       <text x="860" y="145" class="board-title">Peripheral Board (right)</text>
+      <text x="860" y="159" class="board-axis">row 1 ↑ · A-E left · F-J right</text>
       <rect x="710" y="162" width="300" height="816" class="board-outline"/>
       <rect x="722" y="180" width="18" height="780" class="power-rail"/>
       <rect x="980" y="180" width="18" height="780" class="power-rail"/>
@@ -288,116 +297,143 @@
     <path d="M 598.00 525.97 Q 641.00 425.32, 564.00 324.68" class="connection-halo"/>
     <path d="M 598.00 525.97 Q 641.00 425.32, 564.00 324.68" fill="none" stroke="#d62828" stroke-width="4.5" class="connection"/>
 
-    <path d="M 598.00 525.97 Q 641.00 626.61, 564.00 727.26" class="connection-halo"/>
-    <path d="M 598.00 525.97 Q 641.00 626.61, 564.00 727.26" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 894.00 639.19 Q 971.00 469.35, 952.00 299.52" class="connection-halo"/>
+    <path d="M 894.00 639.19 Q 971.00 469.35, 952.00 299.52" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 598.00 525.97 Q 641.00 695.81, 564.00 865.65" class="connection-halo"/>
-    <path d="M 598.00 525.97 Q 641.00 695.81, 564.00 865.65" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 894.00 777.58 Q 971.00 538.55, 952.00 299.52" class="connection-halo"/>
+    <path d="M 894.00 777.58 Q 971.00 538.55, 952.00 299.52" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 928.00 249.19 Q 971.00 356.13, 952.00 463.06" class="connection-halo"/>
-    <path d="M 928.00 249.19 Q 971.00 356.13, 952.00 463.06" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 761.00 639.19, 826.00 639.19" class="connection-halo"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 761.00 639.19, 826.00 639.19" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 894.00 664.35 Q 971.00 563.71, 952.00 463.06" class="connection-halo"/>
-    <path d="M 894.00 664.35 Q 971.00 563.71, 952.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 761.00 777.58, 826.00 777.58" class="connection-halo"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 761.00 777.58, 826.00 777.58" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 894.00 827.90 Q 971.00 746.13, 894.00 664.35" class="connection-halo"/>
-    <path d="M 894.00 827.90 Q 971.00 746.13, 894.00 664.35" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
+    <path d="M 894.00 500.81 Q 971.00 400.16, 952.00 299.52" class="connection-halo"/>
+    <path d="M 894.00 500.81 Q 971.00 400.16, 952.00 299.52" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 234.00 349.84 C 299.00 349.84, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
-    <path d="M 234.00 349.84 C 299.00 349.84, 397.00 525.97, 462.00 525.97" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 689.52 C 279.00 689.52, 279.00 130, 344.00 130 L 716.00 130 C 781.00 130, 781.00 500.81, 826.00 500.81" class="connection-halo"/>
+    <path d="M 234.00 689.52 C 279.00 689.52, 279.00 130, 344.00 130 L 716.00 130 C 781.00 130, 781.00 500.81, 826.00 500.81" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
 
-    <path d="M 234.00 349.84 C 299.00 349.84, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
-    <path d="M 234.00 349.84 C 299.00 349.84, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 397.00 525.97, 462.00 525.97" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 268.00 538.55 C 333.00 538.55, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
-    <path d="M 268.00 538.55 C 333.00 538.55, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
+    <path d="M 234.00 299.52 C 299.00 299.52, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 268.00 538.55 C 333.00 538.55, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
-    <path d="M 268.00 538.55 C 333.00 538.55, 397.00 525.97, 462.00 525.97" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 268.00 488.23 C 333.00 488.23, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
+    <path d="M 268.00 488.23 C 333.00 488.23, 431.00 324.68, 496.00 324.68" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
-    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d62828" stroke-width="4.5" class="connection"/>
+    <path d="M 268.00 488.23 C 333.00 488.23, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
+    <path d="M 268.00 488.23 C 333.00 488.23, 397.00 525.97, 462.00 525.97" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 564.00 324.68 C 629.00 324.68, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
-    <path d="M 564.00 324.68 C 629.00 324.68, 761.00 827.90, 826.00 827.90" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
+    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 299.52, 768.00 299.52" class="connection-halo"/>
+    <path d="M 564.00 324.68 C 629.00 324.68, 703.00 299.52, 768.00 299.52" fill="none" stroke="#d62828" stroke-width="4.5" class="connection"/>
 
-    <path d="M 564.00 727.26 C 629.00 727.26, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
-    <path d="M 564.00 727.26 C 629.00 727.26, 761.00 827.90, 826.00 827.90" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 234.00 689.52 C 299.00 689.52, 431.00 324.68, 496.00 324.68" class="connection-halo"/>
+    <path d="M 234.00 689.52 C 299.00 689.52, 431.00 324.68, 496.00 324.68" fill="none" stroke="#079455" stroke-width="2.5" stroke-dasharray="9 6" class="connection"/>
 
-    <path d="M 564.00 865.65 C 629.00 865.65, 761.00 827.90, 826.00 827.90" class="connection-halo"/>
-    <path d="M 564.00 865.65 C 629.00 865.65, 761.00 827.90, 826.00 827.90" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 234.00 689.52 C 299.00 689.52, 397.00 525.97, 462.00 525.97" class="connection-halo"/>
+    <path d="M 234.00 689.52 C 299.00 689.52, 397.00 525.97, 462.00 525.97" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 564.00 727.26 C 629.00 727.26, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
-    <path d="M 564.00 727.26 C 629.00 727.26, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 689.52 Q 311.00 588.87, 268.00 488.23" class="connection-halo"/>
+    <path d="M 234.00 689.52 Q 311.00 588.87, 268.00 488.23" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 564.00 865.65 C 629.00 865.65, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
-    <path d="M 564.00 865.65 C 629.00 865.65, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 234.00 299.52 Q 311.00 494.52, 234.00 689.52" class="connection-halo"/>
+    <path d="M 234.00 299.52 Q 311.00 494.52, 234.00 689.52" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 664.35, 826.00 664.35" class="connection-halo"/>
-    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 664.35, 826.00 664.35" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 500.81, 826.00 500.81" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 500.81, 826.00 500.81" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
-    <path d="M 598.00 525.97 C 663.00 525.97, 727.00 249.19, 792.00 249.19" class="connection-halo"/>
-    <path d="M 598.00 525.97 C 663.00 525.97, 727.00 249.19, 792.00 249.19" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 639.19, 826.00 639.19" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 639.19, 826.00 639.19" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 463.06, 768.00 463.06" class="connection-halo"/>
-    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 777.58, 826.00 777.58" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 761.00 777.58, 826.00 777.58" fill="none" stroke="#1769e0" stroke-width="3" class="connection"/>
 
-    <path d="M 234.00 349.84 C 279.00 349.84, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 463.06, 768.00 463.06" class="connection-halo"/>
-    <path d="M 234.00 349.84 C 279.00 349.84, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 463.06, 768.00 463.06" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 299.52, 768.00 299.52" class="connection-halo"/>
+    <path d="M 598.00 525.97 C 663.00 525.97, 703.00 299.52, 768.00 299.52" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
+
+    <path d="M 234.00 299.52 C 279.00 299.52, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 299.52, 768.00 299.52" class="connection-halo"/>
+    <path d="M 234.00 299.52 C 279.00 299.52, 279.00 112, 344.00 112 L 658.00 112 C 723.00 112, 723.00 299.52, 768.00 299.52" fill="none" stroke="#d97706" stroke-width="2.5" class="connection"/>
 
     <g id="chip-GAL">
-      <rect x="166.00" y="274.98" width="68" height="149.71" rx="5" fill="#36a2bd" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="200" y="330.34">ATF22V10B/C</tspan><tspan x="200" y="343.34">GAL (24-pin)</tspan><tspan x="200" y="356.34">rows 9-20</tspan><tspan x="200" y="369.34">0.3in pin-row span</tspan></text>
+      <rect x="166.00" y="224.66" width="68" height="149.71" rx="5" fill="#36a2bd" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="200" y="280.02">ATF22V10B/C</tspan><tspan x="200" y="293.02">GAL (24-pin)</tspan><tspan x="200" y="306.02">rows 5-16</tspan><tspan x="200" y="319.02">0.3in pin-row span</tspan></text>
+
+      <path d="M 191 225.66129032258064 Q 200 232.66129032258064 209 225.66129032258064" class="notch-marker"/>
+      <circle cx="173" cy="232.66129032258064" r="4" class="pin-one"/><text x="173" y="235.16129032258064" class="pin-one-label">1</text>
     </g>
 
     <g id="chip-SRAM">
-      <rect x="132.00" y="438.53" width="136" height="200.03" rx="5" fill="#8ecae6" class="chip"/>
-      <text class="chip-label wide-label"><tspan x="200" y="519.05">AS6C1008-55PCN</tspan><tspan x="200" y="532.05">SRAM (32-pin)</tspan><tspan x="200" y="545.05">rows 22-37</tspan><tspan x="200" y="558.05">0.6in pin-row span</tspan></text>
+      <rect x="132.00" y="388.21" width="136" height="200.03" rx="5" fill="#8ecae6" class="chip"/>
+      <text class="chip-label wide-label"><tspan x="200" y="468.73">AS6C1008-55PCN</tspan><tspan x="200" y="481.73">SRAM (32-pin)</tspan><tspan x="200" y="494.73">rows 18-33</tspan><tspan x="200" y="507.73">0.6in pin-row span</tspan></text>
+
+      <path d="M 191 389.2096774193549 Q 200 396.2096774193549 209 389.2096774193549" class="notch-marker"/>
+      <circle cx="139" cy="396.2096774193549" r="4" class="pin-one"/><text x="139" y="398.7096774193549" class="pin-one-label">1</text>
+    </g>
+
+    <g id="chip-MCP">
+      <rect x="166.00" y="602.08" width="68" height="174.87" rx="5" fill="#91cf35" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="200" y="663.52">MCP23S17-E/SP</tspan><tspan x="200" y="676.52">28-pin SPDIP</tspan><tspan x="200" y="689.52">+ Q1 / 2x SIP pulls</tspan><tspan x="200" y="702.52">rows 35-48</tspan><tspan x="200" y="715.52">0.3in pin-row span</tspan></text>
+
+      <path d="M 191 775.9516129032259 Q 200 768.9516129032259 209 775.9516129032259" class="notch-marker"/>
+      <circle cx="227" cy="768.9516129032259" r="4" class="pin-one"/><text x="227" y="771.4516129032259" class="pin-one-label">1</text>
     </g>
 
     <g id="chip-SUPPLY">
       <rect x="405.00" y="174.34" width="250" height="36.48" rx="5" fill="#d2d2d2" class="chip"/>
       <text class="chip-label supply-label"><tspan x="530" y="186.08">5V supply clearance</tspan><tspan x="530" y="199.08">rows 1-3 reserved</tspan></text>
+
     </g>
 
     <g id="chip-HCT541">
       <rect x="496.00" y="262.40" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
       <text class="chip-label narrow-label"><tspan x="530" y="305.18">SN74HCT541N</tspan><tspan x="530" y="318.18">buffer (20-pin)</tspan><tspan x="530" y="331.18">rows 8-17</tspan><tspan x="530" y="344.18">0.3in pin-row span</tspan></text>
+
+      <path d="M 521 385.9516129032258 Q 530 378.9516129032258 539 385.9516129032258" class="notch-marker"/>
+      <circle cx="557" cy="378.9516129032258" r="4" class="pin-one"/><text x="557" y="381.4516129032258" class="pin-one-label">1</text>
     </g>
 
     <g id="chip-Z80">
       <rect x="462.00" y="400.79" width="136" height="250.35" rx="5" fill="#fb8500" class="chip"/>
       <text class="chip-label wide-label"><tspan x="530" y="506.47">Z84C0020PEC</tspan><tspan x="530" y="519.47">Z80 CPU (40-pin)</tspan><tspan x="530" y="532.47">rows 19-38</tspan><tspan x="530" y="545.47">0.6in pin-row span</tspan></text>
-    </g>
 
-    <g id="chip-HCT245_LO">
-      <rect x="496.00" y="664.98" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="530" y="707.76">SN74HCT245N</tspan><tspan x="530" y="720.76">low byte (20-pin)</tspan><tspan x="530" y="733.76">rows 40-49</tspan><tspan x="530" y="746.76">0.3in pin-row span</tspan></text>
-    </g>
-
-    <g id="chip-HCT245_HI">
-      <rect x="496.00" y="803.37" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="530" y="846.15">SN74HCT245N</tspan><tspan x="530" y="859.15">high byte (20-pin)</tspan><tspan x="530" y="872.15">rows 51-60</tspan><tspan x="530" y="885.15">0.3in pin-row span</tspan></text>
-    </g>
-
-    <g id="chip-CARRIER">
-      <rect x="792.00" y="174.34" width="136" height="149.71" rx="5" fill="#5fbc98" class="chip"/>
-      <text class="chip-label wide-label"><tspan x="860" y="229.69">SN74LVC8T245PW</tspan><tspan x="860" y="242.69">carrier (24-pin)</tspan><tspan x="860" y="255.69">rows 1-12</tspan><tspan x="860" y="268.69">0.6in pin-row span</tspan></text>
+      <path d="M 521 401.7903225806452 Q 530 408.7903225806452 539 401.7903225806452" class="notch-marker"/>
+      <circle cx="469" cy="408.7903225806452" r="4" class="pin-one"/><text x="469" y="411.2903225806452" class="pin-one-label">1</text>
     </g>
 
     <g id="chip-PICO">
-      <rect x="768.00" y="337.89" width="184" height="250.35" rx="5" fill="#91cf35" class="chip"/>
-      <text class="chip-label pico-label"><tspan x="860" y="443.56">Raspberry Pi Pico 2</tspan><tspan x="860" y="456.56">2x20-pin module</tspan><tspan x="860" y="469.56">rows 14-33</tspan><tspan x="860" y="482.56">0.7in header span</tspan></text>
+      <rect x="768.00" y="174.34" width="184" height="250.35" rx="5" fill="#91cf35" class="chip"/>
+      <text class="chip-label pico-label"><tspan x="860" y="280.02">Raspberry Pi Pico 2</tspan><tspan x="860" y="293.02">2x20-pin module</tspan><tspan x="860" y="306.02">rows 1-20</tspan><tspan x="860" y="319.02">0.7in header span</tspan></text>
+
+      <rect x="847" y="176.33870967741936" width="26" height="8" rx="2" class="usb-marker"/>
+      <text x="860" y="183.33870967741936" class="marker-label">USB ↑</text>
+      <circle cx="775" cy="182.33870967741936" r="4" class="pin-one"/><text x="775" y="184.83870967741936" class="pin-one-label">1</text>
     </g>
 
     <g id="chip-LVC244">
-      <rect x="826.00" y="602.08" width="68" height="124.55" rx="5" fill="#5fbc98" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="860" y="644.85">SN74LVC244AN</tspan><tspan x="860" y="657.85">buffer (20-pin)</tspan><tspan x="860" y="670.85">rows 35-44</tspan><tspan x="860" y="683.85">0.3in pin-row span</tspan></text>
+      <rect x="826.00" y="438.53" width="68" height="124.55" rx="5" fill="#5fbc98" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="860" y="481.31">SN74LVC244AN</tspan><tspan x="860" y="494.31">monitor (20-pin)</tspan><tspan x="860" y="507.31">rows 22-31</tspan><tspan x="860" y="520.31">0.3in pin-row span</tspan></text>
+
+      <path d="M 851 439.53225806451616 Q 860 446.53225806451616 869 439.53225806451616" class="notch-marker"/>
+      <circle cx="833" cy="446.53225806451616" r="4" class="pin-one"/><text x="833" y="449.03225806451616" class="pin-one-label">1</text>
     </g>
 
-    <g id="chip-MCP">
-      <rect x="826.00" y="740.47" width="68" height="174.87" rx="5" fill="#91cf35" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="860" y="808.40">MCP23S17-E/SP</tspan><tspan x="860" y="821.40">28-pin SPDIP</tspan><tspan x="860" y="834.40">rows 46-59</tspan><tspan x="860" y="847.40">0.3in pin-row span</tspan></text>
+    <g id="chip-UP245">
+      <rect x="826.00" y="576.92" width="68" height="124.55" rx="5" fill="#52b788" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="860" y="613.19">SN74AHCT245N</tspan><tspan x="860" y="626.19">Pico -&gt; 5V bus</tspan><tspan x="860" y="639.19">+ RN3 data pulls</tspan><tspan x="860" y="652.19">rows 33-42</tspan><tspan x="860" y="665.19">0.3in pin-row span</tspan></text>
+
+      <path d="M 851 700.4677419354839 Q 860 693.4677419354839 869 700.4677419354839" class="notch-marker"/>
+      <circle cx="887" cy="693.4677419354839" r="4" class="pin-one"/><text x="887" y="695.9677419354839" class="pin-one-label">1</text>
+    </g>
+
+    <g id="chip-DOWN245">
+      <rect x="826.00" y="715.31" width="68" height="124.55" rx="5" fill="#52b788" class="chip"/>
+      <text class="chip-label narrow-label"><tspan x="860" y="758.08">SN74LVC245AN</tspan><tspan x="860" y="771.08">5V bus -&gt; Pico</tspan><tspan x="860" y="784.08">rows 44-53</tspan><tspan x="860" y="797.08">0.3in pin-row span</tspan></text>
+
+      <path d="M 851 838.8548387096774 Q 860 831.8548387096774 869 838.8548387096774" class="notch-marker"/>
+      <circle cx="887" cy="831.8548387096774" r="4" class="pin-one"/><text x="887" y="834.3548387096774" class="pin-one-label">1</text>
     </g>
 
   <g id="legend">
@@ -408,5 +444,5 @@
   </g>
   <text x="530" y="1048" class="note">One line represents a signal group. Blue paths are shared trunks; intermediate chips are taps, not series logic.</text>
   <text x="530" y="1071" class="note">Power, ground, pull resistors, and decoupling are intentionally omitted.</text>
-  <text x="530" y="1094" class="note">DIP widths show pin-row span; Pico shows its 0.7in header span (PCB body approximately 0.83in wide).</text>
+  <text x="530" y="1094" class="note">Yellow dot = pin 1. Curved edge = DIP notch. Pico USB and all notch directions must match the mounting table.</text>
 </svg>
