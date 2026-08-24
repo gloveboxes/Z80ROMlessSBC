@@ -38,17 +38,17 @@ function findBrowser() {
 const css = String.raw`
 @page {
   size: A4 portrait;
-  margin: 14mm 13mm 16mm;
+  margin: 11mm 9mm 14mm;
 }
 
 @page diagram-portrait {
   size: A4 portrait;
-  margin: 10mm;
+  margin: 7mm;
 }
 
 @page diagram-landscape {
   size: A4 landscape;
-  margin: 10mm;
+  margin: 7mm;
 }
 
 :root {

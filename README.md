@@ -113,15 +113,15 @@ Purchase quantities include a small allowance for breadboard spares.
 
 ### 0.2 Sockets and Headers
 
-| Quantity | Item |
-|----:|----|
-| 1 | 40-pin DIP socket |
-| 1 | 32-pin DIP socket |
-| 1 | 28-pin DIP socket |
-| 1 | 24-pin, 0.3-inch-wide DIP socket for the ATF22V10 |
-| 4 | 20-pin DIP sockets |
-| 2 | 20-pin 0.1-inch male headers for the Pico 2, if not fitted |
-| 2 | 20-position 0.1-inch socket strips for removable Pico mounting; do not substitute DIP IC sockets |
+| Quantity | Item | Used for | Width / form factor |
+|----:|----|----|----|
+| 1 | 40-pin DIP socket | Z84C0020PEC Z80 | **Wide: 0.6-inch (15.24 mm) row spacing** |
+| 1 | 32-pin DIP socket | AS6C1008-55PCN SRAM | **Wide: 0.6-inch (15.24 mm) row spacing** |
+| 1 | 28-pin DIP socket | MCP23S17-E/SP | Narrow: 0.3-inch (7.62 mm) row spacing |
+| 1 | 24-pin DIP socket | ATF22V10B-15PC or ATF22V10C-15PU | Narrow: 0.3-inch (7.62 mm) row spacing |
+| 4 | 20-pin DIP sockets | SN74HCT541N, SN74AHCT245N, SN74LVC245AN, and SN74LVC244AN | Narrow: 0.3-inch (7.62 mm) row spacing |
+| 2 | 20-pin 0.1-inch male headers | Pico 2 W, if headers are not fitted | Single-row header strips |
+| 2 | 20-position 0.1-inch socket strips | Removable Pico 2 W mounting; do not substitute DIP IC sockets | Single-row socket strips |
 
 ### 0.3 Capacitors and Resistors
 
