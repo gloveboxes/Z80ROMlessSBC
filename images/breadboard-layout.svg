@@ -387,9 +387,9 @@
 
     </g>
 
-    <g id="chip-HCT541">
+    <g id="chip-AHCT244">
       <rect x="496.00" y="262.40" width="68" height="124.55" rx="5" fill="#ffbd20" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="530" y="305.18">SN74HCT541N</tspan><tspan x="530" y="318.18">buffer (20-pin)</tspan><tspan x="530" y="331.18">rows 8-17</tspan><tspan x="530" y="344.18">0.3in pin-row span</tspan></text>
+      <text class="chip-label narrow-label"><tspan x="530" y="305.18">SN74AHCT244N</tspan><tspan x="530" y="318.18">buffer (20-pin)</tspan><tspan x="530" y="331.18">rows 8-17</tspan><tspan x="530" y="344.18">0.3in pin-row span</tspan></text>
 
       <path d="M 521 385.9516129032258 Q 530 378.9516129032258 539 385.9516129032258" class="notch-marker"/>
       <circle cx="557" cy="378.9516129032258" r="4" class="pin-one"/><text x="557" y="381.4516129032258" class="pin-one-label">1</text>

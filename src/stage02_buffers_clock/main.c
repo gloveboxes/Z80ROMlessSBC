@@ -13,7 +13,7 @@ static const uint BUFFER_INPUT_PINS[] = {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  printf("\nStage 2: GAL, HCT541, and Z80 clock\n");
+  printf("\nStage 2: GAL, AHCT244, and Z80 clock\n");
   printf("w=walking outputs, 1=1kHz, 2=100kHz, 3=1MHz, x=stop\n");
 
   while (true) {

@@ -24,6 +24,18 @@ static _Noreturn void trap_fail_closed(void) {
     tight_loop_contents();
 }
 
+static void resume_and_wait_for_release(uint control_pin) {
+  absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
+  z80_clock_resume();
+  while (!gpio_get(PIN_IORQ_N) || !gpio_get(control_pin)) {
+    if (time_reached(deadline)) {
+      __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
+      trap_fail_closed();
+    }
+    tight_loop_contents();
+  }
+}
+
 static void io_trap_handler(uint gpio, uint32_t events) {
   (void)events;
   if (gpio != PIN_IORQ_N)
@@ -53,10 +65,10 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   if (is_write) {
     z80_data_bus_prepare_input();
     uint8_t value = z80_data_bus_sample();
-    z80_data_bus_isolate();
     if (application_write != NULL)
       application_write(port, value, application_context);
-    z80_clock_resume();
+    resume_and_wait_for_release(PIN_WR_N);
+    z80_data_bus_isolate();
     return;
   }
 
@@ -64,15 +76,7 @@ static void io_trap_handler(uint gpio, uint32_t events) {
                       ? 0xFF
                       : application_read(port, application_context);
   z80_data_bus_drive(value);
-  absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
-  z80_clock_resume();
-  while (!gpio_get(PIN_RD_N)) {
-    if (time_reached(deadline)) {
-      __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
-      trap_fail_closed();
-    }
-    tight_loop_contents();
-  }
+  resume_and_wait_for_release(PIN_RD_N);
   z80_data_bus_isolate();
 }
 

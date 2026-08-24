@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-08-24T16:01:16")
+		(date "2026-08-25T05:02:57")
 		(tool "Eeschema 10.0.5")
 		(sheet
 			(number "1")
@@ -354,9 +354,9 @@
 		)
 		(comp
 			(ref "C4")
-			(value "100n U4 HCT541")
+			(value "100n U4 AHCT244")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U4 HCT541")
+			(description "Z80ROMlessSBC 100n U4 AHCT244")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -364,7 +364,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U4 HCT541")
+					(name "Description") "Z80ROMlessSBC 100n U4 AHCT244")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2987,9 +2987,9 @@
 		)
 		(comp
 			(ref "U4")
-			(value "SN74HCT541N")
+			(value "SN74AHCT244N")
 			(footprint "Package_DIP:DIP-20_W7.62mm")
-			(description "Z80ROMlessSBC SN74HCT541N")
+			(description "Z80ROMlessSBC SN74AHCT244N")
 			(fields
 				(field
 					(name "Footprint") "Package_DIP:DIP-20_W7.62mm")
@@ -2997,12 +2997,12 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC SN74HCT541N")
+					(name "Description") "Z80ROMlessSBC SN74AHCT244N")
 			)
 			(libsource
 				(lib "Z80SBC")
-				(part "HCT541")
-				(description "Z80ROMlessSBC project symbol: SN74HCT541N")
+				(part "AHCT244")
+				(description "Z80ROMlessSBC project symbol: SN74AHCT244N")
 			)
 			(property
 				(name "Sheetname")
@@ -3025,25 +3025,25 @@
 							(num "19")
 						)
 						(pin
-							(num "9")
+							(num "17")
+						)
+						(pin
+							(num "15")
+						)
+						(pin
+							(num "13")
+						)
+						(pin
+							(num "11")
 						)
 						(pin
 							(num "8")
 						)
 						(pin
-							(num "7")
-						)
-						(pin
 							(num "6")
 						)
 						(pin
-							(num "5")
-						)
-						(pin
 							(num "4")
-						)
-						(pin
-							(num "3")
 						)
 						(pin
 							(num "2")
@@ -3058,28 +3058,28 @@
 							(num "20")
 						)
 						(pin
-							(num "11")
-						)
-						(pin
-							(num "12")
-						)
-						(pin
-							(num "13")
-						)
-						(pin
-							(num "14")
-						)
-						(pin
-							(num "15")
+							(num "18")
 						)
 						(pin
 							(num "16")
 						)
 						(pin
-							(num "17")
+							(num "14")
 						)
 						(pin
-							(num "18")
+							(num "12")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "3")
 						)
 					)
 				)
@@ -3515,6 +3515,127 @@
 	(libparts
 		(libpart
 			(lib "Z80SBC")
+			(part "AHCT244")
+			(description "Z80ROMlessSBC project symbol: SN74AHCT244N")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "SN74AHCT244N")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: SN74AHCT244N")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "OE1#")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "1A1")
+					(type "input")
+				)
+				(pin
+					(num "3")
+					(name "2Y4")
+					(type "tri_state")
+				)
+				(pin
+					(num "4")
+					(name "1A2")
+					(type "input")
+				)
+				(pin
+					(num "5")
+					(name "2Y3")
+					(type "tri_state")
+				)
+				(pin
+					(num "6")
+					(name "1A3")
+					(type "input")
+				)
+				(pin
+					(num "7")
+					(name "2Y2")
+					(type "tri_state")
+				)
+				(pin
+					(num "8")
+					(name "1A4")
+					(type "input")
+				)
+				(pin
+					(num "9")
+					(name "2Y1")
+					(type "tri_state")
+				)
+				(pin
+					(num "10")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "11")
+					(name "2A1")
+					(type "input")
+				)
+				(pin
+					(num "12")
+					(name "1Y4")
+					(type "tri_state")
+				)
+				(pin
+					(num "13")
+					(name "2A2")
+					(type "input")
+				)
+				(pin
+					(num "14")
+					(name "1Y3")
+					(type "tri_state")
+				)
+				(pin
+					(num "15")
+					(name "2A3")
+					(type "input")
+				)
+				(pin
+					(num "16")
+					(name "1Y2")
+					(type "tri_state")
+				)
+				(pin
+					(num "17")
+					(name "2A4")
+					(type "input")
+				)
+				(pin
+					(num "18")
+					(name "1Y1")
+					(type "tri_state")
+				)
+				(pin
+					(num "19")
+					(name "OE2#")
+					(type "input")
+				)
+				(pin
+					(num "20")
+					(name "VCC")
+					(type "power_in")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
 			(part "AHCT245")
 			(description "Z80ROMlessSBC project symbol: SN74AHCT245N")
 			(fields
@@ -3715,7 +3836,7 @@
 				)
 				(pin
 					(num "13")
-					(name "UNUSED_IN4")
+					(name "Z80_IORQ#")
 					(type "input")
 				)
 				(pin
@@ -3750,22 +3871,22 @@
 				)
 				(pin
 					(num "20")
-					(name "CONST_LOW1")
+					(name "WAIT#")
 					(type "output")
 				)
 				(pin
 					(num "21")
-					(name "CONST_LOW2")
+					(name "CONST_LOW1")
 					(type "output")
 				)
 				(pin
 					(num "22")
-					(name "CONST_LOW3")
+					(name "CONST_LOW2")
 					(type "output")
 				)
 				(pin
 					(num "23")
-					(name "CONST_LOW4")
+					(name "CONST_LOW3")
 					(type "output")
 				)
 				(pin
@@ -3834,127 +3955,6 @@
 					(num "2")
 					(name "A")
 					(type "passive")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
-			(part "HCT541")
-			(description "Z80ROMlessSBC project symbol: SN74HCT541N")
-			(fields
-				(field
-					(name "Reference") "U")
-				(field
-					(name "Value") "SN74HCT541N")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: SN74HCT541N")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "OE1#")
-					(type "input")
-				)
-				(pin
-					(num "2")
-					(name "A1")
-					(type "input")
-				)
-				(pin
-					(num "3")
-					(name "A2")
-					(type "input")
-				)
-				(pin
-					(num "4")
-					(name "A3")
-					(type "input")
-				)
-				(pin
-					(num "5")
-					(name "A4")
-					(type "input")
-				)
-				(pin
-					(num "6")
-					(name "A5")
-					(type "input")
-				)
-				(pin
-					(num "7")
-					(name "A6")
-					(type "input")
-				)
-				(pin
-					(num "8")
-					(name "A7")
-					(type "input")
-				)
-				(pin
-					(num "9")
-					(name "A8")
-					(type "input")
-				)
-				(pin
-					(num "10")
-					(name "GND")
-					(type "power_in")
-				)
-				(pin
-					(num "11")
-					(name "Y8")
-					(type "tri_state")
-				)
-				(pin
-					(num "12")
-					(name "Y7")
-					(type "tri_state")
-				)
-				(pin
-					(num "13")
-					(name "Y6")
-					(type "tri_state")
-				)
-				(pin
-					(num "14")
-					(name "Y5")
-					(type "tri_state")
-				)
-				(pin
-					(num "15")
-					(name "Y4")
-					(type "tri_state")
-				)
-				(pin
-					(num "16")
-					(name "Y3")
-					(type "tri_state")
-				)
-				(pin
-					(num "17")
-					(name "Y2")
-					(type "tri_state")
-				)
-				(pin
-					(num "18")
-					(name "Y1")
-					(type "tri_state")
-				)
-				(pin
-					(num "19")
-					(name "OE2#")
-					(type "input")
-				)
-				(pin
-					(num "20")
-					(name "VCC")
-					(type "power_in")
 				)
 			)
 		)
@@ -6020,8 +6020,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "17")
-				(pinfunction "Y2_17")
+				(pin "16")
+				(pinfunction "1Y2_16")
 				(pintype "tri_state")
 			)
 		)
@@ -6564,12 +6564,6 @@
 				(pintype "power_in")
 			)
 			(node
-				(ref "U3")
-				(pin "13")
-				(pinfunction "UNUSED_IN4_13")
-				(pintype "input")
-			)
-			(node
 				(ref "U4")
 				(pin "1")
 				(pinfunction "OE1#_1")
@@ -6688,6 +6682,12 @@
 				(pintype "tri_state")
 			)
 			(node
+				(ref "U3")
+				(pin "13")
+				(pinfunction "Z80_IORQ#_13")
+				(pintype "input")
+			)
+			(node
 				(ref "U7")
 				(pin "4")
 				(pinfunction "1A2_4")
@@ -6717,8 +6717,8 @@
 			(class "Default")
 			(node
 				(ref "U4")
-				(pin "16")
-				(pinfunction "Y3_16")
+				(pin "14")
+				(pinfunction "1Y3_14")
 				(pintype "tri_state")
 			)
 			(node
@@ -6797,8 +6797,8 @@
 			(class "Default")
 			(node
 				(ref "U4")
-				(pin "15")
-				(pinfunction "Y4_15")
+				(pin "12")
+				(pinfunction "1Y4_12")
 				(pintype "tri_state")
 			)
 			(node
@@ -6814,8 +6814,8 @@
 			(class "Default")
 			(node
 				(ref "U4")
-				(pin "14")
-				(pinfunction "Y5_14")
+				(pin "9")
+				(pinfunction "2Y1_9")
 				(pintype "tri_state")
 			)
 			(node
@@ -6923,8 +6923,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "3")
-				(pinfunction "A2_3")
+				(pin "4")
+				(pinfunction "1A2_4")
 				(pintype "input")
 			)
 		)
@@ -6970,7 +6970,7 @@
 			(node
 				(ref "U4")
 				(pin "2")
-				(pinfunction "A1_2")
+				(pinfunction "1A1_2")
 				(pintype "input")
 			)
 		)
@@ -7281,8 +7281,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "4")
-				(pinfunction "A3_4")
+				(pin "6")
+				(pinfunction "1A3_6")
 				(pintype "input")
 			)
 		)
@@ -7321,8 +7321,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "6")
-				(pinfunction "A5_6")
+				(pin "11")
+				(pinfunction "2A1_11")
 				(pintype "input")
 			)
 		)
@@ -7344,8 +7344,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "5")
-				(pinfunction "A4_5")
+				(pin "8")
+				(pinfunction "1A4_8")
 				(pintype "input")
 			)
 		)
@@ -7465,8 +7465,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "11")
-				(pinfunction "Y8_11")
+				(pin "3")
+				(pinfunction "2Y4_3")
 				(pintype "tri_state")
 			)
 		)
@@ -7488,8 +7488,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "9")
-				(pinfunction "A8_9")
+				(pin "17")
+				(pinfunction "2A4_17")
 				(pintype "input")
 			)
 		)
@@ -7511,8 +7511,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "12")
-				(pinfunction "Y7_12")
+				(pin "5")
+				(pinfunction "2Y3_5")
 				(pintype "tri_state")
 			)
 		)
@@ -7534,8 +7534,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "8")
-				(pinfunction "A7_8")
+				(pin "15")
+				(pinfunction "2A3_15")
 				(pintype "input")
 			)
 		)
@@ -7557,8 +7557,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "13")
-				(pinfunction "Y6_13")
+				(pin "7")
+				(pinfunction "2Y2_7")
 				(pintype "tri_state")
 			)
 		)
@@ -7580,8 +7580,8 @@
 			)
 			(node
 				(ref "U4")
-				(pin "7")
-				(pinfunction "A6_7")
+				(pin "13")
+				(pinfunction "2A2_13")
 				(pintype "input")
 			)
 		)
@@ -7617,6 +7617,12 @@
 				(pin "24")
 				(pinfunction "WAIT#_24")
 				(pintype "input")
+			)
+			(node
+				(ref "U3")
+				(pin "20")
+				(pinfunction "WAIT#_20")
+				(pintype "output")
 			)
 		)
 		(net
@@ -7661,7 +7667,7 @@
 			(node
 				(ref "U4")
 				(pin "18")
-				(pinfunction "Y1_18")
+				(pinfunction "1Y1_18")
 				(pintype "tri_state")
 			)
 		)
@@ -7755,50 +7761,39 @@
 		)
 		(net
 			(code "102")
-			(name "unconnected-(U3-CONST_LOW1-Pad20)")
+			(name "unconnected-(U3-CONST_LOW1-Pad21)")
 			(class "Default")
 			(node
 				(ref "U3")
-				(pin "20")
-				(pinfunction "CONST_LOW1_20")
+				(pin "21")
+				(pinfunction "CONST_LOW1_21")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
 			(code "103")
-			(name "unconnected-(U3-CONST_LOW2-Pad21)")
+			(name "unconnected-(U3-CONST_LOW2-Pad22)")
 			(class "Default")
 			(node
 				(ref "U3")
-				(pin "21")
-				(pinfunction "CONST_LOW2_21")
+				(pin "22")
+				(pinfunction "CONST_LOW2_22")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
 			(code "104")
-			(name "unconnected-(U3-CONST_LOW3-Pad22)")
+			(name "unconnected-(U3-CONST_LOW3-Pad23)")
 			(class "Default")
 			(node
 				(ref "U3")
-				(pin "22")
-				(pinfunction "CONST_LOW3_22")
+				(pin "23")
+				(pinfunction "CONST_LOW3_23")
 				(pintype "output+no_connect")
 			)
 		)
 		(net
 			(code "105")
-			(name "unconnected-(U3-CONST_LOW4-Pad23)")
-			(class "Default")
-			(node
-				(ref "U3")
-				(pin "23")
-				(pinfunction "CONST_LOW4_23")
-				(pintype "output+no_connect")
-			)
-		)
-		(net
-			(code "106")
 			(name "unconnected-(U7-2Y2-Pad7)")
 			(class "Default")
 			(node
@@ -7809,7 +7804,7 @@
 			)
 		)
 		(net
-			(code "107")
+			(code "106")
 			(name "unconnected-(U7-2Y3-Pad5)")
 			(class "Default")
 			(node
@@ -7820,7 +7815,7 @@
 			)
 		)
 		(net
-			(code "108")
+			(code "107")
 			(name "unconnected-(U7-2Y4-Pad3)")
 			(class "Default")
 			(node
@@ -7831,7 +7826,7 @@
 			)
 		)
 		(net
-			(code "109")
+			(code "108")
 			(name "unconnected-(U8-INTA-Pad20)")
 			(class "Default")
 			(node
@@ -7842,7 +7837,7 @@
 			)
 		)
 		(net
-			(code "110")
+			(code "109")
 			(name "unconnected-(U8-INTB-Pad19)")
 			(class "Default")
 			(node

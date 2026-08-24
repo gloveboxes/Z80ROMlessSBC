@@ -31,7 +31,7 @@ const chips = [
   { key: "MCP", board: "memory", label: ["MCP23S17-E/SP", "28-pin SPDIP", "+ Q1 / 2x SIP pulls"], start: 35, end: 48, width: "narrow", color: "#91cf35", orientation: "down" },
 
   { key: "SUPPLY", board: "core", label: ["5V supply clearance", "rows 1-3 reserved"], start: 1, end: 3, width: "supply", color: "#d2d2d2", compact: true },
-  { key: "HCT541", board: "core", label: ["SN74HCT541N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20", orientation: "down" },
+  { key: "AHCT244", board: "core", label: ["SN74AHCT244N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20", orientation: "down" },
   { key: "Z80", board: "core", label: ["Z84C0020PEC", "Z80 CPU (40-pin)"], start: 19, end: 38, width: "wide", color: "#fb8500", orientation: "up" },
 
   { key: "PICO", board: "peripheral", label: ["Raspberry Pi Pico 2", "2x20-pin module"], start: 1, end: 20, width: "pico", color: "#91cf35", orientation: "usb-up" },
@@ -41,7 +41,7 @@ const chips = [
 ];
 
 const connections = [
-  { a: "Z80", b: "HCT541", kind: "clock" },
+  { a: "Z80", b: "AHCT244", kind: "clock" },
   { a: "UP245", b: "PICO", kind: "bus" },
   { a: "DOWN245", b: "PICO", kind: "bus" },
   { a: "GAL", b: "UP245", kind: "control" },
@@ -50,12 +50,12 @@ const connections = [
   { a: "MCP", b: "LVC244", kind: "spi", long: true, longLane: 1 },
 
   { a: "GAL", b: "Z80", kind: "control" },
-  { a: "GAL", b: "HCT541", kind: "control" },
-  { a: "HCT541", b: "SRAM", kind: "control" },
+  { a: "GAL", b: "AHCT244", kind: "control" },
+  { a: "AHCT244", b: "SRAM", kind: "control" },
   { a: "SRAM", b: "Z80", kind: "bus" },
 
-  { a: "HCT541", b: "PICO", kind: "clock" },
-  { a: "HCT541", b: "MCP", kind: "spi" },
+  { a: "AHCT244", b: "PICO", kind: "clock" },
+  { a: "AHCT244", b: "MCP", kind: "spi" },
   { a: "MCP", b: "Z80", kind: "bus" },
   { a: "MCP", b: "SRAM", kind: "bus" },
   { a: "GAL", b: "MCP", kind: "control" },

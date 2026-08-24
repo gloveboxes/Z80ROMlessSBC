@@ -35,7 +35,7 @@ Use this workflow to preserve the project's electrical safety, firmware ownershi
 
 - Do not revive superseded SD-card, PSRAM, LVC8T245-carrier, or 74HCT157/74HCT08 architectures without an explicit redesign request.
 - Do not connect a 5 V output directly to a Pico GPIO.
-- Do not bypass the HCT541 on GAL-to-SRAM controls.
+- Do not bypass the AHCT244 on GAL-to-SRAM controls.
 - Do not share SPI0 across cores or introduce a second bus master on SCK/MOSI.
 - Do not treat a physically installed but unpowered 5 V IC as equivalent to an absent socketed device.
 - Do not delete `README.pdf`; it is a tracked generated artifact.

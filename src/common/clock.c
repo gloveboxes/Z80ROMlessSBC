@@ -8,7 +8,7 @@
 #include "z80sbc/pins.h"
 
 bool z80_clock_set_hz(uint32_t hz) {
-  if (hz < 10 || hz > 4000000)
+  if (hz < 10 || hz > 8000000)
     return false;
 
   uint slice_num = pwm_gpio_to_slice_num(PIN_CLK);

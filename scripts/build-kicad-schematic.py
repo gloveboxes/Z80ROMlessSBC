@@ -153,22 +153,28 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(7, "PICO_CE#", "input", "left"), pin(8, "Z80_MREQ#", "input", "left"),
             pin(9, "DATA_ENABLE", "input", "left"), pin(10, "ADDR_ENABLE", "input", "left"),
             pin(11, "DATA_DIR", "input", "left"), pin(12, "GND", "power_in", "bottom"),
-            pin(13, "UNUSED_IN4", "input", "left"), pin(14, "SRAM_WE_PRE#", "output", "right"),
+            pin(13, "Z80_IORQ#", "input", "left"), pin(14, "SRAM_WE_PRE#", "output", "right"),
             pin(15, "SRAM_OE_PRE#", "output", "right"), pin(16, "SRAM_CE_PRE#", "output", "right"),
             pin(17, "DATA_UP_OE#", "output", "right"), pin(18, "DATA_DOWN_OE#", "output", "right"),
-            pin(19, "MCP_RESET_DRIVE", "output", "right"),
-            *[pin(number, f"CONST_LOW{number - 19}", "output", "right") for number in range(20, 24)],
+            pin(19, "MCP_RESET_DRIVE", "output", "right"), pin(20, "WAIT#", "output", "right"),
+            *[pin(number, f"CONST_LOW{number - 20}", "output", "right") for number in range(21, 24)],
             pin(24, "VCC", "power_in", "top"),
         ],
     ),
-    "HCT541": (
+    "AHCT244": (
         "U",
-        "SN74HCT541N",
+        "SN74AHCT244N",
         [
             pin(1, "OE1#", "input", "left"),
-            *[pin(number + 1, f"A{number}", "input", "left") for number in range(1, 9)],
+            pin(2, "1A1", "input", "left"), pin(3, "2Y4", "tri_state", "right"),
+            pin(4, "1A2", "input", "left"), pin(5, "2Y3", "tri_state", "right"),
+            pin(6, "1A3", "input", "left"), pin(7, "2Y2", "tri_state", "right"),
+            pin(8, "1A4", "input", "left"), pin(9, "2Y1", "tri_state", "right"),
             pin(10, "GND", "power_in", "bottom"),
-            *[pin(19 - number, f"Y{number}", "tri_state", "right") for number in range(1, 9)],
+            pin(11, "2A1", "input", "left"), pin(12, "1Y4", "tri_state", "right"),
+            pin(13, "2A2", "input", "left"), pin(14, "1Y3", "tri_state", "right"),
+            pin(15, "2A3", "input", "left"), pin(16, "1Y2", "tri_state", "right"),
+            pin(17, "2A4", "input", "left"), pin(18, "1Y1", "tri_state", "right"),
             pin(19, "OE2#", "input", "left"), pin(20, "VCC", "power_in", "top"),
         ],
     ),
@@ -525,21 +531,22 @@ add_component("U2", "SRAM", "AS6C1008-55PCN", 152.4, 152.4, sram_nets, footprint
 gal_nets = {
     1: "@RESET_JUNCTION", 2: "BUSACK_N", 3: "PICO_WE_N", 4: "WR_N",
     5: "PICO_OE_N", 6: "RD_N", 7: "PICO_CE_N", 8: "MREQ_N",
-    9: "DATA_ENABLE", 10: "ADDR_ENABLE", 11: "DATA_DIR", 12: "GND", 13: "GND",
+    9: "DATA_ENABLE", 10: "ADDR_ENABLE", 11: "DATA_DIR", 12: "GND", 13: "IORQ_N",
     14: "SRAM_WE_PRE_N", 15: "SRAM_OE_PRE_N", 16: "SRAM_CE_PRE_N",
     17: "DATA_UP_OE_N", 18: "DATA_DOWN_OE_N",
-    19: "MCP_RESET_DRIVE", 20: None, 21: None, 22: None, 23: None, 24: "+5V",
+    19: "MCP_RESET_DRIVE", 20: "WAIT_N", 21: None, 22: None, 23: None, 24: "+5V",
 }
 add_component("U3", "ATF22V10", "ATF22V10B/C", 152.4, 330.2, gal_nets, footprint="Package_DIP:DIP-24_W7.62mm")
 
-hct541_nets = {
-    1: "GND", 2: "PICO_CLK", 3: "PICO_BUSREQ_N", 4: "PICO_SPI_CS_N",
-    5: "PICO_SPI_SCK", 6: "PICO_SPI_MOSI", 7: "SRAM_WE_PRE_N",
-    8: "SRAM_OE_PRE_N", 9: "SRAM_CE_PRE_N", 10: "GND", 11: "SRAM_CE_N",
-    12: "SRAM_OE_N", 13: "SRAM_WE_N", 14: "MCP_SI", 15: "MCP_SCK",
-    16: "MCP_CS_N", 17: "BUSREQ_N", 18: "Z80_CLK", 19: "GND", 20: "+5V",
+ahct244_nets = {
+    1: "GND", 2: "PICO_CLK", 3: "SRAM_CE_N", 4: "PICO_BUSREQ_N",
+    5: "SRAM_OE_N", 6: "PICO_SPI_CS_N", 7: "SRAM_WE_N",
+    8: "PICO_SPI_SCK", 9: "MCP_SI", 10: "GND", 11: "PICO_SPI_MOSI",
+    12: "MCP_SCK", 13: "SRAM_WE_PRE_N", 14: "MCP_CS_N",
+    15: "SRAM_OE_PRE_N", 16: "BUSREQ_N", 17: "SRAM_CE_PRE_N",
+    18: "Z80_CLK", 19: "GND", 20: "+5V",
 }
-add_component("U4", "HCT541", "SN74HCT541N", 508.0, 330.2, hct541_nets, footprint="Package_DIP:DIP-20_W7.62mm")
+add_component("U4", "AHCT244", "SN74AHCT244N", 508.0, 330.2, ahct244_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
 lvc244_nets = {
     1: "GND", 2: "BUSACK_N", 3: None, 4: "IORQ_N", 5: None, 6: "RD_N",
@@ -619,7 +626,7 @@ add_component("R31", "RESISTOR", "10k MCP RESET# pull-up", 203.2, 736.6, {1: "MC
 
 CAPACITORS = [
     ("100n U1 Z80", "+5V"), ("100n U2 SRAM", "+5V"),
-    ("100n U3 GAL", "+5V"), ("100n U4 HCT541", "+5V"),
+    ("100n U3 GAL", "+5V"), ("100n U4 AHCT244", "+5V"),
     ("100n U7 LVC244", "+3V3"), ("100n U8 MCP", "+5V"),
     ("100n U9 AHCT245", "+5V"), ("100n U10 LVC245", "+3V3"),
     ("22u Memory Board", "+5V"), ("22u Core Board", "+5V"),
