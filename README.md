@@ -288,14 +288,61 @@ Core Board placement.
 ### 0.5 Bring-Up Equipment
 
 - Digital multimeter with resistance, continuity, and DC voltage modes.
-- Two-channel oscilloscope rated for at least 100 MHz for edge-integrity
-  checks; a 20 MHz instrument is adequate only for low-speed functional
-  bring-up.
+- Available oscilloscope: PicoScope PQ012, two analog channels and
+  50 MHz bandwidth. This is suitable for the specified 1-4 MHz
+  functional, voltage-margin, duty-cycle, pulse-width, and paired-signal
+  timing checks, subject to the limitations below.
 - Logic analyzer with at least 16 channels; 24 or more is preferred.
 - Current-limited bench supply or an in-line 5 V current meter.
 - Fine probe hooks or test clips suitable for DIP pins.
 - A programmer explicitly supporting the selected ATF22V10B or
   ATF22V10C device and generic 22V10 JEDEC files.
+
+#### PicoScope PQ012 Setup and Capture Plan
+
+The 50 MHz front end has a calculated rise time of approximately 7 ns
+($0.35 / 50\,\text{MHz}$). A displayed edge near or below that value is
+scope-limited; it does not prove the circuit's true edge rate or the
+absence of higher-frequency ringing. Use the PQ012 for pass/fail logic
+levels, threshold margin, duty cycle, pulse width, gross overshoot,
+and relative timing. If a decision depends on sub-7 ns edge shape,
+small high-frequency ringing, or an unexplained marginal waveform,
+repeat that measurement on a borrowed scope with at least 100 MHz
+bandwidth before qualification.
+
+- Use compensated 10x passive probes. Check compensation against the
+  scope calibration output before each bring-up session.
+- Use a ground spring or a ground lead shorter than 20 mm at a ground
+  point beside the measured IC. A long crocodile ground lead can create
+  the ringing being investigated.
+- Connect probe grounds only to common circuit GND. The USB scope ground
+  is referenced through the host computer; never clip it to a signal or
+  positive rail.
+- Use DC coupling and the highest real-time block-mode sample rate that
+  PicoScope 7 offers with both channels enabled. Do not use ETS to prove
+  single-shot glitches, ownership transitions, or trap timing; ETS
+  constructs a waveform from repeated acquisitions.
+- Disable software bandwidth limiting for edge/ringing checks. A 20 MHz
+  software limit may be enabled only for low-noise rail-ripple readings,
+  and the capture must be labelled accordingly.
+
+Because only two analog channels are available, repeat each test for
+every listed signal rather than moving both probes during one capture:
+
+| Measurement | Channel A / trigger | Channel B | Required repetitions |
+| --- | --- | --- | --- |
+| Clock translation | Pico GP2 | HCT541 Y1 / Z80 CLK pin 6 | 1 kHz, 100 kHz, 1 MHz, then each qualified frequency |
+| GAL ownership transition | RESET# or BUSACK# | One of GAL pins 14-16 | Every input transition and each output |
+| Data interlock | DATA_ENABLE or DATA_DIR | GAL pin 17 or 18 | Both outputs for every truth-table transition |
+| Address integrity | Z80 CLK or MREQ# | SRAM A0, A7, A8, or A15 | Required address patterns at 1, 2, 3, and 4 MHz |
+| SRAM read setup | Z80 CLK | SRAM D0-D7, one bit per capture | Representative 0x00, 0xFF, 0x55, and 0xAA reads |
+| SRAM write pulse | SRAM CE# | SRAM WE# | Each qualified frequency and worst-case write loop |
+| Supply integrity | 5 V entry | Farthest-board 5 V | Idle, DMA patterns, Z80 run, and Wi-Fi traffic |
+
+The logic analyzer remains mandatory for simultaneous bus/control
+correlation. The PQ012 validates analog voltage and waveform quality;
+the logic analyzer proves multi-signal ordering and captures A0-A15,
+D0-D7, and control activity concurrently.
 
 ### 0.6 Optional Items
 
@@ -2105,6 +2152,9 @@ A8, and A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM
 CE#/OE#/WE#, and D0-D7 as well; require
 valid read data before the Z80 setup deadline and every SRAM write pulse
 to meet the 45 ns minimum after propagation through the GAL and HCT541.
+Use the Section 0.5 PQ012 channel pairs and repeat sequentially for each
+analog signal. Use the logic analyzer for the simultaneous digital
+capture; do not infer whole-bus ordering from two analog channels.
 The qualified frequency is the highest error-free step for which the
 logic analyzer proves the clock always stops before the Z80 advances
 beyond the safe trap point. Do not claim operation above 4 MHz without
@@ -3436,6 +3486,7 @@ Z80 is held in BUSACK#.
 - [RP2350 datasheet](datasheets/RP2350-Datasheet.pdf)
 - [Raspberry Pi Pico 2 board datasheet](datasheets/Pico-2-Datasheet.pdf)
 - [BusBoard BB830 breadboard datasheet](datasheets/BB830-Datasheet.pdf)
+- [PicoScope 2000 Series datasheet](https://www.picotech.com/download/datasheets/picoscope-2000-series-data-sheet-en.pdf)
 
 ### 8.15 Source Code Index
 
