@@ -3975,16 +3975,16 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Region | Address range | Role |
 | --- | --- | --- |
 | Page zero | `0x0000`-`0x00FF` | CP/M vectors, default FCBs, DMA buffer, and command tail |
-| Transient Program Area (TPA) | `0x0100`-`0xE5FF` | `.COM` program, dcc runtime, static data, heap, and stack |
-| CCP | `0xE600`-`0xEDFF` | Console Command Processor, reloaded after a warm boot |
-| BDOS | `0xEE00`-`0xFBFF` | CP/M console, file, and disk service layer; entry at `0xEE06` |
-| BIOS | `0xFC00`-`0xFEB9` | Board-specific boot, console, disk, and translation routines |
+| Transient Program Area (TPA) | `0x0100`-`0xE2FF` | `.COM` program, dcc runtime, static data, heap, and stack |
+| CCP | `0xE300`-`0xEAFF` | Console Command Processor, reloaded after a warm boot |
+| BDOS | `0xEB00`-`0xF8FF` | CP/M console, file, and disk service layer; entry at `0xEB06` |
+| BIOS | `0xF900`-`0xFBB9` | Board-specific boot, console, disk, and translation routines |
 
-The TPA contains `0xE500` bytes, or 58,624 bytes, before the CCP boundary. A
+The TPA contains `0xE200` bytes, or 57,856 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space
 together with its stack and heap. On entry, the dcc runtime reads the BDOS
 vector at `0x0006` and uses that address as the exclusive top of available
-transient memory. This agrees with the installed `JP 0xEE06` vector.
+transient memory. This agrees with the installed `JP 0xEB06` vector.
 
 The BIOS cold boot installs `JP` instructions at `0x0000` and `0x0005` for
 warm boot and BDOS respectively. A dcc program normally starts at `0x0100` and
@@ -4050,7 +4050,7 @@ bypasses part of the normal runtime:
 | API | Compatibility on this system |
 | --- | --- |
 | `bdos()` / `bdoshl()` | Compatible for implemented CP/M 2.2 BDOS functions through `CALL 0x0005` |
-| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xFC00` |
+| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xF900` |
 | `inp(port)` | Executes an 8-bit Z80 `IN`; suitable for reading the virtual terminal or disk ports |
 | `outp(port, value)` | Executes an 8-bit Z80 `OUT`; suitable for writing the virtual terminal or disk ports |
 
@@ -4070,7 +4070,7 @@ is outside this compatibility claim.
 
 ### D.5 Compatibility Boundaries
 
-- Programs must fit within the `0x0100`-`0xE5FF` TPA after runtime, globals,
+- Programs must fit within the `0x0100`-`0xE2FF` TPA after runtime, globals,
   heap, and stack requirements are included.
 - The installed operating system is CP/M 2.2. Optional CP/M 3 or emulator-only
   BDOS extensions are not supplied by this BIOS/BDOS image. In particular,
@@ -4106,7 +4106,7 @@ tests and additionally run representative dcc `.COM` programs that cover:
 4. Transfers on drives A-D, including repeated writes followed by power-cycle
    recovery and byte-for-byte host comparison.
 5. A dcc program near the TPA limit, confirming that stack/heap growth does not
-  cross `0xE600` and that exit reliably reloads the CCP.
+  cross `0xE300` and that exit reliably reloads the CCP.
 
 Passing those application tests, the existing all-LBA and fault-injection disk
 plan, and the logic-analyzer requirements is the point at which console and

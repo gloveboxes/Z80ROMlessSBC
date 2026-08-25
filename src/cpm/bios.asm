@@ -1,6 +1,6 @@
-CCP_BASE:       equ 0e600h
-BDOS_ENTRY:     equ 0ee06h
-BIOS_BASE:      equ 0fc00h
+CCP_BASE:       equ 0e300h
+BDOS_ENTRY:     equ 0eb06h
+BIOS_BASE:      equ 0f900h
 
 TERM_DATA:      equ 00h
 TERM_STATUS:    equ 01h

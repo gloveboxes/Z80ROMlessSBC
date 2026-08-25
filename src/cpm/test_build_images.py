@@ -68,9 +68,9 @@ class BuildImagesTest(unittest.TestCase):
             self.z80_image[build_images.CCP_BASE : build_images.BIOS_BASE],
             self.cpm_system,
         )
-        self.assertEqual(self.cpm_system[:3], bytes((0xC3, 0x5C, 0xE9)))
+        self.assertEqual(self.cpm_system[:3], bytes((0xC3, 0x5C, 0xE6)))
         self.assertEqual(
-            self.cpm_system[0x806:0x809], bytes((0xC3, 0x11, 0xEE))
+            self.cpm_system[0x806:0x809], bytes((0xC3, 0x11, 0xEB))
         )
         self.assertEqual(
             self.z80_image[
@@ -97,9 +97,9 @@ class BuildImagesTest(unittest.TestCase):
             build_images.CPM_SYSTEM_RECORDS * build_images.RECORD_BYTES,
             build_images.BIOS_BASE - build_images.CCP_BASE,
         )
-        self.assertEqual(build_images.CCP_BASE, 0xE600)
-        self.assertEqual(build_images.BDOS_ENTRY, 0xEE06)
-        self.assertEqual(build_images.BIOS_BASE, 0xFC00)
+        self.assertEqual(build_images.CCP_BASE, 0xE300)
+        self.assertEqual(build_images.BDOS_ENTRY, 0xEB06)
+        self.assertEqual(build_images.BIOS_BASE, 0xF900)
         self.assertEqual(
             divmod(
                 build_images.CPM_SYSTEM_RECORDS,
