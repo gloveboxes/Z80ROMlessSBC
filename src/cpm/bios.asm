@@ -1,6 +1,6 @@
-CCP_BASE:       equ 0df00h
-BDOS_ENTRY:     equ 0e706h
-BIOS_BASE:      equ 0f500h
+CCP_BASE:       equ 0e600h
+BDOS_ENTRY:     equ 0ee06h
+BIOS_BASE:      equ 0fc00h
 
 TERM_DATA:      equ 00h
 TERM_STATUS:    equ 01h
@@ -247,7 +247,7 @@ disk_io_done:
                 ret
 
 banner:
-                db 13,10,10,"63K CP/M 2.2 - Z80 ROMless SBC",13,10,0
+                db 13,10,10,"64K CP/M 2.2 - Z80 ROMless SBC",13,10,0
 
 disk_parameter_headers:
                 dw 0,0,0,0,directory_buffer,disk_parameter_block,0,allocation_0

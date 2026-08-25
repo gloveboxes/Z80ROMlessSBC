@@ -15,14 +15,7 @@ class BuildImagesTest(unittest.TestCase):
         if assembler is None:
             raise unittest.SkipTest("z80asm is not installed")
 
-        source_disk = (
-            build_images.REPO_ROOT
-            / "src"
-            / "disks"
-            / "source-altair"
-            / "cpm63k.dsk"
-        ).read_bytes()
-        cls.cpm_system = build_images.extract_cpm_system(source_disk)
+        cls.cpm_system = build_images.load_cpm_system()
         cls.bios = build_images.build_bios(assembler)
         cls.z80_image = build_images.build_z80_image(cls.cpm_system, cls.bios)
         cls.package = build_images.build_boot_package(cls.z80_image)
@@ -75,6 +68,10 @@ class BuildImagesTest(unittest.TestCase):
             self.z80_image[build_images.CCP_BASE : build_images.BIOS_BASE],
             self.cpm_system,
         )
+        self.assertEqual(self.cpm_system[:3], bytes((0xC3, 0x5C, 0xE9)))
+        self.assertEqual(
+            self.cpm_system[0x806:0x809], bytes((0xC3, 0x11, 0xEE))
+        )
         self.assertEqual(
             self.z80_image[
                 build_images.BIOS_BASE : build_images.BIOS_BASE + len(self.bios)
@@ -100,6 +97,9 @@ class BuildImagesTest(unittest.TestCase):
             build_images.CPM_SYSTEM_RECORDS * build_images.RECORD_BYTES,
             build_images.BIOS_BASE - build_images.CCP_BASE,
         )
+        self.assertEqual(build_images.CCP_BASE, 0xE600)
+        self.assertEqual(build_images.BDOS_ENTRY, 0xEE06)
+        self.assertEqual(build_images.BIOS_BASE, 0xFC00)
         self.assertEqual(
             divmod(
                 build_images.CPM_SYSTEM_RECORDS,

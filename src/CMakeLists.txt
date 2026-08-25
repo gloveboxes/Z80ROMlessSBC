@@ -106,8 +106,8 @@ if(Z80ASM_EXECUTABLE)
       z80_stage10_websocket_terminal
       cpm/bios.asm
       cpm/build_images.py
+      cpm/cpm64_system.bin
       disks/geometry.py
-      disks/source-altair/cpm63k.dsk
       disks/generated/drive_a_cpm63k.img
       disks/generated/drive_b_bdsc.img
       disks/generated/drive_c_escape.img

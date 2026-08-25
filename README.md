@@ -3944,7 +3944,7 @@ bring-up.
 
 | Area | Files | Purpose |
 | --- | --- | --- |
-| Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | Native BIOS, CCP/BDOS extraction, boot package, full-flash composition, and host regression tests |
+| Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | 64K CCP/BDOS image, native BIOS, boot package, full-flash composition, and host regression tests |
 | Disk geometry and conversion | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py), [convert_altair_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/convert_altair_disks.py) | Shared CP/M geometry and deterministic Altair-media conversion |
 | Generated disk artifacts | [generated directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/generated), [manifest.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/generated/manifest.json) | Four exact 320 KiB intermediate disk slots and source/output hashes |
 | Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
@@ -3954,7 +3954,7 @@ bring-up.
 ## Appendix D: CP/M BIOS and dcc Compatibility
 
 This system runs CP/M 2.2 with a custom BIOS designed specifically for this
-board. The image builder packages the 63K CP/M CCP and BDOS with the native
+board. The image builder packages the 64K CP/M CCP and BDOS with the native
 BIOS assembled from
 [src/cpm/bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm).
 The BIOS is the layer that translates standard CP/M console and disk
@@ -3975,16 +3975,16 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Region | Address range | Role |
 | --- | --- | --- |
 | Page zero | `0x0000`-`0x00FF` | CP/M vectors, default FCBs, DMA buffer, and command tail |
-| Transient Program Area (TPA) | `0x0100`-`0xDEFF` | `.COM` program, dcc runtime, static data, heap, and stack |
-| CCP | `0xDF00`-`0xE6FF` | Console Command Processor, reloaded after a warm boot |
-| BDOS | `0xE700`-`0xF4FF` | CP/M console, file, and disk service layer; entry at `0xE706` |
-| BIOS | From `0xF500` | Board-specific boot, console, disk, and translation routines |
+| Transient Program Area (TPA) | `0x0100`-`0xE5FF` | `.COM` program, dcc runtime, static data, heap, and stack |
+| CCP | `0xE600`-`0xEDFF` | Console Command Processor, reloaded after a warm boot |
+| BDOS | `0xEE00`-`0xFBFF` | CP/M console, file, and disk service layer; entry at `0xEE06` |
+| BIOS | `0xFC00`-`0xFEB9` | Board-specific boot, console, disk, and translation routines |
 
-The TPA contains `0xDE00` bytes, or 56,832 bytes, before the CCP boundary. A
+The TPA contains `0xE500` bytes, or 58,624 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space
 together with its stack and heap. On entry, the dcc runtime reads the BDOS
 vector at `0x0006` and uses that address as the exclusive top of available
-transient memory. This agrees with the installed `JP 0xE706` vector.
+transient memory. This agrees with the installed `JP 0xEE06` vector.
 
 The BIOS cold boot installs `JP` instructions at `0x0000` and `0x0005` for
 warm boot and BDOS respectively. A dcc program normally starts at `0x0100` and
@@ -4050,7 +4050,7 @@ bypasses part of the normal runtime:
 | API | Compatibility on this system |
 | --- | --- |
 | `bdos()` / `bdoshl()` | Compatible for implemented CP/M 2.2 BDOS functions through `CALL 0x0005` |
-| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xF500` |
+| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xFC00` |
 | `inp(port)` | Executes an 8-bit Z80 `IN`; suitable for reading the virtual terminal or disk ports |
 | `outp(port, value)` | Executes an 8-bit Z80 `OUT`; suitable for writing the virtual terminal or disk ports |
 
@@ -4070,7 +4070,7 @@ is outside this compatibility claim.
 
 ### D.5 Compatibility Boundaries
 
-- Programs must fit within the `0x0100`-`0xDEFF` TPA after runtime, globals,
+- Programs must fit within the `0x0100`-`0xE5FF` TPA after runtime, globals,
   heap, and stack requirements are included.
 - The installed operating system is CP/M 2.2. Optional CP/M 3 or emulator-only
   BDOS extensions are not supplied by this BIOS/BDOS image. In particular,
@@ -4106,7 +4106,7 @@ tests and additionally run representative dcc `.COM` programs that cover:
 4. Transfers on drives A-D, including repeated writes followed by power-cycle
    recovery and byte-for-byte host comparison.
 5. A dcc program near the TPA limit, confirming that stack/heap growth does not
-   cross `0xDF00` and that exit reliably reloads the CCP.
+  cross `0xE600` and that exit reliably reloads the CCP.
 
 Passing those application tests, the existing all-LBA and fault-injection disk
 plan, and the logic-analyzer requirements is the point at which console and

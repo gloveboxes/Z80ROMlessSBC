@@ -37,20 +37,15 @@ from geometry import (  # noqa: E402
 )
 
 
-CCP_BASE = 0xDF00
-BDOS_ENTRY = 0xE706
-BIOS_BASE = 0xF500
-CPM_SYSTEM_RECORD_FIRST = 3
+CCP_BASE = 0xE600
+BDOS_ENTRY = 0xEE06
+BIOS_BASE = 0xFC00
 CPM_SYSTEM_RECORDS = 44
 CPM_SYSTEM_BYTES = CPM_SYSTEM_RECORDS * RECORD_BYTES
+CPM_SYSTEM_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_system.bin"
 CPM_SYSTEM_SHA256 = (
-    "0bae910ea014d3b36442e3b76fa7754731faafe77be9d90f695e1e8bb6592e7e"
+    "9da1dfa130c40448bbe6bca1e77d77d32b8e21f702384e9b10a0ccab64dde5db"
 )
-
-SOURCE_TRACKS = 77
-SOURCE_SECTOR_BYTES = 137
-SOURCE_RECORD_OFFSET = 3
-SOURCE_GRID_BYTES = SOURCE_TRACKS * SECTORS_PER_TRACK * SOURCE_SECTOR_BYTES
 
 BOOT_MAGIC = 0x5442385A
 BOOT_VERSION = 1
@@ -87,20 +82,12 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def extract_cpm_system(source: bytes) -> bytes:
-    if len(source) not in {SOURCE_GRID_BYTES, SOURCE_GRID_BYTES + 96}:
-        raise ValueError(f"unexpected CP/M source size: {len(source)}")
-
-    records = []
-    for record in range(
-        CPM_SYSTEM_RECORD_FIRST,
-        CPM_SYSTEM_RECORD_FIRST + CPM_SYSTEM_RECORDS,
-    ):
-        offset = record * SOURCE_SECTOR_BYTES + SOURCE_RECORD_OFFSET
-        records.append(source[offset : offset + RECORD_BYTES])
-    system = b"".join(records)
+def load_cpm_system() -> bytes:
+    system = CPM_SYSTEM_PATH.read_bytes()
+    if len(system) != CPM_SYSTEM_BYTES:
+        raise ValueError(f"unexpected CP/M system size: {len(system)}")
     if sha256(system) != CPM_SYSTEM_SHA256:
-        raise ValueError("CP/M CCP/BDOS fingerprint does not match cpm63k.dsk")
+        raise ValueError("CP/M 64K CCP/BDOS fingerprint does not match")
     return system
 
 
@@ -204,11 +191,6 @@ def parse_args() -> argparse.Namespace:
         help="z80asm executable (default: search PATH)",
     )
     parser.add_argument(
-        "--source-disk",
-        type=Path,
-        default=REPO_ROOT / "src" / "disks" / "source-altair" / "cpm63k.dsk",
-    )
-    parser.add_argument(
         "--disk-dir",
         type=Path,
         default=REPO_ROOT / "src" / "disks" / "generated",
@@ -231,7 +213,7 @@ def main() -> None:
     if args.assembler is None:
         raise SystemExit("z80asm was not found; install it or pass --assembler")
 
-    cpm_system = extract_cpm_system(args.source_disk.read_bytes())
+    cpm_system = load_cpm_system()
     bios = build_bios(args.assembler)
     z80_image = build_z80_image(cpm_system, bios)
     package = build_boot_package(z80_image)
