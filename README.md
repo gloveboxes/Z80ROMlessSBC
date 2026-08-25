@@ -3968,7 +3968,30 @@ compatible with this system: the dcc runtime enters CP/M through the standard
 page-zero vectors, CP/M BDOS performs console and file-system policy, and the
 custom BIOS performs the final hardware-dependent transfer.
 
-### D.1 CP/M Memory Map and Entry Points
+### D.1 CP/M Image Provenance and Machine Boundary
+
+The resident CCP and BDOS come from the Burcon CP/M 2.2 distribution for the
+MITS Altair 88-DCDD controller. Its BIOS reservation is `0x0700` bytes, so a
+64K generation places the CCP at `0xE300`, BDOS at `0xEB00`, and BIOS at
+`0xF900`. The checked-in `src/cpm/cpm64_system.bin` is the 5,632-byte CCP/BDOS
+RAM region captured after the matching Burcon `MOVCPM 64` and `SYSGEN` tools
+produced a system that cold-booted successfully in the Altair emulator. Its
+SHA-256 fingerprint is enforced by the image builder.
+
+CP/M generators are machine-specific. The iCOM FD3712 `MOVCPM 64 *` variant
+reports an `F400` configuration and `SAVE 34`; it assumes a different BIOS
+reservation and produces the incompatible `0xE600`/`0xEE00`/`0xFC00` map. The
+matching Burcon generator reports `SAVE 38`. Do not regenerate this project's
+CCP/BDOS artifact with the iCOM utility or substitute a nominal “64K” image
+without first verifying its BIOS reservation and relocated entry vectors.
+
+Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
+cold loader use ports `0x08`-`0x0A` and are reference material, not executable
+code for this board. At image-build time they are replaced by the SBC-native
+BIOS assembled from `src/cpm/bios.asm`, which uses the Pico-serviced terminal
+and flash-disk ports described below.
+
+### D.2 CP/M Memory Map and Entry Points
 
 The reset-ready SRAM image uses the following upper-memory layout:
 
@@ -3992,7 +4015,7 @@ returns to CP/M through the warm-boot vector. Because a transient program may
 overwrite the resident CCP while using the TPA, the custom warm boot reloads
 the 44 CCP/BDOS system records before returning to the command prompt.
 
-### D.2 Custom BIOS Responsibilities
+### D.3 Custom BIOS Responsibilities
 
 The BIOS supplies the standard CP/M 2.2 jump table expected by BDOS and by
 dcc's optional direct-BIOS functions. Its principal mappings are:
@@ -4015,7 +4038,7 @@ The BIOS sees only drive selection and 128-byte logical records. Consequently,
 dcc file APIs do not require a board-specific runtime backend: their BDOS file
 calls eventually reach the custom `READ` and `WRITE` entries.
 
-### D.3 dcc Console and File-I/O Paths
+### D.4 dcc Console and File-I/O Paths
 
 The normal dcc runtime paths are compatible without recompiling the runtime for
 these port numbers:
@@ -4042,7 +4065,7 @@ output-heavy program eventually waits in BIOS `CONOUT` when status bit 1
 reports no room. This wait occurs in the Z80 program, not in the Pico's I/O
 trap, and a connected client allows transmission to resume.
 
-### D.4 Direct CP/M, BIOS, and Port Access
+### D.5 Direct CP/M, BIOS, and Port Access
 
 dcc also exposes non-C89 target extensions for software that intentionally
 bypasses part of the normal runtime:
@@ -4068,7 +4091,7 @@ file services, and exit still depend on CP/M page zero, BDOS, and BIOS. A truly
 bare-metal dcc program would need a different startup/runtime arrangement and
 is outside this compatibility claim.
 
-### D.5 Compatibility Boundaries
+### D.6 Compatibility Boundaries
 
 - Programs must fit within the `0x0100`-`0xE2FF` TPA after runtime, globals,
   heap, and stack requirements are included.
@@ -4087,13 +4110,20 @@ is outside this compatibility claim.
   runtime portability, but it does not by itself qualify this board's Pico
   trap, custom BIOS, flash backend, or electrical timing.
 
-### D.6 Validation Status and Required Qualification
+### D.7 Validation Status and Required Qualification
 
 The host regression suite assembles the custom BIOS and verifies its placement,
 the CCP/BDOS fingerprint, page-zero reset target, boot-package headers and CRCs,
 native disk construction, CP/M geometry, and complete 4 MiB flash layout. These
 are structural and reproducibility checks; they do not execute dcc programs
 through this BIOS or measure a physical I/O cycle.
+
+Separately, the source Burcon system has been cold-booted in the Altair host
+emulator as 64K CP/M, reached the `A>` prompt, and completed `DIR`. That test
+validates the relocated CCP/BDOS artifact and Burcon memory ABI, but it executes
+the Altair BIOS rather than this board's custom BIOS. It therefore does not
+validate the Pico I/O trap, virtual terminal and disk ports, flash persistence,
+or Z80 bus timing.
 
 The design remains unvalidated in hardware as stated in the Overview. Before
 claiming dcc compatibility on the completed machine, perform the Phase 8-10

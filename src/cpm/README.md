@@ -17,6 +17,14 @@ in `build_images.py`. Page zero uses BDOS entry `0xEB06`, and the custom BIOS
 jump table begins at `0xF900`. The TPA is `0x0100`-`0xE2FF` (57,856 bytes),
 1,024 bytes larger than the previous 63K configuration.
 
+Use only the matching Burcon generator when reproducing this artifact. Burcon
+reserves `0x0700` bytes for its BIOS and reports `SAVE 38` after `MOVCPM 64`.
+The iCOM FD3712 `MOVCPM 64 *` utility reports an `F400` configuration and
+`SAVE 34`; it generates the incompatible `0xE600`/`0xEE00`/`0xFC00` map even
+though it is also described as 64K CP/M. The SBC does not execute either
+machine's BIOS: `bios.asm` replaces it while preserving the Burcon
+`0xE300`/`0xEB00`/`0xF900` memory ABI.
+
 `bios.asm` is assembled at `0xF900`. It uses terminal data/status ports
 `0x00`/`0x01` and disk command, drive, LBA-low, LBA-high, and data ports
 `0x10`-`0x14`. Warm boot reloads 44 sequential records from native Drive A.
