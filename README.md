@@ -19,6 +19,7 @@
 - [Appendix A: Terms and Abbreviations](#appendix-a-terms-and-abbreviations)
 - [Appendix B: Datasheet References](#appendix-b-datasheet-references)
 - [Appendix C: Source Code Index](#appendix-c-source-code-index)
+- [Appendix D: CP/M BIOS and dcc Compatibility](#appendix-d-cpm-bios-and-dcc-compatibility)
 - [Generate the PDF](#generate-the-pdf)
 
 </details>
@@ -3940,6 +3941,167 @@ bring-up.
 | Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
 | Browser terminal | [terminal.html](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/terminal.html), [embed_html.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/embed_html.py) | Embedded Stage 10 terminal client and build-time HTML conversion |
 | Network configuration | [lwipopts.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/lwipopts.h), [wifi_config.h.in](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/wifi_config.h.in) | lwIP settings and build-time Wi-Fi credential template |
+
+## Appendix D: CP/M BIOS and dcc Compatibility
+
+This system runs CP/M 2.2 with a custom BIOS designed specifically for this
+board. The image builder packages the 63K CP/M CCP and BDOS with the native
+BIOS assembled from
+[src/cpm/bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm).
+The BIOS is the layer that translates standard CP/M console and disk
+operations into this board's Pico-serviced virtual I/O ports. Applications do
+not need to know that the terminal is a WebSocket or that disk records reside
+in Pico flash.
+
+[dcc](https://github.com/gloveboxes/dcc) targets CP/M 2.2 on the Z80 and emits
+ordinary `.COM` programs linked with its Z80 runtime. That execution model is
+compatible with this system: the dcc runtime enters CP/M through the standard
+page-zero vectors, CP/M BDOS performs console and file-system policy, and the
+custom BIOS performs the final hardware-dependent transfer.
+
+### D.1 CP/M Memory Map and Entry Points
+
+The reset-ready SRAM image uses the following upper-memory layout:
+
+| Region | Address range | Role |
+| --- | --- | --- |
+| Page zero | `0x0000`-`0x00FF` | CP/M vectors, default FCBs, DMA buffer, and command tail |
+| Transient Program Area (TPA) | `0x0100`-`0xDEFF` | `.COM` program, dcc runtime, static data, heap, and stack |
+| CCP | `0xDF00`-`0xE6FF` | Console Command Processor, reloaded after a warm boot |
+| BDOS | `0xE700`-`0xF4FF` | CP/M console, file, and disk service layer; entry at `0xE706` |
+| BIOS | From `0xF500` | Board-specific boot, console, disk, and translation routines |
+
+The TPA contains `0xDE00` bytes, or 56,832 bytes, before the CCP boundary. A
+dcc program and every runtime block selected for it must fit in this space
+together with its stack and heap. On entry, the dcc runtime reads the BDOS
+vector at `0x0006` and uses that address as the exclusive top of available
+transient memory. This agrees with the installed `JP 0xE706` vector.
+
+The BIOS cold boot installs `JP` instructions at `0x0000` and `0x0005` for
+warm boot and BDOS respectively. A dcc program normally starts at `0x0100` and
+returns to CP/M through the warm-boot vector. Because a transient program may
+overwrite the resident CCP while using the TPA, the custom warm boot reloads
+the 44 CCP/BDOS system records before returning to the command prompt.
+
+### D.2 Custom BIOS Responsibilities
+
+The BIOS supplies the standard CP/M 2.2 jump table expected by BDOS and by
+dcc's optional direct-BIOS functions. Its principal mappings are:
+
+| CP/M BIOS operation | Board implementation |
+| --- | --- |
+| `BOOT` / `WBOOT` | Initialize page zero or reload CCP/BDOS from Drive A |
+| `CONST` | Read terminal status port `0x01`; return `0xFF` when bit 0 reports input ready |
+| `CONIN` / `READER` | Wait for receive-ready, then read terminal data port `0x00` |
+| `CONOUT` / `LIST` / `PUNCH` | Wait for transmit-room bit 1, then write the character to port `0x00` |
+| `LISTST` | Return ready when terminal status bit 1 reports transmit room |
+| `SELDSK` | Validate drives A-D and return the corresponding disk parameter header |
+| `SETTRK` / `SETSEC` / `SETDMA` | Record the logical CP/M transfer location and SRAM DMA address |
+| `READ` / `WRITE` | Convert track and sector to a linear 128-byte LBA and transfer it through ports `0x10`-`0x14` |
+| `SECTRAN` | Return the sector unchanged because native disk images use linear sector order |
+
+CP/M BDOS remains responsible for filenames, FCBs, directory searches,
+allocation, sequential/random record selection, and text-file conventions.
+The BIOS sees only drive selection and 128-byte logical records. Consequently,
+dcc file APIs do not require a board-specific runtime backend: their BDOS file
+calls eventually reach the custom `READ` and `WRITE` entries.
+
+### D.3 dcc Console and File-I/O Paths
+
+The normal dcc runtime paths are compatible without recompiling the runtime for
+these port numbers:
+
+| dcc application operation | Runtime and operating-system path |
+| --- | --- |
+| `printf`, `puts`, `putchar`, and stdout/stderr writes | dcc console buffering -> BDOS functions 9 and 2 -> BIOS `CONOUT` -> terminal ports |
+| `getchar`, `scanf`, and stdin reads | BDOS function 1 -> BIOS `CONST`/`CONIN` -> terminal ports |
+| `kbhit` and `getch` | BDOS direct-console function 6 -> BIOS console entries -> terminal ports |
+| `fopen`, `fread`, `fwrite`, `fclose`, and related file calls | CP/M FCB operations in BDOS -> BIOS `READ`/`WRITE` -> flash-disk ports |
+| Program exit or abort | Page-zero warm boot -> BIOS `WBOOT` -> system reload and CCP prompt |
+
+dcc's console runtime performs CP/M-oriented character handling above the BIOS.
+In particular, normal text input treats Ctrl-Z as end-of-file, converts an
+entered carriage return to C `\n`, and supplies the accompanying line-feed
+echo. Console output converts C `\n` to CR/LF. The BIOS deliberately transports
+bytes and reports readiness; it does not duplicate those runtime policies.
+
+Buffered dcc output may not reach the browser immediately. A newline, an
+explicit `fflush`, a full buffer, an input operation, or program termination
+flushes it. Separately, the Pico terminal transmit queue is bounded. With no
+WebSocket client, limited output can queue for later delivery, but an
+output-heavy program eventually waits in BIOS `CONOUT` when status bit 1
+reports no room. This wait occurs in the Z80 program, not in the Pico's I/O
+trap, and a connected client allows transmission to resume.
+
+### D.4 Direct CP/M, BIOS, and Port Access
+
+dcc also exposes non-C89 target extensions for software that intentionally
+bypasses part of the normal runtime:
+
+| API | Compatibility on this system |
+| --- | --- |
+| `bdos()` / `bdoshl()` | Compatible for implemented CP/M 2.2 BDOS functions through `CALL 0x0005` |
+| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xF500` |
+| `inp(port)` | Executes an 8-bit Z80 `IN`; suitable for reading the virtual terminal or disk ports |
+| `outp(port, value)` | Executes an 8-bit Z80 `OUT`; suitable for writing the virtual terminal or disk ports |
+
+Only the low eight bits of a dcc `inp` or `outp` port argument are significant,
+which matches the supervisor's eight-bit I/O decode. Direct terminal code must
+poll receive-ready before reading port `0x00` and transmit-room before writing
+it. Direct disk code must follow the complete command/status and exact
+128-byte-transfer protocol in Section 6.3. Using BDOS is preferred for ordinary
+console and file access because it preserves CP/M buffering, FCB, error, and
+warm-boot behavior.
+
+A normal dcc `.COM` file linked with the dcc runtime is not a standalone
+bare-metal binary even if it uses `inp` and `outp`: startup, memory discovery,
+file services, and exit still depend on CP/M page zero, BDOS, and BIOS. A truly
+bare-metal dcc program would need a different startup/runtime arrangement and
+is outside this compatibility claim.
+
+### D.5 Compatibility Boundaries
+
+- Programs must fit within the `0x0100`-`0xDEFF` TPA after runtime, globals,
+  heap, and stack requirements are included.
+- The installed operating system is CP/M 2.2. Optional CP/M 3 or emulator-only
+  BDOS extensions are not supplied by this BIOS/BDOS image. In particular,
+  software should treat dcc's BDOS-105-backed clock functions as unavailable
+  unless separately demonstrated on this target.
+- CP/M filenames and disks retain CP/M 2.2 semantics: 8.3 names, FCB-based
+  access, 128-byte logical records, and Ctrl-Z text-file conventions where the
+  dcc API documents them.
+- The terminal data port returns `0x00` if read while empty. Correct software
+  must test status bit 0 first; BDOS and the custom BIOS already do so.
+- Status bit 7 reports WebSocket client connection state to direct-port
+  software, but CP/M and dcc do not require it for their standard console ABI.
+- dcc's own emulator and physical-Z80 test history establishes general CP/M
+  runtime portability, but it does not by itself qualify this board's Pico
+  trap, custom BIOS, flash backend, or electrical timing.
+
+### D.6 Validation Status and Required Qualification
+
+The host regression suite assembles the custom BIOS and verifies its placement,
+the CCP/BDOS fingerprint, page-zero reset target, boot-package headers and CRCs,
+native disk construction, CP/M geometry, and complete 4 MiB flash layout. These
+are structural and reproducibility checks; they do not execute dcc programs
+through this BIOS or measure a physical I/O cycle.
+
+The design remains unvalidated in hardware as stated in the Overview. Before
+claiming dcc compatibility on the completed machine, perform the Phase 8-10
+tests and additionally run representative dcc `.COM` programs that cover:
+
+1. `printf`/`puts`, literal `$`, CR/LF conversion, buffering, and `fflush`.
+2. `getchar`, `scanf`, `kbhit`, `getch`, Ctrl-Z, and browser reconnect behavior.
+3. File create, close, reopen, sequential read/write, random access, rename,
+   delete, directory updates, disk-full handling, and warm boot.
+4. Transfers on drives A-D, including repeated writes followed by power-cycle
+   recovery and byte-for-byte host comparison.
+5. A dcc program near the TPA limit, confirming that stack/heap growth does not
+   cross `0xDF00` and that exit reliably reloads the CCP.
+
+Passing those application tests, the existing all-LBA and fault-injection disk
+plan, and the logic-analyzer requirements is the point at which console and
+file-I/O compatibility may be described as proven on this hardware.
 
 ## Generate the PDF
 
