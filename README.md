@@ -1357,6 +1357,15 @@ the maximum qualified frequency remains measured because GAL delay, Z80
 WAIT setup/hold, clock phase, and breadboard signal integrity still need
 logic-analyzer evidence.
 
+PIO is deliberately not placed in the WAIT# assertion path. Raw IORQ#
+already reaches the GAL directly, so WAIT# is asserted after the GAL's
+combinational propagation delay without GPIO synchronization, PIO sampling,
+or processor interrupt latency. A PIO state machine could notify firmware or
+gate a PIO-generated clock, but it would not make this existing assertion path
+faster and C would still perform the MCP23S17 and data-bus service. The design
+therefore keeps the GAL as the timing-critical interlock and uses the RP2350
+interrupt only after the Z80 has been held safely.
+
 ### 6.2 Terminal I/O over Pico WebSocket
 
 The final terminal is a virtual I/O peripheral implemented by the Pico,
