@@ -22,6 +22,7 @@ enum {
   FLASH_JOURNAL_PAIR_COUNT =
       Z80_FLASH_JOURNAL_BYTES / FLASH_JOURNAL_PAIR_BYTES,
   FLASH_BOOT_PAYLOAD_OFFSET = Z80_FLASH_BOOT_OFFSET + FLASH_SECTOR_SIZE,
+  DISK_CACHE_IDLE_FLUSH_MS = 250,
   Z80_BOOT_MAGIC = 0x5442385Au,
   Z80_BOOT_VERSION = 1u,
   FLASH_SERVICE_ACQUIRE_BUS,
@@ -85,6 +86,14 @@ typedef struct {
   uint8_t operation;
 } service_request_t;
 
+typedef struct {
+  bool valid;
+  bool dirty;
+  unsigned int drive;
+  uint32_t block_offset;
+  uint8_t data[FLASH_SECTOR_SIZE];
+} disk_cache_t;
+
 _Static_assert(sizeof(boot_manifest_t) == 20,
                "boot manifest must match host packer");
 _Static_assert(sizeof(journal_header_t) == FLASH_PAGE_SIZE,
@@ -92,6 +101,10 @@ _Static_assert(sizeof(journal_header_t) == FLASH_PAGE_SIZE,
 
 static queue_t service_request_queue;
 static queue_t service_result_queue;
+static disk_cache_t disk_cache;
+static uint32_t journal_sequence;
+static unsigned int next_journal_pair;
+static absolute_time_t disk_cache_flush_deadline;
 
 static uint32_t crc32_bytes(const uint8_t *data, size_t length) {
   uint32_t crc = UINT32_MAX;
@@ -255,28 +268,18 @@ void z80_flash_backend_core0_service(void) {
     reboot_after_flash_failure();
 }
 
-bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
-                                    const uint8_t *data, size_t length) {
-  if (drive >= Z80_FLASH_DISK_SLOT_COUNT ||
-      lba >= Z80_FLASH_RECORD_COUNT || data == NULL ||
-      length != Z80_FLASH_RECORD_BYTES)
-    return false;
+static bool flush_disk_cache(void) {
+  if (!disk_cache.dirty)
+    return true;
 
-  uint32_t sector_offset = (uint32_t)lba * Z80_FLASH_RECORD_BYTES;
-  uint32_t within_block = sector_offset & (FLASH_SECTOR_SIZE - 1u);
-  uint32_t block_offset = sector_offset - within_block;
   uint32_t flash_offset = Z80_FLASH_DISK_OFFSET +
-                          drive * Z80_FLASH_DISK_SLOT_BYTES + block_offset;
-  static uint8_t block[FLASH_SECTOR_SIZE];
-  memcpy(block, (const void *)(XIP_BASE + flash_offset), sizeof(block));
-  memcpy(block + within_block, data, length);
-
+                          disk_cache.drive * Z80_FLASH_DISK_SLOT_BYTES +
+                          disk_cache.block_offset;
   if (!request_core0(FLASH_SERVICE_ACQUIRE_BUS))
     return false;
 
-  static uint32_t sequence;
-  static unsigned int next_pair;
-  unsigned int pair = next_pair++ % FLASH_JOURNAL_PAIR_COUNT;
+  unsigned int pair =
+      next_journal_pair++ % FLASH_JOURNAL_PAIR_COUNT;
   uint32_t header_offset = Z80_FLASH_JOURNAL_OFFSET +
                            pair * FLASH_JOURNAL_PAIR_BYTES;
   write_params_t params;
@@ -284,12 +287,13 @@ bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
   params.header_offset = header_offset;
   params.data_offset = header_offset + FLASH_SECTOR_SIZE;
   params.target_offset = flash_offset;
-  params.data = block;
+    params.data = disk_cache.data;
   memset(&params.header, 0xFF, sizeof(params.header));
   params.header.magic = FLASH_JOURNAL_MAGIC;
-  params.header.sequence = ++sequence;
+    params.header.sequence = ++journal_sequence;
   params.header.target_offset = flash_offset;
-  params.header.data_crc32 = crc32_bytes(block, sizeof(block));
+    params.header.data_crc32 =
+      crc32_bytes(disk_cache.data, sizeof(disk_cache.data));
   params.header.header_crc32 =
       crc32_bytes((const uint8_t *)&params.header,
                   offsetof(journal_header_t, header_crc32));
@@ -297,8 +301,80 @@ bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
   int result = flash_safe_execute(write_callback, &params, 1000);
   if (result != PICO_OK)
     reboot_after_flash_failure();
+  if (params.committed)
+    disk_cache.dirty = false;
   bool released = request_core0(FLASH_SERVICE_RELEASE_BUS);
   return released && params.committed;
+}
+
+static bool select_disk_cache(unsigned int drive, uint16_t lba) {
+  uint32_t sector_offset = (uint32_t)lba * Z80_FLASH_RECORD_BYTES;
+  uint32_t block_offset =
+      sector_offset & ~(uint32_t)(FLASH_SECTOR_SIZE - 1u);
+  if (disk_cache.valid && disk_cache.drive == drive &&
+      disk_cache.block_offset == block_offset)
+    return true;
+  if (!flush_disk_cache())
+    return false;
+
+  uint32_t flash_offset = Z80_FLASH_DISK_OFFSET +
+                          drive * Z80_FLASH_DISK_SLOT_BYTES + block_offset;
+  memcpy(disk_cache.data, (const void *)(XIP_BASE + flash_offset),
+         sizeof(disk_cache.data));
+  disk_cache.drive = drive;
+  disk_cache.block_offset = block_offset;
+  disk_cache.valid = true;
+  return true;
+}
+
+bool z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
+                                   uint8_t *data, size_t length) {
+  if (drive >= Z80_FLASH_DISK_SLOT_COUNT ||
+      lba >= Z80_FLASH_RECORD_COUNT || data == NULL ||
+      length != Z80_FLASH_RECORD_BYTES)
+    return false;
+
+  uint32_t sector_offset = (uint32_t)lba * Z80_FLASH_RECORD_BYTES;
+  uint32_t block_offset =
+      sector_offset & ~(uint32_t)(FLASH_SECTOR_SIZE - 1u);
+  uint32_t within_block = sector_offset - block_offset;
+  if (disk_cache.valid && disk_cache.drive == drive &&
+      disk_cache.block_offset == block_offset) {
+    memcpy(data, disk_cache.data + within_block, length);
+  } else {
+    uint32_t flash_offset = Z80_FLASH_DISK_OFFSET +
+                            drive * Z80_FLASH_DISK_SLOT_BYTES + sector_offset;
+    memcpy(data, (const void *)(XIP_BASE + flash_offset), length);
+  }
+  return true;
+}
+
+bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
+                                    const uint8_t *data, size_t length,
+                                    uint8_t write_type) {
+  if (drive >= Z80_FLASH_DISK_SLOT_COUNT ||
+      lba >= Z80_FLASH_RECORD_COUNT || data == NULL ||
+      length != Z80_FLASH_RECORD_BYTES || write_type > 2u ||
+      !select_disk_cache(drive, lba))
+    return false;
+
+  uint32_t within_block =
+      ((uint32_t)lba * Z80_FLASH_RECORD_BYTES) &
+      (FLASH_SECTOR_SIZE - 1u);
+  if (memcmp(disk_cache.data + within_block, data, length) != 0) {
+    memcpy(disk_cache.data + within_block, data, length);
+    disk_cache.dirty = true;
+    disk_cache_flush_deadline = make_timeout_time_ms(DISK_CACHE_IDLE_FLUSH_MS);
+  }
+  return write_type == 1u ? flush_disk_cache() : true;
+}
+
+bool z80_flash_backend_flush(void) {
+  return flush_disk_cache();
+}
+
+bool z80_flash_backend_flush_due(void) {
+  return disk_cache.dirty && time_reached(disk_cache_flush_deadline);
 }
 
 bool z80_flash_backend_init(void) {
@@ -306,5 +382,9 @@ bool z80_flash_backend_init(void) {
   queue_init(&service_result_queue, sizeof(bool), 4);
   if (!recover_journal() || !load_boot_image())
     return false;
+  memset(&disk_cache, 0, sizeof(disk_cache));
+  journal_sequence = 0;
+  next_journal_pair = 0;
+  disk_cache_flush_deadline = nil_time;
   return flash_safe_execute_core_init();
 }

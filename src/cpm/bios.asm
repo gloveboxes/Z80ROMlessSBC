@@ -13,7 +13,10 @@ DISK_LBA_LOW:   equ 12h
 DISK_LBA_HIGH:  equ 13h
 DISK_DATA:      equ 14h
 DISK_READ:      equ 01h
-DISK_WRITE:     equ 02h
+DISK_WRITE_NORMAL: equ 02h
+DISK_WRITE_DIRECTORY: equ 03h
+DISK_WRITE_UNALLOCATED: equ 04h
+DISK_FLUSH:     equ 05h
 DISK_READY:     equ 01h
 DISK_DATA_READY: equ 02h
 DISK_DATA_ROOM: equ 04h
@@ -27,8 +30,11 @@ warm_boot_entry:
                 jp console_status
                 jp console_input
                 jp console_output
+list_output_entry:
                 jp console_output
+punch_output_entry:
                 jp console_output
+reader_input_entry:
                 jp console_input
                 jp home
                 jp select_disk
@@ -56,6 +62,9 @@ cold_boot_message:
 
 warm_boot:
                 ld sp,0080h
+                call flush_disk
+                or a
+                jr nz,warm_boot
                 xor a
                 ld (disk_drive),a
                 ld (disk_track),a
@@ -168,6 +177,10 @@ translate_sector:
                 ret
 
 prepare_disk_io:
+disk_ready_wait:
+                in a,(DISK_COMMAND)
+                bit 0,a
+                jr z,disk_ready_wait
                 ld a,(disk_drive)
                 out (DISK_DRIVE_PORT),a
                 ld hl,(disk_track)
@@ -193,18 +206,14 @@ read_record:
                 out (DISK_COMMAND),a
 read_wait:
                 in a,(DISK_COMMAND)
-                and DISK_ERROR
+                bit 7,a
                 jr nz,disk_io_error
-                in a,(DISK_COMMAND)
-                and DISK_DATA_READY
+                bit 1,a
                 jr z,read_wait
                 ld hl,(dma_address)
                 ld b,128
-read_loop:
-                in a,(DISK_DATA)
-                ld (hl),a
-                inc hl
-                djnz read_loop
+                ld c,DISK_DATA
+                inir
                 xor a
                 jr disk_io_done
 
@@ -213,30 +222,46 @@ write_record:
                 push de
                 push hl
                 call prepare_disk_io
-                ld a,DISK_WRITE
+                ld a,c
+                cp 3
+                jr c,write_command_valid
+                xor a
+write_command_valid:
+                add a,DISK_WRITE_NORMAL
                 out (DISK_COMMAND),a
 write_room_wait:
                 in a,(DISK_COMMAND)
-                and DISK_ERROR
+                bit 7,a
                 jr nz,disk_io_error
-                in a,(DISK_COMMAND)
-                and DISK_DATA_ROOM
+                bit 2,a
                 jr z,write_room_wait
                 ld hl,(dma_address)
                 ld b,128
-write_loop:
-                ld a,(hl)
-                out (DISK_DATA),a
-                inc hl
-                djnz write_loop
+                ld c,DISK_DATA
+                otir
 write_done_wait:
                 in a,(DISK_COMMAND)
                 bit 7,a
                 jr nz,disk_io_error
-                and DISK_READY
+                bit 0,a
                 jr z,write_done_wait
                 xor a
                 jr disk_io_done
+
+flush_disk:
+                ld a,DISK_FLUSH
+                out (DISK_COMMAND),a
+flush_wait:
+                in a,(DISK_COMMAND)
+                bit 7,a
+                jr nz,flush_error
+                bit 0,a
+                jr z,flush_wait
+                xor a
+                ret
+flush_error:
+                ld a,1
+                ret
 
 disk_io_error:
                 ld a,1

@@ -1518,23 +1518,30 @@ of the first 4 KiB with `0xFF`; the image begins at package offset
 offset zero. Generate this package and the BIOS DPB constants from one
 host tool so geometry and integrity metadata cannot drift.
 
-**Read path.** A disk read is a plain pointer dereference into the
-memory-mapped flash region -- `XIP_BASE + drive_offset + sector_offset`
--- with no SPI transaction, no DMA request, and no cross-core
-handshake. This is fast and safe to call directly from
-`io_trap_handler()` itself, unlike the deferred-queue pattern SD-based
-storage would have needed, provided no flash write (below) is
-concurrently in progress; the write path guarantees that by freezing
-the Z80 for its own duration, so a read trap can never race a write.
+**Read path.** A disk read copies from a single 4 KiB SRAM cache when it
+matches the selected drive and flash block; otherwise it copies directly
+from the memory-mapped flash region. There is no SPI transaction, DMA
+request, or cross-core handshake. The READY status uses release/acquire
+ordering, so core 0 cannot inspect the cache while core 1 is changing it.
 
-**Write and recovery path.** Updating one 128-byte CP/M record requires
-read-modify-erasing and reprogramming its enclosing 4 KiB flash block.
-The trap copies the complete 128-byte request into `disk_write_queue`
-and reports BUSY; it never erases flash itself. Core 1 constructs the
-new 4 KiB block in SRAM, asks core 0 to acquire BUSACK# while trapping
-remains enabled, and core 0 disables the trap only after BUSACK# is
-LOW. Core 1 then uses a bounded `flash_safe_execute()` call, which
-parks the registered core-0 victim and disables core-1 interrupts.
+**Write and recovery path.** CP/M still transfers 128-byte records, but the
+Pico coalesces them in one 4 KiB erase-block cache. The BIOS passes the
+standard CP/M `WRITE` classification from register C: normal writes and the
+first record of a newly allocated CP/M block may remain dirty in SRAM;
+directory writes flush immediately. Selecting another flash block flushes
+the previous block first, 250 ms without another changed record triggers an
+idle flush, and warm boot issues an explicit flush before it reloads CCP/BDOS.
+Thus CP/M cannot persist directory metadata ahead of its referenced data, a
+completed overwrite cannot remain indefinitely only in SRAM, and sequential
+writes to one track need at most one journaled flash update instead of as many
+as 32. An unchanged record does not dirty the cache.
+
+The trap copies each complete write request into `disk_write_queue` and
+reports BUSY; it never erases flash itself. When a flush is required, core 1
+asks core 0 to acquire BUSACK# while trapping remains enabled, and core 0
+disables the trap only after BUSACK# is LOW. Core 1 then uses a bounded
+`flash_safe_execute()` call, which parks the registered core-0 victim and
+disables core-1 interrupts.
 
 Each update rotates through one of eight 8 KiB journal pairs:
 
@@ -1566,22 +1573,22 @@ forces a watchdog reboot before attempting another core-0 request:
 SDK lockout-exit failure can leave core 0 parked, so continuing to its
 release queue would deadlock instead of recovering.
 
-Flash write endurance is finite and chip-specific; confirm the Pico 2
-W's actual onboard flash part's rated erase-cycle endurance before
-relying on this for a write-heavy workload. This partition suits
-occasional CP/M saves and file writes well; it is a poor fit for a
+Flash write endurance is finite and chip-specific; confirm the Pico 2 W's
+actual onboard flash part's rated erase-cycle endurance before relying on
+this for a write-heavy workload. The erase-block cache substantially reduces
+wear for sequential CP/M writes, but this partition remains a poor fit for a
 disk used as constant scratch/swap space.
 
-**Core assignment.** Reads happen inline in `io_trap_handler()` on
-core 0, since they need no cross-core coordination. Writes are
-deferred: the trap enqueues a request, and core 1 -- the same task
-that owns the WebSocket terminal (Section 6.2) -- checks that queue on
-every loop iteration before doing network work, asks core 0's
-foreground loop to freeze the Z80, performs the journaled update, then
-releases it and reports READY or ERROR. Wi-Fi association is a bounded
-polling state machine, so storage remains available with no access
-point. Flash access never touches SPI0, the MCP23S17, or any Z80 bus
-GPIO.
+**Core assignment.** Reads happen inline in `io_trap_handler()` on core 0.
+Writes and flushes are deferred to core 1, the same task that owns the
+WebSocket terminal (Section 6.2). A cache-only write returns READY without a
+flash operation; after 250 ms of write inactivity, core 1 flushes it. Every
+required flush asks core 0's foreground loop to freeze the Z80, performs the
+journaled update, clears the cache's dirty state, and only then releases the
+Z80. A successful idle flush does not modify protocol status, so it cannot
+consume or overwrite a foreground command state. Wi-Fi association is a
+bounded polling state machine, so storage remains available with no access
+point. Flash access never touches SPI0, the MCP23S17, or any Z80 bus GPIO.
 
 ### 6.4 System Performance Envelope & Constraints
 
@@ -2984,27 +2991,25 @@ static bool flash_recover_journal(void) {
   return true;
 }
 
-// Core 1 only. Rewrites one flash sector of a CP/M disk slot, freezing
-// the Z80 for the whole operation so its PWM-driven clock never
-// advances while flash_safe_execute() pauses XIP fetches on both cores
-// (Section 6.3). Core 0 must call flash_safe_execute_core_init() before
-// core 1 starts, because core 0 is the victim parked by this call.
-static bool flash_disk_write_sector(unsigned drive, uint32_t sector_offset,
-    const uint8_t *data, size_t length) {
-  uint32_t within_block = sector_offset & (FLASH_SECTOR_SIZE - 1u);
-  if (drive >= FLASH_DISK_SLOT_COUNT || data == NULL || length == 0 ||
-      sector_offset >= FLASH_DISK_SLOT_BYTES ||
-      length > FLASH_DISK_SLOT_BYTES - sector_offset ||
-      length > FLASH_SECTOR_SIZE - within_block)
-    return false;
+typedef struct {
+  bool valid;
+  bool dirty;
+  unsigned drive;
+  uint32_t block_offset;
+  uint8_t data[FLASH_SECTOR_SIZE];
+} flash_disk_cache_t;
 
-  uint32_t block_offset = sector_offset - within_block;
+static flash_disk_cache_t disk_cache;
+static absolute_time_t disk_cache_flush_deadline;
+
+// Core 1 only. Commits the cached erase block, freezing the Z80 while
+// flash_safe_execute() pauses XIP fetches on both cores (Section 6.3).
+static bool flash_disk_flush_cache(void) {
+  if (!disk_cache.dirty)
+    return true;
+
   uint32_t flash_offset = FLASH_DISK_BASE_OFFSET +
-    drive * FLASH_DISK_SLOT_BYTES + block_offset;
-
-  static uint8_t block[FLASH_SECTOR_SIZE];
-  memcpy(block, (const uint8_t *)(XIP_BASE + flash_offset), sizeof block);
-  memcpy(block + within_block, data, length);
+    disk_cache.drive * FLASH_DISK_SLOT_BYTES + disk_cache.block_offset;
 
   if (!core0_request(FLASH_SERVICE_ACQUIRE_BUS))
     return false;
@@ -3020,21 +3025,73 @@ static bool flash_disk_write_sector(unsigned drive, uint32_t sector_offset,
   params.header_offset = header_offset;
   params.data_offset = header_offset + FLASH_SECTOR_SIZE;
   params.target_offset = flash_offset;
-  params.data = block;
+  params.data = disk_cache.data;
   memset(&params.header, 0xFF, sizeof params.header);
   params.header.magic = FLASH_JOURNAL_MAGIC;
   params.header.sequence = ++sequence;
   params.header.target_offset = flash_offset;
-  params.header.data_crc32 = crc32_bytes(block, sizeof block);
+  params.header.data_crc32 = crc32_bytes(disk_cache.data,
+    sizeof disk_cache.data);
   params.header.header_crc32 = crc32_bytes((const uint8_t *)&params.header,
     offsetof(flash_journal_header_t, header_crc32));
 
   int rc = flash_safe_execute(flash_write_callback, &params, 1000);
   if (rc != PICO_OK)
     reboot_after_flash_safe_failure();
+  if (params.committed)
+    disk_cache.dirty = false;
   bool released = core0_request(FLASH_SERVICE_RELEASE_BUS);
-
   return released && params.committed;
+}
+
+static bool flash_disk_select_cache(unsigned drive, uint16_t lba) {
+  uint32_t sector_offset = (uint32_t)lba * FLASH_DISK_RECORD_BYTES;
+  uint32_t block_offset = sector_offset & ~(FLASH_SECTOR_SIZE - 1u);
+  if (disk_cache.valid && disk_cache.drive == drive &&
+      disk_cache.block_offset == block_offset)
+    return true;
+  if (!flash_disk_flush_cache())
+    return false;
+
+  uint32_t flash_offset = FLASH_DISK_BASE_OFFSET +
+    drive * FLASH_DISK_SLOT_BYTES + block_offset;
+  memcpy(disk_cache.data, (const void *)(XIP_BASE + flash_offset),
+    sizeof disk_cache.data);
+  disk_cache.drive = drive;
+  disk_cache.block_offset = block_offset;
+  disk_cache.valid = true;
+  return true;
+}
+
+static bool flash_disk_write_record(unsigned drive, uint16_t lba,
+    const uint8_t *data, uint8_t write_type) {
+  if (!flash_disk_select_cache(drive, lba))
+    return false;
+  size_t offset = ((size_t)lba * FLASH_DISK_RECORD_BYTES) &
+    (FLASH_SECTOR_SIZE - 1u);
+  if (memcmp(disk_cache.data + offset, data, FLASH_DISK_RECORD_BYTES)) {
+    memcpy(disk_cache.data + offset, data, FLASH_DISK_RECORD_BYTES);
+    disk_cache.dirty = true;
+    disk_cache_flush_deadline = make_timeout_time_ms(250);
+  }
+  return write_type == 1 ? flash_disk_flush_cache() : true;
+}
+
+static bool flash_disk_read_record(unsigned drive, uint16_t lba,
+    uint8_t *data) {
+  uint32_t sector_offset = (uint32_t)lba * FLASH_DISK_RECORD_BYTES;
+  uint32_t block_offset = sector_offset & ~(FLASH_SECTOR_SIZE - 1u);
+  uint32_t within_block = sector_offset - block_offset;
+  if (disk_cache.valid && disk_cache.drive == drive &&
+      disk_cache.block_offset == block_offset) {
+    memcpy(data, disk_cache.data + within_block, FLASH_DISK_RECORD_BYTES);
+  } else {
+    uint32_t flash_offset = FLASH_DISK_BASE_OFFSET +
+      drive * FLASH_DISK_SLOT_BYTES + sector_offset;
+    memcpy(data, (const void *)(XIP_BASE + flash_offset),
+      FLASH_DISK_RECORD_BYTES);
+  }
+  return true;
 }
 
 enum {
@@ -3045,7 +3102,10 @@ enum {
   DISK_DATA_PORT = 0x14,
   DISK_COMMAND_CLEAR = 0,
   DISK_COMMAND_READ = 1,
-  DISK_COMMAND_WRITE = 2,
+  DISK_COMMAND_WRITE_NORMAL = 2,
+  DISK_COMMAND_WRITE_DIRECTORY = 3,
+  DISK_COMMAND_WRITE_UNALLOCATED = 4,
+  DISK_COMMAND_FLUSH = 5,
   DISK_STATUS_READY = 1u << 0,
   DISK_STATUS_DATA_READY = 1u << 1,
   DISK_STATUS_DATA_ROOM = 1u << 2,
@@ -3055,10 +3115,11 @@ enum {
 };
 
 typedef struct {
+  uint8_t command;
   uint8_t drive;
   uint16_t lba;
   uint8_t data[FLASH_DISK_RECORD_BYTES];
-} disk_write_request_t;
+} disk_request_t;
 
 static queue_t disk_write_queue;             // Z80/Core 0 -> Core 1.
 static uint32_t disk_status = DISK_STATUS_READY;
@@ -3067,6 +3128,7 @@ static uint8_t disk_drive;
 static uint16_t disk_lba;
 static uint8_t disk_write_drive;   // Snapshot of drive/lba at WRITE issue,
 static uint16_t disk_write_lba;    // immune to changes during data transfer.
+static uint8_t disk_write_type;
 static uint16_t disk_data_index;
 static uint8_t disk_data[FLASH_DISK_RECORD_BYTES];
 
@@ -3084,7 +3146,7 @@ static bool disk_address_valid(void) {
 }
 
 static void disk_service_init(void) {
-  queue_init(&disk_write_queue, sizeof(disk_write_request_t),
+  queue_init(&disk_write_queue, sizeof(disk_request_t),
     DISK_WRITE_QUEUE_DEPTH);
   __atomic_store_n(&disk_fatal_error, 0, __ATOMIC_RELEASE);
   disk_status_store(DISK_STATUS_READY);
@@ -3104,6 +3166,15 @@ static void disk_start_command(uint8_t command) {
     disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     return;
   }
+
+  if (command == DISK_COMMAND_FLUSH) {
+    disk_request_t request = { .command = command };
+    if (queue_try_add(&disk_write_queue, &request))
+      disk_status_store(DISK_STATUS_BUSY);
+    else
+      disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
+    return;
+  }
   if (!disk_address_valid()) {
     disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     return;
@@ -3111,13 +3182,14 @@ static void disk_start_command(uint8_t command) {
 
   disk_data_index = 0;
   if (command == DISK_COMMAND_READ) {
-    const uint8_t *source = flash_disk_slot_ptr(disk_drive) +
-      (uint32_t)disk_lba * FLASH_DISK_RECORD_BYTES;
-    memcpy(disk_data, source, sizeof disk_data);
-    disk_status_store(DISK_STATUS_READY | DISK_STATUS_DATA_READY);
-  } else if (command == DISK_COMMAND_WRITE) {
+    bool ok = flash_disk_read_record(disk_drive, disk_lba, disk_data);
+    disk_status_store(DISK_STATUS_READY |
+      (ok ? DISK_STATUS_DATA_READY : DISK_STATUS_ERROR));
+  } else if (command >= DISK_COMMAND_WRITE_NORMAL &&
+      command <= DISK_COMMAND_WRITE_UNALLOCATED) {
     disk_write_drive = disk_drive;
     disk_write_lba = disk_lba;
+    disk_write_type = command - DISK_COMMAND_WRITE_NORMAL;
     disk_status_store(DISK_STATUS_READY | DISK_STATUS_DATA_ROOM);
   } else {
     disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
@@ -3153,8 +3225,10 @@ static void disk_virtual_io_write(uint8_t port, uint8_t value) {
       (status & DISK_STATUS_DATA_ROOM)) {
     disk_data[disk_data_index++] = value;
     if (disk_data_index == sizeof disk_data) {
-      disk_write_request_t request = {
-        .drive = disk_write_drive, .lba = disk_write_lba
+      disk_request_t request = {
+        .command = DISK_COMMAND_WRITE_NORMAL + disk_write_type,
+        .drive = disk_write_drive,
+        .lba = disk_write_lba
       };
       memcpy(request.data, disk_data, sizeof request.data);
       if (queue_try_add(&disk_write_queue, &request))
@@ -3165,30 +3239,43 @@ static void disk_virtual_io_write(uint8_t port, uint8_t value) {
   }
 }
 
-// Core 1 only; call on every foreground-loop iteration, including while
-// Wi-Fi is disconnected.
-static void core1_service_disk_write(void) {
-  disk_write_request_t request;
-  if (!queue_try_remove(&disk_write_queue, &request))
+// Core 1 only; call on every loop iteration, including while Wi-Fi is down.
+static void core1_service_disk_request(void) {
+  disk_request_t request;
+  if (!queue_try_remove(&disk_write_queue, &request)) {
+    if (!disk_cache.dirty || !time_reached(disk_cache_flush_deadline))
+      return;
+    bool ok = flash_disk_flush_cache();
+    if (!ok)
+      __atomic_store_n(&disk_fatal_error, 1, __ATOMIC_RELEASE);
+    if (!ok)
+      disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     return;
+  }
 
-  uint32_t offset = (uint32_t)request.lba * FLASH_DISK_RECORD_BYTES;
-  bool ok = flash_disk_write_sector(request.drive, offset,
-    request.data, sizeof request.data);
+  bool ok = request.command == DISK_COMMAND_FLUSH
+    ? flash_disk_flush_cache()
+    : flash_disk_write_record(request.drive, request.lba, request.data,
+        request.command - DISK_COMMAND_WRITE_NORMAL);
   if (!ok)
     __atomic_store_n(&disk_fatal_error, 1, __ATOMIC_RELEASE);
   disk_status_store(DISK_STATUS_READY | (ok ? 0 : DISK_STATUS_ERROR));
 }
 ```
 
-The Z80 BIOS sets drive and 16-bit LBA, then writes command 1 for a read
-or command 2 for a write. A read returns 128 bytes from the data port;
-a write accepts exactly 128 bytes there, then changes status to BUSY
-until core 1 finishes the journaled update. Command 0 clears a transient
-protocol/queue error when not busy; a flash or journal failure remains
-latched until reboot and recovery. The BIOS must poll
-READY/DATA_READY/DATA_ROOM/BUSY instead of assuming host timing. No
-erase, program, blocking queue, or flash-safe call runs inside
+The Z80 BIOS sets drive and 16-bit LBA, then writes command 1 for a read.
+Write commands 2, 3, and 4 mean normal, directory, and first record of a newly
+allocated CP/M block respectively; command 5 explicitly flushes the cache.
+A read returns 128 bytes from the data port. A write accepts exactly 128 bytes
+there, then changes status to BUSY until core 1 has cached it and completed
+any required journaled flush. Command 0 clears a transient protocol/queue
+error when not busy; a flash or journal failure remains latched until reboot
+and recovery. The BIOS polls READY/DATA_READY/DATA_ROOM/BUSY instead of
+assuming Pico timing, but reads each status only once per poll and uses Z80
+`INIR`/`OTIR` for payload transfer. It also waits for READY before writing a
+command's drive/LBA registers. Idle flushes are serialized separately by
+holding BUSACK# from before the flash operation until dirty state is cleared.
+No erase, program, blocking queue, or flash-safe call runs inside
 `io_trap_handler()`.
 
 **Test plan:**
@@ -3414,7 +3501,7 @@ static void core1_main(void) {
   bool websocket_started = false;
 
   while (true) {
-    core1_service_disk_write();
+    core1_service_disk_request();
 
     bool network_ready = wifi_service_poll();
     if (network_ready && !websocket_started) {
@@ -3495,7 +3582,7 @@ initialization failure it cleans up and retries with an internal
 backoff. Core 1 calls it on every loop even after the server starts. It
 returns false while unavailable, re-enters association after link loss,
 and returns true once the station link is usable again. This guarantees
-`core1_service_disk_write()` runs even with Wi-Fi absent or reconnecting.
+`core1_service_disk_request()` runs even with Wi-Fi absent or reconnecting.
 Once associated, disable power-saving with
 `cyw43_wifi_pm(&cyw43_state, CYW43_NO_POWERSAVE_MODE)` for lower
 terminal latency. `supervisor_usb_poll_nonblocking()` similarly stands
@@ -4002,7 +4089,7 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Transient Program Area (TPA) | `0x0100`-`0xE2FF` | `.COM` program, dcc runtime, static data, heap, and stack |
 | CCP | `0xE300`-`0xEAFF` | Console Command Processor, reloaded after a warm boot |
 | BDOS | `0xEB00`-`0xF8FF` | CP/M console, file, and disk service layer; entry at `0xEB06` |
-| BIOS | `0xF900`-`0xFBB9` | Board-specific boot, console, disk, and translation routines |
+| BIOS | `0xF900`-`0xFBD0` | 721-byte board-specific boot, console, disk, and translation routines |
 
 The TPA contains `0xE200` bytes, or 57,856 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space
@@ -4025,12 +4112,12 @@ dcc's optional direct-BIOS functions. Its principal mappings are:
 | --- | --- |
 | `BOOT` / `WBOOT` | Initialize page zero or reload CCP/BDOS from Drive A |
 | `CONST` | Read terminal status port `0x01`; return `0xFF` when bit 0 reports input ready |
-| `CONIN` / `READER` | Wait for receive-ready, then read terminal data port `0x00` |
-| `CONOUT` / `LIST` / `PUNCH` | Wait for transmit-room bit 1, then write the character to port `0x00` |
-| `LISTST` | Return ready when terminal status bit 1 reports transmit room |
+| `CONIN` / `READER` | Wait for receive-ready, then read terminal data port `0x00`; no separate reader is fitted |
+| `CONOUT` / `LIST` / `PUNCH` | Wait for transmit-room bit 1, then write the character to port `0x00`; no separate printer or punch is fitted |
+| `LISTST` | Report the aliased console output readiness because no line printer exists |
 | `SELDSK` | Validate drives A-D and return the corresponding disk parameter header |
 | `SETTRK` / `SETSEC` / `SETDMA` | Record the logical CP/M transfer location and SRAM DMA address |
-| `READ` / `WRITE` | Convert track and sector to a linear 128-byte LBA and transfer it through ports `0x10`-`0x14` |
+| `READ` / `WRITE` | Convert track and sector to a linear 128-byte LBA, transfer through ports `0x10`-`0x14`, and preserve CP/M write-type semantics for flash caching |
 | `SECTRAN` | Return the sector unchanged because native disk images use linear sector order |
 
 CP/M BDOS remains responsible for filenames, FCBs, directory searches,
@@ -4038,6 +4125,11 @@ allocation, sequential/random record selection, and text-file conventions.
 The BIOS sees only drive selection and 128-byte logical records. Consequently,
 dcc file APIs do not require a board-specific runtime backend: their BDOS file
 calls eventually reach the custom `READ` and `WRITE` entries.
+
+Console ports occupy the aligned `0x00` group and disk ports the aligned
+`0x10` group. Moving them would not reduce Pico trap work because the same
+8-bit port decoder handles every I/O cycle, so these established direct-I/O
+addresses remain stable.
 
 ### D.4 dcc Console and File-I/O Paths
 

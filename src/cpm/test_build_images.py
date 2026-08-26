@@ -121,6 +121,24 @@ class BuildImagesTest(unittest.TestCase):
             build_images.FLASH_BYTES,
         )
 
+    def test_bios_jump_table_abi(self) -> None:
+        jump_table_entries = 17
+        self.assertLessEqual(
+            len(self.bios), build_images.Z80_IMAGE_BYTES - build_images.BIOS_BASE
+        )
+        self.assertEqual(
+            self.bios[0 : jump_table_entries * 3 : 3],
+            bytes([0xC3]) * jump_table_entries,
+        )
+
+        def jump_target(entry: int) -> int:
+            offset = entry * 3
+            return self.bios[offset + 1] | (self.bios[offset + 2] << 8)
+
+        self.assertEqual(jump_target(5), jump_target(4))
+        self.assertEqual(jump_target(6), jump_target(4))
+        self.assertEqual(jump_target(7), jump_target(3))
+
     def test_complete_flash_layout(self) -> None:
         firmware = b"stage10"
         disks = [self.native_drive] * build_images.DRIVE_COUNT

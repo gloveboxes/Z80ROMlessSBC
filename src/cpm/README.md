@@ -8,7 +8,7 @@ The memory map is:
 | --- | ---: | ---: |
 | CCP | `0xE300` | 2,048 bytes |
 | BDOS | `0xEB00` | 3,584 bytes |
-| BIOS | `0xF900` | 698 bytes currently |
+| BIOS | `0xF900` | 721 bytes currently |
 
 The checked-in `cpm64_system.bin` was captured from RAM after the matching
 Burcon `MOVCPM 64` and `SYSGEN` utilities produced and booted a 64K system. It
@@ -30,7 +30,14 @@ the Burcon `0xE300`/`0xEB00`/`0xF900` memory ABI.
 `0x00`/`0x01` and disk command, drive, LBA-low, LBA-high, and data ports
 `0x10`-`0x14`. Warm boot reloads 44 sequential records from native Drive A.
 The BIOS uses an identity `SECTRAN` because disk conversion has already removed
-the Altair skew.
+the Altair skew. It forwards CP/M's standard write type to the Pico so normal
+writes can be coalesced in a 4 KiB cache, while directory writes and warm boot
+flush through the journal. A 250 ms idle deadline also persists an isolated
+normal overwrite. `LIST`, `PUNCH`, and `READER` remain in their
+required jump-table positions but intentionally alias the terminal because no
+separate printer, punch, or reader hardware is fitted. The existing aligned
+console (`0x00`) and disk (`0x10`) port groups are retained for direct-I/O
+compatibility; changing their values would not reduce the number of I/O traps.
 
 Disk geometry lives once in `src/disks/geometry.py`. The host builder converts
 it to assembler equates, assembles the BIOS, builds the reset-ready SRAM image,
