@@ -3978,12 +3978,13 @@ RAM region captured after the matching Burcon `MOVCPM 64` and `SYSGEN` tools
 produced a system that cold-booted successfully in the Altair emulator. Its
 SHA-256 fingerprint is enforced by the image builder.
 
-CP/M generators are machine-specific. The iCOM FD3712 `MOVCPM 64 *` variant
-reports an `F400` configuration and `SAVE 34`; it assumes a different BIOS
-reservation and produces the incompatible `0xE600`/`0xEE00`/`0xFC00` map. The
-matching Burcon generator reports `SAVE 38`. Do not regenerate this project's
-CCP/BDOS artifact with the iCOM utility or substitute a nominal “64K” image
-without first verifying its BIOS reservation and relocated entry vectors.
+CP/M generators are machine-specific. To reproduce this artifact, use the
+[Burcon CP/M 2.2 utilities](https://deramp.com/downloads/altair/software/8_inch_floppy/CPM/CPM%202.2/Burcon%20CPM/):
+the archive's `MOVCPM.COM` and `SYSGEN.COM`, following its
+[Using MOVCPM guide](https://deramp.com/downloads/altair/software/8_inch_floppy/CPM/CPM%202.2/Burcon%20CPM/Using%20MOVCPM.pdf).
+The matching generator reports `SAVE 38` after `MOVCPM 64`. Preserve the
+Burcon `0x0700` BIOS reservation and verify the relocated entry vectors before
+accepting any regenerated CCP/BDOS image.
 
 Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
 cold loader use ports `0x08`-`0x0A` and are reference material, not executable
