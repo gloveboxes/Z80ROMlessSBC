@@ -4031,7 +4031,7 @@ bring-up.
 
 | Area | Files | Purpose |
 | --- | --- | --- |
-| Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | 64K CCP/BDOS image, native BIOS, boot package, full-flash composition, and host regression tests |
+| Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [z80_bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/z80_bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | 64K CCP/BDOS image, native BIOS, boot package, full-flash composition, and host regression tests |
 | Disk geometry and conversion | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py), [convert_altair_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/convert_altair_disks.py) | Shared CP/M geometry and deterministic Altair-media conversion |
 | Generated disk artifacts | [generated directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/generated), [manifest.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/generated/manifest.json) | Four exact 320 KiB intermediate disk slots and source/output hashes |
 | Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
@@ -4043,7 +4043,7 @@ bring-up.
 This system runs CP/M 2.2 with a custom BIOS designed specifically for this
 board. The image builder packages the 64K CP/M CCP and BDOS with the native
 BIOS assembled from
-[src/cpm/bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/bios.asm).
+[src/cpm/z80_bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/z80_bios.asm).
 The BIOS is the layer that translates standard CP/M console and disk
 operations into this board's Pico-serviced virtual I/O ports. Applications do
 not need to know that the terminal is a WebSocket or that disk records reside
@@ -4076,8 +4076,11 @@ accepting any regenerated CCP/BDOS image.
 Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
 cold loader use ports `0x08`-`0x0A` and are reference material, not executable
 code for this board. At image-build time they are replaced by the SBC-native
-BIOS assembled from `src/cpm/bios.asm`, which uses the Pico-serviced terminal
+BIOS assembled from `src/cpm/z80_bios.asm`, which uses the Pico-serviced terminal
 and flash-disk ports described below.
+It intentionally targets the Z80 rather than the 8080-compatible subset, using
+relative branches, `DJNZ`, `BIT`, rotate/carry status tests, carry-to-mask
+`SBC A,A`, and `INIR`/`OTIR` block I/O. Build it with `z80asm`.
 
 ### D.2 CP/M Memory Map and Entry Points
 
@@ -4089,7 +4092,7 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Transient Program Area (TPA) | `0x0100`-`0xE2FF` | `.COM` program, dcc runtime, static data, heap, and stack |
 | CCP | `0xE300`-`0xEAFF` | Console Command Processor, reloaded after a warm boot |
 | BDOS | `0xEB00`-`0xF8FF` | CP/M console, file, and disk service layer; entry at `0xEB06` |
-| BIOS | `0xF900`-`0xFBD0` | 721-byte board-specific boot, console, disk, and translation routines |
+| BIOS | `0xF900`-`0xFBBE` | 703-byte Z80-optimized boot, console, disk, and translation routines |
 
 The TPA contains `0xE200` bytes, or 57,856 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space

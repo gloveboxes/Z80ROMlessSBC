@@ -112,10 +112,10 @@ def assembler_definitions() -> str:
 
 
 def build_bios(assembler: str) -> bytes:
-    source_path = REPO_ROOT / "src" / "cpm" / "bios.asm"
+    source_path = REPO_ROOT / "src" / "cpm" / "z80_bios.asm"
     with tempfile.TemporaryDirectory(prefix="z80sbc-cpm-") as directory:
         temporary = Path(directory)
-        combined_path = temporary / "bios.asm"
+        combined_path = temporary / "z80_bios.asm"
         binary_path = temporary / "bios.bin"
         combined_path.write_text(
             assembler_definitions() + source_path.read_text(encoding="ascii"),

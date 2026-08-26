@@ -48,8 +48,8 @@ reader_input_entry:
 
 cold_boot:
                 ld sp,0080h
-                xor a
-                ld (0004h),a
+                ld hl,0
+                ld (0003h),hl
                 ld hl,banner
 cold_boot_message:
                 ld a,(hl)
@@ -67,32 +67,30 @@ warm_boot:
                 jr nz,warm_boot
                 xor a
                 ld (disk_drive),a
-                ld (disk_track),a
-                ld (disk_track+1),a
-                ld (disk_sector),a
-                ld (disk_sector+1),a
+                ld h,a
+                ld l,a
+                ld (disk_track),hl
+                ld (disk_sector),hl
                 ld hl,CCP_BASE
                 ld (dma_address),hl
                 ld b,SYSTEM_RECORDS
 warm_boot_loop:
-                push bc
                 call read_record
-                pop bc
                 or a
                 jr nz,warm_boot
                 ld hl,(dma_address)
-                ld de,0080h
-                add hl,de
+                ; warm_boot fixes and balances SP at the 128-byte record size.
+                add hl,sp
                 ld (dma_address),hl
                 ld hl,(disk_sector)
                 inc hl
                 ld a,l
-                cp 32
+                cp DPB_SPT
                 jr c,warm_boot_next
+                ld hl,(disk_track)
+                inc hl
+                ld (disk_track),hl
                 ld hl,0
-                ld de,(disk_track)
-                inc de
-                ld (disk_track),de
 warm_boot_next:
                 ld (disk_sector),hl
                 djnz warm_boot_loop
@@ -105,22 +103,22 @@ enter_cpm:
                 ld (0001h),hl
                 ld hl,BDOS_ENTRY
                 ld (0006h),hl
-                ld bc,0080h
-                call set_dma
+                ld hl,0080h
+                ld (dma_address),hl
                 ld a,(0004h)
                 ld c,a
                 jp CCP_BASE+3
 
 console_status:
                 in a,(TERM_STATUS)
-                and TERM_RX_READY
-                ret z
-                ld a,0ffh
+                rrca
+                sbc a,a
                 ret
 
 console_input:
-                call console_status
-                jr z,console_input
+                in a,(TERM_STATUS)
+                rrca
+                jr nc,console_input
                 in a,(TERM_DATA)
                 and 7fh
                 ret
@@ -135,9 +133,9 @@ console_output:
 
 list_status:
                 in a,(TERM_STATUS)
-                and TERM_TX_ROOM
-                ret z
-                ld a,0ffh
+                rrca
+                rrca
+                sbc a,a
                 ret
 
 home:
@@ -179,8 +177,8 @@ translate_sector:
 prepare_disk_io:
 disk_ready_wait:
                 in a,(DISK_COMMAND)
-                bit 0,a
-                jr z,disk_ready_wait
+                rrca
+                jr nc,disk_ready_wait
                 ld a,(disk_drive)
                 out (DISK_DRIVE_PORT),a
                 ld hl,(disk_track)
@@ -206,9 +204,9 @@ read_record:
                 out (DISK_COMMAND),a
 read_wait:
                 in a,(DISK_COMMAND)
-                bit 7,a
-                jr nz,disk_io_error
-                bit 1,a
+                rlca
+                jr c,disk_io_error
+                bit 2,a
                 jr z,read_wait
                 ld hl,(dma_address)
                 ld b,128
@@ -223,17 +221,13 @@ write_record:
                 push hl
                 call prepare_disk_io
                 ld a,c
-                cp 3
-                jr c,write_command_valid
-                xor a
-write_command_valid:
                 add a,DISK_WRITE_NORMAL
                 out (DISK_COMMAND),a
 write_room_wait:
                 in a,(DISK_COMMAND)
-                bit 7,a
-                jr nz,disk_io_error
-                bit 2,a
+                rlca
+                jr c,disk_io_error
+                bit 3,a
                 jr z,write_room_wait
                 ld hl,(dma_address)
                 ld b,128
@@ -241,9 +235,9 @@ write_room_wait:
                 otir
 write_done_wait:
                 in a,(DISK_COMMAND)
-                bit 7,a
-                jr nz,disk_io_error
-                bit 0,a
+                rlca
+                jr c,disk_io_error
+                bit 1,a
                 jr z,write_done_wait
                 xor a
                 jr disk_io_done
@@ -253,9 +247,9 @@ flush_disk:
                 out (DISK_COMMAND),a
 flush_wait:
                 in a,(DISK_COMMAND)
-                bit 7,a
-                jr nz,flush_error
-                bit 0,a
+                rlca
+                jr c,flush_error
+                bit 1,a
                 jr z,flush_wait
                 xor a
                 ret

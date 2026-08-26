@@ -104,7 +104,7 @@ if(Z80ASM_EXECUTABLE)
       --output-dir ${cpm_output_dir}
     DEPENDS
       z80_stage10_websocket_terminal
-      cpm/bios.asm
+      cpm/z80_bios.asm
       cpm/build_images.py
       cpm/cpm64_system.bin
       disks/geometry.py
