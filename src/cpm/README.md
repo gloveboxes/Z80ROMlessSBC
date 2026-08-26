@@ -17,6 +17,16 @@ in `build_images.py`. Page zero uses BDOS entry `0xEB06`, and the custom BIOS
 jump table begins at `0xF900`. The TPA is `0x0100`-`0xE2FF` (57,856 bytes),
 1,024 bytes larger than the previous 63K configuration.
 
+`disassemble_cpm64.py` recursively disassembles the exact fingerprinted image
+from the CCP vectors and all indirect CCP/BDOS dispatch tables. It generates
+`cpm64_i8080.asm` with Intel 8080 mnemonics and leaves unvisited strings,
+tables, and workspace as byte data. See `cpm64_i8080_audit.md` for the
+correctness and optimization review. The boot-proven `cpm64_system.bin` remains
+immutable. The builder instead assembles the generated `cpm64_z80.asm` port.
+Its unoptimized generation mode reproduces the immutable image byte-for-byte;
+the active port uses 242 safe relative branches and three independently checked
+substitutions to reclaim 245 bytes while preserving the fixed section ABI.
+
 Use the matching
 [Burcon CP/M 2.2 utilities](https://deramp.com/downloads/altair/software/8_inch_floppy/CPM/CPM%202.2/Burcon%20CPM/)
 when reproducing this artifact: run that archive's `MOVCPM.COM` and
@@ -36,9 +46,10 @@ The BIOS uses an identity `SECTRAN` because disk conversion has already removed
 the Altair skew. It forwards CP/M's standard write type to the Pico so normal
 writes can be coalesced in a 4 KiB cache, while directory writes and warm boot
 flush through the journal. A 250 ms idle deadline also persists an isolated
-normal overwrite. `LIST`, `PUNCH`, and `READER` remain in their
-required jump-table positions but intentionally alias the terminal because no
-separate printer, punch, or reader hardware is fitted. The existing aligned
+normal overwrite. `LIST`, `PUNCH`, and `READER` remain in their mandatory
+jump-table positions, but no devices are implemented: printer and punch output
+is discarded, reader input returns CP/M text EOF (`0x1A`), and `LISTST` reports
+not ready. The existing aligned
 console (`0x00`) and disk (`0x10`) port groups are retained for direct-I/O
 compatibility; changing their values would not reduce the number of I/O traps.
 

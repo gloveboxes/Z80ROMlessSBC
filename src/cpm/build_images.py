@@ -38,11 +38,13 @@ from geometry import (  # noqa: E402
 
 
 CCP_BASE = 0xE300
+BDOS_BASE = 0xEB00
 BDOS_ENTRY = 0xEB06
 BIOS_BASE = 0xF900
 CPM_SYSTEM_RECORDS = 44
 CPM_SYSTEM_BYTES = CPM_SYSTEM_RECORDS * RECORD_BYTES
 CPM_SYSTEM_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_system.bin"
+CPM_Z80_SOURCE_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_z80.asm"
 CPM_SYSTEM_SHA256 = (
     "2897f0ecf91048c753ea6a09f26fd28f20a607dddbbaca0c96a6943178115d0e"
 )
@@ -89,6 +91,33 @@ def load_cpm_system() -> bytes:
     if sha256(system) != CPM_SYSTEM_SHA256:
         raise ValueError("CP/M 64K CCP/BDOS fingerprint does not match")
     return system
+
+
+def assemble_cpm_source(assembler: str, source: str) -> bytes:
+    with tempfile.TemporaryDirectory(prefix="z80sbc-system-") as directory:
+        temporary = Path(directory)
+        source_path = temporary / "cpm64_z80.asm"
+        binary_path = temporary / "cpm64_z80.bin"
+        source_path.write_text(source, encoding="ascii")
+        subprocess.run(
+            [assembler, "-o", str(binary_path), str(source_path)],
+            check=True,
+        )
+        system = binary_path.read_bytes()
+
+    if len(system) != CPM_SYSTEM_BYTES:
+        raise ValueError(f"unexpected Z80 CP/M system size: {len(system)}")
+    if system[0] != 0xC3:
+        raise ValueError("Z80 CCP does not start with JP")
+    if system[BDOS_BASE - CCP_BASE + 1] != 22:
+        raise ValueError("Z80 BDOS version is not CP/M 2.2")
+    return system
+
+
+def build_cpm_system(assembler: str) -> bytes:
+    return assemble_cpm_source(
+        assembler, CPM_Z80_SOURCE_PATH.read_text(encoding="ascii")
+    )
 
 
 def assembler_definitions() -> str:
@@ -213,7 +242,7 @@ def main() -> None:
     if args.assembler is None:
         raise SystemExit("z80asm was not found; install it or pass --assembler")
 
-    cpm_system = load_cpm_system()
+    cpm_system = build_cpm_system(args.assembler)
     bios = build_bios(args.assembler)
     z80_image = build_z80_image(cpm_system, bios)
     package = build_boot_package(z80_image)

@@ -31,11 +31,11 @@ warm_boot_entry:
                 jp console_input
                 jp console_output
 list_output_entry:
-                jp console_output
+                jp unused_output
 punch_output_entry:
-                jp console_output
+                jp unused_output
 reader_input_entry:
-                jp console_input
+                jp unused_input
                 jp home
                 jp select_disk
                 jp set_track
@@ -131,11 +131,15 @@ console_output:
                 out (TERM_DATA),a
                 ret
 
+unused_output:
+                ret
+
+unused_input:
+                ld a,1ah
+                ret
+
 list_status:
-                in a,(TERM_STATUS)
-                rrca
-                rrca
-                sbc a,a
+                xor a
                 ret
 
 home:

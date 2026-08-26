@@ -105,6 +105,7 @@ if(Z80ASM_EXECUTABLE)
     DEPENDS
       z80_stage10_websocket_terminal
       cpm/z80_bios.asm
+      cpm/cpm64_z80.asm
       cpm/build_images.py
       cpm/cpm64_system.bin
       disks/geometry.py

@@ -4073,6 +4073,15 @@ The matching generator reports `SAVE 38` after `MOVCPM 64`. Preserve the
 Burcon `0x0700` BIOS reservation and verify the relocated entry vectors before
 accepting any regenerated CCP/BDOS image.
 
+The fingerprinted binary has also been recursively disassembled as Intel 8080
+source in `src/cpm/cpm64_i8080.asm`; its control-flow, opcode-compatibility, and
+optimization findings are recorded in `src/cpm/cpm64_i8080_audit.md`. The
+boot-proven binary remains immutable. The image builder assembles the separate
+`src/cpm/cpm64_z80.asm` port, whose unoptimized generation mode reproduces the
+reference byte-for-byte. The active port replaces 242 eligible absolute jumps
+with relative jumps and applies three independently checked substitutions,
+reclaiming 245 bytes while preserving the fixed memory ABI.
+
 Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
 cold loader use ports `0x08`-`0x0A` and are reference material, not executable
 code for this board. At image-build time they are replaced by the SBC-native
@@ -4115,9 +4124,11 @@ dcc's optional direct-BIOS functions. Its principal mappings are:
 | --- | --- |
 | `BOOT` / `WBOOT` | Initialize page zero or reload CCP/BDOS from Drive A |
 | `CONST` | Read terminal status port `0x01`; return `0xFF` when bit 0 reports input ready |
-| `CONIN` / `READER` | Wait for receive-ready, then read terminal data port `0x00`; no separate reader is fitted |
-| `CONOUT` / `LIST` / `PUNCH` | Wait for transmit-room bit 1, then write the character to port `0x00`; no separate printer or punch is fitted |
-| `LISTST` | Report the aliased console output readiness because no line printer exists |
+| `CONIN` | Wait for receive-ready, then read terminal data port `0x00` |
+| `CONOUT` | Wait for transmit-room bit 1, then write the character to port `0x00` |
+| `READER` | Return CP/M text EOF (`0x1A`); no reader device is implemented |
+| `LIST` / `PUNCH` | Discard output; printer and punch devices are intentionally not implemented |
+| `LISTST` | Return not ready because no list device exists |
 | `SELDSK` | Validate drives A-D and return the corresponding disk parameter header |
 | `SETTRK` / `SETSEC` / `SETDMA` | Record the logical CP/M transfer location and SRAM DMA address |
 | `READ` / `WRITE` | Convert track and sector to a linear 128-byte LBA, transfer through ports `0x10`-`0x14`, and preserve CP/M write-type semantics for flash caching |
