@@ -301,18 +301,18 @@ L_E496:
 L_E4A7:
         ld hl,A_E307
         ld b,(hl)
-L_E4AB:
         inc hl
         ld a,b
         or a
         jr z,L_E4BA
+L_E4AB:
         ld a,(hl)
         call L_E430
         ld (hl),a
-        dec b
-        jr L_E4AB
+        inc hl
+        djnz L_E4AB
 L_E4BA:
-        ld (hl),a
+        ld (hl),b
         ld hl,A_E308
         ld (A_E388),hl
         ret
@@ -355,8 +355,7 @@ L_E4FD:
         jp nz,L_E6CF
         inc de
         inc hl
-        dec b
-        jr nz,L_E4FD
+        djnz L_E4FD
         ret
 L_E509:
         call L_E398
@@ -463,8 +462,7 @@ L_E5A9:
         ld (hl),a
         inc de
 L_E5AB:
-        dec b
-        jr nz,L_E598
+        djnz L_E598
 L_E5AF:
         call L_E530
         jr z,L_E5C0
@@ -473,8 +471,7 @@ L_E5AF:
 L_E5B9:
         inc hl
         ld (hl),0x20
-        dec b
-        jr nz,L_E5B9
+        djnz L_E5B9
 L_E5C0:
         ld b,0x03
         cp 0x2e
@@ -492,8 +489,7 @@ L_E5D9:
         ld (hl),a
         inc de
 L_E5DB:
-        dec b
-        jr nz,L_E5C8
+        djnz L_E5C8
 L_E5DF:
         call L_E530
         jr z,L_E5F0
@@ -502,15 +498,13 @@ L_E5DF:
 L_E5E9:
         inc hl
         ld (hl),0x20
-        dec b
-        jr nz,L_E5E9
+        djnz L_E5E9
 L_E5F0:
         ld b,0x03
 L_E5F2:
         inc hl
         ld (hl),0x00
-        dec b
-        jr nz,L_E5F2
+        djnz L_E5F2
         ex de,hl
         ld (A_E388),hl
         pop hl
@@ -574,8 +568,7 @@ L_E63C:
         jr nz,L_E64F
         inc de
         inc hl
-        dec b
-        jr nz,L_E63C
+        djnz L_E63C
         ld a,(de)
         cp 0x20
         jr nz,L_E654
@@ -583,8 +576,7 @@ L_E63C:
         ret
 L_E64F:
         inc hl
-        dec b
-        jr nz,L_E64F
+        djnz L_E64F
 L_E654:
         inc c
         jr L_E633
@@ -727,12 +719,9 @@ L_E733:
 L_E740:
         ld b,0x03
 L_E742:
-        ld a,(hl)
-        ld (de),a
-        inc hl
-        inc de
-        dec b
-        jr nz,L_E742
+        ld c,b
+        ld b,0
+        ldir
         ret
 L_E74B:
         ld hl,0x0080
@@ -772,8 +761,7 @@ CCP_COMMAND_0:
 L_E788:
         ld (hl),0x3f
         inc hl
-        dec b
-        jr nz,L_E788
+        djnz L_E788
 L_E78F:
         ld e,0x00
         push de
@@ -1965,12 +1953,10 @@ L_EEE4:
         jr nc,L_EEFA
         push hl
         ld hl,(A_F8C1)
-        ld a,e
-        sub l
-        ld e,a
-        ld a,d
-        sbc a,h
-        ld d,a
+        or a
+        ex de,hl
+        sbc hl,de
+        ex de,hl
         pop hl
         dec hl
         jr L_EEE4
@@ -2332,16 +2318,14 @@ L_F105:
         inc hl
         ld (A_F8EA),hl
         call L_F095
-        jr nc,L_F119
-        jr L_F0FE
+        jr c,L_F0FE
 L_F119:
         ld a,(A_F8EA)
         and 0x03
         ld b,0x05
 L_F120:
         add a,a
-        dec b
-        jr nz,L_F120
+        djnz L_F120
         ld (A_F8E9),a
         or a
         ret nz
@@ -2906,23 +2890,22 @@ L_F4C1:
         cp (hl)
         jr c,L_F4E6
         cp 0x80
-        jr nz,L_F4FB
+        jp nz,L_EE05
         call L_F45A
         xor a
         ld (A_F8E3),a
         ld a,(A_EE45)
         or a
-        jr nz,L_F4FB
+        jp nz,L_EE05
 L_F4E6:
         call L_EF77
         call L_EF84
-        jr z,L_F4FB
+        jp z,L_EE05
         call L_EF8A
         call L_EED1
         call L_EEB2
         jp L_EFD2
 L_F4FB:
-        jp L_EE05
 L_F4FE:
         ld a,0x01
         ld (A_F8D5),a
@@ -2987,14 +2970,12 @@ L_F56E:
         push bc
         call L_EF8A
         ld a,(A_F8D5)
-        dec a
-        dec a
+        sub 2
         jr nz,L_F5BB
         pop bc
         push bc
         ld a,c
-        dec a
-        dec a
+        sub 2
         jr nz,L_F5BB
         push hl
         ld hl,(A_F8B9)
@@ -3157,13 +3138,13 @@ L_F68B:
 L_F693:
         ld c,0xff
         call L_F603
-        call z,L_F4C1
-        ret
+        ret nz
+        jp L_F4C1
 L_F69C:
         ld c,0x00
         call L_F603
-        call z,L_F503
-        ret
+        ret nz
+        jp L_F503
 L_F6A5:
         ex de,hl
         add hl,de
@@ -3473,8 +3454,8 @@ BDOS_FUNCTION_40:
         ld (A_F8D5),a
         ld c,0x00
         call L_F607
-        call z,L_F503
-        ret
+        ret nz
+        jp L_F503
 A_F8AC:
         db 0xe5
 A_F8AD:

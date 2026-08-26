@@ -45,6 +45,34 @@ pointers, and self-modifying targets, then pads each section to retain the fixed
 `0xE300`/`0xEB00`/`0xF900` ABI. Its unoptimized mode assembles byte-for-byte
 to the immutable image; this is enforced by the host tests.
 
+## Deeper Z80 optimization pass
+
+The active port additionally applies guarded whole-program transformations:
+
+- Ten flag-dead `DEC B; JR NZ` loop tails become `DJNZ`.
+- The shared counted byte-copy routine becomes `LD C,B; LD B,0; LDIR`,
+  after proving its three callers pass nonzero constants and discard `A`, `BC`,
+  and exit flags.
+- CCP command normalization keeps the pointer in `HL`, uses `DJNZ`, and removes
+  one redundant loop test while preserving the zero-length path.
+- `F113` inverts a branch-over-jump pair; three BDOS error branches target their
+  final handler directly instead of the `F4FB` trampoline.
+- Three conditional-call/return tails become inverse conditional returns followed
+  by direct jumps. This is size-neutral but shortens both paths.
+- Inline `DE = DE - HL` uses native `SBC HL,DE` between exchanges, after
+  proving the changed accumulator and non-carry flags are dead.
+- Two `DEC A; DEC A` pairs become `SUB 2`, where only the zero result is consumed.
+
+Together with the first pass, the active source reclaims 260 bytes: 109 bytes in
+CCP and 151 bytes in BDOS. Tests independently reconstruct the relocated layout,
+verify every generated `JR` and `DJNZ` destination, check the native instruction
+encodings, and retain the byte-identical unoptimized round trip.
+
+Rejected transformations include alternate-register allocation across public BDOS
+entries, block operations without closed count/register contracts, rotate rewrites
+that alter carry, and zeroing substitutions at `E444`, `F384`, and `F6B4` where
+the original flags are live.
+
 Rejected substitutions:
 
 - `0xE444`: `MVI A,0` preserves the Z flag consumed by `CNZ`.

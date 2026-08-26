@@ -188,13 +188,62 @@ class BuildImagesTest(unittest.TestCase):
         output_address = disassemble_cpm64.ORIGIN
         address = disassemble_cpm64.ORIGIN
         relative_branches = []
+        djnz_branches = []
+        section_ends = {}
         while address < disassemble_cpm64.BIOS_BASE:
             if address == disassemble_cpm64.BDOS_BASE:
+                section_ends["ccp"] = output_address
                 output_address = disassemble_cpm64.BDOS_BASE
             relocated[address] = output_address
             instruction = instructions.get(address)
             if instruction is None:
                 size = 1
+            elif address == 0xE4A7:
+                relocated[0xE4AB] = output_address + 9
+                size = 17
+                address = 0xE4BA
+                output_address += size
+                continue
+            elif address == 0xE4BA:
+                size = 1
+            elif address == 0xE742:
+                size = 6
+                address = 0xE74B
+                output_address += size
+                continue
+            elif address == 0xEEEF:
+                size = 5
+                address = 0xEEF5
+                output_address += size
+                continue
+            elif address in disassemble_cpm64.DJNZ_SITES:
+                jump = instructions[address + instruction.size]
+                djnz_branches.append((instruction, jump.target))
+                size = 2
+                address += instruction.size + jump.size
+                output_address += size
+                continue
+            elif address in disassemble_cpm64.SUB_TWO_SITES:
+                following_decrement = instructions[address + instruction.size]
+                size = 2
+                address += instruction.size + following_decrement.size
+                output_address += size
+                continue
+            elif address == 0xF113:
+                size = 2
+                address = 0xF119
+                output_address += size
+                continue
+            elif address in disassemble_cpm64.CONDITIONAL_TAIL_CALLS:
+                following_return = instructions[address + instruction.size]
+                size = 4
+                address += instruction.size + following_return.size
+                output_address += size
+                continue
+            elif address in disassemble_cpm64.THREADED_CONDITIONAL_JUMPS:
+                size = 3
+            elif address == 0xF4FB:
+                size = 0
             elif address == 0xF0C3:
                 size = 0
             elif address in {0xE55E, 0xF503}:
@@ -216,6 +265,7 @@ class BuildImagesTest(unittest.TestCase):
                 size = instruction.size
             output_address += size
             address += instruction.size if instruction is not None else 1
+        section_ends["bdos"] = output_address
 
         jr_opcodes = {
             "JMP": 0x18,
@@ -224,7 +274,6 @@ class BuildImagesTest(unittest.TestCase):
             "JNC": 0x30,
             "JC": 0x38,
         }
-        self.assertEqual(len(relative_branches), 242)
         for instruction in relative_branches:
             source = relocated[instruction.address]
             offset = source - disassemble_cpm64.ORIGIN
@@ -238,6 +287,101 @@ class BuildImagesTest(unittest.TestCase):
                 source + 2 + displacement,
                 relocated[instruction.target],
                 f"JR target mismatch for {instruction.address:04X}",
+            )
+
+        self.assertEqual(
+            disassemble_cpm64.BDOS_BASE - section_ends["ccp"], 109
+        )
+        self.assertEqual(
+            disassemble_cpm64.BIOS_BASE - section_ends["bdos"], 151
+        )
+        self.assertEqual(len(djnz_branches), 10)
+        for instruction, target in djnz_branches:
+            source = relocated[instruction.address]
+            offset = source - disassemble_cpm64.ORIGIN
+            self.assertEqual(self.z80_system[offset], 0x10)
+            displacement = int.from_bytes(
+                self.z80_system[offset + 1 : offset + 2], signed=True
+            )
+            self.assertEqual(source + 2 + displacement, relocated[target])
+
+        copy = relocated[0xE742] - disassemble_cpm64.ORIGIN
+        self.assertEqual(
+            self.z80_system[copy : copy + 6],
+            bytes((0x48, 0x06, 0x00, 0xED, 0xB0, 0xC9)),
+        )
+        inverted = relocated[0xF113] - disassemble_cpm64.ORIGIN
+        self.assertEqual(self.z80_system[inverted], 0x38)
+        displacement = int.from_bytes(
+            self.z80_system[inverted + 1 : inverted + 2], signed=True
+        )
+        self.assertEqual(
+            relocated[0xF113] + 2 + displacement, relocated[0xF0FE]
+        )
+
+        for address, target in disassemble_cpm64.THREADED_CONDITIONAL_JUMPS.items():
+            offset = relocated[address] - disassemble_cpm64.ORIGIN
+            opcode = 0xCA if instructions[address].mnemonic == "JZ" else 0xC2
+            self.assertEqual(self.z80_system[offset], opcode)
+            destination = int.from_bytes(
+                self.z80_system[offset + 1 : offset + 3], byteorder="little"
+            )
+            self.assertEqual(destination, relocated[target])
+
+        for address in disassemble_cpm64.CONDITIONAL_TAIL_CALLS:
+            offset = relocated[address] - disassemble_cpm64.ORIGIN
+            self.assertEqual(self.z80_system[offset : offset + 2], bytes((0xC0, 0xC3)))
+
+        de_subtract = relocated[0xEEEF] - disassemble_cpm64.ORIGIN
+        self.assertEqual(
+            self.z80_system[de_subtract : de_subtract + 5],
+            bytes((0xB7, 0xEB, 0xED, 0x52, 0xEB)),
+        )
+        for address in disassemble_cpm64.SUB_TWO_SITES:
+            offset = relocated[address] - disassemble_cpm64.ORIGIN
+            self.assertEqual(self.z80_system[offset : offset + 2], bytes((0xD6, 0x02)))
+
+        for table_address, count in (
+            disassemble_cpm64.CCP_COMMAND_TABLE,
+            disassemble_cpm64.BDOS_ERROR_TABLE,
+            disassemble_cpm64.BDOS_FUNCTION_TABLE,
+        ):
+            output = relocated[table_address] - disassemble_cpm64.ORIGIN
+            for index, target in enumerate(
+                disassemble_cpm64.table_targets(
+                    self.cpm_system, table_address, count
+                )
+            ):
+                actual = int.from_bytes(
+                    self.z80_system[output + index * 2 : output + index * 2 + 2],
+                    byteorder="little",
+                )
+                expected = relocated.get(target, target)
+                self.assertEqual(
+                    actual,
+                    expected,
+                    f"relocated table target mismatch at {table_address + index * 2:04X}",
+                )
+
+        workspace_pointer = relocated[0xE388] - disassemble_cpm64.ORIGIN
+        self.assertEqual(
+            int.from_bytes(
+                self.z80_system[workspace_pointer : workspace_pointer + 2],
+                byteorder="little",
+            ),
+            relocated[0xE308],
+        )
+        for site, target, opcode in (
+            (0xE6D2, 0xE300, 0x22),
+            (0xEBEE, 0xEBC6, 0x32),
+        ):
+            offset = relocated[site] - disassemble_cpm64.ORIGIN
+            self.assertEqual(self.z80_system[offset], opcode)
+            self.assertEqual(
+                int.from_bytes(
+                    self.z80_system[offset + 1 : offset + 3], byteorder="little"
+                ),
+                relocated[target],
             )
 
     def test_i8080_decoder_opcode_coverage(self) -> None:

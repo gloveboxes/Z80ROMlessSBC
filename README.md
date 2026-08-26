@@ -4078,9 +4078,11 @@ source in `src/cpm/cpm64_i8080.asm`; its control-flow, opcode-compatibility, and
 optimization findings are recorded in `src/cpm/cpm64_i8080_audit.md`. The
 boot-proven binary remains immutable. The image builder assembles the separate
 `src/cpm/cpm64_z80.asm` port, whose unoptimized generation mode reproduces the
-reference byte-for-byte. The active port replaces 242 eligible absolute jumps
-with relative jumps and applies three independently checked substitutions,
-reclaiming 245 bytes while preserving the fixed memory ABI.
+reference byte-for-byte. The active port uses relative branches, `DJNZ`, `LDIR`,
+native 16-bit subtraction, branch threading, tail transfers, and guarded
+register-use rewrites. It reclaims 260 bytes while preserving the fixed memory
+ABI; host tests independently verify the relocated branch targets and native
+instruction encodings.
 
 Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
 cold loader use ports `0x08`-`0x0A` and are reference material, not executable

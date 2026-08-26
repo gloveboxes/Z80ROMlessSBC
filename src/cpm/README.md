@@ -23,9 +23,11 @@ from the CCP vectors and all indirect CCP/BDOS dispatch tables. It generates
 tables, and workspace as byte data. See `cpm64_i8080_audit.md` for the
 correctness and optimization review. The boot-proven `cpm64_system.bin` remains
 immutable. The builder instead assembles the generated `cpm64_z80.asm` port.
-Its unoptimized generation mode reproduces the immutable image byte-for-byte;
-the active port uses 242 safe relative branches and three independently checked
-substitutions to reclaim 245 bytes while preserving the fixed section ABI.
+Its unoptimized generation mode reproduces the immutable image byte-for-byte.
+The active port combines relative branches, `DJNZ`, `LDIR`, native 16-bit
+subtraction, branch threading, tail transfers, and guarded register-use rewrites
+to reclaim 260 bytes while preserving the fixed section ABI. Host tests
+independently verify the relocated branch targets and native encodings.
 
 Use the matching
 [Burcon CP/M 2.2 utilities](https://deramp.com/downloads/altair/software/8_inch_floppy/CPM/CPM%202.2/Burcon%20CPM/)

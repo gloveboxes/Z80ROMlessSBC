@@ -30,6 +30,14 @@ UNOFFICIAL_8080 = {0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38,
                    0xCB, 0xD9, 0xDD, 0xED, 0xFD}
 SELF_MODIFYING_SITES = {0xE6D2: ("SHLD", "E300H"),
                         0xEBEE: ("STA", "EBC6H")}
+DJNZ_SITES = {
+    0xE504, 0xE5AB, 0xE5BC, 0xE5DB, 0xE5EC,
+    0xE5F5, 0xE643, 0xE650, 0xE78B, 0xF121,
+}
+CONDITIONAL_TAIL_CALLS = {0xF698: "NZ", 0xF6A1: "NZ", 0xF8A8: "NZ"}
+THREADED_CONDITIONAL_JUMPS = {0xF4D5: 0xEE05, 0xF4E3: 0xEE05,
+                              0xF4EC: 0xEE05}
+SUB_TWO_SITES = {0xF57A, 0xF582}
 
 
 @dataclass(frozen=True)
@@ -405,13 +413,93 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             lines.append(f"        dw {labels[0xE308]}")
             address += 2
             continue
+        if optimize and address == 0xE4A7:
+            lines.extend((
+                f"        ld hl,{labels[0xE307]}",
+                "        ld b,(hl)",
+                "        inc hl",
+                "        ld a,b",
+                "        or a",
+                f"        jr z,{labels[0xE4BA]}",
+                f"{labels[0xE4AB]}:",
+                "        ld a,(hl)",
+                f"        call {labels[0xE430]}",
+                "        ld (hl),a",
+                "        inc hl",
+                f"        djnz {labels[0xE4AB]}",
+            ))
+            address = 0xE4BA
+            continue
+        if optimize and address == 0xE4BA:
+            lines.append("        ld (hl),b")
+            address += instructions[address].size
+            continue
+        if optimize and address == 0xE742:
+            lines.extend((
+                "        ld c,b",
+                "        ld b,0",
+                "        ldir",
+                "        ret",
+            ))
+            address = 0xE74B
+            continue
+        if optimize and address == 0xEEEF:
+            expected = ("MOV", "SUB", "MOV", "MOV", "SBB", "MOV")
+            sequence = []
+            sequence_address = address
+            for _ in expected:
+                sequence.append(instructions[sequence_address])
+                sequence_address += sequence[-1].size
+            if tuple(item.mnemonic for item in sequence) != expected:
+                raise ValueError("native DE subtraction pattern changed at EEEF")
+            lines.extend((
+                "        or a",
+                "        ex de,hl",
+                "        sbc hl,de",
+                "        ex de,hl",
+            ))
+            address = sequence_address
+            continue
         instruction = instructions.get(address)
         if instruction is None:
             lines.append(f"        db 0x{image[address - ORIGIN]:02x}")
             address += 1
             continue
 
-        if optimize and address in {0xE55E, 0xF503}:
+        next_instruction = instructions.get(address + instruction.size)
+        if optimize and address in DJNZ_SITES:
+            if (next_instruction is None or next_instruction.mnemonic != "JNZ" or
+                    next_instruction.target is None):
+                raise ValueError(f"DJNZ pattern changed at {address:04X}")
+            text = f"djnz {labels[next_instruction.target]}"
+            address += next_instruction.size
+        elif optimize and address in SUB_TWO_SITES:
+            if (next_instruction is None or next_instruction.mnemonic != "DCR" or
+                    next_instruction.operand != "A"):
+                raise ValueError(f"SUB 2 pattern changed at {address:04X}")
+            text = "sub 2"
+            address += next_instruction.size
+        elif optimize and address == 0xF113:
+            if (next_instruction is None or next_instruction.address != 0xF116 or
+                    next_instruction.mnemonic != "JMP" or
+                    next_instruction.target != 0xF0FE):
+                raise ValueError("branch inversion pattern changed at F113")
+            text = f"jr c,{labels[0xF0FE]}"
+            address += next_instruction.size
+        elif optimize and address in CONDITIONAL_TAIL_CALLS:
+            if (next_instruction is None or next_instruction.mnemonic != "RET" or
+                    instruction.target is None):
+                raise ValueError(f"conditional tail-call pattern changed at {address:04X}")
+            lines.append(f"        ret {CONDITIONAL_TAIL_CALLS[address].lower()}")
+            text = f"jp {labels[instruction.target]}"
+            address += next_instruction.size
+        elif optimize and address in THREADED_CONDITIONAL_JUMPS:
+            condition = instruction.mnemonic[1:].lower()
+            text = f"jp {condition},{labels[THREADED_CONDITIONAL_JUMPS[address]]}"
+        elif optimize and address == 0xF4FB:
+            address += instruction.size
+            continue
+        elif optimize and address in {0xE55E, 0xF503}:
             text = "xor a"
         elif optimize and address == 0xF0C0:
             text = f"jp {labels[instruction.target or 0]}"
@@ -551,6 +639,34 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         "pointers, and self-modifying targets, then pads each section to retain the fixed",
         "`0xE300`/`0xEB00`/`0xF900` ABI. Its unoptimized mode assembles byte-for-byte",
         "to the immutable image; this is enforced by the host tests.",
+        "",
+        "## Deeper Z80 optimization pass",
+        "",
+        "The active port additionally applies guarded whole-program transformations:",
+        "",
+        "- Ten flag-dead `DEC B; JR NZ` loop tails become `DJNZ`.",
+        "- The shared counted byte-copy routine becomes `LD C,B; LD B,0; LDIR`,",
+        "  after proving its three callers pass nonzero constants and discard `A`, `BC`,",
+        "  and exit flags.",
+        "- CCP command normalization keeps the pointer in `HL`, uses `DJNZ`, and removes",
+        "  one redundant loop test while preserving the zero-length path.",
+        "- `F113` inverts a branch-over-jump pair; three BDOS error branches target their",
+        "  final handler directly instead of the `F4FB` trampoline.",
+        "- Three conditional-call/return tails become inverse conditional returns followed",
+        "  by direct jumps. This is size-neutral but shortens both paths.",
+        "- Inline `DE = DE - HL` uses native `SBC HL,DE` between exchanges, after",
+        "  proving the changed accumulator and non-carry flags are dead.",
+        "- Two `DEC A; DEC A` pairs become `SUB 2`, where only the zero result is consumed.",
+        "",
+        "Together with the first pass, the active source reclaims 260 bytes: 109 bytes in",
+        "CCP and 151 bytes in BDOS. Tests independently reconstruct the relocated layout,",
+        "verify every generated `JR` and `DJNZ` destination, check the native instruction",
+        "encodings, and retain the byte-identical unoptimized round trip.",
+        "",
+        "Rejected transformations include alternate-register allocation across public BDOS",
+        "entries, block operations without closed count/register contracts, rotate rewrites",
+        "that alter carry, and zeroing substitutions at `E444`, `F384`, and `F6B4` where",
+        "the original flags are live.",
         "",
         "Rejected substitutions:",
         "",
