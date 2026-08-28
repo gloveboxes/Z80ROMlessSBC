@@ -1,0 +1,13 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Interactive CP/M emulator",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "python3 src/cpm/interactive/launch.py",
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "Prepare interactive CP/M emulator"
+		}
+	]
+}

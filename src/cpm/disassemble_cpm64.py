@@ -14,6 +14,9 @@ CCP_BYTES = 0x0800
 BDOS_BASE = 0xEB00
 BIOS_BASE = 0xF900
 IMAGE_BYTES = BIOS_BASE - ORIGIN
+ACTIVE_ORIGIN = 0xE700
+ACTIVE_BDOS_BASE = 0xEF00
+ACTIVE_BIOS_BASE = 0xFD00
 EXPECTED_SHA256 = (
     "2897f0ecf91048c753ea6a09f26fd28f20a607dddbbaca0c96a6943178115d0e"
 )
@@ -170,6 +173,7 @@ def roots(image: bytes) -> dict[int, str]:
         0xE300: "CCP_COLD_ENTRY",
         0xE303: "CCP_WARM_ENTRY",
         0xEB06: "BDOS_ENTRY",
+        0xF874: "BDOS_RETURN_CLEANUP",
     }
     for index, target in enumerate(table_targets(image, *CCP_COMMAND_TABLE)):
         result[target] = f"CCP_COMMAND_{index}"
@@ -368,14 +372,27 @@ def format_z80_instruction(instruction: Instruction, labels: dict[int, str]) -> 
 
 
 def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
-                  targets: set[int], optimize: bool = True) -> str:
+                  targets: set[int], optimize: bool = True,
+                  relocate: bool | None = None,
+                  deep_optimize: bool = True) -> str:
+    if relocate is None:
+        relocate = optimize
+    output_origin = ACTIVE_ORIGIN if relocate else ORIGIN
+    output_bdos_base = ACTIVE_BDOS_BASE if relocate else BDOS_BASE
+    output_bios_base = ACTIVE_BIOS_BASE if relocate else BIOS_BASE
     labels = labels_for(image, targets)
+    for value in range(BIOS_BASE, BIOS_BASE + 0x31, 3):
+        labels.setdefault(value, f"BIOS_BASE+0x{value - BIOS_BASE:02x}")
     for instruction in instructions.values():
         for part in instruction.operand.split(","):
             if part.endswith("H") and len(part) == 5:
                 value = int(part[:-1], 16)
                 if ORIGIN <= value < BIOS_BASE:
                     labels.setdefault(value, f"A_{value:04X}")
+                elif BIOS_BASE <= value <= BIOS_BASE + 0x30:
+                    labels.setdefault(
+                        value, f"BIOS_BASE+0x{value - BIOS_BASE:02x}"
+                    )
 
     pointer_tables = {
         CCP_COMMAND_TABLE[0]: CCP_COMMAND_TABLE[1],
@@ -385,7 +402,8 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
     lines = [
         "; Z80 port generated from the immutable Burcon CP/M 2.2 image.",
         "; Internal references are symbolic so each fixed-base section can be compacted.",
-        f"        org 0x{ORIGIN:04x}",
+        f"BIOS_BASE: equ 0x{output_bios_base:04x}",
+        f"        org 0x{output_origin:04x}",
         "",
     ]
     address = ORIGIN
@@ -393,8 +411,8 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
         if address == BDOS_BASE:
             lines.extend((
                 "",
-                f"        defs 0x{BDOS_BASE:04x}-$,0",
-                f"        org 0x{BDOS_BASE:04x}",
+                f"        defs 0x{output_bdos_base:04x}-$,0",
+                f"        org 0x{output_bdos_base:04x}",
                 "",
             ))
         if address in labels:
@@ -413,7 +431,7 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             lines.append(f"        dw {labels[0xE308]}")
             address += 2
             continue
-        if optimize and address == 0xE4A7:
+        if optimize and deep_optimize and address == 0xE4A7:
             lines.extend((
                 f"        ld hl,{labels[0xE307]}",
                 "        ld b,(hl)",
@@ -430,11 +448,11 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             ))
             address = 0xE4BA
             continue
-        if optimize and address == 0xE4BA:
+        if optimize and deep_optimize and address == 0xE4BA:
             lines.append("        ld (hl),b")
             address += instructions[address].size
             continue
-        if optimize and address == 0xE742:
+        if optimize and deep_optimize and address == 0xE742:
             lines.extend((
                 "        ld c,b",
                 "        ld b,0",
@@ -443,7 +461,7 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             ))
             address = 0xE74B
             continue
-        if optimize and address == 0xEEEF:
+        if optimize and deep_optimize and address == 0xEEEF:
             expected = ("MOV", "SUB", "MOV", "MOV", "SBB", "MOV")
             sequence = []
             sequence_address = address
@@ -460,6 +478,34 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             ))
             address = sequence_address
             continue
+        if optimize and deep_optimize and address == 0xEF3E:
+            # This loop's counter is C, so its DCR/JNZ tail cannot use DJNZ
+            # as-is. C is never read again after the loop (the routine
+            # overwrites B itself two instructions later, so its caller
+            # cannot rely on B being preserved either), so the counter is
+            # safely relocated from C to B to enable DJNZ.
+            expected = ("LXI", "MOV", "LDA", "ORA", "RAR", "DCR", "JNZ")
+            sequence = []
+            sequence_address = address
+            for _ in expected:
+                sequence.append(instructions[sequence_address])
+                sequence_address += sequence[-1].size
+            if (tuple(item.mnemonic for item in sequence) != expected or
+                    sequence[1].operand != "C,M" or
+                    sequence[5].operand != "C" or
+                    sequence[6].target != 0xEF45):
+                raise ValueError("C-to-B loop counter pattern changed at EF3E")
+            lines.extend((
+                f"        ld hl,{labels[0xF8C3]}",
+                "        ld b,(hl)",
+                f"        ld a,({labels[0xF8E3]})",
+                f"{labels[0xEF45]}:",
+                "        or a",
+                "        rra",
+                f"        djnz {labels[0xEF45]}",
+            ))
+            address = sequence_address
+            continue
         instruction = instructions.get(address)
         if instruction is None:
             lines.append(f"        db 0x{image[address - ORIGIN]:02x}")
@@ -467,36 +513,36 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             continue
 
         next_instruction = instructions.get(address + instruction.size)
-        if optimize and address in DJNZ_SITES:
+        if optimize and deep_optimize and address in DJNZ_SITES:
             if (next_instruction is None or next_instruction.mnemonic != "JNZ" or
                     next_instruction.target is None):
                 raise ValueError(f"DJNZ pattern changed at {address:04X}")
             text = f"djnz {labels[next_instruction.target]}"
             address += next_instruction.size
-        elif optimize and address in SUB_TWO_SITES:
-            if (next_instruction is None or next_instruction.mnemonic != "DCR" or
-                    next_instruction.operand != "A"):
-                raise ValueError(f"SUB 2 pattern changed at {address:04X}")
-            text = "sub 2"
-            address += next_instruction.size
-        elif optimize and address == 0xF113:
-            if (next_instruction is None or next_instruction.address != 0xF116 or
-                    next_instruction.mnemonic != "JMP" or
-                    next_instruction.target != 0xF0FE):
-                raise ValueError("branch inversion pattern changed at F113")
-            text = f"jr c,{labels[0xF0FE]}"
-            address += next_instruction.size
-        elif optimize and address in CONDITIONAL_TAIL_CALLS:
+        elif optimize and deep_optimize and address in CONDITIONAL_TAIL_CALLS:
             if (next_instruction is None or next_instruction.mnemonic != "RET" or
                     instruction.target is None):
                 raise ValueError(f"conditional tail-call pattern changed at {address:04X}")
             lines.append(f"        ret {CONDITIONAL_TAIL_CALLS[address].lower()}")
             text = f"jp {labels[instruction.target]}"
             address += next_instruction.size
-        elif optimize and address in THREADED_CONDITIONAL_JUMPS:
+        elif optimize and deep_optimize and address in SUB_TWO_SITES:
+            if (next_instruction is None or next_instruction.mnemonic != "DCR" or
+                    next_instruction.operand != "A"):
+                raise ValueError(f"SUB 2 pattern changed at {address:04X}")
+            text = "sub 2"
+            address += next_instruction.size
+        elif optimize and deep_optimize and address == 0xF113:
+            if (next_instruction is None or next_instruction.address != 0xF116 or
+                    next_instruction.mnemonic != "JMP" or
+                    next_instruction.target != 0xF0FE):
+                raise ValueError("branch inversion pattern changed at F113")
+            text = f"jr c,{labels[0xF0FE]}"
+            address += next_instruction.size
+        elif optimize and deep_optimize and address in THREADED_CONDITIONAL_JUMPS:
             condition = instruction.mnemonic[1:].lower()
             text = f"jp {condition},{labels[THREADED_CONDITIONAL_JUMPS[address]]}"
-        elif optimize and address == 0xF4FB:
+        elif optimize and deep_optimize and address == 0xF4FB:
             address += instruction.size
             continue
         elif optimize and address in {0xE55E, 0xF503}:
@@ -517,7 +563,7 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
                 text = text.replace("jp ", "jr ", 1)
         lines.append(f"        {text}")
         address += instruction.size
-    lines.extend(("", f"        defs 0x{BIOS_BASE:04x}-$,0"))
+    lines.extend(("", f"        defs 0x{output_bios_base:04x}-$,0"))
     return "\n".join(lines) + "\n"
 
 
@@ -621,6 +667,8 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         "the CCP version-mismatch path at `0xE6CF` writes `DI; HLT` at `0xE300`,",
         "and BDOS error formatting at `0xEBEE` writes the current drive letter into",
         "the message byte at `0xEBC6`.",
+        "The synthetic return target at `0xF874` is an explicit discovery root because",
+        "BDOS reaches that cleanup block by pushing its address and later executing `RET`.",
         "",
         "## Intel 8080 optimization review",
         "",
@@ -636,32 +684,58 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         f"These save {len(relative_branches) + 3} bytes: "
         f"{ccp_relative_branches + 1} in CCP and {bdos_relative_branches + 2} in BDOS.",
         "The generated source symbolizes internal operands, dispatch tables, workspace",
-        "pointers, and self-modifying targets, then pads each section to retain the fixed",
-        "`0xE300`/`0xEB00`/`0xF900` ABI. Its unoptimized mode assembles byte-for-byte",
+        "pointers, and self-modifying targets. The active port relocates the fixed-size",
+        "sections to `0xE700`/`0xEF00`/`0xFD00`, while its unoptimized reference mode assembles byte-for-byte",
         "to the immutable image; this is enforced by the host tests.",
         "",
         "## Deeper Z80 optimization pass",
         "",
         "The active port additionally applies guarded whole-program transformations:",
         "",
-        "- Ten flag-dead `DEC B; JR NZ` loop tails become `DJNZ`.",
+        "- Ten flag-dead `DEC B; JR NZ` loop tails become `DJNZ` (nine in CCP, one in",
+        "  BDOS). Each site was proven flag-dead: the loop body's own comparison",
+        "  branch is the only flag consumer, and every caller either discards the",
+        "  return flags or re-establishes them (for example with `LDA`/`ld a,(nn)`)",
+        "  before testing them. An earlier rejection of this transform was traced to",
+        "  a flaky DCC debug-host test harness, not a real defect; see below.",
         "- The shared counted byte-copy routine becomes `LD C,B; LD B,0; LDIR`,",
         "  after proving its three callers pass nonzero constants and discard `A`, `BC`,",
         "  and exit flags.",
         "- CCP command normalization keeps the pointer in `HL`, uses `DJNZ`, and removes",
         "  one redundant loop test while preserving the zero-length path.",
-        "- `F113` inverts a branch-over-jump pair; three BDOS error branches target their",
-        "  final handler directly instead of the `F4FB` trampoline.",
+        "- An inline `DE = DE - HL` computed by hand with `MOV/SUB/MOV/MOV/SBB/MOV`",
+        "  becomes native `OR A; EX DE,HL; SBC HL,DE; EX DE,HL`, after proving the",
+        "  accumulator and non-carry flags it changes are dead at the call site.",
+        "- Three BDOS error branches target their final handler directly instead of the",
+        "  `F4FB` trampoline.",
         "- Three conditional-call/return tails become inverse conditional returns followed",
         "  by direct jumps. This is size-neutral but shortens both paths.",
-        "- Inline `DE = DE - HL` uses native `SBC HL,DE` between exchanges, after",
-        "  proving the changed accumulator and non-carry flags are dead.",
-        "- Two `DEC A; DEC A` pairs become `SUB 2`, where only the zero result is consumed.",
+        "- `F113` inverts a branch-over-jump pair into a single `JR C` past the `F0FE`",
+        "  handler.",
+        "- Two `DEC A; DEC A` pairs become `SUB 2`, where only the zero/non-zero result",
+        "  is consumed by the caller.",
+        "- The `EF3E` right-shift-normalize loop moves its counter from `C` to `B`",
+        "  (`LD B,(HL)` instead of `LD C,M`) so its `DCR C; JR NZ` tail becomes `DJNZ`.",
+        "  `C` is never read again after the loop, and the routine itself overwrites",
+        "  `B` two instructions later, so no caller can rely on either register.",
         "",
-        "Together with the first pass, the active source reclaims 260 bytes: 109 bytes in",
-        "CCP and 151 bytes in BDOS. Tests independently reconstruct the relocated layout,",
+        "Together with the first pass, the active source reclaims 263 bytes: 109 bytes in",
+        "CCP and 154 bytes in BDOS. Tests independently reconstruct the relocated layout,",
         "verify every generated `JR` and `DJNZ` destination, check the native instruction",
         "encodings, and retain the byte-identical unoptimized round trip.",
+        "",
+        "An earlier working-tree revision rejected the `DJNZ`, native `SBC HL,DE`,",
+        "`SUB 2`, and `F113` transforms after \"relocated runtime testing\" reported",
+        "failures. Root-causing those failures found the actual defect in the test",
+        "harness, not the generated code: the DCC debug host's `FullCpmHost` model",
+        "reports `exited-normally` whenever the emulated PC coincidentally equals",
+        "0x0000 or a bootstrap-captured address, even mid-instruction-stream during",
+        "completely ordinary execution. That produced intermittent false failures",
+        "unrelated to any of the four transforms (repeated runs of the *same*",
+        "generated bytes both passed and failed). `test_dcc_debug_host.py` now",
+        "resumes past that spurious checkpoint and all four transforms pass",
+        "repeated boot, `DIR`, `LS.COM`, and `SAVE` (disk-write) runs under",
+        "`dcc-debug-host`.",
         "",
         "Rejected transformations include alternate-register allocation across public BDOS",
         "entries, block operations without closed count/register contracts, rotate rewrites",
@@ -674,9 +748,9 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         "- `0xF384`: `MVI A,0` preserves carry from `CMP` for the following `JC`.",
         "- `0xF6B4`: `MVI A,0` preserves carry for the following `ADC A,B`.",
         "",
-        "No correctness defect was found in the reachable 8080 CCP/BDOS code. More",
-        "invasive Z80 rewrites such as loop conversion, block operations, or alternate",
-        "register use are deliberately deferred until they have behavioral tests.",
+        "The optimized image boots, completes a disk-directory command, loads a transient,",
+        "and completes a BIOS warm reload under `dcc-debug-host` using the SBC adapter. More invasive",
+        "alternate-register allocation remains deferred without closed behavioral contracts.",
     ]
 
 

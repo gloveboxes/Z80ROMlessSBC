@@ -1,6 +1,6 @@
-CCP_BASE:       equ 0e300h
-BDOS_ENTRY:     equ 0eb06h
-BIOS_BASE:      equ 0f900h
+CCP_BASE:       equ 0e700h
+BDOS_ENTRY:     equ 0ef06h
+BIOS_BASE:      equ 0fd00h
 
 TERM_DATA:      equ 00h
 TERM_STATUS:    equ 01h
@@ -73,14 +73,14 @@ warm_boot:
                 ld (disk_sector),hl
                 ld hl,CCP_BASE
                 ld (dma_address),hl
+                ld de,0080h
                 ld b,SYSTEM_RECORDS
 warm_boot_loop:
                 call read_record
                 or a
                 jr nz,warm_boot
                 ld hl,(dma_address)
-                ; warm_boot fixes and balances SP at the 128-byte record size.
-                add hl,sp
+                add hl,de
                 ld (dma_address),hl
                 ld hl,(disk_sector)
                 inc hl
@@ -200,9 +200,12 @@ disk_ready_wait:
                 ret
 
 read_record:
-                push bc
-                push de
-                push hl
+                ; Interrupts are never enabled anywhere in this system (BIOS
+                ; or CP/M), so the alternate register set is never touched by
+                ; anything else. Banking BC/DE/HL out with EXX preserves the
+                ; caller's values across this routine in one instruction each
+                ; way, replacing three PUSHes and three POPs.
+                exx
                 call prepare_disk_io
                 ld a,DISK_READ
                 out (DISK_COMMAND),a
@@ -220,12 +223,16 @@ read_wait:
                 jr disk_io_done
 
 write_record:
-                push bc
-                push de
-                push hl
-                call prepare_disk_io
+                ; C selects DISK_WRITE_NORMAL/DIRECTORY/UNALLOCATED and must
+                ; be read from the caller's BC before EXX banks it away;
+                ; stash the computed command byte in memory since A is not
+                ; preserved across the prepare_disk_io call that follows.
                 ld a,c
                 add a,DISK_WRITE_NORMAL
+                ld (write_command),a
+                exx
+                call prepare_disk_io
+                ld a,(write_command)
                 out (DISK_COMMAND),a
 write_room_wait:
                 in a,(DISK_COMMAND)
@@ -264,13 +271,11 @@ flush_error:
 disk_io_error:
                 ld a,1
 disk_io_done:
-                pop hl
-                pop de
-                pop bc
+                exx
                 ret
 
 banner:
-                db 13,10,10,"64K CP/M 2.2 - Z80 ROMless SBC",13,10,0
+                db 13,10,10,"64K CP/M 2.2 - Burcon Z80 Edition",13,10,0
 
 disk_parameter_headers:
                 dw 0,0,0,0,directory_buffer,disk_parameter_block,0,allocation_0
@@ -295,6 +300,8 @@ disk_sector:
                 dw 0
 dma_address:
                 dw 0080h
+write_command:
+                db 0
 
 directory_buffer:
                 defs 128

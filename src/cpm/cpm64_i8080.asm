@@ -2929,8 +2929,19 @@ BDOS_FUNCTION_37:
         MOV   H,A                ; F86F: 67
         SHLD  F8ADH              ; F870: 22 AD F8
         RET                      ; F873: C9
-        DB    3AH,DEH,F8H,B7H,CAH,91H,F8H,2AH,43H,EEH,36H,00H,3AH,E0H,F8H,B7H ; F874: :......*C.6.:...
-        DB    CAH,91H,F8H,77H,3AH,DFH,F8H,32H,D6H,F8H,CDH,45H,F7H             ; F884: ...w:..2...E.
+BDOS_RETURN_CLEANUP:
+        LDA   F8DEH              ; F874: 3A DE F8
+        ORA   A                  ; F877: B7
+        JZ    L_F891             ; F878: CA 91 F8
+        LHLD  EE43H              ; F87B: 2A 43 EE
+        MVI   M,00H              ; F87E: 36 00
+        LDA   F8E0H              ; F880: 3A E0 F8
+        ORA   A                  ; F883: B7
+        JZ    L_F891             ; F884: CA 91 F8
+        MOV   M,A                ; F887: 77
+        LDA   F8DFH              ; F888: 3A DF F8
+        STA   F8D6H              ; F88B: 32 D6 F8
+        CALL  BDOS_FUNCTION_14   ; F88E: CD 45 F7
 L_F891:
         LHLD  EE0FH              ; F891: 2A 0F EE
         SPHL                     ; F894: F9

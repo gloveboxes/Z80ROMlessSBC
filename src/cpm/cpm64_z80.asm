@@ -1,6 +1,7 @@
 ; Z80 port generated from the immutable Burcon CP/M 2.2 image.
 ; Internal references are symbolic so each fixed-base section can be compacted.
-        org 0xe300
+BIOS_BASE: equ 0xfd00
+        org 0xe700
 
 CCP_COLD_ENTRY:
         jp L_E65C
@@ -1287,8 +1288,8 @@ A_EAF1:
         db 0x00
         db 0x00
 
-        defs 0xeb00-$,0
-        org 0xeb00
+        defs 0xef00-$,0
+        org 0xef00
 
 A_EB00:
         db 0x00
@@ -1321,7 +1322,7 @@ L_EB11:
         xor a
         ld (A_F8E0),a
         ld (A_F8DE),a
-        ld hl,A_F874
+        ld hl,BDOS_RETURN_CLEANUP
         push hl
         ld a,c
         cp 0x29
@@ -1339,12 +1340,12 @@ L_EB11:
         ex de,hl
         jp (hl)
 BDOS_FUNCTION_POINTERS:
-        dw 0xf903
+        dw BIOS_BASE+0x03
         dw BDOS_FUNCTION_1
         dw BDOS_FUNCTION_2
         dw BDOS_FUNCTION_3
-        dw 0xf912
-        dw 0xf90f
+        dw BIOS_BASE+0x12
+        dw BIOS_BASE+0x0f
         dw BDOS_FUNCTION_6
         dw BDOS_FUNCTION_7
         dw BDOS_FUNCTION_8
@@ -1462,7 +1463,7 @@ L_EBFB:
         ld (hl),0x00
         or a
         ret nz
-        jp 0xf909
+        jp BIOS_BASE+0x09
 L_EC06:
         call L_EBFB
         call L_EC14
@@ -1487,13 +1488,13 @@ L_EC23:
         ld a,(A_EE0E)
         or a
         jr nz,L_EC45
-        call 0xf906
+        call BIOS_BASE+0x06
         and 0x01
         ret z
-        call 0xf909
+        call BIOS_BASE+0x09
         cp 0x13
         jr nz,L_EC42
-        call 0xf909
+        call BIOS_BASE+0x09
         cp 0x03
         jp z,0x0000
         xor a
@@ -1511,12 +1512,12 @@ L_EC48:
         call L_EC23
         pop bc
         push bc
-        call 0xf90c
+        call BIOS_BASE+0x0c
         pop bc
         push bc
         ld a,(A_EE0D)
         or a
-        call nz,0xf90f
+        call nz,BIOS_BASE+0x0f
         pop bc
 L_EC62:
         ld a,c
@@ -1564,10 +1565,10 @@ L_EC96:
 L_ECA4:
         call L_ECAC
         ld c,0x20
-        call 0xf90c
+        call BIOS_BASE+0x0c
 L_ECAC:
         ld c,0x08
-        jp 0xf90c
+        jp BIOS_BASE+0x0c
 L_ECB1:
         ld c,0x23
         call L_EC48
@@ -1737,20 +1738,20 @@ BDOS_FUNCTION_1:
         call L_EC06
         jr L_EE01
 BDOS_FUNCTION_3:
-        call 0xf915
+        call BIOS_BASE+0x15
         jr L_EE01
 BDOS_FUNCTION_6:
         ld a,c
         inc a
         jr z,L_EDE0
         inc a
-        jp z,0xf906
-        jp 0xf90c
+        jp z,BIOS_BASE+0x06
+        jp BIOS_BASE+0x0c
 L_EDE0:
-        call 0xf906
+        call BIOS_BASE+0x06
         or a
         jp z,L_F891
-        call 0xf909
+        call BIOS_BASE+0x09
         jr L_EE01
 BDOS_FUNCTION_7:
         ld a,(0x0003)
@@ -1865,7 +1866,7 @@ L_EE50:
 L_EE59:
         ld a,(A_EE42)
         ld c,a
-        call 0xf91b
+        call BIOS_BASE+0x1b
         ld a,h
         or l
         ret z
@@ -1904,7 +1905,7 @@ L_EE9D:
         or a
         ret
 L_EEA1:
-        call 0xf918
+        call BIOS_BASE+0x18
         xor a
         ld hl,(A_F8B5)
         ld (hl),a
@@ -1916,10 +1917,10 @@ L_EEA1:
         ld (hl),a
         ret
 L_EEB2:
-        call 0xf927
+        call BIOS_BASE+0x27
         jr L_EEBB
 L_EEB8:
-        call 0xf92a
+        call BIOS_BASE+0x2a
 L_EEBB:
         or a
         ret z
@@ -1984,7 +1985,7 @@ L_EF0F:
         add hl,de
         ld b,h
         ld c,l
-        call 0xf91e
+        call BIOS_BASE+0x1e
         pop de
         ld hl,(A_F8B5)
         ld (hl),e
@@ -2004,19 +2005,18 @@ L_EF0F:
         ld b,a
         ld hl,(A_F8D0)
         ex de,hl
-        call 0xf930
+        call BIOS_BASE+0x30
         ld c,l
         ld b,h
-        jp 0xf921
+        jp BIOS_BASE+0x21
 L_EF3E:
         ld hl,A_F8C3
-        ld c,(hl)
+        ld b,(hl)
         ld a,(A_F8E3)
 L_EF45:
         or a
         rra
-        dec c
-        jr nz,L_EF45
+        djnz L_EF45
         ld b,a
         ld a,0x08
         sub (hl)
@@ -2292,7 +2292,7 @@ L_F0E3:
         ld c,(hl)
         inc hl
         ld b,(hl)
-        jp 0xf924
+        jp BIOS_BASE+0x24
 L_F0E9:
         ld hl,(A_F8B9)
         ex de,hl
@@ -3411,36 +3411,19 @@ BDOS_FUNCTION_37:
         ld h,a
         ld (A_F8AD),hl
         ret
-A_F874:
-        db 0x3a
-        db 0xde
-        db 0xf8
-        db 0xb7
-        db 0xca
-        db 0x91
-        db 0xf8
-        db 0x2a
-        db 0x43
-        db 0xee
-        db 0x36
-        db 0x00
-        db 0x3a
-        db 0xe0
-        db 0xf8
-        db 0xb7
-        db 0xca
-        db 0x91
-        db 0xf8
-        db 0x77
-        db 0x3a
-        db 0xdf
-        db 0xf8
-        db 0x32
-        db 0xd6
-        db 0xf8
-        db 0xcd
-        db 0x45
-        db 0xf7
+BDOS_RETURN_CLEANUP:
+        ld a,(A_F8DE)
+        or a
+        jr z,L_F891
+        ld hl,(A_EE43)
+        ld (hl),0x00
+        ld a,(A_F8E0)
+        or a
+        jr z,L_F891
+        ld (hl),a
+        ld a,(A_F8DF)
+        ld (A_F8D6),a
+        call BDOS_FUNCTION_14
 L_F891:
         ld hl,(A_EE0F)
         ld sp,hl
@@ -3583,4 +3566,4 @@ A_F8EC:
         db 0x00
         db 0x00
 
-        defs 0xf900-$,0
+        defs 0xfd00-$,0

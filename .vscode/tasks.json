@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Prepare interactive CP/M emulator",
+			"type": "shell",
+			"command": "cmake -S src/cpm/dcc_debug_host -B build/cpm/dcc_debug_host -DDCC_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF && cmake --build build/cpm/dcc_debug_host && python3 src/cpm/build_images.py --assembler z80asm --output-dir build/cpm",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "silent",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}

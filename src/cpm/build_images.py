@@ -37,10 +37,10 @@ from geometry import (  # noqa: E402
 )
 
 
-CCP_BASE = 0xE300
-BDOS_BASE = 0xEB00
-BDOS_ENTRY = 0xEB06
-BIOS_BASE = 0xF900
+CCP_BASE = 0xE700
+BDOS_BASE = 0xEF00
+BDOS_ENTRY = 0xEF06
+BIOS_BASE = 0xFD00
 CPM_SYSTEM_RECORDS = 44
 CPM_SYSTEM_BYTES = CPM_SYSTEM_RECORDS * RECORD_BYTES
 CPM_SYSTEM_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_system.bin"
@@ -63,11 +63,15 @@ FLASH_BOOT_OFFSET = 0x2A0000
 FLASH_BOOT_BYTES = 0x20000
 FLASH_DISK_OFFSETS = (0x2C0000, 0x310000, 0x360000, 0x3B0000)
 
-DISK_NAMES = (
+SOURCE_DISK_NAMES = (
     "drive_a_cpm63k.img",
     "drive_b_bdsc.img",
     "drive_c_escape.img",
     "drive_d_blank.img",
+)
+OUTPUT_DISK_NAMES = (
+    "drive_a_cpm63k-z80.img",
+    *SOURCE_DISK_NAMES[1:],
 )
 
 assert FLASH_LINK_LIMIT == FLASH_JOURNAL_OFFSET
@@ -247,7 +251,9 @@ def main() -> None:
     z80_image = build_z80_image(cpm_system, bios)
     package = build_boot_package(z80_image)
 
-    generated = [(args.disk_dir / name).read_bytes() for name in DISK_NAMES]
+    generated = [
+        (args.disk_dir / name).read_bytes() for name in SOURCE_DISK_NAMES
+    ]
     disks = [build_native_drive(generated[0], cpm_system, bios), *generated[1:]]
     if any(len(disk) != DISK_IMAGE_BYTES for disk in disks):
         raise ValueError("all disk images must be exactly 320 KiB")
@@ -258,7 +264,7 @@ def main() -> None:
         "z80boot.img": z80_image,
         "z80boot.pkg": package,
     }
-    artifacts.update(dict(zip(DISK_NAMES, disks, strict=True)))
+    artifacts.update(dict(zip(OUTPUT_DISK_NAMES, disks, strict=True)))
 
     if args.firmware is not None:
         artifacts["z80romless-flash.bin"] = build_flash_image(

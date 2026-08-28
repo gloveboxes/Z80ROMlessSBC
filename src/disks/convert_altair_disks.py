@@ -15,6 +15,19 @@ from geometry import TRACKS as OUTPUT_TRACKS
 SOURCE_TRACKS = 77
 PHYSICAL_SECTOR_BYTES = 137
 RECORD_OFFSET = 3
+# The authentic Burcon BIOS (disks/cpm64_bios.asm in the sibling
+# esp32-altair-8800 project) uses two different physical sector layouts: a
+# simple one for tracks 0-5 (128-byte payload starting at offset 3, no extra
+# skew) and a richer one with a track/sector/checksum header for tracks 6-76
+# (128-byte payload starting at offset 7). On tracks >= TRACK_FORMAT_BOUNDARY
+# the BIOS's `altSkew` routine also applies an additional rotation on top of
+# the standard `xlate` skew table, but only for logical sector numbers >= 16
+# (the second half of the track); logical sectors 0-15 use the `xlate`
+# result unchanged. Empirically this rotation is equivalent to adding 16 (mod
+# 32, one-based) to the `xlate` result, confirmed by cross-checking against a
+# live, known-good boot of `cpm63k.dsk` in that sibling project's emulator.
+TRACK_FORMAT_BOUNDARY = 6
+RECORD_OFFSET_HIGH_TRACK = 7
 SOURCE_GRID_BYTES = SOURCE_TRACKS * SECTORS_PER_TRACK * PHYSICAL_SECTOR_BYTES
 SECTOR_TRANSLATION = (
     1,
@@ -72,14 +85,18 @@ def convert(source: bytes) -> bytes:
 
     output = bytearray([0xE5]) * OUTPUT_BYTES
     for track in range(SOURCE_TRACKS):
+        high_track = track >= TRACK_FORMAT_BOUNDARY
+        record_offset = RECORD_OFFSET_HIGH_TRACK if high_track else RECORD_OFFSET
         for logical_sector, physical_sector in enumerate(SECTOR_TRANSLATION):
+            if high_track and logical_sector >= 16:
+                physical_sector = ((physical_sector - 1 + 16) % 32) + 1
             source_index = track * SECTORS_PER_TRACK + physical_sector - 1
             source_offset = source_index * PHYSICAL_SECTOR_BYTES
             output_index = track * SECTORS_PER_TRACK + logical_sector
             output_offset = output_index * RECORD_BYTES
             output[output_offset : output_offset + RECORD_BYTES] = source[
-                source_offset + RECORD_OFFSET : source_offset
-                + RECORD_OFFSET
+                source_offset + record_offset : source_offset
+                + record_offset
                 + RECORD_BYTES
             ]
     return bytes(output)

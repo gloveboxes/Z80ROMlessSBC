@@ -91,7 +91,7 @@ if(Z80ASM_EXECUTABLE)
       ${cpm_output_dir}/bios.bin
       ${cpm_output_dir}/z80boot.img
       ${cpm_output_dir}/z80boot.pkg
-      ${cpm_output_dir}/drive_a_cpm63k.img
+      ${cpm_output_dir}/drive_a_cpm63k-z80.img
       ${cpm_output_dir}/drive_b_bdsc.img
       ${cpm_output_dir}/drive_c_escape.img
       ${cpm_output_dir}/drive_d_blank.img

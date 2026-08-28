@@ -7,6 +7,7 @@
 <summary><strong>Table of Contents</strong></summary>
 
 - [Overview](#overview)
+- [Project Documentation](#project-documentation)
 - [0. Project Inventory](#0-project-inventory)
 - [1. Reference Pin Mapping & Logic Domain Verification](#1-reference-pin-mapping--logic-domain-verification)
 - [2. 16-Bit Address Expansion Interface: MCP23S17-E/SP](#2-16-bit-address-expansion-interface-mcp23s17-esp)
@@ -59,12 +60,55 @@ released. Once the Z80 is running, the same I/O trap mechanism can
 expose sector-oriented virtual disk ports backed by that same flash
 partition (Section 6.3).
 
+### CP/M Boot and Disk Flow
+
+The complete software and storage path is:
+
+1. The build assembles the Z80-optimized CCP/BDOS and board BIOS, then places
+   them in a reset-ready 64 KiB Z80 memory image.
+2. The builder wraps that image as `z80boot.pkg` with a manifest and CRC, and
+   inserts the same optimized resident system into Drive A's reserved system
+   tracks. Drives B-D are built as separate native 320 KiB CP/M images.
+3. The boot package and four disk images are provisioned into fixed regions of
+   the Pico 2 W's 4 MiB onboard flash. They may be combined with the Pico
+   firmware as `z80romless-flash.bin`.
+4. On cold boot, the Pico validates the package and journal, holds the Z80 in
+   reset, takes ownership of the bus, copies the 64 KiB image from flash into
+   SRAM, verifies the copy, installs the CP/M page-zero vectors, and releases
+   reset.
+5. The Z80 starts from SRAM, enters the BIOS, and reaches the CP/M `A>` prompt.
+   The BIOS converts CP/M's disk requests into 128-byte virtual-I/O transfers;
+   the Pico services those transfers from the flash disk regions.
+6. The Pico caches ordinary writes and journals directory or other important
+   writes. On a CP/M warm boot, the BIOS reloads the resident CCP/BDOS records
+   from flash-backed Drive A into SRAM before returning to the prompt.
+
+This gives the project one simple separation: **flash provides persistent
+storage, SRAM provides the Z80's executing memory, and the BIOS plus Pico
+connect the two**. The [CP/M boot-image README](src/cpm/README.md), [disk-media
+README](src/disks/README.md), [Section 6.3](#63-onboard-flash-cpm-disk-storage),
+and [Appendix D](#appendix-d-cpm-bios-and-dcc-compatibility) provide the
+construction details, addresses, protocols, and validation evidence.
+
 The build plan is deliberately phased. Early phases prove power,
 translation, SPI expansion, bus isolation, SRAM DMA, and clock control
 before the Z80 is installed. Later phases prove virtual-ROM boot,
 synchronous I/O trapping, WebSocket terminal service, and finally the
 maximum qualified clock rate. Passing an earlier phase is a prerequisite
 for trusting the assumptions used by the next one.
+
+## Project Documentation
+
+The repository also includes focused documentation for specific implementation
+areas:
+
+- [Stage 0: Power and passive wiring](src/stage00_power/README.md) - safe
+  initial power, continuity, resistance, rail-voltage, and diode-OR checks.
+- [Native CP/M boot image](src/cpm/README.md) - CP/M memory layout, Z80
+  optimization, boot-package construction, BIOS behavior, and host testing.
+- [CP/M disk media](src/disks/README.md) - source disk formats, conversion,
+  native geometry, generated images, and flash provisioning.
+- [PDF edition](README.pdf) - printable version of this specification.
 
 ## 0. Project Inventory
 
@@ -1453,7 +1497,7 @@ project-specific logical geometry, not the IBM 3740 8-inch SSSD format
 (77 tracks x 26 records x 128 bytes = 256,256 bytes); existing images
 in another 8-inch format must be converted rather than copied into a
 slot unchanged. The matching CP/M 2.2 DPB is `SPT=32`, `BSH=4`,
-`BLM=15`, `EXM=1`, `DSM=155`, `DRM=63`, `AL0=0x80`, `AL1=0x00`,
+`BLM=15`, `EXM=0`, `DSM=155`, `DRM=63`, `AL0=0x80`, `AL1=0x00`,
 `CKS=0`, and `OFF=2`. Keep these values in the Z80 BIOS and host image
 builder from one shared generated definition.
 
@@ -1675,7 +1719,7 @@ leaves networking disabled while flash-disk service continues to operate. The
 | Artifact | Purpose |
 | --- | --- |
 | `z80boot.pkg` | Manifest, CRCs, and the reset-ready 64 KiB Z80 image |
-| `drive_a_cpm63k.img` | Native CP/M system disk with the SBC BIOS |
+| `drive_a_cpm63k-z80.img` | Native CP/M system disk with the Z80 SBC BIOS |
 | `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 320 KiB disks |
 | `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
 | `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
@@ -1702,7 +1746,7 @@ commands preserve regions not named by the input file:
 ```sh
 picotool load -v build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2
 picotool load -v build/cpm/z80boot.pkg -t bin -o 0x102A0000
-picotool load -v build/cpm/drive_a_cpm63k.img -t bin -o 0x102C0000
+picotool load -v build/cpm/drive_a_cpm63k-z80.img -t bin -o 0x102C0000
 picotool load -v build/cpm/drive_b_bdsc.img -t bin -o 0x10310000
 picotool load -v build/cpm/drive_c_escape.img -t bin -o 0x10360000
 picotool load -v build/cpm/drive_d_blank.img -t bin -o 0x103B0000
@@ -3287,41 +3331,63 @@ No erase, program, blocking queue, or flash-safe call runs inside
   print/static assertion still reports the physical C macro as 4 MiB.
 3. Provision the boot package and four exact-size disk images with
   `picotool -v`; read every region's first and last page back and compare
-  host CRC32 values.
+  host CRC32 values. Give every image a distinct known directory sentinel
+  (`DUMP.COM` on A, `CC2.COM` on B, `ATTNC11.COM` on C, and `DOCTOR.COM`
+  on D) so a valid but aliased drive mapping cannot pass.
 4. Cold-boot with RESET# held LOW. Require journal recovery and SRAM
   verification to finish without waiting for BUSACK#, then release
   RESET# only after success. Corrupt the manifest, payload, and SRAM
   readback separately and require each case to remain fail-closed.
-5. Exercise all 2,560 LBAs on every drive through ports `0x10`-`0x14`.
-  Verify exact 128-byte transfers, invalid drive/LBA rejection, command
+5. Exercise the decoded port path with real Z80 `IN`/`OUT` instructions,
+  not direct calls to the C handlers. Prove that `0x10` selects only
+  command/status, `0x11` only the drive, `0x12`/`0x13` the complete LBA,
+  and `0x14` only record data; also prove that terminal ports `0x00`/`0x01`
+  cannot intercept or alias any disk access.
+6. Exercise all 2,560 LBAs on every drive through ports `0x10`-`0x14`,
+  alternating the selected drive between commands. Verify exact 128-byte
+  transfers, distinct per-drive sentinel records, no cross-drive aliasing,
+  invalid drive/LBA rejection, command
   while BUSY rejection, and test-injected queue-full/error clearing
   behavior. After an injected flash or journal failure, require every
   READ/WRITE command to retain READY|ERROR until reboot recovery.
-6. Probe BUSREQ#, BUSACK#, IORQ#, and CLK during a write. Require the
+7. Start a write, then change the live drive and LBA registers before core 1
+  services its queue. Verify the completed write uses the drive, LBA, write
+  type, and 128-byte payload captured when the command began and changes no
+  other record.
+8. Boot the packaged image and exercise the filesystem through CP/M itself:
+  run `DIR` on A-D and require each sentinel on only its expected drive; run
+  `LS` through natural transient exit and BIOS warm boot; run multi-extent
+  `C:ATTNC11`; and use `PIP` to copy files across drives. Reboot and compare
+  the affected records and directories byte-for-byte with the expected host
+  images.
+9. Probe BUSREQ#, BUSACK#, IORQ#, and CLK during a write. Require the
   trap to remain armed until BUSACK# is LOW and to be armed again before
   BUSACK# returns HIGH, with no untrapped I/O edge in either interval.
   Inject an IORQ# falling edge while BUSACK# is LOW and require the
   handler to disable the IRQ without touching CLK, SPI0, or either bus.
-7. Add test-only power-cut hooks after journal-data program, header
+10. Add test-only power-cut hooks after journal-data program, header
   program, target erase, partial target program, target verification,
   and header clear. Reboot after every hook and require recovery to
   produce either the complete old block (before valid header) or the
   complete new block (after valid header), never a mixture.
-8. Repeat reads and writes with Wi-Fi absent, associating, connected,
+11. Repeat reads and writes with Wi-Fi absent, associating, connected,
   and reconnecting. Disk completion must not depend on network state,
   and WebSocket queue overflow must remain counted rather than block.
-9. Rewrite hot directory blocks repeatedly while tracking journal-pair
+12. Rewrite hot directory blocks repeatedly while tracking journal-pair
   rotation and the flash part's rated erase endurance. Treat this as a
   smoke test, not proof of lifetime.
-10. Inject safe-execute entry and exit failures. Require RESET# LOW,
+13. Inject safe-execute entry and exit failures. Require RESET# LOW,
   isolated buses, stopped CLK, and a watchdog reboot without waiting on
   the core-0 release queue; recovery must retain the verified old or new
   disk block.
 
-**Pass gate:** Boot and all four disks match host CRC32 values, every
-fault-injection reboot recovers an intact old or new block, all bounds
-and manifest failures remain fail-closed, disk service works without
-Wi-Fi, the linker protects the storage boundary, and logic-analyzer
+**Pass gate:** Boot and all four disks match host CRC32 values; A-D expose
+their distinct expected sentinel files with no aliasing; real CP/M `DIR`,
+transient execution, warm boot, multi-extent loading, and cross-drive copy
+complete through the BIOS; queued writes retain their command-time drive/LBA
+snapshot; every fault-injection reboot recovers an intact old or new block;
+all bounds and manifest failures remain fail-closed; disk service works
+without Wi-Fi; the linker protects the storage boundary; and logic-analyzer
 captures show no untrapped Z80 cycle around a flash write.
 
 ### 8.11 Phase 10 - WebSocket Terminal Console
@@ -3629,19 +3695,27 @@ Z80 is held in BUSACK#.
   `OUT 0x00`. Verify the browser receives the stream in order and that
   queue-full conditions are counted rather than blocking the trap.
 4. Type from the browser and verify the Z80 receives each byte through
-  `IN 0x00` only after `IN 0x01` reports data available.
-5. Disconnect and reconnect the browser while the Z80 test program runs.
+  `IN 0x00` only after `IN 0x01` reports data available. Test single
+  characters, pasted bursts, delayed characters, an empty queue, and queue
+  overflow; RX_READY must never be asserted unless an immediate data read
+  returns a real queued byte.
+5. At the CP/M prompt, run `DIR`, `LS`, switch through B-D, and repeat the
+  Phase 9 sentinel and cross-drive checks. This proves the terminal and disk
+  port ranges remain independently routed in the final combined firmware.
+6. Disconnect and reconnect the browser while the Z80 test program runs.
   Verify stale input is cleared, output resumes for the new client, and
   no trap timeout counter increments.
-6. Exhaust the default alarm pool before service startup and require the
+7. Exhaust the default alarm pool before service startup and require the
   supervisor to remain fail-closed rather than launching core 1 without
   both WebSocket polling timers.
 
 **Pass gate:** The WebSocket service remains responsive while the Z80
-runs at the Phase 8 qualified 1 MHz setting, no network path runs on the
-core that services Z80 timing, and all terminal queue overflow or client
-disconnect conditions are visible through counters rather than blocking
-the CPU trap.
+runs at the Phase 8 qualified 1 MHz setting; terminal status never claims
+data that cannot be read; interactive CP/M commands, warm boot, distinct
+A-D directories, and cross-drive copies still pass in the final combined
+firmware; no network path runs on the core that services Z80 timing; and all
+terminal queue overflow or client disconnect conditions are visible through
+counters rather than blocking the CPU trap.
 
 ### 8.12 Frequency Qualification
 
@@ -4078,11 +4152,15 @@ source in `src/cpm/cpm64_i8080.asm`; its control-flow, opcode-compatibility, and
 optimization findings are recorded in `src/cpm/cpm64_i8080_audit.md`. The
 boot-proven binary remains immutable. The image builder assembles the separate
 `src/cpm/cpm64_z80.asm` port, whose unoptimized generation mode reproduces the
-reference byte-for-byte. The active port uses relative branches, `DJNZ`, `LDIR`,
-native 16-bit subtraction, branch threading, tail transfers, and guarded
-register-use rewrites. It reclaims 260 bytes while preserving the fixed memory
-ABI; host tests independently verify the relocated branch targets and native
-instruction encodings.
+reference byte-for-byte. The active port uses relative branches, ten guarded
+`DJNZ` sites, `LDIR`, native `SBC HL,DE` subtraction, `SUB 2` fusion, a branch
+inversion, branch threading, tail transfers, and register-use rewrites. It
+reclaims 263 bytes while preserving the fixed section sizes and relocates them
+upward by `0x0400`. Recursive discovery includes the BDOS cleanup block reached through a
+synthetic stack return. Host tests independently verify relocation and native
+instruction encodings, while `src/cpm/test_dcc_debug_host.py` boots the image
+and completes `DIR`, transient loading, and a BIOS warm reload through a model
+of the SBC terminal and disk ports.
 
 Only the CCP/BDOS and their memory ABI are reused. The Altair disk BIOS and
 cold loader use ports `0x08`-`0x0A` and are reference material, not executable
@@ -4091,7 +4169,10 @@ BIOS assembled from `src/cpm/z80_bios.asm`, which uses the Pico-serviced termina
 and flash-disk ports described below.
 It intentionally targets the Z80 rather than the 8080-compatible subset, using
 relative branches, `DJNZ`, `BIT`, rotate/carry status tests, carry-to-mask
-`SBC A,A`, and `INIR`/`OTIR` block I/O. Build it with `z80asm`.
+`SBC A,A`, `INIR`/`OTIR` block I/O, and `EXX` alternate-register banking in
+`read_record`/`write_record` (safe because this system never enables
+interrupts, so the shadow register set is otherwise unused). Build it with
+`z80asm`.
 
 ### D.2 CP/M Memory Map and Entry Points
 
@@ -4100,16 +4181,18 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Region | Address range | Role |
 | --- | --- | --- |
 | Page zero | `0x0000`-`0x00FF` | CP/M vectors, default FCBs, DMA buffer, and command tail |
-| Transient Program Area (TPA) | `0x0100`-`0xE2FF` | `.COM` program, dcc runtime, static data, heap, and stack |
-| CCP | `0xE300`-`0xEAFF` | Console Command Processor, reloaded after a warm boot |
-| BDOS | `0xEB00`-`0xF8FF` | CP/M console, file, and disk service layer; entry at `0xEB06` |
-| BIOS | `0xF900`-`0xFBBE` | 703-byte Z80-optimized boot, console, disk, and translation routines |
+| Transient Program Area (TPA) | `0x0100`-`0xE6FF` | `.COM` program, dcc runtime, static data, heap, and stack |
+| CCP | `0xE700`-`0xEEFF` | Console Command Processor, reloaded after a warm boot |
+| BDOS | `0xEF00`-`0xFCFF` | CP/M console, file, and disk service layer; entry at `0xEF06` |
+| BIOS | `0xFD00`-`0xFFC5` | 710-byte Z80-optimized boot, console, disk, and translation routines |
 
-The TPA contains `0xE200` bytes, or 57,856 bytes, before the CCP boundary. A
+The TPA contains `0xE600` bytes, or 58,880 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space
-together with its stack and heap. On entry, the dcc runtime reads the BDOS
-vector at `0x0006` and uses that address as the exclusive top of available
-transient memory. This agrees with the installed `JP 0xEB06` vector.
+together with its stack and heap. The dcc runtime reads the installed
+`JP 0xEF06` vector at `0x0005` to locate BDOS; application memory must still
+remain below the CCP boundary at `0xE700`. Required CCP/BDOS workspace, the
+BIOS directory buffer and allocation vectors, disk state, and internal stacks
+remain inside their relocated resident regions.
 
 The BIOS cold boot installs `JP` instructions at `0x0000` and `0x0005` for
 warm boot and BDOS respectively. A dcc program normally starts at `0x0100` and
@@ -4182,7 +4265,7 @@ bypasses part of the normal runtime:
 | API | Compatibility on this system |
 | --- | --- |
 | `bdos()` / `bdoshl()` | Compatible for implemented CP/M 2.2 BDOS functions through `CALL 0x0005` |
-| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xF900` |
+| `bios()` / `bioshl()` / `biosreg()` | Compatible with the standard 17-entry BIOS jump table installed at `0xFD00` |
 | `inp(port)` | Executes an 8-bit Z80 `IN`; suitable for reading the virtual terminal or disk ports |
 | `outp(port, value)` | Executes an 8-bit Z80 `OUT`; suitable for writing the virtual terminal or disk ports |
 
@@ -4202,7 +4285,7 @@ is outside this compatibility claim.
 
 ### D.6 Compatibility Boundaries
 
-- Programs must fit within the `0x0100`-`0xE2FF` TPA after runtime, globals,
+- Programs must fit within the `0x0100`-`0xE6FF` TPA after runtime, globals,
   heap, and stack requirements are included.
 - The installed operating system is CP/M 2.2. Optional CP/M 3 or emulator-only
   BDOS extensions are not supplied by this BIOS/BDOS image. In particular,
@@ -4245,11 +4328,141 @@ tests and additionally run representative dcc `.COM` programs that cover:
 4. Transfers on drives A-D, including repeated writes followed by power-cycle
    recovery and byte-for-byte host comparison.
 5. A dcc program near the TPA limit, confirming that stack/heap growth does not
-  cross `0xE300` and that exit reliably reloads the CCP.
+  cross `0xE700` and that exit reliably reloads the CCP.
 
 Passing those application tests, the existing all-LBA and fault-injection disk
 plan, and the logic-analyzer requirements is the point at which console and
 file-I/O compatibility may be described as proven on this hardware.
+
+### D.8 End-to-End Z80 Optimization, Image Build, and Flash Test
+
+The active bootable system is Z80-optimized throughout its resident software:
+the CCP and BDOS are emitted as `cpm64_z80.asm`, and the board BIOS is
+implemented by `z80_bios.asm`. The immutable `cpm64_system.bin` is retained as
+the fingerprinted Burcon reference and as the input to the translation audit;
+it is not copied directly into the deployed image. The optimized CCP/BDOS port
+uses Z80 relative branches, guarded `DJNZ`, block moves, native arithmetic,
+tail transfers, and safe register-use rewrites. The BIOS uses the Z80
+instruction set for its jump table, cold/warm boot paths, console polling, and
+disk transfers, including `INIR`/`OTIR`, `SBC`, relative branches, and `EXX`.
+The resulting image keeps the CP/M ABI and fixed resident boundaries while
+leaving the transient program area at `0x0100`-`0xE6FF`.
+
+Build the complete CP/M artifact set from the repository root:
+
+```sh
+python3 src/cpm/build_images.py --output-dir build/cpm
+```
+
+The builder assembles the optimized CCP/BDOS and BIOS, constructs the
+reset-ready 64 KiB `z80boot.img`, wraps it as `z80boot.pkg` with a manifest and
+CRC, and replaces only Drive A's reserved system tracks in
+`drive_a_cpm63k-z80.img`. Drives B-D remain the converted native 320 KiB
+images. With a Stage 10 firmware binary, the same builder can compose
+`z80romless-flash.bin`, a complete 4 MiB image:
+
+```sh
+python3 src/cpm/build_images.py --output-dir build/cpm \
+  --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin
+```
+
+The BIOS and flash backend share one deliberately narrow contract. CP/M passes
+drive, track, sector, DMA address, and write type to the BIOS; the BIOS
+converts the request to one 128-byte linear-record transfer through ports
+`0x10`-`0x14`. The Pico maps those records into the four exact 320 KiB flash
+slots at `0x2C0000`, `0x310000`, `0x360000`, and `0x3B0000`. Normal writes can
+coalesce in a 4 KiB cache, while directory and warm-boot writes are journaled;
+the write type is preserved so the Pico can choose the safe persistence path.
+Cold boot validates the package and journal, copies the image into SRAM while
+RESET# is held, verifies it, and installs the page-zero warm-boot and BDOS
+vectors. BIOS warm boot then reloads the 44 resident CP/M records from native
+Drive A. This avoids a second storage bus while keeping Z80 disk semantics and
+Pico flash erase/program operations separate.
+
+Run the reproducibility and structure tests with:
+
+```sh
+python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+```
+
+These tests assemble both optimized Z80 components and verify the CP/M 2.2
+version byte, resident placement, BIOS jump-table ABI, boot-package header and
+CRCs, exact 64 KiB and 320 KiB geometries, Drive A system-track replacement,
+and every flash-region boundary. The end-to-end DCC debug-host test additionally
+boots the optimized image, observes the CP/M banner and `A>` prompt, runs
+`DIR`, executes `LS.COM` to its natural exit, confirms BIOS warm reload, selects
+another drive, loads a multi-extent transient, and copies files across drives.
+When the sibling `dcc-debug-host` checkout is available, run it with:
+
+```sh
+python3 src/cpm/test_dcc_debug_host.py --dcc-root ../dcc
+```
+
+This is host/emulator evidence, not a claim of completed electrical
+qualification. Physical proof still requires the Phase 8-10 bus, flash
+fault-injection, power-cycle recovery, and logic-analyzer tests described above.
+
+### D.9 Interactive End-to-End CP/M User Test
+
+The repository includes an interactive launcher for manually exercising the
+same optimized CP/M image, board BIOS, virtual-disk protocol, and native disk
+images used by the automated DCC test.
+
+Prerequisites are CMake, a C/C++ compiler, Python 3, and `z80asm`. In VS Code:
+
+1. Open **Run and Debug**.
+2. Select **Interactive CP/M emulator**.
+3. Press **Start**.
+4. Wait for the banner and `A>` prompt in the **Interactive CP/M emulator**
+   terminal.
+5. Type CP/M commands normally. Press `Ctrl+]` to detach and stop the session.
+
+The pre-launch task builds the vendored DCC debug host, regenerates the CP/M
+artifacts in `build/cpm`, and starts the project-specific launcher. The launcher
+extracts the 64 KiB SRAM payload from `z80boot.pkg`, starts it through the board
+BIOS, and attaches Drives A-D from the generated 320 KiB images. A successful
+start displays:
+
+```text
+64K CP/M 2.2 - Burcon Z80 Edition
+
+A>
+```
+
+The following manual sequence exercises progressively more of the deployed
+software path:
+
+```text
+A>DIR
+A>LS
+A>C:
+C>ATTNC11
+C>A:PIP D:ATTNC11.COM=C:ATTNC11.COM
+C>A:PIP D:ATTN.WTS=C:ATTN.WTS
+C>D:
+D>DIR
+```
+
+- `DIR` proves CCP command handling, BDOS directory access, BIOS record reads,
+  the `0x10`-`0x14` disk-port protocol, and Drive A filesystem interpretation.
+- `LS` loads and executes a transient program, exits through page zero, and
+  exercises the BIOS warm-boot reload before returning to `A>`.
+- `C:` and `ATTNC11` exercise drive selection and multi-extent program loading.
+- The `PIP` commands exercise cross-drive reads, writes, directory updates, and
+  persistence in the emulator's generated Drive D image.
+
+This is a realistic end-to-end **software-path** test: it executes the optimized
+CCP/BDOS and `z80_bios.asm` with the SRAM payload extracted from the packaged
+boot artifact, while the BIOS accesses the same native disk-image format that
+is provisioned into Pico flash. Disk writes are made to the generated files
+under `build/cpm`; rerunning the preparation task regenerates those artifacts,
+so copy out any test result that must be retained.
+
+The launcher intentionally substitutes host files for the physical Pico flash
+backend. It therefore does not validate Pico package/CRC handling, the physical
+flash cache and journal implementation, power-loss recovery, the Pico-to-SRAM
+DMA transfer, WAIT#/bus timing, voltage translation, or the assembled board.
+Those remain Phase 8-10 hardware and firmware qualification items.
 
 ## Generate the PDF
 
