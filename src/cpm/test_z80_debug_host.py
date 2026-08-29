@@ -17,7 +17,7 @@ import time
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LOCAL_HOST = REPO_ROOT / "build" / "cpm" / "dcc_debug_host" / "dcc-debug-host"
+LOCAL_HOST = REPO_ROOT / "build" / "cpm" / "z80_debug_host" / "z80-debug-host"
 
 
 class MISession:
@@ -146,7 +146,7 @@ def resume_past_spurious_exit(
     """Resume past FullCpmHost's "exited-normally" checkpoint when it is not
     the specific transient-exit we are intentionally expecting.
 
-    The DCC debug host's FullCpmHost model reports
+    The Z80 debug host's FullCpmHost model reports
     "*stopped,reason=exited-normally" whenever the emulated PC equals 0x0000
     or a `warm_boot_address_` value captured once from its own internal
     bootstrap fixture (see dcc_host_full_cpm.cpp::target_exited()). That
@@ -181,14 +181,14 @@ def main() -> None:
     dcc_root = args.dcc_root.resolve()
     host = (args.host or LOCAL_HOST).resolve()
     if not host.is_file():
-        raise SystemExit(f"DCC debug host not found: {host}")
+        raise SystemExit(f"Z80 debug host not found: {host}")
     if args.assembler is None:
         raise SystemExit("z80asm was not found")
 
     sys.path.insert(0, str(Path(__file__).parent))
     import build_images
 
-    with tempfile.TemporaryDirectory(prefix="z80sbc-dcc-host-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="z80sbc-z80-host-") as temporary:
         directory = Path(temporary)
         output = directory / "images"
         subprocess.run(
@@ -237,7 +237,7 @@ def main() -> None:
             drive_a[: len(system)] = system
             (output / "drive_a_cpm63k-z80.img").write_bytes(drive_a)
         extension = ".dylib" if sys.platform == "darwin" else ".so"
-        adapter = directory / f"libz80sbc-dcc-adapter{extension}"
+        adapter = directory / f"libz80sbc-io-adapter{extension}"
         build_adapter(dcc_root, adapter)
 
         drive_names = (
@@ -331,7 +331,7 @@ def main() -> None:
             _, stopped = session.command(
                 '-interpreter-exec console "input LS"', stop=True
             )
-            # The DCC debug host's FullCpmHost model reports
+            # The Z80 debug host's FullCpmHost model reports
             # "*stopped,reason=exited-normally" the instant the emulated PC
             # equals 0x0000 (or a coincidentally matching bootstrap address).
             # That is by design for its single-program run-to-completion
@@ -410,7 +410,7 @@ def main() -> None:
                 if args.first_pass_only
                 else "optimized SBC CP/M image"
             )
-            print(f"PASS: DCC debug host booted the {variant}")
+            print(f"PASS: Z80 debug host booted the {variant}")
             print("PASS: DIR completed through the SBC disk-port model")
             print("PASS: LS.COM ran to natural completion and BIOS warm boot")
             print("      reloaded CP/M and restored the A> prompt")

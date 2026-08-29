@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge a VS Code integrated terminal to dcc-debug-host target I/O."""
+"""Bridge a VS Code integrated terminal to z80-debug-host target I/O."""
 
 import argparse
 import os

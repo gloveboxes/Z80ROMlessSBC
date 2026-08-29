@@ -5,8 +5,8 @@
 #include <iostream>
 #include <string>
 
-#ifndef DCC_DEBUG_HOST_ASSETS_DIR
-#define DCC_DEBUG_HOST_ASSETS_DIR "assets"
+#ifndef Z80_DEBUG_HOST_ASSETS_DIR
+#define Z80_DEBUG_HOST_ASSETS_DIR "assets"
 #endif
 
 #ifndef DCC_DEBUG_HOST_ENV_FILE
@@ -20,9 +20,9 @@ namespace
 FullCpmOptions default_options()
 {
     FullCpmOptions options;
-    options.drive_a = DCC_DEBUG_HOST_ASSETS_DIR "/disks/cpm63k.dsk";
-    options.drive_c = DCC_DEBUG_HOST_ASSETS_DIR "/disks/disk_c_blank.dsk";
-    options.drive_d = DCC_DEBUG_HOST_ASSETS_DIR "/disks/disk_d_blank.dsk";
+    options.drive_a = Z80_DEBUG_HOST_ASSETS_DIR "/disks/cpm63k.dsk";
+    options.drive_c = Z80_DEBUG_HOST_ASSETS_DIR "/disks/disk_c_blank.dsk";
+    options.drive_d = Z80_DEBUG_HOST_ASSETS_DIR "/disks/disk_d_blank.dsk";
     options.environment_file = DCC_DEBUG_HOST_ENV_FILE;
     return options;
 }
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
     if (!parse_options(argc, argv, options))
     {
-        std::cerr << "usage: dcc-debug-host --interpreter=mi\n"
+        std::cerr << "usage: z80-debug-host --interpreter=mi\n"
                      "  [--fixture FILE] [--text-fixture FILE]\n"
                      "  [--drive-a IMAGE] [--drive-c IMAGE] [--drive-d IMAGE]\n"
                      "  [--io-adapter LIBRARY]\n"

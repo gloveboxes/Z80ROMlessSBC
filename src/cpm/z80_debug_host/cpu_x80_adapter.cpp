@@ -1,4 +1,4 @@
-// Z80 CPU adapter dedicated to dcc_debug_host.
+// Z80 CPU adapter dedicated to z80_debug_host.
 // Its engine/register model is the debugger-local Z80-only ntvcm derivative;
 // other emulators use their own adapter/core copies.
 //

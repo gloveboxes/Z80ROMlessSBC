@@ -4162,7 +4162,7 @@ inversion, branch threading, tail transfers, and register-use rewrites. It
 reclaims 263 bytes while preserving the fixed section sizes and relocates them
 upward by `0x0400`. Recursive discovery includes the BDOS cleanup block reached through a
 synthetic stack return. Host tests independently verify relocation and native
-instruction encodings, while `src/cpm/test_dcc_debug_host.py` boots the image
+instruction encodings, while `src/cpm/test_z80_debug_host.py` boots the image
 and completes `DIR`, transient loading, and a BIOS warm reload through a model
 of the SBC terminal and disk ports.
 
@@ -4396,10 +4396,11 @@ and every flash-region boundary. The end-to-end DCC debug-host test additionally
 boots the optimized image, observes the CP/M banner and `A>` prompt, runs
 `DIR`, executes `LS.COM` to its natural exit, confirms BIOS warm reload, selects
 another drive, loads a multi-extent transient, and copies files across drives.
-When the sibling `dcc-debug-host` checkout is available, run it with:
+After building the project-owned `z80-debug-host`, run the end-to-end test with:
 
 ```sh
-python3 src/cpm/test_dcc_debug_host.py --dcc-root ../dcc
+python3 src/cpm/test_z80_debug_host.py \
+  --host build/cpm/z80_debug_host/z80-debug-host
 ```
 
 This is host/emulator evidence, not a claim of completed electrical
@@ -4421,10 +4422,10 @@ Prerequisites are CMake, a C/C++ compiler, Python 3, and `z80asm`. In VS Code:
    terminal.
 5. Type CP/M commands normally. Press `Ctrl+]` to detach and stop the session.
 
-The pre-launch task builds the vendored DCC debug host, the complete
+The pre-launch task builds the DCC-derived `z80-debug-host`, the complete
 project-owned adapter in `src/cpm/dcc_io_adapter`, and the CP/M artifacts in
 `build/cpm`. The **Interactive CP/M emulator** debug configuration always
-passes that built adapter to `dcc-debug-host`; no optional selection or external
+passes that built adapter to `z80-debug-host`; no optional selection or external
 Altair checkout is required. The launcher extracts the 64 KiB SRAM payload from
 `z80boot.pkg`, starts it through the board BIOS, and attaches Drives A-D from
 the generated 320 KiB images. A successful start displays:

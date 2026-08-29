@@ -1,8 +1,9 @@
-# Local DCC CP/M test host
+# Local Z80 CP/M debug host
 
-This directory contains the standalone DCC debug-host sources used by the
-CP/M end-to-end test. The Z80 engine files are direct copies from the sibling
-DCC checkout:
+This directory contains the standalone `z80-debug-host` sources used by the
+CP/M end-to-end test and interactive debugger. Its debugger protocol and Z80
+engine derive from DCC, but the project-specific host and process use the Z80
+name. The Z80 engine files are direct copies from the sibling DCC checkout:
 
 - `x80.cxx`
 - `x80.hxx`
@@ -19,16 +20,16 @@ adapter supplies the SBC console and ports `0x10`-`0x14` backed by the generated
 Build it from the repository root:
 
 ```sh
-cmake -S src/cpm/dcc_debug_host -B build/cpm/dcc_debug_host \
-  -DDCC_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
-cmake --build build/cpm/dcc_debug_host
+cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+cmake --build build/cpm/z80_debug_host
 ```
 
 Run the project end-to-end test with Python 3.10 or newer:
 
 ```sh
-python3 src/cpm/test_dcc_debug_host.py \
-  --host build/cpm/dcc_debug_host/dcc-debug-host \
+python3 src/cpm/test_z80_debug_host.py \
+  --host build/cpm/z80_debug_host/z80-debug-host \
   --assembler z80asm
 ```
 

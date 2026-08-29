@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(dcc_debug_host C CXX)
+project(z80_debug_host C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(DCC_DEBUG_HOST_BUILD_EXAMPLES "Build debugger I/O adapter examples" ON)
+option(Z80_DEBUG_HOST_BUILD_EXAMPLES "Build debugger I/O adapter examples" ON)
 
 find_package(Threads REQUIRED)
 
@@ -22,7 +22,7 @@ function(assert_debugger_local_path PATH_TO_CHECK)
     string(FIND "${RESOLVED_PATH}" "${DEBUGGER_ROOT}/" ROOT_PREFIX_POSITION)
     if(NOT ROOT_PREFIX_POSITION EQUAL 0)
         message(FATAL_ERROR
-            "dcc_debug_host target path escapes the standalone project: ${RESOLVED_PATH}")
+            "z80_debug_host target path escapes the standalone project: ${RESOLVED_PATH}")
     endif()
 endfunction()
 
@@ -33,7 +33,7 @@ foreach(REQUIRED_STANDALONE_PATH
         ${ASSETS_DIR}/disks/disk_c_blank.dsk
         ${ASSETS_DIR}/disks/disk_d_blank.dsk)
     if(NOT EXISTS ${REQUIRED_STANDALONE_PATH})
-        message(FATAL_ERROR "dcc_debug_host standalone asset is missing: ${REQUIRED_STANDALONE_PATH}")
+        message(FATAL_ERROR "z80_debug_host standalone asset is missing: ${REQUIRED_STANDALONE_PATH}")
     endif()
 endforeach()
 
@@ -44,7 +44,7 @@ foreach(FORBIDDEN_Z80_TOKEN "i8080_" "fZ80Mode" "Z80Mode")
            "${FORBIDDEN_Z80_TOKEN}" FORBIDDEN_Z80_POSITION)
     if(NOT FORBIDDEN_Z80_POSITION EQUAL -1)
         message(FATAL_ERROR
-            "dcc_debug_host Z80 engine contains forbidden 8080-mode token: ${FORBIDDEN_Z80_TOKEN}")
+            "z80_debug_host Z80 engine contains forbidden 8080-mode token: ${FORBIDDEN_Z80_TOKEN}")
     endif()
 endforeach()
 unset(DEBUGGER_X80_SOURCE)
@@ -86,13 +86,13 @@ foreach(DEBUGGER_SOURCE ${DEBUGGER_ROOT_CODE} ${DEBUGGER_LOCAL_CODE})
          REGEX "^[ \t]*#[ \t]*include[ \t]*[<\"]\\.\\./")
     if(PARENT_INCLUDE)
         message(FATAL_ERROR
-            "dcc_debug_host source has a parent-directory include: ${DEBUGGER_SOURCE}")
+            "z80_debug_host source has a parent-directory include: ${DEBUGGER_SOURCE}")
     endif()
 endforeach()
 
-add_executable(dcc-debug-host ${DEBUGGER_HOST_SOURCES})
+add_executable(z80-debug-host ${DEBUGGER_HOST_SOURCES})
 
-target_include_directories(dcc-debug-host PRIVATE
+target_include_directories(z80-debug-host PRIVATE
     .
     ${IO_ADAPTER_INCLUDE_DIR}
     ${HARDWARE_DIR}
@@ -106,27 +106,27 @@ foreach(DEBUGGER_INCLUDE_DIR
     assert_debugger_local_path(${DEBUGGER_INCLUDE_DIR})
 endforeach()
 
-target_compile_definitions(dcc-debug-host PRIVATE
-    DCC_DEBUG_HOST_ASSETS_DIR="${ASSETS_DIR}"
+target_compile_definitions(z80-debug-host PRIVATE
+    Z80_DEBUG_HOST_ASSETS_DIR="${ASSETS_DIR}"
     TRACK_Z80_R_REGISTER=1
     TRACK_Z80_MEMPTR=1
 )
 
-target_link_libraries(dcc-debug-host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(z80-debug-host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 
 if(WIN32)
-    target_link_libraries(dcc-debug-host PRIVATE ws2_32)
+    target_link_libraries(z80-debug-host PRIVATE ws2_32)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(dcc-debug-host PRIVATE
+    target_compile_options(z80-debug-host PRIVATE
         -Wall
         -Wextra
         -Wno-missing-field-initializers
     )
 elseif(MSVC)
-    target_compile_options(dcc-debug-host PRIVATE /W4 /wd4201)
-    target_compile_definitions(dcc-debug-host PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_options(z80-debug-host PRIVATE /W4 /wd4201)
+    target_compile_definitions(z80-debug-host PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
@@ -154,7 +154,7 @@ function(dcc_enable_test_assertions TARGET_NAME)
     endif()
 endfunction()
 
-if(DCC_DEBUG_HOST_BUILD_EXAMPLES)
+if(Z80_DEBUG_HOST_BUILD_EXAMPLES)
     add_subdirectory(examples/io_adapter)
 endif()
 
@@ -262,18 +262,18 @@ if(BUILD_TESTING)
         $<TARGET_FILE:io-adapter-oversized>
     )
     add_test(
-        NAME dcc-debug-host-mi
+        NAME z80-debug-host-mi
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/tests/dcc_host_mi_test.py
-            $<TARGET_FILE:dcc-debug-host>
+            $<TARGET_FILE:z80-debug-host>
     )
-        set_tests_properties(dcc-debug-host-mi PROPERTIES TIMEOUT 30)
+        set_tests_properties(z80-debug-host-mi PROPERTIES TIMEOUT 30)
     if(EXISTS "${DCC_ROOT}/dccmake" AND EXISTS "${DCC_ROOT}/DCCRTL.MAC")
         add_test(
-                NAME dcc-debug-host-dcc
+                NAME z80-debug-host-dcc
             COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/tests/dcc_host_integration.py
-                    $<TARGET_FILE:dcc-debug-host> ${DCC_ROOT}
+                    $<TARGET_FILE:z80-debug-host> ${DCC_ROOT}
         )
-            set_tests_properties(dcc-debug-host-dcc PROPERTIES TIMEOUT 120)
+            set_tests_properties(z80-debug-host-dcc PROPERTIES TIMEOUT 120)
     endif()
 
     foreach(TEST_TARGET

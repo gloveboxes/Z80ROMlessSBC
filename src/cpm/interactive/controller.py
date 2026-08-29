@@ -7,10 +7,10 @@ import time
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src/cpm"))
-from test_dcc_debug_host import MISession, write_memory
+from test_z80_debug_host import MISession, write_memory
 
 session_dir = Path(__file__).resolve().parent
-host = ROOT / "build/cpm/dcc_debug_host/dcc-debug-host"
+host = ROOT / "build/cpm/z80_debug_host/z80-debug-host"
 if sys.platform == "darwin":
     adapter_name = "libz80sbc-io-adapter.dylib"
 elif sys.platform == "win32":

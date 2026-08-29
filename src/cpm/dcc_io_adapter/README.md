@@ -1,7 +1,7 @@
 # Z80 ROMless SBC DCC I/O Adapter
 
 `z80sbc-io-adapter` is the project-owned, self-contained I/O-port library used
-by `dcc-debug-host`. It combines the Z80 ROMless SBC native-disk protocol with
+by `z80-debug-host`. It combines the Z80 ROMless SBC native-disk protocol with
 the complete host-compatible adapter from
 `esp32-altair-8800/dcc_debug_io_adapter`: time, utility, weather, chat,
 file-transfer, environment, interrupt-timer, shared-response, and terminal
@@ -95,7 +95,7 @@ policy; a generic host without this adapter passes terminal bytes through.
 ## Direct use
 
 ```sh
-./build/cpm/dcc_debug_host/dcc-debug-host --interpreter=mi \
+./build/cpm/z80_debug_host/z80-debug-host --interpreter=mi \
   --io-adapter ./build/cpm/dcc_io_adapter/libz80sbc-io-adapter.dylib \
   --env-file ./path/to/session.env
 ```

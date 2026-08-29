@@ -31,10 +31,11 @@ native `SBC HL,DE` subtraction, `SUB 2` fusion, a branch inversion, branch
 threading, tail transfers, and register-use rewrites to reclaim 263 bytes while
 preserving the fixed section sizes. Discovery includes
 the BDOS cleanup block reached through a synthetic stack return. Host tests
-independently verify relocation and native encodings; `test_dcc_debug_host.py`
+independently verify relocation and native encodings; `test_z80_debug_host.py`
 boots the optimized image, runs `DIR`, loads a real transient program to its
 natural exit, and verifies that BIOS warm boot reloads CP/M and restores the
-prompt through the modeled SBC ports. The DCC debug host's `FullCpmHost` model
+prompt through the modeled SBC ports. The Z80 debug host's DCC-derived
+`FullCpmHost` model
 reports a benign `exited-normally` checkpoint whenever the emulated PC
 coincidentally equals `0x0000` or a bootstrap-captured address, even during
 completely ordinary execution; the test resumes past it (occasionally dozens
@@ -87,15 +88,16 @@ optionally composes the complete 4 MiB flash image.
 python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
-With a sibling DCC checkout containing the extended `dcc-debug-host`:
+To run the end-to-end test with the project-owned `z80-debug-host`:
 
 ```sh
-python3 src/cpm/test_dcc_debug_host.py --dcc-root ../dcc
+python3 src/cpm/test_z80_debug_host.py \
+  --host build/cpm/z80_debug_host/z80-debug-host
 ```
 
 For a self-contained test that uses the vendored current DCC Z80 engine, build
 the local host described in
-[`dcc_debug_host/README.md`](dcc_debug_host/README.md), then pass its executable
+[`z80_debug_host/README.md`](z80_debug_host/README.md), then pass its executable
 with `--host`. The Python test extracts the SRAM payload from `z80boot.pkg`
 instead of loading a separate boot-image artifact.
 
@@ -120,7 +122,7 @@ preserves standalone Escape after a 30 ms sequence timeout. See
 complete procedure, expected results, and the boundary between emulator
 coverage and Pico/physical-board qualification.
 
-The sibling `dcc-debug-host` must implement DD/FD-prefixed opcodes that don't
+The project `z80-debug-host` must implement DD/FD-prefixed opcodes that don't
 reference `H`/`L`/`(HL)` as executing exactly as if unprefixed (the real Z80
 behavior); a build missing this aborts with `bugbug: not-implemented z80
 instruction` on some historical `.COM` files. It is fixed in `x80.cxx`'s

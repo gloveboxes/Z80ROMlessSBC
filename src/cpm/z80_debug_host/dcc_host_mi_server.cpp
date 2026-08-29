@@ -1386,7 +1386,7 @@ void MiServer::handle_command(const std::string &input, bool &done)
     else if (command.rfind("-list-thread-groups", 0) == 0)
         result(token, "^done,groups=[{id=\"i1\",type=\"process\",pid=\"" +
                       std::to_string(debugger_process_id()) +
-                      "\",executable=\"dcc-debug-host\"}]");
+                      "\",executable=\"z80-debug-host\"}]");
     else if (command.rfind("-list-features", 0) == 0)
         result(token, "^done,features=[]");
     else if (command.rfind("-gdb-exit", 0) == 0)

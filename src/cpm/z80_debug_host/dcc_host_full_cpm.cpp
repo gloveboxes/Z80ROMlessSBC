@@ -67,7 +67,7 @@ bool cpm_name_ok(const std::string &name)
 fs::path make_session_root()
 {
     auto stamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    fs::path root = fs::temp_directory_path() / ("dcc-debug-host-" + std::to_string(stamp));
+    fs::path root = fs::temp_directory_path() / ("z80-debug-host-" + std::to_string(stamp));
     fs::create_directories(root / "DEBUG");
     return root;
 }
