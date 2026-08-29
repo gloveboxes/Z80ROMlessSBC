@@ -106,6 +106,9 @@ areas:
   initial power, continuity, resistance, rail-voltage, and diode-OR checks.
 - [Native CP/M boot image](src/cpm/README.md) - CP/M memory layout, Z80
   optimization, boot-package construction, BIOS behavior, and host testing.
+- [DCC debug I/O adapter](src/cpm/dcc_io_adapter/README.md) - complete
+  project-hosted Altair-compatible port drivers, SBC native disks, interrupt
+  services, private environment configuration, and ANSI terminal input.
 - [CP/M disk media](src/disks/README.md) - source disk formats, conversion,
   native geometry, generated images, and flash provisioning.
 - [PDF edition](README.pdf) - printable version of this specification.
