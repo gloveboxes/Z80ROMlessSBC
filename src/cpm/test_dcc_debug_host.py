@@ -18,7 +18,6 @@ import time
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_HOST = REPO_ROOT / "build" / "cpm" / "dcc_debug_host" / "dcc-debug-host"
-LOCAL_HOST_INCLUDE = REPO_ROOT / "src" / "cpm" / "dcc_debug_host" / "include"
 
 
 class MISession:
@@ -103,31 +102,26 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_adapter(dcc_root: Path, output: Path) -> None:
-    compiler = os.environ.get("CC", shutil.which("cc"))
-    if compiler is None:
-        raise RuntimeError("a C compiler is required")
-    if sys.platform == "darwin":
-        library_flags = ["-dynamiclib"]
-    elif os.name == "posix":
-        library_flags = ["-shared", "-fPIC"]
-    else:
-        raise RuntimeError("adapter smoke test currently supports macOS and Linux")
+    del dcc_root
+    cmake = shutil.which("cmake")
+    if cmake is None:
+        raise RuntimeError("cmake is required")
+    source = REPO_ROOT / "src" / "cpm" / "dcc_io_adapter"
+    build = REPO_ROOT / "build" / "cpm" / "dcc_io_adapter"
     subprocess.run(
-        [
-            compiler,
-            "-std=c11",
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            *library_flags,
-            "-I",
-            str(LOCAL_HOST_INCLUDE),
-            "-o",
-            str(output),
-            str(Path(__file__).with_name("dcc_debug_io_adapter.c")),
-        ],
+        [cmake, "-S", str(source), "-B", str(build), "-DBUILD_TESTING=OFF"],
         check=True,
     )
+    subprocess.run([cmake, "--build", str(build)], check=True)
+    if sys.platform == "darwin":
+        library = build / "libz80sbc-io-adapter.dylib"
+    elif os.name == "nt":
+        library = build / "z80sbc-io-adapter.dll"
+    elif os.name == "posix":
+        library = build / "libz80sbc-io-adapter.so"
+    else:
+        raise RuntimeError("adapter smoke test currently supports macOS and Linux")
+    shutil.copy2(library, output)
 
 
 def write_smoke_program(directory: Path) -> Path:

@@ -1,18 +1,13 @@
-#include "dcc_debug_io_adapter.h"
+#include "sbc_disk.h"
 
-#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#define DRIVE_COUNT 4
 #define DISK_BYTES (80u * 32u * 128u)
 #define RECORD_BYTES 128u
 
 enum
 {
-    TERM_DATA = 0x00,
-    TERM_STATUS = 0x01,
     DISK_COMMAND = 0x10,
     DISK_DRIVE = 0x11,
     DISK_LBA_LOW = 0x12,
@@ -27,30 +22,17 @@ enum
     DISK_ERROR = 0x80
 };
 
-typedef struct sbc_context
-{
-    FILE *drives[DRIVE_COUNT];
-    uint8_t drive;
-    uint16_t lba;
-    uint8_t status;
-    uint8_t record[RECORD_BYTES];
-    size_t record_index;
-    int active;
-} sbc_context_t;
-
-static sbc_context_t sbc;
-
 static void set_error(char *error, size_t error_size, const char *message)
 {
     if (error != NULL && error_size != 0)
         snprintf(error, error_size, "%s", message);
 }
 
-static void close_drives(sbc_context_t *context)
+static void close_drives(sbc_disk_context_t *context)
 {
     size_t index;
 
-    for (index = 0; index < DRIVE_COUNT; ++index)
+    for (index = 0; index < SBC_DISK_DRIVE_COUNT; ++index)
     {
         if (context->drives[index] != NULL)
             fclose(context->drives[index]);
@@ -58,10 +40,10 @@ static void close_drives(sbc_context_t *context)
     }
 }
 
-static int load_environment(sbc_context_t *context, const char *path,
+static int load_environment(sbc_disk_context_t *context, const char *path,
                             char *error, size_t error_size)
 {
-    static const char *names[DRIVE_COUNT] = {
+    static const char *names[SBC_DISK_DRIVE_COUNT] = {
         "DRIVE_A", "DRIVE_B", "DRIVE_C", "DRIVE_D"
     };
     char line[4096];
@@ -87,7 +69,7 @@ static int load_environment(sbc_context_t *context, const char *path,
             continue;
         *equals++ = '\0';
         equals[strcspn(equals, "\r\n")] = '\0';
-        for (index = 0; index < DRIVE_COUNT; ++index)
+        for (index = 0; index < SBC_DISK_DRIVE_COUNT; ++index)
         {
             if (strcmp(line, names[index]) == 0)
             {
@@ -103,7 +85,8 @@ static int load_environment(sbc_context_t *context, const char *path,
         }
     }
     fclose(environment);
-    for (size_t index = 0; index < DRIVE_COUNT; ++index)
+
+    for (size_t index = 0; index < SBC_DISK_DRIVE_COUNT; ++index)
     {
         long size;
 
@@ -112,23 +95,25 @@ static int load_environment(sbc_context_t *context, const char *path,
             (size = ftell(context->drives[index])) != (long)DISK_BYTES ||
             fseek(context->drives[index], 0, SEEK_SET) != 0)
         {
-            set_error(error, error_size, "each drive must be a 327680-byte image");
+            set_error(error, error_size,
+                      "each drive must be a configured 327680-byte image");
             return 0;
         }
     }
     return 1;
 }
 
-static int seek_record(sbc_context_t *context)
+static int seek_record(sbc_disk_context_t *context)
 {
     long offset = (long)context->lba * RECORD_BYTES;
 
-    if (context->drive >= DRIVE_COUNT || offset >= (long)DISK_BYTES)
+    if (context->drive >= SBC_DISK_DRIVE_COUNT ||
+        offset >= (long)DISK_BYTES)
         return 0;
     return fseek(context->drives[context->drive], offset, SEEK_SET) == 0;
 }
 
-static void disk_command(sbc_context_t *context, uint8_t command)
+static void disk_command(sbc_disk_context_t *context, uint8_t command)
 {
     context->record_index = 0;
     if (command == DISK_READ)
@@ -151,7 +136,7 @@ static void disk_command(sbc_context_t *context, uint8_t command)
         size_t index;
 
         context->status = DISK_READY;
-        for (index = 0; index < DRIVE_COUNT; ++index)
+        for (index = 0; index < SBC_DISK_DRIVE_COUNT; ++index)
             if (fflush(context->drives[index]) != 0)
                 context->status = DISK_ERROR;
     }
@@ -161,16 +146,34 @@ static void disk_command(sbc_context_t *context, uint8_t command)
     }
 }
 
-static uint8_t sbc_input(void *opaque_context, uint8_t port)
+int sbc_disk_init(sbc_disk_context_t *context, const char *environment_file,
+                  char *error, size_t error_size)
 {
-    sbc_context_t *context = (sbc_context_t *)opaque_context;
+    memset(context, 0, sizeof(*context));
+    context->status = DISK_READY;
+    if (!load_environment(context, environment_file, error, error_size))
+    {
+        close_drives(context);
+        return 0;
+    }
+    return 1;
+}
 
+void sbc_disk_close(sbc_disk_context_t *context)
+{
+    close_drives(context);
+    memset(context, 0, sizeof(*context));
+}
+
+int sbc_disk_handles_port(uint8_t port)
+{
+    return port >= DISK_COMMAND && port <= ADAPTER_ACTIVATE;
+}
+
+uint8_t sbc_disk_input(sbc_disk_context_t *context, uint8_t port)
+{
     switch (port)
     {
-        case TERM_DATA:
-            return 0;
-        case TERM_STATUS:
-            return 0x02;
         case DISK_COMMAND: return context->status;
         case DISK_DRIVE: return context->drive;
         case DISK_LBA_LOW: return (uint8_t)context->lba;
@@ -189,14 +192,10 @@ static uint8_t sbc_input(void *opaque_context, uint8_t port)
     }
 }
 
-static void sbc_output(void *opaque_context, uint8_t port, uint8_t data)
+void sbc_disk_output(sbc_disk_context_t *context, uint8_t port, uint8_t data)
 {
-    sbc_context_t *context = (sbc_context_t *)opaque_context;
-
     switch (port)
     {
-        case TERM_DATA:
-            break;
         case DISK_COMMAND:
             disk_command(context, data);
             break;
@@ -231,47 +230,4 @@ static void sbc_output(void *opaque_context, uint8_t port, uint8_t data)
         default:
             break;
     }
-}
-
-static void sbc_close(void *opaque_context)
-{
-    sbc_context_t *context = (sbc_context_t *)opaque_context;
-
-    close_drives(context);
-    memset(context, 0, sizeof(*context));
-}
-
-int dcc_debug_io_adapter_init(const dcc_debug_io_adapter_config_t *config,
-                              dcc_debug_io_adapter_t *adapter,
-                              char *error, size_t error_size)
-{
-    if (config == NULL || adapter == NULL ||
-        config->abi_version != DCC_DEBUG_IO_ADAPTER_ABI_VERSION ||
-        config->struct_size < sizeof(*config) ||
-        config->host.abi_version != DCC_DEBUG_IO_ADAPTER_ABI_VERSION ||
-        config->host.struct_size < sizeof(config->host))
-    {
-        set_error(error, error_size,
-                  "DCC host does not provide claimed-port terminal services");
-        return 0;
-    }
-
-    memset(&sbc, 0, sizeof(sbc));
-    sbc.status = DISK_READY;
-    if (!load_environment(&sbc, config->environment_file, error, error_size))
-    {
-        close_drives(&sbc);
-        return 0;
-    }
-
-    memset(adapter, 0, sizeof(*adapter));
-    adapter->abi_version = DCC_DEBUG_IO_ADAPTER_ABI_VERSION;
-    adapter->struct_size = sizeof(*adapter);
-    adapter->context = &sbc;
-    adapter->input = sbc_input;
-    adapter->output = sbc_output;
-    adapter->close = sbc_close;
-    if (error != NULL && error_size != 0)
-        error[0] = '\0';
-    return 1;
 }

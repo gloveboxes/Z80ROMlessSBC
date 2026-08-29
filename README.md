@@ -4106,6 +4106,7 @@ bring-up.
 | Area | Files | Purpose |
 | --- | --- | --- |
 | Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [z80_bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/z80_bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | 64K CCP/BDOS image, native BIOS, boot package, full-flash composition, and host regression tests |
+| Dynamic debug I/O | [adapter README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/README.md), [adapter entry point](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/src/dcc_debug_io_adapter.c), [port dispatcher](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/host/PortDrivers/io_ports.c) | Project-hosted SBC disk adapter, complete Altair host port drivers, interrupt service, and ANSI terminal-input pipeline |
 | Disk geometry and conversion | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py), [convert_altair_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/convert_altair_disks.py) | Shared CP/M geometry and deterministic Altair-media conversion |
 | Generated disk artifacts | [generated directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/generated), [manifest.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/generated/manifest.json) | Four exact 320 KiB intermediate disk slots and source/output hashes |
 | Preserved source media | [source-altair directory](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/disks/source-altair), [altair_88dskrom.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_88dskrom.h), [altair_disk_loader.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/source-altair/altair_disk_loader.h) | Original framed disks, Altair loader references, and upstream license |
@@ -4417,11 +4418,13 @@ Prerequisites are CMake, a C/C++ compiler, Python 3, and `z80asm`. In VS Code:
    terminal.
 5. Type CP/M commands normally. Press `Ctrl+]` to detach and stop the session.
 
-The pre-launch task builds the vendored DCC debug host, regenerates the CP/M
-artifacts in `build/cpm`, and starts the project-specific launcher. The launcher
-extracts the 64 KiB SRAM payload from `z80boot.pkg`, starts it through the board
-BIOS, and attaches Drives A-D from the generated 320 KiB images. A successful
-start displays:
+The pre-launch task builds the vendored DCC debug host, the complete
+project-owned adapter in `src/cpm/dcc_io_adapter`, and the CP/M artifacts in
+`build/cpm`. The **Interactive CP/M emulator** debug configuration always
+passes that built adapter to `dcc-debug-host`; no optional selection or external
+Altair checkout is required. The launcher extracts the 64 KiB SRAM payload from
+`z80boot.pkg`, starts it through the board BIOS, and attaches Drives A-D from
+the generated 320 KiB images. A successful start displays:
 
 ```text
 64K CP/M 2.2 - Burcon Z80 Edition
@@ -4450,6 +4453,33 @@ D>DIR
 - `C:` and `ATTNC11` exercise drive selection and multi-extent program loading.
 - The `PIP` commands exercise cross-drive reads, writes, directory updates, and
   persistence in the emulator's generated Drive D image.
+
+The dynamic adapter preserves the SBC ports `0x10`-`0x15` and also mirrors all
+active ports in the ESP32 Altair `port_drivers/io_ports.c` dispatcher:
+
+| Ports | Host-emulated function |
+|---|---|
+| 24-31, 37-39, 41-44 | Time and timer requests |
+| 24-30 | Time and timer input |
+| 45, 48, 49, 70 | Utility strings and host information |
+| 46-47 | OpenWeatherMap field request and status |
+| 52 | DCC-host interrupt timer |
+| 60-61 | Host file transfer |
+| 71-72 | Text-file-backed environment variables |
+| 120-124 | OpenAI-compatible chat request and response |
+| 200 | Shared response-buffer input |
+
+The host adapter intentionally does not add the `altair_local` Sense HAT
+extensions because those ports are absent from the firmware source-of-truth
+dispatcher. Weather and chat use libcurl when available and explicitly report
+an unavailable/error state when network support or configuration is absent.
+No API keys are stored in the repository.
+
+Terminal input uses the same policy as `altair_local`: Up/Down/Right/Left map to
+Ctrl-E/Ctrl-X/Ctrl-D/Ctrl-S, Insert/Delete map to Ctrl-O/Ctrl-G, Page Up/Page
+Down map to Ctrl-R/Ctrl-V, and Backspace or Delete maps to Ctrl-H. A standalone
+Escape is emitted after a 30 ms grace period, allowing ANSI cursor sequences to
+be recognized without losing Escape as a CP/M command key.
 
 This is a realistic end-to-end **software-path** test: it executes the optimized
 CCP/BDOS and `z80_bios.asm` with the SRAM payload extracted from the packaged

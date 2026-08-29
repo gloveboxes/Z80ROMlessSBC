@@ -106,7 +106,16 @@ from `z80boot.pkg` and connects the integrated terminal to the emulated CP/M
 console. Wait for `A>`, then type commands normally; `DIR`, `LS`, `C:`,
 `ATTNC11`, and cross-drive `PIP` copies provide progressively broader checks of
 CCP, BDOS, BIOS warm boot, multi-extent loading, and disk writes. `Ctrl+]`
-detaches from the terminal and stops the session. See
+detaches from the terminal and stops the session.
+
+The pre-launch task builds the complete project-owned
+[`dcc_io_adapter/`](dcc_io_adapter/) shared library and the debug configuration
+always loads it. In addition to the SBC disk ports, it mirrors all active ports
+in the ESP32 Altair `port_drivers` dispatcher for time, utility, weather,
+interrupt timer, file transfer, environment, chat, and shared response data.
+Its terminal pipeline translates cursor, Insert/Delete, and Page Up/Page Down
+ANSI sequences to the CP/M control keys, maps Backspace/Delete to Ctrl-H, and
+preserves standalone Escape after a 30 ms sequence timeout. See
 [Appendix D.9](../../README.md#d9-interactive-end-to-end-cpm-user-test) for the
 complete procedure, expected results, and the boundary between emulator
 coverage and Pico/physical-board qualification.

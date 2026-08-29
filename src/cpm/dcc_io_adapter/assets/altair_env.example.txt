@@ -1,0 +1,11 @@
+# Altair debugger I/O adapter environment.
+# Copy this file to altair_env.txt and add credentials there.
+OWM_KEY=
+OWM_LOCATION=Sydney,AU
+OWM_UNITS=metric
+CHAT_OPENAI_KEY=
+CHAT_PROVIDER=compatible
+CHAT_ENDPOINT=http://192.168.1.226:11434/v1/chat/completions
+CHAT_MODEL=gemma4:e2b
+CHAT_MAX_TOKENS=4096
+CHAT_TEMPERATURE=0.7

@@ -9,13 +9,6 @@ session_dir = Path(__file__).resolve().parent
 endpoint = session_dir / "terminal.endpoint"
 bridge_script = Path(__file__).resolve().with_name("terminal_bridge.py")
 controller_script = session_dir / "controller.py"
-adapter = session_dir / "libz80sbc-interactive.dylib"
-compiler = "cc"
-subprocess.run([
-    compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-dynamiclib",
-    "-Isrc/cpm/dcc_debug_host/include", "-o", str(adapter),
-    "src/cpm/dcc_debug_io_adapter.c",
-], cwd=root, check=True)
 
 endpoint.unlink(missing_ok=True)
 bridge = subprocess.Popen([
@@ -60,4 +53,3 @@ finally:
         bridge.terminate()
         bridge.wait()
     endpoint.unlink(missing_ok=True)
-    adapter.unlink(missing_ok=True)

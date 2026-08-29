@@ -11,9 +11,17 @@ from test_dcc_debug_host import MISession, write_memory
 
 session_dir = Path(__file__).resolve().parent
 host = ROOT / "build/cpm/dcc_debug_host/dcc-debug-host"
-adapter = session_dir / "libz80sbc-interactive.dylib"
+if sys.platform == "darwin":
+    adapter_name = "libz80sbc-io-adapter.dylib"
+elif sys.platform == "win32":
+    adapter_name = "z80sbc-io-adapter.dll"
+else:
+    adapter_name = "libz80sbc-io-adapter.so"
+adapter = ROOT / "build/cpm/dcc_io_adapter" / adapter_name
 environment = session_dir / "session.env"
 endpoint = session_dir / "terminal.endpoint"
+if not adapter.is_file():
+    raise SystemExit(f"project I/O adapter was not built: {adapter}")
 package = (ROOT / "build/cpm/z80boot.pkg").read_bytes()
 sys.path.insert(0, str(ROOT / "src/cpm"))
 import build_images
@@ -22,6 +30,14 @@ image = package[build_images.BOOT_PAYLOAD_OFFSET:]
 with tempfile.TemporaryDirectory(prefix="z80sbc-interactive-") as directory_name:
     directory = Path(directory_name)
     environment = directory / "session.env"
+    adapter_assets = ROOT / "src/cpm/dcc_io_adapter/assets"
+    local_environment = adapter_assets / "altair_env.txt"
+    default_environment = adapter_assets / "altair_env.example.txt"
+    adapter_environment = (
+        local_environment if local_environment.is_file() else default_environment
+    ).read_text(encoding="ascii")
+    if adapter_environment and not adapter_environment.endswith("\n"):
+        adapter_environment += "\n"
     program = directory / "loader.COM"
     program.write_bytes(bytes((0xC3, 0x00, 0x01)))
     (directory / "loader.dbg").write_text(
@@ -32,7 +48,8 @@ with tempfile.TemporaryDirectory(prefix="z80sbc-interactive-") as directory_name
         encoding="ascii",
     )
     environment.write_text(
-        "".join(
+        adapter_environment
+        + "".join(
             f"DRIVE_{letter}={ROOT / 'build/cpm' / filename}\n"
             for letter, filename in zip(
                 "ABCD",
