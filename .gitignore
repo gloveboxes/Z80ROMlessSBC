@@ -9,3 +9,4 @@ node_modules/
 *.py[cod]
 src/cpm/*.lab
 src/cpm/*.lst
+src/cpm/interactive/terminal.endpoint

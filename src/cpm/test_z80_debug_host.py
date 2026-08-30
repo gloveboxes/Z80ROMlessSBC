@@ -319,6 +319,21 @@ def main() -> None:
                     f"DIR did not return the expected listing: {directory_text!r}"
                 )
 
+            before_survey = session.target_text()
+            _, stopped = session.command(
+                '-interpreter-exec console "input SURVEY"', stop=True
+            )
+            stopped = resume_past_spurious_exit(session, stopped)
+            if 'reason="end-stepping-range"' not in stopped:
+                raise RuntimeError(f"SURVEY did not return to console input: {stopped}")
+            survey_text = session.target_text()[len(before_survey) :]
+            if ("*** System Survey" not in survey_text or
+                    "Active I/O ports:" not in survey_text or
+                    "A>" not in survey_text):
+                raise RuntimeError(
+                    f"SURVEY did not complete its I/O scan: {survey_text!r}"
+                )
+
             before_warm_boot = session.target_text()
             # Run a real transient program (LS.COM) to its natural exit
             # instead of injecting a fabricated jump straight to

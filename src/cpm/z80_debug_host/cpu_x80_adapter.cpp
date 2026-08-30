@@ -410,13 +410,16 @@ void x80_invoke_in(uint8_t port)
         reg.a = sbc_mode ? cpu->io_port_in_handler(port) : cpu->term_in();
         break;
     case 0x08:
-        reg.a = cpu->disk_controller.disk_status();
+        reg.a = sbc_mode ? cpu->io_port_in_handler(port)
+                         : cpu->disk_controller.disk_status();
         break;
     case 0x09:
-        reg.a = cpu->disk_controller.sector();
+        reg.a = sbc_mode ? cpu->io_port_in_handler(port)
+                         : cpu->disk_controller.sector();
         break;
     case 0x0a:
-        reg.a = cpu->disk_controller.read();
+        reg.a = sbc_mode ? cpu->io_port_in_handler(port)
+                         : cpu->disk_controller.read();
         break;
     case 0x10:
         if (sbc_mode)
@@ -458,13 +461,22 @@ void x80_invoke_out(uint8_t port)
             cpu->term_out(reg.a);
         break;
     case 0x08:
-        cpu->disk_controller.disk_select(reg.a);
+        if (sbc_mode)
+            cpu->io_port_out_handler(port, reg.a);
+        else
+            cpu->disk_controller.disk_select(reg.a);
         break;
     case 0x09:
-        cpu->disk_controller.disk_function(reg.a);
+        if (sbc_mode)
+            cpu->io_port_out_handler(port, reg.a);
+        else
+            cpu->disk_controller.disk_function(reg.a);
         break;
     case 0x0a:
-        cpu->disk_controller.write(reg.a);
+        if (sbc_mode)
+            cpu->io_port_out_handler(port, reg.a);
+        else
+            cpu->disk_controller.write(reg.a);
         break;
     case 0x11:
         if (sbc_mode)
