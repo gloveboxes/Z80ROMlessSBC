@@ -276,61 +276,110 @@ Core Board placement.
 ### 0.5 Bring-Up Equipment
 
 - Digital multimeter with resistance, continuity, and DC voltage modes.
-- Available oscilloscope: PicoScope PQ012, two analog channels and
-  50 MHz bandwidth. This is suitable for the specified 1-6 MHz
-  functional, voltage-margin, duty-cycle, pulse-width, and paired-signal
-  timing checks, subject to the limitations below.
+- Oscilloscope: RIGOL DHO814, four analog channels, 100 MHz bandwidth,
+  1.25 GSa/s maximum real-time sample rate, 25 Mpts maximum memory depth,
+  and 12-bit vertical resolution. Use its four supplied 150 MHz passive
+  probes for the analog signal-quality and timing checks below.
 - Logic analyzer with at least 16 channels; 24 or more is preferred.
 - Current-limited bench supply or an in-line 5 V current meter.
 - Fine probe hooks or test clips suitable for DIP pins.
 - A programmer explicitly supporting the selected ATF22V10B or
   ATF22V10C device and generic 22V10 JEDEC files.
 
-#### PicoScope PQ012 Setup and Capture Plan
+#### RIGOL DHO814 Setup and Capture Plan
 
-The 50 MHz front end has a calculated rise time of approximately 7 ns
-($0.35 / 50\,\text{MHz}$). A displayed edge near or below that value is
-scope-limited; it does not prove the circuit's true edge rate or the
-absence of higher-frequency ringing. Use the PQ012 for pass/fail logic
-levels, threshold margin, duty cycle, pulse width, gross overshoot,
-and relative timing. If a decision depends on sub-7 ns edge shape,
-small high-frequency ringing, or an unexplained marginal waveform,
-repeat that measurement on a borrowed scope with at least 100 MHz
-bandwidth before qualification.
+The DHO814 validates actual voltage, edge shape, ringing, pulse width,
+and timing margin at the device pins. Its four channels allow one stable
+trigger and three related nodes to be captured in the same acquisition.
+It does not replace the logic analyzer: four analog channels cannot prove
+the state or ordering of the complete A0-A15 and D0-D7 buses.
 
-- Use compensated 10x passive probes. Check compensation against the
-  scope calibration output before each bring-up session.
-- Use a ground spring or a ground lead shorter than 20 mm at a ground
-  point beside the measured IC. A long crocodile ground lead can create
-  the ringing being investigated.
-- Connect probe grounds only to common circuit GND. The USB scope ground
-  is referenced through the host computer; never clip it to a signal or
-  positive rail.
-- Use DC coupling and the highest real-time block-mode sample rate that
-  PicoScope 7 offers with both channels enabled. Do not use ETS to prove
-  single-shot glitches, ownership transitions, or trap timing; ETS
-  constructs a waveform from repeated acquisitions.
-- Disable software bandwidth limiting for edge/ringing checks. A 20 MHz
-  software limit may be enabled only for low-noise rail-ripple readings,
-  and the capture must be labelled accordingly.
+##### Probe and Instrument Preparation
 
-Because only two analog channels are available, repeat each test for
-every listed signal rather than moving both probes during one capture:
+1. Connect each probe to its channel, set the physical probe switch to
+   **10X**, and open that channel's **Vertical > Probe > Probe Ratio** menu.
+   Set the scope ratio to **10X** as well. A mismatched ratio makes every
+   displayed voltage incorrect.
+2. Before each bring-up session, connect each probe in turn to the front
+   panel compensation output and its adjacent ground terminal. Adjust the
+   probe until the square wave has flat tops and square corners, matching
+   the manual's "Perfectly compensated" example. Repeat for CH1-CH4.
+3. Fit a ground spring or a ground lead shorter than 20 mm to every probe.
+   Connect all probe grounds only to nearby points on the common circuit
+   GND. The DHO814 BNC shells and probe grounds are common; never connect a
+   ground clip to +3.3 V, +5 V, or any signal node.
+4. Recall the default setup, then configure every active channel as
+   **1 MOhm input, DC coupling, 10X probe, Invert OFF, Delay 0 s**, and
+   **Bandwidth Limit OFF**. Use the full 100 MHz bandwidth for timing,
+   edge, overshoot, and ringing captures. A bandwidth limit may be used
+   only for a separately labelled supply-noise capture.
+5. Set **Horizontal > Acquisition = Normal**. The DHO800 manual identifies
+   Normal as the best mode for most waveforms and confirms that sampling is
+   real-time only. Do not use Average to qualify glitches or transitions;
+   averaging can hide non-repetitive faults. Peak mode may be used as a
+   second search capture, but the pass/fail evidence must include a Normal
+   acquisition.
+6. Start with **Memory Depth = Auto** for repetitive clock checks. Select
+   **25 Mpts** for single-shot RESET#, BUSREQ#/BUSACK#, DMA, I/O-trap, or
+   intermittent-fault captures, then verify the sample-rate label remains
+   at least 500 MSa/s. Reduce the time span or memory depth if necessary to
+   restore that sample rate. Place the trigger at about 40% of the screen
+   so both pre-trigger cause and post-trigger response are visible.
+7. For 3.3 V nodes start at **1 V/div**; for 5 V nodes start at
+   **2 V/div**. Position ground markers near the bottom of each lane without
+   overlapping traces. Adjust one step finer when useful, but keep ground
+   and both logic levels visible. Start the horizontal scale at 200 us/div
+   for 1 kHz, 2 us/div for 100 kHz, 200 ns/div for 1 MHz, and 50 ns/div for
+   2-8 MHz. Tighten the scale around an edge when measuring rise time or
+   ringing.
+8. Open **Trigger**, choose **Type = Edge**, **Source = CH1**,
+   **Coupling = DC**, and choose the edge stated in the table below. Set the
+   level to **1.65 V** when CH1 is a 3.3 V node or **2.5 V** when it is a
+   5 V node. Use **Sweep = Normal** for repetitive captures and
+   **Sweep = Single** for ownership, reset, trap, and other one-off events;
+   arm Single before issuing the firmware command. Do not use Auto sweep as
+   pass evidence because it can force an acquisition without the requested
+   event.
+9. Add automatic measurements appropriate to the capture: **Frequency,
+   Period, +Duty, -Duty, Rise Time, Fall Time, +Width, -Width, Vmax, Vmin,
+   Vpp, Overshoot**, and the applicable **Delay** measurement between CH1
+   and another channel. Check timing with cursors as well; automatic
+   measurements are invalid if the relevant edges or levels are not fully
+   visible.
+10. Stop the acquisition before moving a live probe. Save a screen image
+    and waveform for every pass gate, naming it with the phase, clock rate,
+    stimulus, and probed signals. Record the displayed sample rate, memory
+    depth, probe ratio, bandwidth limit, and measured minima/maxima.
 
-| Measurement | Channel A / trigger | Channel B | Required repetitions |
-| --- | --- | --- | --- |
-| Clock translation | Pico GP2 | AHCT244 1Y1 / Z80 CLK pin 6 | 1 kHz, 100 kHz, 1 MHz, then each qualified frequency |
-| GAL ownership transition | RESET# or BUSACK# | One of GAL pins 14-16 | Every input transition and each output |
-| Data interlock | DATA_ENABLE or DATA_DIR | GAL pin 17 or 18 | Both outputs for every truth-table transition |
-| Address integrity | Z80 CLK or MREQ# | SRAM A0, A7, A8, or A15 | Required address patterns at 1, 2, 3, and 4 MHz |
-| SRAM read setup | Z80 CLK | SRAM D0-D7, one bit per capture | Representative 0x00, 0xFF, 0x55, and 0xAA reads |
-| SRAM write pulse | SRAM CE# | SRAM WE# | Each qualified frequency and worst-case write loop |
-| Supply integrity | 5 V entry | Farthest-board 5 V | Idle, DMA patterns, Z80 run, and Wi-Fi traffic |
+##### Four-Channel Connections and Expected Results
 
-The logic analyzer remains mandatory for simultaneous bus/control
-correlation. The PQ012 validates analog voltage and waveform quality;
-the logic analyzer proves multi-signal ordering and captures A0-A15,
-D0-D7, and control activity concurrently.
+Connect the channels exactly as listed, using the physical IC pin as the
+probe point. CH1 is the normal trigger source unless the row explicitly names
+another source. Where a row lists alternatives, repeat the capture for every
+alternative while leaving the other channels in place where possible.
+
+| Purpose | CH1 / trigger | CH2 | CH3 | CH4 | Trigger and expected outcome |
+| --- | --- | --- | --- | --- | --- |
+| Clock translation | Pico GP2, header pin 4 | AHCT244 pin 18 | Z80 CLK pin 6 | Z80 RESET# pin 26 | CH1 rising. At 1 kHz, 100 kHz, 1 MHz, and each qualification rate, CH1 is about 0-3.3 V and CH2/CH3 about 0-5 V. CH2 and CH3 match frequency and duty cycle, contain no extra edges, and differ only by interconnect delay. RESET# stays HIGH while running. |
+| Reset sequence | Z80 RESET# pin 26 | Z80 CLK pin 6 | Z80 M1# pin 27 | Z80 MREQ# pin 19 | CH1 rising, Single. RESET# remains LOW for at least three complete clocks. After release, M1# and MREQ# produce valid active-LOW opcode-fetch activity with no runt RESET# or CLK pulse. |
+| DMA ownership | Z80 BUSREQ# pin 25 | Z80 BUSACK# pin 23 | Z80 RESET# pin 26 | Z80 CLK pin 6 | CH1 falling, Single. BUSACK# subsequently falls and remains LOW for DMA; CLK is deliberately stopped only by the firmware sequence. On release, BUSREQ# rises before BUSACK# returns HIGH and normal clocks resume without a runt edge. |
+| SRAM write control | Z80 CLK pin 6 | Z80 MREQ# pin 19 | Z80 WR# pin 22 | SRAM WE# pin 29 | CH1 rising. During a CPU write, MREQ# and WR# assert LOW and SRAM WE# follows the selected write control through GAL/AHCT244 propagation. WE# has no extra pulse and its LOW width is at least 45 ns. |
+| SRAM read timing | Z80 CLK pin 6 | Z80 MREQ# pin 19 | SRAM OE# pin 24 | One SRAM data pin D0-D7: pins 13-15, 17-21 | CH1 rising. Repeat CH4 for all eight bits and the 00/FF/55/AA patterns. MREQ# and OE# assert LOW once per read; CH4 reaches the expected 0 V or 5 V state and is stable before the Z80 sampling edge. Use the logic analyzer to prove the complete byte and setup margin. |
+| Address integrity | Z80 CLK pin 6 | SRAM A0 pin 12 or A7 pin 5 | SRAM A8 pin 27 | SRAM A15 pin 31 | CH1 rising. Repeat with A0 and A7 on CH2 at 1, 2, 3, and 4 MHz, then at every Section 8.12 rate. For 0000/FFFF/5555/AAAA and walking patterns, each observed line matches the commanded bit, reaches valid 0/5 V levels, is stable during the active memory control interval, and has no double edge or excessive ringing. The logic analyzer proves A0-A15 together. |
+| GAL ownership mux | RESET# at Z80 pin 26 or BUSACK# at Z80 pin 23 | Selected Z80 control: WR# pin 22, RD# pin 21, or MREQ# pin 19 | Matching GAL output: pin 14, 15, or 16 | Matching SRAM control: WE# pin 29, OE# pin 24, or CE# pin 22 | Trigger on the ownership input transition, Single; repeat rising/falling and all three paths. GAL and SRAM outputs remain inactive HIGH while ownership changes when both candidate controls are HIGH. Under CPU ownership they follow the Z80 control; under RESET#/BUSACK# DMA ownership they follow the Pico control. No active-LOW glitch is permitted. |
+| Data-transceiver interlock | DATA_ENABLE at Pico GP7, header pin 10 | DATA_DIR at Pico GP6, header pin 9 | GAL pin 17 / AHCT245 OE# pin 19 | GAL pin 18 / LVC245 OE# pin 19 | CH1 rising and falling, Single. With DATA_ENABLE LOW both OE# outputs remain HIGH. With DATA_ENABLE HIGH and DATA_DIR HIGH, CH3 is LOW and CH4 HIGH; with DATA_DIR LOW, CH3 is HIGH and CH4 LOW. CH3 and CH4 must never be LOW simultaneously, including during transitions. |
+| I/O trap and WAIT# | Z80 IORQ# pin 20 | Z80 WAIT# pin 24 | Z80 CLK pin 6 | DATA_ENABLE at Pico GP7, header pin 10 | CH1 falling, Single. WAIT# falls from GAL hardware before the Z80 sampling edge; the clock stops at a complete edge. WAIT# rises only after DATA_ENABLE and direction are valid, then clocking resumes. WAIT# does not reassert before IORQ# and RD#/WR# are inactive. Use a second capture with CH4 on RD# pin 21, then WR# pin 22. |
+| Supply integrity | +5 V logic-rail entry at the 100 uF bulk capacitor | Farthest-board +5 V rail | Pico 3V3 header pin 36 | Z80 CLK pin 6 | Trigger on CH4 rising for repetitive operation; use Single on the relevant command for transients. Repeat at idle, DMA patterns, Z80 memory loop, disk write, and Wi-Fi traffic. CH1/CH2 remain 4.75-5.25 V and CH3 remains within the Pico 3.3 V rail specification; no capture may show more than 250 mV rail droop or a reset/clock disturbance. For ripple detail, AC coupling or a bandwidth limit is allowed only in an additional labelled capture; retain the DC-coupled full-bandwidth capture as pass evidence. |
+
+For logic nodes, a measured LOW must satisfy the receiving device's LOW
+limit and a measured HIGH must satisfy its HIGH limit; use the device-specific
+thresholds and margins stated in the relevant phase rather than treating the
+trigger level as a pass threshold. Investigate overshoot below GND or above
+the node's supply, non-monotonic threshold crossings, ringing that creates a
+second crossing, or a rise/fall time near the DHO814's own approximately
+3.5 ns 100 MHz front-end limit. The scope validates analog quality on the
+listed nodes; the logic analyzer remains mandatory for simultaneous bus-wide
+ordering and the final frequency claim.
 
 ### 0.6 Optional Items
 
@@ -3735,9 +3784,10 @@ to meet the 45 ns minimum after propagation through the GAL and AHCT244.
 For every I/O cycle, also require WAIT# LOW before the Z80 sampling edge,
 WAIT# HIGH only after DATA_ENABLE and data direction are valid, and no
 WAIT# reassertion until IORQ# and RD#/WR# are inactive.
-Use the Section 0.5 PQ012 channel pairs and repeat sequentially for each
-analog signal. Use the logic analyzer for the simultaneous digital
-capture; do not infer whole-bus ordering from two analog channels.
+Use the Section 0.5 DHO814 four-channel groups and repeat the listed
+alternatives for each analog signal. Use the logic analyzer for the
+simultaneous digital capture; do not infer whole-bus ordering from four
+analog channels.
 The qualified frequency is the highest error-free step at or below
 6 MHz for which the logic analyzer proves memory timing and the complete
 WAIT/clock-stop handshake. Report 6.5-8 MHz separately as experimental
@@ -4021,14 +4071,14 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | --- | --- | --- |
 | Oscilloscope / scope | Instrument displaying voltage versus time | Measures analog levels, edge shape, pulse width, ringing, and timing between two signals. |
 | Logic analyzer | Instrument recording many digital HIGH/LOW signals | Correlates bus values and control ordering across many channels simultaneously. |
-| MSO | Mixed-signal oscilloscope | Instrument combining analog scope channels with synchronized digital inputs; the available PQ012 is not an MSO. |
+| MSO | Mixed-signal oscilloscope | Instrument combining analog scope channels with synchronized digital inputs; the DHO814 has four analog channels but no integrated digital bus inputs. |
 | Probe | Instrument lead designed to minimize loading | A compensated 10x scope probe is used for analog measurements; logic probes capture digital states. |
 | 1x / 10x probe | Probe attenuation ratio | 10x mode usually loads fast logic less and provides better bandwidth than 1x mode. |
 | Ground spring | Very short probe-ground attachment | Prevents the probe's own ground-loop inductance from creating apparent ringing. |
-| Bandwidth | Highest sine-wave frequency passed within a stated attenuation | A 50 MHz scope has about 7 ns calculated rise time and cannot prove faster edge detail. |
+| Bandwidth | Highest sine-wave frequency passed within a stated attenuation | The DHO814's 100 MHz front end has an approximate 3.5 ns calculated rise-time limit; an edge displayed near that limit may be scope-limited. |
 | Sample rate | Number of measurements recorded per second | Determines time resolution; it is distinct from analog bandwidth. |
-| ETS | Equivalent-time sampling | Builds a high-resolution view from repeated events; unsuitable for proving one-off glitches. |
-| Block mode | Capture first into instrument memory, then transfer | Provides the PicoScope's highest real-time sample rate for transient checks. |
+| Real-time sampling | Samples used for one displayed acquisition are collected from the same trigger event | The DHO814 uses real-time sampling, so Single mode can preserve a one-off transition for analysis. |
+| Memory depth | Number of samples retained in one acquisition | The DHO814 provides up to 25 Mpts, allowing substantial pre-trigger and post-trigger context while retaining a useful sample rate. |
 | AWG | Arbitrary waveform generator | Produces programmable test waveforms; available in many USB scopes but not required for Z80 operation. |
 | SCPI | Standard Commands for Programmable Instruments | Text-command interface for automating compatible bench instruments. |
 | KiCad | Electronic schematic and PCB design application | Holds the native electrical schematic and runs ERC. |
@@ -4052,7 +4102,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 - [RP2350 datasheet](datasheets/RP2350-Datasheet.pdf)
 - [Raspberry Pi Pico 2 board datasheet](datasheets/Pico-2-Datasheet.pdf)
 - [BusBoard BB830 breadboard datasheet](datasheets/BB830-Datasheet.pdf)
-- [PicoScope 2000 Series datasheet](https://www.picotech.com/download/datasheets/picoscope-2000-series-data-sheet-en.pdf)
+- [RIGOL DHO800 Series user guide](datasheets/DHO800_UserGuide_EN.pdf)
 
 ## Appendix C: Source Code Index
 
