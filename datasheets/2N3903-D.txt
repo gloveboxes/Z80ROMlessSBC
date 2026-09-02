@@ -1,0 +1,870 @@
+DATA SHEET
+www.onsemi.com
+General Purpose
+Transistors
+NPN Silicon
+2N3903, 2N3904
+Features
+• Pb−Free Packages are Available*
+2
+BASE
+COLLECTOR
+3
+1
+EMITTER
+MAXIMUM RATINGS
+TO−92
+CASE 29
+STYLE 1
+Rating Symbol Value Unit
+Collector−Emitter Voltage VCEO 40 Vdc
+Collector−Base Voltage VCBO 60 Vdc
+Emitter−Base Voltage VEBO 6.0 Vdc
+1 2 3
+STRAIGHT LEAD
+BULK PACK
+1
+2
+3
+BENT LEAD
+TAPE & REEL
+AMMO PACK
+Collector Current − Continuous IC 200 mAdc
+Total Device Dissipation
+@ TA = 25°C
+Derate above 25°C
+PD
+625
+5.0
+mW
+mW/°C
+MARKING DIAGRAMS
+Total Device Dissipation
+@ TC = 25°C
+Derate above 25°C
+PD
+1.5
+12
+W
+mW/°C
+Operating and Storage Junction
+Temperature Range
+TJ, Tstg−55 to +150 °C
+THERMAL CHARACTERISTICS (Note 1)
+Characteristic Symbol Max Unit
+Thermal Resistance, Junction−to−Ambient RqJA 200 °C/W
+Thermal Resistance, Junction−to−Case RqJC 83.3 °C/W
+2N
+390x
+YWWG
+G
+x = 3 or 4
+Y = Year
+WW = Work Week
+G = Pb−Free Package
+(Note: Microdot may be in either location)
+Stresses exceeding those listed in the Maximum Ratings table may damage the
+device. If any of these limits are exceeded, device functionality should not be
+assumed, damage may occur and reliability may be affected.
+1. Indicates Data in addition to JEDEC Requirements.
+ORDERING INFORMATION
+See detailed ordering and shipping information in the package
+dimensions section on page 3 of this data sheet.
+*For additional information on our Pb−Free strategy and soldering details, please
+download the onsemi Soldering and Mounting Techniques Reference Manual,
+SOLDERRM/D.
+© Semiconductor Components Industries, LLC, 2012
+August, 2021 − Rev. 9
+1 Publication Order Number:
+2N3903/D
+2N3903, 2N3904
+ELECTRICAL CHARACTERISTICS (TA = 25°C unless otherwise noted)
+Characteristic OFF CHARACTERISTICS
+Collector−Emitter Breakdown Voltage (Note 2) (IC = 1.0 mAdc, IB = 0) Collector−Base Breakdown Voltage (IC = 10 mAdc, IE = 0) Emitter−Base Breakdown Voltage (IE = 10 mAdc, IC = 0) Base Cutoff Current (VCE = 30 Vdc, VEB = 3.0 Vdc) Collector Cutoff Current (VCE = 30 Vdc, VEB = 3.0 Vdc) ON CHARACTERISTICS
+DC Current Gain (Note 2)
+(IC = 0.1 mAdc, VCE = 1.0 Vdc) (IC = 1.0 mAdc, VCE = 1.0 Vdc) (IC = 10 mAdc, VCE = 1.0 Vdc) (IC = 50 mAdc, VCE = 1.0 Vdc) (IC = 100 mAdc, VCE = 1.0 Vdc) 2N3903
+2N3904
+2N3903
+2N3904
+2N3903
+2N3904
+2N3903
+2N3904
+2N3903
+2N3904
+Collector−Emitter Saturation Voltage (Note 2)
+(IC = 10 mAdc, IB = 1.0 mAdc)
+(IC = 50 mAdc, IB = 5.0 mAdc
+Base−Emitter Saturation Voltage (Note 2)
+(IC = 10 mAdc, IB = 1.0 mAdc)
+(IC = 50 mAdc, IB = 5.0 mAdc)
+SMALL−SIGNAL CHARACTERISTICS
+Current−Gain − Bandwidth Product
+(IC = 10 mAdc, VCE = 20 Vdc, f = 100 MHz) 2N3903
+2N3904
+Output Capacitance (VCB = 5.0 Vdc, IE = 0, f = 1.0 MHz) Input Capacitance (VEB = 0.5 Vdc, IC = 0, f = 1.0 MHz) Input Impedance
+(IC = 1.0 mAdc, VCE = 10 Vdc, f = 1.0 kHz) 2N3903
+2N3904
+Voltage Feedback Ratio
+(IC = 1.0 mAdc, VCE = 10 Vdc, f = 1.0 kHz) 2N3903
+2N3904
+Small−Signal Current Gain
+(IC = 1.0 mAdc, VCE = 10 Vdc, f = 1.0 kHz) 2N3903
+2N3904
+Output Admittance (IC = 1.0 mAdc, VCE = 10 Vdc, f = 1.0 kHz) Noise Figure
+(IC = 100 mAdc, VCE = 5.0 Vdc, RS = 1.0 k W, f = 1.0 kHz) 2N3903
+2N3904
+SWITCHING CHARACTERISTICS
+Delay Time Rise Time (VCC = 3.0 Vdc, VBE = 0.5 Vdc,
+IC = 10 mAdc, IB1 = 1.0 mAdc)
+Storage Time (VCC = 3.0 Vdc, IC = 10 mAdc, IB1 = IB2 = 1.0 mAdc) 2N3903
+2N3904
+Fall Time 2. Pulse Test: Pulse Width v 300 ms; Duty Cycle v 2%.
+www.onsemi.com
+2
+Symbol Min Max V(BR)CEO 40− V(BR)CBO 60− V(BR)EBO 6.0− IBL− 50 ICEX− 50 hFE
+20
+40
+35
+70
+50
+100
+30
+60
+15
+30
+−
+−
+−
+−
+150
+300
+−
+−
+−
+−
+VCE(sat)
+−
+−
+0.2
+0.3
+VBE(sat)
+0.65
+−
+0.85
+0.95
+fT
+250
+300
+−
+−
+Cobo− 4.0 Cibo− 8.0 hie
+1.0
+1.0
+8.0
+10
+hre
+0.1
+0.5
+5.0
+8.0
+hfe
+50
+100
+200
+400
+hoe 1.0 40 NF
+−
+−
+6.0
+5.0
+td− 35 tr− 35 ts−
+−
+175
+200
+tf− 50 Unit
+Vdc
+Vdc
+Vdc
+nAdc
+nAdc
+−
+Vdc
+Vdc
+MHz
+pF
+pF
+k W
+X 10− 4
+−
+mmhos
+dB
+ns
+ns
+ns
+ns
+2N3903, 2N3904
+ORDERING INFORMATION
+Device Package Shipping†
+2N3903RLRM TO−92 2000 / Ammo Pack
+2N3904 TO−92 5000 Units / Bulk
+2N3904G TO−92
+(Pb−Free)
+5000 Units / Bulk
+2N3904RLRA TO−92 2000 / Tape & Reel
+2N3904RLRAG TO−92
+(Pb−Free)
+2000 / Tape & Reel
+2N3904RLRM TO−92 2000 / Ammo Pack
+2N3904RLRMG TO−92
+(Pb−Free)
+2000 / Ammo Pack
+2N3904RLRP TO−92 2000 / Ammo Pack
+2N3904RLRPG TO−92
+(Pb−Free)
+2000 / Ammo Pack
+2N3904RL1G TO−92
+(Pb−Free)
+2000 / Tape & Reel
+2N3904ZL1 TO−92 2000 / Ammo Pack
+2N3904ZL1G TO−92
+(Pb−Free)
+2000 / Ammo Pack
+†For information on tape and reel specifications, including part orientation and tape sizes, please refer to our Tape and Reel Packaging
+Specifications Brochure, BRD8011/D.
++3 V
+DUTY CYCLE = 2%
+300 ns
++10.9 V
+275
+10 k
+-0.5 V
+< 1 ns
+CS < 4 pF*
+* Total shunt capacitance of test jig and connectors
+Figure 1. Delay and Rise Time Equivalent Test Circuit
++3 V
+10 < t1 < 500 ms
+DUTY CYCLE = 2%
+0
+t1
++10.9 V
+275
+10 k
+1N916 -9.1 V′
+< 1 ns
+* Total shunt capacitance of test jig and connectors
+Figure 2. Storage and Fall Time Equivalent Test Circuit
+CS < 4 pF*
+www.onsemi.com
+3
+CAPACITANCE (pF)
+TIME (ns)
+′
+t , STORAGE TIME (ns)s
+10
+7.0
+5.0
+3.0
+2.0
+1.0
+0.1
+500
+300
+200
+100
+70
+50
+30
+20
+10
+7
+5
+500
+300
+200
+100
+70
+50
+30
+20
+10
+7
+5
+VCC = 40 V
+IC/IB = 10
+Cibo
+Cobo
+0.2 0.3 0.5 0.7
+1.0 2.0 3.0 5.0 7.0 10 20 30 40
+REVERSE BIAS VOLTAGE (VOLTS)
+Figure 3. Capacitance
+1.0
+IC/IB = 10
+td @ VOB = 0 V
+1.0 2.0 3.0 10 20 70
+100
+5.0 7.0 30 50 200
+IC, COLLECTOR CURRENT (mA)
+Figure 5. Turn−On Time
+IC/IB = 20
+IC/IB = 10
+2N3903, 2N3904
+TYPICAL TRANSIENT CHARACTERISTICS
+TJ = 25°C
+TJ = 125°C
+5000
+3000
+2000
+Q, CHARGE (pC)
+t , RISE TIME (ns)
+r
+t , FALL TIME (ns)f
+1000
+700
+500
+300
+200
+100
+70
+50
+500
+300
+200
+100
+70
+50
+30
+20
+10
+7
+5
+500
+300
+200
+100
+70
+50
+30
+20
+10
+7
+5
+QT
+QA
+2.0 3.0 5.0 7.0 10 20 30 50 70 100 200
+IC, COLLECTOR CURRENT (mA)
+Figure 4. Charge Data
+VCC IC/IB = 40 V
+= 10
+tr @ VCC = 3.0 V
+40 V
+15 V
+2.0 V
+1.0 2.0 3.0 10 20 70
+100
+5.0 7.0 30 50 200
+IC, COLLECTOR CURRENT (mA)
+Figure 6. Rise Time
+t′
+s = ts -
+1/8 tf
+IB1 = IB2
+VCC = 40 V
+IB1 = IB2
+IC/IB = 20
+IC/IB = 20
+IC/IB = 10
+IC/IB = 10
+1.0 2.0 3.0 10 20 70
+100
+5.0 7.0 30 50 200
+IC, COLLECTOR CURRENT (mA)
+Figure 7. Storage Time
+1.0 2.0 3.0 10 20 70
+100
+5.0 7.0 30 50 200
+IC, COLLECTOR CURRENT (mA)
+Figure 8. Fall Time
+www.onsemi.com
+4
+NF, NOISE FIGURE (dB)
+h , CURRENT GAIN
+fe
+h , INPUT IMPEDANCE (k OHMS)ie
+12
+10
+8
+6
+4
+2
+0
+0.1
+300
+200
+100
+70
+50
+30
+20
+10
+5.0
+2.0
+1.0
+0.5
+0.2
+SOURCE RESISTANCE = 200 W
+IC = 1.0 mA
+f = 1.0 kHz IC = 1.0 mA
+IC = 0.5 mA
+SOURCE RESISTANCE = 200 W
+IC = 0.5 mA
+SOURCE RESISTANCE = 1.0 k
+IC = 50 mA
+SOURCE RESISTANCE IC = 100 mA
+= 500 W
+0.2 0.4
+1.0 2.0 4.0 10 20 40
+f, FREQUENCY (kHz)
+Figure 9.
+100
+0.1 0.2 1.0 2.0 5.0 10
+0.3 0.5 3.0
+IC, COLLECTOR CURRENT (mA)
+Figure 11. Current Gain
+2N3903, 2N3904
+TYPICAL AUDIO SMALL−SIGNAL CHARACTERISTICS
+NOISE FIGURE VARIATIONS
+(VCE = 5.0 Vdc, TA = 25°C, Bandwidth = 1.0 Hz)
+14
+12
+NF, NOISE FIGURE (dB)
+10
+8
+6
+4
+2
+0
+0.1 h PARAMETERS
+(VCE = 10 Vdc, f = 1.0 kHz, TA = 25°C)
+100
+m
+h , OUTPUT ADMITTANCE ( mhos)
+oe
+50
+20
+10
+5
+2
+1
+10
+-4
+h , VOLTAGE FEEDBACK RATIO (X 10 )re
+7.0
+5.0
+3.0
+2.0
+1.0
+0.7
+0.5
+IC = 50 mA
+IC = 100 mA
+0.2 0.4 100
+1.0 2.0 4.0 10 20 40
+RS, SOURCE RESISTANCE (k OHMS)
+Figure 10.
+0.1 0.2 1.0 2.0 5.0 10
+0.3 0.5 3.0
+IC, COLLECTOR CURRENT (mA)
+Figure 12. Output Admittance
+0.1 0.2 1.0 2.0 5.0 10
+0.3 0.5 3.0
+IC, COLLECTOR CURRENT (mA)
+Figure 13. Input Impedance
+0.1 0.2 1.0 2.0 5.0
+0.3 0.5 3.0
+IC, COLLECTOR CURRENT (mA)
+Figure 14. Voltage Feedback Ratio
+10
+www.onsemi.com
+5
+V, VOLTAGE (VOLTS)
+V , COLLECTOR EMITTER VOLTAGE (VOLTS)
+CE
+h , DC CURRENT GAIN (NORMALIZED)
+FE
+2N3903, 2N3904
+TYPICAL STATIC CHARACTERISTICS
+2.0
+1.0
+0.7
+0.5
+0.3
+0.2
+0.1
+0.1
+1.0
+0.8
+0.6
+0.4
+0.2
+0
+1.2
+1.0
+0.8
+0.6
+0.4
+0.2
+0
+TJ = +125°C
+VCE = 1.0 V
++25°C
+-55°C
+0.2 0.3
+0.5 2.0 3.0 10 50 70
+0.7 200
+1.0
+5.0 7.0
+20
+30
+100
+IC, COLLECTOR CURRENT (mA)
+Figure 15. DC Current Gain
+TJ = 25°C
+IC = 1.0 mA
+10 mA 30 mA 100 mA
+0.01
+0.02
+0.03
+0.05
+0.07
+TJ = 25°C
+VBE(sat) @ IC/IB =10
++25°C TO +125°C
+qVC FOR VCE(sat)
+VCE(sat) @ IC/IB 0.1
+0.2 0.3
+0.5 2.0 3.0 10
+1.00.7 5.0 7.0
+IB, BASE CURRENT (mA)
+Figure 16. Collector Saturation Region
+1.0
+0.5
+°
+COEFFICIENT (mV/ C)
+0
+-0.5
+-1.0
+-1.5
+-2.0
+-55°C TO +25°C
+VBE @ VCE =1.0 V
+-55°C TO +25°C
+=10
++25°C TO +125°C
+qVB FOR VBE(sat)
+1.0 2.0 5.0 10 20 50
+IC, COLLECTOR CURRENT (mA)
+Figure 17. “ON” Voltages
+100
+200
+20 40 100
+0 60 80 120 140 160 180
+IC, COLLECTOR CURRENT (mA)
+Figure 18. Temperature Coefficients
+200
+www.onsemi.com
+6
+MECHANICAL CASE OUTLINE
+PACKAGE DIMENSIONS
+TO−92 (TO−226)
+CASE 29−11
+ISSUE AM
+SCALE 1:1
+1 2 3
+STRAIGHT LEAD
+BULK PACK
+R
+SEATING
+PLANE DATE 09 MAR 2007
+1
+2
+3
+BENT LEAD
+TAPE & REEL
+AMMO PACK
+A
+B
+P
+L
+K
+XX
+G
+H
+V
+J
+C
+1
+N
+N
+R A
+B
+T
+P
+SEATING
+PLANE K
+XX
+G
+V
+C
+1
+N
+STRAIGHT LEAD
+BULK PACK
+D
+SECTION X−X
+BENT LEAD
+TAPE & REEL
+AMMO PACK
+D
+J
+SECTION X−X
+STYLES ON PAGE 2
+DIM NOTES:
+1. DIMENSIONING AND TOLERANCING PER ANSI
+Y14.5M, 1982.
+2. CONTROLLING DIMENSION: INCH.
+3. CONTOUR OF PACKAGE BEYOND DIMENSION R
+IS UNCONTROLLED.
+4. LEAD DIMENSION IS UNCONTROLLED IN P AND
+BEYOND DIMENSION K MINIMUM.
+INCHES
+MILLIMETERS
+MIN MAX MIN MAX
+A 0.175 0.205 4.45 5.20
+B 0.170 0.210 4.32 5.33
+C 0.125 0.165 3.18 4.19
+D 0.016 0.021 0.407 0.533
+G 0.045 0.055 1.15 1.39
+H 0.095 0.105 2.42 2.66
+J 0.015 0.020 0.39 0.50
+K 0.500 --- 12.70 ---
+L 0.250 --- 6.35 ---
+N 0.080 0.105 2.04 2.66
+P --- 0.100 --- 2.54
+R 0.115 --- 2.93 ---
+V 0.135 --- 3.43 ---
+NOTES:
+1. DIMENSIONING AND TOLERANCING PER
+ASME Y14.5M, 1994.
+2. CONTROLLING DIMENSION: MILLIMETERS.
+3. CONTOUR OF PACKAGE BEYOND
+DIMENSION R IS UNCONTROLLED.
+4. LEAD DIMENSION IS UNCONTROLLED IN P
+AND BEYOND DIMENSION K MINIMUM.
+MILLIMETERS
+DIM MIN MAX
+A 4.45 5.20
+B 4.32 5.33
+C 3.18 4.19
+D 0.40 0.54
+G 2.40 2.80
+J 0.39 0.50
+K 12.70 ---
+N 2.04 2.66
+P 1.50 4.00
+R 2.93 ---
+V 3.43 ---
+DOCUMENT NUMBER:
+98ASB42022B
+Electronic versions are uncontrolled except when accessed directly from the Document Repository.
+Printed versions are uncontrolled except when stamped “CONTROLLED COPY” in red.
+DESCRIPTION:
+TO−92 (TO−226)
+PAGE 1 OF 2
+onsemi and are trademarks of Semiconductor Components Industries, LLC dba onsemi or its subsidiaries in the United States and/or other countries. onsemi reserves
+the right to make changes without further notice to any products herein. onsemi makes no warranty, representation or guarantee regarding the suitability of its products for any particular
+purpose, nor does onsemi assume any liability arising out of the application or use of any product or circuit, and specifically disclaims any and all liability, including without limitation
+special, consequential or incidental damages. onsemi does not convey any license under its patent rights nor the rights of others.
+© Semiconductor Components Industries, LLC, 1998 www.onsemi.com
+TO−92 (TO−226)
+CASE 29−11
+ISSUE AM
+STYLE 1:
+PIN 1. EMITTER
+2. BASE
+3. COLLECTOR
+STYLE 6:
+PIN 1. GATE
+2. SOURCE & SUBSTRATE
+3. DRAIN
+STYLE 11:
+PIN 1. ANODE
+2. CATHODE & ANODE
+3. CATHODE
+STYLE 16:
+PIN 1. ANODE
+2. GATE
+3. CATHODE
+STYLE 21:
+PIN 1. COLLECTOR
+2. EMITTER
+3. BASE
+STYLE 26:
+PIN 1. VCC
+2. GROUND 2
+3. OUTPUT
+STYLE 31:
+PIN 1. GATE
+2. DRAIN
+3. SOURCE
+STYLE 2:
+PIN 1. BASE
+2. EMITTER
+3. COLLECTOR
+STYLE 7:
+PIN 1. SOURCE
+2. DRAIN
+3. GATE
+STYLE 12:
+PIN 1. MAIN TERMINAL 1
+2. GATE
+3. MAIN TERMINAL 2
+STYLE 17:
+PIN 1. COLLECTOR
+2. BASE
+3. EMITTER
+STYLE 22:
+PIN 1. SOURCE
+2. GATE
+3. DRAIN
+STYLE 27:
+PIN 1. MT
+2. SUBSTRATE
+3. MT
+STYLE 32:
+PIN 1. BASE
+2. COLLECTOR
+3. EMITTER
+STYLE 3:
+PIN 1. ANODE
+2. ANODE
+3. CATHODE
+STYLE 8:
+PIN 1. DRAIN
+2. GATE
+3. SOURCE & SUBSTRATE
+STYLE 13:
+PIN 1. ANODE 1
+2. GATE
+3. CATHODE 2
+STYLE 18:
+PIN 1. ANODE
+2. CATHODE
+3. NOT CONNECTED
+STYLE 23:
+PIN 1. GATE
+2. SOURCE
+3. DRAIN
+STYLE 28:
+PIN 1. CATHODE
+2. ANODE
+3. GATE
+STYLE 33:
+PIN 1. RETURN
+2. INPUT
+3. OUTPUT
+STYLE 4:
+PIN 1. CATHODE
+2. CATHODE
+3. ANODE
+STYLE 9:
+PIN 1. BASE 1
+2. EMITTER
+3. BASE 2
+STYLE 14:
+PIN 1. EMITTER
+2. COLLECTOR
+3. BASE
+STYLE 19:
+PIN 1. GATE
+2. ANODE
+3. CATHODE
+STYLE 24:
+PIN 1. EMITTER
+2. COLLECTOR/ANODE
+3. CATHODE
+STYLE 29:
+PIN 1. NOT CONNECTED
+2. ANODE
+3. CATHODE
+STYLE 34:
+PIN 1. INPUT
+2. GROUND
+3. LOGIC
+DATE 09 MAR 2007
+STYLE 5:
+PIN 1. DRAIN
+2. SOURCE
+3. GATE
+STYLE 10:
+PIN 1. CATHODE
+2. GATE
+3. ANODE
+STYLE 15:
+PIN 1. ANODE 1
+2. CATHODE
+3. ANODE 2
+STYLE 20:
+PIN 1. NOT CONNECTED
+2. CATHODE
+3. ANODE
+STYLE 25:
+PIN 1. MT 1
+2. GATE
+3. MT 2
+STYLE 30:
+PIN 1. DRAIN
+2. GATE
+3. SOURCE
+STYLE 35:
+PIN 1. GATE
+2. COLLECTOR
+3. EMITTER
+DOCUMENT NUMBER:
+98ASB42022B
+Electronic versions are uncontrolled except when accessed directly from the Document Repository.
+Printed versions are uncontrolled except when stamped “CONTROLLED COPY” in red.
+DESCRIPTION:
+TO−92 (TO−226)
+PAGE 2 OF 2
+onsemi and are trademarks of Semiconductor Components Industries, LLC dba onsemi or its subsidiaries in the United States and/or other countries. onsemi reserves
+the right to make changes without further notice to any products herein. onsemi makes no warranty, representation or guarantee regarding the suitability of its products for any particular
+purpose, nor does onsemi assume any liability arising out of the application or use of any product or circuit, and specifically disclaims any and all liability, including without limitation
+special, consequential or incidental damages. onsemi does not convey any license under its patent rights nor the rights of others.
+www.onsemi.com
+© Semiconductor Components Industries, LLC, 1998 2
+www.onsemi.com
+onsemi, , and other names, marks, and brands are registered and/or common law trademarks of Semiconductor Components Industries, LLC dba “onsemi” or its affiliates
+and/or subsidiaries in the United States and/or other countries. onsemi owns the rights to a number of patents, trademarks, copyrights, trade secrets, and other intellectual property.
+A listing of onsemi’s product/patent coverage may be accessed at www.onsemi.com/site/pdf/Patent−Marking.pdf. onsemi reserves the right to make changes at any time to any
+products or information herein, without notice. The information herein is provided “as−is” and onsemi makes no warranty, representation or guarantee regarding the accuracy of the
+information, product features, availability, functionality, or suitability of its products for any particular purpose, nor does onsemi assume any liability arising out of the application or use
+of any product or circuit, and specifically disclaims any and all liability, including without limitation special, consequential or incidental damages. Buyer is responsible for its products
+and applications using onsemi products, including compliance with all laws, regulations and safety requirements or standards, regardless of any support or applications information
+provided by onsemi. “Typical” parameters which may be provided in onsemi data sheets and/or specifications can and do vary in different applications and actual performance may
+vary over time. All operating parameters, including “Typicals” must be validated for each customer application by customer’s technical experts. onsemi does not convey any license
+under any of its intellectual property rights nor the rights of others. onsemi products are not designed, intended, or authorized for use as a critical component in life support systems
+or any FDA Class 3 medical devices or medical devices with a same or similar classification in a foreign jurisdiction or any devices intended for implantation in the human body. Should
+Buyer purchase or use onsemi products for any such unintended or unauthorized application, Buyer shall indemnify and hold onsemi and its officers, employees, subsidiaries, affiliates,
+and distributors harmless against all claims, costs, damages, and expenses, and reasonable attorney fees arising out of, directly or indirectly, any claim of personal injury or death
+associated with such unintended or unauthorized use, even if such claim alleges that onsemi was negligent regarding the design or manufacture of the part. onsemi is an Equal
+Opportunity/Affirmative Action Employer. This literature is subject to all applicable copyright laws and is not for resale in any manner.
+ADDITIONAL INFORMATION
+TECHNICAL PUBLICATIONS:
+Technical Library: www.onsemi.com/design/resources/technical−documentation
+onsemi Website: www.onsemi.com
+ONLINE SUPPORT: www.onsemi.com/support
+For additional information, please contact your local Sales Representative at
+www.onsemi.com/support/sales
+

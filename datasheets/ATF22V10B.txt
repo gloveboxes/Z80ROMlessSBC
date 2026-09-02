@@ -1,0 +1,569 @@
+Features
+• Industry Standard Architecture
+– Low-cost Easy-to-use Software Tools
+• High-speed, Electrically Erasable Programmable Logic Devices
+• CMOS and TTL Compatible Inputs and Outputs
+– Input and I/O Pull-up Resistors
+• Advanced Flash Technology
+– Reprogrammable
+– 100% Tested
+• High-reliability CMOS Process
+– 20 year Data Retention
+– 100 Erase/Write Cycles
+– 2,000V ESD Protection
+– 200mA Latchup Immunity
+• Full Military Temperature Ranges
+• Dual-in-line and Surface Mount Packages in Standard Pinouts
+• PCI Compliant
+Figure 0-1. Logic Diagram
+Figure 0-2. Pin Configurations
+All Pinouts Top View
+Pin Name Function
+CLK Clock
+IN Logic Inputs
+I/O Bidirectional Buffers
+* No Internal Connection
+VCC +5V Supply
+TSSOP
+DIP/SOIC
+CLK/IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+GND
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+24
+23
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+VCC
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+IN
+CLK/IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+GND
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+24
+23
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+VCC
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+IN
+2
+1
+28
+CLK/IN
+*
+VCC
+LCC/PLCC
+IN
+IN
+IN
+*
+IN
+IN
+IN
+IN
+4
+5
+6
+7
+8
+9
+10
+11
+12
+IN
+3
+IN
+27
+I/O
+IN
+13
+GND
+14
+*
+15
+IN
+16
+I/O
+17
+I/O
+26
+25
+24
+23
+22
+21
+20
+19
+18
+I/O
+I/O
+I/O
+I/O
+*
+I/O
+I/O
+I/O
+High-performance
+Electrically
+Erasable
+Programmable
+Logic Device
+Atmel ATF22V10B
+0250M–PLD–7/10
+1. Description
+The Atmel® ATF22V10B is a high-performance CMOS (electrically erasable) programmable logic device (PLD)
+which utilizes the Atmel proven electrically erasable Flash memory technology. Speeds down to 7.5ns and power
+dissipation as low as 10mA are offered. All speed ranges are specified over the full 5V  10% range for military and
+industrial temperature ranges, and 5V  5% for commercial temperature ranges.
+Several low-power options allow selection of the best solution for various types of power-limited applications. Each
+of these options significantly reduces total system power and enhances system reliability.
+2. Absolute Maximum Ratings*
+Temperature Under Bias .................-55°C to +125°C Storage Temperature ......................-65°C to +150°C
+Voltage on Any Pin with
+Respect to Ground .......................... -2.0V to +7.0V(1)
+Voltage on Input Pins
+with Respect to Ground
+During Programming ..................... -2.0V to +14.0V(1)
+*NOTICE: Note: 1. Programming Voltage with
+Respect to Ground ........................ -2.0V to +14.0V(1)
+Stresses beyond those listed under “Absolute
+Maximum Ratings” may cause permanent dam-
+age to the device. This is a stress rating only and
+functional operation of the device at these or any
+other conditions beyond those indicated in the
+operational sections of this specification is not
+implied. Exposure to absolute maximum rating
+conditions for extended periods may affect device
+reliability.
+Minimum voltage is -0.6V DC, which may under-
+shoot to -2.0V for pulses of less than 20ns.
+Maximum output pin voltage is VCC + 0.75V DC,
+which may overshoot to 7.0V for pulses of less
+than 20ns.
+3. DC and AC Operating Conditions
+Commercial Industrial Military
+Operating Temperature 0°C - 70°C
+(Ambient)
+-40°C - 85°C
+(Ambient)
+-55°C - 125°C
+(Case)
+VCC Power Supply 5V 5% 5V 10% 5V 10%
+Note: 1. The shaded devices are obsolete
+2
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+3.1 DC Characteristics
+Symbol Parameter Condition Min Typ Max Units
+IIL
+Input or I/O
+Low Leakage Current
+0 VIN 
+VIL (Max) -35 -100 µA
+IIH
+Input or I/O
+High Leakage Current 3.5 VIN VCC 10 µA
+ICC
+Power Supply Current,
+Standby
+VCC = Max,
+VIN = Max,
+Outputs Open
+Com. 85 120 mA
+B-7
+Ind., Mil. 85 140 mA
+Com./Ind. 85/85 120/140 mA
+B-10
+Mil. 85 140 mA
+Com./Ind. 65/65 90/115 mA
+B-15
+Mil. 65 115 mA
+ICC
+Power Supply Current,
+Standby
+VCC = Max,
+VIN = Max,
+Outputs Open
+Com. 65 90 mA
+B-25
+Ind., Mil. 65 115 mA
+BQ-15 Com. 35 55 mA
+Com. 5 10 mA
+BQL-20, -25
+Ind., Mil. 5 15 mA
+Com. 90 120 mA
+B-7
+Mil., Ind. 90 145 mA
+Com./Ind. 90/90 120/145 mA
+B-10
+Mil. 90 150 mA
+Com./Ind. 65/65 90/120 mA
+ICC2
+Clocked Power
+Supply Current
+VCC = Max,
+Outputs Open,
+f = 15MHz
+B-15
+Mil. 65 150 mA
+Com. 65 90 mA
+B-25
+Ind., Mil. 65 120 mA
+BQ-15 Com. 40 60 mA
+Com. 20 50 mA
+BQL-20, -25
+Ind., Mil. 20 70 mA
+IOS(1) Output Short
+Circuit Current VOUT = 0.5V -130 mA
+VIL Input Low Voltage -0.5 0.8 V
+VIH Input High Voltage 2.0 VCC + 0.75 V
+VOL Output Low Voltage VIN =VIH or VIL,
+VCC = Min
+IOL = 16mA Com., Ind. 0.5 V
+IOL = 12mA Mil. 0.5 V
+VOH Output High Voltage VIN =VIH or VIL,
+VCC = Min IOH = -4.0mA 2.4 V
+Notes: 1. 2. Not more than one output at a time should be shorted. Duration of short circuit test should not exceed 30 sec
+The shaded devices are obsolete
+3
+0250M–PLD–7/10
+4. AC Waveforms(1)
+Note: 1. 5. AC Characteristics(1)
+Timing measurement reference is 1.5V. Input AC driving levels are 0.0V and 3.0V, unless otherwise specified
+-10 -15
+Symbol Parameter
+Min Max Min Max
+Units
+tPD
+Input or Feedback to
+Combinatorial Output 3 10 3 15 ns
+tCO Clock to Output 2 6.5 2 8 ns
+tCF Clock to Feedback 2.5 2.5 ns
+tS Input or Feedback Setup Time 4.5 10 ns
+tH Hold Time 0 0 ns
+External Feedback 1/(tS +tCO) 90 55.5 MHz
+fMAX
+Internal Feedback 1/(tS +tCF) 142 69 MHz
+No Feedback 1/(tWH +tWL) 142 83.3 MHz
+tW Clock Width (tWL and tWH) 3.5 6 ns
+tEA Input or I/O to Output Enable 3 10 3 15 ns
+tER Input or I/O to Output Disable 3 9 3 15 ns
+tAP
+Input or I/O to Asynchronous
+Reset of Register 3 12 3 20 ns
+tAW Asynchronous Reset Width 8 15 ns
+tAR
+Asynchronous Reset
+Recovery Time 6 10 ns
+tSP Setup Time, Synchronous Preset 6 10 ns
+tSPR
+Synchronous Preset to
+Clock Recovery Time 8 10 ns
+Notes: 1. See ordering information for valid part numbers
+4
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+6. Input Test Waveforms and Measurement Levels
+tR,tF < 3ns
+7. Output Test Loads
+Commercial Military
+* All except -7 which is R2 = 300
+8. Pin Capacitance
+f = 1MHz, T = 25°C(1)
+Typ Max Units Conditions
+CIN 5 8 pF VIN =0V
+COUT 6 8 pF VOUT =0V
+Note: 1. Typical values for nominal supply voltage. This parameter is only sampled and is not 100% tested
+9. Power-up Reset
+The registers in the Atmel® ATF22V10B are designed to reset during power-up. At a point delayed slightly from
+VCC crossing VRST, all registers will be reset to the low state. The output state will depend on the polarity of the out-
+put buffer.
+This feature is critical for state machine initialization. However, due to the asynchronous nature of reset and the
+uncertainty of how VCC actually rises in the system, the following conditions are required:
+1. The VCC rise must be monotonic
+2. After reset occurs, all input and feedback setup times must be met before driving the clock pin high
+3. The clock must remain stable during tPR
+5
+0250M–PLD–7/10
+10. Preload of Registered Outputs
+The Atmel® ATF22V10B registers are provided with circuitry to allow loading of each register with either a high or a
+low. This feature will simplify testing since any state can be forced into the registers to control test sequencing. A
+JEDEC file with preload is generated when a source file with vectors is compiled. Once downloaded, the JEDEC
+file preload sequence will be done automatically by most of the approved programmers after the programming.
+Figure 10-1.
+Table 10-1.
+Parameter Description Typ Max Units
+tPR
+Power-up
+Reset Time 600 1,000 ns
+VRST
+Power-up
+Reset
+Voltage
+3.8 4.5 V
+11. Security Fuse Usage
+A single fuse is provided to prevent unauthorized copying of the ATF22V10B fuse patterns. Once programmed,
+fuse verify and preload are inhibited. However, the 64-bit User Signature remains accessible.
+The security fuse should be programmed last, as its effect is immediate.
+12. Electronic Signature Word
+There are 64-bits of programmable memory that are always available to the user, even if the device is secured.
+These bits can be used for user-specific data.
+13. Programming/Erasing
+Programming/erasing is performed using standard PLD programmers. See CMOS PLD Programming
+Hardware and Software Support for information on software/programming.
+6
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+14. Input and I/O Pull-ups
+All Atmel® ATF22V10B family members have internal input and I/O pull-up resistors. Therefore, whenever inputs or
+I/Os are not being driven externally, they will float to VCC. This ensures that all logic array inputs are at known
+states. These are relatively weak active pull-ups that can easily be overdriven by TTL-compatible drivers (see input
+and I/O diagrams below).
+Figure 14-1. Input Diagram
+Figure 14-2. I/O Diagram
+7
+0250M–PLD–7/10
+Figure 14-3. Functional Logic Diagram Atmel ATF22V10B
+8
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+ATMEL ATMEL
+ATMEL
+ATMEL
+ATMEL ATMEL
+9
+0250M–PLD–7/10
+10
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+11
+0250M–PLD–7/10
+15. Ordering Information
+15.1 Atmel ATF22V10B(2) Ordering Detail
+tPD (ns) tS (ns) tCO (ns) Ordering Code ATF22V10B-10GM/883
+ATF22V10B-10NM/883
+10 4.5 6.5
+5962-89841 06LA
+5962-89841 063X
+ATF22V10B-15GM/883
+ATF22V10B-15NM/883
+15 10 8
+5962-89841 03LA
+5962-89841 033X
+15.2 Atmel ATF22V10BQ(L)(1,2) Ordering Detail
+tPD (ns) tS (ns) tCO (ns) Ordering Code ATF22V10BQL-20GM/883
+ATF22V10BQL-20NM/883
+20 14 12
+5962-89841 14 LA
+5962-89841 14 3X
+ATF22V10BQL-25GM/883
+ATF22V10BQL-25NM/883
+25 15 15
+5962-89841 13 LA
+5962-89841 13 3X
+Notes: 1. The shaded devices are obsolete
+2. Please see DSCC DWG for military parts
+12
+Atmel ATF22V10B
+Package 24D3
+28L
+24D3
+28L
+24D3
+28L
+24D3
+28L
+Package 24D3
+28L
+24D3
+28L
+24D3
+28L
+24D3
+28L
+Operation Range
+Military/883C
+(-55Cto125C)
+Class B, Fully Compliant
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+Military/883C
+(-55Cto125C)
+Class B, Fully Compliant
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+Operation Range
+Military/883C
+(-55Cto125C)
+Class B, Fully Compliant
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+Military/883C
+(-55Cto125C)
+Class B, Fully Compliant
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+0250M–PLD–7/10
+Atmel ATF22V10B
+16. Packaging Information
+24D3
+24D3, 24-lead, 0.300"Wide. Non-windowed,
+Ceramic Dual Inline Parkage (Cerdip)
+Dimensions in Millimeters and (Inches)*
+MIL-STD-1835 D-9 CONFIG A (Glass Sealed)
+*Controlling dimension: Inches
+REV. A 04/11/2001
+13
+0250M–PLD–7/10
+28L
+28L, 28-pad, Non-windowed, Ceramic lid, Leadless Chip
+Carrier (LCC)
+Dimensions in Millimeters and (Inches)*
+MIL-STD-1835 C-4
+*Controlling dimension: Inches
+14
+Atmel ATF22V10B
+0250M–PLD–7/10
+Atmel ATF22V10B
+17. Revision History
+Doc. Rev. Date Comments
+0250M 07/2010 Removed all commerical and industrial grade leaded part offerings
+15
+0250M–PLD–7/10
+Headquarters International
+Atmel Corporation
+2325 Orchard Parkway
+San Jose, CA 95131
+USA
+Tel: (+1)(408) 441-0311
+Fax: (+1)(408) 487-2600
+www.atmel.com
+Atmel Asia Limited
+Unit 01-5 & 16, 19/F
+BEA Tower, Millennium City 5
+418 Kwun Tong Road
+Kwun Tong, Kowloon
+HONG KONG
+Tel: (+852) 2245-6100
+Fax: (+852) 2722-1369
+Atmel Munich GmbH
+Business Campus
+Parkring 4
+D-85748 Garching b. Munich
+GERMANY
+Tel: (+49) 89-31970-0
+Fax: (+49) 89-3194621
+Atmel Japan
+9F, Tonetsu Shinkawa Bldg.
+1-24-8 Shinkawa
+Chuo-ku, Tokyo 104-0033
+JAPAN
+Tel: (+81) 3-3523-3551
+Fax: (+81) 3-3523-7581
+Product Contact
+Technical Support
+pld@atmel.com
+Sales Contact
+www.atmel.com/contacts
+Literature Requests
+www.atmel.com/literature
+Disclaimer: The information in this document is provided in connection with Atmel products. No license, express or implied, by estoppel or otherwise, to any
+intellectual property right is granted by this document or in connection with the sale of Atmel products. EXCEPT AS SET FORTH IN ATMEL’S TERMS AND CONDI-
+TIONS OF SALE LOCATED ON ATMEL’S WEB SITE, ATMEL ASSUMES NO LIABILITY WHATSOEVER AND DISCLAIMS ANY EXPRESS, IMPLIED OR STATUTORY
+WARRANTY RELATING TO ITS PRODUCTS INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, OR NON-INFRINGEMENT. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY DIRECT, INDIRECT, CONSEQUENTIAL, PUNITIVE, SPECIAL OR INCIDEN-
+TAL DAMAGES (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF PROFITS, BUSINESS INTERRUPTION, OR LOSS OF INFORMATION) ARISING OUT OF
+THE USE OR INABILITY TO USE THIS DOCUMENT, EVEN IF ATMEL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. Atmel makes no
+representations or warranties with respect to the accuracy or completeness of the contents of this document and reserves the right to make changes to specifications
+and product descriptions at any time without notice. Atmel does not make any commitment to update the information contained herein. Unless specifically provided
+otherwise, Atmel products are not suitable for, and shall not be used in, automotive applications. Atmel’s products are not intended, authorized, or warranted for use
+as components in applications intended to support or sustain life.
+© 2010 Atmel Corporation. All rights reserved.
+Atmel®, Atmel logo and combinations thereof and others are registered trademarks or trademarks of Atmel Corporation or its subsidiaries. Other
+terms and product names may be trademarks of others.
+0250M–PLD–7/10

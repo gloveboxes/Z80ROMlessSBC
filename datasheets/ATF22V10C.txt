@@ -1,0 +1,1051 @@
+Features
+• Industry-standard Architecture
+– Low-cost, Easy-to-use Software Tools
+• High-speed, Electrically Erasable Programmable Logic Devices
+– 5ns Maximum Pin-to-pin Delay
+• Latch Feature Holds Inputs to Previous Logic States
+• Pin-controlled Standby Power (10µA Typical)
+• Advanced Flash Technology
+– Reprogrammable
+– 100% Tested
+• High-reliability CMOS Process
+– 20-year Data Retention
+– 100 Erase/Write Cycles
+– 2,000V ESD Protection
+– 200mA Latch-up Immunity
+• Dual Inline and Surface Mount Packages in Standard Pinouts
+• PCI-compliant
+• Green Package Options (Pb/Halide-free/RoHS Compliant) Available
+• Full Military, Commercial and Industrial Temperature Ranges
+• Backward-Compatible with Atmel ATF22V10B(Q) and Atmel AT22V10(L)
+• Applications Include Glue Logic for 5.0V Systems, DMA Control, State Machine
+Control, Graphics Processing
+1. Description
+The Atmel® ATF22V10C is a high-performance CMOS (electrically erasable) pro-
+grammable logic device (PLD) that utilizes proven electrically erasable Flash memory
+technology from Atmel. Speeds down to 5ns and power dissipation as low as 10µA
+(typical) are offered. All speed ranges are specified over the full 5V ± 10% range for
+military and industrial temperature ranges, and 5V ± 5% for commercial temperature
+ranges.
+Several low-power options allow selection of the best solution for various types of
+power-limited applications. Each of these options significantly reduces total system
+power and enhances system reliability.
+High-performance
+Electrically
+Erasable
+Programmable
+Logic Device
+Atmel ATF22V10C
+Atmel ATF22V10CQ
+See separate datasheet for
+the Atmel ATF22V10C(Q)Z
+0735U–PLD–7/10
+Figure 1-1. Logic Diagram
+2. Pin Configurations
+Table 2-1. Pin Configurations (All Pinouts Top View)
+Pin Name Function
+CLK Clock
+IN Logic Inputs
+I/O Bi-directional Buffers
+GND Ground
+VCC +5V Supply
+PD Power-down
+Figure 2-1. TSSOP Figure 2-2. DIP/SOIC
+CLK/IN
+IN
+IN
+IN/PD
+IN
+IN
+IN
+IN
+IN
+IN
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+24
+VCC
+23
+I/O
+22
+I/O
+21
+I/O
+20
+I/O
+19
+I/O
+18
+I/O
+17
+I/O
+16
+I/O
+15
+I/O
+IN
+GND
+11
+14
+I/O
+12
+13
+IN
+Figure 2-3. PLCC/LCC
+IN
+IN
+CLK/IN
+VCC*
+VCC
+I/O
+I/O
+4
+3
+2
+1
+28
+27
+26
+IN/PD
+IN
+IN
+GND*
+IN
+IN
+IN
+5
+6
+7
+8
+9
+10
+11
+25
+24
+23
+22
+21
+20
+19
+I/O
+I/O
+I/O
+GND*
+I/O
+I/O
+I/O
+12
+13
+14
+15
+16
+17
+18
+IN
+IN
+GND
+GND*
+IN
+I/O
+I/O
+Note: CLK/IN
+IN
+IN
+IN/PD
+IN
+IN
+IN
+IN
+IN
+IN
+IN
+GND
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+24
+23
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+VCC
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+I/O
+IN
+For all PLCCs (except “-5”), pins 1, 8, 15 and 22 can be left unconnected. However, if they are
+connected, superior performance will be achieved
+2
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+3. Absolute Maximum Ratings*
+Temperature under Bias................. -55°C to +125°C Storage Temperature...................... -65°C to +150°C
+Voltage on Any Pin with
+Respect to Ground...........................-2.0V to +7.0V(1)
+Voltage on Input Pins
+with Respect to Ground
+during Programming ......................-2.0V to +14.0V(1)
+Programming Voltage with
+Respect to Ground.........................-2.0V to +14.0V(1)
+*NOTICE: Note: 1. Stresses beyond those listed under “Absolute Maximum
+Ratings” may cause permanent damage to the device.
+This is a stress rating only and functional operation of the
+device at these or any other conditions beyond those
+indicated in the operational sections of this specification
+is not implied. Exposure to absolute maximum rating
+conditions for extended periods may affect device reli-
+ability.
+Minimum voltage is -0.6V DC, which may undershoot to -
+2.0V for pulses of less than 20ns.
+Maximum output pin voltage is VCC + 0.75V DC, which
+may overshoot to 7.0V for pulses of less than 20ns.
+4. DC and AC Operating Conditions
+Commercial Industrial Military
+Operating Temperature (Ambient) 0°C - 70°C -40°C - 85°C -55°C - 125°C (case)
+VCC Power Supply 5V±5% 5V± 10% 5V± 10%
+3
+0735U–PLD–7/10
+4.1 DC Characteristics
+Symbol Parameter Condition Min Typ Max Units
+IIL
+Input or I/O Low
+Leakage Current 0 VIN VIL (Max) -10.0 µA
+IIH
+Input or I/O High
+Leakage Current 3.5 VIN VCC 10.0 µA
+C-5, 7, 10 Com. 85.0 130.0 mA
+ICC
+Power Supply Current,
+Standby
+VCC = Max,
+VIN = Max,
+Outputs Open
+C-10 Ind. 90.0 140.0 mA
+C-15 Ind. 65.0 115.0 mA
+CQ-15 Ind. 35.0 70.0 mA
+C-5, 7, 10 Com. 150.0 mA
+C-10 Ind., Mil. 160.0 mA
+ICC2
+Clocked Power Supply
+Current
+VCC = Max, Outputs Open,
+f = 15MHz
+C-15 Ind. 70.0 125 mA
+C-15 Mil. 160.0 mA
+CQ-15 Ind. 40.0 80.0 mA
+IPD
+Power Supply Current,
+PD Mode
+VCC = Max Com. 10.0 500.0 µA
+VIN = 0, Max Ind. 10.0 650.0 µA
+IOS(1) Output Short Circuit
+Current VOUT = 0.5V -130.0 mA
+VIL Input Low Voltage -0.5 0.8 V
+VIH Input High Voltage 2.0 VCC+0.75 V
+VOL Output Low Voltage VIN =VIH or VIL,
+VCC = Min
+IOL = 16mA Com., Ind. 0.5 V
+IOL = 12mA Mil. 0.5 V
+VOH Output High Voltage VIN =VIH or VIL,
+VCC = Min IOH = -4.0mA 2.4 V
+Note: 1. Not more than one output at a time should be shorted. Duration of short circuit test should not exceed 30 sec
+4.2 AC Waveforms (1)
+CLOCK
+Note: 1. 4
+Timing measurement reference is 1.5V. Input AC driving levels are 0.0V and 3.0V, unless otherwise specified
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+4.3 AC Characteristics(1)
+-5 Symbol Parameter
+Min Max Min tPD
+Input or Feedback to Combinatorial
+Output 1.0 5.0 3.0 tCO Clock to Output 1.0 4.0 2.0 tCF Clock to Feedback 2.5 tS Input or Feedback Setup Time 3.0 3.5 tH Hold Time 0 0 External Feedback 1/(tS +tCO) 142.0 125.0(3) fMAX
+Internal Feedback 1/(tS +tCF) 166.0 142.0 No Feedback 1/(tWH +tWL) 166.0 166.0 tW Clock Width (tWL and tWH) 3.0 3.0 tEA Input or I/O to Output Enable 2.0 6.0 3.0 tER Input or I/O to Output Disable 2.0 5.0 3.0 tAP
+Input or I/O to Asynchronous Reset of
+Register 3.0 7.0 3.0 tAW Asynchronous Reset Width 5.5 7.0 tAR Asynchronous Reset Recovery Time 4.0 5.0 tSP Setup Time, Synchronous Preset 4.0 4.5 tSPR
+Synchronous Preset to Clock
+Recovery Time 4.0 5.0 Notes: 1. See ordering information for valid part numbers
+2. 3. 5.5ns for DIP package devices
+111MHz for DIP package devices
+0735U–PLD–7/10
+-7 Atmel ATF22V10C(Q)
+-10 -15
+Max Min Max Min Max
+Units
+7.5 3.0 10.0 3.0 15.0 ns
+4.5(2) 2.0 6.5 2.0 8.0 ns
+2.5 2.5 2.5 ns
+4.5 10.0 ns
+0 0 ns
+90.0 55.5 MHz
+117.0 80.0 MHz
+125.0 83.3 MHz
+3.0 6.0 ns
+7.5 3.0 10.0 3.0 15.0 ns
+7.5 3.0 9.0 3.0 15.0 ns
+10.0 3.0 12.0 3.0 20.0 ns
+8.0 15.0 ns
+6.0 10.0 ns
+6.0 10.0 ns
+8.0 10.0 ns
+5
+4.4 Power-down AC Characteristics(1)(2)(3)
+-5 -7 -10 -15
+Symbol Parameter
+Min Max Min Max Min Max Min Max
+Units
+tIVDH Valid Input before PD High 5.0 7.5 10.0 15.0 ns
+tGVDH Valid OE before PD High 0 0 0 0 ns
+tCVDH Valid Clock before PD High 0 0 0 ns
+tDHIX Input Don’t Care after PD High 5.0 7.0 10.0 15.0 ns
+tDHGX OE Don’t Care after PD High 5.0 7.0 10.0 15.0 ns
+tDHCX Clock Don’t Care after PD High 5.0 7.0 10.0 15.0 ns
+tDLIV PD Low to Valid Input 5.0 7.5 10.0 15.0 ns
+tDLGV PD Low to Valid OE 15.0 20.0 25.0 30.0 ns
+tDLCV PD Low to Valid Clock 15.0 20.0 25.0 30.0 ns
+tDLOV PD Low to Valid Output 20.0 25.0 30.0 35.0 ns
+Notes: 1. Output data is latched and held
+2. High-Z outputs remain high-Z
+3. Clock and input transitions are ignored
+4.5 Input Test Waveforms
+4.5.1 Input Test Waveforms and Measurement Levels
+4.5.2 Commercial Output Test Loads
+4.6 Pin Capacitance
+Table 4-1. Pin Capacitance (f = 1MHz,T=25C(1))
+Typ Max Units Conditions
+CIN 5 8 pF VIN =0V
+COUT 6 8 pF VOUT =0V
+Note: 1. Typical values for nominal supply voltage. This parameter is only sampled and is not 100% tested
+6
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+4.7 Power-up Reset
+The registers in the Atmel® ATF22V10Cs are designed to reset during power-up. At a point delayed slightly from
+VCC crossing VRST, all registers will be reset to the low state. The output state will depend on the polarity of the
+output buffer.
+This feature is critical for state machine initialization. However, due to the asynchronous nature of reset and the
+uncertainty of how VCC actually rises in the system, the following conditions are required:
+1. 2. 3. The VCC rise must be monotonic, and starts below 0.7V
+After reset occurs, all input and feedback setup times must be met before driving the clock pin high
+The clock must remain stable during tPR
+Figure 4-1. Power-up Reset Timing
+VRST
+POWER
+tPR
+REGISTERED
+OUTPUTS CLOCK
+tS
+tW
+4.8 Preload of Registered Outputs
+The ATF22V10C registers are provided with circuitry to allow loading of each register with either a high or a low.
+This feature will simplify testing since any state can be forced into the registers to control test sequencing. A
+JEDEC file with preload is generated when a source file with vectors is compiled. Once downloaded, the JEDEC
+file preload sequence will be done automatically by most of the approved programmers after the programming.
+5. Electronic Signature Word
+There are 64-bits of programmable memory that are always available to the user, even if the device is secured.
+These bits can be used for user-specific data.
+6. Security Fuse Usage
+A single fuse is provided to prevent unauthorized copying of the ATF22V10C fuse patterns. Once programmed,
+fuse verify and preload are inhibited. However, the 64-bit User Signature remains accessible.
+The security fuse should be programmed last, as its effect is immediate.
+7. Programming/Erasing
+Programming/erasing is performed using standard PLD programmers. See “CMOS PLD Programming Hardware
+and Software Support” for information on software/programming.
+Table 7-1. Programming/Erasing
+Parameter Description Typ Max Units
+tPR Power-up Reset Time 600 1,000 ns
+VRST Power-up Reset Voltage 3.8 4.5 V
+7
+0735U–PLD–7/10
+8. Input and I/O Pin-keeper Circuits
+The Atmel® ATF22V10C contains internal input and I/O pin-keeper circuits. These circuits allow each ATF22V10C
+pin to hold its previous value even when it is not being driven by an external source or by the device’s output buffer.
+This helps to ensure that all logic array inputs are at known valid logic levels. This reduces system power by
+preventing pins from floating to indeterminate levels. By using pin-keeper circuits rather than pull-up resistors,
+there is no DC current required to hold the pins in either logic state (high or low).
+These pin-keeper circuits are implemented as weak feedback inverters, as shown in the Input Diagram below.
+These keeper circuits can easily be overdriven by standard TTL- or CMOS-compatible drivers. The typical
+overdrive current required is 40µA.
+Figure 8-1. Input Diagram
+Figure 8-2. I/O Diagram
+8
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+9. Power-down Mode
+The Atmel® ATF22V10C includes an optional pin-controlled power-down feature. When this mode is enabled, the
+PD pin acts as the power-down pin (Pin 4 on the DIP/SOIC packages and Pin 5 on the PLCC package). When the
+PD pin is high, the device supply current is reduced to less than 100mA. During power-down, all output data and
+internal logic states are latched and held. Therefore, all registered and combinatorial output data remain valid. Any
+outputs that were in an undetermined state at the onset of power-down will remain at the same state. During
+power-down, all input signals except the power-down pin are blocked. Input and I/O hold latches remain active to
+ensure that pins do not float to indeterminate levels, further reducing system power. The power-down pin feature is
+enabled in the logic design file. Designs using the power-down pin may not use the PD pin logic array input.
+However, all other PD pin macrocell resources may still be used, including the buried feedback and foldback
+product term array inputs.
+PD pin configuration is controlled by the design file, and appears as a separate fuse bit in the JEDEC file. When
+the power-down feature is not specified in the design file, the IN/PD pin will be configured as a regular logic input.
+Note: Some programmers list the 22V10 JEDEC compatible 22V10C (no PD used) separately from the non-22V10 JEDEC
+compatible 22V10CEX (with PD used)
+10. Compiler Mode Selection
+Table 10-1. Compiler Mode Selection
+PAL Mode
+(5828 Fuses)
+GAL Mode
+(5892 Fuses)
+Power-down Mode(1)
+(5893 Fuses)
+Synario ATF22V10C (DIP)
+ATF22V10C (PLCC)
+ATTF22V10C DIP (UES)
+ATF22C10C PLCC (UES)
+ATF22V10C DIP (PWD)
+ATF22V10C PLCC (PWD)
+WINCUPL P22V10
+P22V10LCC
+G22V10
+G22V10LCC
+G22V10CP
+G22V10CPLCC
+Note: 1. These device types will create a JEDEC file which when programmed in Atmel ATF22V10C devices will enable the
+power-down mode feature. All other device types have the feature disabled
+9
+0735U–PLD–7/10
+11. Functional Logic Diagram
+10
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+ICC (mA)
+ICC (mA)
+IOH (mA)
+IOL (mA)
+140.0
+120.0
+100.0
+80.0
+60.0
+40.0
+20.0
+0.0
+120.0
+80.0
+40.0
+0.0
+0.0
+-5.0
+-10.0
+-15.0
+-20.0
+-25.0
+-30.0
+-35.0
+-40.0
+-45.0
+-50.0
+46.0
+45.0
+44.0
+43.0
+42.0
+41.0
+40.0
+39.0
+38.0
+37.0
+ATMEL ATF22V10C/CQ SUPPLY CURRENT VS.
+SUPPLY VOLTAGE (TA = 25°C)
+C-5, -7, -10
+C-15
+CQ-15
+4.50 4.75 5.00 5.25 5.50
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ SUPPLY CURRENT VS.
+INPUT FREQUENCY (VCC = 5V, TA = 25°C)
+C-5, 7, 10
+C-15
+CQ-15
+0.0 10.0 20.0 50.0
+FREQUENCY (MHz)
+ATMEL ATF22V10C/CQ OUTPUT SOURCE
+CURRENT VS. SUPPLY VOLTAGE (VOH = 2.4V)
+4.0 4.5 5.0 5.5 6.0
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ OUTPUT SINK
+CURRENT VS. SUPPLY VOLTAGE (VOL = 0.5V)
+4.0 4.5 5.0 5.5 6.0
+SUPPLY VOLTAGE (V)
+0735U–PLD–7/10
+IOL (mA)
+Atmel ATF22V10C(Q)
+ATMEL ATF22V10C/CQ
+NORMALIZED ICC VS. TEMPERATURE
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0
+VOH (V)
+ATMEL ATF22V10C/CQ OUTPUT SINK CURRENT VS.
+SUPPLY VOLTAGE (VOL = 0.5V)
+1.1
+NORMALIZED ICC
+1.0
+0.9
+0.8
+-40.0 0.0 25.0 75.0
+TEMPERATURE (°C)
+ATMEL ATF22V10C/CQ OUTPUT SOURCE
+CURRENT VS. OUTPUT VOLTAGE (VCC = 5V, TA = 25°C)
+0.0
+-10.0
+-20.0
+-30.0
+IOH (mA)
+-40.0
+-50.0
+-60.0
+-70.0
+-80.0
+-90.0
+140.0
+120.0
+100.0
+80.0
+60.0
+40.0
+20.0
+0.0
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ INPUT CLAMP CURRENT
+VS. INPUT VOLTAGE (VCC = 5V, TA = 35°C)
+0.0
+INPUT CURRENT (mA)
+-20.0
+-40.0
+-60.0
+-80.0
+-100.0
+-120.0
+0.0 -0.2 -0.4 -0.6 -0.8 -1.0
+INPUT VOLTAGE (V)
+11
+NORMALIZED TPD
+NORMALIZED TCO
+NORMALIZED TSU
+NORMALIZED TPD
+12
+ATMEL ATF22V10C/CQ
+NORMALIZED TPD VS. VCC
+1.2
+1.1
+1.0
+0.9
+0.8
+4.50 4.75 5.00 5.25 5.50
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ
+NORMALIZED TCO VS. VCC
+1.3
+1.2
+1.1
+1.0
+0.9
+0.8
+4.50 4.75 5.00 5.25 5.50
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ
+NORMALIZED TSU VS. VCC
+1.2
+1.1
+1.0
+0.9
+0.8
+4.50 4.75 5.00 5.25 5.50
+SUPPLY VOLTAGE (V)
+ATMEL ATF22V10C/CQ
+NORMALIZED TPD VS. TEMPERATURE
+1.1
+1.0
+0.9
+0.8
+-40.0 0.0 25.0 75.0
+TEMPERATURE (°C)
+Atmel ATF22V10C(Q)
+NORMALIZED TCO
+NORMALIZED TSU
+DELTA TPD (ns)
+DELTA TPD (ns)
+ATMEL ATF22V10C/CQ
+NORMALIZED TCO VS. TEMPERATURE
+1.1
+1.0
+0.9
+0.8
+1.1
+1.0
+0.9
+0.8
+8.0
+6.0
+4.0
+2.0
+0.0
+-2.0
+-40.0 0.0 25.0 75.0
+TEMPERATURE (°C)
+ATMEL ATF22V10C/CQ
+NORMALIZED TSU VS. TEMPERATURE
+-40.0 0.0 25.0 75.0
+TEMPERATURE (°C)
+ATMEL ATF22V10C/CQ
+DELTA TPD VS. OUTPUT LOADING
+0 50 100 150 200 250 300
+OUTPUT LOADING (pF)
+ATMEL ATF22V10C/CQ DELTA TPD VS.
+NUMBER OF OUTPUT SWITCHING
+0.0
+-0.1
+-0.2
+-0.3
+-0.4
+-0.5
+1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+NUMBER OF OUTPUTS SWITCHING
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+ATMEL ATF22V10C/CQ
+DELTA TCO VS. OUTPUT LOADING
+ATMEL ATF22V10C/CQ
+DELTA TCO VS. NUMBER OF SWITCHING
+DELTA TCO (ns)
+8.0
+7.0
+6.0
+5.0
+4.0
+3.0
+2.0
+1.0
+0.0
+DELTA TCO (ns)
+0.0
+-0.1
+-0.2
+-0.3
+-0.4
+-0.5
+-0.6
+50 100 150 200 250 300
+NUMBER OF OUTPUTS LOADING
+1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+NUMBER OF OUTPUTS SWITCHING
+13
+0735U–PLD–7/10
+12. Ordering Information
+12.1 Atmel ATF22V10C(Q) Green Package Options (Pb/Halide-free/RoHS Compliant)
+tPD (ns) tS (ns) tCO (ns) Ordering Code Package Operation Range
+5 3 4 ATF22V10C-5JX 28J Commercial
+(0Cto70C)
+7.5 3.5 4.5
+ATF22V10C-7PX
+ATF22V10C-7SX
+24P3
+24S
+Commercial
+(0Cto70C)
+7.5 3.5 4.5 ATF22V10C-7JU 28J Industrial
+(-40°Cto85C)
+10 4.5 6.5
+ATF22V10C-10JU
+ATF22V10C-10PU
+ATF22V10C-10SU
+ATF22V10C-10XU
+28J
+24P3
+24S
+24X
+Industrial
+(-40Cto85C)
+ATF22V10C-15JU
+ATF22V10C-15PU
+28J
+24P3
+Industrial
+(-40Cto85C)
+15 10 8
+ATF22V10CQ-15JU 28J Industrial
+(-40Cto85C)
+12.2 Using “C” Product for Industrial
+To use commercial product for industrial temperature ranges, down-grade one speed grade from the industrial-
+grade to the commercial-grade device (e.g. 7ns PX = 10ns PU) and de-rate power by 30%.
+12.3 Military Package Options (Lead-based)(1)
+tPD (ns) tS (ns) tCO (ns) Ordering Code Package Operation Range
+ATF22V10C-10GM/883
+ATF22V10C-10NM/883
+24D3
+28L 10 4.5 6.5
+5962-8984116LA
+5962-89841163A
+24D3
+28L
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+ATF22V10C-15GM/883
+ATF22V10C-15NM/883
+24D3
+28L 15 10 8
+5962-8984115LA
+5962-89841153A
+24D3
+28L
+Military
+(-55Cto125C)
+Class B, Fully Compliant
+Notes: 1. Military/DSCC parts meet the DSCC drawing specifications
+Package Type
+24D3 24-lead, 0.300" Wide, Non-windowed Ceramic Dual Inline Package (CERDIP)
+24P3 24-pin, 0.300" Wide, Plastic Dual Inline Package (PDIP)
+24S 24-lead, 0.300" Wide, Plastic Gull Wing Small Outline (SOIC)
+24X 24-lead, 4.4mm Wide, Plastic Thin Shrink Small Outline (TSSOP)
+28J 28-lead, Plastic J-leaded Chip Carrier (PLCC)
+28L 28-lead, Ceramic Leadless Chip Carrier (LCC)
+14
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+13. Packaging Information
+13.1 24D3 – CERDIP
+Dimensions in Millimeters and (Inches).
+Controlling dimension: Inches.
+MIL-STD 1835 D-9 Config A (Glass Sealed)
+32.51(1.280)
+31.50(1.240) PIN
+1
+7.87(0.310)
+7.24(0.285)
+27.94(1.100) REF
+5.08(0.200)
+MAX
+0.127(0.005) MIN
+SEATING
+PLANE
+5.08(0.200)
+3.18(0.125)
+1.52(0.060)
+0.38(0.015)
+0.66(0.026)
+0.36(0.014)
+2.45(0.100)BSC
+1.65(0.065)
+1.14(0.045)
+8.13(0.320)
+7.37(0.290)
+0º~ 15º REF
+0.46(0.018)
+0.20(0.008)
+10.20(0.400) MAX
+10/21/03
+Package Drawing Contact:
+packagedrawings@atmel.com
+TITLE 24D3, 24-lead, 0.300" Wide. Non-windowed, Ceramic
+Dual Inline Package (Cerdip)
+DRAWING NO. 24D3
+REV.
+B
+15
+0735U–PLD–7/10
+13.2 24P3 – PDIP
+D
+PIN
+1
+E1
+A
+SEATING PLANE
+A1
+L
+B
+B1
+e
+E
+COMMON DIMENSIONS
+(Unit of Measure = mm)
+C
+SYMBOL MIN NOM MAX NOTE
+eC
+eB
+A – – 5.334
+A1 0.381 – –
+D 31.623 – 32.131 Note 2
+E 7.620 – 8.255
+E1 6.096 – 7.112 Note 2
+B 0.356 – 0.559
+Notes: 1. 2. This package conforms to JEDEC reference MS-001, Variation AF
+Dimensions D and E1 do not include mold Flash or Protrusion
+Mold Flash or Protrusion shall not exceed 0.25mm (0.010")
+B1 1.270 – 1.651
+L 2.921 – 3.810
+C 0.203 – 0.356
+eB – – 10.922
+eC 0.000 – 1.524
+e 2.540 TYP
+6/1/04
+Package Drawing Contact:
+packagedrawings@atmel.com
+TITLE DRAWING NO. REV.
+24P3, 24-lead (0.300"/7.62mm Wide) Plastic Dual
+24P3
+Inline Package (PDIP) D
+16
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+13.3 24S – SOIC
+PIN1ID
+PIN 1
+e
+E
+08
+Package Drawing Contact:
+packagedrawings@atmel.com
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+B
+D1
+D
+A
+COMMON DIMENSIONS
+(Unit of Measure = mm)
+SYMBOL MIN NOM MAX NOTE
+A1
+A – – 2.65
+A1 0.10 – 0.30
+D 10.00 – 10.65
+D1 7.40 – 7.60
+E 15.20 – 15.60
+L1
+B 0.33 – 0.51
+L 0.40 – 1.27
+L
+L1 0.23 – 0.32
+e 1.27 BSC
+06/17/2002
+TITLE DRAWING NO. 24S, 24-lead (0.300" body) Plastic Gull Wing Small
+24S
+Outline (SOIC) B
+REV.
+17
+13.4 24X – TSSOP
+Dimensions in Millimeter and (Inches)*
+JEDEC STANDARD MO-153 AD
+Controlling dimension: millimeters
+0.30(0.012)
+0.19(0.007)
+4.48(0.176)
+6.50(0.256)
+4.30(0.169)
+6.25(0.246)
+PIN 1
+0.65(0.0256)BSC
+7.90(0.311)
+7.70(0.303)
+1.20(0.047)MAX
+0.15(0.006)
+0.05(0.002)
+0.20(0.008)
+08
+0.09(0.004)
+0.75(0.030)
+0.45(0.018)
+04/11/2001
+TITLE Package Drawing Contact:
+packagedrawings@atmel.com
+DRAWING NO. 24X, 24-lead (4.4mm body width) Plastic Thin Shrink
+24X
+Small Outline Package (TSSOP) A
+REV.
+18
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+13.5 28J – PLCC
+1.14(0.045) X 45°
+1.14(0.045) X 45° PIN NO. 1
+IDENTIFIER
+0.318(0.0125)
+0.191(0.0075)
+E1 E
+B1 D2/E2
+B
+e
+D1
+D
+A
+0.51(0.020)MAX
+45° MAX (3X)
+A2
+A1
+COMMON DIMENSIONS
+(Unit of Measure = mm)
+SYMBOL MIN NOM MAX NOTE
+A 4.191 – 4.572
+A1 2.286 – 3.048
+A2 0.508 – –
+D 12.319 – 12.573
+D1 11.430 – 11.582 Note 2
+E 12.319 – 12.573
+Notes: 1. 2. 3. This package conforms to JEDEC reference MS-018, Variation AB
+Dimensions D1 and E1 do not include mold protrusion
+Allowable protrusion is .010"(0.254mm) per side. Dimension D1
+and E1 include mold mismatch and are measured at the extreme
+material condition at the upper or lower parting line
+Lead coplanarity is 0.004" (0.102mm) maximum
+E1 11.430 – 11.582 Note 2
+D2/E2 9.906 – 10.922
+B 0.660 – 0.813
+B1 0.330 – 0.533
+e 1.270 TYP
+10/04/01
+TITLE Package Drawing Contact:
+packagedrawings@atmel.com
+28J, 28-lead, Plastic J-leaded Chip Carrier (PLCC) DRAWING NO. 28J
+REV.
+B
+19
+0735U–PLD–7/10
+13.6 28L – LCC
+Dimensions in Millimeters and (Inches).
+Controlling dimension: Inches.
+MIL-STD 1835 C-4
+11.68(0.460)
+11.23(0.442)
+2.54(0.100)
+2.16(0.085)
+11.68(0.460)
+11.23(0.442)
+1.91(0.075)
+1.40(0.055)
+PIN 1
+1.40(0.055)
+2.41(0.095)
+1.14(0.045)
+INDEX CORNER
+1.91(0.075)
+0.635(0.025)
+0.381(0.015) X 45°
+0.305(0.012)
+0.178(0.007)RADIUS
+7.62(0.300) BSC
+0.737(0.029)
+0.533(0.021)
+1.27(0.050) TYP
+1.02(0.040) X 45°
+2.16(0.085)
+7.62(0.300) BSC
+1.65(0.065)
+10/21/03
+Package Drawing Contact:
+packagedrawings@atmel.com TITLE 28L, 28-pad, Non-windowed, Ceramic Lid, Leadless Chip
+Carrier (LCC)
+DRAWING NO. 28L
+REV.
+B
+20
+Atmel ATF22V10C(Q)
+0735U–PLD–7/10
+Atmel ATF22V10C(Q)
+14. Revision History
+Doc. Rev. Date Comments
+0735U 05/2010
+Updated C-15 military device ICC limit
+Revised the maximum power supply current in PD mode for commercial- and industrial-grade
+devices from 100µA to 500µA and 100µA to 650µA maximum, respectively
+C-15 and CQ-15 Commercial part removed from Table 4-1.
+Removed Mil from ICC, C-15 (Ind.) parts
+ICC2 at 15mhz Max changed from 90mA to 125mA
+0735T 05/2009 Added military-grade packages and removed leaded parts
+0735S 08/2008 Added new green part
+0735R 06/2008 Updated Green package options
+21
+0735U–PLD–7/10
+Headquarters International
+Atmel Corporation
+2325 Orchard Parkway
+San Jose, CA 95131
+USA
+Tel: (+1) (408) 441-0311
+Fax: (+1) (408) 487-2600
+www.atmel.com
+Atmel Asia Limited
+Unit 01-5 & 16, 19F
+BEA Tower, Millennium City 5
+418 Kwun Tong Road
+Kwun Tong, Kowloon
+HONG KONG
+Tel: (+852) 2245-6100
+Fax: (+852) 2722-1369
+Atmel Munich GmbH
+Business Campus
+Parkring 4
+D-85748 Garching b. Munich
+GERMANY
+Tel: (+49) 89-31970-0
+Fax: (+49) 89-3194621
+Atmel Japan
+9F, Tonetsu Shinkawa Bldg.
+1-24-8 Shinkawa
+Chuo-ku, Tokyo 104-0033
+JAPAN
+Tel: (+81) (3) 3523-3551
+Fax: (+81) (3) 3523-7581
+Product Contacts
+Technical Support
+PLD@atmel.com
+Sales Contact
+www.atmel.com/contacts
+Literature Requests
+www.atmel.com/literature
+Disclaimer: The information in this document is provided in connection with Atmel products. No license, express or implied, by estoppel or otherwise, to any
+intellectual property right is granted by this document or in connection with the sale of Atmel products. EXCEPT AS SET FORTH IN ATMEL’S TERMS AND CONDI-
+TIONS OF SALE LOCATED ON ATMEL’S WEB SITE, ATMEL ASSUMES NO LIABILITY WHATSOEVER AND DISCLAIMS ANY EXPRESS, IMPLIED OR STATUTORY
+WARRANTY RELATING TO ITS PRODUCTS INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, OR NON-INFRINGEMENT. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY DIRECT, INDIRECT, CONSEQUENTIAL, PUNITIVE, SPECIAL OR INCIDEN-
+TAL DAMAGES (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF PROFITS, BUSINESS INTERRUPTION, OR LOSS OF INFORMATION) ARISING OUT OF
+THE USE OR INABILITY TO USE THIS DOCUMENT, EVEN IF ATMEL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. Atmel makes no
+representations or warranties with respect to the accuracy or completeness of the contents of this document and reserves the right to make changes to specifications
+and product descriptions at any time without notice. Atmel does not make any commitment to update the information contained herein. Unless specifically provided
+otherwise, Atmel products are not suitable for, and shall not be used in, automotive applications. Atmel’s products are not intended, authorized, or warranted for use
+as components in applications intended to support or sustain life.
+© 2010 Atmel Corporation. All rights reserved.
+Atmel®, logo and combinations thereof, and others are registered trademarks or trademarks of Atmel Corporation or its subsidiaries. Other terms
+and product names may be trademarks of others.
+0735U–PLD–7/10
