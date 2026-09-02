@@ -16,6 +16,23 @@ The final design has nine active through-hole packages:
 
 The older LVC8T245 carrier, SD storage, external PSRAM, three AHCT125 packages, and HCT157/HCT08 arbitration are not the current architecture.
 
+## Bench Instruments
+
+- The RIGOL DHO814 validates analogue voltage, edge quality, ringing,
+  overshoot, pulse width, and close timing. Bond its chassis to protective
+  earth before connecting any input/output lead.
+- The DreamSourceLab DSLogic Plus validates digital state and ordering in the
+  Group A-D capture sets defined in
+  `docs/docs/en/hardware/logic-analyzer.md`.
+- DSLogic Plus uses 16-channel, 100 MHz Buffer Mode for qualification. Its
+  16-channel Stream Mode limit is 20 MHz and is only suitable for long-duration
+  low-rate searches.
+- DSLogic grounds are connected to the USB host ground. Connect them only to
+  common circuit GND. CK and TI are limited to 0-3.3 V and are not used for
+  standard project captures.
+- Neither instrument replaces the other: digital thresholds do not prove
+  analogue margins, and four scope channels do not prove whole-bus ordering.
+
 ## Voltage and Power
 
 - All 5 V logic shares one regulated 5 V rail. Every installed 5 V device must be powered whenever that rail is energized.
@@ -53,7 +70,11 @@ Narrow DIPs cross E/F. Z80 and SRAM require real 0.6-inch sockets. Verify curren
 - Qualify at 1 MHz first, then 2-6 MHz in 500 kHz steps. Treat 6.5-8 MHz as experimental even if measured clean.
 - The CPU's 20 MHz grade is not a system rating. Worst-case GAL + AHCT244 + SRAM control-to-data delay is about 79.5 ns before breadboard and setup margin.
 - I/O trapping uses GAL-generated hardware WAIT# plus static clock stop; WAIT setup/hold and release sequencing remain measured behavior.
-- Use the logic analyzer for simultaneous buses and controls; use the four-channel DHO814 for analog levels, edge quality, and correlated timing groups.
+- Use the 16-channel DSLogic Plus capture groups in
+  `docs/docs/en/hardware/logic-analyzer.md` for digital buses and controls.
+  Use 100 MHz Buffer Mode for qualification; 16-channel Stream Mode is only
+  20 MHz. Use the four-channel DHO814 for analogue levels, edge quality, and
+  correlated timing groups.
 
 ## Flash, CP/M, and Multicore Ownership
 

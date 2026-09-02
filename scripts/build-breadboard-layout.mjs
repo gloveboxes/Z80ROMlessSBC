@@ -4,7 +4,14 @@ import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
-const outputPath = path.join(repoRoot, "images", "breadboard-layout.svg");
+const outputPath = path.join(
+  repoRoot,
+  "docs",
+  "docs",
+  "en",
+  "images",
+  "breadboard-layout.svg",
+);
 
 const ROWS = 63;
 const BOARD_TOP = 180;

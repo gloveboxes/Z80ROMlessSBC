@@ -118,7 +118,7 @@ interrupt timer, file transfer, environment, chat, and shared response data.
 Its terminal pipeline translates cursor, Insert/Delete, and Page Up/Page Down
 ANSI sequences to the CP/M control keys, maps Backspace/Delete to Ctrl-H, and
 preserves standalone Escape after a 30 ms sequence timeout. See
-[Appendix D.9](../../README.md#d9-interactive-end-to-end-cpm-user-test) for the
+[interactive-test documentation](../../docs/docs/en/cpm-dcc/interactive.md) for the
 complete procedure, expected results, and the boundary between emulator
 coverage and Pico/physical-board qualification.
 

@@ -1,0 +1,127 @@
+site_name: Z80 ROMless SBC Engineering Specification
+site_author: David Lee
+site_description: >-
+  Electrical design, firmware architecture, and staged bring-up plan for a
+  Pico 2 W-supervised ROMless Z80 computer.
+
+docs_dir: en
+site_dir: ../site
+
+repo_name: Z80ROMlessSBC
+repo_url: https://github.com/gloveboxes/Z80ROMlessSBC
+
+copyright: >-
+  Copyright &copy; 2026 David Lee
+
+nav:
+  - Introduction: en/index.md
+  - Hardware design:
+    - Overview: en/hardware/index.md
+    - 0 - Inventory: en/hardware/inventory.md
+    - 1 - Pin mapping and SRAM wiring: en/hardware/pin-mapping.md
+    - 2 - Address interface: en/hardware/address-interface.md
+    - 3 - Construction and breadboards: en/hardware/construction.md
+    - 4 - Output buffer: en/hardware/output-buffer.md
+    - 5 - Bus translation and isolation: en/hardware/bus-isolation.md
+    - Test instruments:
+      - RIGOL DHO814 oscilloscope: en/hardware/oscilloscope.md
+      - DSLogic Plus logic analyzer: en/hardware/logic-analyzer.md
+  - System architecture:
+      - Operational boundaries: en/system/operation.md
+      - Firmware build and provisioning: en/system/firmware-build.md
+  - Implementation plan:
+      - Plan and prerequisites: en/implementation/index.md
+      - Phase 0 - Power distribution: en/implementation/phase-0-power.md
+      - Phase 1 - Pico supervisor: en/implementation/phase-1-supervisor.md
+      - Phase 2 - GAL, buffer, and clock: en/implementation/phase-2-buffer-clock.md
+      - Phase 3 - Address generator: en/implementation/phase-3-address-generator.md
+      - Phase 4 - Address bus: en/implementation/phase-4-address-bus.md
+      - Phase 5 - Data bus: en/implementation/phase-5-data-bus.md
+      - Phase 6 - SRAM and DMA: en/implementation/phase-6-sram.md
+      - Phase 7 - Z80 CPU: en/implementation/phase-7-z80.md
+      - Phase 8 - Virtual I/O: en/implementation/phase-8-virtual-io.md
+      - Phase 9 - Flash storage: en/implementation/phase-9-flash-storage.md
+      - Phase 10 - WebSocket terminal: en/implementation/phase-10-websocket.md
+      - Frequency qualification: en/implementation/frequency-qualification.md
+  - CP/M and dcc:
+      - Compatibility overview: en/cpm-dcc/index.md
+      - Image provenance: en/cpm-dcc/image-provenance.md
+      - Memory map: en/cpm-dcc/memory-map.md
+      - Custom BIOS: en/cpm-dcc/bios.md
+      - Console and file I/O: en/cpm-dcc/console-files.md
+      - Direct access: en/cpm-dcc/direct-access.md
+      - Compatibility boundaries: en/cpm-dcc/boundaries.md
+      - Validation requirements: en/cpm-dcc/validation.md
+      - End-to-end test: en/cpm-dcc/end-to-end.md
+      - Interactive test: en/cpm-dcc/interactive.md
+  - Reference:
+      - Terms and abbreviations: en/reference/glossary.md
+      - Datasheets: en/reference/datasheets.md
+      - Source index: en/reference/source-index.md
+  - Building these docs: en/development/building-docs.md
+
+plugins:
+  - search
+  - glightbox
+  - include-markdown
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          name: English
+          default: true
+          site_name: Z80 ROMless SBC Engineering Specification
+
+theme:
+  name: material
+  features:
+    - navigation.footer
+    - navigation.tabs.sticky
+    - content.code.copy
+    - content.tabs.link
+  font:
+    code: Roboto Mono
+    text: Roboto
+  palette:
+    - scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-2
+        name: Switch to dark mode
+    - scheme: slate
+      primary: amber
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+extra_javascript:
+  - path: javascripts/mermaid.mjs
+    type: module
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: z80-mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - md_in_html
+
+validation:
+  links:
+    absolute_links: relative_to_docs
+    unrecognized_links: warn

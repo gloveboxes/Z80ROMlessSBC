@@ -1,13 +1,8 @@
 {
-  "name": "z80-romless-sbc-docs",
+  "name": "z80-romless-sbc-tools",
   "private": true,
   "scripts": {
     "kicad": "./scripts/build-kicad.sh",
-    "layout": "node scripts/build-breadboard-layout.mjs",
-    "pdf": "npm run layout && node scripts/build-readme-pdf.mjs"
-  },
-  "devDependencies": {
-    "mermaid": "11.17.0",
-    "puppeteer-core": "25.8.0"
+    "layout": "node scripts/build-breadboard-layout.mjs"
   }
 }

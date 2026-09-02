@@ -1,0 +1,87 @@
+
+1                              www.dreamsourcelab.com
+
+DSLogic Plus
+USB-based Logic Analyzer
+Key Features
+ 16 digital channels
+ Up to 400MHz sample rate
+ Up to 256Mbits hardware memory
+ Up to 16G sample depth (stream mode)
+ Adjustable Threshold (0.1V Step)
+ Shielded fly wires
+ Unibody aluminum case
+ 1-year warranty
+Connectivity
+ USB Type-C interface (USB 2.0 device port)
+ 1.27mm dupont female connector (Host device)
+ 2.54mm dupont female connector (Fly wires)
+Power Source
+ Power source voltage: 5VDC±5%
+ Power consumption: 2 W maximum
+Input output ports
+ Direction Descriptions Protected Voltage Range
+USB 2.0 port InOut Connect to host computer 4.75v ~ 5.25v
+CH0 ~ CH15 Input Connect to under test signals -30v ~ 30v (with fly wires)
+CK Input Clock input at state sample mode 0v ~ 3.3v (Max 50MHz)
+TI Input Reserved 0v ~ 3.3v
+TO Output External trigger signal output --
+Designed to make your work enjoyable
+DSLogic Plus is an USB-based logic analyzer, which has a portable size (79x74x9mm), but powerful performance
+(up to 400MHz sample rate). With the easy-to-use and cross platform software, DSView, you can use your
+favorite computer to debug and analysis your circuits, observe the digital wave and decoder various protocols at
+anywhere and anytime.
+
+DSLogic Plus Datasheet
+www.dreamsourcelab.com                              2
+Te c h n i c a l  S p e c i f i c a t i o n s
+Input Voltage and Thresholds
+Safe voltage range: -30v ~ 30v (with fly wires)
+Threshold voltage: 0v ~ 5v (0.1v step)
+Work with most of logic voltage level (such as: 5v, 3.3v, 2.5v, 1.8v, 1.5v, 1.2v, 1.0v, etc.)
+ESD protected
+
+Input Impedance
+250KΩ // ~13pF
+
+Max Sample Rates
+Buffer mode Stream mode
+4 channels:    400MHz --
+8 channels:    200MHz --
+16 channels:   100MHz 3 channels:   100MHz
+-- 6 channels:    50MHz
+-- 12 channels:   25MHz
+-- 16 channels:   20MHz
+
+Max Sample Depth
+Buffer mode (without RLE compression): 256M / num. of channels
+Buffer mode (with RLE compression): 16G / num. of channels
+Stream mode: 16G
+
+Error/Accuracy
+Minimum acquisition pulse: 5ns
+Acquisition Accuracy: ±sample interval (for example: ±10ns@100M sample rate, ±1us@1M sample rate)
+
+Noise Immunity
+Each channel provides independent shielding ground.
+
+System Requirements
+Windows XP, Vista, Win7, Win8 & Win10
+Mac OS X 10.12 or above
+Linux: recent Ubuntu, Fedora, Arch, etc.
+USB 2.0 Host port
+
+DSLogic Plus DataSheet
+3                              www.dreamsourcelab.com
+Safety & Caution
+ If you are using a mains powered (grounded) host computer, the ground terminals of DSLogic are also
+connected to the real ground, you must avoid to connect any ground terminals to HOT DUTs.
+ DSLogic has the overcurrent protection, but we recommend that you should try to avoid any short circuit
+event. After all the ability of upstream USB port is an uncertain factor.
+
+Revision History
+The following table shows the revision history for this document.
+Date(DD/MM/YY) Version Revision
+20/06/20 v1.2 Add CK max frequency
+18/02/20 v1.1 Minor fix (based on DSView v1.10)
+17/08/17 v1.0 Initial release (based on DSView v0.98)

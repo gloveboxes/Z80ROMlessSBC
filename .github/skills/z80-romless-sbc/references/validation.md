@@ -32,7 +32,7 @@ Regenerate the native schematic, exports, strict ERC report, and netlist compari
 ```sh
 python3 -m venv .venv-kicad
 .venv-kicad/bin/pip install -r scripts/requirements-kicad.txt
-PYTHON=.venv-kicad/bin/python npm run kicad
+PYTHON="$PWD/.venv-kicad/bin/python" npm run kicad
 ```
 
 For any pin, part, package, resistor, capacitor, or layout change, also verify:
@@ -55,47 +55,47 @@ The current source is `src/pld/sram_control.pld`. After equation changes:
 - Compile a JEDEC file with the project's supported PLD toolchain.
 - Program, read back, and verify using the exact device algorithm before installation.
 
-## Documentation and PDF
+## Documentation
 
 ```sh
 npm run layout
-npm run pdf
-git diff --check HEAD -- README.md README.pdf scripts/build-readme-pdf.mjs
+docs/docs/.venv/bin/mkdocs build --strict -f docs/docs/mkdocs.yml
+git diff --check HEAD -- README.md docs .github/workflows/docs.yml
 ```
 
-`npm run pdf` already regenerates `images/breadboard-layout.svg`. `README.pdf` is tracked and must be regenerated after rendered README or renderer changes.
+`npm run layout` regenerates
+`docs/docs/en/images/breadboard-layout.svg`. The pinout images live beside it.
+Inspect representative generated pages for broken tables, Mermaid failures, and
+poor heading placement after structural changes.
 
-When PyMuPDF is available, verify numbering and section placement:
+A strict build validates Markdown and links but does not execute JavaScript.
+After changing Mermaid source, `mermaid.mjs`, CSS, navigation, or the theme,
+also use a browser at desktop and 390 px mobile widths to verify:
 
-```sh
-python3 - <<'PY'
-import pymupdf
-pdf = pymupdf.open('README.pdf')
-for number, page in enumerate(pdf, 1):
-    text = ' '.join(page.get_text().split())
-    assert f'Page {number} of {len(pdf)}' in text, number
-print(f'PASS: all {len(pdf)} pages numbered')
-PY
-```
+- every `pre.z80-mermaid` becomes one populated `.mermaid svg`
+- the expected diagram count renders on every affected page
+- SVG and table containers do not cause page-level horizontal overflow
+- labels remain readable and client-side navigation reruns the Mermaid adapter
 
-Render representative changed pages and inspect them for clipped text, broken tables, orphaned headings, code overflow, and blank diagrams. For font changes, inspect `page.get_fonts(full=True)` to prove Chromium embedded the intended face rather than a fallback.
-
-## README C Excerpts
+## Documentation C Excerpts
 
 The phase-specific C excerpts are explanatory and cumulative. When editing them:
 
 - Keep maintained-source links adjacent.
 - Validate Markdown fence balance.
-- Treat excerpts in document order as one conceptual translation unit: an earlier helper cannot rely on an include shown only in a later block.
+- Keep each page internally coherent; do not imply that a snippet is the
+  canonical maintained implementation.
 - Prefer validating the maintained source and stage builds over trusting hand-written SDK stubs; stubs can miss incorrect or absent real SDK includes.
 
 ## Qualification Evidence
 
 Do not report a clock rate as qualified without captures and error-free tests at that rate. Preserve:
 
-- Logic-analyzer ordering for CLK, controls, A0-A15, and D0-D7.
 - DHO814 analog captures using compensated 10x probes and short ground springs.
+- DSLogic Plus Group A-D captures using 16-channel, 100 MHz Buffer Mode,
+  threshold appropriate to each group, Filter=None, and RLE disabled.
 - SRAM setup/write-pulse evidence and ownership-transition evidence.
-- Repeated cold boots, DMA verification, I/O tests, and fault-injection results required by Section 8.
+- Repeated cold boots, DMA verification, I/O tests, and fault-injection results
+  required by the implementation phase pages.
 
 Separate theoretical calculations, simulated/host-tested behavior, and physical bench measurements in every report.

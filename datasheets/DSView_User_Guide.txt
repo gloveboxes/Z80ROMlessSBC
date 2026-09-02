@@ -1,0 +1,1744 @@
+DSView
+User Guide
+v1.3.0
+
+
+www.dreamsourcelab.com 1
+Revision History
+The following table shows the revision history for this document.
+Date(DD/MM/YY) Version Revision
+12/07/23 v1.3.0 release for DSView v1.3.0
+02/09/19 v1.0.0 release for DSView v1.0.0
+30/05/18 v0.9.9 release for DSView v0.9.9
+19/07/17 v0.9.8 release for DSView v0.9.8
+08/09/16 v0.9.6 Initial release for DSView v0.9.6
+
+
+www.dreamsourcelab.com 2
+Contents
+1 Overview ..................................................................................................................................................... 5
+1.1 Introduction ................................................................................................................................... 5
+1.2 Download ...................................................................................................................................... 5
+1.3 Installing DSView ......................................................................................................................... 5
+1.3.1 Operating System ................................................................................................................... 5
+1.3.2 Recommended Minimum Hardware ...................................................................................... 5
+1.3.3 How to Install ......................................................................................................................... 6
+1.4 User Interface ................................................................................................................................ 8
+1.4.1 Device Mode .......................................................................................................................... 8
+1.4.2 Device Type ........................................................................................................................... 9
+1.4.3 Language Switch .................................................................................................................. 10
+1.4.4 Theme Switch ...................................................................................................................... 10
+2 Logic Analyzer .......................................................................................................................................... 11
+2.1 Hardware Connection ................................................................................................................. 11
+2.2 Hardware Options ....................................................................................................................... 13
+2.2.1 Mode .................................................................................................................................... 13
+2.2.2 Channel ................................................................................................................................ 15
+2.3 Sample Duration/Rate ................................................................................................................. 15
+2.3.1 Sample Duration .................................................................................................................. 15
+2.3.2 Sample Rate ......................................................................................................................... 16
+2.4 Trigger ......................................................................................................................................... 17
+2.4.1 Trigger Position .................................................................................................................... 17
+2.4.2 Simple Trigger ..................................................................................................................... 18
+2.4.3 Advanced Trigger................................................................................................................. 18
+2.5 Capture ........................................................................................................................................ 20
+2.5.1 Normal Capture .................................................................................................................... 21
+2.5.2 Instant Capture ..................................................................................................................... 21
+2.5.3 Capture Mode....................................................................................................................... 22
+2.6 Navigating ................................................................................................................................... 24
+2.6.1 Pan Left/Right ...................................................................................................................... 25
+2.6.2 Zoom in/Out ......................................................................................................................... 25
+2.6.3 Pattern Search ...................................................................................................................... 26
+2.6.4 Channel Customization ........................................................................................................ 26
+2.7 Measurement ............................................................................................................................... 27
+2.7.1 Width/Period/Frequency/Duty Cycle ................................................................................... 27
+2.7.2 Pulse Counter ....................................................................................................................... 27
+2.7.3 Edge distance ....................................................................................................................... 28
+2.7.4 Cursor Insert......................................................................................................................... 28
+2.7.5 Cursor Move ........................................................................................................................ 28
+2.7.6 Cursor Jump ......................................................................................................................... 29
+2.7.7 Cursor Measure .................................................................................................................... 29
+2.7.8 Delete Cursor ....................................................................................................................... 30
+
+
+www.dreamsourcelab.com 3
+2.8 Protocol Decoder ........................................................................................................................ 31
+2.8.1 Add Decoder ........................................................................................................................ 32
+2.8.2 Stack Decoder ...................................................................................................................... 33
+2.8.3 List Viewer ........................................................................................................................... 34
+2.8.4 Search Results ...................................................................................................................... 34
+2.8.5 Export Results ...................................................................................................................... 35
+2.8.6 Delete Decoder..................................................................................................................... 36
+2.9 File Operation ............................................................................................................................. 36
+2.9.1 Load/Save Session ............................................................................................................... 37
+2.9.2 Save ...................................................................................................................................... 37
+2.9.3 Open ..................................................................................................................................... 37
+2.9.4 Export ................................................................................................................................... 37
+2.9.5 Screen Shot .......................................................................................................................... 37
+3 Oscilloscope .............................................................................................................................................. 38
+3.1 Hardware Connection ................................................................................................................. 38
+3.2 Hardware Options ....................................................................................................................... 39
+3.2.1 Operation Mode/Bandwidth Limit ....................................................................................... 39
+3.2.2 Auto Calibration................................................................................................................... 40
+3.2.3 Manual Calibration .............................................................................................................. 40
+3.3 Capture ........................................................................................................................................ 41
+3.3.1 Channel Customization ........................................................................................................ 41
+3.3.2 Horizontal Resolution .......................................................................................................... 42
+3.3.3 Run/Stop .............................................................................................................................. 43
+3.3.4 Single Capture ...................................................................................................................... 43
+3.3.5 Trigger .................................................................................................................................. 43
+3.4 Measurements ............................................................................................................................. 45
+3.4.1 Auto Measurements ............................................................................................................. 45
+3.4.2 Y Cursors ............................................................................................................................. 45
+3.4.3 X Cursors ............................................................................................................................. 48
+3.4.4 Manual Measurement........................................................................................................... 48
+3.5 Spectrum Analysis ...................................................................................................................... 49
+3.5.1 FFT Options ......................................................................................................................... 49
+3.5.2 Navigating Spectrum ........................................................................................................... 50
+3.6 Math Function ............................................................................................................................. 51
+3.6.1 Add Math Channel ............................................................................................................... 51
+3.6.2 Math channel ........................................................................................................................ 52
+3.7 Lissajous Figure .......................................................................................................................... 53
+3.7.1 Lissajous Setup .................................................................................................................... 53
+3.7.2 Lissajous View ..................................................................................................................... 53
+3.8 File Operations ............................................................................................................................ 54
+3.8.1 Load/Save Session ............................................................................................................... 54
+3.8.2 Save ...................................................................................................................................... 54
+3.8.3 Open ..................................................................................................................................... 54
+3.8.4 Export ................................................................................................................................... 55
+3.8.5 Screen Shot .......................................................................................................................... 55
+
+
+www.dreamsourcelab.com 4
+4 Data Acquisition........................................................................................................................................ 56
+4.1 Hardware Connection ................................................................................................................. 56
+4.2 Hardware Options ....................................................................................................................... 56
+4.2.1 Operation Mode/ Bandwidth Limit ...................................................................................... 57
+4.2.2 Channel Options................................................................................................................... 57
+4.3 Capture ........................................................................................................................................ 58
+4.3.1 Capture Option ..................................................................................................................... 58
+4.3.2 Start/Stop .............................................................................................................................. 58
+4.4 Measurement ............................................................................................................................... 58
+4.4.1 Cursor Measure .................................................................................................................... 58
+4.4.2 Manual Measurement........................................................................................................... 60
+4.5 File Operations ............................................................................................................................ 61
+4.5.1 Load/Save Session ............................................................................................................... 61
+4.5.2 Save ...................................................................................................................................... 61
+4.5.3 Open ..................................................................................................................................... 61
+4.5.4 Export ................................................................................................................................... 62
+4.5.5 Screen Shot .......................................................................................................................... 62
+
+
+www.dreamsourcelab.com 5
+1  Overview
+1.1 Introduction
+DSView is a versatile signal ca pture and analysis software with multiple functions. Its main features
+include digital logic signal capture and measurement, digital protocol analysis and debugging, real -time
+display and measurement of analog signals, and signal spectrum analysis, among others.
+DSView is also an open source software based on sigrok project  (www.sigrok.org), developed and
+maintained by DreamSourceLab  (www.dreamsourcelab.com). Current v ersion (v1.3.0) support three
+operation modes: Logic Analyzer, Oscilloscope and Data Acquisition.
+Currently, DSView supports the following hardware:
+ DSLogic series logic analyzer:
+ DSLogic Plus / U3Pro16 / U3Pro32
+ DSCope series oscilloscope:
+ DSCope U2P20 / U2B100 / U3P100
+1.2 Downl oad
+Installer: http://www.dreamsourcelab.com/download/
+Source code: http://www.github.com/DreamSourceLab/DSView
+1.3 Inst alling DSView
+1.3.1  Operating System
+Windows： Win7 / Win8 / Win10 /Win11
+Linux：Debian / Ubuntu, Fedora, OpenSUSE, etc.
+Apple：macOS 10.13 and above
+1.3.2  Recommended Minimum Hardware
+CPU: P4 1.5G or above
+Memory: 2G or above
+Graphics Memory: 512MB or above
+HDD: 20G or above
+USB：USB2.0 or above
+
+
+www.dreamsourcelab.com 6
+1.3.3  How to Install
+1.3.3.1  Wind ows
+a)  If an earlier version of DSView software is installed, it needs to be completely
+uninstalled （including drivers）
+b) For older hardware devices purchased before 2018, if you need to use them on Windows
+8 or above, the installation process requires disabling driver signature enforcement. You
+can refer to the following link for instructions:
+win8:
+https://learn.sparkfun.com/tutorials/disabling-driver-signature-on-windows-8/disabling-signed-driver-en
+forcement-on-windows-8
+win10:
+https://answers.microsoft.com/en-us/insider/forum/insider_wintp-insider_devices/how-do-i-disable-drive
+r-signature-enforcement-win/a53ec7ca-bdd3-4f39-a3af-3bd92336d248?auth=1
+Install Steps:
+1、 Download the Windows setup file. (http://www.dreamsourcelab.com/download/)
+2、 Double-click on the .exe file to start the installation process.
+3、 Select installation program language.
+4、 Click Next on welcome page.
+5、 Please read the license agreement carefully. If you accept the terms of the license agreement and
+agree to comply with them, click I Agree to proceed with the installation. If you do not accept the
+terms of the license agreement, click Cancel to abort the installation. .
+6、 Choose install location, and click Install.
+7、 Waiting done. If following page appear (Figure 1-1), please select Install this driver software
+anyway.
+
+Figure 1-1
+
+
+www.dreamsourcelab.com 7
+1.3.3.2 Linux
+Step1: Get the DSView source code
+$ git clone git://github.com/DreamSourceLab/DSView
+
+Step2: Installing the requirements:
+please check your respective distro's package manager tool if you use other distros
+
+Debian/Ubuntu:
+ $ sudo apt install git gcc g++ make cmake qt5-default libglib2.0-dev zlib1g-dev \
+  libusb-1.0-0-dev libboost-dev libfftw3-dev python3-dev libudev-dev pkg-config
+
+   How to install qt on ubuntu?
+    qt5: qt5-default,qtbase5-dev
+    qt6: qt6-base-dev,libQt6Svg*,libgl1-mesa-dev*
+
+Fedora (18, 19):
+ $ sudo yum install git gcc g++ make cmake libtool pkgconfig glib2-devel \
+   zlib-devel libudev-devel libusb1-devel \
+   python3-devel qt-devel boost-devel libfftw3-devel
+
+Arch:
+ $ pacman -S base-devel git cmake glib2 zlib libusb
+   python boost qt5 fftw
+
+Step3: Building
+$ cmake .
+$ make
+$ sudo make install
+1.3.3.3 macOS
+1、 Download the dmg file. (http://www.dreamsourcelab.com/download/)
+2、 Open the dmg, and drag DSView to Application directly.
+
+
+www.dreamsourcelab.com 8
+1.4 User Interface
+1.4.1 Device Mode
+Figure 1-2 shows the user interface of DSView under logic analyzer mode. Currently, only the DSLogic
+series logic analyzers support this Device Mode.
+
+Figure 1-2
+Figure 1-3 shows the user interface of DSView under oscilloscope mode. Currently, only the DS Cope
+series oscilloscopes support this Device Mode.
+
+Figure 1-3
+Device Options
+Device Name
+Device Mode
+Channel
+Options
+Horizontal Res
+Wave Window Tool Dock
+Sample Rate
+Toolbar Help
+FFT Window
+Measurements
+Device Options
+Device Name
+Device Mode
+Channel
+Options
+Sample Duration
+Wave Windows Tool Dock
+Sample Rate Toolbar Help
+
+
+www.dreamsourcelab.com 9
+Figure 1-4 shows the user interface of DSView under Data Acquisition  mode. Currently, only the
+DSCope series oscilloscopes support this Device Mode.
+
+Figure 1-4
+1.4.2 Device Type
+The leftmost section of the DSView toolbar displays the device type of the current device, as shown in
+Figure 1-5. DSView has a total of four device types, namely USB 2.0, USB 3.0, Demo Device, and File.
+
+Figure 1-5
+: Indicates that the current device is a demo device. This device type is used to demonstrate the
+functionality of different device modes.
+: Indicates that the current device is using a USB 3.0 interface for data transfer.
+: Indicates that the current device is using a USB 2.0 interface for data transfer. If the device
+supports USB 3.0, it is recommended to use a USB 3.0 interface for optimal USB connection quality.
+: Indicates that the current operation involves reading a DSL file and displaying the file data.
+Device Options
+Device Name
+Device Mode
+Channel
+Options
+Sample Duration
+Wave Windows Tool Dock
+Sample Rate Toolbar Help
+
+
+www.dreamsourcelab.com 10
+1.4.3 Language Switch
+Figure 1-6 shows how to switch the UI language. HelpLanguage 中文 / English.
+
+Figure 1-6
+1.4.4 Theme Switch
+Figure 1-7 shows how to switch the UI theme. DisplayThemes light / dark.
+
+Figure 1-7
+
+
+www.dreamsourcelab.com 11
+2  Logic Analyzer
+2.1 Hardware Connection
+1) Connect the DSLogic to the USB port of the PC using a USB data cable. If the DSView software is not
+running, the hardware indicator light should be red.
+Please use the original or a high -quality and short USB data cable, and connect it  directly to
+the USB port on the motherboard. Try to avoid using hub extension ports or front panel ports on
+the computer case to ensure the best USB connection quality.
+DSLogic
+
+Figure 2-1
+2) Open the DSView software (the system may need to search for drivers for the first time on Windows,
+please wait patiently). Confirm that the hardware indicator light turns green, the DSView software has
+successfully recognized the device and displays the correct device name in the device combobox.
+
+
+Figure 2-2
+3) Connect the fly wires to the sampling ports of the logic analyzer. Figure 2-3 shows the correspondence
+between the fly wires and the channels. Each channel has a shielded fly wire that is divided into signal
+and ground ports at the end. The colored wires correspond to channels 0-15. Additionally, one fly wire
+includes CK, TI, and TO signals, which are generally not required to be connected. The CK channel
+serves as the clock input for state sampling, allowing an external clock to be used as the sampling clock.
+TI is the input for an external trigger signal, and TO is the output for the trigger signal, which generates
+a pulse when the triggering condition is met during the sampling process.
+
+
+www.dreamsourcelab.com 12
+03478111215CIO
+Channel 0
+Channel 15
+Channel 14
+Channel 12
+Channel 10
+Channel 9
+Channel 8
+Channel 6
+Channel 5
+Channel 4
+Channel 3
+Channel 2
+Channel 1
+Channel 13
+Channel 11
+Channel 7
+CK
+TI
+TO
+
+Figure 2-3
+4) Based on the measurement requirements, connect the channels to the signals to be measured. For
+low-frequency signals (<5MHz), you can connect the signal under test and a common ground signal
+(Figure 2-4 left). For high-frequency signals, it is recommended to individually ground each channel to
+achieve optimal signal integrity (Figure 2-4 right).
+
+Figure 2-4
+
+
+www.dreamsourcelab.com 13
+2.2 Hardware Options
+Click Options button (Figure 2-5) or press the shortcut key "O":
+
+Figure 2-5
+Device Options window will be opened. (Figure 2-6). And the specific content of the device options
+window will vary depending on the hardware device.
+
+Figure 2-6
+2.2.1 Mode
+ Operation Mode:
+ Buffer Mode : During the capture process, DSLogic stores the collected data in its hardware
+memory and transfers the collected data to the PC via USB after the capture is completed.
+Due to the higher memory bandwidth compared to USB bandwidth, this mode supports higher Sample
+Rate. However, it is limited by the memory capacity and does not support l onger Sample Duration . This
+
+
+www.dreamsourcelab.com 14
+mode is suitable when the signal frequency is high and there is no need for long-duration data capture.
+ Stream Mode : During the capture process, DSLogic transfers the collected data to the PC in
+real-time.
+In this mode, there is no need to store the collected data in the hardware memory. Therefore, it supports
+longer Sample Duration. You can also observe the collected data in real -time. However, it is limited by the
+USB bandwidth, so it does not support higher Sample Rate. This mode is suitable when the signal frequency
+is low and there is a need for long-duration data capture.
+ Internal Test: Test only.
+
+ Stop Options:
+ Stop immediately: In Buffer Mode , when the capture process is stopped, there will be no data
+upload or display. This option is only applicable in Buffer Mode.
+ Upload captured data: In Buffer Mode, when the capture process is stopped, the data that has
+been captured in the hardware memory will be uploaded. Once the data transfer is complete, the software
+will display this data in the wave window. This option is only applicable in Buffer Mode.
+
+ Threshold Voltage:
+The threshold voltage is the decision level for digital signals. Signals higher than this voltage are
+considered as high level, and signals lower than this vo ltage are considered as low level. The threshold
+voltage can be set in the range of 0 to 5V with a step size of 0.1V . This setting greatly enhances the
+compatibility of the logic analyzer with different voltage standards. The specific threshold value can b e set
+according to the voltage standard of the signal being measured. For example, if you are capturing a 3.3V
+signal, the threshold voltage is generally set around 1.6V .
+
+ Filter Targets:
+ None: Original capture result
+ 1 Sample Clock: filter all pulse less than 1 sampling clock cycle.
+
+ Max Height:
+Set the maximum height of the signal for each channel in the display area. 1x represents one unit height.
+This option is used to adjust the display effect when there are fewer channels to be displayed.
+
+ Enable RLE Compress:
+Selecting this option enables RLE hardware compression . RLE is used to compensate for the limited
+sample depth in Buffer Mode. When RLE hardware compression is enabled, if there are fewer signal edges,
+data can be compressed to capture more data. This option is only applicable in Buffer Mode.
+
+ Using External Clock:
+Selecting this option indicates that the sampling clock is provided externally (via the CK channel of the
+cable).
+
+ Using Clock Negedge:
+By default, the system samples on the rising  edge of the sampling clock. Selecting this option indicates
+that the system will sample on the falling edge of the sampling clock.
+
+
+www.dreamsourcelab.com 15
+2.2.2 Channel
+ Channel Mode:
+The channel mode determines the actual number of channels used during the capture process. Different
+channel modes allow for different maximum sample rates. Select the appropriate channel mode based on the
+frequency and the number of signals being measured.
+ In Buffer Mode
+
+Figure 2-7
+In Buffer Mode, there a re channel modes available that support higher maximum Sample Rate. Figure
+2-7 shows the channel modes that can be selected for DSLogic Plus in Buffer Mode.
+ In Stream Mode
+
+Figure 2-8
+In Stream Mode, there are channel modes available that support lower maximum Sample Rate. Figure
+2-8 shows the channel modes that can be selected for DSLogic Plus in Stream Mode.
+ Channel Enable:
+After Channel Mode set, each available channel can be enabled or disabled. Enable All will enable all
+available channels; otherwise, Disable All will disable all available channels.
+2.3 Sampl e Duration/Rate
+
+Figure 2-9
+2.3.1 Sample Duration
+As Figure 2-9 shows, the first combobox represents the Sample Duration . Under different Capture
+Mode/Sample Rate/Channel Mode configurations, the Sample Duration has different ranges.
+ Buffer Mode : Max Duration = Hardware Depth / Sample Rate / Channel Number. For example,
+DSLogic Plus device has 256Mbits hardware memory, so @100M 16channles, the  max Sample
+Duration will be about 167.77ms; @400M 1channel, the Sample Duration will be about 671.09ms.
+ Stream Mode: Max duration (64bit software)  = 16G / Sample Rate. For example, @1MHz Sample
+Rate, the max Sample Duration will be  about 4.77 hours; @100MHz Sample Rate, the max Sample
+Duration will be about 2.86 minutes.
+Sample Duration
+
+ Sample Rate
+
+
+www.dreamsourcelab.com 16
+2.3.2 Sample Rate
+As Figure 2-9 shows, the second combobox represents the Sample Rate  per channel. The supported
+Sample Rate varies depending on the device, USB interface, operating mode, and channel mode.
+In general, the sampl e rate should be set to 4 -10 times the highest frequency of the signal being
+measured. A 4x sampling rate can capture every edge of the measured signal, but with a low phase accuracy
+of only +/- 25%, which means only 4 points are captured per cycle of the measured signal.
+As shown in Figure 2-10, the same signal will be sampled differently at different sampling rates. When
+the sample rate is too low, the original signal cannot be accurately reconstructed. According to the sampling
+principle, the highest accuracy in any sampl e rate is within  a sample interval. For example, using a sampl e
+rate of 100MHz, the accuracy range for each edge captured is within +/ - 10ns. Therefore, under normal
+circumstances, if phase accuracy is required, it is generally recommended to use a sampl e rate of at least 10
+times or higher than the highest frequency of the signal being measured. For example, for sampling a UART
+signal with a baud rate of 115200, the sampl e rate is usually set to 2MHz, and for sampling a SPI signal at
+40MHz, the sample rate can be set to 400MHz.
+2x sample rate
+5x sample rate
+10x sample rate
+Results at different sample rates
+2x sample rate
+Wrong waveform
+pulse loss
+5x sample rate
+1/5T deviation
+error on duty
+10x sample rate
+1/10T deviation
+Good result
+Under test signal
+
+Figure 2-10
+In general, the higher the sample rate, the higher the resolution of the sampled results and the closer they
+are to the true signal. However, it is not necessary to use the highest sampling rate for every signal, and there
+are two main factors to consider:
+1. The higher the sampl e rate, the more data is generated per unit of time, resulting in a shorter total
+acquisition time. Additionally, processing signals of the same duration in software will also take more time.
+2. When the frequency of the measured signal is very low, it often means that the rising/falling time is
+longer. As shown in Figure 2-11, excessively high sampling rates may capture the transitions a nd glitches of
+the rising/falling edge itself, which can be detrimental to signal or protocol analysis.
+High
+Sample Rate
+Low
+Sample Rate
+Edge of
+real signal
+Threshold
+
+Figure 2-11
+
+
+www.dreamsourcelab.com 17
+2.4 Trigger
+When setting up triggering, it is necessary to ensure  that the trigger conditions are
+correctly configured and that the waveform meets the trigger conditions. Otherwise, the
+sampling process will wait indefinitely as it cannot trigger correctly.
+Trigger is one of the most important features of a logic analyz er as it helps us capture specific moments
+of the signal that we want to observe. DSView supports two trigger modes: Simple Trigger and Advanced
+Trigger.
+Click Trigger button or press the shortcut key "T", trigger dock will be open (Figure 2-12).
+
+Figure 2-12
+2.4.1 Trigger Position
+The trigger position is set as a percentage of the sampl e duration to locate the trigger point. Setting the
+appropriate position help s locate problem waveforms. As shown in  Figure 2-13, the left diagram shows a
+trigger position of 10%, while the right diagram shows a trigger position of 90%.
+To observe waveforms after the trigger event, set the trigger positio n earlier. To observe waveforms
+before the trigger event, set the trigger position later.
+Note: The trigger position requires hardware memory and is only available in buffer mode. In stream
+mode, the trigger position is typically fixed at 1%.
+
+Figure 2-13
+10%
+Trigger
+Position
+90%
+Trigger
+Positions
+Trigger Button
+
+Simple Trigger
+
+Advanced Trigger
+
+
+www.dreamsourcelab.com 18
+2.4.2 Simple Trigger
+Simple Trigger allows for quick configuration of single/multiple channel edge or level triggers. It also
+supports trigger position setting. As Figure 2-12 shows, when Simple Trigger is selected in the trigger dock,
+the settings within the simple trigger area become the final trigger conditions.
+Figure 2-14 shows the simple trigger setting for each channel.
+
+Figure 2-14
+There are five icons from left to right: Rising, High Level, Falling, Low Level, and Either Edge.
+Note: If multiple channels have been set with simple trigger conditions, they are combined with a
+logical "AND" relationship. This means that the Trigger will be activated only when all the conditions are
+met at the same sampling point.
+2.4.3 Advanced Trigger
+The Advanced Trigger mode is only available for configuration in the Buffer Mode. To use
+the Advanced Trigger mode, you need to set the Operation Mode to Buffer Mode.
+
+Advanced Trigger is used to set complex triggering conditions, such as multi-event triggers and protocol
+triggers. DSView provides two types of advanced trigger settings: Stage Trigger and Serial Trigger.
+
+Figure 2-15
+Stage Trigger supports up to 16 levels of trigger conditions, which means you can set up to 16 events to
+occur sequentially before triggering. Each level of trigger includes two sets of trigger conditions with logical
+operations (AND or OR). Each set of trigger conditions includes level and edge settings for all channels,
+Total trigger stages
+==: trigger when equal
+!=: trigger when not equal
+equal
+
+Counter: fulfill how many
+times before trigger
+
+Enabled stages
+
+Logical relation
+
+Contiguous wave or
+not when counting
+
+From right to left,
+trigger flag of
+channel 0 -15. Each
+channel could be set
+as: X/0/1/R/F/C
+Rising Trig
+Falling Trig
+Edge Trig
+High Level Trig Low Level Trig
+
+
+www.dreamsourcelab.com 19
+invert and counter setting.
+Followings are some example of Stage Trigger
+ High level of channel 0 keep longer than 1000 sample intervals
+
+Figure 2-16
+ Rising edge of channel 0 or falling edge of channel 1
+
+Figure 2-17
+ Rising edge of channel 0, then 100 count of falling edge of channel 1, then high level of channel 2
+
+Figure 2-18
+As Figure 2-19 show, Serial trigger designed a generic trigger template for serial bus, which can be used
+to setup complex protocol trigger. For example, trigger when there is 0x50 byte in the i2c data stream.
+
+Figure 2-19
+Stage 0 Stage 1 Stage 2
+
+
+www.dreamsourcelab.com 20
+Behaviors of serial trigger: After Start Flag matched, value of Data Channel on each Clock Flag will
+be sampled and moved into a shift registers with bits of Data Bits. If the value of shift register is equal to the
+Data V alue of most right Data Bits, trigger fired. Additionally, If Stop Flag matched, the shift register will
+be cleared.
+Followings are some examples of serial trigger:
+ Trigger when 0b010000100 appeared in I2C bus (channel 0: scl，channel 1: sda)
+
+Figure 2-20
+ Trigger when 0x1234 appeared in SPI bus (channel0: cs#, 1: clk, 2: miso, 3: mosi)
+
+Figure 2-21
+2.5 Capture
+After configuring the relevant parameters for capture (device options, Sample Duration, sample rate, and
+trigger settings), you can start capturing data. As Figure 2-22 shows, DSView support two capture operations:
+Normal Capture and Instant Capture.
+
+Figure 2-22
+Normal Capture
+
+Instant Capture
+
+cs# falling edge
+cs# falling edge
+clk rising edge mosi channel
+0x   1    2     3    4
+Falling edge of sda when scl = 1
+Rising edge of sda when scl = 1
+Rising edge of scl
+
+
+www.dreamsourcelab.com 21
+2.5.1 Normal Capture
+DSLogic supports two different operating modes, the process of waveform capture also differs.
+In Buffer Mode:
+1. User initiates capture.
+2. DSView sends sampling parameters to DSLogic.
+3. DSView commands acquisition and waits for data.
+4. DSLogic starts sampling immediately if no trigger set.
+5. If trigger set, DSLogic waits for trigger.
+6. Once triggered, the logic analyzer returns the captured data when the acquisition duration  reaches
+the set value or the buffer is filled.
+7. DSView receives the captured data
+8. After data transfer is complete, DSView ends the current sampling and renders the waveform in the
+display window.
+
+In Stream Mode, the first four steps are the same.
+5. If trigger set, DSLogic waits for trigger. (loop mode ignores all trigger conditions)
+6. During the capture process, DSLogic continuously returns the captured data.
+7. DSView receives and displays the captured waveform in real-time.
+8. In single/repeated capture, the captu re stops when the set sampling duration is reached. In loop
+mode, the capture continues until the user presses the "Stop" button.
+2.5.2 Instant Capture
+The only difference between instant and normal capture is that instant capture ignores trigger settings. It
+captures the current waveform instantly for analysis without needing to modify trigger conditions.
+As Figure 2-23 shows, if no input signal is present, the software waits at the 10% trigger position until
+the waveform satisfies the trigger condition.
+
+Figure 2-23
+As Figure 2-24 shows, if we  click Instant, DSView will ignore any trigger settings and capture the
+waveform immediately.
+Rising Trig
+ Trigger position 10%
+
+Waiting at the 10% position
+
+
+www.dreamsourcelab.com 22
+
+Figure 2-24
+This mode is commonly used in the following scenario: when you have set a relatively complex trigger
+condition, but normal sampling fails to capture the waveform due t o the trigger condition not being met. In
+such cases, you can use instant capture to view the current state of the signal, inspect the device under test,
+or modify the trigger conditions for the next normal capture.
+2.5.3 Capture Mode
+As Figure 2-25 shows, DSView supports different Capture Modes. In Buffer Mode, it supports Single
+and Repetitive Capture. In Stream Mode, it supports Single, Repeat and Loop Capture.
+
+Figure 2-25
+ Buffer Mode:
+Single Capture:  As Figure 2-26 shows. In this mode,  the capture operation is executed only once.
+When the specified Sample Duration is reached, DSView will stop the capture and upload the captured data
+for display in DSView.
+
+Figure 2-26
+Display waveform after Capture finished
+
+Single Capture
+
+Rising Trig
+
+Trigger position 10%
+
+Ignore any trigger settings
+
+Single Capture
+ Repetitive Capture
+ Loop Capture
+
+
+www.dreamsourcelab.com 23
+Repetitive Capture:  As Figure 2-27 shows. In this mode, the capture operation is automatically
+repeated until the stop button is pressed. Combined with trigger condition settings, this mode allows us to
+continuously observe waveforms for specific events without any manual intervention. For example, each
+restart or each button press. In the Buffer Mode, Repetitive Capture supports defining the sampling interval
+time (from 0.1s to 10s) for each capture.
+
+Figure 2-27
+ Stream Mode:
+Single Capture: As Figure 2-28 shows, in this mode, the capture operation is executed only once .
+During the capture process, captured data is uploaded to DSView in real -time and displayed. When the
+displayed data length reaches the set Sample Duration, DSView will stop the capture.
+
+
+Figure 2-28
+Repetitive capture: As Figure 2-29 shows, in this mode, the capture operation is automatically
+repeated until the stop button is pressed. During the capture process, the capture d data is uploaded to
+DSView in real -time and displayed. When the displayed data length reaches the set Sample Duration ,
+DSView will end the current capture and proceed to the next one.
+Real-time display of captured waveform
+
+Single Capture
+
+Repeating the capture process
+
+Repetitive Capture
+
+
+www.dreamsourcelab.com 24
+
+Figure 2-29
+Loop mode: As Figure 2-30 shows, in this mode, the capture continues until the stop button is pressed.
+During the catpure process, the waveform data is uploaded in real -time to DSView for displa y. When the
+displayed waveform length reaches the sample duration, loop mode does not stop the capture. Instead, it
+continuously shifts the old waveform data to the left and appends new waveform data to the right, creating a
+"scrolling" effect. This mode a llows us to observe all the captured waveforms in real -time. When the target
+waveform appears, we can manually stop the acquisition for waveform analysis.
+Note: In loop mode, all trigger condition settings are ignored.
+
+Figure 2-30
+DSLogic supports 3 capture modes that effectively cover different requirements. The single capture
+mode is suitable when you only want to capture the current waveform or a waveform under specific trigger
+conditions. The repetitive capture mode is ideal for observing waveforms of the same event multiple times
+or capturing waveforms at each trigger of a repetitive event. The loop mode is useful when the capture target
+is not well-defined, and you want to dynamically observe and determine the waveform segment to capture in
+real-time.
+2.6 Navigating
+As Figure 2-31 shows, the captured data will be displayed graphically in the wave window.
+Repeating the capture process
+
+Repetitive Capture
+
+Continuous data collection
+
+Loop Capture
+
+When the acquisition duration is reached, the waveform data
+scrolls from right to left. The right side represents the most
+recent captured data, while the data on the left that exceeds
+the acquisition duration will be discarded.
+
+
+www.dreamsourcelab.com 25
+
+Figure 2-31
+2.6.1 Pan Left/Right
+Small range: Drag the waveform by holding the left mouse button and moving it.
+
+Dynamic scrolling: Within the waveform window, hold down the left mouse button, quickly move the
+mouse to the left or right, and release to initiate dynamic scrolling, then gradually slows down until it stops.
+Click Display > Options, and in the Display Options dialog, enable/disable this feature.
+
+Large range: Drag the scroll bar in window bottom will quickly jump to a certain position.
+Shortcut key: press the shortcut key "Page Up" or "Page Down" to drag the wave to left/right.
+2.6.2 Zoom in/Out
+Wheel zoom: Within the waveform window, scroll the wheel of mouse will zoom the wave in/out.
+
+Window zoom: In the wave window, press the right button of mouse, move mouse to draw a rectangle
+window, selected area will be zoom to full window when release the right button.
+
+Zoom toggle: In the wave window, if it’s not the max zoom out state, double click the right button of
+mouse will reach the max zoom out state, double click again will return back to the previous zoom set.
+Channel Color
+Channel Number
+Channel Name
+Wave Window
+
+Move Left Move Right
+Slide Left Slide Right
+Zoom In Zoom Out
+Move Area Zoom In
+
+
+www.dreamsourcelab.com 26
+2.6.3 Pattern Search
+
+Figure 2-32
+As Figure 2-32 shows, clicking Search button or press the shortcut key "R" will bring up the search box
+at the bottom of the window, as Figure 2-33 shows:
+
+Figure 2-33
+Clicking on the search box will open the search settings window. For example,  as Figure 2-34 shows,
+you can set the search to find any rising/falling edge on Channel 0. Click OK will finalize the search settings.
+Afterwards, you can use the Pre and Next buttons in the search box to find the edges on Channel 0 within
+the wave window.
+
+Figure 2-34
+2.6.4 Channel Customization
+ Channel color/name:
+As Figure 2-35 shows, click color/name area to modify the color/name of specific channel.
+
+Figure 2-35
+ Channel move:
+As Figure 2-36 shows, when hover the mouse over the Channel Label, an arro w symbol will appear.
+There are three methods to move the channel in this case:
+Method 1: Hold down the left button of mouse and drag the mouse. The channel will move along with
+Color
+Name Number
+Pattern Search
+
+
+www.dreamsourcelab.com 27
+the mouse. Release the left button of mouse when the channel reaches the desired position.
+Method 2:  Click the left button of mouse  to select the channel you want to move. Then, move the
+mouse, and the channel will follow the mouse movement. Click the left button of mouse again to release the
+channel when it reaches the desired position.
+Method 3: Hold down the shortcut key "Ctrl" key and select multiple channels that you want to move.
+Then, move the mouse, and the selected channels will follow the mouse movement. Click the left button of
+mouse again to release the channels when they reach the desired position.
+
+Figure 2-36
+2.7 Measurement
+DSView provides a wide range of measurement options, primarily achieved through mouse positioning
+and cursor insertion. Simply by moving the mouse to th e desired waveform area, you can measure
+parameters such as pulse width, frequency, period, duty cycle, and edge count for the corresponding
+waveform. Additionally, DSView supports the insertion of multiple cursors, allowing for waveform
+measurement, positioning, and navigation as needed.
+2.7.1 Width/Period/Frequency/Duty Cycle
+As Figure 2-37 shows, when the captured data is displayed in the wave window, you can hover the
+mouse over any pulse position in a channel to view the width, frequency, period, and duty cycle of the
+current pulse.
+
+Figure 2-37
+2.7.2 Pulse Counter
+As Figure 2-38 shows, you can also use mouse operations to count the number of edges in any channel
+within a specified time period. The specific steps are as follows:
+1. Move the mouse to the waveform area of the channel to be measured (between the high and low levels
+of the channel).
+2. Move the mouse to the desired starting position.
+3. Click the left button of mouse and then move the mouse to the desired ending position. This process will
+dynamically display the number of edges, rising edges, and falling edges in the current channel within
+the measurement range.
+4. Click the left button of mouse again to complete the measurement.
+
+
+www.dreamsourcelab.com 28
+
+Figure 2-38
+2.7.3 Edge distance
+As Figure 2-39 shows, you can measure the distance between any two edges using mouse operations.
+The specific steps are as follows:
+1. Move the mouse to the position of certain edge, and click the left button to select the start edge.
+2. Move the mouse to the position of the end edge, and the distance between the two edges will be
+displayed (duration/sample interval).
+3. Click the left button of mouse to complete the measurement.
+
+Figure 2-39
+2.7.4 Cursor Insert
+Method 1: In the wave window, move the mouse to the desired position where you want to insert a
+cursor, and double-click the left button of mouse to insert a new cursor.
+
+Figure 2-40
+Method 2: In time ruler area, move the mouse to the desired position where you want to insert  a cursor,
+click the left button of mouse, and an arrow-down region will appear. Within this region, click the left button
+of mouse again to insert a new cursor.
+
+Figure 2-41
+2.7.5 Cursor Move
+Method 1: Move the mouse to the cursor position. When the cursor is highlighted in bold, click the left
+button of mouse to select the cursor you want to move. The cursor will then follow the mouse movement. If
+you want the cursor to snap to a specific edge of a waveform in a particular channel, simply move the mouse
+close to that edge. Within a certain range, the cursor will automatically snap to the position of that edge.
+Double click to
+insert cursor
+Click this area
+to insert cursor
+
+
+www.dreamsourcelab.com 29
+
+Figure 2-42
+Method 2: In time ruler area,  move the mouse to any position and click the left button of mouse . This
+will display the numbers of all existing cursors. Click on any number to move the corresponding cursor to
+the position indicated by the arrow.
+
+Figure 2-43
+2.7.6 Cursor Jump
+ Cursors can help us mark important positions for easy reference. The following operation allows you to
+navigate between cursor positions. On the time rule r, click the right button of mouse  at any position. This
+will display the numbers of all existing cursors. Click on any number to navigate to the position of that
+cursor.
+
+Figure 2-44
+2.7.7 Cursor Measure
+
+Figure 2-45
+As Figure 2-45 shows, Click Measure button or press the shortcut key " M", measure dock will be
+opened. There are two measure groups: Distance Measure and Edges Counter.
+Measure
+
+Move Right Move Left
+Snap to the edge
+Move existing cursor to this place
+Jump to position of cursor 3
+
+
+www.dreamsourcelab.com 30
+Distance measure: This can be used to measure the time or sample count between two cursors. Click
+ button to add a new set of distance measurement, and then click the start/end area to select the start/end
+cursor individually.
+Edges counter: This can be used to count edges between tow cursors on specific chann el. Click
+
+button to add a new set of edges counter, and then select start/end cursor and channel numb er to be
+measured.
+
+Figure 2-46
+2.7.8 Delete Cursor
+As Figure 2-47 shows, click the ‘×’ area of any cursor will delete the cursor, and remain cursors will be
+renumbered.
+Add measurement
+Delete measurement
+Start cursor
+End cursor
+Start cursor
+End cursor
+Channel
+number
+Delete cursor
+
+
+www.dreamsourcelab.com 31
+
+Figure 2-47
+2.8 Protocol Decod er
+
+Figure 2-48
+Protocol decoder is one of the important features of a logic analyzer. After capturing data, it is necessary
+to interpret the data into specific protocol instructions in order to understand the practical meaning of the
+data. Protocol decode helps us accomplish this task effectively.
+Click Decoder button or press the shortcut key "D", decoder dock will be opened. As Figure 2-49shows,
+decoder dock consists of two parts: Decoder Select, and Protocol List Viewer.
+
+Figure 2-49
+Click here to
+delete cursor
+Decoder select
+
+Protocol List Viewer
+
+Decoder
+
+
+www.dreamsourcelab.com 32
+2.8.1 Add Decoder
+The decoder with a 0 -prefix is a simplified version that does not include bits information
+and does not support high -level protocols with stack. The advantage of this version is faster
+decoding speed and lower memory consumption.
+Click on the protocol search box will bring up a protocol list. You can scroll through the list using the
+scroll wheel or enter a keyword to find the desired protocol to add. For example, if we need to add the I2C
+protocol, we simply need to click on the I2C protocol in the protocol list.
+Here, we directly use the I2C protocol from the protocol list, which will open the settings window for
+that protocol, including content display, protocol channel, protocol parameters, and decoding region settings,
+as shown in Figure 2-50, click the OK button to successfully add the new protocol. If multiple protocols
+need to be added, simply select and add them one by one from the protocol list.
+
+Figure 2-50
+As Figure 2-51 shows, clicking on the "Gear" button allows you to reopen the settings window for a
+protocol. Clicking on the "+" button allows you to add the recently added decoder.
+
+Figure 2-51
+ By default, after adding a protocol, the entire waveform will be decoded. However, there may be
+Add the recently added decoder
+
+Open the protocol settings window
+
+Find the protocol you want
+to add and click on it
+Display Option
+
+Channel Map
+
+Protocol Options
+
+Decode Region
+
+
+www.dreamsourcelab.com 33
+situations where we only want to decode a portion of the waveform to shorten th e decoding time. For
+example, in a captured waveform, there may be noise or irregular waveforms during the reset process. In
+such cases, the start and end positions for decoding can be set using the region decoding settings. The start
+and end positions can be set using the cursor, so you simply need to insert the cursor at the desired moment
+to set it as the start or end position.
+As Figure 2-52 shows, setting cursor 2 as the decoding end position means that the waveform after
+cursor 2 will not be decoded.
+
+Figure 2-52
+2.8.2 Stack Decoder
+Most complex protocols are designed in layers, such as the typical TCP/IP 7 -layer protocol. Adding
+multiple-layer protocols in DSView follows the same process as simple protocols. You can search the
+protocol list to find the top -level protocol you want to a dd. DSView will automatically analyze the required
+lower-level protocols and generate the corresponding settings window. Users only need to set the parameters
+in the popped-up protocol settings window to successfully add the new multiple-layer protocol.
+As Figure 2-53 shows, when we need to add 24xx EEPROM protocol, we simply find the 24xx
+EEPROM protocol in the protocol list and set parameters for all layers in the protocol settings window.
+Due to the numerous types of protocols, to quickly find the desired protocol, you can directly filter by
+entering keywords in the search box. For example, by entering "24" here, the list will only display protocols
+with names that include "24". This makes it more convenient to find/add the desired protocol decoders.
+
+Figure 2-53
+Entry protocol name
+I2C Setting
+24xx EEPROM Setting
+
+Find the protocol you want to
+add and click on it
+
+
+www.dreamsourcelab.com 34
+The decoding result for the 24xx EEPROM protocol shown in Figure 2-54 is not limited to I2C
+read/write operations, but also includes higher-level commands and data for the EEPROM.
+
+Figure 2-54
+2.8.3 List Viewer
+The graphical display of decoder results helps us understand waveforms intuitively. However, when
+there are too many decoder results, it becomes difficult to view them conveniently on the screen and search
+for specific decoder results. The List Viewer effectively solves this problem.
+As Figure 2-55 shows, click on any row of the list viewer can map to the same location in the wave
+window.
+
+Figure 2-55
+2.8.4 Search Results
+The List Viewer allows decoder results to be treated as strings for result searching. DSView supports
+simple single-line content search and multi-bytes data search.
+As Figure 2-56 shows, you can enter the keyword you want to search in the search text editor, and then
+click the previous/next button to find the decoding content that includes the keyword. The wave  windows
+will also jump to the corresponding position for analysis.
+Export to file
+Settings
+List Viewer
+Wave map to row
+
+
+www.dreamsourcelab.com 35
+If you are an alyzing a specific segment of decoder results, you can click on a row to select it, and the
+previous/next button will search for the previous and next matching items starting from that row, instead of
+searching from the beginning.
+
+Figure 2-56
+If want to search multi-bytes data in the decoder results . Symbol ‘-‘ should be used. For example,
+“70-70-70” indicates three consecutive data. As  Figure 2-57 shows, click pre/next button will find out all
+“70-70-70” data.
+Note: Currently, DSView only support multi-bytes data search for UART/I2C/SPI decoders.
+
+Figure 2-57
+2.8.5 Export Results
+DSView supports exporting the protocol decoding results to a file for further processing. As Figure 2-58
+shows, you can click the save button in the list viewer window to save the results as a text file  in CSV or
+TXT format.
+Moreover, DSView supports exporting multiple columns of decoding results to the same file. You just
+need to select all the desired columns to export during the exporting process. The final result will be
+automatically arranged in time order.
+Previous Next
+Keyword
+Multi-bytes search
+
+
+www.dreamsourcelab.com 36
+
+Figure 2-58
+2.8.6 Delete Decoder
+You can delete added protocol decoders. Clicking the " ×" button in the protocol add panel will delete
+all currently added decoders, while clicking the " ×" button before a specific protocol will dele te that
+particular decoder.
+
+Figure 2-59
+2.9 Fil e Operation
+
+Figure 2-60
+Click File button will bring up the  menu for file -related operations, as Figure 2-60 shows. DSView
+supports session load/save, data save/open, data export, screenshot, and more.
+
+Figure 2-61
+File Operation
+
+Delete All Decoders
+ Delete Single Decoder
+
+Export Options
+Multiple columns
+Export
+
+
+www.dreamsourcelab.com 37
+2.9.1 Load/Save Session
+Session represents the current settings, including device options, channel enable/disable, colors, names,
+and trigger settings. Select Config > Save Session to save the current settings to a file . To import a specific
+configuration, select Config > Load Session and choose the corresponding configuration file.
+By selecting Config > Load Default Session, you can load the default settings, which restore the device
+to its factory default condition. DSView also supports automatic saving and loading of configurations.
+When you reopen the software, it will automatically load the settings from the previous session before it
+was closed.
+2.9.2 Save
+Click File > Save and set the desired file path to save the current data in a file format that can be parsed
+by DSView for later opening and viewing.
+2.9.3 Open
+Click File > Open and select the data file you want to load. The data will be reloaded and displayed in
+the wave window. DSView only supports opening files with the .dsl file extension.
+2.9.4 Export
+DSView allows you to export current data t o different file formats for other use. In the logic analyzer
+mode, you can click "File" > "Export" to choose from formats such as CSV , VCD, and Gnuplot
+As Figure 2-62 shows, when exporting a CSV file, you can choo se to export either raw or compressed
+data.
+
+Figure 2-62
+2.9.5 Screen Shot
+If you want to save the current screen as an image, you can choose the screenshot operation. Click
+File > Capture, and it will save the current screen as a PNG file.
+
+
+www.dreamsourcelab.com 38
+3  Oscilloscope
+3.1 Hardware Connection
+1) Connect the DSCope to the USB port of the PC using a USB data cable. If the DSView software is not
+running, the hardware indicator light should be red.
+Please use the original or a high-quality and short USB data cable, and connect it directly to
+the USB port on the motherboard. Try to avoid using hub extension ports or front panel ports on
+the computer case to ensure the best USB connection quality.
+DSCope
+
+Figure 3-1
+2) Open the DSView software (the system may need to search for drivers for the first time on Windows,
+please wait patiently). Confirm that the hardware indicator light turns green, indicating that the DSView
+software has successfully recognized the device and displays the correct device name in the device
+combobox.
+
+
+Figure 3-2
+3) Connect probes to the input of DSCope.
+
+Figure 3-3
+4) To take measurements, connect the probe's ground and signal end to the target test board's ground and
+measured signal end. Set the scaling ratio of the probe to a reasonable position.
+
+
+www.dreamsourcelab.com 39
+The probe, oscilloscope, and PC grounds are connected, so ensure that both sides have the
+same potential to avoid damaging the equipment.
+
+Figure 3-4
+3.2 Hardware Options
+Click Options button (Figure 3-5) or press the shortcut key "O":
+
+Figure 3-5
+Device options window will be opened (Figure 3-6).
+
+Figure 3-6
+3.2.1 Operation Mode/Bandwidth Limit
+ Operation Mode：
+ Normal：Normal working
+ Internal Test: Test only.
+ Bandwidth Limit：
+ Full Bandwidth：No limit.
+ 20Mhz：Limit to 20MHz
+Hardware Options
+
+
+www.dreamsourcelab.com 40
+3.2.2 Auto Calibration
+In order to ensure high precision in varying temperature and humidity conditions, oscilloscope require
+parameter calibration. DSView offers two calibration methods: Auto Calibration and Manual Calibration.
+Click Auto Calibration  button in Device option windows, a message window ( Figure 3-7) will be
+shown.
+
+Figure 3-7
+Please ensure that the device input terminal is floating, without any probe connected. Click the OK
+button to start the Auto Calibration  process. Normally, the calibration process will take a few minu tes to
+complete. Once finished, a message will appear  as Figure 3-8 shows, indicating the end of calibration. You
+can click the Save button to complete the calibration and save the calibration results. During the calibration,
+you can also click the Abort button to stop the process, and the hardware will automatically revert to the
+state before calibration.
+
+Figure 3-8
+3.2.3 Manual Calibration
+Click Manual Calibration button will bring up the Manual Calibration window, as Figure 3-9 shows.
+From top to bottom, there are options for adjusting the gain and offset of Channel 0, followed by options for
+adjusting the gain and offset of Channel 1.
+
+
+www.dreamsourcelab.com 41
+
+Figure 3-9
+Manual Calibration requires adjustments to be made for each Vertical Scale individually. To observe
+real-time adjustment results, the software needs to be in running status, and the waveform should be
+monitored to confirm the adjustments. The specific steps for calibration are as follows:
+1. Click the Manual Calibration button to open the Manual Calibration window.
+2. Click the Start button to set the software to running mode. If adjusting the offset, ground the probe and
+observe the zero position to confirm the adjustment results. If adjusting the gain, provide a calibration
+source signal to confirm the adjustment results.
+3. Adjust the Vertical Scale to the target position.
+4. Drag the slider in the Manual Calibration window while monitoring the waveform to ensure it meets the
+requirements.
+5. If adjustments need to be made for other Vertical Scales, go back to step 3.
+6. Once the calibration is completed, click the Save button to save the current calibration results.
+If you don't want to save the current calibration results, you can click the Abort button. DSView will
+reload the previous settings. If you only want to temporarily use the current calibration results, you can
+simply click the Exit button. The adjusted parameters will be used by the hardware until it is powered off.
+Once the device is powered on again, it will load the previous settings.
+Since the Auto Calibration is based on the previously saved parameters, if you accidentally save
+incorrect manual calibration results, you can click the Reset button to restore the original default state. After
+resetting, you will need to perform the Auto Calibration again.
+3.3 Capture
+3.3.1 Channel Customization
+The settings for each channel are shown in Figure 3-10.
+Enable: Turn on/off the channel.
+Vertical Scale: Set the vertical range, which represents the actual voltage value for each division. For
+example, setting it to 10mv/div means the range for the entire window is 100mv. Setting it to 1v/div means
+the range for the entire window is 10v. The knob can be adjusted in three ways:
+Method 1: Place the mouse cursor over the knob area and rotate the knob by scrolling the mouse wheel.
+When the mouse is in other areas, its scroll wheel is used to adjusting the horizontal resolution.
+Method 2: Place the mouse cursor over the upper or lower part of the knob and click the left button of
+mouse to rotate it up or down.
+
+
+www.dreamsourcelab.com 42
+Method 3: Press the shortcut key "0" or "1" to set/cancel the channel focus. When the channel is in
+focus, press the shortcut key "↑" or "↓" to rotate the knob up or down.
+Color: The color of the current channel waveform.
+Coupling: Channel coupling mode (DC/AC).
+Probe Attenuation: Should be set to match the physical attenuation setting of the probe. If the probe is
+set to 1x attenuation, select x1; if the probe is set to 10x attenuation, select x10.
+Autoset: Automatically adjusts the appropriate Vertical Scale, Horizontal Resolution, and Trigger Level
+based on the current waveform.
+
+Figure 3-10
+ As Figure 3-11 shows, you can adjust the Vertical Offset of a channel by holding down the left button of
+mouse on the Channel Label and moving the mouse. Alternatively, you can also click to select the Channel
+Label and then move the mouse to adjust the Vertical Offset, and click again to end the adjustment.
+
+Figure 3-11
+3.3.2 Horizontal Resolution
+As Figure 3-12 shows, this c ombobox can be used to set Horizontal Resolution. Additionally, roll the
+wheel of mouse in wave windows will also change Horizontal Resolution.
+Autoset
+Vertical Scale
+Coupling
+
+Color
+Enable
+Probe Attenuation
+Channel Label
+
+
+www.dreamsourcelab.com 43
+
+Figure 3-12
+3.3.3 Run/Stop
+As Figure 3-13 shows, click Start button or press the shortcut key "S", oscilloscope will start to capture
+data and show waveform in real -time, and this button will become Stop, click it again will stop running and
+show the last waveform.
+
+Figure 3-13
+3.3.4 Single Capture
+As Figure 3-14 shows, click Single button or press the shortcut key " I", oscilloscope will capture data
+once, stop automatically, and show the waveform.
+
+Figure 3-14
+3.3.5 Trigger
+DSView support simple edge trigger mode, and also sup port setting of Trigger Level, Trigger Position,
+Hold Off time and Trigger Sensitivity. Click Trigger button or press the shortcut key " T", Trigger Settings
+dock will be opened. (Figure 3-15).
+Horizontal Resolution
+
+Run/Stop
+
+Single
+
+
+www.dreamsourcelab.com 44
+
+Figure 3-15
+Trigger Level: The trigger level determines the triggering voltage, and each channel has a separate
+trigger level label. To adjust the trigger level, click on the trigger level label corresponding to the channel
+that needs adjustment, then move the mouse to change the trigger level, and click again to complete the
+trigger level setting.
+
+Trigger Position: The trigger position determines the percentage position of the trigger point within the
+entire sampling range. For example, 50% represents the trigger point in the middle of the entire sampled
+waveform.
+
+Auto Trigger: The auto trigger mode automatically determines whether to set the trigger condition
+based on the current waveform and trigger level settings . If the trigger voltage is within the waveform area
+and meets the sensitivity requirements, it will automatically set the specified channel for triggering. If the
+trigger condition is not met, it will be set as no trigger, and the auto display mode will be activated.
+
+Holdoff Time: The trigger holdoff time can set a period of time after triggering as a prohibited trigger
+time. For example, setting the time to 10ms means that after triggering, it will wait for at least 10ms before
+the next trigger. Holdoff time can be used for stable triggering of burst transmission waveforms.
+
+Trigger Sensitivity: The slider on the leftmost position indicates the highest sensitivity, where any
+voltage change between the trigger levels will trigger. The slider on the rightmo st position indicates the
+lowest sensitivity, where the voltage needs to cross the trigger level within a relatively large range to trigger.
+This setting can filter out the influence of noise on triggering.
+Position
+Auto Source Auto Trigger
+Force Trigger
+Trigger Level
+Edge Type
+Hold Off Time
+Sensitivity
+
+
+www.dreamsourcelab.com 45
+3.4 Measurements
+3.4.1 Auto Measurements
+DSView supports au tomatic measurement of 20 parameters , as Figure 3-16 shows. The waveform
+window has 10 display boxes for measurement results, each of which can show any of the 20 selected
+parameters.
+
+Figure 3-16
+The method to set up Auto Measurement :
+1. Click on any measurement display box to open the Auto Measurement Selection window.
+2. On the left side, select the desired channel for measurement.
+3. Click on the specific measurement parameter. If you don't want to change the current selection, you
+can click the Cancel button. If you want to remove the measurement for the display box, click
+Reset.
+The current measurement settings will be automatically saved when the software is closed. When you
+reopen the software and insert the same device, the previous settings will be automatically loaded.
+3.4.2 Y Cursors
+Cursor Insert:
+Method 1: In time ruler area, move the mouse to the desired position where you want to insert a cursor,
+click the left button of mouse, and an arrow-down region will appear. Within this region, click the left button
+of mouse again to insert a new cursor.
+
+Figure 3-17
+Method 2: In the wave area, click the right button of mouse, and select “Add Y-cursor”.
+
+Click this area
+to insert cursor
+Measurements View Regions
+Channel Selection
+Measurements
+Selection
+
+
+www.dreamsourcelab.com 46
+Cursor Move:
+Method 1: Move the mouse to the cursor position. When the cursor is highlighted in bold, click  the left
+button of mouse to select the cursor you want to move. The cursor will then follow the mouse movement.
+
+Figure 3-18
+Method 2: In time ruler area, move the mouse to any position and click  the left button of mouse . This
+will display the numbers of all existing cursors. Click o n any number to move the corresponding cursor to
+the position indicated by the arrow.
+
+Figure 3-19
+Cursor Jump: Cursors can help us mark important positions for easy reference. The  following
+operation allows you to navigate between cursor positions. On the time ruler, click  the right button of mouse
+at any position. This will display the numbers of all existing cursors. Click on any number to navigate to the
+position of that cursor.
+
+Figure 3-20
+Move Left Move Right
+Move Cursor Here
+Jump to position of cursor 3
+
+
+www.dreamsourcelab.com 47
+  Cursor Measurement:
+
+Figure 3-21
+As Figure 3-21 shows, Click Measure button or press the shortcut key " M", measure dock will be
+opened. Only the Distance Measure is valid in Oscilloscope mode.
+Distance measure: This can be used to measure the time or sample count between two cursors. Click
+ button to add a new set of distance measurement, and then click the start/end area to select the start/end
+cursor individually.
+
+Figure 3-22
+Cursor Delete: As Figure 3-23 shows, click the "×" area of any cursor or click the "×" button in front
+of cursor list in the measure dock will delete the cursor, and remain cursors will be renumbered.
+Measure
+
+Add measurement
+Delete measurement
+Start cursor
+End cursor
+
+
+www.dreamsourcelab.com 48
+
+Figure 3-23
+3.4.3 X Cursors
+As Figure 3-24 show, in the wave area, you can insert an X cursor by cl icking the right button of mouse
+and selecting 'Add X -cursor'. The cursor will be highlighted when the mouse is moved to its position.
+Clicking the left button of mouse  at this point will select the cursor, and you can adjust its position by
+moving the mouse. Clicking the left button of mouse again will release the cursor.
+Each set of X-axis cursors consists of two horizontal lines, and the Δ value in the middle represents the
+voltage difference of the corresponding channel. Clicking the channel toggle bloc k on the right side of the
+cursor allows you to switch between different channels. Clicking the  × on the right side of the cursor will
+delete the current X-axis cursor.
+
+
+Figure 3-24
+3.4.4 Manual Measurement
+DSView supports manual measurement using mouse operations, which complements the limitations of
+automatic measurements. With mouse operations, you can view the voltage value of any sample point in the
+wave window, and create horizontal measurement rulers.
+Current Sample Point: As Figure 3-25 shows, in the stopped capture state, when you move the mouse
+Click here to
+delete cursor
+Delete Cursor
+Channel Switch Delta V oltage
+
+
+www.dreamsourcelab.com 49
+cursor over the wave area, the voltage value of the current sample point will be automatically displayed.
+
+Figure 3-25
+Horizontal Measure Ruler:  To creat e a horizontal measurement ruler in the wave window,
+double-click the left button of mouse  in the blank area (measurement starting position). Move the mouse to
+the next test point, and click the left button of mouse  to measure the width of the interval.  Move the mouse
+to the next test point (measurement ending position), and click the left button of mouse  to measure the
+frequency, period, and duty cycle of the entire interval.  The me asurement results are shown as in  Figure
+3-26.
+Once the measurement is started, you can cancel it by clicking the right button of mouse . To cancel an
+existing measurement ruler, double-click the left button of mouse in the blank area again.
+
+Figure 3-26
+3.5 Spectrum Analysis
+3.5.1 FFT Options
+As Figure 3-27 shows, click FFT in Function menu, will open FFT Options window.
+FFT Enable: Enable the spectrum analysis window or not.
+FFT Length: Specifies the length of data for FFT analysis. The maximum supported FFT length i s
+16384 points. The data is taken from the 0 sample. Longer lengths provide higher frequency resolution in
+the spectrum.
+Sample Interval: Adjust the sampling interval to control the data samples used for FFT. Using a larger
+sampling interval for low -frequency signals reduces the frequency range of the spectrum analysis while
+
+
+www.dreamsourcelab.com 50
+improving the resolution. Be aware of potential frequency aliasing caused by resampling.
+FFT Source: Select the channel for spectrum analysis.
+FFT Window: Choose the window function to be used for FFT. Currently supported options include
+Rectangle, Hann, Hamming, Blackman, and Flat-Top windows.
+DC Ignored: Determine whether to display the DC component in the spectrum analysis result.
+Y-axis Mode: Set the display mode for the Y-axis, which can be either dB or linear.
+DBV Range: Set the display range of the Y-axis when using the dB mode.
+
+Figure 3-27
+3.5.2 Navigating Spectrum
+As Figure 3-28 shows, spectrum window display below the wave window.
+
+Figure 3-28
+Spectrum window support following operations:
+Height Adjustment: Place the mouse cursor in the middle of the wave window or the spectrum analysis
+window, and the mouse cursor shape changes to the one shown in Figure 3-29, press and hold the left button
+of mouse and move the mouse to change the height of the window.
+Spectrum Analysis Window Frequency Ruler
+Amplitude
+Ruler
+Frequency
+Resolution
+Amplitude @ Frequency
+
+
+www.dreamsourcelab.com 51
+
+Figure 3-29
+Spectrum Zoom:  When the mouse is positioned inside the spectrum analysis window, scrolling the
+mouse wheel will zoom in or out on the frequency scale, with the mouse cursor as the center point. This
+allows for observing detailed information about specific frequency points.
+
+Figure 3-30
+Mouse Measurement: As Figure 3-31 shows, moving the mouse inside the spectrum analysis wind ow
+will shows the spectral magnitude and frequency at the mouse cursor position.
+
+Figure 3-31
+Window Panning: When zoomed in to examine spectrum details, you can press and hold the left button
+of mouse and move left or right to drag the spectrum analysis window to the left or right.
+3.6 Math Function
+DSView's math function supports adding, subtracting, multiplying, and dividing physical channel
+signals by adding virtual channels.
+3.6.1 Add Math Channel
+As Figure 3-32 shows, click Math in Function menu will open Math Options window.
+Check Enable checkbox to enable/disable math channel.
+
+
+www.dreamsourcelab.com 52
+
+Figure 3-32
+3.6.2 Math channel
+As Figure 3-33 shows, when adding a math channel, it is set to the default Vertical Scale. Similar to
+physical channels, you can change the Vertical Scale by using the dial. Additionally, you can customize the
+channel color and adjust the Vertical Offset by dragging the Channel Label.
+
+Figure 3-33
+Math
+Type
+Enable/
+Disable
+Math
+Channel
+Math channel
+
+
+www.dreamsourcelab.com 53
+3.7 Lissajous Figure
+3.7.1 Lissajous Setup
+As Figure 3-34 shows, click Lissajous in Display menu will open the Lissajous Options window.
+Check Enable checkbox, select x -axis source and y -axis source, and then click OK button, Lissajous
+Figure will be opened.
+
+Figure 3-34
+3.7.2 Lissajous View
+Figure 3-35 shows the effect of Lissajous Figure.
+
+Figure 3-35
+
+
+www.dreamsourcelab.com 54
+3.8 Fil e Operations
+
+Figure 3-36
+Click the File button will bring up the menu for file -related operations, as Figure 3-37 shows. DSView
+supports file operations such as session load/save, data saving/opening, data export, screenshot, and more.
+
+
+Figure 3-37
+3.8.1 Load/Save Session
+Session represents the current settings, including device options, channel enable/disable, colors, names,
+and trigger settings. Select Config > Save Session to save the current settings to a file . To import a specific
+configuration, select Config > Load Session and choose the corresponding configuration file.
+By selecting Config > Load Default Session, you can load the default settings, which restore the device
+to its factory default condition. DSView also supports automatic saving and loading of configurations.
+When you reopen the software, it will automatically load the settings from the previous session before it
+was closed.
+3.8.2 Save
+Click File > Save and set the desired file path and name to save the current data in a file format that can
+be parsed by DSView for later opening and viewing.
+3.8.3 Open
+Click File > Open and select the data file you want to load. The data will be reloaded and displayed in
+the wave window. DSView only supports opening files with the .dsl file extension.
+File Operations
+
+
+www.dreamsourcelab.com 55
+3.8.4 Export
+DSView supports exporting the current data to common file formats for use in other software. In
+Oscilloscope mode, you can click on File > Export to export the current data. Currently, exporting in CSV
+format is supported.
+3.8.5 Screen Shot
+If you want to save the current screen as an image, you can  choose the screenshot operation. Click
+File > Capture, and it will save the current screen as a PNG file.
+
+
+www.dreamsourcelab.com 56
+4  Data Acquisition
+4.1 Hardware Connection
+The Oscilloscope mode is suitable for observing periodic waveforms or capturing specific waveform
+anomalies, but it is not suitable for continuous long -term observation of irregular signal changes, such as
+voltage monitoring or power consumption monitoring , etc. On the other hand, the Data Acquisition mode is
+specifically designed for long -term capture of irregular signals. It allows flexible settings for the desired
+Sample Rate and Sample Duration.
+The hardware that currently supports the Data Acquisition mode is the DSCope series Oscilloscope. The
+hardware connection for the Data Acquisition mode is identical to th e one described in the hardware
+connection section of Section 3.1. After connecting the hardware as shown in  Figure 4-1, you can select the
+Data Acquisition mode to use it.
+
+Figure 4-1
+4.2 Hardware Options
+
+Figure 4-2
+Under Data Acquisition mode, click Options menu (Figure 4-2) or press the shortcut key " O", Device
+Options window will pop up, as Figure 4-3 shows.
+
+Figure 4-3
+Options
+
+Device Mode Selection
+
+
+www.dreamsourcelab.com 57
+4.2.1 Operation Mode/ Bandwidth Limit
+ Operation Mode：
+ Normal：Normal working
+ Internal Test: Test only.
+ Bandwidth Limit：
+ Full Bandwidth：No limit.
+ 20Mhz：Limit to 20MHz
+4.2.2 Channel Options
+In the Data Acquisition  mode, the parameters of the channels need to be set before the acquisition
+begins, and these parameters cannot be modified during the acquisition process. Please refer t o Figure 4-4
+for more details.
+
+Figure 4-4
+Enable: Turn on/off the channel.
+Coupling: Set the channel as DC or AC coupling.
+Volts/Div: Vertical resolution setting, representing voltage values per division.
+Map Defauljt: Default physical quantity in the vertical direction, usually the actual voltage value.
+Map Unit:  Maps voltage values to other physical quantities. Such as current, temperature, weight,
+speed, etc.
+Map Min: Minimum value of the corresponding physical quantity.
+Map Max: Maximum value of the corresponding physical quantity.
+
+For most sensors, the corresponding physical quantity is converted into voltage or current values, which
+are then detected and collected by t he measurement system. Therefore, the vertical axis mapping function
+can conveniently restore the voltage waveform to the corresponding physical quantity value, making the
+collected waveform more intuitive.
+For DScope series oscilloscope devices operating  in Data Acquisition  mode, they share the same
+calibration system as the oscilloscope mode. So, if there is a vertical offset in the channel in Data
+Acquisition mode, you can recalibrate it in the oscilloscope mode.
+Channel Tab
+Channel Options
+Channel Mapping
+
+
+www.dreamsourcelab.com 58
+4.3 Capture
+4.3.1 Capture Option
+In Data Acquisition mode, you can set the Sample Rate and Sample Duration according to your needs.
+The maximum Sample Duration varies depending on the chosen Sample Rate. For example, at the highest
+Sample Rate of 10M, you can capture up to 10 seconds of data. At a Sample Rate of 1K, you can capture
+data for a whole day.
+
+Figure 4-5
+4.3.2 Start/Stop
+After completing the channel and capture settings, you can click on the Start button or press the
+shortcut key "S" to begin waveform acquisition. During the acquisition process, the Start button will change
+to a Stop button. Before clicking the Stop button, the waveform will continuously update and be displayed
+in real-time.
+
+Figure 4-6
+4.4 Measurement
+4.4.1 Cursor Measure
+Cursor insertion: In time ruler area, move the mouse to the desired position where you want to insert a
+cursor, click the left button of mouse , and an arrow -down region will app ear. Within this region, click the
+left button of mouse again to insert a new cursor.
+
+Figure 4-7
+Cursor movement:
+Method 1: Move the mouse to the cursor position. When the cursor is highlighted in bold, click the left
+button of mouse to select the cursor you want to move. The cursor will then follow the mouse movement.
+Click arrow to insert cursor
+Start / Stop
+
+Sample Duration
+
+Sample Rate
+
+
+www.dreamsourcelab.com 59
+
+Figure 4-8
+ Method 2: In time ruler area, move the mouse to any position and click the left button of mouse . This
+will display the numbers of all existing cursors. Click on any number to move the corresponding cursor to
+the position indicated by the arrow.
+
+Figure 4-9
+ Cursor Jump:  Cursors can help us mark important positions for easy reference. The following
+operation allows you to navigate between cursor positions. On the time ruler, click the right button of mouse
+at any position. This will display the numbers of all existing cursors. Click on any number to navigate to the
+position of that cursor.
+
+Figure 4-10
+Cursor Measure：
+
+Figure 4-11
+As Figure 4-11 shows, Click Measure button or press the shortcut key " M", measure dock will be
+opened. Only the distance measure is valid in Data Acquisition mode.
+Distance measure: This can be used to measure the time or sample count between two cursors. Click
+ button to add a new set of distance measurement, and then click the start/end area to select the start/end
+Jump to cursor 3
+Move left Move right
+Measure
+
+Move exiting cursor
+to this position
+
+
+www.dreamsourcelab.com 60
+cursor individually.
+
+
+Figure 4-12
+Cursor Delete: As Figure 4-13 shows, click the "×" area of any cursor or click the "×" button in front
+of cursor list in the measure dock will delete the cursor, and remain cursors will be renumbered.
+
+Figure 4-13
+4.4.2 Manual Measurement
+DSView supports manual measurement using mouse operations. With mouse operations, you can view
+the voltage value of any sample point in the wave window.
+Current Sample Point: In the stopped ca pture state, when you move the mouse cursor over the wave
+area, the voltage value of the current sample point will be automatically displayed.
+Add measurement
+Delete measurement
+Start cursor
+End cursor
+Click here to
+delete cursor
+
+
+www.dreamsourcelab.com 61
+4.5 Fil e Operations
+
+Figure 4-14
+Click the File button will bring up the menu for file -related operations, as Figure 4-15 shows. DSView
+supports session load/save, data saving/opening, data export, screenshot, and more.
+
+Figure 4-15
+4.5.1 Load/Save Session
+Session represents the current settings, including device options, channel enable/disable, colors, names,
+and trigger settings. Select Config > Save Session to save the current settings to a file . To import a specific
+configuration, select Config > Load Session and choose the corresponding configuration file.
+By selecting Config > Load Default Session, you can load the default settings, which restore the device
+to its factory default condition. DSView also supports automatic sav ing and loading of configurations.
+When you reopen the software, it will automatically load the settings from the previous session before it
+was closed.
+4.5.2 Save
+Click File > Save and set the desired file path and name to save the current data in a file format  that can
+be parsed by DSView for later opening and viewing.
+4.5.3 Open
+Click File > Open and select the data file you want to load. The data will be reloaded and displayed in
+the wave window. DSView only supports opening files with the .dsl file extension.
+File Operations
+
+
+www.dreamsourcelab.com 62
+4.5.4 Export
+DSView supports exporting the current data to common file formats for use in other software. In Data
+Acquisition mode, you can click on File > Export to export the current data. Currently, exporting in CSV
+format is supported.
+4.5.5 Screen Shot
+If you want to  save the current screen as an image, you can choose the screenshot operation. Click
+File > Capture, and it will save the current screen as a PNG file.
