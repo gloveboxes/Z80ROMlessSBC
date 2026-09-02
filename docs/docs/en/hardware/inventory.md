@@ -183,11 +183,4 @@ Core Board placement.
 
 - LEDs with 1 kOhm series resistors for low-speed diagnostics only; do
   not permanently load high-speed buses with LEDs.
-- No card socket or extra storage hardware is needed for boot images or
-  CP/M disks: they live in a reserved region of the Pico's own onboard
-   flash described in the
-   [storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage),
-   provisioned once with `picotool` and read back
-  over the existing memory-mapped XIP bus. Reflash that region with
-  `picotool` to change a disk image; no wiring changes.
 - Spare 100 nF capacitors, resistors, jumper wire, and an IC extractor.
