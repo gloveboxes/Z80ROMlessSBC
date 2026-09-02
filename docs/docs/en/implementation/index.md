@@ -4,7 +4,7 @@
 
 | Phase | Proves |
 | --- | --- |
-| [0 - Power distribution](phase-0-power.md) | Empty-socket wiring, rails, protection, and passive defaults |
+| [0 - Power distribution](phase-0-power.md) | Sockets, rails, protection, and passive defaults |
 | [1 - Pico supervisor](phase-1-supervisor.md) | Safe startup levels and GPIO routing |
 | [2 - GAL, buffer, and clock](phase-2-buffer-clock.md) | Arbitration equations, interlocks, translation, and clock quality |
 | [3 - Address generator](phase-3-address-generator.md) | MCP23S17 reset, SPI, and port operation |
@@ -27,6 +27,13 @@ DSLogic Plus logic analyzer using the
 power-up at a 100 mA current limit and
 remove power immediately if a rail falls by more than 5%, current rises
 unexpectedly, or a device becomes warm.
+
+Each phase owns the signal wiring first required by that phase. Install and
+continuity-check those jumpers with the affected active devices removed, then
+insert only the devices named by the phase. The wiring diagrams are included
+from the consolidated hardware pages, which remain the authoritative
+subsystem references; the implementation plan presents the same source in
+construction order rather than maintaining duplicate diagrams.
 
 Fit the [specified pull-ups and pull-downs](../hardware/inventory.md#03-capacitors-and-resistors)
 so every signal has its defined state before firmware starts. Use temporary

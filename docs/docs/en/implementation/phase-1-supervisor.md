@@ -4,6 +4,22 @@
 
 **Install:** Pico 2 only.
 
+## Wiring - Pico 2 W
+
+With the Pico removed, install and continuity-check every Pico connection
+shown below. Check each destination socket contact against its pin number and
+verify no adjacent GPIOs are shorted before inserting the Pico.
+
+{%
+  include-markdown "../hardware/pin-mapping.md"
+  start='<template id="phase-1-pico-wiring">'
+  end="phase-1-pico-wiring-end</template>"
+%}
+
+Leave GP8/header pin 11 open. Connect the Pico ground pins and leave the
+remaining unused header pins open as specified in the
+[complete Pico pin map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-header-pin-map).
+
 **Firmware feature:** A diagnostic image must establish safe output
 levels before enabling any GPIO output: GP7 and GP9 LOW to isolate
 the data path and hold MCP RESET# asserted; GP3 LOW to assert Z80 RESET#; GP4, GP5,

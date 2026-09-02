@@ -4,6 +4,11 @@
 
 **Install:** No further chips. Load final supervisor firmware.
 
+**Wiring:** Make no hardware changes. Recheck the Phase 2 IORQ#-to-WAIT#
+path and the Phase 3, 5, and 7 monitor paths against the
+[implementation wiring index](../hardware/bus-isolation.md#54-implementation-wiring-index)
+before enabling the integrated trap.
+
 **Firmware feature:** Combine safe startup, timed bus acquisition,
 image injection and readback, run control, and the synchronous IN/OUT
 trap. Maintain counters for boots, DMA failures, readback mismatches,

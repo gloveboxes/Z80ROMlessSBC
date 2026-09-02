@@ -9,6 +9,10 @@ available for bring-up and diagnostics but is not the target operating
 interface. A non-W Pico
 2 may compile the same hooks as stubs only for host-side development.
 
+**Wiring:** Make no bus-hardware changes. Use the Pico 2 W's onboard radio;
+do not add a separate network module or repurpose the reserved wireless
+GPIOs.
+
 **Firmware feature:** Start the WebSocket console service on core 1
 after core 0 has completed safe GPIO startup, queue initialization, and
 the [Phase 9 boot-image load](phase-9-flash-storage.md) (which finishes

@@ -11,6 +11,26 @@ pulled-up Z80 WAIT# node, and tie both AHCT244
 output-enable pins LOW. Require 4.75 V to 5.25 V at GAL VCC before
 testing any pulled-up GAL output.
 
+## Wiring - GAL and output buffer
+
+With the GAL and AHCT244 removed, install and continuity-check the complete
+GAL arbitration, interlock, reset, and WAIT# wiring below. Then wire the
+AHCT244 input and output pairs and its fixed power and enable pins. Verify
+each path at both empty sockets before inserting either device.
+
+{%
+  include-markdown "../hardware/pin-mapping.md"
+  start='<template id="phase-2-gal-wiring">'
+  end="phase-2-gal-wiring-end</template>"
+%}
+
+{%
+  include-markdown "../hardware/output-buffer.md"
+  start='<template id="phase-2-output-buffer-wiring">'
+  end="phase-2-output-buffer-wiring-end</template>"
+  heading-offset=1
+%}
+
 **Firmware feature:** Add commands to toggle each supervisor output at
 10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
 clocks on GP2.

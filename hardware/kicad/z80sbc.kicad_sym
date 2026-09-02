@@ -5415,7 +5415,7 @@
 			(pin tri_state line
 				(at 15.24 -25.4 180)
 				(length 2.54)
-				(name "A14"
+				(name "A13"
 					(effects
 						(font
 							(size 1 1)
@@ -5433,7 +5433,7 @@
 			(pin tri_state line
 				(at 15.24 -22.86 180)
 				(length 2.54)
-				(name "A13"
+				(name "A14"
 					(effects
 						(font
 							(size 1 1)

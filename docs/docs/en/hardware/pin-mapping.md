@@ -10,28 +10,161 @@ driven LOW; M1#, RFSH#, and HALT# are not part of the floated bus set.
 ## 1.0 Raspberry Pi Pico 2 Header Pin Map
 
 GPIO numbers in the firmware are not physical header numbers. Use this
-table for construction; the ranges preserve ascending bit order.
+map for construction; the diagrams preserve ascending bit order.
 
-| Pico function | GPIO | Physical header pin | Connection |
-|----|----:|----:|----|
-| BUSACK# monitor | GP0 | 1 | SN74LVC244AN 1Y1 |
-| IORQ# trap input | GP1 | 2 | SN74LVC244AN 1Y2 |
-| Z80 CLK | GP2 | 4 | SN74AHCT244 1A1 pin 2 |
-| Z80 RESET# | GP3 | 5 | Z80 pin 26 and ATF22V10 pin 1, direct 3.3 V logic |
-| Z80 BUSREQ# | GP4 | 6 | SN74AHCT244 1A2 pin 4 |
-| SRAM CE# | GP5 | 7 | ATF22V10 pin 7 |
-| Data DIR / ENABLE | GP6 / GP7 | 9 / 10 | ATF22V10 pins 11 / 9; GAL pins 17 / 18 generate mutually exclusive data OE# signals |
-| Unused | GP8 | 11 | Leave open; no address transceivers are fitted |
-| Address enable | GP9 | 12 | ATF22V10 pin 10; HIGH releases MCP RESET# through GAL pin 19 and Q1 |
-| D0-D3 | GP10-GP13 | 14-17 | SN74AHCT245N and SN74LVC245AN A1-A4 pins 2-5 |
-| D4-D7 | GP14-GP17 | 19-22 | SN74AHCT245N and SN74LVC245AN A5-A8 pins 6-9 |
-| SPI SCK / MOSI / MISO / CS# | GP18-GP21 | 24-27 | AHCT244 1A4 pin 8 / 2A1 pin 11, LVC244 2Y1, AHCT244 1A3 pin 6 |
-| SRAM WE# | GP22 | 29 | ATF22V10 pin 3 |
-| SRAM OE# | GP26 | 31 | ATF22V10 pin 5 |
-| Z80 RD# monitor | GP27 | 32 | SN74LVC244AN 1Y3 |
-| Z80 WR# monitor | GP28 | 34 | SN74LVC244AN 1Y4 |
-| 3.3 V output | - | 36 | SN74LVC245AN VCC, LVC244 VCC, and 3.3 V pull-ups |
-| VSYS | - | 39 | 1N5819 banded cathode; anode to external +5 V |
+The complete Pico wiring is installed in
+[Phase 1](../implementation/phase-1-supervisor.md#wiring-pico-2-w).
+
+<template id="phase-1-pico-wiring">
+
+### Pico 2 W to SN74AHCT244
+
+```mermaid
+block-beta
+  columns 2
+  P2["Pico CLK - GP2<br/>header pin 4"] B2["AHCT244 1A1 - pin 2"]
+  P4["Pico BUSREQ# - GP4<br/>header pin 6"] B4["AHCT244 1A2 - pin 4"]
+  P18["Pico SCK - GP18<br/>header pin 24"] B18["AHCT244 1A4 - pin 8"]
+  P19["Pico MOSI - GP19<br/>header pin 25"] B19["AHCT244 2A1 - pin 11"]
+  P21["Pico CS# - GP21<br/>header pin 27"] B21["AHCT244 1A3 - pin 6"]
+  P2 --> B2
+  P4 --> B4
+  P18 --> B18
+  P19 --> B19
+  P21 --> B21
+```
+
+### Pico 2 W to ATF22V10
+
+```mermaid
+block-beta
+  columns 2
+  P3["Pico RESET# - GP3<br/>header pin 5"] G3["ATF22V10 RESET# - pin 1"]
+  P5["Pico CE# - GP5<br/>header pin 7"] G5["ATF22V10 PICO_CE# - pin 7"]
+  P6["Pico DATA_DIR - GP6<br/>header pin 9"] G6["ATF22V10 DATA_DIR - pin 11"]
+  P7["Pico DATA_ENABLE - GP7<br/>header pin 10"] G7["ATF22V10 DATA_ENABLE - pin 9"]
+  P9["Pico ADDR_ENABLE - GP9<br/>header pin 12"] G9["ATF22V10 ADDR_ENABLE - pin 10"]
+  P22["Pico WE# - GP22<br/>header pin 29"] G22["ATF22V10 PICO_WE# - pin 3"]
+  P26["Pico OE# - GP26<br/>header pin 31"] G26["ATF22V10 PICO_OE# - pin 5"]
+  P3 --> G3
+  P5 --> G5
+  P6 --> G6
+  P7 --> G7
+  P9 --> G9
+  P22 --> G22
+  P26 --> G26
+```
+
+### Pico 2 W to Z84C00
+
+```mermaid
+block-beta
+  columns 2
+  P3["Pico RESET# - GP3<br/>header pin 5"] Z3["Z80 RESET# - pin 26"]
+  P3 --> Z3
+```
+
+RESET# is one shared node connecting Pico GP3, ATF22V10 pin 1, and Z80 pin 26;
+it appears in both chip-pair views above.
+
+### SN74LVC244 to Pico 2 W
+
+```mermaid
+block-beta
+  columns 2
+  B0["LVC244 1Y1 - pin 18<br/>Z80 BUSACK#"] P0["Pico GP0 - header pin 1"]
+  B1["LVC244 1Y2 - pin 16<br/>Z80 IORQ#"] P1["Pico GP1 - header pin 2"]
+  B20["LVC244 2Y1 - pin 9<br/>MCP23S17 SO"] P20["Pico GP20 - header pin 26"]
+  B27["LVC244 1Y3 - pin 14<br/>Z80 RD#"] P27["Pico GP27 - header pin 32"]
+  B28["LVC244 1Y4 - pin 12<br/>Z80 WR#"] P28["Pico GP28 - header pin 34"]
+  B0 --> P0
+  B1 --> P1
+  B20 --> P20
+  B27 --> P27
+  B28 --> P28
+```
+
+### Pico 2 W to SN74AHCT245
+
+```mermaid
+block-beta
+  columns 2
+  P10["Pico D0 - GP10<br/>header pin 14"] T0["AHCT245 A1 - pin 2"]
+  P11["Pico D1 - GP11<br/>header pin 15"] T1["AHCT245 A2 - pin 3"]
+  P12["Pico D2 - GP12<br/>header pin 16"] T2["AHCT245 A3 - pin 4"]
+  P13["Pico D3 - GP13<br/>header pin 17"] T3["AHCT245 A4 - pin 5"]
+  P14["Pico D4 - GP14<br/>header pin 19"] T4["AHCT245 A5 - pin 6"]
+  P15["Pico D5 - GP15<br/>header pin 20"] T5["AHCT245 A6 - pin 7"]
+  P16["Pico D6 - GP16<br/>header pin 21"] T6["AHCT245 A7 - pin 8"]
+  P17["Pico D7 - GP17<br/>header pin 22"] T7["AHCT245 A8 - pin 9"]
+  P10 --> T0
+  P11 --> T1
+  P12 --> T2
+  P13 --> T3
+  P14 --> T4
+  P15 --> T5
+  P16 --> T6
+  P17 --> T7
+```
+
+### SN74LVC245 to Pico 2 W
+
+```mermaid
+block-beta
+  columns 2
+  T0["LVC245 A1 - pin 2"] P10["Pico D0 - GP10<br/>header pin 14"]
+  T1["LVC245 A2 - pin 3"] P11["Pico D1 - GP11<br/>header pin 15"]
+  T2["LVC245 A3 - pin 4"] P12["Pico D2 - GP12<br/>header pin 16"]
+  T3["LVC245 A4 - pin 5"] P13["Pico D3 - GP13<br/>header pin 17"]
+  T4["LVC245 A5 - pin 6"] P14["Pico D4 - GP14<br/>header pin 19"]
+  T5["LVC245 A6 - pin 7"] P15["Pico D5 - GP15<br/>header pin 20"]
+  T6["LVC245 A7 - pin 8"] P16["Pico D6 - GP16<br/>header pin 21"]
+  T7["LVC245 A8 - pin 9"] P17["Pico D7 - GP17<br/>header pin 22"]
+  T0 --> P10
+  T1 --> P11
+  T2 --> P12
+  T3 --> P13
+  T4 --> P14
+  T5 --> P15
+  T6 --> P16
+  T7 --> P17
+```
+
+### Pico 2 W to SN74LVC244 power
+
+```mermaid
+block-beta
+  columns 2
+  P33["Pico 3V3 - header pin 36"] B20["LVC244 VCC - pin 20"]
+  P33 --> B20
+```
+
+### Pico 2 W to SN74LVC245 power
+
+```mermaid
+block-beta
+  columns 2
+  P33["Pico 3V3 - header pin 36"] T20["LVC245 VCC - pin 20"]
+  P33 --> T20
+```
+
+The same 3.3 V rail supplies the
+[3.3 V pull-ups](inventory.md#03-capacitors-and-resistors); these are separate
+resistor connections, not taps on either transceiver VCC pin.
+
+### External supply to Pico 2 W
+
+```mermaid
+block-beta
+  columns 3
+  EXT["External regulated +5 V"] DIODE["1N5819<br/>anode / banded cathode"] VSYS["Pico VSYS - header pin 39"]
+  EXT --> DIODE
+  DIODE --> VSYS
+```
+
+phase-1-pico-wiring-end</template>
+
+Leave GP8/header pin 11 open; no address transceivers are fitted.
 
 Connect Pico GND pins 3, 8, 13, 18, 23, 28, and 38, plus AGND pin
 33, to common ground with multiple short links. Leave RUN pin 30,
@@ -206,6 +339,11 @@ Manufacturer datasheets:
 - [Zilog Z84C00 CMOS Z80 CPU Product Specification](https://www.zilog.com/docs/z80/ps0178.pdf)
 - [Alliance Memory AS6C1008 128K x 8 Low Power CMOS SRAM Datasheet](https://www.alliancememory.com/wp-content/uploads/AS6C1008_Mar_2023V1.2.pdf)
 
+The complete SRAM socket wiring is installed in
+[Phase 6](../implementation/phase-6-sram.md#wiring-sram-socket).
+
+<template id="phase-6-sram-wiring">
+
 ### Package Pinouts
 
 [![Z84C0020PEC 40-pin PDIP pinout](../images/Z84C0020PEC%20Bus%20Pinout%20Chart.png)](https://www.zilog.com/docs/z80/ps0178.pdf)
@@ -284,18 +422,22 @@ block-beta
 ### Memory Control
 
 ```mermaid
-flowchart TB
-  subgraph SOURCES["Ownership and control candidates"]
-    direction LR
-    OWNER["RESET# + BUSACK#<br/>select active owner"]
-    CPU["Z80 controls<br/>MREQ# pin 19<br/>RD# pin 21<br/>WR# pin 22"]
-    PICO["Pico DMA controls<br/>CE# / OE# / WE#"]
-  end
-  OWNER --> GAL["ATF22V10<br/>reset-aware arbitration"]
-  CPU --> GAL
-  PICO --> GAL
-  GAL -->|"TTL pre-buffer CE# / OE# / WE#"| BUFFER["SN74AHCT244<br/>channels 2A2-2A4"]
-  BUFFER -->|"5 V controls"| SRAM["AS6C1008-55PCN SRAM<br/>CE# pin 22<br/>OE# pin 24<br/>WE# pin 29"]
+block-beta
+  columns 4
+  OWN["Pico RESET# - GP3<br/>Z80 BUSACK# - pin 23"] GOWN["ATF22V10<br/>owner inputs - pins 1 / 2"] space space
+  WRSRC["Z80 WR# - pin 22<br/>Pico WE# - GP22"] GWE["ATF22V10<br/>inputs 4 / 3, output 14"] BWE["AHCT244<br/>2A2 pin 13 / 2Y2 pin 7"] RWE["SRAM WE# - pin 29"]
+  RDSRC["Z80 RD# - pin 21<br/>Pico OE# - GP26"] GOE["ATF22V10<br/>inputs 6 / 5, output 15"] BOE["AHCT244<br/>2A3 pin 15 / 2Y3 pin 5"] ROE["SRAM OE# - pin 24"]
+  CESRC["Z80 MREQ# - pin 19<br/>Pico CE# - GP5"] GCE["ATF22V10<br/>inputs 8 / 7, output 16"] BCE["AHCT244<br/>2A4 pin 17 / 2Y4 pin 3"] RCE["SRAM CE# - pin 22"]
+  OWN --> GOWN
+  WRSRC --> GWE
+  GWE --> BWE
+  BWE --> RWE
+  RDSRC --> GOE
+  GOE --> BOE
+  BOE --> ROE
+  CESRC --> GCE
+  GCE --> BCE
+  BCE --> RCE
 ```
 
 ### Power and Fixed Pins
@@ -320,6 +462,8 @@ block-beta
   GND --> RGND
   GND --> RA16
 ```
+
+phase-6-sram-wiring-end</template>
 
 > **SRAM control-source arbitration:** MREQ#/RD#/WR# above are the
 > CPU-owned run-mode inputs of the ATF22V10 described in
@@ -369,30 +513,126 @@ device algorithm listed by the programmer, write the generated JEDEC
 file, read it back, and require a verify pass before installation. Do
 not enable the optional power-down mode or security fuse.
 
-| ATF22V10 pin | Signal | Connection |
-|----:|----|----|
-| 1 | RESET# | Pico GP3 and Z80 pin 26 direct node |
-| 2 | BUSACK# | Z80 pin 23 |
-| 3 | PICO_WE# | Pico GP22 |
-| 4 | Z80_WR# | Z80 pin 22 |
-| 5 | PICO_OE# | Pico GP26 |
-| 6 | Z80_RD# | Z80 pin 21 |
-| 7 | PICO_CE# | Pico GP5 |
-| 8 | Z80_MREQ# | Z80 pin 19 |
-| 9 | DATA_ENABLE | Pico GP7; 10 kOhm pull-down to GND |
-| 10 | ADDR_ENABLE | Pico GP9; 10 kOhm pull-down to GND |
-| 11 | DATA_DIR | Pico GP6; 10 kOhm pull-down to GND |
-| 12 | GND | Common ground |
-| 13 | Z80_IORQ# | Z80 pin 20 direct 5 V node; existing 10 kOhm pull-up |
-| 14 | SRAM_WE_PRE# | SN74AHCT244 2A2 pin 13 |
-| 15 | SRAM_OE_PRE# | SN74AHCT244 2A3 pin 15 |
-| 16 | SRAM_CE_PRE# | SN74AHCT244 2A4 pin 17 |
-| 17 | DATA_UP_OE# | SN74AHCT245N OE# pin 19 |
-| 18 | DATA_DOWN_OE# | SN74LVC245AN OE# pin 19 |
-| 19 | MCP_RESET_DRIVE | 4.7 kOhm to Q1 base; Q1 collector drives MCP RESET# |
-| 20 | WAIT# | Z80 pin 24 direct node; existing 10 kOhm pull-up |
-| 21-23 | Unused outputs | Program constant LOW; leave open |
-| 24 | VCC | Regulated +5 V |
+The complete GAL pin wiring is installed in
+[Phase 2](../implementation/phase-2-buffer-clock.md#wiring-gal-and-output-buffer).
+
+<template id="phase-2-gal-wiring">
+
+### Pico 2 W to ATF22V10
+
+```mermaid
+block-beta
+  columns 2
+  RST["Pico RESET# - GP3"] G1["ATF22V10 RESET# - pin 1"]
+  PWE["Pico WE# - GP22"] G3["ATF22V10 PICO_WE# - pin 3"]
+  POE["Pico OE# - GP26"] G5["ATF22V10 PICO_OE# - pin 5"]
+  PCE["Pico CE# - GP5"] G7["ATF22V10 PICO_CE# - pin 7"]
+  DEN["Pico DATA_ENABLE - GP7"] G9["ATF22V10 DATA_ENABLE - pin 9"]
+  AEN["Pico ADDR_ENABLE - GP9"] G10["ATF22V10 ADDR_ENABLE - pin 10"]
+  DDIR["Pico DATA_DIR - GP6"] G11["ATF22V10 DATA_DIR - pin 11"]
+  RST --> G1
+  PWE --> G3
+  POE --> G5
+  PCE --> G7
+  DEN --> G9
+  AEN --> G10
+  DDIR --> G11
+```
+
+DATA_ENABLE, ADDR_ENABLE, and DATA_DIR each have a 10 kOhm pull-down to GND.
+
+### Z84C00 to ATF22V10
+
+```mermaid
+block-beta
+  columns 2
+  RST["Z80 RESET# - pin 26"] G1["ATF22V10 RESET# - pin 1"]
+  BACK["Z80 BUSACK# - pin 23"] G2["ATF22V10 BUSACK# - pin 2"]
+  ZWR["Z80 WR# - pin 22"] G4["ATF22V10 Z80_WR# - pin 4"]
+  ZRD["Z80 RD# - pin 21"] G6["ATF22V10 Z80_RD# - pin 6"]
+  ZMR["Z80 MREQ# - pin 19"] G8["ATF22V10 Z80_MREQ# - pin 8"]
+  ZIO["Z80 IORQ# - pin 20"] G13["ATF22V10 Z80_IORQ# - pin 13"]
+  RST --> G1
+  BACK --> G2
+  ZWR --> G4
+  ZRD --> G6
+  ZMR --> G8
+  ZIO --> G13
+```
+
+RESET# is one shared node connecting Pico GP3, Z80 pin 26, and ATF22V10 pin 1;
+it appears in both chip-pair diagrams to make each pair complete. Z80 IORQ# has
+the existing 10 kOhm pull-up to 5 V.
+
+### ATF22V10 to SN74AHCT244
+
+```mermaid
+block-beta
+  columns 2
+  G14["ATF22V10 WE# - pin 14"] B13["AHCT244 2A2 - pin 13"]
+  G15["ATF22V10 OE# - pin 15"] B15["AHCT244 2A3 - pin 15"]
+  G16["ATF22V10 CE# - pin 16"] B17["AHCT244 2A4 - pin 17"]
+  G14 --> B13
+  G15 --> B15
+  G16 --> B17
+```
+
+### SN74AHCT244 to AS6C1008 SRAM
+
+```mermaid
+block-beta
+  columns 2
+  B7["AHCT244 2Y2 - pin 7"] R29["SRAM WE# - pin 29"]
+  B5["AHCT244 2Y3 - pin 5"] R24["SRAM OE# - pin 24"]
+  B3["AHCT244 2Y4 - pin 3"] R22["SRAM CE# - pin 22"]
+  B7 --> R29
+  B5 --> R24
+  B3 --> R22
+```
+
+### ATF22V10 to data transceivers
+
+```mermaid
+block-beta
+  columns 2
+  G17["ATF22V10 DATA_UP_OE# - pin 17"] UOE["SN74AHCT245 OE# - pin 19"]
+  G18["ATF22V10 DATA_DOWN_OE# - pin 18"] DOE["SN74LVC245 OE# - pin 19"]
+  G17 --> UOE
+  G18 --> DOE
+```
+
+### ATF22V10 to Q1
+
+```mermaid
+block-beta
+  columns 2
+  G19["ATF22V10 MCP_RESET_DRIVE - pin 19"] Q1["Q1 base<br/>through 4.7 kOhm"]
+  G19 --> Q1
+```
+
+### Q1 to MCP23S17
+
+```mermaid
+block-beta
+  columns 2
+  Q1["Q1 collector<br/>reset pull-down"] MRST["MCP23S17 RESET# - pin 18"]
+  Q1 --> MRST
+```
+
+### ATF22V10 to Z84C00
+
+```mermaid
+block-beta
+  columns 2
+  G20["ATF22V10 WAIT# - pin 20"] ZWAIT["Z80 WAIT# - pin 24"]
+  G20 --> ZWAIT
+```
+
+phase-2-gal-wiring-end</template>
+
+GAL pin 12 connects to common GND and pin 24 to regulated +5 V. Program
+unused outputs 21-23 constant LOW and leave them open. WAIT# retains its
+existing 10 kOhm pull-up to 5 V.
 
 The ATF22V10's guaranteed HIGH output is 2.4 V, which satisfies the
 AHCT244's 2.0 V input threshold but not the AS6C1008's 5 V CMOS input
@@ -447,16 +687,3 @@ During [Phase 6](../implementation/phase-6-sram.md) with the Z80 absent, hold
 GP3 RESET# LOW. The programmed
 logic then selects the Pico controls regardless of the pulled-up,
 undriven BUSACK# input.
-
-```mermaid
-flowchart TB
-  subgraph INPUTS["Control candidates"]
-    direction LR
-    PICO["Pico<br/>RESET#, WE#, OE#, CE#"]
-    Z80["Z80<br/>BUSACK#, WR#, RD#, MREQ#"]
-  end
-  PICO --> GAL["ATF22V10<br/>three arbitration equations"]
-  Z80 --> GAL
-  GAL -->|"TTL-level pre-buffer controls"| HCT["SN74AHCT244<br/>channels 2A2-2A4"]
-  HCT -->|"5 V CE#, OE#, WE#"| SRAM["AS6C1008 SRAM"]
-```

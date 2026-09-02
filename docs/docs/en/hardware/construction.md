@@ -174,7 +174,7 @@ signals pass through an intermediate chip as series logic.
 | [Project symbol library](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80sbc.kicad_sym) | Exact local pin names, numbers, and ERC electrical types |
 | [SVG export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.svg) and [PDF export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.pdf) | Zoomable full schematic renderings |
 | [KiCad netlist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
-| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) | KiCad 10.0.5 result: zero violations with errors, warnings, and exclusions included |
+| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) | KiCad 10.0.6 result: zero violations with errors, warnings, and exclusions included |
 
 The schematic contains 59 physical components, including 31 discrete
 resistors, three SIP networks, and 12 fitted capacitors, plus one nonphysical
@@ -233,12 +233,15 @@ allows.
 ## 3.4 Major Chip Interconnection Overview
 
 ```mermaid
-flowchart TB
-  MEMORY["Memory Board - left<br/>ATF22V10 arbitration<br/>AS6C1008 SRAM<br/>MCP23S17 address interface"]
-  CORE["Core Board - center<br/>SN74AHCT244 output buffer<br/>Z84C0020PEC CPU<br/>5 V supply entry"]
-  PERIPHERAL["Peripheral Board - right<br/>Pico 2 W supervisor<br/>SN74LVC244 monitor buffer<br/>AHCT245 + LVC245 data paths"]
-
-  MEMORY ---|"shared A0-A15, D0-D7<br/>GAL pre-controls + SRAM controls"| CORE
-  CORE ---|"CLK, BUSREQ#, SPI<br/>status monitors + translated data"| PERIPHERAL
-  PERIPHERAL -->|"RESET#, DMA controls<br/>address/data interlocks"| MEMORY
+block-beta
+  columns 3
+  MEMORY1["Memory Board<br/>GAL + SRAM + MCP23S17"] MC["A0-A15 + D0-D7<br/>GAL pre-controls + SRAM controls"] CORE1["Core Board<br/>AHCT244 + Z80"]
+  CORE2["Core Board<br/>AHCT244 + Z80"] CP["CLK + BUSREQ# + SPI<br/>status monitors + translated data"] PERIPHERAL2["Peripheral Board<br/>Pico + LVC244 + data transceivers"]
+  PERIPHERAL3["Peripheral Board<br/>Pico + data transceivers"] PM["RESET# + DMA controls<br/>address/data interlocks"] MEMORY3["Memory Board<br/>GAL + SRAM + MCP23S17"]
+  MEMORY1 <--> MC
+  MC <--> CORE1
+  CORE2 <--> CP
+  CP <--> PERIPHERAL2
+  PERIPHERAL3 --> PM
+  PM --> MEMORY3
 ```

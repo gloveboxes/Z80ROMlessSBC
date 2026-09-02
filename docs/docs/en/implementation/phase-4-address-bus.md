@@ -5,6 +5,13 @@ pass.
 
 **Install:** No additional IC. Keep Z80 and SRAM removed.
 
+## Wiring - address-trunk verification
+
+Add no signal wiring in this phase. Continuity-check the Phase 3 A0-A15
+trunk from each MCP23S17 pin to both empty destination sockets, verify no
+neighboring address lines are shorted, and then exercise the existing wiring
+electrically as described in the test plan.
+
 **Firmware feature:** Address helpers must assert ADDR_ENABLE LOW,
 release MCP reset, wait, preload OLAT, and only then set IODIR outputs.
 On every exit they must assert reset again.

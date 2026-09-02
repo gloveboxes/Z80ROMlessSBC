@@ -2,8 +2,8 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-08-25T05:02:57")
-		(tool "Eeschema 10.0.5")
+		(date "2026-09-02T22:52:07")
+		(tool "Eeschema 10.0.6")
 		(sheet
 			(number "1")
 			(name "/")
@@ -4984,12 +4984,12 @@
 				)
 				(pin
 					(num "3")
-					(name "A14")
+					(name "A13")
 					(type "tri_state")
 				)
 				(pin
 					(num "4")
-					(name "A13")
+					(name "A14")
 					(type "tri_state")
 				)
 				(pin
@@ -5875,8 +5875,8 @@
 			)
 			(node
 				(ref "U1")
-				(pin "4")
-				(pinfunction "A13_4")
+				(pin "3")
+				(pinfunction "A13_3")
 				(pintype "tri_state")
 			)
 			(node
@@ -5904,8 +5904,8 @@
 			)
 			(node
 				(ref "U1")
-				(pin "3")
-				(pinfunction "A14_3")
+				(pin "4")
+				(pinfunction "A14_4")
 				(pintype "tri_state")
 			)
 			(node

@@ -7,6 +7,20 @@ data transceivers removed. Perform test 1, power off, then install the
 SN74AHCT245N and SN74LVC245AN in that order. Keep Z80 and SRAM removed.
 Tie AHCT DIR HIGH and LVC DIR LOW before insertion.
 
+## Wiring - bidirectional data path
+
+With both transceivers removed, install and continuity-check every D0-D7 tap,
+fixed DIR connection, GAL-controlled OE# connection, supply connection, and
+local decoupling capacitor below. Repeated D0-D7 labels identify one shared
+physical trunk. Verify both driver paths are isolated before inserting the
+transceivers in the stated sequence.
+
+{%
+  include-markdown "../hardware/bus-isolation.md"
+  start='<template id="phase-5-data-wiring">'
+  end="phase-5-data-wiring-end</template>"
+%}
+
 **Firmware feature:** Add an 8-bit data-bus test using the same
 disable-change-enable sequence and fixed, walking-one, and walking-zero
 patterns on the Pico data GPIOs.

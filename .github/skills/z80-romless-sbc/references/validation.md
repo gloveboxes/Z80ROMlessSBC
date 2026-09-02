@@ -35,6 +35,11 @@ python3 -m venv .venv-kicad
 PYTHON="$PWD/.venv-kicad/bin/python" npm run kicad
 ```
 
+The pipeline also runs `scripts/check-doc-interconnects.py`. It resolves every
+pairwise Mermaid endpoint to its schematic reference and pin, requires both
+ends of each documented wire to share a KiCad net, and checks fixed power,
+enable, direction, address-select, and no-connect pins.
+
 For any pin, part, package, resistor, capacitor, or layout change, also verify:
 
 - BOM fitted/purchase counts

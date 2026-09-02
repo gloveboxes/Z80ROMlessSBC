@@ -43,3 +43,4 @@ kicad-cli sch export netlist \
 "$python_bin" "$repo_root/scripts/check-kicad-netlist.py" \
   reports/net_manifest.json \
   "$temporary_netlist"
+"$python_bin" "$repo_root/scripts/check-doc-interconnects.py"

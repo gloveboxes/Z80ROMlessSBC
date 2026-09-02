@@ -19,6 +19,37 @@ address pins to GND as shown in the
 [address-interface map](../hardware/address-interface.md). Confirm
 this wiring against the schematic before proceeding.
 
+## Wiring - SPI and MCP23S17 reset
+
+Install and continuity-check these connections before inserting the MCP23S17.
+The diagrams are included from the authoritative hardware reference so the
+phase instructions and consolidated pin maps cannot drift.
+
+{%
+  include-markdown "../hardware/address-interface.md"
+  start='<template id="phase-3-spi-reset-wiring">'
+  end="phase-3-spi-reset-wiring-end</template>"
+%}
+
+Install the two pulled-up address trunks from the MCP23S17 to the empty Z80
+and SRAM sockets. Repeated A0-A15 labels in the chip-pair views are taps on
+the same physical nets, not separate or serial paths.
+
+{%
+  include-markdown "../hardware/address-interface.md"
+  start='<template id="phase-3-address-trunk-wiring">'
+  end="phase-3-address-trunk-wiring-end</template>"
+%}
+
+Install and continuity-check the complete 5 V-to-3.3 V input-buffer wiring
+before inserting the SN74LVC244AN.
+
+{%
+  include-markdown "../hardware/bus-isolation.md"
+  start='<template id="phase-3-input-buffer-wiring">'
+  end="phase-3-input-buffer-wiring-end</template>"
+%}
+
 **Firmware feature:** Add byte-level SPI register read/write, a
 write-then-read register test, and 16-bit walking-one/walking-zero tests
 that can configure both MCP ports as either inputs or outputs.

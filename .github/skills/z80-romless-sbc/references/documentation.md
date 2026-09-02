@@ -7,6 +7,11 @@
 - `docs/docs/en/implementation/` is the chronological implementation and
   bring-up plan. Put each explanatory C excerpt inside the phase that first
   needs it, after maintained-source links and before the test plan.
+- Put each physical wiring step inside the phase that first needs the
+  connection, before firmware details and tests. Keep each complete diagram
+  in one bounded source range, hide that range from the hardware-page render,
+  and project it into its phase page with `include-markdown`; do not maintain
+  duplicate diagram text or render chip-pair wiring in both sections.
 - `reference/glossary.md` owns terminology, `reference/datasheets.md` owns
   component and instrument sources, and `reference/source-index.md` owns the
   maintained-code index.
@@ -55,6 +60,10 @@ Search for stale part numbers, obsolete architecture names, old section numbers,
   `docs/docs/en/javascripts/mermaid.mjs`. A strict build must pass, and browser
   validation must prove actual SVG rendering because MkDocs does not execute
   the JavaScript adapter.
+- Render physical chip and board interconnects as `block-beta` diagrams with
+  one aligned signal path per row, explicit device/pin labels, and shared bus
+  trunks named as trunks. Reserve free-form flowcharts for behavioral control
+  flow rather than physical wiring.
 
 ## Editing Lessons
 

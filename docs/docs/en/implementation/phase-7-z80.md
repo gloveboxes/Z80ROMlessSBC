@@ -9,6 +9,21 @@ insertion and power-up. RESET# LOW deliberately keeps the programmed
 logic on the inactive Pico side; the GAL equations switch to CPU controls
 automatically only when RESET# is released with BUSACK# HIGH.
 
+## Wiring - final CPU socket verification
+
+Add no new signal jumpers in this phase: the Z80 socket received its clock,
+reset, arbitration, monitor, address, and data connections in Phases 1-6.
+With the Z80 removed, continuity-check every CPU pin against the relevant
+pairwise diagram and verify no adjacent address, data, or control pins are
+shorted. Confirm all fixed Z80 inputs have their specified inactive levels
+before insertion. Use the consolidated
+[Pico wiring](phase-1-supervisor.md#wiring-pico-2-w),
+[GAL and output-buffer wiring](phase-2-buffer-clock.md#wiring-gal-and-output-buffer),
+[address and input-buffer wiring](phase-3-address-generator.md#wiring-spi-and-mcp23s17-reset),
+[data-path wiring](phase-5-data-bus.md#wiring-bidirectional-data-path), and
+[SRAM wiring](phase-6-sram.md#wiring-sram-socket) as the final socket
+checklist.
+
 **Firmware feature:** Add clock single-step and selectable 10 Hz, 1 kHz,
 100 kHz, and 1 MHz run modes; reset pulse control; timed BUSREQ#/BUSACK#
 acquisition; and a command that preloads and verifies a small test

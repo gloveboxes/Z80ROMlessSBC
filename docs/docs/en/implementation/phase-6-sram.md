@@ -7,6 +7,19 @@ AHCT244 channels 2A2-2A4, and final SRAM-side pull-ups have passed the
 [Phase 2 gate](phase-2-buffer-clock.md#pass-gate).
 Keep the Z80 removed.
 
+## Wiring - SRAM socket
+
+Before inserting the SRAM, install and continuity-check its address and data
+trunk taps, buffered control inputs, fixed A16/CE2 connections, supply pins,
+and local decoupling capacitor. The Z80 remains absent; its pins in these
+pairwise views are contacts on the already tested shared trunks.
+
+{%
+  include-markdown "../hardware/pin-mapping.md"
+  start='<template id="phase-6-sram-wiring">'
+  end="phase-6-sram-wiring-end</template>"
+%}
+
 **Electrical hold point:** During DMA the GAL must select only Pico
 CE#/OE#/WE#; during execution it must select only Z80 MREQ#/RD#/WR#.
 CE# must not be tied LOW, and no Pico output is joined directly to a

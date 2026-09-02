@@ -10,6 +10,10 @@ the [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-dis
 Provision the manifest-backed boot package and all four 320 KiB disk slots
 with the verified `picotool` commands there.
 
+**Wiring:** Make no hardware changes. Keep the Phase 8 board intact and
+recheck only the existing ownership and SRAM-control paths if the cold-boot
+DMA checks fail.
+
 **Firmware feature:** With RESET# held LOW, recover any valid journal,
 validate the boot manifest and CRC32, DMA-write its payload to SRAM,
 and compare every byte before RESET# release. Do not wait for BUSACK#

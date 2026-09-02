@@ -15,16 +15,79 @@ additional. This is why 1-6 MHz is measured rather than assumed, and
 why this design is not a
 20 MHz system despite using a 20 MHz-rated CPU.
 
-| Channel | AHCT244 input | AHCT244 output | Function |
-|----:|----|----|----|
-| 1A1 | Pin 2 from Pico GP2 | 1Y1 pin 18 to Z80 CLK pin 6 | Master clock |
-| 1A2 | Pin 4 from Pico GP4 | 1Y2 pin 16 to Z80 BUSREQ# pin 25 | DMA request |
-| 1A3 | Pin 6 from Pico GP21 | 1Y3 pin 14 to MCP23S17 CS# pin 11 | SPI chip select |
-| 1A4 | Pin 8 from Pico GP18 | 1Y4 pin 12 to MCP23S17 SCK pin 12 | SPI clock |
-| 2A1 | Pin 11 from Pico GP19 | 2Y1 pin 9 to MCP23S17 SI pin 13 | SPI MOSI |
-| 2A2 | Pin 13 from ATF22V10 pin 14 | 2Y2 pin 7 to SRAM WE# pin 29 | Arbitrated write enable |
-| 2A3 | Pin 15 from ATF22V10 pin 15 | 2Y3 pin 5 to SRAM OE# pin 24 | Arbitrated output enable |
-| 2A4 | Pin 17 from ATF22V10 pin 16 | 2Y4 pin 3 to SRAM CE# pin 22 | Arbitrated chip enable |
+The complete pin-by-pin wiring is installed in
+[Phase 2](../implementation/phase-2-buffer-clock.md#wiring-gal-and-output-buffer).
+
+<template id="phase-2-output-buffer-wiring">
+
+## Pico 2 W to SN74AHCT244
+
+```mermaid
+block-beta
+	columns 2
+	PCLK["Pico CLK - GP2"] BCLK["AHCT244 1A1 - pin 2"]
+	PREQ["Pico BUSREQ# - GP4"] BREQ["AHCT244 1A2 - pin 4"]
+	PCS["Pico CS# - GP21"] BCS["AHCT244 1A3 - pin 6"]
+	PSCK["Pico SCK - GP18"] BSCK["AHCT244 1A4 - pin 8"]
+	PMOSI["Pico MOSI - GP19"] BMOSI["AHCT244 2A1 - pin 11"]
+	PCLK --> BCLK
+	PREQ --> BREQ
+	PCS --> BCS
+	PSCK --> BSCK
+	PMOSI --> BMOSI
+```
+
+## SN74AHCT244 to Z84C00
+
+```mermaid
+block-beta
+	columns 2
+	BCLK["AHCT244 1Y1 - pin 18"] ZCLK["Z80 CLK - pin 6"]
+	BREQ["AHCT244 1Y2 - pin 16"] ZREQ["Z80 BUSREQ# - pin 25"]
+	BCLK --> ZCLK
+	BREQ --> ZREQ
+```
+
+## SN74AHCT244 to MCP23S17
+
+```mermaid
+block-beta
+	columns 2
+	BCS["AHCT244 1Y3 - pin 14"] MCS["MCP23S17 CS# - pin 11"]
+	BSCK["AHCT244 1Y4 - pin 12"] MSCK["MCP23S17 SCK - pin 12"]
+	BMOSI["AHCT244 2Y1 - pin 9"] MSI["MCP23S17 SI - pin 13"]
+	BCS --> MCS
+	BSCK --> MSCK
+	BMOSI --> MSI
+```
+
+## ATF22V10 to SN74AHCT244
+
+```mermaid
+block-beta
+	columns 2
+	GWE["ATF22V10 WE# - pin 14"] BWE["AHCT244 2A2 - pin 13"]
+	GOE["ATF22V10 OE# - pin 15"] BOE["AHCT244 2A3 - pin 15"]
+	GCE["ATF22V10 CE# - pin 16"] BCE["AHCT244 2A4 - pin 17"]
+	GWE --> BWE
+	GOE --> BOE
+	GCE --> BCE
+```
+
+## SN74AHCT244 to AS6C1008 SRAM
+
+```mermaid
+block-beta
+	columns 2
+	BWE["AHCT244 2Y2 - pin 7"] RWE["SRAM WE# - pin 29"]
+	BOE["AHCT244 2Y3 - pin 5"] ROE["SRAM OE# - pin 24"]
+	BCE["AHCT244 2Y4 - pin 3"] RCE["SRAM CE# - pin 22"]
+	BWE --> RWE
+	BOE --> ROE
+	BCE --> RCE
+```
+
+phase-2-output-buffer-wiring-end</template>
 
 Tie both active-low output enables, OE1# pin 1 and OE2# pin 19, to GND.
 Connect VCC pin 20 to regulated +5 V and GND pin 10 to common ground.

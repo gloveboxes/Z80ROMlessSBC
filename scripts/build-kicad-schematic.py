@@ -100,7 +100,7 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
         "Z84C0020PEC",
         [
             pin(1, "A11", "tri_state", "right"), pin(2, "A12", "tri_state", "right"),
-            pin(3, "A14", "tri_state", "right"), pin(4, "A13", "tri_state", "right"),
+            pin(3, "A13", "tri_state", "right"), pin(4, "A14", "tri_state", "right"),
             pin(5, "A15", "tri_state", "right"), pin(6, "CLK", "input", "left"),
             pin(7, "D4", "bidirectional", "left"), pin(8, "D3", "bidirectional", "left"),
             pin(9, "D5", "bidirectional", "left"), pin(10, "D6", "bidirectional", "left"),
@@ -509,7 +509,7 @@ def pin_map(entries: list[tuple[int | str, str | None]]) -> dict[int | str, str 
 
 
 z80_nets = {
-    1: "A11", 2: "A12", 3: "A14", 4: "A13", 5: "A15", 6: "Z80_CLK",
+    1: "A11", 2: "A12", 3: "A13", 4: "A14", 5: "A15", 6: "Z80_CLK",
     7: "D4", 8: "D3", 9: "D5", 10: "D6", 11: "+5V", 12: "D2", 13: "D7",
     14: "D0", 15: "D1", 16: "INT_N", 17: "NMI_N", 18: None, 19: "MREQ_N",
     20: "IORQ_N", 21: "RD_N", 22: "WR_N", 23: "BUSACK_N", 24: "WAIT_N",

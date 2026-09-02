@@ -5,8 +5,20 @@
 this phase.
 
 **Install:** Breadboards, sockets, decoupling capacitors, pull-ups,
-power wiring, and signal wiring. Install no active device, including the
-Pico 2.
+pull-downs, and power wiring. Install no active device, including the Pico 2.
+Signal wiring is added and continuity-checked in the phase that first uses
+each connection.
+
+## Wiring - sockets, rails, and passive defaults
+
+Place and orient every socket using the
+[package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1).
+Wire the common ground, regulated +5 V, and Pico-derived 3.3 V rails exactly
+as shown in the [construction plan](../hardware/construction.md), including
+the 1N5819 between external +5 V and Pico VSYS. Fit every decoupling and bulk
+capacitor and every pull-up, pull-down, and SIP network in the
+[passive-component plan](../hardware/inventory.md#03-capacitors-and-resistors).
+Do not add point-to-point signal jumpers yet.
 
 **Implementation:** [Phase 0 power checklist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md).
 
@@ -20,11 +32,12 @@ Pico 2.
   the empty-board orientation before wiring over the socket outlines.
 2. With power disconnected, check resistance from each supply rail to
   ground. Investigate readings below 1 kOhm after capacitors charge.
-3. **GAL removed:** Check every address, data, and control net
-  end-to-end, then verify no continuity between neighboring bus lines.
-  At the empty GAL socket, verify each signal has no unintended short
-  to GND, 5 V, or an adjacent pin. Do not attempt to verify GAL output
-  levels while the GAL is removed.
+3. Check every fitted rail and passive connection end-to-end. Verify no
+  continuity between neighboring socket pins or bus contacts except where
+  the passive-component plan explicitly joins them. At the empty GAL socket,
+  verify each fitted passive has no unintended short to GND, 5 V, or an
+  adjacent pin. Do not attempt to verify GAL output levels while it is
+  removed.
 4. Apply 5 V and measure every 5 V-powered DIP socket supply pin.
   Require 4.75 V to 5.25 V at VCC and less than 50 mV at each ground
   pin. The AHCT245 and GAL VCC socket contacts must read 5 V, while the
@@ -50,9 +63,9 @@ Pico 2.
   powered Pico-side logic levels are checked in
   [Phase 1](phase-1-supervisor.md). Measure approximately 10 kOhm
   from each GP10-GP17 contact to GND through the data SIP network.
-  Specifically require approximately 10 kOhm from Z80 WAIT# pin 24 / GAL
-  pin 20 to +5 V, continuity from Z80 IORQ# pin 20 to GAL pin 13, and no
-  WAIT# short to IORQ#, GND, or an adjacent GAL pin.
+  Specifically require approximately 10 kOhm from the Z80 WAIT# pin 24 and
+  GAL pin 20 contacts to +5 V. Their point-to-point connection, and the
+  IORQ# connection to GAL pin 13, are installed and checked in Phase 2.
 
 ## Pass gate
 
