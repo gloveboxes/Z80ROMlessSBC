@@ -105,6 +105,7 @@ static disk_cache_t disk_cache;
 static uint32_t journal_sequence;
 static unsigned int next_journal_pair;
 static absolute_time_t disk_cache_flush_deadline;
+static uint32_t armed_fault;
 
 static uint32_t crc32_bytes(const uint8_t *data, size_t length) {
   uint32_t crc = UINT32_MAX;
@@ -134,22 +135,45 @@ static _Noreturn void reboot_after_flash_failure(void) {
     tight_loop_contents();
 }
 
+static bool consume_fault(z80_flash_fault_point_t point) {
+  uint32_t expected = (uint32_t)point;
+  return __atomic_compare_exchange_n(&armed_fault, &expected,
+                                     Z80_FLASH_FAULT_NONE, false,
+                                     __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+
+static void inject_power_cut(z80_flash_fault_point_t point) {
+  if (consume_fault(point))
+    reboot_after_flash_failure();
+}
+
 static void write_callback(void *parameter) {
   write_params_t *params = parameter;
   flash_range_erase(params->header_offset, FLASH_JOURNAL_PAIR_BYTES);
   flash_range_program(params->data_offset, params->data, FLASH_SECTOR_SIZE);
+  inject_power_cut(Z80_FLASH_FAULT_AFTER_JOURNAL_DATA);
   flash_range_program(params->header_offset,
                       (const uint8_t *)&params->header, FLASH_PAGE_SIZE);
+  inject_power_cut(Z80_FLASH_FAULT_AFTER_JOURNAL_HEADER);
   flash_range_erase(params->target_offset, FLASH_SECTOR_SIZE);
-  flash_range_program(params->target_offset, params->data, FLASH_SECTOR_SIZE);
+  inject_power_cut(Z80_FLASH_FAULT_AFTER_TARGET_ERASE);
+  flash_range_program(params->target_offset, params->data,
+                      FLASH_SECTOR_SIZE / 2u);
+  inject_power_cut(Z80_FLASH_FAULT_AFTER_PARTIAL_TARGET);
+  flash_range_program(params->target_offset + FLASH_SECTOR_SIZE / 2u,
+                      params->data + FLASH_SECTOR_SIZE / 2u,
+                      FLASH_SECTOR_SIZE / 2u);
 
   params->committed =
       memcmp((const void *)(XIP_BASE + params->target_offset), params->data,
              FLASH_SECTOR_SIZE) == 0;
   if (params->committed) {
+    inject_power_cut(Z80_FLASH_FAULT_AFTER_TARGET_VERIFY);
     flash_range_erase(params->header_offset, FLASH_SECTOR_SIZE);
     params->committed =
         *(const uint32_t *)(XIP_BASE + params->header_offset) == UINT32_MAX;
+    if (params->committed)
+      inject_power_cut(Z80_FLASH_FAULT_AFTER_HEADER_CLEAR);
   }
 }
 
@@ -298,7 +322,11 @@ static bool flush_disk_cache(void) {
       crc32_bytes((const uint8_t *)&params.header,
                   offsetof(journal_header_t, header_crc32));
 
-  int result = flash_safe_execute(write_callback, &params, 1000);
+  int result = consume_fault(Z80_FLASH_FAULT_SAFE_EXECUTE_ENTRY)
+                   ? PICO_ERROR_TIMEOUT
+                   : flash_safe_execute(write_callback, &params, 1000);
+  if (consume_fault(Z80_FLASH_FAULT_SAFE_EXECUTE_EXIT))
+    result = PICO_ERROR_TIMEOUT;
   if (result != PICO_OK)
     reboot_after_flash_failure();
   if (params.committed)
@@ -377,6 +405,10 @@ bool z80_flash_backend_flush_due(void) {
   return disk_cache.dirty && time_reached(disk_cache_flush_deadline);
 }
 
+bool z80_flash_backend_quiescent(void) {
+  return !disk_cache.dirty;
+}
+
 bool z80_flash_backend_init(void) {
   queue_init(&service_request_queue, sizeof(service_request_t), 4);
   queue_init(&service_result_queue, sizeof(bool), 4);
@@ -386,5 +418,10 @@ bool z80_flash_backend_init(void) {
   journal_sequence = 0;
   next_journal_pair = 0;
   disk_cache_flush_deadline = nil_time;
+  __atomic_store_n(&armed_fault, Z80_FLASH_FAULT_NONE, __ATOMIC_RELEASE);
   return flash_safe_execute_core_init();
+}
+
+void z80_flash_backend_arm_fault(z80_flash_fault_point_t point) {
+  __atomic_store_n(&armed_fault, (uint32_t)point, __ATOMIC_RELEASE);
 }

@@ -194,3 +194,13 @@ uint32_t z80_flash_disk_status(void) {
 bool z80_flash_disk_has_fatal_error(void) {
   return __atomic_load_n(&disk_fatal_error, __ATOMIC_ACQUIRE) != 0;
 }
+
+bool z80_flash_disk_quiescent(void) {
+  return queue_is_empty(&disk_write_queue) &&
+         disk_status_load() == DISK_STATUS_READY &&
+         z80_flash_backend_quiescent();
+}
+
+void z80_flash_disk_arm_fault(z80_flash_fault_point_t point) {
+  z80_flash_backend_arm_fault(point);
+}

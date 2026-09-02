@@ -53,7 +53,7 @@ Narrow DIPs cross E/F. Z80 and SRAM require real 0.6-inch sockets. Verify curren
 - Qualify at 1 MHz first, then 2-6 MHz in 500 kHz steps. Treat 6.5-8 MHz as experimental even if measured clean.
 - The CPU's 20 MHz grade is not a system rating. Worst-case GAL + AHCT244 + SRAM control-to-data delay is about 79.5 ns before breadboard and setup margin.
 - I/O trapping uses GAL-generated hardware WAIT# plus static clock stop; WAIT setup/hold and release sequencing remain measured behavior.
-- Use the logic analyzer for simultaneous buses and controls; use the two-channel PQ012 for analog levels, edge quality, and paired timing.
+- Use the logic analyzer for simultaneous buses and controls; use the four-channel DHO814 for analog levels, edge quality, and correlated timing groups.
 
 ## Flash, CP/M, and Multicore Ownership
 

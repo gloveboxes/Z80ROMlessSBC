@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "z80sbc/flash_disk.h"
+
 bool z80_flash_backend_init(void);
 void z80_flash_backend_core0_service(void);
 bool z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
@@ -14,5 +16,7 @@ bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
                                     uint8_t write_type);
 bool z80_flash_backend_flush(void);
 bool z80_flash_backend_flush_due(void);
+bool z80_flash_backend_quiescent(void);
+void z80_flash_backend_arm_fault(z80_flash_fault_point_t point);
 
 #endif

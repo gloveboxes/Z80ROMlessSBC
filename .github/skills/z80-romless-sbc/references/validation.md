@@ -94,7 +94,7 @@ The phase-specific C excerpts are explanatory and cumulative. When editing them:
 Do not report a clock rate as qualified without captures and error-free tests at that rate. Preserve:
 
 - Logic-analyzer ordering for CLK, controls, A0-A15, and D0-D7.
-- PQ012 analog captures using compensated 10x probes and short ground springs.
+- DHO814 analog captures using compensated 10x probes and short ground springs.
 - SRAM setup/write-pulse evidence and ownership-transition evidence.
 - Repeated cold boots, DMA verification, I/O tests, and fault-injection results required by Section 8.
 

@@ -46,22 +46,20 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   }
 
   z80_clock_stop();
-  uint16_t address = 0;
+  uint8_t port = 0;
   if (!z80_address_bus_prepare_input() ||
-      !z80_address_bus_sample(&address))
+      !mcp23s17_read_port_a(&port))
     trap_fail_closed();
   z80_address_bus_isolate();
-  if (!mcp23s17_set_directions(0x00, 0x00))
-    trap_fail_closed();
 
-  bool is_read = !gpio_get(PIN_RD_N);
-  bool is_write = !gpio_get(PIN_WR_N);
+  uint32_t controls = gpio_get_all();
+  bool is_read = (controls & (1u << PIN_RD_N)) == 0;
+  bool is_write = (controls & (1u << PIN_WR_N)) == 0;
   if (is_read == is_write) {
     __atomic_fetch_add(&control_errors, 1, __ATOMIC_RELAXED);
     trap_fail_closed();
   }
 
-  uint8_t port = (uint8_t)address;
   if (is_write) {
     z80_data_bus_prepare_input();
     uint8_t value = z80_data_bus_sample();

@@ -63,6 +63,10 @@ bool mcp23s17_write_ports(uint8_t port_a, uint8_t port_b) {
          mcp23s17_write_register(MCP_OLATB, port_b);
 }
 
+bool mcp23s17_read_port_a(uint8_t *port_a) {
+  return mcp23s17_read_register(MCP_GPIOA, port_a);
+}
+
 bool mcp23s17_read_ports(uint8_t *port_a, uint8_t *port_b) {
   return mcp23s17_read_register(MCP_GPIOA, port_a) &&
          mcp23s17_read_register(MCP_GPIOB, port_b);
@@ -70,12 +74,24 @@ bool mcp23s17_read_ports(uint8_t *port_a, uint8_t *port_b) {
 
 bool mcp23s17_register_test(void) {
   static const uint8_t patterns[] = {0x55, 0xAA};
-  bool passed = mcp23s17_set_directions(0x00, 0x00);
+  gpio_put(PIN_ADDR_ENABLE, 0);
+  busy_wait_us_32(1);
+  gpio_put(PIN_ADDR_ENABLE, 1);
+  busy_wait_us_32(1);
+  bool passed = true;
 
   for (size_t index = 0; passed && index < sizeof(patterns); ++index) {
+    uint8_t direction_a;
+    uint8_t direction_b;
     uint8_t actual_a;
     uint8_t actual_b;
-    if (!mcp23s17_write_ports(patterns[index],
+    if (!mcp23s17_set_directions(patterns[index],
+                                 (uint8_t)~patterns[index]) ||
+        !mcp23s17_read_register(MCP_IODIRA, &direction_a) ||
+        !mcp23s17_read_register(MCP_IODIRB, &direction_b) ||
+        direction_a != patterns[index] ||
+        direction_b != (uint8_t)~patterns[index] ||
+        !mcp23s17_write_ports(patterns[index],
                               (uint8_t)~patterns[index]) ||
         !mcp23s17_read_register(MCP_OLATA, &actual_a) ||
         !mcp23s17_read_register(MCP_OLATB, &actual_b) ||

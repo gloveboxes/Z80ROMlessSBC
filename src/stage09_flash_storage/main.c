@@ -36,11 +36,29 @@ static _Noreturn void fail_closed(const char *reason) {
     tight_loop_contents();
 }
 
+static const char *fault_name(z80_flash_fault_point_t point) {
+  static const char *const names[] = {
+    "none",
+    "after journal data",
+    "after journal header",
+    "after target erase",
+    "after partial target program",
+    "after target verification",
+    "after journal header clear",
+    "safe-execute entry failure",
+    "safe-execute exit failure",
+  };
+  return point <= Z80_FLASH_FAULT_SAFE_EXECUTE_EXIT
+             ? names[(unsigned int)point]
+             : "invalid";
+}
+
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
   mcp23s17_init(4000000);
   printf("\nStage 9: manifest boot and journaled flash disks\n");
+  printf("1-8=arm one-shot flash fault, s=status\n");
 
   if (!z80_flash_storage_init())
     fail_closed("boot package or journal recovery");
@@ -54,7 +72,13 @@ int main(void) {
   while (true) {
     z80_flash_core0_service();
     int command = getchar_timeout_us(0);
-    if (command == 's')
+    if (command >= '1' && command <= '8') {
+      z80_flash_fault_point_t point =
+          (z80_flash_fault_point_t)(command - '0');
+      z80_flash_disk_arm_fault(point);
+      printf("armed: %s; trigger the next CP/M write/flush\n",
+             fault_name(point));
+    } else if (command == 's')
       printf("disk_status=%02lx fatal=%u\n",
              (unsigned long)z80_flash_disk_status(),
              z80_flash_disk_has_fatal_error());

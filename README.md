@@ -296,43 +296,56 @@ the state or ordering of the complete A0-A15 and D0-D7 buses.
 
 ##### Probe and Instrument Preparation
 
-1. Connect each probe to its channel, set the physical probe switch to
+1. Before connecting any probe or other input/output lead to the DHO814,
+  use its supplied ground cable to bond the oscilloscope chassis to
+  protective earth. The Type-C power connection does not ground this
+  non-isolated oscilloscope. Its BNC shells, probe grounds, chassis, and
+  digital-interface grounds are common; never use an ordinary passive probe
+  for a floating measurement.
+2. Connect each probe to its channel, set the physical probe switch to
    **10X**, and open that channel's **Vertical > Probe > Probe Ratio** menu.
    Set the scope ratio to **10X** as well. A mismatched ratio makes every
    displayed voltage incorrect.
-2. Before each bring-up session, connect each probe in turn to the front
+3. Before each bring-up session, connect each probe in turn to the front
    panel compensation output and its adjacent ground terminal. Adjust the
    probe until the square wave has flat tops and square corners, matching
    the manual's "Perfectly compensated" example. Repeat for CH1-CH4.
-3. Fit a ground spring or a ground lead shorter than 20 mm to every probe.
-   Connect all probe grounds only to nearby points on the common circuit
-   GND. The DHO814 BNC shells and probe grounds are common; never connect a
-   ground clip to +3.3 V, +5 V, or any signal node.
-4. Recall the default setup, then configure every active channel as
+4. Prefer a ground spring on every probe. If a wire ground must be used,
+   keep it shorter than 20 mm. Connect all probe grounds only to nearby points
+   on the circuit's common GND, and never to a node with voltage relative to
+   earth, including +3.3 V, +5 V, or any signal node.
+5. Recall the default setup, then configure every active channel as
    **1 MOhm input, DC coupling, 10X probe, Invert OFF, Delay 0 s**, and
    **Bandwidth Limit OFF**. Use the full 100 MHz bandwidth for timing,
    edge, overshoot, and ringing captures. A bandwidth limit may be used
    only for a separately labelled supply-noise capture.
-5. Set **Horizontal > Acquisition = Normal**. The DHO800 manual identifies
+6. Set **Horizontal > Acquisition = Normal**. The DHO800 manual identifies
    Normal as the best mode for most waveforms and confirms that sampling is
    real-time only. Do not use Average to qualify glitches or transitions;
    averaging can hide non-repetitive faults. Peak mode may be used as a
    second search capture, but the pass/fail evidence must include a Normal
    acquisition.
-6. Start with **Memory Depth = Auto** for repetitive clock checks. Select
-   **25 Mpts** for single-shot RESET#, BUSREQ#/BUSACK#, DMA, I/O-trap, or
-   intermittent-fault captures, then verify the sample-rate label remains
-   at least 500 MSa/s. Reduce the time span or memory depth if necessary to
-   restore that sample rate. Place the trigger at about 40% of the screen
-   so both pre-trigger cause and post-trigger response are visible.
-7. For 3.3 V nodes start at **1 V/div**; for 5 V nodes start at
+7. Start with **Memory Depth = Auto** for repetitive clock checks. For
+  single-shot RESET#, BUSREQ#/BUSACK#, DMA, I/O-trap, or intermittent-fault
+  captures, select the largest depth available for the number of enabled
+  channels: **25 Mpts** with one channel, **10 Mpts** with two channels, or
+  **5 Mpts** with three or four channels. The corresponding DHO814 maximum
+  real-time sample rates are **1.25 GSa/s**, **625 MSa/s**, and
+  **312.5 MSa/s**. The four-channel maximum gives about 39 samples per 8 MHz
+  clock period and is suitable for the listed multichannel timing captures.
+  For rise/fall time, overshoot, or ringing, disable unneeded channels and
+  shorten the captured time span to obtain the highest displayed sample
+  rate. Place the trigger at about 40% of the screen so both pre-trigger
+  cause and post-trigger response are visible, and record the displayed
+  sample rate and memory depth with the saved evidence.
+8. For 3.3 V nodes start at **1 V/div**; for 5 V nodes start at
    **2 V/div**. Position ground markers near the bottom of each lane without
    overlapping traces. Adjust one step finer when useful, but keep ground
    and both logic levels visible. Start the horizontal scale at 200 us/div
    for 1 kHz, 2 us/div for 100 kHz, 200 ns/div for 1 MHz, and 50 ns/div for
    2-8 MHz. Tighten the scale around an edge when measuring rise time or
    ringing.
-8. Open **Trigger**, choose **Type = Edge**, **Source = CH1**,
+9. Open **Trigger**, choose **Type = Edge**, **Source = CH1**,
    **Coupling = DC**, and choose the edge stated in the table below. Set the
    level to **1.65 V** when CH1 is a 3.3 V node or **2.5 V** when it is a
    5 V node. Use **Sweep = Normal** for repetitive captures and
@@ -340,13 +353,13 @@ the state or ordering of the complete A0-A15 and D0-D7 buses.
    arm Single before issuing the firmware command. Do not use Auto sweep as
    pass evidence because it can force an acquisition without the requested
    event.
-9. Add automatic measurements appropriate to the capture: **Frequency,
+10. Add automatic measurements appropriate to the capture: **Frequency,
    Period, +Duty, -Duty, Rise Time, Fall Time, +Width, -Width, Vmax, Vmin,
    Vpp, Overshoot**, and the applicable **Delay** measurement between CH1
    and another channel. Check timing with cursors as well; automatic
    measurements are invalid if the relevant edges or levels are not fully
    visible.
-10. Stop the acquisition before moving a live probe. Save a screen image
+11. Stop the acquisition before moving a live probe. Save a screen image
     and waveform for every pass gate, naming it with the phase, clock rate,
     stimulus, and probed signals. Record the displayed sample rate, memory
     depth, probe ratio, bandwidth limit, and measured minima/maxima.
@@ -376,10 +389,14 @@ limit and a measured HIGH must satisfy its HIGH limit; use the device-specific
 thresholds and margins stated in the relevant phase rather than treating the
 trigger level as a pass threshold. Investigate overshoot below GND or above
 the node's supply, non-monotonic threshold crossings, ringing that creates a
-second crossing, or a rise/fall time near the DHO814's own approximately
-3.5 ns 100 MHz front-end limit. The scope validates analog quality on the
-listed nodes; the logic analyzer remains mandatory for simultaneous bus-wide
-ordering and the final frequency claim.
+second crossing, or an unusually fast rise/fall time. With the supplied
+150 MHz passive probe, treat a measured rise/fall time approaching about
+4.2 ns as limited by the probe-plus-scope measurement system, not as a
+definitive measurement of the device-under-test edge. The 4.2 ns value is the
+root-sum-square combination of the probe's approximately 2.3 ns and the
+DHO814 front end's approximately 3.5 ns calculated rise-time limits. The scope
+validates analog quality on the listed nodes; the logic analyzer remains
+mandatory for simultaneous bus-wide ordering and the final frequency claim.
 
 ### 0.6 Optional Items
 
@@ -1478,9 +1495,11 @@ existing USB connector as an intermediate terminal transport. USB CDC
 consumes no GPIO and appears as `/dev/cu.usbmodem...` on macOS. It lets
 the same `0x00`/`0x01` virtual-port contract and bounded queues be tested
 without lwIP timing in the loop. Keep diagnostics framed or on a separate
-CDC interface so debug text cannot become CP/M input. Phase 10 replaces
-the USB transport endpoint with Wi-Fi/WebSocket; it does not remove USB
-diagnostics or make USB the final user interface.
+CDC interface so debug text cannot become CP/M input. The Phase 8 firmware
+uses ordinary bytes as terminal input and reserves Ctrl-] followed by one
+command byte for framed diagnostics. Phase 10 replaces the USB transport
+endpoint with Wi-Fi/WebSocket; it does not remove USB diagnostics or make
+USB the final user interface.
 
 The WebSocket server must run on the Pico's other core so Wi-Fi, lwIP,
 HTTP serving, and WebSocket polling cannot interfere with the timing of
@@ -1497,8 +1516,11 @@ between the CPU-facing side and the network-facing side. The trap hook
 must never call lwIP, print, sleep, wait for a browser, or block on a
 queue. It may only enqueue Z80 output bytes, dequeue already-buffered
 browser input bytes, and report terminal status. Core 1 may drop, drain,
-or back-pressure network data; it must not take locks needed by the
-trap or touch any Z80 bus GPIO.
+or back-pressure network data; it must not take application-level locks or
+touch any Z80 bus GPIO. Pico SDK `queue_try_add()`/`queue_try_remove()` do
+not wait for space or data, but they do use brief internal spinlock critical
+sections for multicore safety. Include that bounded contention in measured
+trap-latency qualification rather than describing these queues as lock-free.
 
 The initial terminal decode is intentionally small:
 
@@ -2114,8 +2136,13 @@ static void resume_z80_clock(void) {
 6. Install the AHCT244. Use the Stage 2 walking command to toggle its
   eight functional input paths independently; RESET# was already tested
   in Phase 1 and is not an AHCT244 input. At the selected output require
-  LOW below 0.3 V, HIGH at or above 4.4 V, correct polarity, and no
-  activity on adjacent outputs.
+  LOW below 0.3 V, correct polarity, and no activity on adjacent outputs.
+  Require each non-clock HIGH to reach at least 4.4 V. At Z80 CLK pin 6,
+  require HIGH to reach at least the simultaneously measured Z80
+  $V_{CC}-0.5$ V, which gives 100 mV margin above the Z84C00
+  $V_{IHC}=V_{CC}-0.6$ V minimum across the permitted rail range.
+  Use command `t` to toggle each path independently at 10 Hz and command
+  `w` for the walking-output capture.
 7. Test AHCT244 channel 1A1 at each clock frequency. Require 45% to 55%
   duty cycle and clean transitions at Z80 socket pin 6.
 8. After the Pico 3.3 V rail reaches 3.20 V, verify RESET# remains LOW
@@ -2195,9 +2222,12 @@ static uint8_t mcp_read(uint8_t reg) {
 
 static bool mcp_register_test(void) {
   const uint8_t patterns[] = { 0x55, 0xAA };
-  mcp_write(IODIRA, 0x00);
-  mcp_write(IODIRB, 0x00);
   for (size_t i = 0; i < sizeof patterns; ++i) {
+    mcp_write(IODIRA, patterns[i]);
+    mcp_write(IODIRB, (uint8_t)~patterns[i]);
+    if (mcp_read(IODIRA) != patterns[i] ||
+      mcp_read(IODIRB) != (uint8_t)~patterns[i])
+      return false;
     mcp_write(OLATA, patterns[i]);
     mcp_write(OLATB, (uint8_t)~patterns[i]);
     if (mcp_read(OLATA) != patterns[i] ||
@@ -2218,12 +2248,13 @@ static bool mcp_register_test(void) {
   read HIGH through the two SIP networks. Drive GP9 HIGH and require a
   clean 5 V RESET# release.
 3. With compliant translation fitted, write and read back 0x55 and 0xAA
-  in IODIRA, IODIRB, OLATA, and OLATB.
+  in IODIRA, IODIRB, OLATA, and OLATB with command `m`.
 4. Configure outputs and probe walking-one and walking-zero patterns at
-  the empty Z80 and SRAM sockets.
+  the empty Z80 and SRAM sockets with command `o`.
 5. Configure inputs, apply 0 V or 5 V through 10 kOhm to each pin, and
-  verify only the corresponding GPIO register bit changes.
-6. Run 10,000 alternating register writes and reads with zero errors.
+  use command `i` to verify only the corresponding GPIO register bit changes.
+6. Run command `e` for 10,000 alternating register writes and reads with
+  zero errors.
 
 **Pass gate:** Compliant SPI levels, error-free register access, and
 correct operation of all 16 port bits in both directions.
@@ -2323,8 +2354,9 @@ static void address_bus_drive(uint16_t address) {
 4. Release reset with IODIR inputs. Drive each bus line through 1 kOhm and
   verify the MCP reads it without driving back.
 5. Test 0x0000, 0xFFFF, 0x5555, 0xAAAA, and a walking one across A0-A15,
-  repeat with a walking zero, then run 1,000 release/configure/reset
-  cycles while checking current. Scope A0, A7, A8, and A15 at their
+  then the interleaved walking zero with command `a`. Run command `e` for
+  1,000 release/configure/reset cycles while checking current. Scope A0,
+  A7, A8, and A15 at their
   SRAM socket contacts during 0x0000, 0xFFFF, 0x5555, and 0xAAAA;
   require valid levels without double-clocking, sustained mid-rail
   plateaus, or ringing that crosses the MCP/SRAM input thresholds.
@@ -2360,11 +2392,12 @@ using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
   Verify the AHCT A1-A8 pins remain below 0.8 V while Pico data GPIOs
   are inputs.
 3. Select Pico-to-bus direction and test 0x00, 0xFF, 0x55, 0xAA,
-  walking-one, and walking-zero. Verify levels and bit order.
+  walking-one, and walking-zero with command `d`. Verify levels and bit order.
 4. Drive GP7 LOW, change GP6 LOW, and drive GP7 HIGH. Drive each bus input with
   0 V and 5 V through 1 kOhm and verify the Pico reading.
-5. Run 1,000 disable-change-enable cycles while checking readback and
-  supply current.
+5. Fit temporary 1 kOhm test pulls that present 0xAA on D0-D7, then run
+  command `e` for 1,000 disable-change-enable cycles while checking exact
+  0xAA readback and supply current. Remove the temporary pulls afterward.
 
 **Pass gate:** All eight bits pass both ways, isolation works, and no
 direction change causes contention or unexpected current.
@@ -2561,17 +2594,19 @@ static bool release_cpu_bus(uint32_t timeout_us) {
 1. Verify RESET# LOW, BUSREQ# HIGH, both transceiver OE# signals HIGH,
   and SRAM write inactive immediately after power-up.
 2. Clock at 10 Hz with RESET# asserted for at least three full cycles.
-  Release reset and verify the first opcode fetch at 0x0000, including
+  Use command `0`, release reset, and verify the first opcode fetch at
+  0x0000, including
   the expected M1#, MREQ#, and RD# sequence.
 3. Preload `NOP; NOP; JP 0000h`. Single-step and verify address
-  progression and the repeating jump while Pico bus drivers stay
-  high-impedance.
-4. Repeat at 1 kHz, 100 kHz, and 1 MHz with no unexpected SRAM writes.
-5. Assert BUSREQ# while clocking. Require BUSACK# LOW after the current
+  progression with `l` followed by repeated `s` commands while Pico bus
+  drivers stay high-impedance.
+4. Repeat with commands `1`, `2`, and `3` for 1 kHz, 100 kHz, and 1 MHz
+  respectively, with no unexpected SRAM writes.
+5. Use command `q` to assert BUSREQ# while clocking. Require BUSACK# LOW after the current
   machine cycle and verify CPU bus outputs are high-impedance. Release
   BUSREQ# and require execution to resume.
-6. Assert RESET# for at least three clocks during execution, release it,
-  and verify a new fetch from 0x0000.
+6. Use command `z` to assert RESET# for at least three clocks during
+  execution, release it, and verify a new fetch from 0x0000.
 
 **Pass gate:** Correct reset fetch and execution through 1 MHz, valid
 BUSREQ#/BUSACK# transfer, and no bus contention.
@@ -2618,13 +2653,15 @@ must remain enabled until IORQ# and RD#/WR# have both returned HIGH.
 application-supplied hooks. They must use the signatures below, finish
 without sleeping, printing, waiting on USB, or taking a lock held by
 main code, and must not start another bus operation. Move expensive
-work to the main loop through a lock-free queue.
+work to the main loop through a bounded queue. Pico SDK queue operations do
+not wait for space or data, but their short internal spinlock section means
+they are multicore-safe rather than lock-free.
 
 ```c
 #include "hardware/watchdog.h"
 
-uint8_t process_virtual_io_read(uint8_t port);
-void process_virtual_io_write(uint8_t port, uint8_t value);
+uint8_t process_virtual_io_read(uint8_t port, void *context);
+void process_virtual_io_write(uint8_t port, uint8_t value, void *context);
 
 enum { TRAP_RELEASE_TIMEOUT_US = 500000 }; // Covers the 10 Hz test mode.
 static volatile uint32_t trap_timeout_count;
@@ -2679,11 +2716,11 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   if (is_write) {
     data_bus_prepare_input();                          // Bus -> Pico.
     uint8_t value = data_bus_sample();
-    process_virtual_io_write(port, value);
+    process_virtual_io_write(port, value, NULL);
     resume_and_wait_for_release(PIN_WR_N);
     isolate_buses();
   } else {
-    data_bus_drive(process_virtual_io_read(port));     // Pico -> Bus.
+    data_bus_drive(process_virtual_io_read(port, NULL)); // Pico -> Bus.
     resume_and_wait_for_release(PIN_RD_N);
     isolate_buses();
   }
@@ -2704,25 +2741,26 @@ static void disable_io_trap(void) {
 
 **Test plan:**
 
-1. Acquire ownership by one of two complete procedures. Either use the
-  timed BUSREQ#/BUSACK# handshake, or drive the Pico SRAM controls
-  inactive, assert RESET#, continue the clock for at least three full
-  cycles, and then stop it. In either case, verify the Z80 address and
-  data buses are high-impedance before enabling a transceiver. The
-  Section 1.2 AND gate then grants the Pico exclusive SRAM control;
-  inject a known 64 KB image, read back every byte, and compare it
-  before CPU release.
-2. Run a RAM increment loop for one hour at 1 MHz without corruption or
-  supervisor timeout.
-3. Execute OUT on ports 0x00, 0x01, 0x55, 0xAA, and 0xFF with matching
-  data. Verify correct clock stop, address/data capture, driver disable,
-  and clock resume.
-4. Execute matching IN tests and verify each Pico-generated byte is
-  stored correctly in SRAM.
-5. Bind the same terminal ports to a bounded USB CDC queue. On macOS,
-  connect through `/dev/cu.usbmodem...`; verify bidirectional bytes,
-  disconnect/reconnect, full-queue counters, and no blocking call in the
-  trap. This is an intermediate transport test, not the final terminal.
+1. On startup, the Phase 8 firmware asserts RESET#, supplies at least three
+  full clocks, injects a deterministic 64 KiB image, reads back all 65,536
+  bytes, arms the trap, and only then releases RESET#. Verify the Z80 address
+  and data buses are high-impedance before either transceiver is enabled.
+  Ctrl-] `s` reports separate boot-attempt, DMA, and readback counters.
+2. Enter Ctrl-] `h` to reload the self-checking RAM increment/USB terminal
+  image and run it for one hour at 1 MHz. Require the automatic completion
+  result and Ctrl-] `s` to report zero RAM, trap-timeout, or control errors.
+3. Enter Ctrl-] `p`. The generated Z80 self-test executes OUT on ports 0x00,
+  0x01, 0x55, 0xAA, and 0xFF with matching data. Verify correct clock stop,
+  address/data capture, driver disable, clock resume, and a PASS result.
+4. The same Ctrl-] `p` test executes matching IN instructions, stores each
+  Pico-generated byte in SRAM, reloads and compares it on the Z80, and
+  reports failure through the dedicated test-result port.
+5. On macOS, connect to `/dev/cu.usbmodem...`. Ordinary bytes feed the
+  bounded terminal RX queue and Z80 output drains through the bounded TX
+  queue; Ctrl-] introduces diagnostics. Verify echoed bytes,
+  disconnect/reconnect queue clearing, full-queue counters, and no blocking
+  USB call in the trap. This is an intermediate transport test, not the final
+  terminal.
 6. With a logic analyzer, prove IORQ# asserts WAIT# before the Z80 WAIT
   sampling edge, DATA_ENABLE releases WAIT# only after direction/data are
   stable, and WAIT# remains released until IORQ# and RD#/WR# are HIGH.
@@ -2730,8 +2768,11 @@ static void disable_io_trap(void) {
   during CPU cycles, the CPU bus is high-impedance before DMA enable,
   both DIR controls change only while their OE# is HIGH, and no overlap
   occurs between SRAM control sources.
-8. Repeat cold boot, injection, execution, and I/O tests 100 times with
-  zero logged failures.
+8. Enter Ctrl-] `b` to perform 100 automated reset-held full-image
+  injection/readback/execution/I/O cycles with zero failures. This is not a
+  substitute for cold-power behavior: also perform ten physical power cycles
+  while externally logging each startup PASS line and checking the startup
+  waveforms.
 
 **Pass gate:** Zero image or boot failures, correct IN/OUT behavior,
 one-hour stable execution, and contention-free ownership transitions.
@@ -3433,6 +3474,13 @@ No erase, program, blocking queue, or flash-safe call runs inside
   the core-0 release queue; recovery must retain the verified old or new
   disk block.
 
+Stage 9 USB diagnostic keys `1` through `6` arm the six power-cut points
+in test 10; keys `7` and `8` arm safe-execute entry and exit failure in
+test 13. Each key arms one watchdog reset for the next CP/M write or flush.
+Before arming, preserve host copies of the old and intended new 4 KiB block;
+after reboot, read back and compare the complete block before proceeding to
+the next injection point.
+
 **Pass gate:** Boot and all four disks match host CRC32 values; A-D expose
 their distinct expected sentinel files with no aliasing; real CP/M `DIR`,
 transient execution, warm boot, multi-extent loading, and cross-drive copy
@@ -3459,9 +3507,12 @@ connection management, the embedded HTTP terminal page, WebSocket
 client state, network polling, and the Section 6.3 flash disk-write
 service -- all in the same `core1_main()` task, since
 `multicore_launch_core1()` only accepts one entry point. The two cores
-exchange only terminal bytes, flash disk-write requests, and status
-through nonblocking queues, following the `pico-altair-8800` console
-bridge pattern.
+exchange terminal bytes and immutable disk-write requests with nonwaiting
+`queue_try_*` operations, following the `pico-altair-8800` console bridge
+pattern. During a physical flash commit, core 1 deliberately waits on a
+separate request/result queue while core 0 performs the bounded
+BUSREQ#/BUSACK# ownership transfer; that rendezvous never runs in the Z80
+trap.
 
 **Implementation:** [Phase 10 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c),
 with the shared [terminal bridge](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c),
@@ -3761,6 +3812,15 @@ Z80 is held in BUSACK#.
   supervisor to remain fail-closed rather than launching core 1 without
   both WebSocket polling timers.
 
+Before using the qualification controls, issue a CP/M disk flush and wait
+for READY. The final firmware then quiesces the core-1 disk service before
+any CPU ownership or clock change. USB diagnostic `+` and `-` change the
+clock by 500 kHz under BUSREQ#/BUSACK#; `a` loads a CPU-read-only bus pattern
+covering 0000/FFFF/5555/AAAA plus walking-one/walking-zero addresses;
+`t` starts the self-checking RAM/continuous-terminal image; and `h` runs that
+image with an automatic one-hour result. These diagnostic images replace the
+running CP/M image, so reboot before returning to CP/M filesystem tests.
+
 **Pass gate:** The WebSocket service remains responsive while the Z80
 runs at the Phase 8 qualified 1 MHz setting; terminal status never claims
 data that cannot be read; interactive CP/M commands, warm boot, distinct
@@ -3771,10 +3831,13 @@ counters rather than blocking the CPU trap.
 
 ### 8.12 Frequency Qualification
 
-Begin only after Phase 10 passes at 1 MHz. Test 2 MHz, then increase in
-500 kHz steps to 6 MHz. If and only if 6 MHz passes with margin, continue
-experimentally in 500 kHz steps to 8 MHz. At each step repeat SRAM readback, the one-hour
-memory loop, and continuous IN/OUT tests while measuring stop latency.
+Begin only after Phase 10 passes at 1 MHz and CP/M has flushed all disks.
+Use USB `+`/`-` to select each frequency under the firmware's
+BUSREQ#/BUSACK# and core-1 flash-quiescence interlocks. Test 2 MHz, then
+increase in 500 kHz steps to 6 MHz. If and only if 6 MHz passes with margin,
+continue experimentally in 500 kHz steps to 8 MHz. At each step run `a` for
+CPU SRAM readback/address activity and `h` for the one-hour self-checking
+memory loop plus continuous terminal IN/OUT while measuring stop latency.
 At 1, 2, 3, 4, 5, and 6 MHz, plus every experimental step, also apply address patterns 0x0000, 0xFFFF,
 0x5555, 0xAAAA, walking one, and walking zero while capturing A0, A7,
 A8, and A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM
@@ -4075,7 +4138,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | Probe | Instrument lead designed to minimize loading | A compensated 10x scope probe is used for analog measurements; logic probes capture digital states. |
 | 1x / 10x probe | Probe attenuation ratio | 10x mode usually loads fast logic less and provides better bandwidth than 1x mode. |
 | Ground spring | Very short probe-ground attachment | Prevents the probe's own ground-loop inductance from creating apparent ringing. |
-| Bandwidth | Highest sine-wave frequency passed within a stated attenuation | The DHO814's 100 MHz front end has an approximate 3.5 ns calculated rise-time limit; an edge displayed near that limit may be scope-limited. |
+| Bandwidth | Highest sine-wave frequency passed within a stated attenuation | The DHO814's 100 MHz front end has an approximate 3.5 ns calculated rise-time limit; with the supplied 150 MHz probe, the combined measurement-system limit is about 4.2 ns. |
 | Sample rate | Number of measurements recorded per second | Determines time resolution; it is distinct from analog bandwidth. |
 | Real-time sampling | Samples used for one displayed acquisition are collected from the same trigger event | The DHO814 uses real-time sampling, so Single mode can preserve a one-off transition for analysis. |
 | Memory depth | Number of samples retained in one acquisition | The DHO814 provides up to 25 Mpts, allowing substantial pre-trigger and post-trigger context while retaining a useful sample rate. |
