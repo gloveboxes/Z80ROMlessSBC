@@ -268,7 +268,7 @@ block-beta
 ```
 
 VCC (pin 20) connects to 3.3 V and GND (pin 10) to common ground. The
-[5 V-side pull-ups](inventory.md#03-capacitors-and-resistors) keep every input defined when its
+[5 V-side pull-ups](../implementation/phase-0-power.md#passive-component-installation) keep every input defined when its
 source is absent or high-impedance. Tie unused inputs 2A2/2A3/2A4
 (pins 13/15/17) to GND and leave outputs 2Y2/2Y3/2Y4 (pins 7/5/3) open.
 

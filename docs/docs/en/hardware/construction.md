@@ -143,8 +143,9 @@ This placement uses row alignment to reduce diagonal jumper length:
 
 This schedule includes one empty row between every socket or module and
 still fits all three boards. Mark the actual supply-module overhang and
-socket outlines on the empty boards before wiring; the schedule is not
-valid if the supply consumes more than the assumed three rows.
+socket outlines on the empty boards before wiring. If the supply consumes
+more than the assumed three rows, move it off-board or to the Memory Board
+rather than compressing the Core Board placement.
 
 ![Side-by-side BB830 placement schedule and grouped chip connections](../images/breadboard-layout.svg)
 

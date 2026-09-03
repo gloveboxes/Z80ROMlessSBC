@@ -110,7 +110,7 @@ diagnostic after [Phase 3](phase-3-address-generator.md).
 **Test plan:**
 
 1. With the 1N5819 fitted as specified in the
-  [construction and power plan](../hardware/inventory.md#04-construction-and-power),
+  [Phase 0 power plan](phase-0-power.md#power-distribution-and-isolation),
   USB and external power may be
   connected together. Confirm neither source back-powers the other,
   then require 3.20 V to 3.40 V on the Pico 3.3 V rail, at the

@@ -57,7 +57,7 @@ block-beta
   BSO --> PMISO
 ```
 
-Fit the [specified pull-up](inventory.md#03-capacitors-and-resistors) on SO
+Fit the [specified pull-up](../implementation/phase-0-power.md#passive-component-installation) on SO
 because it is high-impedance while CS# is HIGH.
 
 ### Pico 2 W to ATF22V10

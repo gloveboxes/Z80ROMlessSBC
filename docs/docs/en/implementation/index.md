@@ -35,7 +35,7 @@ from the consolidated hardware pages, which remain the authoritative
 subsystem references; the implementation plan presents the same source in
 construction order rather than maintaining duplicate diagrams.
 
-Fit the [specified pull-ups and pull-downs](../hardware/inventory.md#03-capacitors-and-resistors)
+Fit the [specified pull-ups and pull-downs](phase-0-power.md#passive-component-installation)
 so every signal has its defined state before firmware starts. Use temporary
 1 kOhm series resistors when first connecting two potentially driven nodes.
 Record idle current after every phase. Unless stated otherwise, keep all chips

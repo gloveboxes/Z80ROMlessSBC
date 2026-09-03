@@ -149,7 +149,7 @@ block-beta
 ```
 
 The same 3.3 V rail supplies the
-[3.3 V pull-ups](inventory.md#03-capacitors-and-resistors); these are separate
+[3.3 V pull-ups](../implementation/phase-0-power.md#passive-component-installation); these are separate
 resistor connections, not taps on either transceiver VCC pin.
 
 ### External supply to Pico 2 W
@@ -642,7 +642,7 @@ input pull-ups keep the permanently enabled AHCT244 deterministic if the
 GAL is missing; the output pull-ups keep the SRAM inactive if the
 AHCT244 is physically missing. All installed source devices must be
 powered as required by the
-[construction and power rules](inventory.md#04-construction-and-power).
+[Phase 0 power rules](../implementation/phase-0-power.md#power-distribution-and-isolation).
 
 WAIT# may connect directly from GAL pin 20 to Z80 pin 24 because the
 Z84C00 ordinary-input HIGH minimum is 2.2 V, below the GAL's guaranteed
