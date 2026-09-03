@@ -138,9 +138,10 @@ python3 src/disks/convert_altair_disks.py
 python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
-The first script removes the Altair sector framing and skew, extracts the
+- The first script removes the Altair sector framing and skew, extracts the
 128-byte CP/M records, pads the images from 77 to 80 tracks, and writes them to
-`src/disks/generated/`. The second assembles the board BIOS and optimized
+`src/disks/generated/`. 
+- The second assembles the board BIOS and optimized
 CCP/BDOS, replaces Drive A's system tracks, and writes the provisionable images
 to `build/cpm/`. Drives B-D pass through unchanged. Other source formats need
 a converter that produces the 320 KiB layout defined above.
