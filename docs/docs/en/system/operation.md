@@ -221,19 +221,22 @@ of the first 4 KiB with `0xFF`; the image begins at package offset
 offset zero. Generate this package and the BIOS DPB constants from one
 host tool so geometry and integrity metadata cannot drift.
 
-**Read path.** A disk read copies from a single 4 KiB SRAM cache when it
-matches the selected drive and flash block; otherwise it copies directly
-from the memory-mapped flash region. There is no SPI transaction, DMA
-request, or cross-core handshake. The READY status uses release/acquire
-ordering, so core 0 cannot inspect the cache while core 1 is changing it.
+**Read path.** The Pico firmware allocates one 4 KiB disk-data cache in the
+RP2350's internal SRAM, separate from the Z80's external 64 KiB SRAM. A disk
+read uses this cache when it holds the selected drive and flash block;
+otherwise it copies directly from the memory-mapped flash region. There is no
+SPI transaction, DMA request, or cross-core handshake. The READY status uses
+release/acquire ordering, so core 0 cannot inspect the cache while core 1 is
+changing it.
 
 **Write and recovery path.** CP/M still transfers 128-byte records, but the
-Pico coalesces them in one 4 KiB erase-block cache. The BIOS passes the
-standard CP/M `WRITE` classification from register C: normal writes and the
-first record of a newly allocated CP/M block may remain dirty in SRAM;
-directory writes flush immediately. Selecting another flash block flushes
-the previous block first, 250 ms without another changed record triggers an
-idle flush, and warm boot issues an explicit flush before it reloads CCP/BDOS.
+Pico firmware coalesces them in that 4 KiB RP2350 SRAM cache. The BIOS passes
+the standard CP/M `WRITE` classification from register C: normal writes and
+the first record of a newly allocated CP/M block may remain dirty in the
+cache; directory writes flush immediately. Selecting another flash block
+flushes the previous block first, 250 ms without another changed record
+triggers an idle flush, and warm boot issues an explicit flush before it
+reloads CCP/BDOS.
 Thus CP/M cannot persist directory metadata ahead of its referenced data, a
 completed overwrite cannot remain indefinitely only in SRAM, and sequential
 writes to one track need at most one journaled flash update instead of as many
