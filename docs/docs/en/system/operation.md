@@ -143,7 +143,8 @@ python3 src/cpm/build_images.py --output-dir build/cpm
 `src/disks/generated/`. 
 - The second assembles the board BIOS and optimized
 CCP/BDOS, replaces Drive A's system tracks, and writes the provisionable images
-to `build/cpm/`. Drives B-D pass through unchanged. Other source formats need
+to `build/cpm/`. Drives B-D pass through unchanged. 
+- Other source formats need
 a converter that produces the 320 KiB layout defined above.
 
 **Reservation mechanism.** The RP2350 default linker script includes a
