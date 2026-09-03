@@ -21,8 +21,8 @@ input/output cycles.
 The Pico also provides virtual peripherals. During a Z80 input/output request,
 hardware pauses the processor while the Pico identifies the requested port and
 exchanges one byte. Z80 `IN` and `OUT` instructions feed terminal queues; a
-WebSocket server runs on the Pico's other core so network traffic does not
-affect Z80 timing.
+WebSocket VT100 terminal runs on the Pico's other core so network traffic does
+not affect Z80 timing.
 
 Z80 boot software and CP/M disks occupy reserved regions of the Pico's onboard
 flash rather than removable media. The Pico reads the flash directly and uses
