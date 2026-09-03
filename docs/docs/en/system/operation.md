@@ -131,21 +131,18 @@ slot unchanged. The matching CP/M 2.2 DPB is `SPT=32`, `BSH=4`,
 `CKS=0`, and `OFF=2`. Keep these values in the Z80 BIOS and host image
 builder from one shared generated definition.
 
-**Disk-image conversion.** From the repository root, run:
+**Disk-image conversion.** The converted source disks are checked into
+`src/disks/generated/`, so normal builds require no separate conversion step.
+To regenerate them from the bundled Altair images, run:
 
 ```sh
 python3 src/disks/convert_altair_disks.py
-python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
-- The first script removes the Altair sector framing and skew, extracts the
-128-byte CP/M records, pads the images from 77 to 80 tracks, and writes them to
-`src/disks/generated/`. 
-- The second assembles the board BIOS and optimized
-CCP/BDOS, replaces Drive A's system tracks, and writes the provisionable images
-to `build/cpm/`. Drives B-D pass through unchanged. 
-- Other source formats need
-a converter that produces the 320 KiB layout defined above.
+The script removes the Altair sector framing and skew, extracts the 128-byte
+CP/M records, pads the images from 77 to 80 tracks, and writes them to
+`src/disks/generated/`. Other source formats need a converter that produces
+the 320 KiB layout defined above.
 
 **Reservation mechanism.** The RP2350 default linker script includes a
 file named `pico_flash_region.ld`. After `pico_sdk_init()`, the root
@@ -182,9 +179,20 @@ target_link_libraries(z80_flash_disk PUBLIC
   pico_flash hardware_flash hardware_watchdog pico_multicore pico_util)
 ```
 
-**Provisioning.** Build each disk as a flat, exactly-320-KiB binary and
-build the boot package described below, then write them outside the
-running firmware. Use `-v` so `picotool` verifies every load:
+**Provisioning.** The `z80_cpm_images` build target automatically creates the
+boot package, four final disk images, and combined
+`build/cpm/z80romless-flash.bin`. For initial setup, put the Pico in BOOTSEL
+mode, then build and load the complete image:
+
+```sh
+cmake --build build --target z80_cpm_images -j
+picotool load -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000
+picotool reboot
+```
+
+The build creates the image but does not write the Pico automatically. Use the
+separate files below only to replace selected regions while preserving the
+others:
 
 ```sh
 picotool load -v -o 0x102A0000 -t bin build/cpm/z80boot.pkg
