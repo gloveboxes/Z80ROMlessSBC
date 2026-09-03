@@ -131,6 +131,20 @@ slot unchanged. The matching CP/M 2.2 DPB is `SPT=32`, `BSH=4`,
 `CKS=0`, and `OFF=2`. Keep these values in the Z80 BIOS and host image
 builder from one shared generated definition.
 
+**Disk-image conversion.** From the repository root, run:
+
+```sh
+python3 src/disks/convert_altair_disks.py
+python3 src/cpm/build_images.py --output-dir build/cpm
+```
+
+The first script removes the Altair sector framing and skew, extracts the
+128-byte CP/M records, pads the images from 77 to 80 tracks, and writes them to
+`src/disks/generated/`. The second assembles the board BIOS and optimized
+CCP/BDOS, replaces Drive A's system tracks, and writes the provisionable images
+to `build/cpm/`. Drives B-D pass through unchanged. Other source formats need
+a converter that produces the 320 KiB layout defined above.
+
 **Reservation mechanism.** The RP2350 default linker script includes a
 file named `pico_flash_region.ld`. After `pico_sdk_init()`, the root
 `CMakeLists.txt` writes that file into the build directory with a `FLASH`
