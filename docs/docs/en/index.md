@@ -47,11 +47,12 @@ The complete software and storage path is:
    `z80boot.pkg`, copies its 64 KiB payload into SRAM, verifies the copy, and
    releases the Z80 from reset. The BIOS installs CP/M's restart and system-call
    entry points, then displays the `A>` prompt.
-5. During operation, the BIOS converts disk requests into 128-byte transfers
-   that the Pico reads from or writes to flash. The Pico caches writes and uses
-   a recovery log to protect each flash update. A warm boot does not use
-   `z80boot.pkg`; the BIOS reloads the CCP and BDOS from Drive A before
-   returning to the prompt.
+5. Drives A-D are persistent read/write disks. During operation, the BIOS
+   converts disk requests into 128-byte transfers that the Pico reads from or
+   writes to flash. The Pico caches writes, commits them after 250 ms of
+   inactivity or when CP/M requests an immediate save, and uses a recovery log
+   to protect each flash update. A warm boot does not use `z80boot.pkg`; the
+   BIOS reloads the CCP and BDOS from Drive A before returning to the prompt.
 
 See the [CP/M boot-image README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md),
 [disk-media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md),
