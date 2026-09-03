@@ -90,99 +90,31 @@ more virtual status bits before adding hardware.
 
 ## 6.3 Onboard Flash CP/M Disk Storage
 
-Boot images and CP/M disk images live in a reserved region of the
-Pico's own onboard flash, not on any external card or bus. This needs
-zero extra GPIO and zero extra parts: the same physical flash chip
-that already holds the Pico's own firmware is memory-mapped and
-directly readable by both cores at any time, so no SPI bus, socket, or
-level-shifted chip-select is involved. GP27 and GP28 keep their
-original job monitoring Z80 RD# and WR# through the
-[SN74LVC244 input buffer](../hardware/bus-isolation.md#53-sn74lvc244an-5-v-to-33-v-input-buffer);
-nothing needs
-reclaiming for storage.
+The Pico's 4 MiB onboard flash stores its firmware, the Z80 boot package, and
+four persistent read/write CP/M disks. No external storage, SPI bus, or extra
+GPIO is required. The linker limits Pico firmware to the first 2.5625 MiB and
+reserves the remainder as follows:
 
-**Capacity budget.** The Pico 2 W's onboard flash is 4 MiB. Reserve the
-top 1.4375 MiB for a power-fail journal, a distinct Z80 boot package,
-and four complete 320 KiB disks, leaving 2.5625 MiB for Pico firmware.
-That still comfortably covers this project's code plus the Wi-Fi
-firmware/CLM blob embedded by `pico_cyw43_arch`.
-
-| Region | Flash offset (from flash base) | Size | Contents |
+| Region | Flash offset | Size | Contents |
 |----|----:|----:|----|
 | Journal | `0x290000` | 64 KiB | Eight rotating metadata/data sector pairs |
-| Boot | `0x2A0000` | 128 KiB | Manifest plus a maximum 64 KiB Z80 RAM image |
+| Boot | `0x2A0000` | 128 KiB | Header and Z80 memory image |
 | Drive A | `0x2C0000` | 320 KiB | CP/M system disk |
 | Drive B | `0x310000` | 320 KiB | CP/M data disk |
 | Drive C | `0x360000` | 320 KiB | CP/M data disk |
 | Drive D | `0x3B0000` | 320 KiB | CP/M data disk |
 
-Each 320 KiB slot is exactly eighty 4 KiB flash erase sectors with no
-partial sector left over, so every slot boundary is also a sector
-boundary.
+**Disk format.** Each disk is exactly 327,680 bytes: 80 tracks of 32
+sequential 128-byte records. This project-specific format is not IBM 3740
+SSSD. Converted Altair source disks are checked into `src/disks/generated/`,
+so normal builds need no conversion step. The optional
+`src/disks/convert_altair_disks.py` script removes Altair framing and skew,
+extracts the CP/M records, and pads the images from 77 to 80 tracks.
 
-**Disk-image contract.** Here, "320 KiB" means exactly 327,680 bytes:
-2,560 linear 128-byte CP/M records. The default BIOS presents those as
-80 logical tracks of 32 records, numbered 1-32, with no skew. This is a
-project-specific logical geometry, not the IBM 3740 8-inch SSSD format
-(77 tracks x 26 records x 128 bytes = 256,256 bytes); existing images
-in another 8-inch format must be converted rather than copied into a
-slot unchanged. The matching CP/M 2.2 DPB is `SPT=32`, `BSH=4`,
-`BLM=15`, `EXM=0`, `DSM=155`, `DRM=63`, `AL0=0x80`, `AL1=0x00`,
-`CKS=0`, and `OFF=2`. Keep these values in the Z80 BIOS and host image
-builder from one shared generated definition.
-
-**Disk-image conversion.** The converted source disks are checked into
-`src/disks/generated/`, so normal builds require no separate conversion step.
-To regenerate them from the bundled Altair images, run:
-
-```sh
-python3 src/disks/convert_altair_disks.py
-```
-
-The script removes the Altair sector framing and skew, extracts the 128-byte
-CP/M records, pads the images from 77 to 80 tracks, and writes them to
-`src/disks/generated/`. Other source formats need a converter that produces
-the 320 KiB layout defined above.
-
-**Reservation mechanism.** The RP2350 default linker script includes a
-file named `pico_flash_region.ld`. After `pico_sdk_init()`, the root
-`CMakeLists.txt` writes that file into the build directory with a `FLASH`
-origin of `0x10000000` and length of `0x290000`. The linker therefore rejects
-code or `const` data that grows into storage, while the
-`PICO_FLASH_SIZE_BYTES` C macro remains the board's physical 4 MiB and
-`hardware_flash` accepts physical offsets through `0x3FFFFF`. Pico SDK 2.2
-can also generate the linker fragment from a same-named CMake variable, but
-this project writes the fragment explicitly so the linker limit and physical
-device size have distinct names. Never pass
-`-DPICO_FLASH_SIZE_BYTES=0x290000` to the compiler: that would replace the
-physical-size contract. Add
-`static_assert(PICO_FLASH_SIZE_BYTES == 4u * 1024u * 1024u, "Pico 2 W flash size changed")`
-to the storage module and inspect the link map in CI to require
-`__flash_binary_end <= 0x10290000`.
-
-The build must also link `pico_flash`, `hardware_flash`,
-`hardware_watchdog`, `pico_multicore`, and `pico_util`. Define
-`PICO_FLASH_ASSUME_CORE1_SAFE=1`: core 0 uses `flash_safe_execute()`
-only for journal recovery before core 1 is launched, while later core-1
-writes still lock out core 0 normally. Core 0 must never erase/program
-flash after core 1 starts. The essential CMake ordering is:
-
-```cmake
-pico_sdk_init()
-
-file(WRITE "${CMAKE_BINARY_DIR}/pico_flash_region.ld"
-  "FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 0x290000\n")
-
-target_compile_definitions(z80_flash_disk PUBLIC
-  PICO_FLASH_ASSUME_CORE1_SAFE=1)
-target_link_libraries(z80_flash_disk PUBLIC
-  pico_flash hardware_flash hardware_watchdog pico_multicore pico_util)
-```
-
-**Provisioning.** The `z80_cpm_images` build target automatically creates the
-boot package, four final disk images, and combined
-`build/cpm/z80romless-flash.bin`. For initial setup, put the Pico in BOOTSEL
-mode, then build and load the complete image:
+**Build and provisioning.** The `z80_cpm_images` target automatically creates
+the boot package, four disk images, and combined
+`build/cpm/z80romless-flash.bin`. The build does not flash the Pico. For
+initial setup, put it in BOOTSEL mode and run:
 
 ```sh
 cmake --build build --target z80_cpm_images -j
@@ -190,112 +122,29 @@ picotool load -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000
 picotool reboot
 ```
 
-The build creates the image but does not write the Pico automatically. Use the
-separate files below only to replace selected regions while preserving the
-others:
+Use separate artifacts only for selective updates. The
+[firmware build and provisioning page](firmware-build.md) gives their commands
+and addresses. Full provisioning, `flash_nuke.uf2`, and mass erase destroy
+existing disk contents, so keep backups.
 
-```sh
-picotool load -v -o 0x102A0000 -t bin build/cpm/z80boot.pkg
-picotool load -v -o 0x102C0000 -t bin build/cpm/drive_a_cpm63k-z80.img
-picotool load -v -o 0x10310000 -t bin build/cpm/drive_b_bdsc.img
-picotool load -v -o 0x10360000 -t bin build/cpm/drive_c_escape.img
-picotool load -v -o 0x103B0000 -t bin build/cpm/drive_d_blank.img
-```
+**Runtime behavior.** On cold boot, the Pico recovers any interrupted disk
+update, validates `z80boot.pkg`, copies its image to Z80 SRAM, and verifies the
+copy before releasing reset. The BIOS transfers one 128-byte disk record at a
+time. Core 0 serves reads from memory-mapped flash and queues writes to core 1,
+which maintains one 4 KiB cache in RP2350 internal SRAM, separate from the
+Z80's external SRAM. Directory writes flush immediately. Other writes flush
+on cache eviction, an explicit BIOS request, warm boot, or 250 ms of
+inactivity.
 
-(`0x10000000` is the Pico's XIP flash base address, so these absolute
-addresses are the flash-offset column above plus that base.) Reject any
-disk file whose host-side size is not exactly 327,680 bytes. If an
-RP2350 partition table is later embedded, declare these as data
-partitions and load them by partition ID; do not casually add
-`--ignore-partitions`. Firmware-only UF2 updates normally leave these
-addresses untouched, but `flash_nuke.uf2`, mass erase, or a replacement
-partition table destroys them, so keep host backups. There is no
-runtime bulk-image upload path in this design.
+A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
+At startup, firmware replays complete, CRC-valid committed entries and rejects
+invalid or out-of-range entries. The
+[Phase 9 implementation guide](../implementation/phase-9-flash-storage.md)
+defines the journal sequence, multicore lockout, failure handling, and tests.
 
-`z80boot.pkg` is little-endian. Its first 20 bytes are, in order,
-32-bit magic `0x5442385A` ("Z8BT"), 16-bit version 1, 16-bit header
-length 20, 32-bit image length, 32-bit IEEE CRC32 of the image, and
-32-bit IEEE CRC32 of the preceding 16 header bytes. Pad the remainder
-of the first 4 KiB with `0xFF`; the image begins at package offset
-`0x1000` and must be 1-65,536 bytes. The Z80 reset vector is at image
-offset zero. Generate this package and the BIOS DPB constants from one
-host tool so geometry and integrity metadata cannot drift.
-
-**Read path.** The Pico firmware allocates one 4 KiB disk-data cache in the
-RP2350's internal SRAM, separate from the Z80's external 64 KiB SRAM. A disk
-read uses this cache when it holds the selected drive and flash block;
-otherwise it copies directly from the memory-mapped flash region. There is no
-SPI transaction, DMA request, or cross-core handshake. The READY status uses
-release/acquire ordering, so core 0 cannot inspect the cache while core 1 is
-changing it.
-
-**Write and recovery path.** CP/M still transfers 128-byte records, but the
-Pico firmware coalesces them in that 4 KiB RP2350 SRAM cache. The BIOS passes
-the standard CP/M `WRITE` classification from register C: normal writes and
-the first record of a newly allocated CP/M block may remain dirty in the
-cache; directory writes flush immediately. Selecting another flash block
-flushes the previous block first, 250 ms without another changed record
-triggers an idle flush, and warm boot issues an explicit flush before it
-reloads CCP/BDOS.
-Thus CP/M cannot persist directory metadata ahead of its referenced data, a
-completed overwrite cannot remain indefinitely only in SRAM, and sequential
-writes to one track need at most one journaled flash update instead of as many
-as 32. An unchanged record does not dirty the cache.
-
-The trap copies each complete write request into `disk_write_queue` and
-reports BUSY; it never erases flash itself. When a flush is required, core 1
-asks core 0 to acquire BUSACK# while trapping remains enabled, and core 0
-disables the trap only after BUSACK# is LOW. Core 1 then uses a bounded
-`flash_safe_execute()` call, which parks the registered core-0 victim and
-disables core-1 interrupts.
-
-Each update rotates through one of eight 8 KiB journal pairs:
-
-1. Erase the pair, then program the replacement 4 KiB data block.
-2. Program a one-page header containing sequence, target offset, and
-  CRC32. Until this valid header exists, the target remains untouched.
-3. Erase/program the target block and verify all 4 KiB through XIP.
-4. Erase the journal header only after verification succeeds.
-
-At cold boot, core 0 scans valid journal headers before loading the Z80
-image and restores them in sequence order. Therefore power loss before
-step 2 leaves the old target intact; power loss during or after step 3
-leaves a valid replacement block from which boot recovery can finish.
-After a write, core 0 arms the trap while BUSACK# is still LOW and only
-then releases BUSREQ#, eliminating any interval in which the Z80 can
-run without I/O trapping. A bus-acquisition failure leaves the trap
-enabled; a release failure asserts RESET# and disables the trap.
-IORQ#, RD#, and WR# all tri-state whenever BUSACK# is asserted (Z8400
-datasheet), so `io_trap_handler()` itself first confirms BUSACK# is
-still HIGH before touching anything; a stray edge while the Pico holds
-the bus disables the IORQ# interrupt and is ignored. The fitted
-[5 V-side 10 kOhm pull-ups](../hardware/inventory.md#03-capacitors-and-resistors)
-keep the LVC244 inputs defined throughout
-the grant; Pico-side pulls cannot bias an input on the other side of the
-buffer.
-A successful write or recovery requires both a `PICO_OK` safe-execute
-result and callback verification of the flash contents. A runtime
-safe-execute failure asserts RESET#, isolates the buses, stops CLK, and
-forces a watchdog reboot before attempting another core-0 request:
-SDK lockout-exit failure can leave core 0 parked, so continuing to its
-release queue would deadlock instead of recovering.
-
-Flash write endurance is finite and chip-specific; confirm the Pico 2 W's
-actual onboard flash part's rated erase-cycle endurance before relying on
-this for a write-heavy workload. The erase-block cache substantially reduces
-wear for sequential CP/M writes, but this partition remains a poor fit for a
-disk used as constant scratch/swap space.
-
-**Core assignment.** Reads happen inline in `io_trap_handler()` on core 0.
-Writes and flushes are deferred to core 1, the same task that owns the
-[WebSocket terminal](#62-terminal-io-over-pico-websocket). A cache-only write returns READY without a
-flash operation; after 250 ms of write inactivity, core 1 flushes it. Every
-required flush asks core 0's foreground loop to freeze the Z80, performs the
-journaled update, clears the cache's dirty state, and only then releases the
-Z80. A successful idle flush does not modify protocol status, so it cannot
-consume or overwrite a foreground command state. Wi-Fi association is a
-bounded polling state machine, so storage remains available with no access
-point. Flash access never touches SPI0, the MCP23S17, or any Z80 bus GPIO.
+Flash has finite erase endurance. The cache coalesces writes and skips clean
+blocks, but sustained write-heavy workloads should use replaceable or
+wear-levelled storage.
 
 ## 6.4 System Performance Envelope & Constraints
 
