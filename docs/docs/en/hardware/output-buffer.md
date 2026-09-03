@@ -1,19 +1,24 @@
 # 4. Output Buffer Mapping: SN74AHCT244N (DIP-20)
 
 The 5 V-powered SN74AHCT244 provides all eight required high-level
-outputs. Its TTL-compatible inputs accept both Pico 3.3 V signals and
-the ATF22V10's guaranteed 2.4 V HIGH. At the light CMOS loads used here,
-its 5 V outputs satisfy the Z80 clock's strict $V_{IHC}$ threshold, the
-MCP23S17's $0.8V_{DD}$ SPI threshold, and the SRAM's CMOS control-input
-threshold. Its current TI datasheet specifies a worst-case 9.5 ns
-A-to-Y delay at 5 V with a 50 pF load over -40°C to 85°C. Combined
-with the ATF22V10C-15's 15 ns combinational delay and the SRAM's 55 ns
-chip-enable access, these datasheet maxima give a conservative 79.5 ns
-component-delay sum for the control-to-data path. This is not complete
-timing closure: breadboard interconnect and Z80 setup allowance are
-additional. This is why 1-6 MHz is measured rather than assumed, and
-why this design is not a
-20 MHz system despite using a 20 MHz-rated CPU.
+outputs:
+
+- **Input compatibility:** Its TTL-compatible inputs accept both Pico
+  3.3 V signals and the ATF22V10's guaranteed 2.4 V HIGH.
+- **Output threshold compliance:** At the light CMOS loads used here,
+  its 5 V outputs satisfy the Z80 clock's strict $V_{IHC}$ threshold,
+  the MCP23S17's $0.8V_{DD}$ SPI threshold, and the SRAM's CMOS
+  control-input threshold.
+- **Component-delay budget:** Its current TI datasheet specifies a
+  worst-case 9.5 ns A-to-Y delay at 5 V with a 50 pF load over -40°C to
+  85°C. Combined with the ATF22V10C-15's 15 ns combinational delay and
+  the SRAM's 55 ns chip-enable access, these datasheet maxima give a
+  conservative 79.5 ns component-delay sum for the control-to-data path.
+  This is not complete timing closure: breadboard interconnect and Z80
+  setup allowance are additional.
+
+This is why 1-6 MHz is measured rather than assumed, and why this design
+is not a 20 MHz system despite using a 20 MHz-rated CPU.
 
 The complete pin-by-pin wiring is installed in
 [Phase 2](../implementation/phase-2-buffer-clock.md#wiring-gal-and-output-buffer).
