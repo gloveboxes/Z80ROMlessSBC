@@ -43,24 +43,24 @@ partition described in
 
 The complete software and storage path is:
 
-1. The build assembles the Z80-optimized CCP/BDOS and board BIOS, then places
-   them in a reset-ready 64 KiB Z80 memory image.
-2. The builder wraps that image as `z80boot.pkg` with a manifest and CRC, and
-   inserts the same optimized resident system into Drive A's reserved system
-   tracks. Drives B-D are built as separate native 320 KiB CP/M images.
-3. The boot package and four disk images are provisioned into fixed regions of
-   the Pico 2 W's 4 MiB onboard flash. They may be combined with the Pico
-   firmware as `z80romless-flash.bin`.
-4. On cold boot, the Pico validates the package and journal, holds the Z80 in
-   reset, takes ownership of the bus, copies the 64 KiB image from flash into
-   SRAM, verifies the copy, installs the CP/M page-zero vectors, and releases
-   reset.
+1. The `z80_cpm_images` build assembles the Z80-optimized CCP/BDOS and board
+   BIOS into `z80boot.img`, a reset-ready 64 KiB Z80 memory image. It wraps
+   that image with a header and CRCs as `z80boot.pkg`.
+2. The same build writes the CCP/BDOS and BIOS into Drive A's reserved system
+   tracks and emits Drive A plus Drives B-D as separate 320 KiB CP/M images.
+3. The build always combines the Stage 10 Pico firmware, `z80boot.pkg`, and all
+   four disk images into `z80romless-flash.bin`. This complete 4 MiB image is
+   used for initial provisioning; the separate files are retained so a later
+   update can replace only the firmware, boot package, or selected disks.
+4. On cold boot, the Pico validates `z80boot.pkg` and the journal, holds the Z80
+   in reset, copies the package's 64 KiB payload from flash into SRAM, verifies
+   it, installs the CP/M page-zero vectors, and releases reset.
 5. The Z80 starts from SRAM, enters the BIOS, and reaches the CP/M `A>` prompt.
-   The BIOS converts CP/M's disk requests into 128-byte virtual-I/O transfers;
-   the Pico services those transfers from the flash disk regions.
+   The BIOS converts disk requests into 128-byte virtual-I/O transfers, which
+   the Pico services from the four flash-backed disk regions.
 6. The Pico caches ordinary writes and journals directory or other important
-   writes. On a CP/M warm boot, the BIOS reloads the resident CCP/BDOS records
-   from flash-backed Drive A into SRAM before returning to the prompt.
+   writes. A CP/M warm boot does not use `z80boot.pkg`: the BIOS reloads the
+   resident CCP/BDOS records from Drive A before returning to the prompt.
 
 This gives the project one simple separation: **flash provides persistent
 storage, SRAM provides the Z80's executing memory, and the BIOS plus Pico
