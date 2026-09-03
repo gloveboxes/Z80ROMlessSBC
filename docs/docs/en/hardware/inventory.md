@@ -9,7 +9,7 @@ Purchase quantities include a small allowance for breadboard spares.
 |----:|----|----|----|
 | 1 | Raspberry Pi Pico 2 W | Module with two 20-pin headers | Supervisor, clock, DMA, virtual I/O, and Wi-Fi terminal |
 | 1 | Z84C0020PEC | 40-pin PDIP | CMOS Z80 CPU |
-| 1 | AS6C1008-55PCN | 32-pin PDIP | SRAM; lower 64 KB used |
+| 1 | AS6C1008-55PCN | 32-pin PDIP | SRAM; lower 64 KiB used |
 | 1 | MCP23S17-E/SP | 28-pin SPDIP | SPI-to-16-bit address interface |
 | 1 | ATF22V10B-15PC or ATF22V10C-15PU | 24-pin PDIP | SRAM arbitration, data interlock, MCP reset, and I/O WAIT# control |
 | 1 | SN74AHCT244N | 20-pin PDIP | Eight-channel 5 V output buffer for clock, BUSREQ#, SPI, and SRAM controls |
@@ -40,7 +40,7 @@ Purchase quantities include a small allowance for breadboard spares.
 > reset-default input ports to connect directly to pulled-up A0-A15 and
 > safely share the address bus. The design uses 9 active packages with
 > deterministic isolation and safe power sequencing. The
-> SN74LVC244AN buffers RD#/WR# because Pico 2 GP27 and GP28 are
+> SN74LVC244AN buffers RD#/WR# because Pico 2 W GP27 and GP28 are
 > standard ADC-capable pads, not 5 V-tolerant FT pads. It also buffers
 > BUSACK#, IORQ#, and MCP SO: although GP0, GP1, and GP20 are FT pads,
 > their 5.5 V tolerance requires RP2350 IOVDD to be present at 3.3 V.
@@ -127,7 +127,7 @@ input to a defined level.
 
 Feed the breadboard's +5 V logic rail directly from the regulated
 supply. Feed Pico VSYS from that rail only through the 1N5819: anode to
-external +5 V, banded cathode to VSYS. Pico 2 already has a Schottky
+external +5 V, banded cathode to VSYS. Pico 2 W already has a Schottky
 diode from USB VBUS to VSYS, so this second diode safely ORs USB and
 external power without back-powering either source. Never link the
 external +5 V rail directly to Pico VBUS or VSYS. Feed the

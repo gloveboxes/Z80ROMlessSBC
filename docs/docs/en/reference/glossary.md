@@ -157,8 +157,8 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 
 | Term | Meaning | Purpose in this project |
 | --- | --- | --- |
-| RP2350 | Microcontroller chip used by Pico 2 | Executes the supervisor firmware and provides GPIO, PWM, SPI, flash access, and two CPU cores. |
-| `GP0-GP29` | RP2350 GPIO numbers exposed or used by Pico 2 | Firmware-level pin names; map them to physical header pins with the [Pico header map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-header-pin-map). |
+| RP2350 | Microcontroller chip used by Pico 2 W | Executes the supervisor firmware and provides GPIO, PWM, SPI, flash access, and two CPU cores. |
+| `GP0-GP29` | RP2350 GPIO numbers exposed or used by Pico 2 W | Firmware-level pin names; map them to physical header pins with the [Pico header map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map). |
 | Pad | Physical input/output cell on the RP2350 die | Determines electrical properties such as 5 V tolerance and ADC capability. |
 | FT pad | Five-volt-tolerant digital pad | GP0-GP25 pad type; tolerance still depends on RP2350 power conditions. |
 | ADC pad | Analog-to-digital-converter-capable pad | GP26-GP29 pad type; not 5 V tolerant, so GP27/GP28 monitors require the LVC244. |

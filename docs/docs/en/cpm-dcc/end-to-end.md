@@ -37,11 +37,12 @@ converts the request to one 128-byte linear-record transfer through ports
 slots at `0x2C0000`, `0x310000`, `0x360000`, and `0x3B0000`. Normal writes can
 coalesce in a 4 KiB cache, while directory and warm-boot writes are journaled;
 the write type is preserved so the Pico can choose the safe persistence path.
-Cold boot validates the package and journal, copies the image into SRAM while
-RESET# is held, verifies it, and installs the page-zero warm-boot and BDOS
-vectors. BIOS warm boot then reloads the 44 resident CP/M records from native
-Drive A. This avoids a second storage bus while keeping Z80 disk semantics and
-Pico flash erase/program operations separate.
+On cold boot, the Pico recovers the journal, validates the package, copies the
+image into SRAM while RESET# is held, verifies it, and releases the Z80. The
+BIOS then installs the page-zero warm-boot and BDOS vectors. On a later warm
+boot, the BIOS reloads the 44 CCP/BDOS records (5,632 bytes) from Drive A.
+This avoids a second storage bus while keeping Z80 disk semantics and Pico
+flash erase/program operations separate.
 
 Run the reproducibility and structure tests with:
 

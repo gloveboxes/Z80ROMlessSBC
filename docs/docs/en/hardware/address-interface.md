@@ -1,7 +1,7 @@
 # 2. 16-Bit Address Expansion Interface: MCP23S17-E/SP
 
-The MCP23S17 acts as the dedicated 16-bit register shifter interfacing
-the Pico 2's SPI bus with the shared 5V address bus. During DMA block
+The MCP23S17 acts as the dedicated 16-bit I/O expander connecting the
+Pico 2 W's SPI bus to the shared 5 V address bus. During DMA block
 injection, it drives the target SRAM locations. During an active I/O
 trap, its GPIO ports remain inputs, allowing the MCP23S17 to monitor the
 address bus states driven by the frozen Z80 CPU.

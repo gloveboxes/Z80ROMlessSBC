@@ -1,6 +1,6 @@
 # 5. Transceiver Operating Modes & Isolation Tables
 
-The transceivers isolate the supervisor elements (Pico 2 and MCP23S17)
+The transceivers isolate the supervisor elements (Pico 2 W and MCP23S17)
 from the main bus during standard execution, preventing bus contention.
 
 ## 5.1 All-PDIP Data-Bus Translation and Interlock

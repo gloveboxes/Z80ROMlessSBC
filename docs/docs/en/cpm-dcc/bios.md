@@ -5,7 +5,8 @@ dcc's optional direct-BIOS functions. Its principal mappings are:
 
 | CP/M BIOS operation | Board implementation |
 | --- | --- |
-| `BOOT` / `WBOOT` | Initialize page zero or reload CCP/BDOS from Drive A |
+| `BOOT` | Initialize CP/M state and page-zero vectors, then enter the CCP |
+| `WBOOT` | Flush pending writes, reload CCP/BDOS from Drive A, and re-enter the CCP |
 | `CONST` | Read terminal status port `0x01`; return `0xFF` when bit 0 reports input ready |
 | `CONIN` | Wait for receive-ready, then read terminal data port `0x00` |
 | `CONOUT` | Wait for transmit-room bit 1, then write the character to port `0x00` |

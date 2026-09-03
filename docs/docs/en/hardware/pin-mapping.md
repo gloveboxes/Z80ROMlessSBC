@@ -7,7 +7,7 @@ buses float and control outputs are inactive. During BUSACK#, A0-A15,
 D0-D7, MREQ#, IORQ#, RD#, and WR# float while BUSACK# remains actively
 driven LOW; M1#, RFSH#, and HALT# are not part of the floated bus set.
 
-## 1.0 Raspberry Pi Pico 2 Header Pin Map
+## 1.0 Raspberry Pi Pico 2 W Header Pin Map
 
 GPIO numbers in the firmware are not physical header numbers. Use this
 map for construction; the diagrams preserve ascending bit order.
@@ -191,14 +191,14 @@ ADC_VREF pin 35, and 3V3_EN pin 37 open. Do not connect the external
 <td rowspan="14"><strong>Z84C0020PEC (CPU)</strong></td>
 <td>CLK</td>
 <td>Pin 6</td>
-<td>Input. Driven by level-shifted 5V CMOS square wave. Clock can be
+<td>Input. Driven by level-shifted 5 V CMOS square wave. Clock can be
 safely frozen indefinitely in either a HIGH or LOW state.</td>
 </tr>
 <tr>
 <td>IORQ#</td>
 <td>Pin 20</td>
 <td>Output. Active Low. Buffered to 3.3 V through SN74LVC244AN channel
-1A2/1Y2 and monitored by Pico 2 GP1 to trigger clock-stop trapping. The
+1A2/1Y2 and monitored by Pico 2 W GP1 to trigger clock-stop trapping. The
 raw 5 V node also feeds ATF22V10 pin 13 for hardware WAIT generation.</td>
 </tr>
 <tr>
@@ -211,13 +211,13 @@ CPU-owned SRAM cycles; pulled HIGH when the CPU is absent.</td>
 <td>RD#</td>
 <td>Pin 21</td>
 <td>Output. Active Low. Buffered to 3.3 V through SN74LVC244AN channel
-1A3/1Y3 and sampled by Pico 2 GP27 to resolve cycle intent.</td>
+1A3/1Y3 and sampled by Pico 2 W GP27 to resolve cycle intent.</td>
 </tr>
 <tr>
 <td>WR#</td>
 <td>Pin 22</td>
 <td>Output. Active Low. Buffered to 3.3 V through SN74LVC244AN channel
-1A4/1Y4 and sampled by Pico 2 GP28 to resolve cycle intent alongside
+1A4/1Y4 and sampled by Pico 2 W GP28 to resolve cycle intent alongside
 RD#.</td>
 </tr>
 <tr>
@@ -225,12 +225,12 @@ RD#.</td>
 <td>Pin 23</td>
 <td>Output. Active Low. Feeds ATF22V10 pin 2 for SRAM-source arbitration
 ([Section 1.2](#12-sram-control-source-arbitration-atf22v10bc)) and is buffered to 3.3 V through SN74LVC244AN
-channel 1A1/1Y1 for monitoring at Pico 2 GP0.</td>
+channel 1A1/1Y1 for monitoring at Pico 2 W GP0.</td>
 </tr>
 <tr>
 <td>BUSREQ#</td>
 <td>Pin 25</td>
-<td>Input. Active Low. Level-shifted up to 5V to request DMA
+<td>Input. Active Low. Level-shifted up to 5 V to request DMA
 ownership.</td>
 </tr>
 <tr>
@@ -249,13 +249,13 @@ not connected to Pico logic.</td>
 <tr>
 <td>A0 – A15 (Address Bus)</td>
 <td>Pins 30 – 40, 1 – 5</td>
-<td>5V Tri-state Bus. Driven by CPU during active run, floats during
+<td>5 V Tri-state Bus. Driven by CPU during active run, floats during
 DMA/RESET.</td>
 </tr>
 <tr>
 <td>D0 – D7 (Data Bus)</td>
 <td>Pins 7 – 10, 12 – 15</td>
-<td>5V Bi-directional Tri-state Bus. Connected directly to SRAM data bus
+<td>5 V Bi-directional Tri-state Bus. Connected directly to SRAM data bus
 pins.</td>
 </tr>
 <tr>
@@ -268,32 +268,32 @@ physically absent.</td>
 <tr>
 <td>INT#</td>
 <td>Pin 16</td>
-<td>Input. Active Low. Unused; pull to +5V through 10 kOhm to prevent a
+<td>Input. Active Low. Unused; pull to +5 V through 10 kOhm to prevent a
 spurious interrupt from a floating input.</td>
 </tr>
 <tr>
 <td>NMI#</td>
 <td>Pin 17</td>
-<td>Input. Active Low, edge-sensed. Unused; pull to +5V through 10 kOhm
+<td>Input. Active Low, edge-sensed. Unused; pull to +5 V through 10 kOhm
 to prevent a spurious non-maskable interrupt from a floating input.</td>
 </tr>
 <tr>
 <td rowspan="7"><strong>AS6C1008-55PCN (SRAM)</strong></td>
 <td>A0 – A15 (Address lines)</td>
 <td>Pins 12-10, 9-7, 6-5, 27-26, 23, 25, 4, 28, 3, 31</td>
-<td>5V Input. Connected directly to the 5V Z80 address bus. Driven by
+<td>5 V Input. Connected directly to the 5 V Z80 address bus. Driven by
 MCP23S17 during DMA.</td>
 </tr>
 <tr>
 <td>A16</td>
 <td>Pin 2</td>
-<td>5V Input. Tie to GND to select the lower 64KB bank; do not leave
+<td>5 V Input. Tie to GND to select the lower 64 KiB bank; do not leave
 floating.</td>
 </tr>
 <tr>
 <td>D0 – D7 (Data lines)</td>
 <td>Pins 13 – 15, 17 – 21</td>
-<td>5V Bi-directional Bus. Connected directly to the Z80 data bus.</td>
+<td>5 V Bi-directional Bus. Connected directly to the Z80 data bus.</td>
 </tr>
 <tr>
 <td>WE#</td>
@@ -320,7 +320,7 @@ ownership.</td>
 <tr>
 <td>CE2</td>
 <td>Pin 30</td>
-<td>Input. Active High. Tie permanently to VCC (+5V) to enable the
+<td>Input. Active High. Tie permanently to VCC (+5 V) to enable the
 device through the active-low CE# input.</td>
 </tr>
 </tbody>
@@ -331,7 +331,7 @@ device through the active-low CE# input.</td>
 The following is the direct run-mode connection verified against the
 manufacturers' 40-pin PDIP and 32-pin PDIP pin assignments. The
 AS6C1008 is a 128K x 8 device, so A16 must be tied LOW to expose its
-lower 64KB as the Z80's address space. CE2 must be tied HIGH, and pin 1
+lower 64 KiB as the Z80's address space. CE2 must be tied HIGH, and pin 1
 is not connected.
 
 Manufacturer datasheets:
@@ -445,14 +445,14 @@ block-beta
 ```mermaid
 block-beta
   columns 2
-  VCC["Regulated +5V"]
+  VCC["Regulated +5 V"]
   GND["Common GND"]
   CVCC["CPU VCC - pin 11"]
   CGND["CPU GND - pin 29"]
   RVCC["SRAM VCC - pin 32"]
   RGND["SRAM GND - pin 16"]
   RCE2["SRAM CE2 - pin 30<br/>active HIGH enable"]
-  RA16["SRAM A16 - pin 2<br/>selects lower 64KB"]
+  RA16["SRAM A16 - pin 2<br/>selects lower 64 KiB"]
   RNC["SRAM NC - pin 1<br/>leave open"]
   space
   VCC --> CVCC

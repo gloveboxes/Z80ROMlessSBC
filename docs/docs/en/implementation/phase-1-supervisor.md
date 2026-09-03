@@ -1,8 +1,8 @@
-# 8.2 Phase 1 - Raspberry Pi Pico 2 Supervisor
+# 8.2 Phase 1 - Raspberry Pi Pico 2 W Supervisor
 
 **Prerequisite:** The [Phase 0 pass gate](phase-0-power.md#pass-gate) must pass.
 
-**Install:** Pico 2 only.
+**Install:** Pico 2 W only.
 
 ## Wiring - Pico 2 W
 
@@ -18,7 +18,7 @@ verify no adjacent GPIOs are shorted before inserting the Pico.
 
 Leave GP8/header pin 11 open. Connect the Pico ground pins and leave the
 remaining unused header pins open as specified in the
-[complete Pico pin map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-header-pin-map).
+[complete Pico pin map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map).
 
 **Firmware feature:** A diagnostic image must establish safe output
 levels before enabling any GPIO output: GP7 and GP9 LOW to isolate
@@ -82,7 +82,7 @@ static void diagnostic_safe_startup(void) {
   output_with_initial_level(PIN_CLK, 0);
   output_with_initial_level(PIN_DATA_DIR, 0);
   input_with_no_pull(PIN_BUSACK_N);
-  input_with_no_pull(PIN_IORQ_N); // Section 0.3 pulls up the LVC244 input.
+  input_with_no_pull(PIN_IORQ_N); // External 10 kOhm pull-up holds this input HIGH.
   input_with_no_pull(PIN_RD_N);
   input_with_no_pull(PIN_WR_N);
   input_with_no_pull(PIN_SPI_MISO);

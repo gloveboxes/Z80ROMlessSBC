@@ -2,7 +2,7 @@
 
 **Prerequisite:** The [Phase 7 pass gate](phase-7-z80.md#pass-gate) must pass.
 
-**Install:** No further chips. Load final supervisor firmware.
+**Install:** No further chips. Load the Phase 8 supervisor firmware.
 
 **Wiring:** Make no hardware changes. Recheck the Phase 2 IORQ#-to-WAIT#
 path and the Phase 3, 5, and 7 monitor paths against the

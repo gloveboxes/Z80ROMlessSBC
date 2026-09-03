@@ -17,10 +17,10 @@ entered carriage return to C `\n`, and supplies the accompanying line-feed
 echo. Console output converts C `\n` to CR/LF. The BIOS deliberately transports
 bytes and reports readiness; it does not duplicate those runtime policies.
 
-Buffered dcc output may not reach the browser immediately. A newline, an
-explicit `fflush`, a full buffer, an input operation, or program termination
-flushes it. Separately, the Pico terminal transmit queue is bounded. With no
-WebSocket client, limited output can queue for later delivery, but an
-output-heavy program eventually waits in BIOS `CONOUT` when status bit 1
-reports no room. This wait occurs in the Z80 program, not in the Pico's I/O
-trap, and a connected client allows transmission to resume.
+The dcc runtime buffers output. A newline, explicit `fflush`, full buffer,
+input operation, or program termination flushes it to the Pico.
+
+The Pico's terminal transmit queue is also bounded. With no WebSocket client,
+limited output can wait for later delivery; an output-heavy program blocks in
+BIOS `CONOUT` when status bit 1 reports no room. The Z80 program blocks, not
+the Pico's I/O trap, and a connected client allows transmission to resume.

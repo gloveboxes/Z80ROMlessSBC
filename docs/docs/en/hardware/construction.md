@@ -2,7 +2,7 @@
 
 The layout enforces a strict three-zone model across three 830-point
 breadboards to minimize cross-talk and propagation delay across the
-distinct 3.3V and 5V power domains. Each zone below lists the specific
+distinct 3.3 V and 5 V power domains. Each zone below lists the specific
 chips to place on that board and where to seat them.
 
 Place the three BB830s side by side with their long edges parallel:
@@ -19,7 +19,7 @@ three-way node also tapped by the Z80 on the Core Board; the others
 simply cross the Core Board without connecting to a Core component.
 MCP SO also crosses both boundaries to the Peripheral Board's LVC244.
 Keep these low-activity paths away from CLK. Putting either outer cluster
-in the center would shorten these four wires only by forcing one of the
+in the center would shorten these eight paths only by forcing one of the
 much wider address/data interfaces to span two board widths.
 
 - **Memory Board (Left Zone):** AS6C1008-55PCN SRAM, the programmed
@@ -51,7 +51,7 @@ much wider address/data interfaces to span two board widths.
   clearance, decoupling, and wiring. *No separate wait-state latch or
   flip-flop is used; the GAL drives WAIT# combinationally.*
 
-- **Peripheral Board (Right Zone):** Raspberry Pi Pico 2,
+- **Peripheral Board (Right Zone):** Raspberry Pi Pico 2 W,
   SN74LVC244AN monitor buffer, SN74AHCT245N upward data path,
   and SN74LVC245AN downward data path. The ATF22V10 on Memory provides
   the mutually exclusive enables. Rotate both data transceivers so

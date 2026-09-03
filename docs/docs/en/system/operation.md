@@ -171,11 +171,11 @@ build the boot package described below, then write them outside the
 running firmware. Use `-v` so `picotool` verifies every load:
 
 ```sh
-picotool load -v -o 0x102A0000 -t bin z80boot.pkg
-picotool load -v -o 0x102C0000 -t bin drive-a.img
-picotool load -v -o 0x10310000 -t bin drive-b.img
-picotool load -v -o 0x10360000 -t bin drive-c.img
-picotool load -v -o 0x103B0000 -t bin drive-d.img
+picotool load -v -o 0x102A0000 -t bin build/cpm/z80boot.pkg
+picotool load -v -o 0x102C0000 -t bin build/cpm/drive_a_cpm63k-z80.img
+picotool load -v -o 0x10310000 -t bin build/cpm/drive_b_bdsc.img
+picotool load -v -o 0x10360000 -t bin build/cpm/drive_c_escape.img
+picotool load -v -o 0x103B0000 -t bin build/cpm/drive_d_blank.img
 ```
 
 (`0x10000000` is the Pico's XIP flash base address, so these absolute

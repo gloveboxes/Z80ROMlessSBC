@@ -49,8 +49,9 @@ D>DIR
 - The `PIP` commands exercise cross-drive reads, writes, directory updates, and
   persistence in the emulator's generated Drive D image.
 
-The dynamic adapter preserves the SBC ports `0x10`-`0x15` and also mirrors all
-active ports in the ESP32 Altair `port_drivers/io_ports.c` dispatcher:
+The dynamic adapter preserves the native SBC disk ports `0x10`-`0x14`, adds
+the adapter-only activation port `0x15`, and mirrors all active ports in the
+ESP32 Altair `port_drivers/io_ports.c` dispatcher:
 
 | Ports | Host-emulated function |
 |---|---|

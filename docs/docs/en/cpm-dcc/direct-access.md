@@ -17,8 +17,8 @@ it. Direct disk code must follow the complete command/status and exact
 128-byte-transfer protocol in the
 [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage).
 Using BDOS is preferred for ordinary
-console and file access because it preserves CP/M buffering, FCB, error, and
-warm-boot behavior.
+console and file access because it preserves CP/M buffering, FCB handling,
+error recovery, and normal exit through warm boot.
 
 A normal dcc `.COM` file linked with the dcc runtime is not a standalone
 bare-metal binary even if it uses `inp` and `outp`: startup, memory discovery,

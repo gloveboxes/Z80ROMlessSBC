@@ -15,8 +15,8 @@ maintained source.
 The repository implements the ten cumulative firmware stages under `src/`.
 Stage 10 includes the journaled flash disks, CP/M boot loader, and WebSocket
 terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
-reconstructs pristine CCP/BDOS bytes from the preserved Altair source image,
-and emits all provisionable images.
+assembles the optimized CCP/BDOS from `cpm64_z80.asm`, and emits all
+provisionable images.
 
 Install CMake, Ninja, Python 3, `picotool`, and `z80asm`. The firmware needs a
 complete Arm GNU bare-metal toolchain with Newlib; the Homebrew compiler alone

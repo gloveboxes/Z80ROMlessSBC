@@ -5,7 +5,7 @@
 this phase.
 
 **Install:** Breadboards, sockets, decoupling capacitors, pull-ups,
-pull-downs, and power wiring. Install no active device, including the Pico 2.
+pull-downs, and power wiring. Install no active device, including the Pico 2 W.
 Signal wiring is added and continuity-checked in the phase that first uses
 each connection.
 

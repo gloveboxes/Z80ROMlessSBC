@@ -383,7 +383,7 @@
 
     <g id="chip-SUPPLY">
       <rect x="405.00" y="174.34" width="250" height="36.48" rx="5" fill="#d2d2d2" class="chip"/>
-      <text class="chip-label supply-label"><tspan x="530" y="186.08">5V supply clearance</tspan><tspan x="530" y="199.08">rows 1-3 reserved</tspan></text>
+      <text class="chip-label supply-label"><tspan x="530" y="186.08">5 V supply clearance</tspan><tspan x="530" y="199.08">rows 1-3 reserved</tspan></text>
 
     </g>
 
@@ -405,7 +405,7 @@
 
     <g id="chip-PICO">
       <rect x="768.00" y="174.34" width="184" height="250.35" rx="5" fill="#91cf35" class="chip"/>
-      <text class="chip-label pico-label"><tspan x="860" y="280.02">Raspberry Pi Pico 2</tspan><tspan x="860" y="293.02">2x20-pin module</tspan><tspan x="860" y="306.02">rows 1-20</tspan><tspan x="860" y="319.02">0.7in header span</tspan></text>
+      <text class="chip-label pico-label"><tspan x="860" y="280.02">Raspberry Pi Pico 2 W</tspan><tspan x="860" y="293.02">2x20-pin module</tspan><tspan x="860" y="306.02">rows 1-20</tspan><tspan x="860" y="319.02">0.7in header span</tspan></text>
 
       <rect x="847" y="176.33870967741936" width="26" height="8" rx="2" class="usb-marker"/>
       <text x="860" y="183.33870967741936" class="marker-label">USB ↑</text>
@@ -422,7 +422,7 @@
 
     <g id="chip-UP245">
       <rect x="826.00" y="576.92" width="68" height="124.55" rx="5" fill="#52b788" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="860" y="613.19">SN74AHCT245N</tspan><tspan x="860" y="626.19">Pico -&gt; 5V bus</tspan><tspan x="860" y="639.19">+ RN3 data pulls</tspan><tspan x="860" y="652.19">rows 33-42</tspan><tspan x="860" y="665.19">0.3in pin-row span</tspan></text>
+      <text class="chip-label narrow-label"><tspan x="860" y="613.19">SN74AHCT245N</tspan><tspan x="860" y="626.19">Pico -&gt; 5 V bus</tspan><tspan x="860" y="639.19">+ RN3 data pulls</tspan><tspan x="860" y="652.19">rows 33-42</tspan><tspan x="860" y="665.19">0.3in pin-row span</tspan></text>
 
       <path d="M 851 700.4677419354839 Q 860 693.4677419354839 869 700.4677419354839" class="notch-marker"/>
       <circle cx="887" cy="693.4677419354839" r="4" class="pin-one"/><text x="887" y="695.9677419354839" class="pin-one-label">1</text>
@@ -430,7 +430,7 @@
 
     <g id="chip-DOWN245">
       <rect x="826.00" y="715.31" width="68" height="124.55" rx="5" fill="#52b788" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="860" y="758.08">SN74LVC245AN</tspan><tspan x="860" y="771.08">5V bus -&gt; Pico</tspan><tspan x="860" y="784.08">rows 44-53</tspan><tspan x="860" y="797.08">0.3in pin-row span</tspan></text>
+      <text class="chip-label narrow-label"><tspan x="860" y="758.08">SN74LVC245AN</tspan><tspan x="860" y="771.08">5 V bus -&gt; Pico</tspan><tspan x="860" y="784.08">rows 44-53</tspan><tspan x="860" y="797.08">0.3in pin-row span</tspan></text>
 
       <path d="M 851 838.8548387096774 Q 860 831.8548387096774 869 838.8548387096774" class="notch-marker"/>
       <circle cx="887" cy="831.8548387096774" r="4" class="pin-one"/><text x="887" y="834.3548387096774" class="pin-one-label">1</text>
