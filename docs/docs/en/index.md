@@ -1,92 +1,77 @@
-# Z80 ROMless SBC - WIP Engineering & Build Specification
+# Z80 ROMless SBC - WIP Engineering and Build Specification
 
 **Repository:** [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC)
 
 ## Overview
 
-This document describes a theoretical Z80 single-board computer design
-that has not yet been built, wired, or validated in hardware. Treat it
-as an engineering proposal and bring-up plan, not as a proven reference
-design. Every electrical assumption, timing margin, and firmware
-interaction still needs bench validation with the staged tests in
-the [implementation plan](implementation/index.md) before the design should be
-considered reliable.
+This is a theoretical Z80 single-board computer design that has not yet been
+built or validated in hardware. Treat it as an engineering proposal and
+bring-up plan, not a proven reference design. Its electrical assumptions,
+timing margins, and firmware interactions require bench validation through
+the staged [implementation plan](implementation/index.md).
 
-The proposed system is a ROMless Z80 computer supervised by a Raspberry
-Pi Pico 2 W. The Pico supplies the Z80 clock, holds and releases reset,
-loads a boot image directly into SRAM by taking the Z80 bus, and then
-lets the Z80 execute from RAM. A 64 KB SRAM provides the Z80 memory
-space; level shifters and bus transceivers isolate the Pico's 3.3 V GPIO
-from the 5 V Z80/SRAM bus; an MCP23S17 expands the Pico's address-drive
-capability during DMA and trapped I/O cycles.
+The design pairs a ROMless Z80 with a Raspberry Pi Pico 2 W supervisor. The
+Pico supplies the clock, controls reset, takes ownership of the bus, and loads
+a boot image into SRAM before allowing the Z80 to run. A 64 KiB SRAM chip
+provides the Z80 memory space. Buffers and bus transceivers isolate the Pico's 3.3 V
+GPIO from the 5 V bus, while an MCP23S17 drives the 16-bit address bus during
+DMA and trapped I/O cycles.
 
-The key design idea is that the Pico acts as both supervisor and virtual
-peripheral controller. It can stop the fully static Z80 clock on an I/O
-cycle while the GAL asserts WAIT#, inspect the requested port, exchange
-one data byte, release WAIT# only after the selected data path is ready, and then
-resume execution. Terminal I/O is intended to be one of those virtual
-peripherals: Z80 `IN` and `OUT` instructions feed nonblocking queues on
-the Pico, while a WebSocket terminal server runs on the Pico's other
-core so Wi-Fi and browser traffic do not disturb Z80 timing.
+The Pico also acts as a virtual peripheral controller. During a trapped I/O
+cycle, it can stop the fully static Z80 clock while the GAL asserts WAIT#,
+inspect the requested port, exchange one byte, and then resume execution.
+Z80 `IN` and `OUT` instructions feed nonblocking terminal queues; a WebSocket
+server runs on the Pico's other core so network traffic does not affect Z80
+timing.
 
-Z80 software lives in a reserved region of the Pico's own onboard
-flash rather than on removable media or compiled into the running
-firmware image. The Pico reads boot binaries, monitor images, and CP/M
-disk images directly from that memory-mapped flash region, then uses
-the already-validated DMA path to populate SRAM before the Z80 is
-released. Once the Z80 is running, the same I/O trap mechanism can
-expose sector-oriented virtual disk ports backed by that same flash
-partition described in
-[Section 6.3](system/operation.md#63-onboard-flash-cpm-disk-storage).
+Z80 boot software and CP/M disks occupy reserved regions of the Pico's onboard
+flash rather than removable media. The Pico reads this memory-mapped storage
+directly and uses DMA to populate SRAM before releasing the Z80. Once the Z80
+is running, the same I/O trap serves sector-oriented disk ports backed by the
+[onboard flash partition](system/operation.md#63-onboard-flash-cpm-disk-storage).
 
 ### CP/M Boot and Disk Flow
 
 The complete software and storage path is:
 
-1. The `z80_cpm_images` build assembles the Z80-optimized CCP/BDOS and board
-   BIOS into `z80boot.img`, a reset-ready 64 KiB Z80 memory image. It wraps
-   that image with a header and CRCs as `z80boot.pkg`.
-2. The same build writes the CCP/BDOS and BIOS into Drive A's reserved system
-   tracks and emits Drive A plus Drives B-D as separate 320 KiB CP/M images.
-3. The build always combines the Stage 10 Pico firmware, `z80boot.pkg`, and all
-   four disk images into `z80romless-flash.bin`. This complete 4 MiB image is
-   used for initial provisioning; the separate files are retained so a later
-   update can replace only the firmware, boot package, or selected disks.
-4. On cold boot, the Pico validates `z80boot.pkg` and the journal, holds the Z80
-   in reset, copies the package's 64 KiB payload from flash into SRAM, verifies
-   it, installs the CP/M page-zero vectors, and releases reset.
-5. The Z80 starts from SRAM, enters the BIOS, and reaches the CP/M `A>` prompt.
-   The BIOS converts disk requests into 128-byte virtual-I/O transfers, which
-   the Pico services from the four flash-backed disk regions.
-6. The Pico caches ordinary writes and journals directory or other important
-   writes. A CP/M warm boot does not use `z80boot.pkg`: the BIOS reloads the
-   resident CCP/BDOS records from Drive A before returning to the prompt.
+1. The `z80_cpm_images` target assembles the optimized CCP/BDOS and board BIOS
+   into `z80boot.img`, then adds a header and CRCs to create `z80boot.pkg`.
+2. It also writes the CCP/BDOS and BIOS to Drive A's reserved system tracks and
+   emits Drives A-D as separate 320 KiB CP/M images.
+3. It combines the Stage 10 Pico firmware, `z80boot.pkg`, and all four disks
+   into `z80romless-flash.bin`, the complete 4 MiB initial-provisioning image.
+   The separate artifacts remain available for selective updates.
+4. On cold boot, the Pico recovers the journal, validates `z80boot.pkg`, copies
+   its 64 KiB payload into SRAM, verifies the copy, installs the page-zero
+   vectors, and releases the Z80 from reset. The Z80 enters the BIOS and reaches
+   the CP/M `A>` prompt.
+5. During operation, the BIOS converts disk requests into 128-byte transfers
+   that the Pico services from flash. The Pico caches writes and journals each
+   flash commit. A warm boot does not use `z80boot.pkg`; the BIOS reloads
+   CCP/BDOS from Drive A before returning to the prompt.
 
-This gives the project one simple separation: **flash provides persistent
-storage, SRAM provides the Z80's executing memory, and the BIOS plus Pico
-connect the two**. The [CP/M boot-image README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [disk-media
-README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [Section 6.3](system/operation.md#63-onboard-flash-cpm-disk-storage),
-and [Appendix D](cpm-dcc/index.md) provide the
-construction details, addresses, protocols, and validation evidence.
+See the [CP/M boot-image README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md),
+[disk-media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md),
+[flash-storage design](system/operation.md#63-onboard-flash-cpm-disk-storage),
+and [CP/M appendix](cpm-dcc/index.md) for construction details, addresses,
+protocols, and validation evidence.
 
-The build plan is deliberately phased. Early phases prove power,
-translation, SPI expansion, bus isolation, SRAM DMA, and clock control
-before the Z80 is installed. Later phases prove virtual-ROM boot,
-synchronous I/O trapping, WebSocket terminal service, and finally the
-maximum qualified clock rate. Passing an earlier phase is a prerequisite
-for trusting the assumptions used by the next one.
+The build plan proves each subsystem before relying on it in the next phase.
+It progresses from power, bus isolation, and SRAM DMA through Z80 execution,
+virtual I/O, flash storage, the WebSocket terminal, and clock qualification.
 
 ## Project Documentation
 
-The repository also includes focused documentation for specific implementation
-areas:
+The repository includes these focused implementation guides:
 
-- [Stage 0: Power and passive wiring](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md) - safe
-  initial power, continuity, resistance, rail-voltage, and diode-OR checks.
-- [Native CP/M boot image](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md) - CP/M memory layout, Z80
-  optimization, boot-package construction, BIOS behavior, and host testing.
-- [DCC debug I/O adapter](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/README.md) - complete
-  project-hosted Altair-compatible port drivers, SBC native disks, interrupt
-  services, private environment configuration, and ANSI terminal input.
-- [CP/M disk media](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md) - source disk formats, conversion,
-  native geometry, generated images, and flash provisioning.
+- [Stage 0: Power and passive wiring](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md) -
+   power, continuity, resistance, rail-voltage, and diode-OR checks.
+- [Native CP/M boot image](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md) -
+   memory layout, Z80 optimization, image construction, BIOS behavior, and host
+   tests.
+- [DCC debug I/O adapter](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/README.md) -
+   Altair-compatible I/O drivers, native disks, interrupts, configuration, and
+   ANSI terminal input.
+- [CP/M disk media](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md) -
+   source formats, conversion, native geometry, generated images, and flash
+   provisioning.
