@@ -7,6 +7,16 @@ MCP23S17-E/SP. The already-tested AHCT244 supplies all three SPI inputs.
 Keep Z80 and SRAM removed; their empty sockets expose the pulled-up
 shared address bus for probing.
 
+**What you are proving:** the Pico can set and read the sixteen wires that
+will select Z80 memory addresses. First prove the SPI link with `m`, then
+test the physical address outputs with `o`. Register readback alone does not
+prove that the far end of an address wire is connected.
+
+The MCP has two unrelated sets of similarly named pins: **A0/A1/A2** select
+its SPI hardware address and are tied to GND; **GPA0-GPA7 and GPB0-GPB7** are
+its sixteen GPIOs connected to the computer's A0-A15 bus. Do not confuse
+either set with Pico GP numbers.
+
 **Electrical hold point:** Fit level translation on all SPI inputs. The
 MCP23S17 datasheet specifies $V_{IH} \ge 0.8V_{DD}$ for CS#, SCK, and
 SI, which is 4.0 V with a 5 V supply; a Pico 3.3 V HIGH is therefore
@@ -64,7 +74,8 @@ and [mcp23s17.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/commo
 
 The SPI translator sits between these Pico pins and the 5 V MCP23S17;
 MISO/SO returns through the SN74LVC244AN. The register test proves
-communication before either address transceiver is enabled.
+communication before the full address-pattern tests. There are no separate
+address transceivers: the MCP ports drive the shared address bus directly.
 
 ```c
 #include "hardware/spi.h"
@@ -143,8 +154,14 @@ static bool mcp_register_test(void) {
   in IODIRA, IODIRB, OLATA, and OLATB with command `m`.
 4. Configure outputs and probe walking-one and walking-zero patterns at
   the empty Z80 and SRAM sockets with command `o`.
-5. Configure inputs, apply 0 V or 5 V through 10 kOhm to each pin, and
-  use command `i` to verify only the corresponding GPIO register bit changes.
+5. With the MCP ports in input mode, use command `i`: with no temporary
+  test lead, the fitted pull-ups should give `inputs=ffff`. Power off and
+  connect one address line to GND through 1 kOhm, then power up and run `i`
+  again. Only that bit should become 0; A0 gives `fffe`, A15 gives `7fff`.
+  Repeat for every line, disconnecting power before moving the lead. Do not
+  use a 10 kOhm pull-down against the fitted 10 kOhm pull-up: it produces
+  about 2.5 V, not a valid LOW. Remove the temporary lead before running
+  output or register tests.
 6. Run command `e` for 10,000 alternating register writes and reads with
   zero errors.
 

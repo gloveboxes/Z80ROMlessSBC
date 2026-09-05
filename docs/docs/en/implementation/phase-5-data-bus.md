@@ -7,6 +7,19 @@ data transceivers removed. Perform test 1, power off, then install the
 SN74AHCT245N and SN74LVC245AN in that order. Keep Z80 and SRAM removed.
 Tie AHCT DIR HIGH and LVC DIR LOW before insertion.
 
+**What you are proving:** bytes can cross the voltage boundary in either
+direction, but the two physical drivers can never be enabled together.
+AHCT245 sends Pico data to the 5 V bus; LVC245 receives bus data into the
+3.3 V domain. Their fixed DIR pins are not the same as the Pico's DATA_DIR
+selection signal. Change DATA_DIR only with DATA_ENABLE LOW.
+
+For manual receive tests, power off before fitting test resistors. A test
+pattern such as `0xAA` means D7/D5/D3/D1 HIGH and D6/D4/D2/D0 LOW; connect
+each bit through its own 1 kOhm resistor to +5 V or GND, never directly.
+Use only the specified receive/cycling test with those pulls fitted and
+remove them before the next phase. Temporary resistors limit mistakes;
+they do not make arbitrary opposing drivers safe.
+
 ## Wiring - bidirectional data path
 
 With both transceivers removed, install and continuity-check every D0-D7 tap,

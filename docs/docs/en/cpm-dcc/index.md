@@ -1,5 +1,11 @@
 # Appendix D: CP/M BIOS and dcc Compatibility
 
+For a first hardware build, this section is supporting software reference,
+not a prerequisite for wiring. You can use the
+[interactive host emulator](interactive.md) to become familiar with CP/M
+before the boards are ready. It tests the software path without powering a
+Pico; it does not qualify the physical buses, flash recovery, or timing.
+
 This system runs CP/M 2.2 with a custom BIOS designed specifically for this
 board. The image builder packages the 64K CP/M CCP and BDOS with the native
 BIOS assembled from

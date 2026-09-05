@@ -5,6 +5,13 @@ pass.
 
 **Install:** No additional IC. Keep Z80 and SRAM removed.
 
+**What you are proving:** resetting the MCP really releases the address bus
+so the Z80 can drive it later. **High-impedance (Hi-Z) is not LOW**: it means
+the output driver is disconnected. The pull-ups make a released bus read
+HIGH, so a HIGH reading alone does not prove isolation. The temporary 1 kOhm
+pull-down test proves that a line can move LOW without an active driver
+holding it HIGH. See the [manual input procedure](phase-2-buffer-clock.md#manual-input-tests).
+
 ## Wiring - address-trunk verification
 
 Add no signal wiring in this phase. Continuity-check the Phase 3 A0-A15
@@ -95,7 +102,7 @@ static void address_bus_drive(uint16_t address) {
 
 **Test plan:**
 
-1. With ADDR_ENABLE LOW, verify RESET# LOW and all 16 MCP pins
+1. With ADDR_ENABLE LOW, verify **MCP RESET#** LOW and all 16 MCP port pins
   high-impedance; each bus line must sit HIGH through its 10 kOhm pull-up.
 2. Release reset, select MCP output direction, and test 0x55, 0xAA, walking-one, and
   walking-zero patterns on every shared address line.

@@ -14,6 +14,38 @@ with the verified `picotool` commands there.
 recheck only the existing ownership and SRAM-control paths if the cold-boot
 DMA checks fail.
 
+**What you are proving:** persistent images survive reboot, load into SRAM
+correctly, and recover safely from interrupted writes. SRAM is volatile
+working memory; Pico flash holds the boot package and the four persistent
+virtual disks. A **cold boot** starts the Pico and reloads SRAM; a CP/M
+**warm boot** restarts its command environment without removing power.
+
+The maintained build already sets the linker boundary and flash definitions
+above; you do not need to edit CMake for normal construction. Use the
+[provisioning procedure](../system/firmware-build.md#72-flash-provisioning)
+and retain host backups. The full 4 MiB image includes Stage 10 firmware;
+after initial provisioning, load the Stage 9 UF2 for this phase, preserving
+the storage regions. Do not mistake the disk image files for Pico firmware.
+
+!!! warning "Use disposable disk contents for fault tests"
+    Complete normal boot/read/write checks before injecting faults. Tests
+    that corrupt images, overwrite all records, or interrupt flash updates
+    can destroy files. Preserve the original images and expected old/new
+    blocks first. Use the documented one-shot watchdog hooks; do not simulate
+    faults by pulling individual live signal wires or shorting pins.
+
+**Fail-closed** means the supervisor deliberately holds the CPU in reset or
+reboots into recovery instead of executing an unverified image. Capture the
+USB error/status first. Do not bypass verification merely to get a prompt.
+
+!!! note "Stage 9 is a disk-only diagnostic"
+    Its stock application implements ports 0x10-0x14 and USB status/fault
+    commands, but no CP/M terminal. Do not expect an interactive `A>` prompt
+    over USB. The interactive filesystem and Wi-Fi cases below are storage
+    acceptance requirements completed with the Stage 10 terminal. Other
+    port/fault cases require the stated Z80 test program or test-only setup;
+    a startup `PASS` line does not run them automatically.
+
 **Firmware feature:** With RESET# held LOW, recover any valid journal,
 validate the boot manifest and CRC32, DMA-write its payload to SRAM,
 and compare every byte before RESET# release. Do not wait for BUSACK#
@@ -718,7 +750,17 @@ Before arming, preserve host copies of the old and intended new 4 KiB block;
 after reboot, read back and compare the complete block before proceeding to
 the next injection point.
 
+## Bring-up checkpoint
+
+Before adding the Stage 10 terminal, require verified provisioning,
+successful journal recovery and full SRAM boot-image verification, no fatal
+storage status, and the Phase 8 bus/I/O measurements still passing. Record
+the interactive, network, and fault-injection cases that remain outstanding.
+Proceeding to Stage 10 enables those tests; it does not mark them passed.
+
 ## Pass gate
+
+Final storage acceptance, including the tests completed with Stage 10:
 
 Boot and all four disks match host CRC32 values; A-D expose
 their distinct expected sentinel files with no aliasing; real CP/M `DIR`,

@@ -1,5 +1,37 @@
 # 8. Progressive Build and Bring-Up Plan
 
+## Start here
+
+*Bring-up* means proving a small part of the circuit works before adding the
+next part. Treat each phase like an integration test with a hardware fixture:
+the installed chips, wiring, firmware, and supply settings are all part of
+the test. A successful firmware upload alone does not prove the wiring.
+
+Read the [construction guide](../hardware/construction.md) before handling
+the boards, then complete Phase 0 onward in order. Use the hardware pages as
+references, not as an instruction to wire and populate the whole computer at
+once. Prepare the [firmware build tools](../system/firmware-build.md) before
+Phase 1; use the maintained stage programs rather than assembling the example
+C fragments into your own test firmware.
+
+For each phase:
+
+1. **Power off:** disconnect external power and USB before moving a wire,
+   inserting a chip, or using the meter's continuity mode.
+2. **Wire and inspect:** follow that phase's wiring steps, verify chip
+   orientation, then check each new connection end to end with a multimeter.
+3. **Power and test:** use the specified current limit and firmware; measure
+   the named signals with the appropriate instrument.
+4. **Record and decide:** save the firmware version, rail voltages, idle
+   current, test output, and any required captures. Advance only when every
+   required test passes. If a result differs, stop at this phase and check
+   the most recent wiring before changing firmware or adding more hardware.
+
+!!! warning "A failing power check is a stop condition"
+    A collapsed rail, unexpected current, or warm chip is not a software
+    problem to debug while powered. Disconnect power first. Do not increase
+    the current limit just to make the board start.
+
 ## Phase sequence
 
 | Phase | Proves |
@@ -21,7 +53,7 @@ Build and test one functional block at a time. Do not install the next
 chip until the current phase passes. Use sockets for all DIP devices,
 place a 100 nF ceramic capacitor directly across each IC's supply pins,
 and fit at least one 22 uF bulk capacitor per breadboard. Use a
-current-limited 5 V supply, multimeter, oscilloscope, and preferably a
+current-limited 5 V supply, multimeter, oscilloscope, and a
 DSLogic Plus logic analyzer using the
 [documented capture groups](../hardware/logic-analyzer.md). Start each first
 power-up at a 100 mA current limit and
@@ -42,11 +74,12 @@ Record idle current after every phase. Unless stated otherwise, keep all chips
 from later phases out of their sockets.
 
 The following phase pages contain Pico SDK fragments showing the
-safety-critical core of each test and finish with the required two-core
-`main()` integration order. Board-specific Wi-Fi/WebSocket hooks and the
-optional nonblocking USB command parser remain external. Every diagnostic
-command must print `PASS` or a detailed failure and call `isolate_buses()`
-before returning.
+safety-critical behavior and finish with the required two-core `main()`
+integration order. The maintained applications provide the actual command
+parsers and networking. Test plans include both existing diagnostic commands
+and manual measurements or test-only fault setups; they are not all automated.
+A command printing `PASS` does not replace the listed electrical checks.
+Record any test not performed as **not verified**, rather than inferring a pass.
 
 The fragments simplify or rename identifiers for exposition; the adjacent
 **Maintained source** links identify the authoritative, compilable

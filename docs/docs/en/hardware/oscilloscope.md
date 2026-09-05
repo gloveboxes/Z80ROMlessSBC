@@ -10,6 +10,19 @@ It does not replace the
 the state or ordering of the complete A0-A15 and D0-D7 buses. Conversely,
 the logic analyzer does not prove analogue voltage or signal integrity.
 
+## Reading your first capture
+
+The horizontal axis is time; the vertical axis is voltage relative to the
+probe's GND. `200 ns/div` means each large horizontal division spans 200 ns.
+A **trigger** tells the scope which event to align on; it does not generate
+that event. Arm a Single capture before issuing the diagnostic command.
+If the scope keeps waiting, check the trigger source, edge, level, and whether
+the test actually ran before concluding that the circuit failed.
+
+A multimeter reports steady or averaged voltage; a running 0-5 V clock may
+therefore read around 2.5 V on a meter without being faulty. Use the scope
+to distinguish a switching clock from a line stuck at an invalid mid-level.
+
 ## Probe and instrument preparation
 
 1. Before connecting any probe or other input/output lead to the DHO814,
@@ -75,7 +88,9 @@ the logic analyzer does not prove analogue voltage or signal integrity.
     and another channel. Check timing with cursors as well; automatic
     measurements are invalid if the relevant edges or levels are not fully
     visible.
-11. Stop the acquisition before moving a live probe. Save a screen image
+11. Stop acquisition and power off the SBC before attaching or moving probe
+   clips; stopping acquisition does not make the circuit electrically safe.
+   Save a screen image
     and waveform for every pass gate, naming it with the phase, clock rate,
     stimulus, and probed signals. Record the displayed sample rate, memory
     depth, probe ratio, bandwidth limit, and measured minima/maxima.

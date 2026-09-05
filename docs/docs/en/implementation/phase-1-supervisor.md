@@ -4,6 +4,23 @@
 
 **Install:** Pico 2 W only.
 
+**What you are proving:** the Pico boots safely and each output reaches the
+intended empty socket. Load the Stage 1 diagnostic using the
+[firmware and USB-console procedure](../system/firmware-build.md#load-a-stage-and-open-its-console).
+Use `s` to sample inputs and `w` for the control-output walking test.
+
+A **walking one** drives one tested output HIGH at a time while the others
+are LOW. Probe the named destination and its neighbors: only the intended
+line should change. A walking zero reverses the pattern. These tests reveal
+swapped, shorted, and unconnected wires more clearly than toggling everything
+together.
+
+!!! note "Software PASS is not the phase pass gate"
+    Stage 1's `PASS: safe levels restored` reports that the output sequence
+    completed. It does not measure the socket voltages. The `w` command
+    exercises the control outputs, not GP10-GP17; the data-GPIO check in the
+    test plan is a separate required measurement/test setup.
+
 ## Wiring - Pico 2 W
 
 With the Pico removed, install and continuity-check every Pico connection

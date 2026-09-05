@@ -7,6 +7,22 @@ AHCT244 channels 2A2-2A4, and final SRAM-side pull-ups have passed the
 [Phase 2 gate](phase-2-buffer-clock.md#pass-gate).
 Keep the Z80 removed.
 
+**What you are proving:** the Pico can independently write and read every
+location and bit in SRAM. The CPU is still absent, so a failure is confined
+to power, the tested bus/control paths, or SRAM itself. The Stage 6 commands
+are `p` (address-derived pattern), `c` (its complement), and `m` (March test).
+These are destructive RAM tests: they overwrite the contents being tested.
+
+A **March test** walks through memory in both address directions, reading
+and writing prescribed values to expose stuck bits and interactions between
+locations. Passing one write/read at address zero is not enough.
+
+When a test fails, record the address, expected byte, and actual byte before
+rerunning. Their XOR identifies differing data bits; repeated failures at
+addresses separated by a power of two suggest an address-line problem, not
+necessarily a bad SRAM chip. Recheck those paths with power off. SRAM loses
+its contents when unpowered, so rerun the writes after each power cycle.
+
 ## Wiring - SRAM socket
 
 Before inserting the SRAM, install and continuity-check its address and data
@@ -122,7 +138,8 @@ static bool sram_pattern_test(bool complement) {
   walking-zero data.
 6. Fill all 65,536 bytes with the XOR of the address bytes, verify it,
   then repeat with the complement. Run the March test afterward.
-7. Repeat after ten power cycles and with the intended 1 MHz timing.
+7. Repeat after ten power cycles. These Pico-driven DMA tests do not prove
+  CPU memory timing at 1 MHz; test that with the installed Z80 in Phase 7.
 
 ## Pass gate
 

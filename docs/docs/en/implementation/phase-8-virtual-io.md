@@ -9,6 +9,18 @@ path and the Phase 3, 5, and 7 monitor paths against the
 [implementation wiring index](../hardware/bus-isolation.md#54-implementation-wiring-index)
 before enabling the integrated trap.
 
+**What you are proving:** a Z80 `IN` or `OUT` instruction reaches the Pico,
+transfers the correct byte, and resumes without either device driving against
+the other. The GAL asserts WAIT# immediately; the Pico then stops the clock,
+services the request, and resumes it. A pause during I/O is expected, not a
+clock-generator failure.
+
+This stage uses USB for both Z80 terminal bytes and supervisor diagnostics.
+**Ctrl-] then `s`** means hold Control and press `]`, release them, then type
+`s`; do not type the characters `Ctrl-]`. Ordinary characters go to the Z80.
+Some serial terminals reserve this escape combination; use one that passes
+it through, or change the terminal application's local escape setting.
+
 **Firmware feature:** Combine safe startup, timed bus acquisition,
 image injection and readback, run control, and the synchronous IN/OUT
 trap. Maintain counters for boots, DMA failures, readback mismatches,
@@ -24,9 +36,8 @@ using the shared [I/O trap](https://github.com/gloveboxes/Z80ROMlessSBC/blob/mai
 **Maintained source:** [io_trap.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/io_trap.h)
 and [io_trap.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
 
-A falling-edge IRQ on `PIN_IORQ_N` freezes the clock, reverses the
-address transceiver with the same contention-safe helper used
-elsewhere, reads the trapped port from the lower MCP23S17 port
+A falling-edge IRQ on `PIN_IORQ_N` freezes the clock, configures both
+MCP23S17 ports as inputs, reads the trapped port from the lower MCP23S17 port
 ([Section 6.4's 8-bit decode limit](../system/operation.md#64-system-performance-envelope-constraints)),
 and reuses the already-tested data
 bus helpers from the SRAM DMA code to sample or drive the data byte.
@@ -38,9 +49,10 @@ so a falling edge seen while the Pico already owns the
 bus cannot be a real Z80 cycle and is ignored before any bus or SPI0
 state is touched.
 The GAL has already asserted WAIT# before the handler runs. Both MCP
-ports must be forced to inputs before the two transceivers'
-shared OE# is enabled, even though only GPIOA is read; otherwise the
-still-output GPB port fights Z80 A8-A15. For `IN`, the data byte must
+ports must remain inputs while the Z80 owns the address bus, even though
+only GPIOA is read; an output-configured GPB port would fight Z80 A8-A15.
+There is no separate address transceiver or shared address OE# in this design.
+For `IN`, the data byte must
 stay driven until the Z80 samples it, so the clock resumes and `RD#`
 is polled before the data bus is isolated.
 DATA_ENABLE is also the GAL's WAIT-ready input, so the selected data path

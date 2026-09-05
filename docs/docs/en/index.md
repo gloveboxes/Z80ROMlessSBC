@@ -10,10 +10,26 @@ bring-up plan, not a proven reference design. Its electrical assumptions,
 timing margins, and firmware interactions require bench validation through
 the staged [implementation plan](implementation/index.md).
 
+## Reading path for a first hardware build
+
+Start with the [inventory](hardware/inventory.md) and the
+[breadboard and meter basics](hardware/construction.md#before-you-wire), then
+follow the [implementation plan](implementation/index.md) in order. It tells
+you what to install, wire, and test at each step. The hardware chapters are
+pin-level references; you do not need to understand every firmware excerpt
+before beginning the power checks.
+
+Use the [glossary](reference/glossary.md) for unfamiliar terms. Expect to
+use a multimeter from Phase 0 and a scope for startup/clock checks; the logic
+analyzer is also required for the later bus and speed qualification captures.
+This is a measured prototype build, not a wire-everything-and-power-on kit.
+
+## How the computer works
+
 The design pairs a Z80 without a ROM chip with a Raspberry Pi Pico 2 W. The
 Pico supplies the clock, controls reset, takes ownership of the bus, and loads
-a boot image into static RAM (SRAM) before allowing the Z80 to run. A 64 KiB
-SRAM chip provides the Z80 memory space. Buffers and bus transceivers isolate
+a boot image into static RAM (SRAM) before allowing the Z80 to run. The lower
+64 KiB of a 128 KiB SRAM chip provides the Z80 memory space. Buffers and bus transceivers isolate
 the Pico's 3.3 V pins from the 5 V bus, while an MCP23S17 I/O expander drives
 the 16-bit address bus during direct memory access (DMA) and paused
 input/output cycles.

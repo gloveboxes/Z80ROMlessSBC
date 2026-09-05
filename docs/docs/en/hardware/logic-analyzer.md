@@ -10,6 +10,12 @@ voltage margin, rise/fall time, ringing, overshoot, and close analogue timing.
 Never use a logic-analyzer HIGH or LOW display as proof that a receiving device's
 datasheet voltage limits were met.
 
+A displayed bus value is only as correct as the channel mapping: label the
+channels before capture and put bit 0 at the least-significant position.
+The analyzer samples rather than recording every instant; at 100 MHz,
+samples are 10 ns apart, so a shorter pulse may be missed. A clean-looking
+digital trace is not proof that the analog waveform has no glitch.
+
 The official DSLogic Plus data sheet specifies:
 
 | Property | DSLogic Plus limit |

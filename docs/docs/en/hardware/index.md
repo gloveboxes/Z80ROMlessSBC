@@ -2,8 +2,10 @@
 
 The hardware chapters progress from the bill of materials through pin-level
 wiring, address generation, physical construction, buffering, and final bus
-isolation. Read chapters 0-5 in order before following the staged
-[implementation plan](../implementation/index.md).
+isolation. For a first build, read the inventory and construction basics,
+then follow the staged [implementation plan](../implementation/index.md).
+Consult the other hardware chapters when a phase refers to them; their
+chapter order is not the chip-installation order.
 
 | Chapter | Purpose |
 | --- | --- |

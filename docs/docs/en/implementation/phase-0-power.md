@@ -9,6 +9,16 @@ pull-downs, and power wiring. Install no active device, including the Pico 2 W.
 Signal wiring is added and continuity-checked in the phase that first uses
 each connection.
 
+**What you are proving:** every future chip will receive the correct supply,
+and no wiring fault will short that supply when power is first applied.
+There is no firmware to run yet. Read the
+[meter guide](../hardware/construction.md#use-the-meter-safely) before testing.
+
+!!! warning "Keep powered and unpowered checks separate"
+    Continuity and resistance checks require external power and USB to be
+    disconnected. Use DC voltage mode for powered checks. With no Pico fitted,
+    the 3.3 V rail must remain unpowered; do not add another supply to test it.
+
 ## Wiring - sockets, rails, and passive defaults
 
 Place and orient every socket using the
@@ -25,6 +35,12 @@ specified below. Do not add point-to-point signal jumpers yet.
   than 250 mV rail excursion at the farthest board, add 47-100 uF there and
   repeat the capture. Bulk capacitance does not replace local 100 nF
   capacitors.
+
+  A ceramic 100 nF capacitor is non-polarized: either lead can go to GND.
+  Electrolytic bulk capacitors are polarized; connect `+` to the positive
+  rail and the marked negative lead to GND. Check the case markings, not
+  just lead length. Fit the three 22 uF board capacitors and the 100 uF
+  supply-entry capacitor from the inventory as well as the eight ceramics.
 
 - **5 V pull-ups:** Fit 10 kOhm pull-ups to BUSREQ#, BUSACK#, MREQ#, IORQ#,
   RD#, WR#, MCP SO, SRAM CE#, SRAM OE#, SRAM WE#, WAIT#, INT#, and NMI#.
@@ -43,9 +59,6 @@ specified below. Do not add point-to-point signal jumpers yet.
   (DATA_DIR), GP7 (DATA_ENABLE), GP9 (ADDR_ENABLE), and GP18/GP19 (SPI
   SCK/SI). Leave GP8 unconnected.
 
-- **GAL control inputs:** Connect GP7 and GP6 directly to ATF22V10 pins 9 and
-  11. Its TTL-compatible inputs accept 3.3 V.
-
 - **Pico data-bus defaults:** Fit the third 8x10 kOhm bussed SIP network from
   GP10-GP17 to GND. This keeps the SN74AHCT245N A inputs defined while the Pico
   GPIOs are inputs or the Pico is absent, and loads each active HIGH by only
@@ -59,6 +72,13 @@ specified below. Do not add point-to-point signal jumpers yet.
   verified.
 
 - **Unused inputs:** Tie every unused CMOS input to a defined level.
+
+Use the pin maps for the specified level of each unused input; do not ground
+unused **outputs**. A bussed SIP contains eight separate resistors sharing
+one common pin. Verify its common-pin mark before insertion: RN1/RN2 common
+goes to +5 V, while RN3 common goes to GND. A resistor from a signal to a
+rail is a weak default, not a direct jumper to that rail. GP-to-GAL signal
+jumpers are installed in the later wiring phases.
 
 ### Power distribution and isolation
 
@@ -114,14 +134,19 @@ specified below. Do not add point-to-point signal jumpers yet.
   pin. The AHCT245 and GAL VCC socket contacts must read 5 V, while the
   LVC245 and LVC244 VCC contacts must remain at 0 V because their 3.3 V
   source, the absent Pico, is not yet installed. With the GAL removed,
-  do not test GAL output levels. Verify the GAL socket and associated
-  nets have no unintended continuity to GND, 5 V, or adjacent signals.
+  do not test GAL output levels. The unpowered continuity checks above must
+  already have passed; do not use continuity mode with the rail energized.
   GAL output-level verification is performed in
   [Phase 2](phase-2-buffer-clock.md) after the GAL is installed.
 5. If using the photographed plug-in supply, confirm that its body
-  obscures no more than Core Board rows 1-3. Load its 5 V output to at
-  least 500 mA, require 4.75 V to 5.25 V at the farthest board, and
-  confirm no regulator becomes too hot to touch. Leave its 3.3 V output
+  obscures no more than Core Board rows 1-3. Test its 5 V output separately
+  with a suitable electronic load set to 500 mA; no ICs are fitted for this
+  test. Connect the load with power off, then set the supply current limit
+  high enough for this deliberate load. Require 4.75 V to 5.25 V at the
+  farthest board and check the regulator against its temperature rating.
+  The load dissipates 2.5 W: do not substitute a 1/4 W resistor or use a
+  fingertip as a temperature probe. Power off, remove the load, and restore
+  the 100 mA first-power-up limit afterward. Leave the module's 3.3 V output
   disconnected.
 6. Verify the external +5 V rail reaches Pico VSYS only through the
   1N5819 and does not reach Pico VBUS, the 3.3 V rail, or any GPIO

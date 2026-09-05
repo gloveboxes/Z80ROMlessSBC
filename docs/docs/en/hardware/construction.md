@@ -1,5 +1,66 @@
 # 3. Physical Partitioning & Breadboard Topology
 
+## Before you wire
+
+This page describes the final layout. Build it in the
+[phase sequence](../implementation/index.md), leaving later-phase chips out
+of their sockets. All pin diagrams are **top views**, looking down at the
+chip body, not at its underside.
+
+### How breadboard connections work
+
+- On a BB830, holes A-E in one numbered row are one electrical connection;
+  holes F-J in that row are a separate connection. The center gap separates
+  them. Row 18 does not connect to row 19.
+- Power rails run along the board edges. A printed red or blue stripe is
+  only a label: it supplies no voltage and does not prove continuity. Check
+  each rail segment with a meter, then label its assigned voltage.
+- A wire, socket pin, and resistor lead placed in the same connected strip
+  share a **net**. Moving a jumper by one row can therefore leave the intended
+  pin open while connecting a different pin instead.
+- A DIP straddles the center gap so opposite pins are not shorted. With its
+  notch at the top, pin 1 is top-left; numbering runs down the left side,
+  then up the right. Rotating the chip rotates the pin map. Several chips
+  here deliberately have their notches at the bottom; use the table below.
+
+### Turn a diagram into wires
+
+1. Find the source and destination **device, signal name, and physical pin**.
+   Do not treat a Pico GPIO number as a header position: for example, GP2 is
+   physical header pin 4, not header pin 2.
+2. Locate both pins using the orientation table, then mark their breadboard
+   rows. Wire one connection at a time using short insulated jumpers. Strip
+   only enough insulation to seat the ends; exposed copper above the board
+   must not touch a neighboring pin or jumper.
+3. With external power and USB disconnected, measure continuity from the
+   actual source socket contact to the destination contact. Also check for
+   unintended shorts to adjacent contacts. A beep proves a conductive path,
+   not that you chose the right two pins.
+4. Mark the connection checked before moving on. For a bus, repeat for every
+   bit: `A0-A15` means sixteen separate wires, not one connection. Probe at
+   the receiving socket as well as the source.
+
+Matching net labels in the schematic mean the points are connected even
+when no continuous line is drawn between them. A crossing without a junction
+is not a connection. The placement image shows where parts and signal groups
+belong; the phase pin diagrams specify individual connections.
+
+### Use the meter safely
+
+| Check | Board state | Probe placement and meaning |
+| --- | --- | --- |
+| Continuity / resistance | All power and USB disconnected; capacitors discharged | Measure between two contacts. A direct wire should read close to the resistance of the meter leads; a 10 kOhm pull resistor is not a short and may not beep. |
+| DC voltage | Powered for the stated test | Black lead in COM at common circuit GND; red lead in the voltage/resistance socket at the test point. Measure supply voltage at the IC's supply contact, not only at the power entry. |
+| Current | Use the bench supply readout for routine checks | A separate ammeter must go in series with the supply. Never place a meter in current mode across +5 V and GND; it effectively shorts the rail. Return the red lead to the voltage socket afterward. |
+
+Attach clips with power off, keeping metal tips clear of adjacent pins.
+After disconnecting power, confirm rail voltage has fallen near 0 V before
+switching to resistance mode; do not discharge capacitors by shorting them
+with a tool. A changing resistance reading can be the meter charging a
+capacitor, so allow it to settle.
+
+## Board roles and placement
+
 The layout enforces a strict three-zone model across three 830-point
 breadboards to minimize cross-talk and propagation delay across the
 distinct 3.3 V and 5 V power domains. Each zone below lists the specific
@@ -200,13 +261,19 @@ violation or net/endpoint mismatch fails the build.
 
 ## 3.3 High-Speed Interconnect Routing
 
-At the qualified 1-6 MHz clock rates, propagation skew from a few
+At the target 1-6 MHz clock rates, propagation skew from a few
 millimetres of wire-length difference is negligible compared with the
 Z80 timing budget. Solderless-breadboard reliability is instead
 dominated by total wire length, stubs, loop area, contact resistance,
 and fast-edge ringing. Route each bus as a short grouped trunk with
 roughly similar paths, but do not add serpentine wire merely to make
-lengths equal:
+lengths equal.
+
+A **trunk** is a compact route shared by the bus wires, with a short **tap**
+from each wire to each device that uses it. A **star** fans long wires out
+from one central point; a **stub** is a branch off the main route. Long
+branches can reflect fast voltage transitions even when the clock frequency
+is low. Keep a nearby GND return alongside each inter-board signal group.
 
 - **A0-A15 (hard construction rule):** keep the Z80, SRAM, MCP23S17,
   and both SIP pull-up networks on one short common trunk. Do not build

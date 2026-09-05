@@ -1,5 +1,17 @@
 # 6. Architectural Operational Boundaries
 
+## The three operating states
+
+| State | Who controls the buses? | What you should expect |
+| --- | --- | --- |
+| Reset-held loading | Pico controls SRAM through the MCP, data translators, and GAL | Z80 RESET# is LOW; the Pico loads and verifies the boot image before allowing execution. |
+| Normal execution | Z80 addresses SRAM directly | The Pico's data drivers and MCP address outputs are isolated. Ordinary memory access does not pass through SPI or Pico software. |
+| Trapped I/O | Z80 holds its address while the Pico services one byte | WAIT# and clock stopping hold the cycle; MCP inputs sample the port, and one selected data path transfers the byte. |
+
+Runtime flash writes temporarily request the Z80 bus using BUSREQ#/BUSACK#.
+This is different from cold boot: a running CPU must acknowledge the request
+before the Pico may take over. The detailed rules below protect that boundary.
+
 ## 6.1 Hardware-WAIT-Assisted Clock-Stop Trap Protocol
 
 When the Z80 executes an I/O instruction, IORQ# LOW reaches ATF22V10
@@ -178,7 +190,7 @@ wear-levelled storage.
     qualification at the preceding passing step.
 
   - *20 MHz CPU Rating:* The `Z84C0020PEC` rating applies to the CPU,
-    not this no-wait-state breadboard system. At 20 MHz a clock period
+    not this breadboard system with no memory wait states. At 20 MHz a clock period
     is 50 ns, shorter than the conservative 79.5 ns component-delay sum
     for the worst-case GAL + AHCT244 + SRAM select-to-data path. That sum
     excludes Z80 setup and breadboard delay. Reaching 20 MHz requires a

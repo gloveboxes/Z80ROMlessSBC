@@ -1,7 +1,10 @@
 # 5. Transceiver Operating Modes & Isolation Tables
 
-The transceivers isolate the supervisor elements (Pico 2 W and MCP23S17)
-from the main bus during standard execution, preventing bus contention.
+The data transceivers isolate the Pico from the data bus during standard
+execution. The MCP23S17 uses reset-based isolation on the address bus instead.
+Both prevent bus contention: two output drivers trying to force opposite
+voltages onto the same wire. Treat bus ownership like exclusive write access,
+but remember that a hardware conflict can damage parts, not just corrupt data.
 
 ## 5.1 All-PDIP Data-Bus Translation and Interlock
 

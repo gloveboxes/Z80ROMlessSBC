@@ -11,6 +11,31 @@ pulled-up Z80 WAIT# node, and tie both AHCT244
 output-enable pins LOW. Require 4.75 V to 5.25 V at GAL VCC before
 testing any pulled-up GAL output.
 
+**What you are proving:** the GAL chooses the right control source and the
+AHCT244 converts its signals to valid 5 V levels. Think of the GAL as a small
+hardware implementation of Boolean expressions: it responds without waiting
+for Pico firmware to run.
+
+The `.pld` file is source, not a ready-to-program image. Compile/fit it with
+a toolchain supporting the selected ATF22V10 to produce a `.jed` file, then
+program and verify that file with the exact device algorithm. The Pico CMake
+build does not do this step. If you do not have a verified JEDEC image and
+compatible programmer, stop here; an unprogrammed GAL cannot pass this phase.
+
+### Manual input tests
+
+"Pull LOW through 1 kOhm" means connect the **named input node** to GND
+through a 1 kOhm resistor. Remove that connection to let its fitted pull-up
+restore HIGH. Attach or remove the test lead with power off, then power up
+to measure. This is permitted only where the normal driving device, such as
+the Z80, is absent; never use a jumper to fight a powered output.
+
+Change one input at a time and record the resulting output against the
+[GAL truth table](../hardware/pin-mapping.md#12-sram-control-source-arbitration-atf22v10bc).
+A meter can check held levels; use the scope to check unwanted short pulses.
+The Stage 2 `w`/`t` commands do not automate the complete GAL truth table.
+Remove all temporary test leads and power off before installing the AHCT244.
+
 ## Wiring - GAL and output buffer
 
 With the GAL and AHCT244 removed, install and continuity-check the complete

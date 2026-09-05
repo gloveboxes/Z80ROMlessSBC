@@ -2,12 +2,27 @@
 
 **Prerequisite:** The [Phase 6 pass gate](phase-6-sram.md#pass-gate) must pass.
 
-**Install:** Z84C0020PEC. Preload SRAM first. Disable both bus
-transceivers, drive the Pico-side SRAM CE#/OE#/WE# controls inactive,
-hold RESET# LOW and BUSREQ# HIGH, and stop the clock LOW before
-insertion and power-up. RESET# LOW deliberately keeps the programmed
+**Install:** Disconnect external power and USB, then insert the Z84C0020PEC
+in its verified orientation. Never insert it into a powered socket. On the
+next power-up, Stage 7 firmware must disable both bus transceivers, drive
+the Pico-side SRAM CE#/OE#/WE# controls inactive, hold RESET# LOW and
+BUSREQ# HIGH, and keep the clock LOW. Load and verify the test program
+**after power-up and before releasing RESET#**; SRAM cannot retain a preload
+through power removal. RESET# LOW deliberately keeps the programmed
 logic on the inactive Pico side; the GAL equations switch to CPU controls
 automatically only when RESET# is released with BUSACK# HIGH.
+
+**What you are proving:** the real Z80 fetches instructions from SRAM and
+releases the buses when the Pico requests them. Start with `l` to load the
+test loop while holding reset, then `s` to advance **one clock cycle** at a
+time. This is not an instruction-level debugger step: each instruction takes
+several cycles, and refresh activity is normal. Use M1#, MREQ#, and RD# to
+identify opcode fetches rather than expecting every step to fetch an opcode.
+
+If there is no fetch, check power and CLK at the CPU first, then RESET#,
+WAIT#, and BUSREQ#. Only after those levels are correct should you investigate
+the address/data path. A `PASS: CPU running` message means the Pico completed
+load/start; it is not independent proof of Z80 execution.
 
 ## Wiring - final CPU socket verification
 

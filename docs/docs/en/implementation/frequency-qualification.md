@@ -3,6 +3,17 @@
 **Prerequisite:** The [Phase 10 pass gate](phase-10-websocket.md#pass-gate) must pass at
 1 MHz before testing any higher rate.
 
+**Qualification is measurement, not overclocking until CP/M looks stable.**
+A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
+baseline and change only the clock setting between tests, not the wiring,
+power arrangement, and probe layout at the same time.
+
+**Setup time** is how long data must be valid before the CPU samples it;
+**hold time** is how long it must remain valid afterward. Measure at the
+receiving pin relative to the specified sampling edge. A waveform that
+eventually reaches HIGH can still arrive too late. Use the scope for these
+small timing margins, not just a logic-analyzer byte decode.
+
 Begin only after CP/M has flushed all disks. Use USB `+`/`-` to select
 each frequency under the firmware's BUSREQ#/BUSACK# and core-1
 flash-quiescence interlocks.
@@ -42,3 +53,9 @@ DHO814 proves memory margin and the complete WAIT/clock-stop handshake.
 Report 6.5-8 MHz separately as experimental even if they pass; do not
 claim any rate without equivalent timing evidence and repeated
 cold/runtime tests.
+
+Record the requested and reported clock, firmware revision, rail voltages,
+functional error counts, worst measured timing margins, and capture filenames
+for each step. On any failed criterion, stop increasing the clock and return
+to the last fully passing rate. After changing wiring, repeat qualification;
+the old result describes the old physical build.

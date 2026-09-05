@@ -2,6 +2,24 @@
 
 The quantities below build one complete three-breadboard prototype.
 
+## Before ordering
+
+- Match the **whole part number and package**, not just `244` or `245`.
+  AHCT and LVC devices have different supply and input-voltage requirements;
+  they are not interchangeable even when their pins look alike.
+- Buy through-hole parts in the listed packages. Check the wide Z80/SRAM
+  sockets separately from the narrow logic sockets, and use **bussed**,
+  9-pin resistor networks, not isolated resistor arrays.
+- The Pico needs soldered headers. Order a header-fitted Pico 2 W or arrange
+  for the headers to be soldered and inspected before breadboarding; loose
+  header pins pushed through unsoldered holes are not reliable connections.
+- Arrange a compatible GAL programmer **and** a PLD compile/fit tool before
+  Phase 2. A blank ATF22V10 is not ready to use, and USB programming the Pico
+  cannot program it.
+- Have the meter and current-limited supply ready for Phase 0, the scope for
+  Phase 1 onward, and the logic analyzer for the specified bus captures.
+  Budget bench access to these instruments as part of the build.
+
 ## 0.1 Semiconductors
 
 | Required | Component | Package | Function |
@@ -119,6 +137,8 @@ of Pico/GAL TTL HIGHs.
 - Fine probe hooks or test clips suitable for DIP pins.
 - A programmer explicitly supporting the selected ATF22V10B or
   ATF22V10C device and generic 22V10 JEDEC files.
+- For the optional plug-in supply's Phase 0 load test: a suitable electronic
+  load and a means of checking regulator temperature without touching it.
 
 ## 0.6 Optional Items
 

@@ -1,6 +1,8 @@
 # 8.11 Phase 10 - WebSocket Terminal Console
 
-**Prerequisite:** The [Phase 9 pass gate](phase-9-flash-storage.md#pass-gate) must pass.
+**Prerequisite:** The [Phase 9 bring-up checkpoint](phase-9-flash-storage.md#bring-up-checkpoint)
+must pass. Use this terminal to finish the interactive and network-dependent
+parts of the Phase 9 storage acceptance tests.
 
 **Install:** No further bus hardware. Use a Pico 2 W for the final
 networked terminal build. Wi-Fi/WebSocket is the required final user
@@ -12,6 +14,28 @@ interface. A non-W Pico
 **Wiring:** Make no bus-hardware changes. Use the Pico 2 W's onboard radio;
 do not add a separate network module or repurpose the reserved wireless
 GPIOs.
+
+**What you are proving:** the working computer remains reliable while Wi-Fi,
+terminal traffic, and disk writes run together. Keep USB connected for Pico
+diagnostics; type CP/M commands in the browser, not into the USB diagnostic
+console. In this stage USB `s` reports status directly, without Phase 8's
+Ctrl-] prefix.
+
+### First connection and fault isolation
+
+1. Build with the intended Wi-Fi credentials and load the Stage 10 firmware.
+  Keep the clock at 1 MHz. Find the Pico's DHCP address in the network log
+  or your router's client list, then open `http://<pico-ip>:8088/` from a
+  computer on the same reachable local network.
+2. If the page does not load, check association, the address, and client
+  isolation/firewall settings before changing breadboard wiring. Guest
+  networks may block clients from communicating with each other.
+3. If the page loads but no CP/M output appears, inspect USB `s` for client,
+  disk/fatal, and queue-drop status. A served web page proves the Pico's
+  network path, not the Z80 boot or disk path.
+4. Once CP/M responds, run the functional tests below before trying a higher
+  clock. Keep this unauthenticated HTTP/WebSocket terminal on a trusted
+  local network; do not expose port 8088 to the Internet.
 
 **Firmware feature:** Start the WebSocket console service on core 1
 after core 0 has completed safe GPIO startup, queue initialization, and
@@ -47,8 +71,8 @@ queues on core 0, load the boot image from flash through the
 [Section 6.3 path](../system/operation.md#63-onboard-flash-cpm-disk-storage)
 entirely on core 0, then launch core 1 to own Wi-Fi and WebSocket work and
 the flash disk-write service in the same task. The
-exact HTTP/WebSocket library can be `pico-ws-server` as in that project,
-or another lwIP-based server with the same callback shape. Only the
+maintained network service supplies the HTTP/WebSocket implementation;
+builders do not need to choose or integrate another server library. Only the
 queue functions are visible to the Z80 trap.
 
 ```c

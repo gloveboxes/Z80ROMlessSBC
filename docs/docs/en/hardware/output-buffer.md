@@ -1,5 +1,12 @@
 # 4. Output Buffer Mapping: SN74AHCT244N (DIP-20)
 
+This is a **non-inverting** buffer: a LOW input produces a LOW output and a
+HIGH input produces a HIGH output, at the required output voltage. Buffer
+pin names `A` and `Y` mean input and output; they are not memory address bits.
+Its two active-LOW enable pins are tied to GND, so all eight channels are
+always enabled. Unlike the data transceivers, it is not switched off by
+DATA_ENABLE.
+
 The 5 V-powered SN74AHCT244 provides all eight required high-level
 outputs:
 
