@@ -1,0 +1,2631 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../oscilloscope/">
+      
+      
+        <link rel="next" href="../../system/operation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>DSLogic Plus logic analyzer - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dreamsourcelab-dslogic-plus-capture-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              DSLogic Plus logic analyzer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#purpose-and-instrument-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose and instrument limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-and-connection-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety and connection preparation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#baseline-dsview-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Baseline DSView configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-a-complete-sram-address-bus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group A: complete SRAM address bus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-b-memory-data-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group B: memory data and controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Group B: memory data and controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-dsview-z80-decoder-cross-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional DSView Z80 decoder cross-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-c-trapped-io-and-data-path-interlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group C: trapped I/O and data-path interlock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-d-sram-ownership-and-control-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group D: SRAM ownership and control propagation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trigger-and-expected-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trigger and expected outcomes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authoritative-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoritative documents
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#purpose-and-instrument-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose and instrument limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-and-connection-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety and connection preparation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#baseline-dsview-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Baseline DSView configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-a-complete-sram-address-bus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group A: complete SRAM address bus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-b-memory-data-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group B: memory data and controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Group B: memory data and controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-dsview-z80-decoder-cross-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional DSView Z80 decoder cross-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-c-trapped-io-and-data-path-interlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group C: trapped I/O and data-path interlock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-d-sram-ownership-and-control-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group D: SRAM ownership and control propagation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trigger-and-expected-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trigger and expected outcomes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authoritative-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoritative documents
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="dreamsourcelab-dslogic-plus-capture-plan">DreamSourceLab DSLogic Plus Capture Plan<a class="headerlink" href="#dreamsourcelab-dslogic-plus-capture-plan" title="Permanent link">¶</a></h1>
+<h2 id="purpose-and-instrument-limits">Purpose and instrument limits<a class="headerlink" href="#purpose-and-instrument-limits" title="Permanent link">¶</a></h2>
+<p>The DSLogic Plus proves simultaneous digital state, event ordering, bus values,
+and control sequencing. It complements the
+<a href="../oscilloscope/">RIGOL DHO814</a>: the logic analyzer
+answers <strong>what happened and in what order</strong>, while the oscilloscope proves
+voltage margin, rise/fall time, ringing, overshoot, and close analogue timing.
+Never use a logic-analyzer HIGH or LOW display as proof that a receiving device's
+datasheet voltage limits were met.</p>
+<p>A displayed bus value is only as correct as the channel mapping: label the
+channels before capture and put bit 0 at the least-significant position.
+The analyzer samples rather than recording every instant; at 100 MHz,
+samples are 10 ns apart, so a shorter pulse may be missed. A clean-looking
+digital trace is not proof that the analog waveform has no glitch.</p>
+<p>The official DSLogic Plus data sheet specifies:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>DSLogic Plus limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Digital channels</td>
+<td>16, CH0-CH15</td>
+</tr>
+<tr>
+<td>Buffer Mode sample rate</td>
+<td>400 MHz / 4 channels, 200 MHz / 8 channels, 100 MHz / 16 channels</td>
+</tr>
+<tr>
+<td>Stream Mode sample rate</td>
+<td>100 MHz / 3 channels, 50 MHz / 6 channels, 25 MHz / 12 channels, 20 MHz / 16 channels</td>
+</tr>
+<tr>
+<td>Hardware memory</td>
+<td>256 Mbits</td>
+</tr>
+<tr>
+<td>Buffer depth without RLE</td>
+<td>256 Mbits divided by enabled channel count</td>
+</tr>
+<tr>
+<td>Maximum stream depth</td>
+<td>16G samples</td>
+</tr>
+<tr>
+<td>Input threshold</td>
+<td>0-5 V, adjustable in 0.1 V steps</td>
+</tr>
+<tr>
+<td>Input impedance</td>
+<td>250 kOhm in parallel with approximately 13 pF</td>
+</tr>
+<tr>
+<td>Protected CH0-CH15 range</td>
+<td>-30 V to +30 V with the supplied fly wires</td>
+</tr>
+<tr>
+<td>100 MHz timing accuracy</td>
+<td>Within one sample interval, approximately +/-10 ns per captured edge</td>
+</tr>
+</tbody>
+</table>
+<p>All 16 channels are required for a complete address-bus capture, so this project
+uses <strong>16-channel, 100 MHz Buffer Mode</strong> for qualification. At the experimental
+8 MHz clock limit this gives 12.5 samples per clock period, satisfying DSView's
+recommendation to use at least 10 times the measured signal frequency when phase
+accuracy matters. It cannot resolve analogue behavior or prove a timing margin
+smaller than its sample uncertainty; use the
+<a href="../oscilloscope/">DHO814 capture plan</a> for those cases.</p>
+<p>The 16-channel Stream Mode limit is 20 MHz, only 2.5 samples per 8 MHz clock.
+Use it for long-duration state/fault searches at low clock rates, not as timing
+qualification evidence at the final operating frequency.</p>
+<h2 id="safety-and-connection-preparation">Safety and connection preparation<a class="headerlink" href="#safety-and-connection-preparation" title="Permanent link">¶</a></h2>
+<ol>
+<li>Install the current DSView release from the
+   <a href="https://www.dreamsourcelab.com/download/">DreamSourceLab download page</a>.
+   Connect DSLogic Plus directly to a reliable USB port. Open DSView and require
+   the hardware indicator to turn green and the device selector to identify
+   <strong>DSLogic Plus</strong> before attaching it to the circuit.</li>
+<li>The probe grounds are connected through USB to the host computer ground.
+   Connect them only to the SBC's common GND. Never attach a ground lead to
+   +3.3 V, +5 V, a signal, or a floating/hot DUT. If the host is mains-grounded,
+   DSLogic ground is earth-referenced.</li>
+<li>Power off the SBC before attaching or moving clips. Connect ground leads
+   first, then signal leads. Remove signal leads first when disconnecting.</li>
+<li>Use the supplied shielded fly wires. Each active channel has an independent
+   ground return; connect those returns to nearby common-GND points. Although
+   the Z80 clock is at most 8 MHz, its edges are fast, so use the guide's
+   high-frequency connection method rather than one long shared ground lead.</li>
+<li>Probe the physical destination pin listed below, not a distant jumper end.
+   Sixteen inputs add meaningful capacitive loading to a solderless breadboard.
+   Recheck operation at 1 MHz after connecting each group, and do not stack a
+   scope probe on the same node unless that combined loaded condition is the
+   test being qualified.</li>
+<li>Do not connect CK, TI, or TO for the standard project captures. CK and TI are
+   limited to the 0-3.3 V domain; attaching either to a 5 V Z80 signal violates
+   the hardware data sheet. CH0-CH15 provide every trigger used here.</li>
+</ol>
+<h2 id="baseline-dsview-configuration">Baseline DSView configuration<a class="headerlink" href="#baseline-dsview-configuration" title="Permanent link">¶</a></h2>
+<ol>
+<li>Press <strong>O</strong> or open <strong>Options</strong>. Select <strong>Logic Analyzer</strong> and
+   <strong>Buffer Mode</strong>, with <strong>Upload captured data</strong> as the stop option.</li>
+<li>Select <strong>Use 16 Channels (Max 100 MHz)</strong>, enable CH0-CH15, set
+   <strong>Sample Rate = 100 MHz</strong>, and begin with <strong>Sample Duration = 100 ms</strong>.
+   The official maximum at 100 MHz with 16 channels is approximately 167.77 ms.</li>
+<li>Set <strong>Filter Targets = None</strong>. The <strong>1 Sample Clock</strong> filter suppresses pulses
+   shorter than one sample interval and must not be used as pass evidence.</li>
+<li>Disable <strong>RLE Compress</strong> for baseline qualification so capture depth is fixed
+   and reproducible. A separately labelled RLE capture may be used to search for
+   sparse events, but it does not replace the baseline capture.</li>
+<li>Set the single device threshold for the selected group: <strong>3.5 V</strong> for Group A,
+   <strong>2.2 V</strong> for Group B, or <strong>1.6 V</strong> for mixed 3.3 V/TTL Groups C and D. These
+   thresholds make transitions visible at useful digital decision levels; the
+   DHO814 still proves device-specific $V_{IH}$/$V_{IL}$ margins.</li>
+<li>Select <strong>Single Capture</strong> and <strong>Normal Capture</strong>. Do not use Instant Capture
+   as pass evidence because it ignores trigger settings. Repetitive Capture is
+   useful only as additional evidence for repeatable events.</li>
+<li>Press <strong>T</strong> to open Trigger. Use <strong>Simple Trigger</strong> unless a scenario below
+   requests a bus pattern. Clear every stale channel condition first: multiple
+   Simple Trigger conditions are ANDed at the same sample point.</li>
+<li>Start with the trigger position at <strong>30%</strong> to retain the cause and more
+   post-trigger response. Use 50% when equal pre/post context is useful. Stream
+   Mode fixes the trigger close to the start and is not used for these gates.</li>
+<li>Rename every channel to the signal shown in its group before capture. Use
+   cursors and edge snap to measure ordering; record the sample count between
+   relevant edges as well as the displayed time.</li>
+<li>Save the complete <code>.dsl</code> capture and DSView session, export a VCD or raw CSV,
+    and save a PNG screenshot. Include phase, clock rate, stimulus, group,
+    threshold, sample rate, duration, filter, RLE state, and trigger in the name.</li>
+</ol>
+<h2 id="group-a-complete-sram-address-bus">Group A: complete SRAM address bus<a class="headerlink" href="#group-a-complete-sram-address-bus" title="Permanent link">¶</a></h2>
+<p>Use threshold <strong>3.5 V</strong>. This group proves all address bits simultaneously at the
+SRAM receiver pins.</p>
+<table>
+<thead>
+<tr>
+<th>DSLogic channel</th>
+<th>Signal</th>
+<th>Physical probe point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CH0</td>
+<td>A0</td>
+<td>SRAM pin 12</td>
+</tr>
+<tr>
+<td>CH1</td>
+<td>A1</td>
+<td>SRAM pin 11</td>
+</tr>
+<tr>
+<td>CH2</td>
+<td>A2</td>
+<td>SRAM pin 10</td>
+</tr>
+<tr>
+<td>CH3</td>
+<td>A3</td>
+<td>SRAM pin 9</td>
+</tr>
+<tr>
+<td>CH4</td>
+<td>A4</td>
+<td>SRAM pin 8</td>
+</tr>
+<tr>
+<td>CH5</td>
+<td>A5</td>
+<td>SRAM pin 7</td>
+</tr>
+<tr>
+<td>CH6</td>
+<td>A6</td>
+<td>SRAM pin 6</td>
+</tr>
+<tr>
+<td>CH7</td>
+<td>A7</td>
+<td>SRAM pin 5</td>
+</tr>
+<tr>
+<td>CH8</td>
+<td>A8</td>
+<td>SRAM pin 27</td>
+</tr>
+<tr>
+<td>CH9</td>
+<td>A9</td>
+<td>SRAM pin 26</td>
+</tr>
+<tr>
+<td>CH10</td>
+<td>A10</td>
+<td>SRAM pin 23</td>
+</tr>
+<tr>
+<td>CH11</td>
+<td>A11</td>
+<td>SRAM pin 25</td>
+</tr>
+<tr>
+<td>CH12</td>
+<td>A12</td>
+<td>SRAM pin 4</td>
+</tr>
+<tr>
+<td>CH13</td>
+<td>A13</td>
+<td>SRAM pin 28</td>
+</tr>
+<tr>
+<td>CH14</td>
+<td>A14</td>
+<td>SRAM pin 3</td>
+</tr>
+<tr>
+<td>CH15</td>
+<td>A15</td>
+<td>SRAM pin 31</td>
+</tr>
+</tbody>
+</table>
+<h2 id="group-b-memory-data-and-controls">Group B: memory data and controls<a class="headerlink" href="#group-b-memory-data-and-controls" title="Permanent link">¶</a></h2>
+<p>Use threshold <strong>2.2 V</strong>. Group B correlates the complete byte with the CPU and
+SRAM control cycle. The analogue scope captures remain responsible for proving
+the SRAM's stricter write-data HIGH margin.</p>
+<table>
+<thead>
+<tr>
+<th>DSLogic channel</th>
+<th>Signal</th>
+<th>Physical probe point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CH0-CH7</td>
+<td>D0-D7 in ascending order</td>
+<td>SRAM pins 13, 14, 15, 17, 18, 19, 20, 21</td>
+</tr>
+<tr>
+<td>CH8</td>
+<td>CLK</td>
+<td>Z80 pin 6</td>
+</tr>
+<tr>
+<td>CH9</td>
+<td>MREQ#</td>
+<td>Z80 pin 19</td>
+</tr>
+<tr>
+<td>CH10</td>
+<td>RD#</td>
+<td>Z80 pin 21</td>
+</tr>
+<tr>
+<td>CH11</td>
+<td>WR#</td>
+<td>Z80 pin 22</td>
+</tr>
+<tr>
+<td>CH12</td>
+<td>SRAM CE#</td>
+<td>SRAM pin 22</td>
+</tr>
+<tr>
+<td>CH13</td>
+<td>SRAM OE#</td>
+<td>SRAM pin 24</td>
+</tr>
+<tr>
+<td>CH14</td>
+<td>SRAM WE#</td>
+<td>SRAM pin 29</td>
+</tr>
+<tr>
+<td>CH15</td>
+<td>M1#</td>
+<td>Z80 pin 27</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optional-dsview-z80-decoder-cross-check">Optional DSView Z80 decoder cross-check<a class="headerlink" href="#optional-dsview-z80-decoder-cross-check" title="Permanent link">¶</a></h3>
+<p>After preserving the raw Group B capture, add DSView's <strong>Z80</strong> protocol
+decoder and bind D0-D7 to CH0-CH7, M1# to CH15, RD# to CH10, WR# to CH11,
+and optional MREQ# to CH9. Leave IORQ# and A0-A15 unbound for this group.
+The decoder can annotate opcode fetches and memory read/write bytes, but it
+cannot report the full address and must not replace manual inspection of the
+raw controls. Group C remains authoritative for trapped I/O, and Group A
+remains authoritative for the complete address bus.</p>
+<h2 id="group-c-trapped-io-and-data-path-interlock">Group C: trapped I/O and data-path interlock<a class="headerlink" href="#group-c-trapped-io-and-data-path-interlock" title="Permanent link">¶</a></h2>
+<p>Use threshold <strong>1.6 V</strong>. Repeat the group once for IN with RD# on CH10 and once
+for OUT with WR# on CH10.</p>
+<table>
+<thead>
+<tr>
+<th>DSLogic channel</th>
+<th>Signal</th>
+<th>Physical probe point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CH0-CH7</td>
+<td>D0-D7 in ascending order</td>
+<td>SRAM pins 13, 14, 15, 17, 18, 19, 20, 21</td>
+</tr>
+<tr>
+<td>CH8</td>
+<td>CLK</td>
+<td>Z80 pin 6</td>
+</tr>
+<tr>
+<td>CH9</td>
+<td>IORQ#</td>
+<td>Z80 pin 20</td>
+</tr>
+<tr>
+<td>CH10</td>
+<td>RD# for IN; WR# for OUT</td>
+<td>Z80 pin 21; repeat at pin 22</td>
+</tr>
+<tr>
+<td>CH11</td>
+<td>WAIT#</td>
+<td>Z80 pin 24</td>
+</tr>
+<tr>
+<td>CH12</td>
+<td>DATA_ENABLE</td>
+<td>Pico GP7, header pin 10</td>
+</tr>
+<tr>
+<td>CH13</td>
+<td>DATA_DIR</td>
+<td>Pico GP6, header pin 9</td>
+</tr>
+<tr>
+<td>CH14</td>
+<td>Pico-to-bus transceiver OE#</td>
+<td>SN74AHCT245 pin 19</td>
+</tr>
+<tr>
+<td>CH15</td>
+<td>Bus-to-Pico transceiver OE#</td>
+<td>SN74LVC245 pin 19</td>
+</tr>
+</tbody>
+</table>
+<h2 id="group-d-sram-ownership-and-control-propagation">Group D: SRAM ownership and control propagation<a class="headerlink" href="#group-d-sram-ownership-and-control-propagation" title="Permanent link">¶</a></h2>
+<p>Use threshold <strong>1.6 V</strong>. This mixed group follows CPU/Pico ownership through the
+GAL and AHCT244 to the final SRAM pins.</p>
+<table>
+<thead>
+<tr>
+<th>DSLogic channel</th>
+<th>Signal</th>
+<th>Physical probe point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CH0</td>
+<td>RESET#</td>
+<td>Z80 pin 26</td>
+</tr>
+<tr>
+<td>CH1</td>
+<td>BUSREQ#</td>
+<td>Z80 pin 25</td>
+</tr>
+<tr>
+<td>CH2</td>
+<td>BUSACK#</td>
+<td>Z80 pin 23</td>
+</tr>
+<tr>
+<td>CH3</td>
+<td>Z80 MREQ#</td>
+<td>Z80 pin 19</td>
+</tr>
+<tr>
+<td>CH4</td>
+<td>Z80 RD#</td>
+<td>Z80 pin 21</td>
+</tr>
+<tr>
+<td>CH5</td>
+<td>Z80 WR#</td>
+<td>Z80 pin 22</td>
+</tr>
+<tr>
+<td>CH6</td>
+<td>SRAM_CE_PRE#</td>
+<td>ATF22V10 pin 16</td>
+</tr>
+<tr>
+<td>CH7</td>
+<td>SRAM_OE_PRE#</td>
+<td>ATF22V10 pin 15</td>
+</tr>
+<tr>
+<td>CH8</td>
+<td>SRAM_WE_PRE#</td>
+<td>ATF22V10 pin 14</td>
+</tr>
+<tr>
+<td>CH9</td>
+<td>SRAM CE#</td>
+<td>SRAM pin 22</td>
+</tr>
+<tr>
+<td>CH10</td>
+<td>SRAM OE#</td>
+<td>SRAM pin 24</td>
+</tr>
+<tr>
+<td>CH11</td>
+<td>SRAM WE#</td>
+<td>SRAM pin 29</td>
+</tr>
+<tr>
+<td>CH12</td>
+<td>PICO_CE#</td>
+<td>Pico GP5, header pin 7</td>
+</tr>
+<tr>
+<td>CH13</td>
+<td>PICO_OE#</td>
+<td>Pico GP26, header pin 31</td>
+</tr>
+<tr>
+<td>CH14</td>
+<td>PICO_WE#</td>
+<td>Pico GP22, header pin 29</td>
+</tr>
+<tr>
+<td>CH15</td>
+<td>CLK</td>
+<td>Z80 pin 6</td>
+</tr>
+</tbody>
+</table>
+<h2 id="trigger-and-expected-outcomes">Trigger and expected outcomes<a class="headerlink" href="#trigger-and-expected-outcomes" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Group and trigger</th>
+<th>Expected result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Address integrity</td>
+<td>Group A. Set all 16 Simple Trigger levels to match 0000, FFFF, 5555, or AAAA; all conditions are ANDed. Repeat for each fixed pattern and trigger on 0000 for walking/CPU-read sequences.</td>
+<td>Every captured word equals the commanded address, each walking pattern changes only the intended bit, and no address transition occurs during the active sampling interval of a memory cycle. Repeat at every qualified clock rate.</td>
+</tr>
+<tr>
+<td>Opcode fetch</td>
+<td>Group B, CH15 M1# falling.</td>
+<td>M1#, MREQ#, RD#, CE#, and OE# assert in the expected active-LOW sequence; WE# remains HIGH and D0-D7 contain the fetched opcode before the Z80 sampling edge.</td>
+</tr>
+<tr>
+<td>SRAM read</td>
+<td>Group B, CH10 RD# falling with CH9 MREQ# LOW.</td>
+<td>CE# and OE# assert once, WE# remains HIGH, and all eight data bits settle to the expected byte before the sampling edge. No extra control transition is permitted.</td>
+</tr>
+<tr>
+<td>SRAM write</td>
+<td>Group B, CH11 WR# falling with CH9 MREQ# LOW.</td>
+<td>D0-D7 contain the expected byte before WE# falls and remain stable through its LOW pulse; CE# and WE# assert once and OE# remains HIGH. DSLogic screens pulse presence and ordering only; the DHO814 must prove the exact 45 ns minimum WE# LOW width.</td>
+</tr>
+<tr>
+<td>Reset and restart</td>
+<td>Group D, CH0 RESET# rising, trigger position 30%.</td>
+<td>RESET# was LOW for at least three clocks. While LOW, final SRAM controls follow inactive Pico controls. After release, the Z80-side controls become authoritative without any active-LOW glitch.</td>
+</tr>
+<tr>
+<td>DMA ownership</td>
+<td>Group D, CH2 BUSACK# falling for acquisition; repeat rising for release.</td>
+<td>BUSREQ# falls before BUSACK#. Once BUSACK# is LOW, GAL and SRAM controls select the Pico candidates. On release, Pico controls are inactive before BUSREQ# rises; BUSACK# then rises and CPU controls resume without overlap.</td>
+</tr>
+<tr>
+<td>Ownership hazard</td>
+<td>Group D, CH0 or CH2 either edge while both candidate controls are HIGH.</td>
+<td>GAL pre-controls and final SRAM controls remain continuously HIGH through the ownership transition. Any sampled LOW pulse fails the phase and requires a DHO814 close-up.</td>
+</tr>
+<tr>
+<td>Trapped IN</td>
+<td>Group C with RD# on CH10; trigger CH9 IORQ# falling.</td>
+<td>WAIT# falls before the Z80 WAIT sampling edge. DATA_DIR selects bus-to-Pico, only the LVC245 OE# falls, D0-D7 are sampled, DATA_ENABLE releases WAIT#, and both IORQ#/RD# return HIGH before the path is disabled.</td>
+</tr>
+<tr>
+<td>Trapped OUT</td>
+<td>Group C with WR# on CH10; trigger CH9 IORQ# falling.</td>
+<td>WAIT# falls first. DATA_DIR selects Pico-to-bus, only the AHCT245 OE# falls, D0-D7 contain the expected output byte, and WAIT#/clock release ordering matches the trap protocol. The two OE# signals are never LOW together.</td>
+</tr>
+</tbody>
+</table>
+<p>For the final frequency claim, save Group A, B, C-IN, C-OUT, and D captures at
+each tested rate. The separate groups must use the same firmware build, clock
+rate, and deterministic stimulus. A 16-channel DSLogic Plus cannot establish
+simultaneous whole-address, whole-data, and control ordering in one acquisition;
+do not imply otherwise in qualification records.</p>
+<h2 id="authoritative-documents">Authoritative documents<a class="headerlink" href="#authoritative-documents" title="Permanent link">¶</a></h2>
+<ul>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/DSLogic_Plus_Datasheet.pdf">DSLogic Plus Data Sheet</a></li>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/DSView_User_Guide.pdf">DSView User Guide</a></li>
+<li><a href="https://www.dreamsourcelab.com/product/dslogic-series/">DreamSourceLab DSLogic product page</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../oscilloscope/" class="md-footer__link md-footer__link--prev" aria-label="Previous: RIGOL DHO814 oscilloscope">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                RIGOL DHO814 oscilloscope
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../system/operation/" class="md-footer__link md-footer__link--next" aria-label="Next: Operational boundaries">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Operational boundaries
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,2701 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../phase-8-virtual-io/">
+      
+      
+        <link rel="next" href="../phase-10-websocket/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Phase 9 - Flash storage - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#810-phase-9-flash-disk-image-loader-and-cpm-storage" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Phase 9 - Flash storage
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#flash-disk-image-loader-final-phase-9-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flash Disk Image Loader (Final Phase 9 Integration)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bring-up-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bring-up checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#flash-disk-image-loader-final-phase-9-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flash Disk Image Loader (Final Phase 9 Integration)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bring-up-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bring-up checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="810-phase-9-flash-disk-image-loader-and-cpm-storage">8.10 Phase 9 - Flash Disk Image Loader and CP/M Storage<a class="headerlink" href="#810-phase-9-flash-disk-image-loader-and-cpm-storage" title="Permanent link">¶</a></h1>
+<p><strong>Prerequisite:</strong> The <a href="../phase-8-virtual-io/#pass-gate">Phase 8 pass gate</a> must pass.</p>
+<p><strong>Install:</strong> No hardware rework. Keep the board's physical
+<code>PICO_FLASH_SIZE_BYTES</code> value at 4 MiB; the root <code>CMakeLists.txt</code> writes a
+<code>pico_flash_region.ld</code> include that limits linked firmware to <code>0x290000</code>.
+Define <code>PICO_FLASH_ASSUME_CORE1_SAFE=1</code> and link the libraries listed in
+the <a href="../../system/operation/#63-onboard-flash-cpm-disk-storage">flash-storage architecture</a>.
+Provision the manifest-backed boot package and all four 320 KiB disk slots
+with the verified <code>picotool</code> commands there.</p>
+<p><strong>Wiring:</strong> Make no hardware changes. Keep the Phase 8 board intact and
+recheck only the existing ownership and SRAM-control paths if the cold-boot
+DMA checks fail.</p>
+<p><strong>What you are proving:</strong> persistent images survive reboot, load into SRAM
+correctly, and recover safely from interrupted writes. SRAM is volatile
+working memory; Pico flash holds the boot package and the four persistent
+virtual disks. A <strong>cold boot</strong> starts the Pico and reloads SRAM; a CP/M
+<strong>warm boot</strong> restarts its command environment without removing power.</p>
+<p>The maintained build already sets the linker boundary and flash definitions
+above; you do not need to edit CMake for normal construction. Use the
+<a href="../../system/firmware-build/#72-flash-provisioning">provisioning procedure</a>
+and retain host backups. The full 4 MiB image includes Stage 10 firmware;
+after initial provisioning, load the Stage 9 UF2 for this phase, preserving
+the storage regions. Do not mistake the disk image files for Pico firmware.</p>
+<div class="admonition warning">
+<p class="admonition-title">Use disposable disk contents for fault tests</p>
+<p>Complete normal boot/read/write checks before injecting faults. Tests
+that corrupt images, overwrite all records, or interrupt flash updates
+can destroy files. Preserve the original images and expected old/new
+blocks first. Use the documented one-shot watchdog hooks; do not simulate
+faults by pulling individual live signal wires or shorting pins.</p>
+</div>
+<p><strong>Fail-closed</strong> means the supervisor deliberately holds the CPU in reset or
+reboots into recovery instead of executing an unverified image. Capture the
+USB error/status first. Do not bypass verification merely to get a prompt.</p>
+<div class="admonition note">
+<p class="admonition-title">Stage 9 is a disk-only diagnostic</p>
+<p>Its stock application implements ports 0x10-0x14 and USB status/fault
+commands, but no CP/M terminal. Do not expect an interactive <code>A&gt;</code> prompt
+over USB. The interactive filesystem and Wi-Fi cases below are storage
+acceptance requirements completed with the Stage 10 terminal. Other
+port/fault cases require the stated Z80 test program or test-only setup;
+a startup <code>PASS</code> line does not run them automatically.</p>
+</div>
+<p><strong>Firmware feature:</strong> With RESET# held LOW, recover any valid journal,
+validate the boot manifest and CRC32, DMA-write its payload to SRAM,
+and compare every byte before RESET# release. Do not wait for BUSACK#
+during this cold-boot path: RESET# itself selects the Pico's SRAM
+controls through the
+<a href="../../hardware/pin-mapping/#12-sram-control-source-arbitration-atf22v10bc">GAL equations</a>.
+Once running, ports <code>0x10</code>-<code>0x14</code>
+provide command/status, drive, 16-bit LBA, and 128-byte data transfers.
+Reads are synchronous XIP copies; writes use the journaled core-1
+service and BUSY/READY/ERROR behavior defined in the
+<a href="../../system/operation/#63-onboard-flash-cpm-disk-storage">flash-storage architecture</a>.</p>
+<p><strong>Implementation:</strong> <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c">Phase 9 application</a>,
+with the shared <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c">disk device</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c">flash backend</a>, and
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h">flash layout</a>.</p>
+<h2 id="flash-disk-image-loader-final-phase-9-integration">Flash Disk Image Loader (Final Phase 9 Integration)<a class="headerlink" href="#flash-disk-image-loader-final-phase-9-integration" title="Permanent link">¶</a></h2>
+<p><strong>Maintained source:</strong> <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_disk.h">flash_disk.h</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h">flash_layout.h</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c">disk_device.c</a>, and
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c">flash_backend.c</a>.</p>
+<p>Loading a boot image is now a synchronous, core-0-only operation: a
+flash read is an ordinary memory access through the XIP-mapped pointer
+described in the
+<a href="../../system/operation/#63-onboard-flash-cpm-disk-storage">flash-storage architecture</a>,
+so bringing the initial image into SRAM needs no
+filesystem, blocking I/O call, or core 1 task. Only CP/M's live
+disk-sector <em>writes</em> still need to run on
+core 1 and cross back to core 0's foreground loop, because only they
+need to freeze the Z80 around a flash erase/program cycle
+using those same <a href="../../system/operation/#63-onboard-flash-cpm-disk-storage">storage ownership rules</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdint.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdbool.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stddef.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"hardware/flash.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"hardware/watchdog.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"pico/flash.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"pico/util/queue.h"</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">FLASH_JOURNAL_BASE_OFFSET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x290000u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_JOURNAL_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x10000u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_JOURNAL_BYTES</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_BOOT_BASE_OFFSET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x2A0000u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_BOOT_REGION_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x20000u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_BOOT_PAYLOAD_OFFSET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_BOOT_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x2C0000u</span><span class="p">,</span><span class="w">   </span><span class="c1">// Section 6.3 partition table.</span>
+<span class="w">  </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x50000u</span><span class="p">,</span><span class="w">     </span><span class="c1">// 320 KiB per drive.</span>
+<span class="w">  </span><span class="n">FLASH_DISK_SLOT_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">FLASH_DISK_RECORD_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2560u</span><span class="p">,</span>
+<span class="w">  </span><span class="n">SRAM_SIZE_BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">65536</span>
+<span class="p">};</span>
+
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">PICO_FLASH_SIZE_BYTES</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">4u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024u</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"Pico 2 W physical flash size changed"</span><span class="p">);</span>
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">==</span>
+<span class="w">  </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_COUNT</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"disk geometry does not fill its slot"</span><span class="p">);</span>
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">FLASH_BOOT_PAYLOAD_OFFSET</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SRAM_SIZE_BYTES</span><span class="w"> </span><span class="o">&lt;=</span>
+<span class="w">  </span><span class="n">FLASH_BOOT_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_BOOT_REGION_BYTES</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"boot payload exceeds its reserved region"</span><span class="p">);</span>
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="n">FLASH_DISK_SLOT_COUNT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PICO_FLASH_SIZE_BYTES</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"disk slots must end at physical flash boundary"</span><span class="p">);</span>
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"journal layout no longer matches the partition table"</span><span class="p">);</span>
+<span class="k">_Static_assert</span><span class="p">(</span><span class="n">PICO_FLASH_ASSUME_CORE1_SAFE</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"core 0 journal recovery runs only before core 1 is launched"</span><span class="p">);</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="nf">flash_disk_slot_ptr</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">drive</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">drive</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">crc32_bytes</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">crc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UINT32_MAX</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">crc</span><span class="w"> </span><span class="o">^=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">bit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">bit</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">bit</span><span class="p">)</span>
+<span class="w">      </span><span class="n">crc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">crc</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="mh">0xEDB88320u</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="o">-</span><span class="p">(</span><span class="kt">int32_t</span><span class="p">)(</span><span class="n">crc</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">1u</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">~</span><span class="n">crc</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Z80_BOOT_MAGIC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x5442385Au</span><span class="p">,</span><span class="w"> </span><span class="n">Z80_BOOT_VERSION</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="p">};</span><span class="w"> </span><span class="c1">// "Z8BT".</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">magic</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">version</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">header_bytes</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">image_bytes</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">image_crc32</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_crc32</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">z80_boot_manifest_t</span><span class="p">;</span>
+
+<span class="k">_Static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">z80_boot_manifest_t</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"boot manifest layout must match the host packer"</span><span class="p">);</span>
+
+<span class="c1">// Core 0 only, entirely synchronous: a flash read needs no filesystem,</span>
+<span class="c1">// queue, or core 1 task.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">prepare_reset_held_dma</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">isolate_buses</span><span class="p">();</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_RESET_N</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cycle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">cycle</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">cycle</span><span class="p">)</span>
+<span class="w">    </span><span class="n">clock_one_cycle</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Bit-banged SIO pulses; set_z80_clock_hz() runs later.</span>
+<span class="w">  </span><span class="n">stop_z80_clock</span><span class="p">();</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">gpio_get</span><span class="p">(</span><span class="n">PIN_BUSACK_N</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">gpio_get</span><span class="p">(</span><span class="n">PIN_IORQ_N</span><span class="p">)</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="o">!</span><span class="n">gpio_get</span><span class="p">(</span><span class="n">PIN_RD_N</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">gpio_get</span><span class="p">(</span><span class="n">PIN_WR_N</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w">  </span><span class="c1">// RESET# LOW selects the Pico SRAM controls (Section 1.2).</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">boot_image_from_flash</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">z80_boot_manifest_t</span><span class="w"> </span><span class="o">*</span><span class="n">manifest</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">z80_boot_manifest_t</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_BOOT_BASE_OFFSET</span><span class="p">);</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">source</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_BOOT_PAYLOAD_OFFSET</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">magic</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Z80_BOOT_MAGIC</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">version</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Z80_BOOT_VERSION</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">header_bytes</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">manifest</span><span class="p">)</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">SRAM_SIZE_BYTES</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_crc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crc32_bytes</span><span class="p">((</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">manifest</span><span class="p">,</span>
+<span class="w">    </span><span class="n">offsetof</span><span class="p">(</span><span class="n">z80_boot_manifest_t</span><span class="p">,</span><span class="w"> </span><span class="n">header_crc32</span><span class="p">));</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">header_crc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">header_crc32</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">crc32_bytes</span><span class="p">(</span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_crc32</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">prepare_reset_held_dma</span><span class="p">())</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span>
+<span class="w">    </span><span class="n">dma_write_byte</span><span class="p">((</span><span class="kt">uint16_t</span><span class="p">)</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dma_read_byte</span><span class="p">((</span><span class="kt">uint16_t</span><span class="p">)</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">source</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">printf</span><span class="p">(</span><span class="s">"boot verify failed near %04lx</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">i</span><span class="p">);</span>
+<span class="w">      </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"loaded boot bytes=%lu crc32=%08lx</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
+<span class="w">      </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_bytes</span><span class="p">,</span>
+<span class="w">      </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">manifest</span><span class="o">-&gt;</span><span class="n">image_crc32</span><span class="p">);</span>
+<span class="w">  </span><span class="n">isolate_buses</span><span class="p">();</span>
+<span class="w">  </span><span class="c1">// RESET# remains asserted; the caller releases it only after success.</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ok</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_recover_journal</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">boot_cpm_from_flash</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">flash_recover_journal</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">boot_image_from_flash</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">FLASH_SERVICE_ACQUIRE_BUS</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SERVICE_RELEASE_BUS</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">operation</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">flash_service_request_t</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">queue_t</span><span class="w"> </span><span class="n">flash_service_request_queue</span><span class="p">;</span><span class="w">  </span><span class="c1">// Core 1 -&gt; Core 0.</span>
+<span class="k">static</span><span class="w"> </span><span class="n">queue_t</span><span class="w"> </span><span class="n">flash_service_result_queue</span><span class="p">;</span><span class="w">   </span><span class="c1">// Core 0 -&gt; Core 1.</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">flash_service_queues_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">queue_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_request_queue</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">flash_service_request_t</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+<span class="w">  </span><span class="n">queue_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_result_queue</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">bool</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Core 0's foreground loop only; never called from io_trap_handler().</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">core0_service_flash_requests</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">flash_service_request_t</span><span class="w"> </span><span class="n">request</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">queue_try_remove</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_request_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">request</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="p">;</span>
+<span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">operation</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">FLASH_SERVICE_ACQUIRE_BUS</span><span class="p">:</span>
+<span class="w">      </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">request_cpu_bus</span><span class="p">(</span><span class="mi">500000</span><span class="p">);</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">        </span><span class="n">disable_io_trap</span><span class="p">();</span><span class="w">              </span><span class="c1">// BUSACK# LOW: no new cycle can start.</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">FLASH_SERVICE_RELEASE_BUS</span><span class="p">:</span>
+<span class="w">      </span><span class="n">enable_io_trap</span><span class="p">();</span><span class="w">                 </span><span class="c1">// Arm before BUSACK# lets the Z80 run.</span>
+<span class="w">      </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">release_cpu_bus</span><span class="p">(</span><span class="mi">500000</span><span class="p">);</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">        </span><span class="n">disable_io_trap</span><span class="p">();</span><span class="w">              </span><span class="c1">// release_cpu_bus() asserted RESET#.</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="k">default</span><span class="o">:</span>
+<span class="w">      </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">queue_add_blocking</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_result_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ok</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Core 1 only; blocks its caller, never core 0's foreground loop.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">core0_request</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">operation</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">flash_service_request_t</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">operation</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="n">queue_add_blocking</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_request_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="n">queue_remove_blocking</span><span class="p">(</span><span class="o">&amp;</span><span class="n">flash_service_result_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ok</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ok</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">FLASH_JOURNAL_MAGIC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x314C4E4Au</span><span class="w"> </span><span class="p">};</span><span class="w"> </span><span class="c1">// "JNL1".</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">magic</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sequence</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">target_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">data_crc32</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_crc32</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">reserved</span><span class="p">[</span><span class="n">FLASH_PAGE_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">20u</span><span class="p">];</span>
+<span class="p">}</span><span class="w"> </span><span class="n">flash_journal_header_t</span><span class="p">;</span>
+
+<span class="k">_Static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">flash_journal_header_t</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FLASH_PAGE_SIZE</span><span class="p">,</span>
+<span class="w">  </span><span class="s">"journal header must occupy one flash page"</span><span class="p">);</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">data_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">target_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">;</span>
+<span class="w">  </span><span class="n">flash_journal_header_t</span><span class="w"> </span><span class="n">header</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">committed</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">flash_write_params_t</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_disk_block_offset_valid</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">offset</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">disk_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">    </span><span class="n">FLASH_DISK_SLOT_COUNT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">    </span><span class="n">offset</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">disk_end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">    </span><span class="p">(</span><span class="n">offset</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">FLASH_SECTOR_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">_Noreturn</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reboot_after_flash_safe_failure</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_RESET_N</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">isolate_buses</span><span class="p">();</span>
+<span class="w">  </span><span class="n">stop_z80_clock</span><span class="p">();</span>
+<span class="w">  </span><span class="n">watchdog_reboot</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">)</span>
+<span class="w">    </span><span class="n">tight_loop_contents</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">flash_write_callback</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">param</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">flash_write_params_t</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">flash_write_params_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">param</span><span class="p">;</span>
+<span class="w">  </span><span class="n">flash_range_erase</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="p">);</span>
+<span class="w">  </span><span class="n">flash_range_program</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data_offset</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">flash_range_program</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FLASH_PAGE_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">flash_range_erase</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">flash_range_program</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">committed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memcmp</span><span class="p">((</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">),</span>
+<span class="w">    </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">committed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">flash_range_erase</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">    </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">committed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">)</span><span class="w"> </span><span class="o">==</span>
+<span class="w">      </span><span class="n">UINT32_MAX</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">target_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">restored</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">flash_restore_params_t</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">flash_restore_callback</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">param</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">flash_restore_params_t</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">flash_restore_params_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">param</span><span class="p">;</span>
+<span class="w">  </span><span class="n">flash_range_erase</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">flash_range_program</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">restored</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memcmp</span><span class="p">((</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">target_offset</span><span class="p">),</span>
+<span class="w">    </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">restored</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">flash_range_erase</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">);</span>
+<span class="w">    </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">restored</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">header_offset</span><span class="p">)</span><span class="w"> </span><span class="o">==</span>
+<span class="w">      </span><span class="n">UINT32_MAX</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Core 0 only, before core 1 launch and before RESET# release.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_recover_journal</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">flash_journal_header_t</span><span class="w"> </span><span class="n">headers</span><span class="p">[</span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">];</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">valid</span><span class="p">[</span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">];</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">recovery_block</span><span class="p">[</span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">];</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">pair</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_JOURNAL_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">      </span><span class="n">pair</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="p">;</span>
+<span class="w">    </span><span class="n">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">],</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">header_offset</span><span class="p">),</span>
+<span class="w">      </span><span class="k">sizeof</span><span class="w"> </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">]);</span>
+<span class="w">    </span><span class="n">valid</span><span class="p">[</span><span class="n">pair</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">magic</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FLASH_JOURNAL_MAGIC</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">header_crc32</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">crc32_bytes</span><span class="p">((</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">],</span>
+<span class="w">        </span><span class="n">offsetof</span><span class="p">(</span><span class="n">flash_journal_header_t</span><span class="p">,</span><span class="w"> </span><span class="n">header_crc32</span><span class="p">))</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="n">flash_disk_block_offset_valid</span><span class="p">(</span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">target_offset</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">recovered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">recovered</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">;</span>
+<span class="w">      </span><span class="o">++</span><span class="n">recovered</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">pair</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="n">pair</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">selected</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">sequence</span><span class="w"> </span><span class="o">&lt;</span>
+<span class="w">          </span><span class="n">headers</span><span class="p">[(</span><span class="kt">unsigned</span><span class="p">)</span><span class="n">selected</span><span class="p">].</span><span class="n">sequence</span><span class="p">))</span>
+<span class="w">        </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">pair</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">selected</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="p">)</span><span class="n">selected</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_JOURNAL_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">      </span><span class="n">pair</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">data_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">;</span>
+<span class="w">    </span><span class="n">memcpy</span><span class="p">(</span><span class="n">recovery_block</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_offset</span><span class="p">),</span>
+<span class="w">      </span><span class="k">sizeof</span><span class="w"> </span><span class="n">recovery_block</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">crc32_bytes</span><span class="p">(</span><span class="n">recovery_block</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">recovery_block</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span>
+<span class="w">        </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">data_crc32</span><span class="p">)</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">flash_restore_params_t</span><span class="w"> </span><span class="n">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">header_offset</span><span class="p">,</span><span class="w"> </span><span class="n">headers</span><span class="p">[</span><span class="n">pair</span><span class="p">].</span><span class="n">target_offset</span><span class="p">,</span><span class="w"> </span><span class="n">recovery_block</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_safe_execute</span><span class="p">(</span><span class="n">flash_restore_callback</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">PICO_OK</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">params</span><span class="p">.</span><span class="n">restored</span><span class="p">)</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">valid</span><span class="p">[</span><span class="n">pair</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">valid</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">dirty</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">drive</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">block_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">];</span>
+<span class="p">}</span><span class="w"> </span><span class="n">flash_disk_cache_t</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">flash_disk_cache_t</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="n">absolute_time_t</span><span class="w"> </span><span class="n">disk_cache_flush_deadline</span><span class="p">;</span>
+
+<span class="c1">// Core 1 only. Commits the cached erase block, freezing the Z80 while</span>
+<span class="c1">// flash_safe_execute() pauses XIP fetches on both cores (Section 6.3).</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_disk_flush_cache</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">dirty</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">flash_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">    </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">drive</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">block_offset</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">core0_request</span><span class="p">(</span><span class="n">FLASH_SERVICE_ACQUIRE_BUS</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sequence</span><span class="p">;</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">next_pair</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">next_pair</span><span class="o">++</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_COUNT</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">header_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_JOURNAL_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">    </span><span class="n">pair</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_JOURNAL_PAIR_BYTES</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">flash_write_params_t</span><span class="w"> </span><span class="n">params</span><span class="p">;</span>
+<span class="w">  </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">params</span><span class="p">);</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">data_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">FLASH_SECTOR_SIZE</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">target_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+<span class="w">  </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">);</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">.</span><span class="n">magic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_JOURNAL_MAGIC</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">.</span><span class="n">sequence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">++</span><span class="n">sequence</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">.</span><span class="n">target_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">.</span><span class="n">data_crc32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crc32_bytes</span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="p">,</span>
+<span class="w">    </span><span class="k">sizeof</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="p">);</span>
+<span class="w">  </span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">.</span><span class="n">header_crc32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crc32_bytes</span><span class="p">((</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">params</span><span class="p">.</span><span class="n">header</span><span class="p">,</span>
+<span class="w">    </span><span class="n">offsetof</span><span class="p">(</span><span class="n">flash_journal_header_t</span><span class="p">,</span><span class="w"> </span><span class="n">header_crc32</span><span class="p">));</span>
+
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_safe_execute</span><span class="p">(</span><span class="n">flash_write_callback</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">PICO_OK</span><span class="p">)</span>
+<span class="w">    </span><span class="n">reboot_after_flash_safe_failure</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">params</span><span class="p">.</span><span class="n">committed</span><span class="p">)</span>
+<span class="w">    </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">dirty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">released</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">core0_request</span><span class="p">(</span><span class="n">FLASH_SERVICE_RELEASE_BUS</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">released</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">.</span><span class="n">committed</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_disk_select_cache</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">drive</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">lba</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sector_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">lba</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sector_offset</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="p">(</span><span class="n">FLASH_SECTOR_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">drive</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">drive</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">block_offset</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">block_offset</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">flash_disk_flush_cache</span><span class="p">())</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">flash_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">    </span><span class="n">drive</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">block_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="n">memcpy</span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">flash_offset</span><span class="p">),</span>
+<span class="w">    </span><span class="k">sizeof</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="p">);</span>
+<span class="w">  </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">drive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">drive</span><span class="p">;</span>
+<span class="w">  </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">block_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">block_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_disk_write_record</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">drive</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">lba</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">write_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">flash_disk_select_cache</span><span class="p">(</span><span class="n">drive</span><span class="p">,</span><span class="w"> </span><span class="n">lba</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="kt">size_t</span><span class="p">)</span><span class="n">lba</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span>
+<span class="w">    </span><span class="p">(</span><span class="n">FLASH_SECTOR_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">memcmp</span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">memcpy</span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">);</span>
+<span class="w">    </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">dirty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">disk_cache_flush_deadline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_timeout_time_ms</span><span class="p">(</span><span class="mi">250</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">write_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">flash_disk_flush_cache</span><span class="p">()</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">flash_disk_read_record</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">drive</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">lba</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sector_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">lba</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sector_offset</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="p">(</span><span class="n">FLASH_SECTOR_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">within_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sector_offset</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">block_offset</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">drive</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">drive</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">block_offset</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">block_offset</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">memcpy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">disk_cache</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">within_block</span><span class="p">,</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">flash_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FLASH_DISK_BASE_OFFSET</span><span class="w"> </span><span class="o">+</span>
+<span class="w">      </span><span class="n">drive</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_BYTES</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sector_offset</span><span class="p">;</span>
+<span class="w">    </span><span class="n">memcpy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">XIP_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">flash_offset</span><span class="p">),</span>
+<span class="w">      </span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_STATUS_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x10</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_DRIVE_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x11</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_LBA_LOW_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x12</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_LBA_HIGH_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x13</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_DATA_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x14</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_CLEAR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_READ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_WRITE_NORMAL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_WRITE_DIRECTORY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_WRITE_UNALLOCATED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_COMMAND_FLUSH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_STATUS_DATA_READY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_STATUS_DATA_ROOM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_STATUS_BUSY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_STATUS_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1u</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<span class="w">  </span><span class="n">DISK_WRITE_QUEUE_DEPTH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="p">};</span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">command</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">drive</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">lba</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">];</span>
+<span class="p">}</span><span class="w"> </span><span class="n">disk_request_t</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">queue_t</span><span class="w"> </span><span class="n">disk_write_queue</span><span class="p">;</span><span class="w">             </span><span class="c1">// Z80/Core 0 -&gt; Core 1.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">disk_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DISK_STATUS_READY</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">disk_fatal_error</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">disk_drive</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">disk_lba</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">disk_write_drive</span><span class="p">;</span><span class="w">   </span><span class="c1">// Snapshot of drive/lba at WRITE issue,</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">disk_write_lba</span><span class="p">;</span><span class="w">    </span><span class="c1">// immune to changes during data transfer.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">disk_write_type</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">disk_data_index</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">disk_data</span><span class="p">[</span><span class="n">FLASH_DISK_RECORD_BYTES</span><span class="p">];</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">disk_status_load</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">__atomic_load_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_status</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_ACQUIRE</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disk_status_store</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__atomic_store_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_status</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_RELEASE</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">disk_address_valid</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">disk_drive</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FLASH_DISK_SLOT_COUNT</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">    </span><span class="n">disk_lba</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FLASH_DISK_RECORD_COUNT</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disk_service_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">queue_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_write_queue</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">disk_request_t</span><span class="p">),</span>
+<span class="w">    </span><span class="n">DISK_WRITE_QUEUE_DEPTH</span><span class="p">);</span>
+<span class="w">  </span><span class="n">__atomic_store_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_fatal_error</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_RELEASE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disk_start_command</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">command</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disk_status_load</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">DISK_STATUS_BUSY</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">fatal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">__atomic_load_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_fatal_error</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_ACQUIRE</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_CLEAR</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_data_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">fatal</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fatal</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_FLUSH</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_request_t</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">queue_try_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_write_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">request</span><span class="p">))</span>
+<span class="w">      </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_BUSY</span><span class="p">);</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">      </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">disk_address_valid</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">disk_data_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_READ</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_disk_read_record</span><span class="p">(</span><span class="n">disk_drive</span><span class="p">,</span><span class="w"> </span><span class="n">disk_lba</span><span class="p">,</span><span class="w"> </span><span class="n">disk_data</span><span class="p">);</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span>
+<span class="w">      </span><span class="p">(</span><span class="n">ok</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">DISK_STATUS_DATA_READY</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">DISK_COMMAND_WRITE_NORMAL</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="n">command</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">DISK_COMMAND_WRITE_UNALLOCATED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_write_drive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_drive</span><span class="p">;</span>
+<span class="w">    </span><span class="n">disk_write_lba</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_lba</span><span class="p">;</span>
+<span class="w">    </span><span class="n">disk_write_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">DISK_COMMAND_WRITE_NORMAL</span><span class="p">;</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_DATA_ROOM</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">disk_virtual_io_read</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">port</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_STATUS_PORT</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="n">disk_status_load</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">DISK_DATA_PORT</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="o">!</span><span class="p">(</span><span class="n">disk_status_load</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">DISK_STATUS_DATA_READY</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_data</span><span class="p">[</span><span class="n">disk_data_index</span><span class="o">++</span><span class="p">];</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disk_data_index</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">disk_data</span><span class="p">)</span>
+<span class="w">    </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disk_virtual_io_write</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_status_load</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_STATUS_PORT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_start_command</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">DISK_STATUS_BUSY</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_DRIVE_PORT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_drive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_LBA_LOW_PORT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_lba</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)((</span><span class="n">disk_lba</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0xFF00u</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">value</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_LBA_HIGH_PORT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_lba</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)((</span><span class="n">disk_lba</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x00FFu</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">((</span><span class="kt">uint16_t</span><span class="p">)</span><span class="n">value</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">port</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_DATA_PORT</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">      </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">DISK_STATUS_DATA_ROOM</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">disk_data</span><span class="p">[</span><span class="n">disk_data_index</span><span class="o">++</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disk_data_index</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">disk_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">disk_request_t</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">.</span><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DISK_COMMAND_WRITE_NORMAL</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">disk_write_type</span><span class="p">,</span>
+<span class="w">        </span><span class="p">.</span><span class="n">drive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_write_drive</span><span class="p">,</span>
+<span class="w">        </span><span class="p">.</span><span class="n">lba</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">disk_write_lba</span>
+<span class="w">      </span><span class="p">};</span>
+<span class="w">      </span><span class="n">memcpy</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">disk_data</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="n">data</span><span class="p">);</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">queue_try_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_write_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">request</span><span class="p">))</span>
+<span class="w">        </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_BUSY</span><span class="p">);</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="w">        </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Core 1 only; call on every loop iteration, including while Wi-Fi is down.</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">core1_service_disk_request</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">disk_request_t</span><span class="w"> </span><span class="n">request</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">queue_try_remove</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_write_queue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">request</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">disk_cache</span><span class="p">.</span><span class="n">dirty</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">time_reached</span><span class="p">(</span><span class="n">disk_cache_flush_deadline</span><span class="p">))</span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flash_disk_flush_cache</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">      </span><span class="n">__atomic_store_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_fatal_error</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_RELEASE</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">      </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DISK_COMMAND_FLUSH</span>
+<span class="w">    </span><span class="o">?</span><span class="w"> </span><span class="n">flash_disk_flush_cache</span><span class="p">()</span>
+<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">flash_disk_write_record</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">drive</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="n">lba</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="n">data</span><span class="p">,</span>
+<span class="w">        </span><span class="n">request</span><span class="p">.</span><span class="n">command</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">DISK_COMMAND_WRITE_NORMAL</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span>
+<span class="w">    </span><span class="n">__atomic_store_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">disk_fatal_error</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">__ATOMIC_RELEASE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">disk_status_store</span><span class="p">(</span><span class="n">DISK_STATUS_READY</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">ok</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">DISK_STATUS_ERROR</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The Z80 BIOS sets drive and 16-bit LBA, then writes command 1 for a read.
+Write commands 2, 3, and 4 mean normal, directory, and first record of a newly
+allocated CP/M block respectively; command 5 explicitly flushes the cache.
+A read returns 128 bytes from the data port. A write accepts exactly 128 bytes
+there, then changes status to BUSY until core 1 has cached it and completed
+any required journaled flush. Command 0 clears a transient protocol/queue
+error when not busy; a flash or journal failure remains latched until reboot
+and recovery. The BIOS polls READY/DATA_READY/DATA_ROOM/BUSY instead of
+assuming Pico timing, but reads each status only once per poll and uses Z80
+<code>INIR</code>/<code>OTIR</code> for payload transfer. It also waits for READY before writing a
+command's drive/LBA registers. Idle flushes are serialized separately by
+holding BUSACK# from before the flash operation until dirty state is cleared.
+No erase, program, blocking queue, or flash-safe call runs inside
+<code>io_trap_handler()</code>.</p>
+<p><strong>Test plan:</strong></p>
+<ol>
+<li>With the Z80 socket populated and the
+  <a href="../phase-8-virtual-io/#pass-gate">Phase 8 gate</a> passing, confirm
+  <code>io_trap_handler()</code> still passes every Phase 8 IN/OUT test unchanged;
+  Phase 9 adds no new pins or rework to disturb it.</li>
+<li>Confirm the link fails if code crosses <code>0x10290000</code>, while a runtime
+  print/static assertion still reports the physical C macro as 4 MiB.</li>
+<li>Provision the boot package and four exact-size disk images with
+  <code>picotool -v</code>; read every region's first and last page back and compare
+  host CRC32 values. Give every image a distinct known directory sentinel
+  (<code>DUMP.COM</code> on A, <code>CC2.COM</code> on B, <code>ATTNC11.COM</code> on C, and <code>DOCTOR.COM</code>
+  on D) so a valid but aliased drive mapping cannot pass.</li>
+<li>Cold-boot with RESET# held LOW. Require journal recovery and SRAM
+  verification to finish without waiting for BUSACK#, then release
+  RESET# only after success. Corrupt the manifest, payload, and SRAM
+  readback separately and require each case to remain fail-closed.</li>
+<li>Exercise the decoded port path with real Z80 <code>IN</code>/<code>OUT</code> instructions,
+  not direct calls to the C handlers. Prove that <code>0x10</code> selects only
+  command/status, <code>0x11</code> only the drive, <code>0x12</code>/<code>0x13</code> the complete LBA,
+  and <code>0x14</code> only record data; also prove that terminal ports <code>0x00</code>/<code>0x01</code>
+  cannot intercept or alias any disk access.</li>
+<li>Exercise all 2,560 LBAs on every drive through ports <code>0x10</code>-<code>0x14</code>,
+  alternating the selected drive between commands. Verify exact 128-byte
+  transfers, distinct per-drive sentinel records, no cross-drive aliasing,
+  invalid drive/LBA rejection, command
+  while BUSY rejection, and test-injected queue-full/error clearing
+  behavior. After an injected flash or journal failure, require every
+  READ/WRITE command to retain READY|ERROR until reboot recovery.</li>
+<li>Start a write, then change the live drive and LBA registers before core 1
+  services its queue. Verify the completed write uses the drive, LBA, write
+  type, and 128-byte payload captured when the command began and changes no
+  other record.</li>
+<li>Boot the packaged image and exercise the filesystem through CP/M itself:
+  run <code>DIR</code> on A-D and require each sentinel on only its expected drive; run
+  <code>LS</code> through natural transient exit and BIOS warm boot; run multi-extent
+  <code>C:ATTNC11</code>; and use <code>PIP</code> to copy files across drives. Reboot and compare
+  the affected records and directories byte-for-byte with the expected host
+  images.</li>
+<li>Use <a href="../../hardware/logic-analyzer/#group-d-sram-ownership-and-control-propagation">DSLogic Group D</a>
+  during a write to prove BUSREQ#/BUSACK#/CLK ownership and SRAM-control
+  propagation. Repeat with <a href="../../hardware/logic-analyzer/#group-c-trapped-io-and-data-path-interlock">Group C</a>
+  to prove the trap remains armed until BUSACK# is LOW and is armed again
+  before BUSACK# returns HIGH, with no untrapped I/O edge in either interval.
+  Inject an IORQ# falling edge while BUSACK# is LOW and require the handler
+  to disable the IRQ without touching CLK, SPI0, or either bus.</li>
+<li>Add test-only power-cut hooks after journal-data program, header
+  program, target erase, partial target program, target verification,
+  and header clear. Reboot after every hook and require recovery to
+  produce either the complete old block (before valid header) or the
+  complete new block (after valid header), never a mixture.</li>
+<li>Repeat reads and writes with Wi-Fi absent, associating, connected,
+  and reconnecting. Disk completion must not depend on network state,
+  and WebSocket queue overflow must remain counted rather than block.</li>
+<li>Rewrite hot directory blocks repeatedly while tracking journal-pair
+  rotation and the flash part's rated erase endurance. Treat this as a
+  smoke test, not proof of lifetime.</li>
+<li>Inject safe-execute entry and exit failures. Require RESET# LOW,
+  isolated buses, stopped CLK, and a watchdog reboot without waiting on
+  the core-0 release queue; recovery must retain the verified old or new
+  disk block.</li>
+</ol>
+<p>Stage 9 USB diagnostic keys <code>1</code> through <code>6</code> arm the six power-cut points
+in test 10; keys <code>7</code> and <code>8</code> arm safe-execute entry and exit failure in
+test 13. Each key arms one watchdog reset for the next CP/M write or flush.
+Before arming, preserve host copies of the old and intended new 4 KiB block;
+after reboot, read back and compare the complete block before proceeding to
+the next injection point.</p>
+<h2 id="bring-up-checkpoint">Bring-up checkpoint<a class="headerlink" href="#bring-up-checkpoint" title="Permanent link">¶</a></h2>
+<p>Before adding the Stage 10 terminal, require verified provisioning,
+successful journal recovery and full SRAM boot-image verification, no fatal
+storage status, and the Phase 8 bus/I/O measurements still passing. Record
+the interactive, network, and fault-injection cases that remain outstanding.
+Proceeding to Stage 10 enables those tests; it does not mark them passed.</p>
+<h2 id="pass-gate">Pass gate<a class="headerlink" href="#pass-gate" title="Permanent link">¶</a></h2>
+<p>Final storage acceptance, including the tests completed with Stage 10:</p>
+<p>Boot and all four disks match host CRC32 values; A-D expose
+their distinct expected sentinel files with no aliasing; real CP/M <code>DIR</code>,
+transient execution, warm boot, multi-extent loading, and cross-drive copy
+complete through the BIOS; queued writes retain their command-time drive/LBA
+snapshot; every fault-injection reboot recovers an intact old or new block;
+all bounds and manifest failures remain fail-closed; disk service works
+without Wi-Fi; the linker protects the storage boundary; and the required
+DSLogic Group C/D captures show no untrapped Z80 cycle around a flash write.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../phase-8-virtual-io/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Phase 8 - Virtual I/O">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Phase 8 - Virtual I/O
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../phase-10-websocket/" class="md-footer__link md-footer__link--next" aria-label="Next: Phase 10 - WebSocket terminal">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Phase 10 - WebSocket terminal
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

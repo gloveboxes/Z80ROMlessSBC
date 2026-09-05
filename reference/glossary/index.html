@@ -1,0 +1,3428 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../../cpm-dcc/interactive/">
+      
+      
+        <link rel="next" href="../datasheets/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Terms and abbreviations - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#appendix-a-terms-and-abbreviations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Terms and abbreviations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#system-and-processor-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System and Processor Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory-storage-and-software-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory, Storage, and Software Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digital-electronics-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital Electronics Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signal-names-and-bus-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal Names and Bus Notation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-names-and-pin-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Names and Pin Labels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pico-pad-power-and-mcp-register-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico Pad, Power, and MCP Register Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#software-network-file-and-test-abbreviations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Software, Network, File, and Test Abbreviations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#units-numeric-notation-and-data-sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Units, Numeric Notation, and Data Sizes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logic-families-levels-and-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logic Families, Levels, and Timing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-construction-and-schematic-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package, Construction, and Schematic Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-and-build-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement and Build Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#system-and-processor-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System and Processor Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory-storage-and-software-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory, Storage, and Software Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digital-electronics-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digital Electronics Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signal-names-and-bus-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal Names and Bus Notation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-names-and-pin-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Names and Pin Labels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pico-pad-power-and-mcp-register-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico Pad, Power, and MCP Register Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#software-network-file-and-test-abbreviations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Software, Network, File, and Test Abbreviations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#units-numeric-notation-and-data-sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Units, Numeric Notation, and Data Sizes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logic-families-levels-and-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logic Families, Levels, and Timing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-construction-and-schematic-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package, Construction, and Schematic Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-and-build-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement and Build Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="appendix-a-terms-and-abbreviations">Appendix A: Terms and Abbreviations<a class="headerlink" href="#appendix-a-terms-and-abbreviations" title="Permanent link">¶</a></h1>
+<p>This glossary explains the recurring terminology used in this document.
+Signal names ending in <code>#</code> are <strong>active LOW</strong>: for example, <code>RESET#</code> is
+asserted (active) at 0 V and deasserted (inactive) at a valid HIGH voltage.
+An overbar or <code>_N</code> suffix in a datasheet or source file commonly means the
+same thing.</p>
+<p>For example, firmware <code>gpio_put(PIN_RESET_N, 0)</code> <strong>asserts reset</strong> and keeps
+the CPU from running. Writing <code>1</code> releases reset. HIGH means a valid voltage
+in that signal's domain, not always 5 V: the Z80 RESET# node is driven
+directly by a 3.3 V Pico output. Neither a HIGH reading nor a Hi-Z output
+means it is safe to connect that node to an arbitrary supply.</p>
+<h2 id="system-and-processor-terms">System and Processor Terms<a class="headerlink" href="#system-and-processor-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SBC</td>
+<td>Single-board computer</td>
+<td>The complete Z80 computer built across the three breadboards.</td>
+</tr>
+<tr>
+<td>Z80</td>
+<td>Zilog 8-bit microprocessor family</td>
+<td>Executes the monitor, test programs, and CP/M after the Pico loads SRAM.</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>Central processing unit</td>
+<td>The Z84C0020PEC Z80 that executes program instructions.</td>
+</tr>
+<tr>
+<td>Pico / Pico 2 W</td>
+<td>Raspberry Pi Pico 2 W microcontroller board</td>
+<td>Supervises startup, loads SRAM, traps I/O, provides virtual disks, and hosts the Wi-Fi terminal.</td>
+</tr>
+<tr>
+<td>Supervisor</td>
+<td>Controller responsible for safe startup and system management</td>
+<td>The Pico firmware that owns reset, clock, DMA, trapped I/O, and fault handling.</td>
+</tr>
+<tr>
+<td>Bus</td>
+<td>Shared group of electrical signals</td>
+<td>Carries addresses, data, or control information between the Z80, SRAM, Pico interface, and MCP23S17.</td>
+</tr>
+<tr>
+<td>Address bus / <code>A0-A15</code></td>
+<td>Sixteen wires selecting a memory location or I/O port</td>
+<td>Addresses 65,536 byte locations; <code>A0</code> is the least-significant bit and <code>A15</code> the most-significant bit.</td>
+</tr>
+<tr>
+<td>Data bus / <code>D0-D7</code></td>
+<td>Eight bidirectional wires carrying one byte</td>
+<td>Transfers instruction, memory, and I/O data between devices.</td>
+</tr>
+<tr>
+<td>Control bus</td>
+<td>Timing and ownership signals such as <code>MREQ#</code>, <code>RD#</code>, and <code>BUSACK#</code></td>
+<td>Identifies the type and phase of each Z80 transaction.</td>
+</tr>
+<tr>
+<td>I/O</td>
+<td>Input/output</td>
+<td>Communication with peripherals rather than ordinary memory. This design implements most peripherals in Pico firmware.</td>
+</tr>
+<tr>
+<td>Port</td>
+<td>An I/O address selected by a Z80 <code>IN</code> or <code>OUT</code> instruction</td>
+<td>Selects terminal, disk, status, or other virtual-device registers.</td>
+</tr>
+<tr>
+<td>Trap</td>
+<td>Firmware interception of a Z80 I/O cycle</td>
+<td>Stops the static Z80 clock so the Pico can inspect or complete the cycle.</td>
+</tr>
+<tr>
+<td>DMA</td>
+<td>Direct memory access</td>
+<td>Lets the Pico take ownership of the buses and read or write SRAM without Z80 execution.</td>
+</tr>
+<tr>
+<td>ROMless</td>
+<td>Having no physical Z80 ROM</td>
+<td>The Pico writes the boot image into SRAM before releasing the Z80.</td>
+</tr>
+<tr>
+<td>Static CPU</td>
+<td>CPU whose clock may be stopped without losing internal state</td>
+<td>Allows the Pico to freeze the Z80 safely during a trapped I/O cycle.</td>
+</tr>
+<tr>
+<td>Clock / <code>CLK</code></td>
+<td>Repeating timing signal</td>
+<td>Advances the Z80 state machine; generated by the Pico and translated by the AHCT244.</td>
+</tr>
+<tr>
+<td>Machine cycle</td>
+<td>Group of clock periods used for one bus operation</td>
+<td>Defines when addresses, controls, and data must become valid.</td>
+</tr>
+<tr>
+<td>Wait state</td>
+<td>Extra clock period inserted into a bus cycle</td>
+<td>GAL-generated WAIT# protects I/O cycles while the Pico prepares the transfer. Ordinary SRAM cycles have no added memory wait states, so their timing still limits clock speed.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="memory-storage-and-software-terms">Memory, Storage, and Software Terms<a class="headerlink" href="#memory-storage-and-software-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAM</td>
+<td>Random-access memory</td>
+<td>Read/write working memory; contents are normally lost when power is removed.</td>
+</tr>
+<tr>
+<td>SRAM</td>
+<td>Static random-access memory</td>
+<td>The AS6C1008 provides the Z80's 64 KiB address space and needs no refresh clock.</td>
+</tr>
+<tr>
+<td>Flash</td>
+<td>Nonvolatile electrically erasable storage</td>
+<td>Pico onboard flash holds firmware, the Z80 boot package, CP/M disks, and the write journal.</td>
+</tr>
+<tr>
+<td>XIP</td>
+<td>Execute in place</td>
+<td>Pico address mapping that permits flash contents to be read like ordinary memory.</td>
+</tr>
+<tr>
+<td>CP/M</td>
+<td>Control Program for Microcomputers</td>
+<td>The disk operating system run by the Z80.</td>
+</tr>
+<tr>
+<td>BIOS</td>
+<td>Basic Input/Output System</td>
+<td>CP/M's board-specific layer for console and disk access. It is unrelated to a modern PC BIOS.</td>
+</tr>
+<tr>
+<td>BDOS</td>
+<td>Basic Disk Operating System</td>
+<td>CP/M service layer implementing files, console functions, and other operating-system calls.</td>
+</tr>
+<tr>
+<td>CCP</td>
+<td>Console Command Processor</td>
+<td>CP/M command interpreter that reads and runs commands.</td>
+</tr>
+<tr>
+<td>DPB</td>
+<td>Disk Parameter Block</td>
+<td>CP/M table describing logical disk geometry and allocation rules.</td>
+</tr>
+<tr>
+<td>LBA</td>
+<td>Logical block address</td>
+<td>Linear number identifying one 128-byte virtual-disk record.</td>
+</tr>
+<tr>
+<td>Sector / record</td>
+<td>Fixed-size disk transfer unit</td>
+<td>CP/M exchanges one 128-byte record; flash updates preserve its containing 4 KiB erase sector.</td>
+</tr>
+<tr>
+<td>Journal</td>
+<td>Temporary recovery record written before changing disk data</td>
+<td>Allows an interrupted flash write to recover the complete old or new block after reboot.</td>
+</tr>
+<tr>
+<td>Manifest</td>
+<td>Header describing an image and its integrity data</td>
+<td>Gives boot-image length, version, and CRC values before SRAM loading.</td>
+</tr>
+<tr>
+<td>CRC / CRC32</td>
+<td>Cyclic redundancy check, using a 32-bit result here</td>
+<td>Detects corruption in boot images, journal entries, and generated artifacts.</td>
+</tr>
+<tr>
+<td>SHA-256</td>
+<td>256-bit cryptographic hash</td>
+<td>Records reproducible host-artifact identities; it is not calculated by the Z80.</td>
+</tr>
+<tr>
+<td>Firmware</td>
+<td>Software executed by a microcontroller</td>
+<td>The staged Pico applications under <code>src/</code>.</td>
+</tr>
+<tr>
+<td>Boot loader</td>
+<td>Code that prepares and starts another program</td>
+<td>Validates the flash package, copies the Z80 image to SRAM, then releases reset.</td>
+</tr>
+<tr>
+<td>UF2</td>
+<td>USB Flashing Format</td>
+<td>Drag-and-drop or <code>picotool</code> firmware image format supported by Pico boot ROM.</td>
+</tr>
+<tr>
+<td>BOOTSEL</td>
+<td>Pico USB boot-selection mode</td>
+<td>Allows firmware or complete flash images to be loaded while the application is not running.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="digital-electronics-terms">Digital Electronics Terms<a class="headerlink" href="#digital-electronics-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPIO</td>
+<td>General-purpose input/output</td>
+<td>Individually programmable Pico pins used for clocks, controls, buses, and status.</td>
+</tr>
+<tr>
+<td>SPI</td>
+<td>Serial Peripheral Interface</td>
+<td>Four-wire link used by the Pico to control the MCP23S17.</td>
+</tr>
+<tr>
+<td>SCK / SCLK</td>
+<td>SPI serial clock</td>
+<td>Times each SPI bit sent to or received from the MCP23S17.</td>
+</tr>
+<tr>
+<td>MOSI / SI</td>
+<td>Master-out, slave-in</td>
+<td>SPI data from Pico to MCP23S17.</td>
+</tr>
+<tr>
+<td>MISO / SO</td>
+<td>Master-in, slave-out</td>
+<td>SPI data from MCP23S17 to Pico through the LVC244.</td>
+</tr>
+<tr>
+<td><code>CS#</code></td>
+<td>Chip select</td>
+<td>Active-LOW SPI signal selecting the MCP23S17 for a transaction.</td>
+</tr>
+<tr>
+<td>PWM</td>
+<td>Pulse-width modulation hardware</td>
+<td>Pico peripheral used to generate an accurate, variable-frequency Z80 clock.</td>
+</tr>
+<tr>
+<td>SIO</td>
+<td>Single-cycle I/O block in the RP2350</td>
+<td>Direct Pico GPIO hardware used for static levels and manual clock stepping; not Z80 serial I/O.</td>
+</tr>
+<tr>
+<td>IRQ</td>
+<td>Interrupt request</td>
+<td>Hardware event that diverts Pico execution to the I/O trap handler.</td>
+</tr>
+<tr>
+<td>ISR / handler</td>
+<td>Interrupt service routine</td>
+<td>Time-critical Pico function that freezes and services a trapped Z80 cycle.</td>
+</tr>
+<tr>
+<td>PLD</td>
+<td>Programmable logic device</td>
+<td>General class of programmable logic; the ATF22V10 implements arbitration and interlocks.</td>
+</tr>
+<tr>
+<td>GAL</td>
+<td>Generic Array Logic</td>
+<td>Reprogrammable PLD family; shorthand used here for the ATF22V10.</td>
+</tr>
+<tr>
+<td>JEDEC / JED file</td>
+<td>Standard programming-data format for a PLD</td>
+<td>File written to the ATF22V10 by a compatible programmer.</td>
+</tr>
+<tr>
+<td>Logic equation / product term</td>
+<td>Boolean expression implemented inside the GAL</td>
+<td>Selects SRAM control ownership and guarantees mutually exclusive data drivers.</td>
+</tr>
+<tr>
+<td>Consensus term</td>
+<td>Redundant Boolean term that removes a static hazard</td>
+<td>Prevents a brief false SRAM-control pulse while ownership inputs change.</td>
+</tr>
+<tr>
+<td>Static hazard / glitch</td>
+<td>Unwanted short output pulse caused by unequal logic delays</td>
+<td>Could accidentally assert SRAM <code>CE#</code>, <code>OE#</code>, or <code>WE#</code>; explicitly prevented and tested.</td>
+</tr>
+<tr>
+<td>Buffer</td>
+<td>Logic device that strengthens, isolates, or translates a signal</td>
+<td>AHCT244 drives 5 V clock/SPI/SRAM controls; LVC244 protects Pico inputs.</td>
+</tr>
+<tr>
+<td>Transceiver</td>
+<td>Bidirectional or direction-controlled bus buffer</td>
+<td>AHCT245 and LVC245 form separate Pico-to-bus and bus-to-Pico data paths.</td>
+</tr>
+<tr>
+<td>Tri-state / high-impedance / Hi-Z</td>
+<td>Output state that electrically disconnects its driver</td>
+<td>Permits several devices to share a bus as long as only the intended owner drives it.</td>
+</tr>
+<tr>
+<td>Bus contention</td>
+<td>Two outputs driving different levels on one wire</td>
+<td>Can corrupt data or damage parts; GAL and firmware interlocks are designed to prevent it.</td>
+</tr>
+<tr>
+<td>Level shifting / translation</td>
+<td>Converting signals between voltage domains</td>
+<td>Safely connects Pico 3.3 V logic to the 5 V Z80, SRAM, GAL, and MCP23S17.</td>
+</tr>
+<tr>
+<td>5 V tolerant</td>
+<td>Input may safely receive a specified 5 V-domain signal</td>
+<td>Required for every path from installed 5 V logic into a 3.3 V-powered device.</td>
+</tr>
+<tr>
+<td><code>Ioff</code></td>
+<td>Partial-power-down input/output protection</td>
+<td>Prevents LVC devices from being back-powered through their pins while their supply is off.</td>
+</tr>
+<tr>
+<td>Pull-up / pull-down</td>
+<td>Resistor weakly biasing a signal HIGH / LOW</td>
+<td>Establishes a safe default when no active device drives the signal.</td>
+</tr>
+<tr>
+<td>Decoupling / bypass capacitor</td>
+<td>Small capacitor beside an IC supply pair</td>
+<td>Supplies brief switching current locally and suppresses rail noise.</td>
+</tr>
+<tr>
+<td>Bulk capacitor</td>
+<td>Larger capacitor on a board or supply entry</td>
+<td>Reduces slower supply dips; it does not replace local decoupling.</td>
+</tr>
+<tr>
+<td>Power domain / rail</td>
+<td>Group of devices sharing a supply voltage</td>
+<td>The design has regulated 5 V logic and Pico-derived 3.3 V logic domains with common ground.</td>
+</tr>
+<tr>
+<td>GND</td>
+<td>Common electrical reference, nominally 0 V</td>
+<td>Return path and voltage reference shared by all boards and instruments.</td>
+</tr>
+<tr>
+<td>VCC / VDD</td>
+<td>Positive IC supply voltage</td>
+<td>Usually 5 V for Z80-side logic and 3.3 V for Pico-side LVC devices in this design.</td>
+</tr>
+<tr>
+<td>VSYS / VBUS / 3V3</td>
+<td>Pico system-input, USB 5 V, and regulated 3.3 V rails</td>
+<td>Must be connected exactly as specified to avoid back-powering USB or the Pico regulator.</td>
+</tr>
+<tr>
+<td>Schottky diode</td>
+<td>Low-forward-voltage diode</td>
+<td>The 1N5819 safely ORs external 5 V into Pico VSYS.</td>
+</tr>
+<tr>
+<td>NPN transistor</td>
+<td>Three-terminal bipolar transistor type</td>
+<td>Q1, a 2N3904, pulls MCP <code>RESET#</code> LOW when address access is disabled.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="signal-names-and-bus-notation">Signal Names and Bus Notation<a class="headerlink" href="#signal-names-and-bus-notation" title="Permanent link">¶</a></h2>
+<p>The descriptions below state the signal's purpose when it is asserted. Because
+most Z80 controls are active LOW, an inactive signal normally sits HIGH.</p>
+<table>
+<thead>
+<tr>
+<th>Signal or notation</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CLK</code></td>
+<td>Clock</td>
+<td>Advances the Z80. The Pico generates it and the AHCT244 translates it to a compliant 5 V clock level.</td>
+</tr>
+<tr>
+<td><code>RESET#</code></td>
+<td>Reset</td>
+<td>LOW initializes the Z80 and also forces GAL arbitration to select the Pico's SRAM controls.</td>
+</tr>
+<tr>
+<td><code>BUSREQ#</code></td>
+<td>Bus request</td>
+<td>Pico drives it LOW to ask the Z80 to release its address, data, and main control buses for DMA.</td>
+</tr>
+<tr>
+<td><code>BUSACK#</code></td>
+<td>Bus acknowledge</td>
+<td>Z80 drives it LOW after granting <code>BUSREQ#</code>; tells the Pico and GAL that DMA ownership is established.</td>
+</tr>
+<tr>
+<td><code>MREQ#</code></td>
+<td>Memory request</td>
+<td>Z80 drives it LOW during a memory transaction; becomes the CPU-owned source for SRAM <code>CE#</code>.</td>
+</tr>
+<tr>
+<td><code>IORQ#</code></td>
+<td>Input/output request</td>
+<td>Z80 drives it LOW during an I/O transaction; its falling edge starts the Pico clock-stop trap.</td>
+</tr>
+<tr>
+<td><code>RD#</code></td>
+<td>Read</td>
+<td>Z80 drives it LOW when the selected memory or I/O device must place data onto <code>D0-D7</code>.</td>
+</tr>
+<tr>
+<td><code>WR#</code></td>
+<td>Write</td>
+<td>Z80 drives it LOW when the selected memory or I/O device must accept data from <code>D0-D7</code>.</td>
+</tr>
+<tr>
+<td><code>M1#</code></td>
+<td>Machine-cycle-one</td>
+<td>Z80 drives it LOW during an opcode fetch and interrupt acknowledgement; used here as a <a href="../../implementation/phase-7-z80/">Phase 7</a> probe point.</td>
+</tr>
+<tr>
+<td><code>RFSH#</code></td>
+<td>Dynamic-memory refresh</td>
+<td>Z80 output for refreshing DRAM after an opcode fetch; this SRAM design does not use it.</td>
+</tr>
+<tr>
+<td><code>HALT#</code></td>
+<td>Halt state</td>
+<td>Z80 drives it LOW after executing <code>HALT</code>; not connected to the Pico in this design.</td>
+</tr>
+<tr>
+<td><code>WAIT#</code></td>
+<td>Wait request</td>
+<td>GAL pin 20 drives it LOW for an I/O cycle until DATA_ENABLE reports that the selected data path is ready; a 10 kOhm pull-up defines it if the GAL is absent.</td>
+</tr>
+<tr>
+<td><code>INT#</code></td>
+<td>Maskable interrupt request</td>
+<td>An external device could pull it LOW to request a normal Z80 interrupt; unused and pulled HIGH here.</td>
+</tr>
+<tr>
+<td><code>NMI#</code></td>
+<td>Non-maskable interrupt request</td>
+<td>A falling edge requests the Z80's highest-priority interrupt; unused and pulled HIGH here.</td>
+</tr>
+<tr>
+<td><code>CE#</code> / <code>CS#</code></td>
+<td>Chip enable / chip select</td>
+<td>LOW selects an IC. <code>CE#</code> selects SRAM; <code>CS#</code> selects the MCP23S17 for SPI.</td>
+</tr>
+<tr>
+<td><code>CE2</code></td>
+<td>Second chip-enable input</td>
+<td>Active-HIGH SRAM enable tied permanently to 5 V; <code>CE#</code> remains the switched enable.</td>
+</tr>
+<tr>
+<td><code>OE#</code></td>
+<td>Output enable</td>
+<td>LOW allows a memory, buffer, or transceiver to drive its output pins.</td>
+</tr>
+<tr>
+<td><code>WE#</code></td>
+<td>Write enable</td>
+<td>LOW commands SRAM to store the current data-bus value.</td>
+</tr>
+<tr>
+<td><code>DIR</code> / <code>DATA_DIR</code></td>
+<td>Direction select</td>
+<td>Chooses which fixed-direction data transceiver may be enabled; firmware changes it only while isolated.</td>
+</tr>
+<tr>
+<td><code>DATA_ENABLE</code></td>
+<td>Data-interface master enable</td>
+<td>HIGH permits the GAL to enable exactly one data path; LOW makes both paths high-impedance.</td>
+</tr>
+<tr>
+<td><code>ADDR_ENABLE</code></td>
+<td>Address-interface enable</td>
+<td>HIGH releases MCP reset for address access; LOW resets it so all address pins return to inputs.</td>
+</tr>
+<tr>
+<td><code>DATA_UP_OE#</code></td>
+<td>Pico-to-5 V data-path output enable</td>
+<td>GAL output that enables the AHCT245 only for Pico-to-bus transfers.</td>
+</tr>
+<tr>
+<td><code>DATA_DOWN_OE#</code></td>
+<td>5 V-to-Pico data-path output enable</td>
+<td>GAL output that enables the LVC245 only for bus-to-Pico transfers.</td>
+</tr>
+<tr>
+<td><code>SRAM_*_PRE#</code></td>
+<td>Pre-buffer SRAM control</td>
+<td>GAL-generated TTL-level <code>CE#</code>, <code>OE#</code>, or <code>WE#</code> signal before the AHCT244 raises it to 5 V CMOS levels.</td>
+</tr>
+<tr>
+<td><code>PICO_*</code> / <code>Z80_*</code></td>
+<td>Source-name prefix</td>
+<td>Distinguishes Pico-generated controls from Z80-generated controls in equations and net names.</td>
+</tr>
+<tr>
+<td><code>A0-A15</code></td>
+<td>Address bits 0 through 15</td>
+<td>Shared 16-bit address bus; <code>A0</code> is least significant and <code>A15</code> most significant.</td>
+</tr>
+<tr>
+<td><code>A16</code></td>
+<td>SRAM address bit 16</td>
+<td>Tied LOW so only the lower 64 KiB of the 128 KiB SRAM is used.</td>
+</tr>
+<tr>
+<td><code>D0-D7</code></td>
+<td>Data bits 0 through 7</td>
+<td>Shared 8-bit bidirectional data bus; <code>D0</code> is least significant.</td>
+</tr>
+<tr>
+<td><code>GPA0-GPA7</code> / <code>GPB0-GPB7</code></td>
+<td>MCP23S17 port A / B bits</td>
+<td>Connect directly to address buses <code>A0-A7</code> / <code>A8-A15</code>. These are not Pico <code>GP</code> pins.</td>
+</tr>
+<tr>
+<td><code>SCK</code> / <code>SI</code> / <code>SO</code></td>
+<td>Serial clock / serial input / serial output</td>
+<td>MCP23S17 datasheet names for SPI clock, MOSI, and MISO respectively.</td>
+</tr>
+<tr>
+<td><code>IN</code> / <code>OUT</code></td>
+<td>Z80 input / output instructions</td>
+<td>Read a byte from, or write a byte to, an I/O port serviced by the Pico trap.</td>
+</tr>
+<tr>
+<td><code>#</code>, <code>_N</code>, or overbar</td>
+<td>Active-LOW notation</td>
+<td>Indicates that LOW means asserted. For example, <code>PIN_RD_N</code> in source code represents hardware <code>RD#</code>.</td>
+</tr>
+<tr>
+<td><code>X</code> in a truth table</td>
+<td>Don't-care value</td>
+<td>Either LOW or HIGH is allowed because that input cannot alter the stated result.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="component-names-and-pin-labels">Component Names and Pin Labels<a class="headerlink" href="#component-names-and-pin-labels" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name or fragment</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Z84C0020PEC</code></td>
+<td>Zilog CMOS Z80, 20 MHz grade, plastic DIP commercial part</td>
+<td>The exact CPU specified for the build; 20 MHz is a part rating, not the qualified system speed.</td>
+</tr>
+<tr>
+<td><code>AS6C1008-55PCN</code></td>
+<td>Alliance Memory 128 KiB x 8 SRAM, 55 ns, plastic DIP</td>
+<td>Provides the Z80's lower 64 KiB memory space.</td>
+</tr>
+<tr>
+<td><code>MCP23S17-E/SP</code></td>
+<td>Microchip 16-bit SPI GPIO expander in SPDIP</td>
+<td>Drives or samples the 16-bit address bus under Pico control.</td>
+</tr>
+<tr>
+<td><code>ATF22V10B/C</code></td>
+<td>Microchip 22-input/10-output reprogrammable GAL variants</td>
+<td>Implements SRAM arbitration, data interlocking, MCP reset control, and I/O WAIT#.</td>
+</tr>
+<tr>
+<td><code>SN74AHCT244N</code> / <code>AHCT244</code></td>
+<td>8-channel non-inverting 5 V buffer with TTL inputs</td>
+<td>Translates clock, bus request, SPI, and GAL SRAM controls to 5 V outputs.</td>
+</tr>
+<tr>
+<td><code>SN74AHCT245N</code> / <code>AHCT245</code></td>
+<td>8-bit 5 V bus transceiver with TTL inputs</td>
+<td>Implements the fixed Pico-to-5 V data path.</td>
+</tr>
+<tr>
+<td><code>SN74LVC245AN</code> / <code>LVC245</code></td>
+<td>8-bit low-voltage bus transceiver with 5 V-tolerant inputs</td>
+<td>Implements the fixed 5 V-to-Pico data path.</td>
+</tr>
+<tr>
+<td><code>SN74LVC244AN</code> / <code>LVC244</code></td>
+<td>8-channel low-voltage input buffer with 5 V-tolerant inputs</td>
+<td>Buffers Z80 status/control and MCP <code>SO</code> into the Pico domain.</td>
+</tr>
+<tr>
+<td><code>2N3904</code> / <code>Q1</code></td>
+<td>General-purpose NPN transistor / schematic reference for transistor 1</td>
+<td>Pulls MCP <code>RESET#</code> LOW under GAL control.</td>
+</tr>
+<tr>
+<td><code>1N5819</code></td>
+<td>Schottky rectifier diode</td>
+<td>ORs external 5 V into Pico <code>VSYS</code> without feeding the USB <code>VBUS</code> node.</td>
+</tr>
+<tr>
+<td><code>RN1</code>, <code>RN2</code>, <code>RN3</code></td>
+<td>Resistor-network references</td>
+<td>RN1/RN2 pull up address bits; RN3 pulls down Pico data GPIOs.</td>
+</tr>
+<tr>
+<td><code>A1-A8</code> / <code>B1-B8</code></td>
+<td>The two eight-bit ports of a <code>245</code> transceiver</td>
+<td>A faces the Pico and B faces the 5 V bus in this design.</td>
+</tr>
+<tr>
+<td><code>1A1</code>, <code>1Y1</code>, etc.</td>
+<td>Input and output labels on a <code>244</code>/<code>541</code> buffer bank</td>
+<td><code>A</code> is a buffer input and <code>Y</code> is its corresponding output; the leading digit selects a bank where present.</td>
+</tr>
+<tr>
+<td><code>OE1#</code> / <code>OE2#</code></td>
+<td>Output-enable inputs for buffer bank 1 / 2</td>
+<td>Tied LOW on the always-readable LVC244 and AHCT244 buffers. A <code>245</code> transceiver instead has one <code>OE#</code> for all eight bits.</td>
+</tr>
+<tr>
+<td><code>GP0</code>, <code>GP1</code>, etc.</td>
+<td>Pico general-purpose pin number</td>
+<td>RP2350 GPIO index used by firmware; it is not the Pico header's physical pin number.</td>
+</tr>
+<tr>
+<td><code>pin 1</code>, notch, dot</td>
+<td>Package orientation references</td>
+<td>Identify how to insert a device without rotation or mirroring.</td>
+</tr>
+<tr>
+<td><code>N</code>, <code>AN</code>, <code>PCN</code>, <code>PEC</code>, <code>PU</code>, <code>SP</code> suffixes</td>
+<td>Manufacturer package/grade codes</td>
+<td>Distinguish exact orderable parts; consult that manufacturer's datasheet rather than assuming suffixes are interchangeable.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pico-pad-power-and-mcp-register-terms">Pico Pad, Power, and MCP Register Terms<a class="headerlink" href="#pico-pad-power-and-mcp-register-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RP2350</td>
+<td>Microcontroller chip used by Pico 2 W</td>
+<td>Executes the supervisor firmware and provides GPIO, PWM, SPI, flash access, and two CPU cores.</td>
+</tr>
+<tr>
+<td><code>GP0-GP29</code></td>
+<td>RP2350 GPIO numbers exposed or used by Pico 2 W</td>
+<td>Firmware-level pin names; map them to physical header pins with the <a href="../../hardware/pin-mapping/#10-raspberry-pi-pico-2-w-header-pin-map">Pico header map</a>.</td>
+</tr>
+<tr>
+<td>Pad</td>
+<td>Physical input/output cell on the RP2350 die</td>
+<td>Determines electrical properties such as 5 V tolerance and ADC capability.</td>
+</tr>
+<tr>
+<td>FT pad</td>
+<td>Five-volt-tolerant digital pad</td>
+<td>GP0-GP25 pad type; tolerance still depends on RP2350 power conditions.</td>
+</tr>
+<tr>
+<td>ADC pad</td>
+<td>Analog-to-digital-converter-capable pad</td>
+<td>GP26-GP29 pad type; not 5 V tolerant, so GP27/GP28 monitors require the LVC244.</td>
+</tr>
+<tr>
+<td>ADC</td>
+<td>Analog-to-digital converter</td>
+<td>Converts voltage to a number; not used for Z80 monitoring despite GP26-GP29 being ADC-capable.</td>
+</tr>
+<tr>
+<td><code>IOVDD</code></td>
+<td>RP2350 input/output supply</td>
+<td>Must be present at 3.3 V for the FT-pad 5.5 V absolute-maximum condition to apply.</td>
+</tr>
+<tr>
+<td><code>AGND</code></td>
+<td>Pico analog ground pin</td>
+<td>Bonded to common ground because this project does not use a separate analog subsystem.</td>
+</tr>
+<tr>
+<td><code>ADC_VREF</code></td>
+<td>Pico ADC reference-voltage pin</td>
+<td>Left open because the project does not use Pico ADC measurements.</td>
+</tr>
+<tr>
+<td><code>3V3</code> / <code>3V3(OUT)</code></td>
+<td>Pico regulated 3.3 V output</td>
+<td>Powers LVC244/LVC245 and 3.3 V pull-ups.</td>
+</tr>
+<tr>
+<td><code>3V3_EN</code></td>
+<td>Pico 3.3 V regulator enable</td>
+<td>Left open; pulling it LOW would disable the Pico's 3.3 V rail.</td>
+</tr>
+<tr>
+<td><code>RUN</code></td>
+<td>Pico reset input</td>
+<td>Left open; pulling it LOW resets the RP2350.</td>
+</tr>
+<tr>
+<td><code>VBUS</code></td>
+<td>USB connector's nominal 5 V node</td>
+<td>Must not be tied to the external 5 V rail.</td>
+</tr>
+<tr>
+<td><code>VSYS</code></td>
+<td>Pico system power input</td>
+<td>Receives external 5 V only through the 1N5819 and USB power through Pico's onboard diode.</td>
+</tr>
+<tr>
+<td><code>IODIRA</code> / <code>IODIRB</code></td>
+<td>MCP port A / B direction registers</td>
+<td>Bit value 1 selects input; 0 selects output. Reset makes both registers <code>0xFF</code>.</td>
+</tr>
+<tr>
+<td><code>OLATA</code> / <code>OLATB</code></td>
+<td>MCP port A / B output-latch registers</td>
+<td>Preload the next address value before changing port direction to outputs.</td>
+</tr>
+<tr>
+<td><code>GPIOA</code> / <code>GPIOB</code></td>
+<td>MCP port A / B pin-value registers</td>
+<td>Read the actual logic levels present on the address-bus pins.</td>
+</tr>
+<tr>
+<td><code>IOCON</code></td>
+<td>MCP I/O configuration register</td>
+<td>Holds global expander options, including hardware-address enable.</td>
+</tr>
+<tr>
+<td><code>HAEN</code></td>
+<td>MCP hardware-address-enable bit</td>
+<td>Enables SPI opcode comparison with A0/A1/A2 pins; those pins are tied LOW here regardless.</td>
+</tr>
+<tr>
+<td><code>SPI0</code></td>
+<td>RP2350 SPI controller instance 0</td>
+<td>Dedicated to MCP23S17 access while the I/O trap is armed.</td>
+</tr>
+<tr>
+<td>Core 0 / Core 1</td>
+<td>The two RP2350 processor cores</td>
+<td>Core 0 owns timing and buses; core 1 owns networking and runtime flash writes.</td>
+</tr>
+<tr>
+<td>FIFO</td>
+<td>First-in, first-out queue</td>
+<td>Ordered communication buffer; the multicore FIFO is reserved by Pico flash lockout support.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="software-network-file-and-test-abbreviations">Software, Network, File, and Test Abbreviations<a class="headerlink" href="#software-network-file-and-test-abbreviations" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SDK</td>
+<td>Software development kit</td>
+<td>Pico headers, libraries, tools, and build support used by the firmware.</td>
+</tr>
+<tr>
+<td>API</td>
+<td>Application programming interface</td>
+<td>Defined functions through which code or tools access a subsystem.</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td>Command-line interface</td>
+<td>Text-based invocation of tools such as CMake, <code>picotool</code>, and test scripts.</td>
+</tr>
+<tr>
+<td>CI</td>
+<td>Continuous integration</td>
+<td>Automated build/test environment that can reject boundary or artifact failures.</td>
+</tr>
+<tr>
+<td>USB</td>
+<td>Universal Serial Bus</td>
+<td>Programs the Pico, carries diagnostics, and connects test instruments to the Mac.</td>
+</tr>
+<tr>
+<td>UART</td>
+<td>Universal asynchronous receiver/transmitter</td>
+<td>Common serial protocol supported by decoders; the Z80 terminal itself is virtual, not a UART chip.</td>
+</tr>
+<tr>
+<td>I2C / I²C</td>
+<td>Inter-Integrated Circuit</td>
+<td>Two-wire serial protocol supported by tools but not used for the MCP23S17 in this design.</td>
+</tr>
+<tr>
+<td>TCP/IP</td>
+<td>Transmission Control Protocol / Internet Protocol</td>
+<td>Networking foundation used by HTTP and WebSocket traffic.</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>Hypertext Transfer Protocol</td>
+<td>Serves the browser terminal page from Pico port 8088.</td>
+</tr>
+<tr>
+<td>HTML</td>
+<td>Hypertext Markup Language</td>
+<td>Source format of the embedded browser terminal interface.</td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>JavaScript Object Notation</td>
+<td>Structured text format used for generated manifests.</td>
+</tr>
+<tr>
+<td>CSV</td>
+<td>Comma-separated values</td>
+<td>Plain-text tabular export format for captures, measurements, and generated data.</td>
+</tr>
+<tr>
+<td>SVG</td>
+<td>Scalable Vector Graphics</td>
+<td>Vector image format used for diagrams and schematic exports.</td>
+</tr>
+<tr>
+<td>PDF</td>
+<td>Portable Document Format</td>
+<td>Generated printable edition of this specification and schematic.</td>
+</tr>
+<tr>
+<td>FFT</td>
+<td>Fast Fourier transform</td>
+<td>Converts sampled time-domain data into a frequency spectrum.</td>
+</tr>
+<tr>
+<td>DVM</td>
+<td>Digital voltmeter</td>
+<td>Instrument function that reports numeric voltage measurements.</td>
+</tr>
+<tr>
+<td>RLE</td>
+<td>Run-length encoding</td>
+<td>Compression that stores repeated identical digital samples efficiently.</td>
+</tr>
+<tr>
+<td>IEEE CRC32</td>
+<td>Standard 32-bit CRC convention</td>
+<td>Exact CRC algorithm used by boot and journal formats.</td>
+</tr>
+<tr>
+<td><code>XIP_BASE</code></td>
+<td>Base address of Pico's memory-mapped external flash</td>
+<td>Added to a flash offset to obtain a readable pointer.</td>
+</tr>
+<tr>
+<td><code>PICO_OK</code></td>
+<td>Pico SDK success result</td>
+<td>Required return from <code>flash_safe_execute()</code> before a flash operation is accepted.</td>
+</tr>
+<tr>
+<td>watchdog</td>
+<td>Hardware recovery timer</td>
+<td>Reboots into journal recovery if runtime flash coordination cannot continue safely.</td>
+</tr>
+<tr>
+<td>atomic</td>
+<td>Operation observed as indivisible between cores</td>
+<td>Protects shared status words without a lock needed by the trap.</td>
+</tr>
+<tr>
+<td>nonblocking</td>
+<td>Returns immediately rather than waiting</td>
+<td>Required for trap hooks and foreground services that must not stall another critical task.</td>
+</tr>
+<tr>
+<td>CRC, hash, verify</td>
+<td>Different integrity checks</td>
+<td>CRC detects transfer/storage corruption, SHA-256 identifies host artifacts, and verify compares programmed/read-back contents.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="units-numeric-notation-and-data-sizes">Units, Numeric Notation, and Data Sizes<a class="headerlink" href="#units-numeric-notation-and-data-sizes" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Notation</th>
+<th>Meaning</th>
+<th>How to read it here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x</code> prefix</td>
+<td>Hexadecimal (base-16) number</td>
+<td><code>0xFF</code> is decimal 255; convenient for bytes, addresses, masks, and register values.</td>
+</tr>
+<tr>
+<td>bit</td>
+<td>One binary digit</td>
+<td>Has value 0 or 1. Eight bits form one byte.</td>
+</tr>
+<tr>
+<td>byte</td>
+<td>Eight bits</td>
+<td>One Z80 data-bus transfer and one addressable SRAM location.</td>
+</tr>
+<tr>
+<td><code>K</code>, <code>M</code>, <code>G</code> in rates</td>
+<td>Decimal kilo, mega, giga</td>
+<td>Multipliers of 1,000; for example, 1 MHz is 1,000,000 cycles per second.</td>
+</tr>
+<tr>
+<td><code>KiB</code> / <code>MiB</code></td>
+<td>Kibibyte / mebibyte</td>
+<td>Binary sizes of 1,024 bytes / 1,048,576 bytes.</td>
+</tr>
+<tr>
+<td><code>KB</code> / <code>MB</code></td>
+<td>Kilobyte / megabyte</td>
+<td>Sometimes used informally in prose or vendor material; exact project image sizes are stated in bytes or KiB.</td>
+</tr>
+<tr>
+<td><code>Hz</code>, <code>kHz</code>, <code>MHz</code></td>
+<td>Hertz, kilohertz, megahertz</td>
+<td>Cycles per second; used for clock, signal, and bandwidth values.</td>
+</tr>
+<tr>
+<td><code>S/s</code>, <code>MS/s</code>, <code>GSa/s</code></td>
+<td>Samples per second, mega-samples/s, giga-samples/s</td>
+<td>Logic-analyzer or oscilloscope sampling rate, not signal frequency.</td>
+</tr>
+<tr>
+<td><code>s</code>, <code>ms</code>, <code>us</code>, <code>ns</code></td>
+<td>Second, millisecond, microsecond, nanosecond</td>
+<td>Time units: each step is one thousand times smaller than the previous. Source identifiers use <code>us</code> for microseconds.</td>
+</tr>
+<tr>
+<td><code>V</code>, <code>mV</code></td>
+<td>Volt, millivolt</td>
+<td>Electrical potential; 1 V equals 1,000 mV.</td>
+</tr>
+<tr>
+<td><code>A</code>, <code>mA</code></td>
+<td>Ampere, milliampere</td>
+<td>Electrical current; 1 A equals 1,000 mA.</td>
+</tr>
+<tr>
+<td><code>Ohm</code>, <code>kOhm</code></td>
+<td>Ohm, kilo-ohm</td>
+<td>Resistance; 10 kOhm means 10,000 ohms.</td>
+</tr>
+<tr>
+<td><code>pF</code>, <code>nF</code>, <code>uF</code></td>
+<td>Picofarad, nanofarad, microfarad</td>
+<td>Capacitance units; adjacent steps differ by 1,000. <code>uF</code> is ASCII notation for µF.</td>
+</tr>
+<tr>
+<td><code>Mpts</code>, samples</td>
+<td>Million points / recorded measurements</td>
+<td>Capture-memory depth; available duration depends on sample rate and active channels.</td>
+</tr>
+<tr>
+<td><code>x</code> or <code>×</code></td>
+<td>Multiplication or count</td>
+<td><code>128K x 8</code> means 128K locations each eight bits wide; <code>8x10 kOhm</code> means eight resistors.</td>
+</tr>
+<tr>
+<td><code>1x</code> / <code>10x</code></td>
+<td>Probe attenuation</td>
+<td>Probe delivers full voltage / one tenth voltage to the scope; software must use the matching setting.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="logic-families-levels-and-timing">Logic Families, Levels, and Timing<a class="headerlink" href="#logic-families-levels-and-timing" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TTL</td>
+<td>Transistor-transistor logic levels</td>
+<td>A TTL-compatible input accepts a lower HIGH voltage than a 5 V CMOS input.</td>
+</tr>
+<tr>
+<td>CMOS</td>
+<td>Complementary metal-oxide-semiconductor logic</td>
+<td>Technology used by the static Z80, SRAM, Pico, and most interface devices.</td>
+</tr>
+<tr>
+<td>HCT</td>
+<td>High-speed CMOS with TTL-compatible inputs</td>
+<td>Slower family considered for U4; the final design uses AHCT instead.</td>
+</tr>
+<tr>
+<td>AHCT</td>
+<td>Faster HCT-family logic</td>
+<td>AHCT244 buffers clock/control/SPI and AHCT245 drives the 5 V data bus from Pico 3.3 V outputs.</td>
+</tr>
+<tr>
+<td>LVC</td>
+<td>Low-voltage CMOS logic family</td>
+<td>LVC244/LVC245 run at 3.3 V while accepting protected 5 V inputs.</td>
+</tr>
+<tr>
+<td>HIGH / LOW</td>
+<td>The two digital logic states</td>
+<td>Voltage ranges, not exact voltages; valid limits are defined by each datasheet.</td>
+</tr>
+<tr>
+<td>Assert / deassert</td>
+<td>Make a control active / inactive</td>
+<td>Independent of voltage wording; asserting <code>RESET#</code> means driving it LOW.</td>
+</tr>
+<tr>
+<td>$V_{IH}$ / $V_{IL}$</td>
+<td>Minimum input-HIGH / maximum input-LOW voltage</td>
+<td>Determines whether a receiving input is guaranteed to recognize a signal.</td>
+</tr>
+<tr>
+<td>$V_{OH}$ / $V_{OL}$</td>
+<td>Guaranteed output-HIGH / output-LOW voltage</td>
+<td>Determines whether a driver meets the receiving device's input thresholds under load.</td>
+</tr>
+<tr>
+<td>Propagation delay</td>
+<td>Time from an input transition to its output response</td>
+<td>Delays through GAL, AHCT244, and SRAM constrain the maximum clock rate.</td>
+</tr>
+<tr>
+<td>Setup time</td>
+<td>Time data must be stable before a sampling clock edge</td>
+<td>SRAM read data must arrive early enough for the Z80 to sample it correctly.</td>
+</tr>
+<tr>
+<td>Hold time</td>
+<td>Time data must remain stable after a sampling edge</td>
+<td>Drivers must not release or change the bus too soon.</td>
+</tr>
+<tr>
+<td>Rise / fall time</td>
+<td>Time for a signal edge to change between LOW and HIGH</td>
+<td>Fast edges, rather than only clock frequency, cause breadboard ringing and crosstalk.</td>
+</tr>
+<tr>
+<td>Duty cycle</td>
+<td>Percentage of a period that a signal is HIGH</td>
+<td>The Z80 clock is targeted at 50%, with a stated acceptance range.</td>
+</tr>
+<tr>
+<td>Ringing / overshoot</td>
+<td>Oscillation or voltage excursion following an edge</td>
+<td>Can cross logic thresholds or exceed ratings; checked with short-ground scope probing.</td>
+</tr>
+<tr>
+<td>Crosstalk</td>
+<td>Unwanted coupling from one signal into another</td>
+<td>Reduced by short grouped wiring and nearby ground returns.</td>
+</tr>
+<tr>
+<td>Timing margin</td>
+<td>Remaining safe time or voltage beyond a required limit</td>
+<td>Measured during qualification rather than inferred from part speed ratings alone.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="package-construction-and-schematic-terms">Package, Construction, and Schematic Terms<a class="headerlink" href="#package-construction-and-schematic-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC</td>
+<td>Integrated circuit</td>
+<td>A packaged electronic device such as the Z80, SRAM, or logic buffer.</td>
+</tr>
+<tr>
+<td>DIP / PDIP</td>
+<td>Dual in-line package / plastic dual in-line package</td>
+<td>Through-hole IC package with two parallel pin rows, suitable for sockets and breadboards.</td>
+</tr>
+<tr>
+<td>SPDIP</td>
+<td>Skinny plastic dual in-line package in Microchip's ordering code</td>
+<td>The MCP23S17-E/SP uses a narrow 0.3-inch-body, through-hole DIP; do not confuse it with the surface-mount SSOP variant.</td>
+</tr>
+<tr>
+<td>SIP</td>
+<td>Single in-line package</td>
+<td>Resistor network with one common pin and eight resistor pins.</td>
+</tr>
+<tr>
+<td>TO-92</td>
+<td>Small three-lead transistor package</td>
+<td>Package used by Q1; its lead order must be checked against the purchased datasheet.</td>
+</tr>
+<tr>
+<td>Pin 1 / notch / dot</td>
+<td>Package orientation marks</td>
+<td>Prevent an IC from being inserted rotated or mirrored.</td>
+</tr>
+<tr>
+<td>Breadboard ravine</td>
+<td>Insulating center gap of a solderless breadboard</td>
+<td>Separates the two IC pin rows so opposite pins are not shorted together.</td>
+</tr>
+<tr>
+<td>Net</td>
+<td>All electrically connected points sharing one signal name</td>
+<td>Fundamental connection represented and checked in the KiCad schematic.</td>
+</tr>
+<tr>
+<td>Junction</td>
+<td>Explicit connection where wires meet</td>
+<td>Distinguishes an intended shared node from crossing but unconnected wires.</td>
+</tr>
+<tr>
+<td>ERC</td>
+<td>Electrical rules check</td>
+<td>KiCad check for incompatible, missing, or improperly driven schematic connections.</td>
+</tr>
+<tr>
+<td>Netlist</td>
+<td>Machine-readable list of components, pins, and nets</td>
+<td>Independently compared with the generated manifest to validate schematic connectivity.</td>
+</tr>
+<tr>
+<td>BOM</td>
+<td>Bill of materials</td>
+<td>List and quantity of components needed to build the system.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="measurement-and-build-terms">Measurement and Build Terms<a class="headerlink" href="#measurement-and-build-terms" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Purpose in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Oscilloscope / scope</td>
+<td>Instrument displaying voltage versus time</td>
+<td>Measures analog levels, edge shape, pulse width, ringing, and timing between two signals.</td>
+</tr>
+<tr>
+<td>Logic analyzer</td>
+<td>Instrument recording many digital HIGH/LOW signals</td>
+<td>The 16-channel DSLogic Plus correlates bus values and control ordering in repeated capture groups.</td>
+</tr>
+<tr>
+<td>Buffer Mode</td>
+<td>DSLogic mode that captures into onboard memory before uploading</td>
+<td>Provides 100 MHz sampling with all 16 channels for project qualification captures.</td>
+</tr>
+<tr>
+<td>Stream Mode</td>
+<td>DSLogic mode that transfers samples continuously over USB</td>
+<td>Extends duration, but all 16 channels are limited to 20 MHz and are unsuitable for final 8 MHz timing qualification.</td>
+</tr>
+<tr>
+<td>Input threshold</td>
+<td>Voltage at which a logic analyzer changes its displayed digital state</td>
+<td>DSLogic Plus provides a global adjustable threshold; it does not replace device-specific analogue $V_{IH}$/$V_{IL}$ checks.</td>
+</tr>
+<tr>
+<td>RLE</td>
+<td>Run-length encoding</td>
+<td>Optional DSLogic compression for sparse Buffer Mode activity; disabled for fixed-depth baseline evidence.</td>
+</tr>
+<tr>
+<td>MSO</td>
+<td>Mixed-signal oscilloscope</td>
+<td>Instrument combining analog scope channels with synchronized digital inputs; the DHO814 has four analog channels but no integrated digital bus inputs.</td>
+</tr>
+<tr>
+<td>Probe</td>
+<td>Instrument lead designed to minimize loading</td>
+<td>A compensated 10x scope probe is used for analog measurements; logic probes capture digital states.</td>
+</tr>
+<tr>
+<td>1x / 10x probe</td>
+<td>Probe attenuation ratio</td>
+<td>10x mode usually loads fast logic less and provides better bandwidth than 1x mode.</td>
+</tr>
+<tr>
+<td>Ground spring</td>
+<td>Very short probe-ground attachment</td>
+<td>Prevents the probe's own ground-loop inductance from creating apparent ringing.</td>
+</tr>
+<tr>
+<td>Bandwidth</td>
+<td>Highest sine-wave frequency passed within a stated attenuation</td>
+<td>The DHO814's 100 MHz front end has an approximate 3.5 ns calculated rise-time limit; with the supplied 150 MHz probe, the combined measurement-system limit is about 4.2 ns.</td>
+</tr>
+<tr>
+<td>Sample rate</td>
+<td>Number of measurements recorded per second</td>
+<td>Determines time resolution; it is distinct from analog bandwidth.</td>
+</tr>
+<tr>
+<td>Real-time sampling</td>
+<td>Samples used for one displayed acquisition are collected from the same trigger event</td>
+<td>The DHO814 uses real-time sampling, so Single mode can preserve a one-off transition for analysis.</td>
+</tr>
+<tr>
+<td>Memory depth</td>
+<td>Number of samples retained in one acquisition</td>
+<td>The DHO814 provides up to 25 Mpts, allowing substantial pre-trigger and post-trigger context while retaining a useful sample rate.</td>
+</tr>
+<tr>
+<td>AWG</td>
+<td>Arbitrary waveform generator</td>
+<td>Produces programmable test waveforms; available in many USB scopes but not required for Z80 operation.</td>
+</tr>
+<tr>
+<td>SCPI</td>
+<td>Standard Commands for Programmable Instruments</td>
+<td>Text-command interface for automating compatible bench instruments.</td>
+</tr>
+<tr>
+<td>KiCad</td>
+<td>Electronic schematic and PCB design application</td>
+<td>Holds the native electrical schematic and runs ERC.</td>
+</tr>
+<tr>
+<td>CMake / Ninja</td>
+<td>Build-system generator / build executor</td>
+<td>Configure and compile the Pico firmware and generated CP/M artifacts.</td>
+</tr>
+<tr>
+<td>Toolchain</td>
+<td>Compiler, assembler, linker, libraries, and utilities</td>
+<td>Converts source code into executable Pico and Z80 images.</td>
+</tr>
+<tr>
+<td>Bare metal</td>
+<td>Software running without a hosted desktop operating system</td>
+<td>The Pico firmware links its own embedded runtime rather than macOS libraries.</td>
+</tr>
+<tr>
+<td>lwIP</td>
+<td>Lightweight IP networking stack</td>
+<td>Supplies TCP/IP networking used by the Pico WebSocket terminal.</td>
+</tr>
+<tr>
+<td>WebSocket</td>
+<td>Persistent bidirectional browser/server connection</td>
+<td>Carries terminal bytes between the browser and Pico with low overhead.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../../cpm-dcc/interactive/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Interactive test">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Interactive test
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../datasheets/" class="md-footer__link md-footer__link--next" aria-label="Next: Datasheets">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Datasheets
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

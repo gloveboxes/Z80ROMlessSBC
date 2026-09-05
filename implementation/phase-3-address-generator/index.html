@@ -1,0 +1,2562 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../phase-2-buffer-clock/">
+      
+      
+        <link rel="next" href="../phase-4-address-bus/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Phase 3 - Address generator - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#84-phase-3-mcp23s17-spi-address-generator" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Phase 3 - Address generator
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#wiring-spi-and-mcp23s17-reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - SPI and MCP23S17 reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring - SPI and MCP23S17 reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-sn74ahct244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to SN74AHCT244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct244-to-mcp23s17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT244 to MCP23S17
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-atf22v10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to ATF22V10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#atf22v10-to-q1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATF22V10 to Q1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q1-to-mcp23s17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q1 to MCP23S17
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-z84c00-a0-a7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to Z84C00: A0-A7
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-z84c00-a8-a15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to Z84C00: A8-A15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-as6c1008-sram-a0-a7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to AS6C1008 SRAM: A0-A7
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-as6c1008-sram-a8-a15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to AS6C1008 SRAM: A8-A15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp23s17-register-and-port-test-phases-3-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 Register and Port Test (Phases 3-4)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#wiring-spi-and-mcp23s17-reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - SPI and MCP23S17 reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring - SPI and MCP23S17 reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-sn74ahct244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to SN74AHCT244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct244-to-mcp23s17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT244 to MCP23S17
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-atf22v10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to ATF22V10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#atf22v10-to-q1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATF22V10 to Q1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q1-to-mcp23s17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q1 to MCP23S17
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-z84c00-a0-a7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to Z84C00: A0-A7
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-z84c00-a8-a15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to Z84C00: A8-A15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-as6c1008-sram-a0-a7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to AS6C1008 SRAM: A0-A7
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-as6c1008-sram-a8-a15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to AS6C1008 SRAM: A8-A15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp23s17-register-and-port-test-phases-3-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 Register and Port Test (Phases 3-4)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="84-phase-3-mcp23s17-spi-address-generator">8.4 Phase 3 - MCP23S17 SPI Address Generator<a class="headerlink" href="#84-phase-3-mcp23s17-spi-address-generator" title="Permanent link">¶</a></h1>
+<p><strong>Prerequisite:</strong> The <a href="../phase-2-buffer-clock/#pass-gate">Phase 2 pass gate</a> must pass.</p>
+<p><strong>Install:</strong> The 3.3 V-powered SN74LVC244AN first, then Q1 and the
+MCP23S17-E/SP. The already-tested AHCT244 supplies all three SPI inputs.
+Keep Z80 and SRAM removed; their empty sockets expose the pulled-up
+shared address bus for probing.</p>
+<p><strong>What you are proving:</strong> the Pico can set and read the sixteen wires that
+will select Z80 memory addresses. First prove the SPI link with <code>m</code>, then
+test the physical address outputs with <code>o</code>. Register readback alone does not
+prove that the far end of an address wire is connected.</p>
+<p>The MCP has two unrelated sets of similarly named pins: <strong>A0/A1/A2</strong> select
+its SPI hardware address and are tied to GND; <strong>GPA0-GPA7 and GPB0-GPB7</strong> are
+its sixteen GPIOs connected to the computer's A0-A15 bus. Do not confuse
+either set with Pico GP numbers.</p>
+<p><strong>Electrical hold point:</strong> Fit level translation on all SPI inputs. The
+MCP23S17 datasheet specifies $V_{IH} \ge 0.8V_{DD}$ for CS#, SCK, and
+SI, which is 4.0 V with a 5 V supply; a Pico 3.3 V HIGH is therefore
+not compliant. Translate Pico CS#, SCK, and MOSI through SN74AHCT244
+channels 3-5 in the <a href="../../hardware/output-buffer/">output-buffer map</a>.
+Buffer MCP SO/MISO down through SN74LVC244AN channel 2A1/2Y1 in the
+<a href="../../hardware/bus-isolation/#53-sn74lvc244an-5-v-to-33-v-input-buffer">input-buffer map</a>;
+do not connect it directly to GP20. Tie the MCP23S17 A0/A1/A2 hardware
+address pins to GND as shown in the
+<a href="../../hardware/address-interface/">address-interface map</a>. Confirm
+this wiring against the schematic before proceeding.</p>
+<h2 id="wiring-spi-and-mcp23s17-reset">Wiring - SPI and MCP23S17 reset<a class="headerlink" href="#wiring-spi-and-mcp23s17-reset" title="Permanent link">¶</a></h2>
+<p>Install and continuity-check these connections before inserting the MCP23S17.
+The diagrams are included from the authoritative hardware reference so the
+phase instructions and consolidated pin maps cannot drift.</p>
+<h3 id="pico-2-w-to-sn74ahct244">Pico 2 W to SN74AHCT244<a class="headerlink" href="#pico-2-w-to-sn74ahct244" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  PCS["Pico CS# - GP21"] BCS["AHCT244 1A3 - pin 6"]
+  PSCK["Pico SCK - GP18"] BSCK["AHCT244 1A4 - pin 8"]
+  PMOSI["Pico MOSI - GP19"] BMOSI["AHCT244 2A1 - pin 11"]
+  PCS --&gt; BCS
+  PSCK --&gt; BSCK
+  PMOSI --&gt; BMOSI</code></pre>
+<h3 id="sn74ahct244-to-mcp23s17">SN74AHCT244 to MCP23S17<a class="headerlink" href="#sn74ahct244-to-mcp23s17" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  BCS["AHCT244 1Y3 - pin 14"] MCS["MCP23S17 CS# - pin 11"]
+  BSCK["AHCT244 1Y4 - pin 12"] MSCK["MCP23S17 SCK - pin 12"]
+  BMOSI["AHCT244 2Y1 - pin 9"] MSI["MCP23S17 SI - pin 13"]
+  BCS --&gt; MCS
+  BSCK --&gt; MSCK
+  BMOSI --&gt; MSI</code></pre>
+<h3 id="mcp23s17-to-sn74lvc244">MCP23S17 to SN74LVC244<a class="headerlink" href="#mcp23s17-to-sn74lvc244" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  MSO["MCP23S17 SO - pin 14"] BSO["LVC244 2A1 - pin 11"]
+  MSO --&gt; BSO</code></pre>
+<h3 id="sn74lvc244-to-pico-2-w">SN74LVC244 to Pico 2 W<a class="headerlink" href="#sn74lvc244-to-pico-2-w" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  BSO["LVC244 2Y1 - pin 9"] PMISO["Pico MISO - GP20"]
+  BSO --&gt; PMISO</code></pre>
+<p>Fit the <a href="../phase-0-power/#passive-component-installation">specified pull-up</a> on SO
+because it is high-impedance while CS# is HIGH.</p>
+<h3 id="pico-2-w-to-atf22v10">Pico 2 W to ATF22V10<a class="headerlink" href="#pico-2-w-to-atf22v10" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  PEN["Pico ADDR_ENABLE - GP9"] GEN["ATF22V10 ADDR_ENABLE - pin 10"]
+  PEN --&gt; GEN</code></pre>
+<h3 id="atf22v10-to-q1">ATF22V10 to Q1<a class="headerlink" href="#atf22v10-to-q1" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  GEN["ATF22V10 MCP_RESET_DRIVE - pin 19"] Q1["Q1 base&lt;br/&gt;through 4.7 kOhm"]
+  GEN --&gt; Q1</code></pre>
+<h3 id="q1-to-mcp23s17">Q1 to MCP23S17<a class="headerlink" href="#q1-to-mcp23s17" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  Q1["Q1 collector&lt;br/&gt;reset pull-down"] MRST["MCP23S17 RESET# - pin 18"]
+  Q1 --&gt; MRST</code></pre>
+<p>Tie MCP23S17 A0, A1, and A2 (pins 15-17) directly to common GND. This selects
+hardware address <code>000</code>, matching the fixed
+<code>0x40</code>/<code>0x41</code> firmware opcodes regardless of IOCON.HAEN. RESET# has a 10 kOhm
+pull-up to 5 V; Q1 holds it LOW outside address access, returning every MCP GPIO
+to input mode.</p>
+<p><a href="https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-MCP23S17-16-Bit-IO-Expander-with-Serial-Interface-DS20001952.pdf">Microchip MCP23017/MCP23S17 16-Bit I/O Expander with Serial Interface Datasheet</a></p>
+<p>Install the two pulled-up address trunks from the MCP23S17 to the empty Z80
+and SRAM sockets. Repeated A0-A15 labels in the chip-pair views are taps on
+the same physical nets, not separate or serial paths.</p>
+<h3 id="mcp23s17-to-z84c00-a0-a7">MCP23S17 to Z84C00: A0-A7<a class="headerlink" href="#mcp23s17-to-z84c00-a0-a7" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  GPA0["MCP GPA0 - pin 21"] A0["Z80 A0 - pin 30"]
+  GPA1["MCP GPA1 - pin 22"] A1["Z80 A1 - pin 31"]
+  GPA2["MCP GPA2 - pin 23"] A2["Z80 A2 - pin 32"]
+  GPA3["MCP GPA3 - pin 24"] A3["Z80 A3 - pin 33"]
+  GPA4["MCP GPA4 - pin 25"] A4["Z80 A4 - pin 34"]
+  GPA5["MCP GPA5 - pin 26"] A5["Z80 A5 - pin 35"]
+  GPA6["MCP GPA6 - pin 27"] A6["Z80 A6 - pin 36"]
+  GPA7["MCP GPA7 - pin 28"] A7["Z80 A7 - pin 37"]
+  GPA0 &lt;--&gt; A0
+  GPA1 &lt;--&gt; A1
+  GPA2 &lt;--&gt; A2
+  GPA3 &lt;--&gt; A3
+  GPA4 &lt;--&gt; A4
+  GPA5 &lt;--&gt; A5
+  GPA6 &lt;--&gt; A6
+  GPA7 &lt;--&gt; A7</code></pre>
+<h3 id="mcp23s17-to-z84c00-a8-a15">MCP23S17 to Z84C00: A8-A15<a class="headerlink" href="#mcp23s17-to-z84c00-a8-a15" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  GPB0["MCP GPB0 - pin 1"] A8["Z80 A8 - pin 38"]
+  GPB1["MCP GPB1 - pin 2"] A9["Z80 A9 - pin 39"]
+  GPB2["MCP GPB2 - pin 3"] A10["Z80 A10 - pin 40"]
+  GPB3["MCP GPB3 - pin 4"] A11["Z80 A11 - pin 1"]
+  GPB4["MCP GPB4 - pin 5"] A12["Z80 A12 - pin 2"]
+  GPB5["MCP GPB5 - pin 6"] A13["Z80 A13 - pin 3"]
+  GPB6["MCP GPB6 - pin 7"] A14["Z80 A14 - pin 4"]
+  GPB7["MCP GPB7 - pin 8"] A15["Z80 A15 - pin 5"]
+  GPB0 &lt;--&gt; A8
+  GPB1 &lt;--&gt; A9
+  GPB2 &lt;--&gt; A10
+  GPB3 &lt;--&gt; A11
+  GPB4 &lt;--&gt; A12
+  GPB5 &lt;--&gt; A13
+  GPB6 &lt;--&gt; A14
+  GPB7 &lt;--&gt; A15</code></pre>
+<h3 id="mcp23s17-to-as6c1008-sram-a0-a7">MCP23S17 to AS6C1008 SRAM: A0-A7<a class="headerlink" href="#mcp23s17-to-as6c1008-sram-a0-a7" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  GPA0["MCP GPA0 - pin 21"] A0["SRAM A0 - pin 12"]
+  GPA1["MCP GPA1 - pin 22"] A1["SRAM A1 - pin 11"]
+  GPA2["MCP GPA2 - pin 23"] A2["SRAM A2 - pin 10"]
+  GPA3["MCP GPA3 - pin 24"] A3["SRAM A3 - pin 9"]
+  GPA4["MCP GPA4 - pin 25"] A4["SRAM A4 - pin 8"]
+  GPA5["MCP GPA5 - pin 26"] A5["SRAM A5 - pin 7"]
+  GPA6["MCP GPA6 - pin 27"] A6["SRAM A6 - pin 6"]
+  GPA7["MCP GPA7 - pin 28"] A7["SRAM A7 - pin 5"]
+  GPA0 --&gt; A0
+  GPA1 --&gt; A1
+  GPA2 --&gt; A2
+  GPA3 --&gt; A3
+  GPA4 --&gt; A4
+  GPA5 --&gt; A5
+  GPA6 --&gt; A6
+  GPA7 --&gt; A7</code></pre>
+<h3 id="mcp23s17-to-as6c1008-sram-a8-a15">MCP23S17 to AS6C1008 SRAM: A8-A15<a class="headerlink" href="#mcp23s17-to-as6c1008-sram-a8-a15" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  GPB0["MCP GPB0 - pin 1"] A8["SRAM A8 - pin 27"]
+  GPB1["MCP GPB1 - pin 2"] A9["SRAM A9 - pin 26"]
+  GPB2["MCP GPB2 - pin 3"] A10["SRAM A10 - pin 23"]
+  GPB3["MCP GPB3 - pin 4"] A11["SRAM A11 - pin 25"]
+  GPB4["MCP GPB4 - pin 5"] A12["SRAM A12 - pin 4"]
+  GPB5["MCP GPB5 - pin 6"] A13["SRAM A13 - pin 28"]
+  GPB6["MCP GPB6 - pin 7"] A14["SRAM A14 - pin 3"]
+  GPB7["MCP GPB7 - pin 8"] A15["SRAM A15 - pin 31"]
+  GPB0 --&gt; A8
+  GPB1 --&gt; A9
+  GPB2 --&gt; A10
+  GPB3 --&gt; A11
+  GPB4 --&gt; A12
+  GPB5 --&gt; A13
+  GPB6 --&gt; A14
+  GPB7 --&gt; A15</code></pre>
+<p>Install and continuity-check the complete 5 V-to-3.3 V input-buffer wiring
+before inserting the SN74LVC244AN.</p>
+<h3 id="z84c00-to-sn74lvc244">Z84C00 to SN74LVC244<a class="headerlink" href="#z84c00-to-sn74lvc244" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  BACK["Z80 BUSACK# - pin 23"] B1["LVC244 1A1 - pin 2"]
+  IORQ["Z80 IORQ# - pin 20"] B2["LVC244 1A2 - pin 4"]
+  RD["Z80 RD# - pin 21"] B3["LVC244 1A3 - pin 6"]
+  WR["Z80 WR# - pin 22"] B4["LVC244 1A4 - pin 8"]
+  BACK --&gt; B1
+  IORQ --&gt; B2
+  RD --&gt; B3
+  WR --&gt; B4</code></pre>
+<h3 id="mcp23s17-to-sn74lvc244_1">MCP23S17 to SN74LVC244<a class="headerlink" href="#mcp23s17-to-sn74lvc244_1" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  SO["MCP23S17 SO - pin 14"] B5["LVC244 2A1 - pin 11"]
+  SO --&gt; B5</code></pre>
+<h3 id="sn74lvc244-to-pico-2-w_1">SN74LVC244 to Pico 2 W<a class="headerlink" href="#sn74lvc244-to-pico-2-w_1" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  B1["LVC244 1Y1 - pin 18"] P0["Pico BUSACK# - GP0"]
+  B2["LVC244 1Y2 - pin 16"] P1["Pico IORQ# - GP1"]
+  B3["LVC244 1Y3 - pin 14"] P27["Pico RD# - GP27"]
+  B4["LVC244 1Y4 - pin 12"] P28["Pico WR# - GP28"]
+  B5["LVC244 2Y1 - pin 9"] P20["Pico MISO - GP20"]
+  B1 --&gt; P0
+  B2 --&gt; P1
+  B3 --&gt; P27
+  B4 --&gt; P28
+  B5 --&gt; P20</code></pre>
+<p>VCC (pin 20) connects to 3.3 V and GND (pin 10) to common ground. The
+<a href="../phase-0-power/#passive-component-installation">5 V-side pull-ups</a> keep every input defined when its
+source is absent or high-impedance. Tie unused inputs 2A2/2A3/2A4
+(pins 13/15/17) to GND and leave outputs 2Y2/2Y3/2Y4 (pins 7/5/3) open.</p>
+<p><strong>Firmware feature:</strong> Add byte-level SPI register read/write, a
+write-then-read register test, and 16-bit walking-one/walking-zero tests
+that can configure both MCP ports as either inputs or outputs.</p>
+<p><strong>Implementation:</strong> <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c">Phase 3 application</a>,
+using the shared <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c">MCP23S17 driver</a>.</p>
+<h2 id="mcp23s17-register-and-port-test-phases-3-4">MCP23S17 Register and Port Test (Phases 3-4)<a class="headerlink" href="#mcp23s17-register-and-port-test-phases-3-4" title="Permanent link">¶</a></h2>
+<p><strong>Maintained source:</strong> <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/mcp23s17.h">mcp23s17.h</a>
+and <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c">mcp23s17.c</a>.</p>
+<p>The SPI translator sits between these Pico pins and the 5 V MCP23S17;
+MISO/SO returns through the SN74LVC244AN. The register test proves
+communication before the full address-pattern tests. There are no separate
+address transceivers: the MCP ports drive the shared address bus directly.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"hardware/spi.h"</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">MCP_WRITE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x40</span><span class="p">,</span><span class="w"> </span><span class="n">MCP_READ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x41</span><span class="w"> </span><span class="p">};</span>
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">IODIRA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="n">IODIRB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="n">GPIOA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x12</span><span class="p">,</span><span class="w"> </span><span class="n">GPIOB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x13</span><span class="p">,</span>
+<span class="w">     </span><span class="n">OLATA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x14</span><span class="p">,</span><span class="w"> </span><span class="n">OLATB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x15</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mcp_spi_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">output_with_initial_level</span><span class="p">(</span><span class="n">PIN_SPI_CS_N</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">spi_init</span><span class="p">(</span><span class="n">spi0</span><span class="p">,</span><span class="w"> </span><span class="mi">4000000</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_SPI_SCK</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_SPI</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_SPI_MOSI</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_SPI</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_SPI_MISO</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_SPI</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mcp_write</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">frame</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">MCP_WRITE</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_SPI_CS_N</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">spi_write_blocking</span><span class="p">(</span><span class="n">spi0</span><span class="p">,</span><span class="w"> </span><span class="n">frame</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">frame</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_SPI_CS_N</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">mcp_read</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">reg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">tx</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">MCP_READ</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="mh">0x00</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">rx</span><span class="p">[</span><span class="k">sizeof</span><span class="w"> </span><span class="n">tx</span><span class="p">];</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_SPI_CS_N</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">spi_write_read_blocking</span><span class="p">(</span><span class="n">spi0</span><span class="p">,</span><span class="w"> </span><span class="n">tx</span><span class="p">,</span><span class="w"> </span><span class="n">rx</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">tx</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_SPI_CS_N</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">rx</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">mcp_register_test</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">patterns</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mh">0x55</span><span class="p">,</span><span class="w"> </span><span class="mh">0xAA</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_ADDR_ENABLE</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// Reset and isolate the MCP23S17 outputs.</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_ADDR_ENABLE</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">passed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">patterns</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">IODIRA</span><span class="p">,</span><span class="w"> </span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">    </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">IODIRB</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="o">~</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mcp_read</span><span class="p">(</span><span class="n">IODIRA</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">mcp_read</span><span class="p">(</span><span class="n">IODIRB</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="o">~</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">passed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">OLATA</span><span class="p">,</span><span class="w"> </span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">    </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">OLATB</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="o">~</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mcp_read</span><span class="p">(</span><span class="n">OLATA</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">||</span>
+<span class="w">      </span><span class="n">mcp_read</span><span class="p">(</span><span class="n">OLATB</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="o">~</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">passed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">IODIRA</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">);</span>
+<span class="w">  </span><span class="n">mcp_write</span><span class="p">(</span><span class="n">IODIRB</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">restored</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mcp_read</span><span class="p">(</span><span class="n">IODIRA</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0xFF</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mcp_read</span><span class="p">(</span><span class="n">IODIRB</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">;</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_ADDR_ENABLE</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">passed</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">restored</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Test plan:</strong></p>
+<ol>
+<li>Before fitting the MCP, pull each used LVC244 input LOW through
+  1 kOhm, then release it HIGH through its fitted 10 kOhm pull-up.
+  Verify the matching Pico input reads LOW and HIGH at 3.3 V levels
+  and unused channels do not change.</li>
+<li>With GP9 LOW, verify Q1 holds MCP RESET# LOW and all A0-A15 nodes
+  read HIGH through the two SIP networks. Drive GP9 HIGH and require a
+  clean 5 V RESET# release.</li>
+<li>With compliant translation fitted, write and read back 0x55 and 0xAA
+  in IODIRA, IODIRB, OLATA, and OLATB with command <code>m</code>.</li>
+<li>Configure outputs and probe walking-one and walking-zero patterns at
+  the empty Z80 and SRAM sockets with command <code>o</code>.</li>
+<li>With the MCP ports in input mode, use command <code>i</code>: with no temporary
+  test lead, the fitted pull-ups should give <code>inputs=ffff</code>. Power off and
+  connect one address line to GND through 1 kOhm, then power up and run <code>i</code>
+  again. Only that bit should become 0; A0 gives <code>fffe</code>, A15 gives <code>7fff</code>.
+  Repeat for every line, disconnecting power before moving the lead. Do not
+  use a 10 kOhm pull-down against the fitted 10 kOhm pull-up: it produces
+  about 2.5 V, not a valid LOW. Remove the temporary lead before running
+  output or register tests.</li>
+<li>Run command <code>e</code> for 10,000 alternating register writes and reads with
+  zero errors.</li>
+</ol>
+<h2 id="pass-gate">Pass gate<a class="headerlink" href="#pass-gate" title="Permanent link">¶</a></h2>
+<p>Compliant SPI levels, error-free register access, and
+correct operation of all 16 port bits in both directions.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../phase-2-buffer-clock/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Phase 2 - GAL, buffer, and clock">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Phase 2 - GAL, buffer, and clock
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../phase-4-address-bus/" class="md-footer__link md-footer__link--next" aria-label="Next: Phase 4 - Address bus">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Phase 4 - Address bus
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

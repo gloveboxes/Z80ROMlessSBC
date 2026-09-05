@@ -1,0 +1,2487 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../output-buffer/">
+      
+      
+        <link rel="next" href="../oscilloscope/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>5 - Bus translation and isolation - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#5-transceiver-operating-modes-isolation-tables" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              5 - Bus translation and isolation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#51-all-pdip-data-bus-translation-and-interlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 All-PDIP Data-Bus Translation and Interlock
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 All-PDIP Data-Bus Translation and Interlock">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-sn74ahct245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to SN74AHCT245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct245-to-z84c00" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT245 to Z84C00
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct245-to-as6c1008-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT245 to AS6C1008 SRAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as6c1008-sram-to-sn74lvc245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AS6C1008 SRAM to SN74LVC245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc245-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC245 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#52-direct-mcp23s17-address-bus-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Direct MCP23S17 Address-Bus Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#53-sn74lvc244an-5-v-to-33-v-input-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#54-implementation-wiring-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Implementation Wiring Index
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#51-all-pdip-data-bus-translation-and-interlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 All-PDIP Data-Bus Translation and Interlock
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 All-PDIP Data-Bus Translation and Interlock">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pico-2-w-to-sn74ahct245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pico 2 W to SN74AHCT245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct245-to-z84c00" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT245 to Z84C00
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74ahct245-to-as6c1008-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74AHCT245 to AS6C1008 SRAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as6c1008-sram-to-sn74lvc245" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AS6C1008 SRAM to SN74LVC245
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc245-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC245 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#52-direct-mcp23s17-address-bus-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Direct MCP23S17 Address-Bus Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#53-sn74lvc244an-5-v-to-33-v-input-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#z84c00-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Z84C00 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp23s17-to-sn74lvc244" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP23S17 to SN74LVC244
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sn74lvc244-to-pico-2-w" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SN74LVC244 to Pico 2 W
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#54-implementation-wiring-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Implementation Wiring Index
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="5-transceiver-operating-modes-isolation-tables">5. Transceiver Operating Modes &amp; Isolation Tables<a class="headerlink" href="#5-transceiver-operating-modes-isolation-tables" title="Permanent link">¶</a></h1>
+<p>The data transceivers isolate the Pico from the data bus during standard
+execution. The MCP23S17 uses reset-based isolation on the address bus instead.
+Both prevent bus contention: two output drivers trying to force opposite
+voltages onto the same wire. Treat bus ownership like exclusive write access,
+but remember that a hardware conflict can damage parts, not just corrupt data.</p>
+<h2 id="51-all-pdip-data-bus-translation-and-interlock">5.1 All-PDIP Data-Bus Translation and Interlock<a class="headerlink" href="#51-all-pdip-data-bus-translation-and-interlock" title="Permanent link">¶</a></h2>
+<p>No single PDIP part provides an SN74LVC8T245-equivalent combination of
+dual supplies, bidirectional translation, deterministic direction,
+three-state isolation, and partial-power-down safety. The breadboard
+design therefore uses two fixed-direction transceivers:</p>
+<ul>
+<li><strong>SN74AHCT245N (5 V):</strong> A port is Pico D0-D7, B port is the 5 V bus,
+  and DIR pin 1 is tied HIGH. Its TTL-compatible A inputs accept 3.3 V
+  and its B outputs provide full 5 V CMOS levels.</li>
+<li><strong>SN74LVC245AN (3.3 V):</strong> A port is Pico D0-D7, B port is the 5 V bus,
+  and DIR pin 1 is tied LOW. Its B inputs tolerate 5.5 V, A outputs stay
+  in the Pico domain, and <code>Ioff</code> prevents back-powering while 3.3 V is
+  absent.</li>
+</ul>
+<p>Every corresponding AHCT245, LVC245, Z84C00, and SRAM data pin below is a tap
+on one common D0-D7 trunk. The separate chip-pair views do not define separate
+nets or a series path through the Z80 or SRAM.</p>
+<p>The complete bidirectional data-path wiring is installed in
+<a href="../../implementation/phase-5-data-bus/#wiring-bidirectional-data-path">Phase 5</a>.</p>
+<p><template id="phase-5-data-wiring">
+<h3 id="pico-2-w-to-sn74ahct245">Pico 2 W to SN74AHCT245<a class="headerlink" href="#pico-2-w-to-sn74ahct245" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  P0["Pico D0 - GP10"] U0["AHCT245 A1 - pin 2"]
+  P1["Pico D1 - GP11"] U1["AHCT245 A2 - pin 3"]
+  P2["Pico D2 - GP12"] U2["AHCT245 A3 - pin 4"]
+  P3["Pico D3 - GP13"] U3["AHCT245 A4 - pin 5"]
+  P4["Pico D4 - GP14"] U4["AHCT245 A5 - pin 6"]
+  P5["Pico D5 - GP15"] U5["AHCT245 A6 - pin 7"]
+  P6["Pico D6 - GP16"] U6["AHCT245 A7 - pin 8"]
+  P7["Pico D7 - GP17"] U7["AHCT245 A8 - pin 9"]
+  P0 --&gt; U0
+  P1 --&gt; U1
+  P2 --&gt; U2
+  P3 --&gt; U3
+  P4 --&gt; U4
+  P5 --&gt; U5
+  P6 --&gt; U6
+  P7 --&gt; U7</code></pre>
+<h3 id="sn74ahct245-to-z84c00">SN74AHCT245 to Z84C00<a class="headerlink" href="#sn74ahct245-to-z84c00" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  U0["AHCT245 B1 - pin 18"] Z0["Z80 D0 - pin 14"]
+  U1["AHCT245 B2 - pin 17"] Z1["Z80 D1 - pin 15"]
+  U2["AHCT245 B3 - pin 16"] Z2["Z80 D2 - pin 12"]
+  U3["AHCT245 B4 - pin 15"] Z3["Z80 D3 - pin 8"]
+  U4["AHCT245 B5 - pin 14"] Z4["Z80 D4 - pin 7"]
+  U5["AHCT245 B6 - pin 13"] Z5["Z80 D5 - pin 9"]
+  U6["AHCT245 B7 - pin 12"] Z6["Z80 D6 - pin 10"]
+  U7["AHCT245 B8 - pin 11"] Z7["Z80 D7 - pin 13"]
+  U0 --&gt; Z0
+  U1 --&gt; Z1
+  U2 --&gt; Z2
+  U3 --&gt; Z3
+  U4 --&gt; Z4
+  U5 --&gt; Z5
+  U6 --&gt; Z6
+  U7 --&gt; Z7</code></pre>
+<h3 id="sn74ahct245-to-as6c1008-sram">SN74AHCT245 to AS6C1008 SRAM<a class="headerlink" href="#sn74ahct245-to-as6c1008-sram" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  U0["AHCT245 B1 - pin 18"] R0["SRAM I/O0 - pin 13"]
+  U1["AHCT245 B2 - pin 17"] R1["SRAM I/O1 - pin 14"]
+  U2["AHCT245 B3 - pin 16"] R2["SRAM I/O2 - pin 15"]
+  U3["AHCT245 B4 - pin 15"] R3["SRAM I/O3 - pin 17"]
+  U4["AHCT245 B5 - pin 14"] R4["SRAM I/O4 - pin 18"]
+  U5["AHCT245 B6 - pin 13"] R5["SRAM I/O5 - pin 19"]
+  U6["AHCT245 B7 - pin 12"] R6["SRAM I/O6 - pin 20"]
+  U7["AHCT245 B8 - pin 11"] R7["SRAM I/O7 - pin 21"]
+  U0 --&gt; R0
+  U1 --&gt; R1
+  U2 --&gt; R2
+  U3 --&gt; R3
+  U4 --&gt; R4
+  U5 --&gt; R5
+  U6 --&gt; R6
+  U7 --&gt; R7</code></pre>
+<h3 id="z84c00-to-sn74lvc245">Z84C00 to SN74LVC245<a class="headerlink" href="#z84c00-to-sn74lvc245" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  Z0["Z80 D0 - pin 14"] L0["LVC245 B1 - pin 18"]
+  Z1["Z80 D1 - pin 15"] L1["LVC245 B2 - pin 17"]
+  Z2["Z80 D2 - pin 12"] L2["LVC245 B3 - pin 16"]
+  Z3["Z80 D3 - pin 8"] L3["LVC245 B4 - pin 15"]
+  Z4["Z80 D4 - pin 7"] L4["LVC245 B5 - pin 14"]
+  Z5["Z80 D5 - pin 9"] L5["LVC245 B6 - pin 13"]
+  Z6["Z80 D6 - pin 10"] L6["LVC245 B7 - pin 12"]
+  Z7["Z80 D7 - pin 13"] L7["LVC245 B8 - pin 11"]
+  Z0 --&gt; L0
+  Z1 --&gt; L1
+  Z2 --&gt; L2
+  Z3 --&gt; L3
+  Z4 --&gt; L4
+  Z5 --&gt; L5
+  Z6 --&gt; L6
+  Z7 --&gt; L7</code></pre>
+<h3 id="as6c1008-sram-to-sn74lvc245">AS6C1008 SRAM to SN74LVC245<a class="headerlink" href="#as6c1008-sram-to-sn74lvc245" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  R0["SRAM I/O0 - pin 13"] L0["LVC245 B1 - pin 18"]
+  R1["SRAM I/O1 - pin 14"] L1["LVC245 B2 - pin 17"]
+  R2["SRAM I/O2 - pin 15"] L2["LVC245 B3 - pin 16"]
+  R3["SRAM I/O3 - pin 17"] L3["LVC245 B4 - pin 15"]
+  R4["SRAM I/O4 - pin 18"] L4["LVC245 B5 - pin 14"]
+  R5["SRAM I/O5 - pin 19"] L5["LVC245 B6 - pin 13"]
+  R6["SRAM I/O6 - pin 20"] L6["LVC245 B7 - pin 12"]
+  R7["SRAM I/O7 - pin 21"] L7["LVC245 B8 - pin 11"]
+  R0 --&gt; L0
+  R1 --&gt; L1
+  R2 --&gt; L2
+  R3 --&gt; L3
+  R4 --&gt; L4
+  R5 --&gt; L5
+  R6 --&gt; L6
+  R7 --&gt; L7</code></pre>
+<h3 id="sn74lvc245-to-pico-2-w">SN74LVC245 to Pico 2 W<a class="headerlink" href="#sn74lvc245-to-pico-2-w" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  L0["LVC245 A1 - pin 2"] P0["Pico D0 - GP10"]
+  L1["LVC245 A2 - pin 3"] P1["Pico D1 - GP11"]
+  L2["LVC245 A3 - pin 4"] P2["Pico D2 - GP12"]
+  L3["LVC245 A4 - pin 5"] P3["Pico D3 - GP13"]
+  L4["LVC245 A5 - pin 6"] P4["Pico D4 - GP14"]
+  L5["LVC245 A6 - pin 7"] P5["Pico D5 - GP15"]
+  L6["LVC245 A7 - pin 8"] P6["Pico D6 - GP16"]
+  L7["LVC245 A8 - pin 9"] P7["Pico D7 - GP17"]
+  L0 --&gt; P0
+  L1 --&gt; P1
+  L2 --&gt; P2
+  L3 --&gt; P3
+  L4 --&gt; P4
+  L5 --&gt; P5
+  L6 --&gt; P6
+  L7 --&gt; P7</code></pre>
+<p>Connect both pin 10s to GND. Connect AHCT pin 20 to 5 V and LVC pin
+20 to 3.3 V. Each device needs its own local 100 nF capacitor.</p>
+<p>The existing ATF22V10 provides the hardware interlock using spare pins
+and product terms. Connect GP7 DATA_ENABLE to GAL pin 9 and GP6
+DATA_DIR to pin 11. GAL pin 17 drives AHCT245 OE# pin 19; pin 18 drives
+LVC245 OE# pin 19. The two equations are documented in
+<a href="../pin-mapping/#12-sram-control-source-arbitration-atf22v10bc">SRAM control-source arbitration</a>.
+No 5 V output drives GP6/GP7: they are GAL inputs with 10 kOhm
+pull-downs. During Pico power-off both inputs read LOW, so both GAL OE#
+outputs are HIGH. The LVC245's <code>Ioff</code> specification protects its
+3.3 V-powered side while GAL pin 18 remains at a 5 V-domain HIGH.</p>
+<table>
+<thead>
+<tr>
+<th>System state</th>
+<th style="text-align: right;">DATA_ENABLE GP7</th>
+<th style="text-align: right;">DATA_DIR GP6</th>
+<th style="text-align: right;">AHCT OE#</th>
+<th style="text-align: right;">LVC OE#</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Isolated / run</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">X</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td>Both Pico data paths high-impedance</td>
+</tr>
+<tr>
+<td>DMA write</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td>Pico → AHCT245 → 5 V bus</td>
+</tr>
+<tr>
+<td>Readback / OUT trap</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td>5 V bus → LVC245 → Pico</td>
+</tr>
+</tbody>
+</table>
+<p>Firmware always drives DATA_ENABLE LOW, waits, changes DATA_DIR, waits,
+and only then drives DATA_ENABLE HIGH. The GAL truth table also
+makes simultaneous enables impossible for every static GP6/GP7 state.
+Do not substitute TXS0108E, TXB0108, BSS138, or resistor-divider
+breakouts: their automatic/pass-device behavior and loading assumptions
+are not equivalent to this controlled, multi-load push-pull bus.</p>
+<p>phase-5-data-wiring-end</p></template></p>
+<h2 id="52-direct-mcp23s17-address-bus-modes">5.2 Direct MCP23S17 Address-Bus Modes<a class="headerlink" href="#52-direct-mcp23s17-address-bus-modes" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>System state</th>
+<th style="text-align: right;">ADDR_ENABLE GP9</th>
+<th style="text-align: right;">MCP RESET#</th>
+<th>IODIRA/B</th>
+<th>Functional role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DMA injection</strong></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td><code>0x00/0x00</code> after OLAT preload</td>
+<td>MCP drives A0-A15</td>
+</tr>
+<tr>
+<td><strong>Trap address read</strong></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td><code>0xFF/0xFF</code></td>
+<td>MCP samples the frozen Z80 address</td>
+</tr>
+<tr>
+<td><strong>Active execution / isolated</strong></td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td>Reset default <code>0xFF/0xFF</code></td>
+<td>MCP pins are inputs; Z80 owns A0-A15</td>
+</tr>
+</tbody>
+</table>
+<p>Always assert ADDR_ENABLE LOW before releasing the CPU. Releasing MCP
+reset is not itself permission to drive: firmware must preload OLAT and
+hold Z80 RESET# or BUSACK# before writing IODIR outputs.</p>
+<h2 id="53-sn74lvc244an-5-v-to-33-v-input-buffer">5.3 SN74LVC244AN 5 V-to-3.3 V Input Buffer<a class="headerlink" href="#53-sn74lvc244an-5-v-to-33-v-input-buffer" title="Permanent link">¶</a></h2>
+<p>The RP2350's GP0-GP25 are 5 V-tolerant FT pads, but the 5.5 V rating
+applies only while IOVDD is powered at 3.3 V; with IOVDD at 0 V their
+absolute maximum is 3.63 V. GP26-GP29 are the QFN-60 package's
+ADC-capable pads and are not FT at all. Buffering all five incoming
+5 V signals therefore avoids a power-sequencing constraint and keeps
+every Pico GPIO within its normal 3.3 V domain. Power the SN74LVC244AN
+from the Pico 3.3 V rail. Its inputs accept up to 5.5 V and its <code>Ioff</code>
+specification protects both sides when VCC is 0 V. Tie both output
+enables (pins 1 and 19) to GND: every buffered signal -- BUSACK#,
+IORQ#, RD#, WR#, and MCP SO -- must always be readable, and none of
+them share a Pico GPIO with any other driver, so neither output enable
+needs gating. Wire the channels as follows; tie every unused input to
+GND and leave unused outputs open.</p>
+<p>The complete input-buffer wiring is installed in
+<a href="../../implementation/phase-3-address-generator/#wiring-spi-and-mcp23s17-reset">Phase 3</a>.</p>
+<p><template id="phase-3-input-buffer-wiring">
+<h3 id="z84c00-to-sn74lvc244">Z84C00 to SN74LVC244<a class="headerlink" href="#z84c00-to-sn74lvc244" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  BACK["Z80 BUSACK# - pin 23"] B1["LVC244 1A1 - pin 2"]
+  IORQ["Z80 IORQ# - pin 20"] B2["LVC244 1A2 - pin 4"]
+  RD["Z80 RD# - pin 21"] B3["LVC244 1A3 - pin 6"]
+  WR["Z80 WR# - pin 22"] B4["LVC244 1A4 - pin 8"]
+  BACK --&gt; B1
+  IORQ --&gt; B2
+  RD --&gt; B3
+  WR --&gt; B4</code></pre>
+<h3 id="mcp23s17-to-sn74lvc244">MCP23S17 to SN74LVC244<a class="headerlink" href="#mcp23s17-to-sn74lvc244" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  SO["MCP23S17 SO - pin 14"] B5["LVC244 2A1 - pin 11"]
+  SO --&gt; B5</code></pre>
+<h3 id="sn74lvc244-to-pico-2-w">SN74LVC244 to Pico 2 W<a class="headerlink" href="#sn74lvc244-to-pico-2-w" title="Permanent link">¶</a></h3>
+<pre class="z80-mermaid"><code>block-beta
+  columns 2
+  B1["LVC244 1Y1 - pin 18"] P0["Pico BUSACK# - GP0"]
+  B2["LVC244 1Y2 - pin 16"] P1["Pico IORQ# - GP1"]
+  B3["LVC244 1Y3 - pin 14"] P27["Pico RD# - GP27"]
+  B4["LVC244 1Y4 - pin 12"] P28["Pico WR# - GP28"]
+  B5["LVC244 2Y1 - pin 9"] P20["Pico MISO - GP20"]
+  B1 --&gt; P0
+  B2 --&gt; P1
+  B3 --&gt; P27
+  B4 --&gt; P28
+  B5 --&gt; P20</code></pre>
+<p>VCC (pin 20) connects to 3.3 V and GND (pin 10) to common ground. The
+<a href="../../implementation/phase-0-power/#passive-component-installation">5 V-side pull-ups</a> keep every input defined when its
+source is absent or high-impedance. Tie unused inputs 2A2/2A3/2A4
+(pins 13/15/17) to GND and leave outputs 2Y2/2Y3/2Y4 (pins 7/5/3) open.</p>
+<p>phase-3-input-buffer-wiring-end</p></template></p>
+<h2 id="54-implementation-wiring-index">5.4 Implementation Wiring Index<a class="headerlink" href="#54-implementation-wiring-index" title="Permanent link">¶</a></h2>
+<p>Use the pair-specific diagrams in the phase where each path is installed:</p>
+<ul>
+<li><a href="../../implementation/phase-1-supervisor/#wiring-pico-2-w">Pico wiring</a></li>
+<li><a href="../../implementation/phase-2-buffer-clock/#wiring-gal-and-output-buffer">GAL and AHCT244 wiring</a></li>
+<li><a href="../../implementation/phase-3-address-generator/#wiring-spi-and-mcp23s17-reset">MCP23S17, address-trunk, and input-buffer wiring</a></li>
+<li><a href="../../implementation/phase-5-data-bus/#wiring-bidirectional-data-path">Bidirectional data-path wiring</a></li>
+<li><a href="../../implementation/phase-6-sram/#wiring-sram-socket">SRAM socket wiring</a></li>
+</ul>
+<p>The matching signal names across those diagrams identify common physical bus
+trunks; they do not imply that a bus passes serially through each chip.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../output-buffer/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 4 - Output buffer">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                4 - Output buffer
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../oscilloscope/" class="md-footer__link md-footer__link--next" aria-label="Next: RIGOL DHO814 oscilloscope">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                RIGOL DHO814 oscilloscope
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

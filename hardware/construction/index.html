@@ -1,0 +1,2507 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../address-interface/">
+      
+      
+        <link rel="next" href="../output-buffer/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>3 - Construction and breadboards - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#3-physical-partitioning-breadboard-topology" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              3 - Construction and breadboards
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#before-you-wire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you wire
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Before you wire">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-breadboard-connections-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How breadboard connections work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turn-a-diagram-into-wires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn a diagram into wires
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-the-meter-safely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the meter safely
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#board-roles-and-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Board roles and placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#31-package-orientation-and-pin-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Package Orientation and Pin 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#32-kicad-electrical-schematic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 KiCad Electrical Schematic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#33-high-speed-interconnect-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 High-Speed Interconnect Routing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#34-major-chip-interconnection-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Major Chip Interconnection Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation plan
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Implementation plan
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - GAL, buffer, and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Address generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - SRAM and DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#before-you-wire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you wire
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Before you wire">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-breadboard-connections-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How breadboard connections work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turn-a-diagram-into-wires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn a diagram into wires
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-the-meter-safely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the meter safely
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#board-roles-and-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Board roles and placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#31-package-orientation-and-pin-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Package Orientation and Pin 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#32-kicad-electrical-schematic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 KiCad Electrical Schematic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#33-high-speed-interconnect-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 High-Speed Interconnect Routing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#34-major-chip-interconnection-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Major Chip Interconnection Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="3-physical-partitioning-breadboard-topology">3. Physical Partitioning &amp; Breadboard Topology<a class="headerlink" href="#3-physical-partitioning-breadboard-topology" title="Permanent link">¶</a></h1>
+<h2 id="before-you-wire">Before you wire<a class="headerlink" href="#before-you-wire" title="Permanent link">¶</a></h2>
+<p>This page describes the final layout. Build it in the
+<a href="../../implementation/">phase sequence</a>, leaving later-phase chips out
+of their sockets. All pin diagrams are <strong>top views</strong>, looking down at the
+chip body, not at its underside.</p>
+<h3 id="how-breadboard-connections-work">How breadboard connections work<a class="headerlink" href="#how-breadboard-connections-work" title="Permanent link">¶</a></h3>
+<ul>
+<li>On a BB830, holes A-E in one numbered row are one electrical connection;
+  holes F-J in that row are a separate connection. The center gap separates
+  them. Row 18 does not connect to row 19.</li>
+<li>Power rails run along the board edges. A printed red or blue stripe is
+  only a label: it supplies no voltage and does not prove continuity. Check
+  each rail segment with a meter, then label its assigned voltage.</li>
+<li>A wire, socket pin, and resistor lead placed in the same connected strip
+  share a <strong>net</strong>. Moving a jumper by one row can therefore leave the intended
+  pin open while connecting a different pin instead.</li>
+<li>A DIP straddles the center gap so opposite pins are not shorted. With its
+  notch at the top, pin 1 is top-left; numbering runs down the left side,
+  then up the right. Rotating the chip rotates the pin map. Several chips
+  here deliberately have their notches at the bottom; use the table below.</li>
+</ul>
+<h3 id="turn-a-diagram-into-wires">Turn a diagram into wires<a class="headerlink" href="#turn-a-diagram-into-wires" title="Permanent link">¶</a></h3>
+<ol>
+<li>Find the source and destination <strong>device, signal name, and physical pin</strong>.
+   Do not treat a Pico GPIO number as a header position: for example, GP2 is
+   physical header pin 4, not header pin 2.</li>
+<li>Locate both pins using the orientation table, then mark their breadboard
+   rows. Wire one connection at a time using short insulated jumpers. Strip
+   only enough insulation to seat the ends; exposed copper above the board
+   must not touch a neighboring pin or jumper.</li>
+<li>With external power and USB disconnected, measure continuity from the
+   actual source socket contact to the destination contact. Also check for
+   unintended shorts to adjacent contacts. A beep proves a conductive path,
+   not that you chose the right two pins.</li>
+<li>Mark the connection checked before moving on. For a bus, repeat for every
+   bit: <code>A0-A15</code> means sixteen separate wires, not one connection. Probe at
+   the receiving socket as well as the source.</li>
+</ol>
+<p>Matching net labels in the schematic mean the points are connected even
+when no continuous line is drawn between them. A crossing without a junction
+is not a connection. The placement image shows where parts and signal groups
+belong; the phase pin diagrams specify individual connections.</p>
+<h3 id="use-the-meter-safely">Use the meter safely<a class="headerlink" href="#use-the-meter-safely" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Board state</th>
+<th>Probe placement and meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Continuity / resistance</td>
+<td>All power and USB disconnected; capacitors discharged</td>
+<td>Measure between two contacts. A direct wire should read close to the resistance of the meter leads; a 10 kOhm pull resistor is not a short and may not beep.</td>
+</tr>
+<tr>
+<td>DC voltage</td>
+<td>Powered for the stated test</td>
+<td>Black lead in COM at common circuit GND; red lead in the voltage/resistance socket at the test point. Measure supply voltage at the IC's supply contact, not only at the power entry.</td>
+</tr>
+<tr>
+<td>Current</td>
+<td>Use the bench supply readout for routine checks</td>
+<td>A separate ammeter must go in series with the supply. Never place a meter in current mode across +5 V and GND; it effectively shorts the rail. Return the red lead to the voltage socket afterward.</td>
+</tr>
+</tbody>
+</table>
+<p>Attach clips with power off, keeping metal tips clear of adjacent pins.
+After disconnecting power, confirm rail voltage has fallen near 0 V before
+switching to resistance mode; do not discharge capacitors by shorting them
+with a tool. A changing resistance reading can be the meter charging a
+capacitor, so allow it to settle.</p>
+<h2 id="board-roles-and-placement">Board roles and placement<a class="headerlink" href="#board-roles-and-placement" title="Permanent link">¶</a></h2>
+<p>The layout enforces a strict three-zone model across three 830-point
+breadboards to minimize cross-talk and propagation delay across the
+distinct 3.3 V and 5 V power domains. Each zone below lists the specific
+chips to place on that board and where to seat them.</p>
+<p>Place the three BB830s side by side with their long edges parallel:
+Memory on the left, Core in the center, and Peripheral on the right.
+Rows 1-63 run in the same direction on all three boards, so equal row
+numbers align across both board boundaries. The Core Board's central
+position is deliberate: the dominant Memory/Core paths are the shared
+16-bit address and 8-bit data buses plus the MCP23S17 address/SPI
+interface, while the dominant Core/Peripheral paths are the Pico's
+8-bit data interface and supervisor controls. Seven Pico-to-GAL signals span both board boundaries
+without a buffer: PICO_CE#, PICO_OE#, PICO_WE#, RESET#, DATA_ENABLE,
+DATA_DIR, and ADDR_ENABLE. RESET# is a
+three-way node also tapped by the Z80 on the Core Board; the others
+simply cross the Core Board without connecting to a Core component.
+MCP SO also crosses both boundaries to the Peripheral Board's LVC244.
+Keep these low-activity paths away from CLK. Putting either outer cluster
+in the center would shorten these eight paths only by forcing one of the
+much wider address/data interfaces to span two board widths.</p>
+<ul>
+<li>
+<p><strong>Memory Board (Left Zone):</strong> AS6C1008-55PCN SRAM, the programmed
+  ATF22V10, and MCP23S17. The GAL's five CPU-side inputs (BUSACK#,
+  MREQ#, IORQ#, RD#, WR#)
+  cross from the Core Board, and its three pre-buffer outputs cross
+  back to the Core Board's SN74AHCT244 before the buffered result
+  returns here as SRAM CE#/OE#/WE#. This deliberate round trip keeps
+  the AHCT244's clock channel local to the Z80 instead (see below), which
+  matters far more than SRAM control length since SRAM CE#/OE#/WE# only
+  toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#. The
+  MCP23S17 now sits here so its 16 port lines join the pulled-up shared
+  address bus at the Memory/Core boundary. Q1 beside it provides
+  reset-based hardware isolation. AHCT244 SPI outputs also cross only
+  the Memory/Core boundary. Its SO output is
+  the one MCP signal that continues across Core to the LVC244. Row
+  budget: 16 (SRAM) + 12 (ATF22V10) + 14 (MCP23S17) = 42 of 63 rows.</p>
+</li>
+<li>
+<p><strong>Core Board (Center Zone):</strong> Z84C0020PEC CPU and the SN74AHCT244N
+  output buffer. Keep the
+  AHCT244 beside the Z80 so its
+  Y1 clock output never crosses a board boundary, the same placement
+  rule the discrete design used for its dedicated clock buffer. The
+  Z80 address pins join the SRAM/MCP address trunk directly. The
+  photographed plug-in supply reserves rows 1-3, leaving 60 usable
+  terminal rows.
+  The chip budget is 20 (Z80) + 10 (SN74AHCT244N) = 30 of those 60
+  rows, leaving 30 rows for socket-body
+  clearance, decoupling, and wiring. <em>No separate wait-state latch or
+  flip-flop is used; the GAL drives WAIT# combinationally.</em></p>
+</li>
+<li>
+<p><strong>Peripheral Board (Right Zone):</strong> Raspberry Pi Pico 2 W,
+  SN74LVC244AN monitor buffer, SN74AHCT245N upward data path,
+  and SN74LVC245AN downward data path. The ATF22V10 on Memory provides
+  the mutually exclusive enables. Rotate both data transceivers so
+  their B-port pin rows face the Core Board and their A-port pin rows
+  face the Pico; tie AHCT DIR HIGH and LVC DIR LOW. Orient the LVC244 so its 1A input pin
+  row faces the Core Board and its 1Y output pin row faces inward toward
+  the Pico; its fifth input, MCP SO, arrives from Memory across Core.
+  Row budget: 20 (Pico) + 10 (LVC244) + 10 (AHCT245) + 10 (LVC245) =
+  50 of 63 rows.</p>
+</li>
+</ul>
+<p>The following row-aligned schedule was selected by evaluating every
+valid per-board package ordering and gap distribution against grouped
+signal-count weights, iterating the comparison across all three boards.
+This is a routing aid, not an instruction to equalize individual wire
+lengths:</p>
+<table>
+<thead>
+<tr>
+<th>Board</th>
+<th>Terminal-row schedule</th>
+<th style="text-align: right;">Unallocated rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory</td>
+<td>Unallocated 1-4; GAL 5-16; gap 17; SRAM 18-33; gap 34; MCP23S17 35-48</td>
+<td style="text-align: right;">1-4 and 49-63 (19)</td>
+</tr>
+<tr>
+<td>Core / middle</td>
+<td>Supply clearance 1-3; unallocated 4-7; AHCT244 8-17; gap 18; Z80 19-38</td>
+<td style="text-align: right;">4-7 and 39-63 (29)</td>
+</tr>
+<tr>
+<td>Peripheral</td>
+<td>Pico 1-20; gap 21; LVC244 22-31; gap 32; AHCT245 33-42; gap 43; LVC245 44-53</td>
+<td style="text-align: right;">54-63 (10)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="31-package-orientation-and-pin-1">3.1 Package Orientation and Pin 1<a class="headerlink" href="#31-package-orientation-and-pin-1" title="Permanent link">¶</a></h2>
+<p>Use this convention for both the table and the placement image: view
+each BB830 from above and rotate it 90 degrees counter-clockwise from
+the manufacturer's landscape drawing, so <strong>row 1 is at the top, row 63
+is at the bottom, A-E are on the left, and F-J are on the right</strong>.
+Memory, Core, and Peripheral then sit left-to-right. Do not mirror any
+board.</p>
+<p>Seat every DIP socket across the center ravine before wiring it. A
+0.3-inch DIP uses the E/F holes immediately beside the ravine. The Z80
+and SRAM are 0.6-inch-wide DIPs: dry-fit their specified 0.6-inch
+sockets in two terminal columns matching the actual 15.24 mm lead-row
+span; do not force or bend them into E/F. Both pin rows must remain on
+opposite, electrically isolated sides of the ravine. Install the IC
+only after marking the socket's pin-1 corner and matching the IC notch
+or dot to the socket.</p>
+<table>
+<thead>
+<tr>
+<th>Board / device</th>
+<th style="text-align: right;">Occupied rows</th>
+<th>Body orientation</th>
+<th>Pin 1 location (top view)</th>
+<th>Opposite corner check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory / ATF22V10</td>
+<td style="text-align: right;">5-16</td>
+<td>Notch toward row 1</td>
+<td>E5</td>
+<td>Pin 24 at F5</td>
+</tr>
+<tr>
+<td>Memory / AS6C1008 SRAM</td>
+<td style="text-align: right;">18-33</td>
+<td>Notch toward row 1</td>
+<td>A-E pin-row side at row 18</td>
+<td>Pin 32 on F-J side at row 18</td>
+</tr>
+<tr>
+<td>Memory / MCP23S17</td>
+<td style="text-align: right;">35-48</td>
+<td>Notch toward row 63</td>
+<td>F48</td>
+<td>Pin 28 at E48</td>
+</tr>
+<tr>
+<td>Core / SN74AHCT244</td>
+<td style="text-align: right;">8-17</td>
+<td>Notch toward row 63</td>
+<td>F17</td>
+<td>Pin 20 at E17; 1Y1 pin 18 is then close to Z80 CLK</td>
+</tr>
+<tr>
+<td>Core / Z84C0020</td>
+<td style="text-align: right;">19-38</td>
+<td>Notch toward row 1</td>
+<td>A-E pin-row side at row 19</td>
+<td>Pin 40 on F-J side at row 19</td>
+</tr>
+<tr>
+<td>Peripheral / Pico 2 W</td>
+<td style="text-align: right;">1-20</td>
+<td>USB connector toward row 1</td>
+<td>Header pin 1 on A-E side at row 1</td>
+<td>Header pin 40 on F-J side at row 1</td>
+</tr>
+<tr>
+<td>Peripheral / SN74LVC244</td>
+<td style="text-align: right;">22-31</td>
+<td>Notch toward row 1</td>
+<td>E22</td>
+<td>Pin 20 at F22; 1A inputs face Core</td>
+</tr>
+<tr>
+<td>Peripheral / SN74AHCT245</td>
+<td style="text-align: right;">33-42</td>
+<td>Notch toward row 63</td>
+<td>F42</td>
+<td>Pin 20 at E42; B1-B8 face Core</td>
+</tr>
+<tr>
+<td>Peripheral / SN74LVC245</td>
+<td style="text-align: right;">44-53</td>
+<td>Notch toward row 63</td>
+<td>F53</td>
+<td>Pin 20 at E53; B1-B8 face Core</td>
+</tr>
+</tbody>
+</table>
+<p>For the non-DIP keyed parts:</p>
+<ul>
+<li><strong>Q1 (2N3904):</strong> place beside the MCP, not across the ravine. TO-92
+  lead order can vary by manufacturer; use the purchased part's
+  datasheet to identify emitter/base/collector and mark <code>E-B-C</code> beside
+  its holes. Do not rely on flat-face orientation alone.</li>
+<li><strong>RN1/RN2:</strong> place as single-row SIPs near SRAM/MCP, parallel to the
+  ravine, with the dot/common pin toward row 1 and wired to +5 V.</li>
+<li><strong>RN3:</strong> place beside the AHCT/LVC A-port node with its dot/common pin
+  toward row 1 and wired to GND.</li>
+<li><strong>1N5819 and electrolytics:</strong> the diode band faces Pico VSYS; every
+  electrolytic <code>+</code> lead goes to its positive rail. Mark polarity on the
+  breadboard before insertion.</li>
+<li><strong>Plug-in supply module:</strong> orient it only from its printed <code>+</code>, <code>-</code>,
+  input, and output labels, then confirm every rail with a meter while
+  unloaded. There is no generic module orientation; never infer
+  polarity from USB-jack position or board color.</li>
+</ul>
+<p>Before applying power, inspect every socket from above and verify the
+pin-1 location against this table. Then use continuity mode to prove
+that opposite-side pins at the same row are not shorted through a
+terminal strip.</p>
+<p>This placement uses row alignment to reduce diagonal jumper length:</p>
+<ul>
+<li><strong>Memory/Core:</strong> SRAM rows 18-33 overlap the Z80's rows 19-38 for the
+  full A0-A15/D0-D7 trunk. GAL rows 5-16 overlap the AHCT244, while
+  MCP23S17 rows 35-48 meet the lower end of the direct Z80 address trunk.</li>
+<li><strong>Core/Peripheral:</strong> Pico rows 1-20 overlap AHCT244 and the top of the
+  Z80. LVC244 rows 22-31 overlap the Z80 monitor sources. Both data
+  transceivers overlap the lower Z80 region while remaining
+  directly adjacent to the Pico on the same board.</li>
+<li><strong>Peripheral/Memory:</strong> Pico rows 1-20 overlap GAL rows 5-16, reducing
+  the vertical component of the seven Pico-to-GAL paths and two OE#
+  returns. MCP SO
+  remains one grouped low-activity crossing to the LVC244.</li>
+</ul>
+<p>This schedule includes one empty row between every socket or module and
+still fits all three boards. Mark the actual supply-module overhang and
+socket outlines on the empty boards before wiring. If the supply consumes
+more than the assumed three rows, move it off-board or to the Memory Board
+rather than compressing the Core Board placement.</p>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../../images/breadboard-layout.svg" data-desc-position="bottom"><img alt="Side-by-side BB830 placement schedule and grouped chip connections" src="../../images/breadboard-layout.svg"></a></p>
+<p>Use one supply-entry point and fan out +5 V and GND to each board; do
+not daisy-chain the boards' power rails end-to-end. Run the Pico 3.3 V
+rail separately to the two LVC devices. Bond adjacent boards with
+multiple short ground jumpers, especially beside the address/data bus
+crossings and CLK. Verify every BB830 distribution rail end-to-end with
+a meter before fitting links; never assume visually aligned rail
+segments are internally continuous.</p>
+<h2 id="32-kicad-electrical-schematic">3.2 KiCad Electrical Schematic<a class="headerlink" href="#32-kicad-electrical-schematic" title="Permanent link">¶</a></h2>
+<p>The native KiCad 10 schematic is the electrical source of truth for
+pin numbers, named nets, explicit no-connect markers, and ERC. It uses
+project-local symbols so the exact ATF22V10, Z80, SRAM, Pico, and
+translator pin definitions travel with the repository. RESET# is drawn
+as an explicit three-way Pico/Z80/GAL wire junction. Address, data,
+SPI, monitor, and control paths are shown as unfolded KiCad vector or
+group buses with every member named; matching labels on the chip-pin
+stubs provide the exact electrical connections without implying that
+signals pass through an intermediate chip as series logic.</p>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro">KiCad project</a> and <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch">native schematic</a></td>
+<td>Editable KiCad 10 source</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80sbc.kicad_sym">Project symbol library</a></td>
+<td>Exact local pin names, numbers, and ERC electrical types</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.svg">SVG export</a> and <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.pdf">PDF export</a></td>
+<td>Zoomable full schematic renderings</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net">KiCad netlist</a> and <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json">independent net manifest</a></td>
+<td>Machine-readable connectivity</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json">ERC report</a></td>
+<td>KiCad 10.0.6 result: zero violations with errors, warnings, and exclusions included</td>
+</tr>
+</tbody>
+</table>
+<p>The schematic contains 59 physical components, including 31 discrete
+resistors, three SIP networks, and 12 fitted capacitors, plus one nonphysical
+<code>#FLG01</code> power marker used only by ERC. KiCad's exported netlist
+matches the independently generated manifest exactly: 79 real nets
+and 349 component pin endpoints. The ERC-only power marker and KiCad's
+synthetic no-connect nets are excluded from that comparison.</p>
+<p>To regenerate and validate the native source, exports, strict ERC
+report, and independent netlist comparison:</p>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-kicad
+.venv-kicad/bin/pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>scripts/requirements-kicad.txt
+<span class="nv">PYTHON</span><span class="o">=</span>.venv-kicad/bin/python<span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>kicad
+</code></pre></div>
+<p>The command runs <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-schematic.py">build-kicad-schematic.py</a>,
+KiCad CLI upgrade/export/ERC, and
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/check-kicad-netlist.py">check-kicad-netlist.py</a>. Any ERC
+violation or net/endpoint mismatch fails the build.</p>
+<h2 id="33-high-speed-interconnect-routing">3.3 High-Speed Interconnect Routing<a class="headerlink" href="#33-high-speed-interconnect-routing" title="Permanent link">¶</a></h2>
+<p>At the target 1-6 MHz clock rates, propagation skew from a few
+millimetres of wire-length difference is negligible compared with the
+Z80 timing budget. Solderless-breadboard reliability is instead
+dominated by total wire length, stubs, loop area, contact resistance,
+and fast-edge ringing. Route each bus as a short grouped trunk with
+roughly similar paths, but do not add serpentine wire merely to make
+lengths equal.</p>
+<p>A <strong>trunk</strong> is a compact route shared by the bus wires, with a short <strong>tap</strong>
+from each wire to each device that uses it. A <strong>star</strong> fans long wires out
+from one central point; a <strong>stub</strong> is a branch off the main route. Long
+branches can reflect fast voltage transitions even when the clock frequency
+is low. Keep a nearby GND return alongside each inter-board signal group.</p>
+<ul>
+<li><strong>A0-A15 (hard construction rule):</strong> keep the Z80, SRAM, MCP23S17,
+  and both SIP pull-up networks on one short common trunk. Do not build
+  this as a star and do not leave long branches to any device. A layout
+  that cannot satisfy this rule fails the placement review and must be
+  rearranged before wiring the remaining signals.</li>
+<li><strong>D0-D7:</strong> join both Peripheral data-transceiver B ports to one short
+  5 V trunk crossing to the Core Board, then continue that shared trunk
+  through the Z80 to the adjacent SRAM. Keep the two A-port taps to the
+  Pico short and parallel; never route one translator through the other.</li>
+<li><strong>SN74AHCT244 2Y2-2Y4 to SRAM WE#/OE#/CE#:</strong> these cross from the Core
+  Board's AHCT244 to the Memory Board's SRAM; route them as one grouped
+  trunk at the board boundary. Exact length matching is unnecessary.</li>
+<li><strong>CLK (SN74AHCT244 1Y1 pin 18 to Z80 pin 6):</strong> route this as the
+  single shortest, most direct jumper, kept away from the address bus.
+  Do not lengthen it to match other nets; clock is the most
+  edge-rate-sensitive signal in the design. This is why the AHCT244 is
+  seated on the Core Board rather than beside the GAL.</li>
+</ul>
+<p>Route a ground jumper alongside every inter-board signal group and add
+ground probe points near CLK, IORQ#, MREQ#, RD#, WR#, SRAM CE#/OE#/WE#,
+and each bus transceiver. Keep all jumpers as short as the placement
+allows.</p>
+<h2 id="34-major-chip-interconnection-overview">3.4 Major Chip Interconnection Overview<a class="headerlink" href="#34-major-chip-interconnection-overview" title="Permanent link">¶</a></h2>
+<pre class="z80-mermaid"><code>block-beta
+  columns 3
+  MEMORY1["Memory Board&lt;br/&gt;GAL + SRAM + MCP23S17"] MC["A0-A15 + D0-D7&lt;br/&gt;GAL pre-controls + SRAM controls"] CORE1["Core Board&lt;br/&gt;AHCT244 + Z80"]
+  CORE2["Core Board&lt;br/&gt;AHCT244 + Z80"] CP["CLK + BUSREQ# + SPI&lt;br/&gt;status monitors + translated data"] PERIPHERAL2["Peripheral Board&lt;br/&gt;Pico + LVC244 + data transceivers"]
+  PERIPHERAL3["Peripheral Board&lt;br/&gt;Pico + data transceivers"] PM["RESET# + DMA controls&lt;br/&gt;address/data interlocks"] MEMORY3["Memory Board&lt;br/&gt;GAL + SRAM + MCP23S17"]
+  MEMORY1 &lt;--&gt; MC
+  MC &lt;--&gt; CORE1
+  CORE2 &lt;--&gt; CP
+  CP &lt;--&gt; PERIPHERAL2
+  PERIPHERAL3 --&gt; PM
+  PM --&gt; MEMORY3</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../address-interface/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 2 - Address interface">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                2 - Address interface
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../output-buffer/" class="md-footer__link md-footer__link--next" aria-label="Next: 4 - Output buffer">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                4 - Output buffer
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>
