@@ -78,9 +78,8 @@ static void disk_start_command(uint8_t command) {
 
   if (command == DISK_COMMAND_FLUSH) {
     disk_request_t request = {.command = command};
-    if (queue_try_add(&disk_write_queue, &request))
-      disk_status_store(DISK_STATUS_BUSY);
-    else
+    disk_status_store(DISK_STATUS_BUSY);
+    if (!queue_try_add(&disk_write_queue, &request))
       disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     return;
   }
@@ -142,15 +141,16 @@ void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
         .lba = disk_write_lba,
       };
       memcpy(request.data, disk_data, sizeof(request.data));
-      if (queue_try_add(&disk_write_queue, &request))
-        disk_status_store(DISK_STATUS_BUSY);
-      else
+      disk_status_store(DISK_STATUS_BUSY);
+      if (!queue_try_add(&disk_write_queue, &request))
         disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     }
   }
 }
 
 void z80_flash_core1_service(void) {
+  if (__atomic_load_n(&disk_fatal_error, __ATOMIC_ACQUIRE))
+    return;
   disk_request_t request;
   if (!queue_try_remove(&disk_write_queue, &request)) {
     if (!z80_flash_backend_flush_due())

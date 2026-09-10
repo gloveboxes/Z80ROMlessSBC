@@ -71,7 +71,12 @@ and [clock.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/c
 Configure `PIN_CLK` as a PWM output once during Phase 2 bring-up. Reuse
 the same slice for the selectable 10 Hz/1 kHz/100 kHz/1 MHz run modes in
 [Phase 7](phase-7-z80.md) and [Phase 8](phase-8-virtual-io.md), and to freeze
-the clock during the Phase 8 I/O trap.
+the clock during the Phase 8 I/O trap. Use integer PWM dividers and even period
+counts during frequency qualification. Fractional dividers improve average
+frequency accuracy by dithering source-clock intervals, but that produces
+alternating edge positions and is unsuitable for timing-margin captures. The
+selector chooses the closest stable rate in the same range. Query
+`z80_clock_get_hz()` and report that actual result alongside the requested rate.
 
 ```c
 #include "hardware/pwm.h"
@@ -84,32 +89,38 @@ static bool set_z80_clock_hz(uint32_t hz) {
   uint slice_num = pwm_gpio_to_slice_num(PIN_CLK);
   pwm_set_enabled(slice_num, false);
   uint32_t sys_clk = clock_get_hz(clk_sys);
-  uint64_t sys_clk16 = (uint64_t)sys_clk * 16u;
-  uint32_t best_divider16 = 0;
+  uint32_t best_divider = 0;
   uint32_t best_count = 0;
   uint64_t best_error = UINT64_MAX;
 
-  // Search all legal 8.4 dividers; this runs only when frequency changes.
-  for (uint32_t divider16 = 16; divider16 <= 4095; ++divider16) {
-    uint64_t denominator = (uint64_t)hz * divider16;
-    uint64_t count = (sys_clk16 + denominator / 2u) / denominator;
+  // Integer dividers avoid fractional-divider edge jitter.
+  for (uint32_t divider = 1; divider <= 255; ++divider) {
+    uint64_t denominator = (uint64_t)hz * divider;
+    uint32_t count = (uint32_t)(((uint64_t)sys_clk + denominator / 2u) /
+                                denominator);
     if (count < 2) count = 2;
     if (count > 65536) count = 65536;
-    uint64_t product = (uint64_t)divider16 * count;
-    uint64_t target_product = (uint64_t)hz * product;
-    uint64_t error = sys_clk16 > target_product ?
-      sys_clk16 - target_product : target_product - sys_clk16;
-    uint64_t best_product = (uint64_t)best_divider16 * best_count;
-    if (best_divider16 == 0 ||
-      error * best_product < best_error * product) {
-      best_divider16 = divider16;
-      best_count = (uint32_t)count;
-      best_error = error;
+    count &= ~1u;
+    if (count < 2) count = 2;
+
+    uint32_t candidates[2] = {count, count < 65536 ? count + 2 : count};
+    for (size_t i = 0; i < 2; ++i) {
+      uint64_t product = (uint64_t)divider * candidates[i];
+      uint64_t target_product = (uint64_t)hz * product;
+      uint64_t error = sys_clk > target_product ?
+        sys_clk - target_product : target_product - sys_clk;
+      uint64_t best_product = (uint64_t)best_divider * best_count;
+      if (best_divider == 0 ||
+        error * best_product < best_error * product) {
+        best_divider = divider;
+        best_count = candidates[i];
+        best_error = error;
+      }
     }
   }
 
   uint16_t wrap = (uint16_t)(best_count - 1u);
-  pwm_set_clkdiv(slice_num, (float)best_divider16 / 16.0f);
+  pwm_set_clkdiv_int_frac4(slice_num, (uint8_t)best_divider, 0);
   pwm_set_wrap(slice_num, wrap);
   pwm_set_chan_level(slice_num, pwm_gpio_to_channel(PIN_CLK),
     (uint16_t)(best_count / 2u)); // Exact 50% when count is even.
@@ -173,6 +184,8 @@ static void resume_z80_clock(void) {
   transition after 3.3 V becomes valid fails the phase.
 
 ## Pass gate
+
+Clock commands report `stage=2 clock_requested=... clock_actual=... verification=unmeasured`; `s` reports the calculated configured rate. Toggle/walking commands report `DONE`, not electrical PASS. The [MCP acceptance runner](../hardware/oscilloscope.md#mcp-acceptance-runner) checks the clock-translation subset without replacing this complete gate.
 
 Programmer verification and every GAL truth-table case
 pass, all eight AHCT244 outputs have valid 5 V levels and correct

@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "rigol-scope": {
+      "type": "stdio",
+      "command": "container",
+      "args": [
+        "run", "--rm", "-i", "--read-only", "--progress", "none",
+        "--tmpfs", "/tmp",
+        "--cap-drop", "ALL",
+        "-e", "RIGOL_IP", "-e", "RIGOL_ENABLE_SEND_RAW",
+        "--mount", "type=volume,source=rigol-mcp-data,target=/data",
+        "rigol-mcp:local"
+      ],
+      "env": {
+        "RIGOL_IP": "192.168.1.43",
+        "RIGOL_ENABLE_SEND_RAW": "0"
+      }
+    }
+  }
+}

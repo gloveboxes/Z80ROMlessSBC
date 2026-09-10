@@ -26,7 +26,16 @@ static void toggle_buffer_inputs_10_hz(void) {
     }
   }
   z80_safe_startup();
-  printf("PASS: 10Hz toggles complete\n");
+  printf("DONE: 10Hz toggles complete; electrical verification required\n");
+}
+
+static void set_clock(uint32_t requested_hz) {
+  if (!z80_clock_set_hz(requested_hz)) {
+    printf("FAIL: clock configuration rejected\n");
+    return;
+  }
+  printf("stage=2 clock_requested=%lu clock_actual=%lu verification=unmeasured\n",
+         (unsigned long)requested_hz, (unsigned long)z80_clock_get_hz());
 }
 
 int main(void) {
@@ -34,22 +43,25 @@ int main(void) {
   stdio_init_all();
   printf("\nStage 2: GAL, AHCT244, and Z80 clock\n");
     printf("w=walking outputs, t=10Hz toggles, 1=1kHz, 2=100kHz, "
-      "3=1MHz, x=stop\n");
+      "3=1MHz, s=status, x=stop\n");
 
   while (true) {
     int command = getchar_timeout_us(0);
-    if (command == 'w') {
+    if (command == 's') {
+      printf("stage=2 clock_actual=%lu verification=unmeasured\n",
+             (unsigned long)z80_clock_get_hz());
+    } else if (command == 'w') {
       z80_walking_output_test(BUFFER_INPUT_PINS,
           sizeof(BUFFER_INPUT_PINS) / sizeof(BUFFER_INPUT_PINS[0]), 250);
-      printf("PASS: walking outputs complete\n");
+      printf("DONE: walking outputs complete; electrical verification required\n");
     } else if (command == 't') {
       toggle_buffer_inputs_10_hz();
     } else if (command == '1') {
-      printf(z80_clock_set_hz(1000) ? "clock=1kHz\n" : "FAIL\n");
+      set_clock(1000);
     } else if (command == '2') {
-      printf(z80_clock_set_hz(100000) ? "clock=100kHz\n" : "FAIL\n");
+      set_clock(100000);
     } else if (command == '3') {
-      printf(z80_clock_set_hz(1000000) ? "clock=1MHz\n" : "FAIL\n");
+      set_clock(1000000);
     } else if (command == 'x') {
       z80_clock_stop();
       printf("clock stopped\n");

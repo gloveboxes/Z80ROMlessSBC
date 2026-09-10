@@ -8,6 +8,8 @@ A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
 baseline and change only the clock setting between tests, not the wiring,
 power arrangement, and probe layout at the same time.
 
+Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Stage 2 and Stage 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing SPI readback or trap code.
+
 **Setup time** is how long data must be valid before the CPU samples it;
 **hold time** is how long it must remain valid afterward. Measure at the
 receiving pin relative to the specified sampling edge. A waveform that
@@ -17,6 +19,15 @@ small timing margins, not just a logic-analyzer byte decode.
 Begin only after CP/M has flushed all disks. Use USB `+`/`-` to select
 each frequency under the firmware's BUSREQ#/BUSACK# and core-1
 flash-quiescence interlocks.
+
+The clock generator uses integer PWM dividers and even period counts so every
+edge remains at a fixed `clk_sys` position and duty cycle is exactly 50%. It does
+not use the PWM fractional divider, whose dither can produce alternating edge
+positions on an oscilloscope. Some requested 500 kHz steps cannot be generated
+exactly from the fixed system clock; the generator selects the closest stable
+rate in the same range. The firmware prints both `clock_requested` and
+`clock_actual`; use the latter for timing and frequency evidence, and record
+both values.
 
 - **Step sequence:** Test 2 MHz, then increase in 500 kHz steps to
   6 MHz. If and only if 6 MHz passes with margin, continue

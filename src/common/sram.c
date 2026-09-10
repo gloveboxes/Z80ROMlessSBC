@@ -5,7 +5,6 @@
 
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
 
@@ -22,7 +21,7 @@ bool z80_sram_prepare_dma(void) {
   gpio_put(PIN_SRAM_CE_N, 1);
   gpio_put(PIN_SRAM_OE_N, 1);
   gpio_put(PIN_SRAM_WE_N, 1);
-  return mcp23s17_set_directions(0x00, 0x00);
+  return true;
 }
 
 bool z80_sram_write_byte(uint16_t address, uint8_t value) {

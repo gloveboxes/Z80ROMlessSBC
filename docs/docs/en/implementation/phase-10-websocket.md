@@ -346,6 +346,7 @@ Z80 is held in BUSACK#.
   characters, pasted bursts, delayed characters, an empty queue, and queue
   overflow; RX_READY must never be asserted unless an immediate data read
   returns a real queued byte.
+  Verify Ctrl+C sends `0x03` and Ctrl+Z sends `0x1A`, not printable letters.
 5. At the CP/M prompt, run `DIR`, `LS`, switch through B-D, and repeat the
   [Phase 9 sentinel and cross-drive checks](phase-9-flash-storage.md#pass-gate).
   This proves the terminal and disk
@@ -353,6 +354,8 @@ Z80 is held in BUSACK#.
 6. Disconnect and reconnect the browser while the Z80 test program runs.
   Verify stale input is cleared, output resumes for the new client, and
   no trap timeout counter increments.
+  Also test a disconnect/reconnect between network polls: the new client
+  must remain connected and its first input must survive queue cleanup.
 7. Exhaust the default alarm pool before service startup and require the
   supervisor to remain fail-closed rather than launching core 1 without
   both WebSocket polling timers.
@@ -365,6 +368,8 @@ covering 0000/FFFF/5555/AAAA plus walking-one/walking-zero addresses;
 `t` starts the self-checking RAM/continuous-terminal image; and `h` runs that
 image with an automatic one-hour result. These diagnostic images replace the
 running CP/M image, so reboot before returning to CP/M filesystem tests.
+Both one-hour tests require ongoing RAM-loop terminal writes and fail after
+five seconds without a heartbeat, even if all error counters remain zero.
 
 ## Pass gate
 

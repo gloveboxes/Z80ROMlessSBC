@@ -10,6 +10,7 @@
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
+#include "z80sbc/test_progress.h"
 
 enum {
   QUALIFICATION_DATA_PORT = 0xFE,
@@ -53,11 +54,14 @@ static uint32_t qualification_index;
 static uint32_t qualification_errors;
 static uint32_t qualification_complete;
 static uint32_t qualification_clock_hz = QUALIFICATION_MIN_HZ;
+static uint32_t qualification_actual_clock_hz = QUALIFICATION_MIN_HZ;
 static absolute_time_t qualification_deadline;
 static bool hour_test_active;
 static absolute_time_t hour_test_deadline;
 static uint32_t hour_trap_timeout_baseline;
 static uint32_t hour_control_error_baseline;
+static uint32_t ram_heartbeats;
+static z80_test_progress_t hour_progress;
 static uint32_t flash_pause_request;
 static uint32_t flash_paused;
 
@@ -120,8 +124,11 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
   }
   if (port >= 0x10 && port <= 0x14)
     z80_flash_disk_io_write(port, value);
-  else
+  else {
+    if (mode == QUALIFICATION_RAM && port == 0x00)
+      __atomic_fetch_add(&ram_heartbeats, 1, __ATOMIC_RELAXED);
     z80_terminal_io_write(port, value);
+  }
 }
 
 static void core1_main(void) {
@@ -179,6 +186,8 @@ static bool set_qualification_clock(uint32_t clock_hz) {
     return false;
   }
   __atomic_store_n(&qualification_clock_hz, clock_hz, __ATOMIC_RELEASE);
+  __atomic_store_n(&qualification_actual_clock_hz, z80_clock_get_hz(),
+                   __ATOMIC_RELEASE);
   return true;
 }
 
@@ -222,6 +231,8 @@ static bool start_ram_test(bool one_hour) {
   hour_test_active = started && one_hour;
   if (hour_test_active) {
     hour_test_deadline = make_timeout_time_ms(60u * 60u * 1000u);
+    z80_test_progress_start(
+        &hour_progress, __atomic_load_n(&ram_heartbeats, __ATOMIC_RELAXED));
     hour_trap_timeout_baseline = z80_io_trap_timeout_count();
     hour_control_error_baseline = z80_io_trap_control_error_count();
   }
@@ -242,9 +253,16 @@ static void service_qualification(void) {
     __atomic_store_n(&qualification_mode, QUALIFICATION_NONE,
                      __ATOMIC_RELEASE);
   }
+  if (hour_test_active &&
+      !z80_test_progress_poll(
+          &hour_progress, __atomic_load_n(&ram_heartbeats, __ATOMIC_RELAXED))) {
+    hour_test_active = false;
+    printf("FAIL: one-hour RAM/terminal test: heartbeat timeout\n");
+  }
   if (hour_test_active && time_reached(hour_test_deadline)) {
     hour_test_active = false;
-    bool passed = __atomic_load_n(&qualification_errors,
+    bool passed = hour_progress.observed &&
+                  __atomic_load_n(&qualification_errors,
                                   __ATOMIC_RELAXED) == 0 &&
                   z80_io_trap_timeout_count() ==
                       hour_trap_timeout_baseline &&
@@ -279,6 +297,8 @@ int main(void) {
     fail_closed("I/O trap initialization");
   if (!z80_cpu_release_reset_and_run(1000000))
     fail_closed("CPU start");
+  __atomic_store_n(&qualification_actual_clock_hz, z80_clock_get_hz(),
+                   __ATOMIC_RELEASE);
   printf("PASS: CP/M started; WebSocket port 8088\n");
   printf("+=500kHz, -=500kHz, a=CPU address/readback, "
          "t=RAM/terminal, h=one-hour RAM/terminal, s=status\n");
@@ -291,18 +311,26 @@ int main(void) {
       uint32_t current = __atomic_load_n(&qualification_clock_hz,
                                          __ATOMIC_ACQUIRE);
       uint32_t requested = current + QUALIFICATION_STEP_HZ;
-      printf(set_qualification_clock(requested) ? "clock=%luHz\n"
-                                                : "FAIL: clock change\n",
-             (unsigned long)requested);
+      if (set_qualification_clock(requested))
+        printf("clock_requested=%luHz clock_actual=%luHz\n",
+               (unsigned long)requested,
+               (unsigned long)__atomic_load_n(
+                   &qualification_actual_clock_hz, __ATOMIC_ACQUIRE));
+      else
+        printf("FAIL: clock change\n");
     } else if (command == '-') {
       uint32_t current = __atomic_load_n(&qualification_clock_hz,
                                          __ATOMIC_ACQUIRE);
       uint32_t requested = current > QUALIFICATION_MIN_HZ
                                ? current - QUALIFICATION_STEP_HZ
                                : 0;
-      printf(set_qualification_clock(requested) ? "clock=%luHz\n"
-                                                : "FAIL: clock change\n",
-             (unsigned long)requested);
+      if (set_qualification_clock(requested))
+        printf("clock_requested=%luHz clock_actual=%luHz\n",
+               (unsigned long)requested,
+               (unsigned long)__atomic_load_n(
+                   &qualification_actual_clock_hz, __ATOMIC_ACQUIRE));
+      else
+        printf("FAIL: clock change\n");
     } else if (command == 'a') {
       hour_test_active = false;
       printf(start_address_test() ? "address/readback test started\n"
@@ -314,10 +342,12 @@ int main(void) {
       printf(start_ram_test(true) ? "one-hour RAM/terminal test started\n"
                                   : "FAIL: one-hour test start\n");
     } else if (command == 's')
-      printf("clock=%lu client=%u rx_drop=%lu tx_drop=%lu disk=%02lx "
+            printf("clock_requested=%lu clock_actual=%lu client=%u rx_drop=%lu tx_drop=%lu disk=%02lx "
              "fatal=%u qual_errors=%lu\n",
              (unsigned long)__atomic_load_n(&qualification_clock_hz,
                                              __ATOMIC_ACQUIRE),
+              (unsigned long)__atomic_load_n(&qualification_actual_clock_hz,
+                     __ATOMIC_ACQUIRE),
              z80_terminal_client_connected(),
              (unsigned long)z80_terminal_rx_drop_count(),
              (unsigned long)z80_terminal_tx_drop_count(),

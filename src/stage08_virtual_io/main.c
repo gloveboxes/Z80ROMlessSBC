@@ -4,11 +4,13 @@
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 #include "pico/util/queue.h"
+#include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/io_trap.h"
 #include "z80sbc/mcp23s17.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
+#include "z80sbc/test_progress.h"
 
 enum {
   TERMINAL_DATA_PORT = 0x00,
@@ -50,6 +52,8 @@ static uint32_t boot_attempts;
 static uint32_t dma_failures;
 static uint32_t readback_failures;
 static uint32_t ram_failures;
+static uint32_t ram_heartbeats;
+static z80_test_progress_t hour_progress;
 static uint32_t self_test_write_index;
 static uint32_t self_test_errors;
 static uint32_t self_test_complete;
@@ -136,9 +140,11 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
     __atomic_fetch_add(&ram_failures, 1, __ATOMIC_RELAXED);
     return;
   }
-  if (port == TERMINAL_DATA_PORT &&
-      !queue_try_add(&terminal_tx_queue, &value))
-    __atomic_fetch_add(&usb_tx_drops, 1, __ATOMIC_RELAXED);
+  if (port == TERMINAL_DATA_PORT) {
+    __atomic_fetch_add(&ram_heartbeats, 1, __ATOMIC_RELAXED);
+    if (!queue_try_add(&terminal_tx_queue, &value))
+      __atomic_fetch_add(&usb_tx_drops, 1, __ATOMIC_RELAXED);
+  }
 }
 
 static bool load_and_start(const uint8_t *program, size_t length,
@@ -237,9 +243,11 @@ static void print_status(void) {
                            ? absolute_time_diff_us(hour_test_started,
                                                    get_absolute_time())
                            : 0;
-  printf("\n[diag] boots=%lu dma_fail=%lu verify_fail=%lu ram_fail=%lu "
+    printf("\n[diag] stage=8 clock_requested=1000000 clock_actual=%lu "
+      "boots=%lu dma_fail=%lu verify_fail=%lu ram_fail=%lu "
          "trap_timeout=%lu control_error=%lu rx_drop=%lu tx_drop=%lu "
          "hour_seconds=%llu\n",
+         (unsigned long)z80_clock_get_hz(),
          (unsigned long)__atomic_load_n(&boot_attempts, __ATOMIC_RELAXED),
          (unsigned long)__atomic_load_n(&dma_failures, __ATOMIC_RELAXED),
          (unsigned long)__atomic_load_n(&readback_failures, __ATOMIC_RELAXED),
@@ -285,6 +293,8 @@ static void process_command(uint8_t command) {
     if (hour_test_active) {
       hour_test_started = get_absolute_time();
       hour_test_deadline = make_timeout_time_ms(60u * 60u * 1000u);
+      z80_test_progress_start(
+          &hour_progress, __atomic_load_n(&ram_heartbeats, __ATOMIC_RELAXED));
     }
     printf(hour_test_active ? "\n[diag] one-hour RAM/USB test started\n"
                             : "\n[diag] FAIL: one-hour test start\n");
@@ -363,10 +373,19 @@ static void service_self_test(void) {
 }
 
 static void service_hour_test(void) {
-  if (!hour_test_active || !time_reached(hour_test_deadline))
+  if (!hour_test_active)
+    return;
+  if (!z80_test_progress_poll(
+          &hour_progress, __atomic_load_n(&ram_heartbeats, __ATOMIC_RELAXED))) {
+    hour_test_active = false;
+    printf("\n[diag] FAIL: one-hour RAM/USB test: heartbeat timeout\n");
+    return;
+  }
+  if (!time_reached(hour_test_deadline))
     return;
   hour_test_active = false;
-  bool passed = __atomic_load_n(&ram_failures, __ATOMIC_RELAXED) == 0 &&
+  bool passed = hour_progress.observed &&
+                __atomic_load_n(&ram_failures, __ATOMIC_RELAXED) == 0 &&
                 z80_io_trap_timeout_count() == hour_trap_timeout_baseline &&
                 z80_io_trap_control_error_count() ==
                     hour_control_error_baseline;

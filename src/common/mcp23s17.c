@@ -54,8 +54,18 @@ bool mcp23s17_read_register(uint8_t reg, uint8_t *value) {
 }
 
 bool mcp23s17_set_directions(uint8_t port_a, uint8_t port_b) {
-  return mcp23s17_write_register(MCP_IODIRA, port_a) &&
-         mcp23s17_write_register(MCP_IODIRB, port_b);
+  uint8_t actual_a;
+  uint8_t actual_b;
+  bool verified = mcp23s17_write_register(MCP_IODIRA, port_a) &&
+                  mcp23s17_write_register(MCP_IODIRB, port_b) &&
+                  mcp23s17_read_register(MCP_IODIRA, &actual_a) &&
+                  mcp23s17_read_register(MCP_IODIRB, &actual_b) &&
+                  actual_a == port_a && actual_b == port_b;
+  if (!verified) {
+    gpio_put(PIN_ADDR_ENABLE, 0);
+    busy_wait_us_32(1);
+  }
+  return verified;
 }
 
 bool mcp23s17_write_ports(uint8_t port_a, uint8_t port_b) {

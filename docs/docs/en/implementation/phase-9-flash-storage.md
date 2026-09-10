@@ -572,9 +572,8 @@ static void disk_start_command(uint8_t command) {
 
   if (command == DISK_COMMAND_FLUSH) {
     disk_request_t request = { .command = command };
-    if (queue_try_add(&disk_write_queue, &request))
-      disk_status_store(DISK_STATUS_BUSY);
-    else
+    disk_status_store(DISK_STATUS_BUSY);
+    if (!queue_try_add(&disk_write_queue, &request))
       disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     return;
   }
@@ -634,9 +633,8 @@ static void disk_virtual_io_write(uint8_t port, uint8_t value) {
         .lba = disk_write_lba
       };
       memcpy(request.data, disk_data, sizeof request.data);
-      if (queue_try_add(&disk_write_queue, &request))
-        disk_status_store(DISK_STATUS_BUSY);
-      else
+      disk_status_store(DISK_STATUS_BUSY);
+      if (!queue_try_add(&disk_write_queue, &request))
         disk_status_store(DISK_STATUS_READY | DISK_STATUS_ERROR);
     }
   }
@@ -644,6 +642,8 @@ static void disk_virtual_io_write(uint8_t port, uint8_t value) {
 
 // Core 1 only; call on every loop iteration, including while Wi-Fi is down.
 static void core1_service_disk_request(void) {
+  if (__atomic_load_n(&disk_fatal_error, __ATOMIC_ACQUIRE))
+    return;
   disk_request_t request;
   if (!queue_try_remove(&disk_write_queue, &request)) {
     if (!disk_cache.dirty || !time_reached(disk_cache_flush_deadline))
@@ -673,7 +673,9 @@ A read returns 128 bytes from the data port. A write accepts exactly 128 bytes
 there, then changes status to BUSY until core 1 has cached it and completed
 any required journaled flush. Command 0 clears a transient protocol/queue
 error when not busy; a flash or journal failure remains latched until reboot
-and recovery. The BIOS polls READY/DATA_READY/DATA_ROOM/BUSY instead of
+and recovery, disabling both queued writes and background flush retries.
+BUSY is published before enqueueing so immediate core-1 completion cannot
+be overwritten by a late BUSY store. The BIOS polls READY/DATA_READY/DATA_ROOM/BUSY instead of
 assuming Pico timing, but reads each status only once per poll and uses Z80
 `INIR`/`OTIR` for payload transfer. It also waits for READY before writing a
 command's drive/LBA registers. Idle flushes are serialized separately by

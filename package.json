@@ -3,6 +3,14 @@
   "private": true,
   "scripts": {
     "kicad": "./scripts/build-kicad.sh",
-    "layout": "node scripts/build-breadboard-layout.mjs"
+    "layout": "node scripts/build-breadboard-layout.mjs",
+    "test:scope": "node --test scripts/scope-evidence.test.mjs",
+    "test:control": "cmake -S src/common/tests -B build/host-control -G Ninja && cmake --build build/host-control && ctest --test-dir build/host-control --output-on-failure",
+    "scope:acceptance": "node scripts/scope-acceptance.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "csv-parse": "^7.0.2",
+    "serialport": "^13.0.0"
   }
 }

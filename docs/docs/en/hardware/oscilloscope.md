@@ -12,6 +12,8 @@ the logic analyzer does not prove analogue voltage or signal integrity.
 
 ## Reading your first capture
 
+For opt-in automated evidence collection, see [MCP acceptance runner](#mcp-acceptance-runner). Automation does not replace the electrical and digital pass gates below.
+
 The horizontal axis is time; the vertical axis is voltage relative to the
 probe's GND. `200 ns/div` means each large horizontal division spans 200 ns.
 A **trigger** tells the scope which event to align on; it does not generate
@@ -129,3 +131,92 @@ DHO814 front end's approximately 3.5 ns calculated rise-time limits. The scope
 validates analogue quality on the listed nodes; the DSLogic Plus remains
 mandatory for repeated bus-wide digital capture groups and the final frequency
 claim.
+
+## MCP Acceptance Runner
+
+The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Stage 2 clock translation, Stage 8 I/O timing, or MCP23S17 SPI evidence. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent phase gates pass.
+
+### Preparation
+
+1. Build the correct cumulative firmware and pass the preceding phases. Stage 2 uses the empty Z80 socket. Stage 8 and SPI modes require a working Stage 8 board at the 1 MHz baseline.
+2. Power off before changing probes. Use compensated 10X probes, full bandwidth, DC coupling, 1 MOhm inputs, verified deskew and common circuit ground. Scope ground clips are not floating inputs.
+3. Install Node.js 20 or later and run `npm ci`. Build the current [rigol-mcp image](https://github.com/gloveboxes/rigol-mcp) in the selected runtime and initialize its capture volume using that project's instructions.
+4. Stop the registered Rigol MCP server yourself and close the Pico serial terminal. The runner starts one dedicated server and calls it sequentially. `--exclusive-session` is your acknowledgement, not automatic proof that no other client is connected.
+5. Use a new output directory under `build/bench/`. The runner checks firmware identity and scope readbacks before collecting evidence, and asks for board/probe/datasheet provenance.
+
+### Stage 2 Clock Translation
+
+Connect CH1 to Pico GP2 (3.3 V), CH2 to Z80 socket CLK pin 6 (5 V), and CH3 to the Z80 VCC supply node. Repeat a separate capture on AHCT244 pin 18 to distinguish buffer delay from interconnect delay. Keep the Stage 2 reset state; do not release a CPU merely to obtain a clock measurement.
+
+```sh
+mkdir -p build/bench
+npm run scope:acceptance -- --mode stage2 --runtime container \
+   --ip 192.168.1.43 --port /dev/cu.usbmodemYOUR_DEVICE \
+   --output build/bench/stage2-first --exclusive-session --bench-confirmed
+```
+
+Use `--runtime docker` for Docker. Commands `1`, `2`, and `3` report requested and calculated actual clock rates. The runner compares hardware frequency to the calculated rate within 1%, requires 45-55% duty and corresponding pulse widths, checks the 4.75-5.25 V supply, and compares settled Z80 clock HIGH against measured VCC minus 0.5 V. The 1% check detects gross errors, not oscillator accuracy or jitter. Sentinel/missing readings are inconclusive, never zero or PASS.
+
+Use robust settled levels for logic swing and raw extrema for overshoot/undershoot; inspect both against receiving-device limits. Check extra threshold crossings and the first/last pulses. Full phase qualification still requires every buffer path, GAL logic, startup and power-cycle tests. A firmware `DONE` message means only that the stimulus completed.
+
+### Stage 8 Clock Stop and Resume
+
+Connect CH1=Z80 IORQ# pin 20, CH2=WAIT# pin 24, CH3=CLK pin 6, CH4=Pico DATA_ENABLE GP7. Thresholds are 2.5 V on the 5 V side and 1.65 V on the Pico side. Verify actual rails in a separate supply capture. Set the following variables using the exact CPU datasheet and an approved latency/pause budget; the runner deliberately has no guessed timing limits:
+
+```sh
+npm run scope:acceptance -- --mode stage8 --runtime container \
+   --ip 192.168.1.43 --port /dev/cu.usbmodemYOUR_DEVICE \
+   --output build/bench/stage8-first \
+   --minimum-high-ns "$MIN_CLK_HIGH_NS" --minimum-low-ns "$MIN_CLK_LOW_NS" \
+   --maximum-last-edge-us "$MAX_LAST_EDGE_US" --maximum-pause-us "$MAX_PAUSE_US" \
+   --duration 60 --captures 3 --exclusive-session --bench-confirmed
+```
+
+The runner starts the existing one-hour RAM/USB checker, samples I/O events, checks fault-counter deltas, and holds the CPU in reset on exit. A 60-second run is not a one-hour pass. For a full run use `--duration 3600`; the firmware's one-hour PASS message must also be observed. Exercise USB traffic externally; later-stage Wi-Fi/storage workload evidence remains separate. Discrete captures cannot prove there were no faults between records.
+
+Aligned stopped RAW CSV captures are streamed to the host. The evaluator separates ordinary high/low pulse minima from extended intervals associated with complete IORQ assertions. It checks last-clock-edge latency, pause duration, WAIT assertion/release, DATA_ENABLE ordering, and premature WAIT reassertion. Unaligned data fails; insufficient sampling or incomplete events are inconclusive. Never include intentional pauses in ordinary periodic-jitter statistics.
+
+The last observed edge is not the instant PWM stopped: uncertainty includes clock phase. Do not describe it as exact ISR-entry latency. Repeat CH4 on RD#, WR#, DATA_DIR and both transceiver OE# nodes. Measure WAIT setup/hold and data setup/hold at the Z80 sampling edge separately. Keep the DSLogic Group A-D captures for whole-bus ordering.
+
+IODIR verification adds two SPI read transactions to each direction configuration, including I/O servicing. Requalify service time, throughput, first resumed pulse, and watchdog margins after this change; the 500 ms software deadline is not a CPU timing specification.
+
+### MCP23S17 SPI Evidence
+
+Use Stage 8 firmware. Connect CH1=MCP SCK, CH2=MCP CS#, CH3=MCP SI, CH4=MCP SO on the expander's 5 V side. Never bypass the LVC buffer into Pico MISO.
+
+```sh
+npm run scope:acceptance -- --mode spi --runtime container \
+   --ip 192.168.1.43 --port /dev/cu.usbmodemYOUR_DEVICE \
+   --output build/bench/spi-first --exclusive-session --bench-confirmed
+```
+
+The runner uses mode-0, MSB-first decoding, real active-LOW chip select and explicit 2.5 V thresholds. Review the saved transaction data against opcodes `0x40`/`0x41`, IODIRA/B `0x00`/`0x01`, GPIOA `0x12`, and OLATA/B `0x14`/`0x15`. For reads, the third MISO byte is the returned register; MOSI contains dummy data. Compare IODIR reads to preceding writes. Verify actual SCK rate and CS setup/hold, then repeat captures across voltage translators.
+
+SPI byte counts prove transfer completion, not peripheral acknowledgement. Firmware reads both direction registers back and asserts ADDR_ENABLE LOW on short transfers or mismatch. Latch preload remains before output enable. A disconnected device returning zeros can mimic an all-output direction register: retain the Stage 3 alternating-pattern register test and SRAM verification. Do not blindly retry uncertain ownership transitions.
+
+### Reports and Restoration
+
+Reports include source revision/dirty state, scope identity, requested/applied settings, probe ratios, thresholds, clock rates, sample-rate/memory metadata, counters, measurements, capture paths and manual gates. `serial.log`, copied captures and setup binary/sidecar are retained. Source revision describes the current source tree; verify separately that the flashed UF2 matches it.
+
+The runner stops the diagnostic workload and asks before restoring the saved scope setup and waveform-transfer settings. Check the restoration result and final SCPI queue; a write alone is not proof of restoration. Declined restoration, mismatched settings or errors produce a nonzero exit. Instrument restoration does not restart the preceding firmware workload. If killed or disconnected, cleanup may be incomplete: power down or hold reset safely and inspect state before retrying. Restart the registered MCP server yourself only after the runner exits.
+
+### Fault Injection
+
+Run host simulation first:
+
+```sh
+npm run test:control
+npm run test:scope
+```
+
+Native tests compile production expander, bus, CPU and trap code against GPIO/SPI/time fakes. They cover short first/second SPI writes/reads, both IODIR mismatches, absent/stuck BUSACK, stuck IORQ/RD/WR, invalid RD/WR combinations, and peripheral failure during a trap. They prove code-path behavior, not analogue safety or actual timing.
+
+| Fault | Required observed behavior |
+| --- | --- |
+| BUSACK never asserts | Request timeout, BUSREQ HIGH, address/data isolated, no SRAM DMA. The current request-timeout path leaves the CPU running. |
+| BUSACK stuck LOW on release | RESET LOW, address/data isolated, Pico SRAM CE/OE/WE HIGH, clock stopped. Capture translated SRAM pins too. |
+| IORQ or selected RD/WR stuck LOW | Release deadline expires; isolate, assert reset, supply reset clocks and reboot via watchdog. Capture the transient recovery, not just the final pins. |
+| Partial SPI or direction mismatch | Hold ADDR_ENABLE LOW; trap callers follow fail-closed watchdog recovery. Do not treat a completed write as verified configuration. |
+| Early DATA_ENABLE release or overlapping transceiver OEs | Reject qualification; capture direction and both OEs separately and with the logic analyzer. |
+
+Physical fault injection needs an approved interposer that disconnects the real driver before forcing a level, power-off fixture changes, and explicit operator approval. Never short active push-pull outputs, bypass voltage translation, or leave installed 5 V ICs unpowered while driven. No electrical fault injection is automated here. Persistent faults may reboot repeatedly. Record recovery at receiving pins and repeat baseline qualification after wiring changes.

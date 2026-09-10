@@ -76,13 +76,15 @@ void process_events() {
   int32_t reject = pending_reject.exchange(-1, std::memory_order_acq_rel);
   if (reject >= 0 && server != nullptr)
     server->close((uint32_t)reject);
-  if (pending_connected.exchange(false, std::memory_order_acq_rel))
-    z80_terminal_network_connected();
   if (pending_disconnected.exchange(false, std::memory_order_acq_rel))
     z80_terminal_network_disconnected();
+  if (pending_connected.exchange(false, std::memory_order_acq_rel) &&
+      active_connection.load(std::memory_order_acquire) >= 0)
+    z80_terminal_network_connected();
 }
 
 void disconnect_client() {
+  cyw43_arch_lwip_begin();
   int32_t connection =
       active_connection.exchange(-1, std::memory_order_acq_rel);
   if (connection >= 0 && server != nullptr)
@@ -90,6 +92,7 @@ void disconnect_client() {
   pending_connected.store(false, std::memory_order_release);
   pending_disconnected.store(false, std::memory_order_release);
   z80_terminal_network_disconnected();
+  cyw43_arch_lwip_end();
 }
 
 bool start_association() {
@@ -188,20 +191,27 @@ extern "C" bool z80_terminal_network_poll(void) {
 extern "C" void z80_terminal_network_poll_input(void) {
   if (server == nullptr || !server_started)
     return;
-  server->popMessages();
+  cyw43_arch_lwip_begin();
   process_events();
+  server->popMessages();
+  cyw43_arch_lwip_end();
 }
 
 extern "C" void z80_terminal_network_poll_output(void) {
   if (server == nullptr || !server_started)
     return;
+  cyw43_arch_lwip_begin();
+  process_events();
   int32_t connection = active_connection.load(std::memory_order_acquire);
-  if (connection < 0)
+  if (connection < 0) {
+    cyw43_arch_lwip_end();
     return;
+  }
 
   uint8_t payload[FRAME_BYTES];
   size_t length = z80_terminal_network_supply(payload, sizeof(payload));
   if (length != 0 &&
       !server->sendMessage((uint32_t)connection, payload, length))
     z80_terminal_network_tx_dropped(length);
+  cyw43_arch_lwip_end();
 }

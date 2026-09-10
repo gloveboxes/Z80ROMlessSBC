@@ -4,6 +4,8 @@
 
 **Install:** No further chips. Load the Phase 8 supervisor firmware.
 
+The [MCP acceptance runner](../hardware/oscilloscope.md#mcp-acceptance-runner) captures clock pauses separately from steady-clock jitter and checks fault-counter deltas. `Ctrl-] s` now includes `stage=8`, `clock_requested` and calculated `clock_actual`. Direction changes verify MCP IODIR readback and isolate on mismatch; the added SPI reads require fresh service-time qualification.
+
 **Wiring:** Make no hardware changes. Recheck the Phase 2 IORQ#-to-WAIT#
 path and the Phase 3, 5, and 7 monitor paths against the
 [implementation wiring index](../hardware/bus-isolation.md#54-implementation-wiring-index)
@@ -158,6 +160,8 @@ static void disable_io_trap(void) {
 2. Enter Ctrl-] `h` to reload the self-checking RAM increment/USB terminal
   image and run it for one hour at 1 MHz. Require the automatic completion
   result and Ctrl-] `s` to report zero RAM, trap-timeout, or control errors.
+  The firmware also requires ongoing RAM-loop terminal writes and fails
+  after five seconds without that heartbeat; elapsed time alone cannot pass.
 3. Enter Ctrl-] `p`. The generated Z80 self-test executes OUT on ports 0x00,
   0x01, 0x55, 0xAA, and 0xFF with matching data. Verify correct clock stop,
   address/data capture, driver disable, clock resume, and a PASS result.
