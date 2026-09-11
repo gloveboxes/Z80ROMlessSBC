@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "date": "2026-09-11T00:24:38",
+    "generator": "KiCad 10.0.6",
+    "project": "z80_romless_sbc",
+    "board_name": "z80_romless_sbc"
+  },
+  "board": {
+    "has_outline": true,
+    "width": "180.0000 mm",
+    "height": "135.0000 mm",
+    "area": "24127.50 mm²",
+    "front_component_density": "27.50",
+    "back_component_density": "5.01",
+    "front_copper_area": "2537.088 mm²",
+    "back_copper_area": "18518.417 mm²",
+    "min_track_clearance": "0.2016 mm",
+    "min_track_width": "0.3000 mm",
+    "min_drill_diameter": "0.4000 mm",
+    "board_thickness": "1.6000 mm",
+    "front_footprint_area": "6636.025 mm²",
+    "back_footprint_area": "1208.843 mm²",
+    "front_footprint_density": "27.50",
+    "back_footprint_density": "5.01"
+  },
+  "pads": {
+    "through_hole": 371,
+    "smd": 0,
+    "connector": 0,
+    "npth": 4,
+    "castellated": 0,
+    "press_fit": 0
+  },
+  "vias": {
+    "through": 113,
+    "blind": 0,
+    "buried": 0,
+    "micro": 0
+  },
+  "components": {
+    "tht": {
+      "front": 65,
+      "back": 0,
+      "total": 65
+    },
+    "smd": {
+      "front": 0,
+      "back": 0,
+      "total": 0
+    },
+    "unspecified": {
+      "front": 4,
+      "back": 0,
+      "total": 4
+    },
+    "total": {
+      "front": 69,
+      "back": 0,
+      "total": 69
+    }
+  },
+  "drill_holes": [
+    {
+      "count": 315,
+      "shape": "Round",
+      "x_size": "0.8000 mm",
+      "y_size": "0.8000 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 113,
+      "shape": "Round",
+      "x_size": "0.4000 mm",
+      "y_size": "0.4000 mm",
+      "plated": true,
+      "source": "Via",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 42,
+      "shape": "Round",
+      "x_size": "1.0000 mm",
+      "y_size": "1.0000 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 7,
+      "shape": "Round",
+      "x_size": "0.9000 mm",
+      "y_size": "0.9000 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 4,
+      "shape": "Round",
+      "x_size": "3.2000 mm",
+      "y_size": "3.2000 mm",
+      "plated": false,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 3,
+      "shape": "Round",
+      "x_size": "0.7500 mm",
+      "y_size": "0.7500 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 2,
+      "shape": "Round",
+      "x_size": "1.1000 mm",
+      "y_size": "1.1000 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 2,
+      "shape": "Round",
+      "x_size": "1.3000 mm",
+      "y_size": "1.3000 mm",
+      "plated": true,
+      "source": "Pad",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    }
+  ]
+}

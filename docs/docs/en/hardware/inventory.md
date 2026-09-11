@@ -120,6 +120,25 @@ of Pico/GAL TTL HIGHs.
 | 1 | In-line power switch or removable supply jumper | Emergency power removal; rated at least 1.5 A continuous |
 | As required | Labels or wire markers | Bus bits, controls, and socket pin 1 |
 
+### PCB assembly alternative
+
+The KiCad design provides a single **180 x 135 mm, two-layer, all-through-hole
+PCB** as an alternative to the three-breadboard build. It uses the same nine
+active packages and electrical safeguards. In addition to the semiconductor,
+socket, resistor, capacitor, diode, and power-terminal items above, the PCB
+assembly needs:
+
+| Quantity | Item | Requirement |
+|----:|----|----|
+| 1 | Fabricated two-layer PCB | 1.6 mm FR-4, 1 oz copper, plated through holes, solder mask both sides |
+| 4 | M3 mounting fastener sets | Match the four 3.2 mm non-plated mounting holes |
+| 7 | Through-hole loop test points | M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND |
+
+The generated BOM and fabrication archive are under
+`hardware/kicad/fabrication/`. Verify the actual Pico headers, DIP sockets,
+electrolytic diameter/pitch, terminal-block pitch, diode body, and purchased
+2N3904 lead order against those footprints before ordering boards.
+
 ## 0.5 Bring-Up Equipment
 
 - Digital multimeter with resistance, continuity, and DC voltage modes.

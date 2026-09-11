@@ -4,6 +4,7 @@ node_modules/
 .venv*/
 *.kicad_prl
 *.kicad_sch-bak
+~*.lck
 *-backups/
 **/__pycache__/
 *.py[cod]

@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/build-kicad-schematic.py",
   "schematic": "hardware/kicad/z80_romless_sbc.kicad_sch",
-  "component_count": 59,
+  "component_count": 65,
   "components": [
     "A1",
     "C1",
@@ -54,6 +54,12 @@
     "RN2",
     "RN3",
     "TP1",
+    "TP2",
+    "TP3",
+    "TP4",
+    "TP5",
+    "TP6",
+    "TP7",
     "U1",
     "U10",
     "U2",
@@ -63,6 +69,398 @@
     "U8",
     "U9"
   ],
+  "component_details": {
+    "A1": {
+      "symbol": "PICO2",
+      "value": "Raspberry Pi Pico 2 W",
+      "footprint": "Module:RaspberryPi_Pico_Common_THT",
+      "description": "Z80ROMlessSBC Raspberry Pi Pico 2 W"
+    },
+    "C1": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U1 Z80 bypass"
+    },
+    "C10": {
+      "symbol": "CAPACITOR",
+      "value": "22u",
+      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "description": "Core cluster bulk"
+    },
+    "C11": {
+      "symbol": "CAPACITOR",
+      "value": "22u",
+      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "description": "Peripheral cluster bulk"
+    },
+    "C12": {
+      "symbol": "CAPACITOR",
+      "value": "100u",
+      "footprint": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
+      "description": "Supply-entry bulk"
+    },
+    "C2": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U2 SRAM bypass"
+    },
+    "C3": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U3 GAL bypass"
+    },
+    "C4": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U4 AHCT244 bypass"
+    },
+    "C5": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U7 LVC244 bypass"
+    },
+    "C6": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U8 MCP23S17 bypass"
+    },
+    "C7": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U9 AHCT245 bypass"
+    },
+    "C8": {
+      "symbol": "CAPACITOR",
+      "value": "100n",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+      "description": "U10 LVC245 bypass"
+    },
+    "C9": {
+      "symbol": "CAPACITOR",
+      "value": "22u",
+      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "description": "Memory cluster bulk"
+    },
+    "D1": {
+      "symbol": "DIODE",
+      "value": "1N5819",
+      "footprint": "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal",
+      "description": "Z80ROMlessSBC 1N5819"
+    },
+    "J1": {
+      "symbol": "SUPPLY",
+      "value": "REGULATED 5V INPUT",
+      "footprint": "TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm",
+      "description": "Z80ROMlessSBC REGULATED 5V INPUT"
+    },
+    "Q1": {
+      "symbol": "NPN",
+      "value": "2N3904 MCP RESET",
+      "footprint": "Package_TO_SOT_THT:TO-92_Inline",
+      "description": "Z80ROMlessSBC 2N3904 MCP RESET"
+    },
+    "R1": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for BUSREQ_N"
+    },
+    "R10": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_WE_N"
+    },
+    "R11": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for WAIT_N"
+    },
+    "R12": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for INT_N"
+    },
+    "R13": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for NMI_N"
+    },
+    "R14": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_WE_PRE_N"
+    },
+    "R15": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_OE_PRE_N"
+    },
+    "R16": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_CE_PRE_N"
+    },
+    "R17": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_BUSREQ_N"
+    },
+    "R18": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_CE_N"
+    },
+    "R19": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_SPI_CS_N"
+    },
+    "R2": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for BUSACK_N"
+    },
+    "R20": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_WE_N"
+    },
+    "R21": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_OE_N"
+    },
+    "R22": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_CLK"
+    },
+    "R23": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for RESET_N"
+    },
+    "R24": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for DATA_ENABLE"
+    },
+    "R25": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for DATA_DIR"
+    },
+    "R26": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for ADDR_ENABLE"
+    },
+    "R27": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_SPI_SCK"
+    },
+    "R28": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for PICO_SPI_MOSI"
+    },
+    "R29": {
+      "symbol": "RESISTOR",
+      "value": "4.7k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "MCP reset transistor base resistor"
+    },
+    "R3": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for MREQ_N"
+    },
+    "R30": {
+      "symbol": "RESISTOR",
+      "value": "47k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "MCP reset transistor base-emitter pull-down"
+    },
+    "R31": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "MCP RESET# pull-up"
+    },
+    "R4": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for IORQ_N"
+    },
+    "R5": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for RD_N"
+    },
+    "R6": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for WR_N"
+    },
+    "R7": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for MCP_SO"
+    },
+    "R8": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_CE_N"
+    },
+    "R9": {
+      "symbol": "RESISTOR",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "description": "10k startup bias for SRAM_OE_N"
+    },
+    "RN1": {
+      "symbol": "RN8",
+      "value": "8x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP9",
+      "description": "A0-A7 pull-up network"
+    },
+    "RN2": {
+      "symbol": "RN8",
+      "value": "8x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP9",
+      "description": "A8-A15 pull-up network"
+    },
+    "RN3": {
+      "symbol": "RN8",
+      "value": "8x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP9",
+      "description": "Pico D0-D7 pull-down network"
+    },
+    "TP1": {
+      "symbol": "TESTPOINT",
+      "value": "M1# TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC M1# TEST"
+    },
+    "TP2": {
+      "symbol": "TESTPOINT",
+      "value": "CLK TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC CLK TEST"
+    },
+    "TP3": {
+      "symbol": "TESTPOINT",
+      "value": "RESET# TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC RESET# TEST"
+    },
+    "TP4": {
+      "symbol": "TESTPOINT",
+      "value": "WAIT# TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC WAIT# TEST"
+    },
+    "TP5": {
+      "symbol": "TESTPOINT",
+      "value": "BUSREQ# TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC BUSREQ# TEST"
+    },
+    "TP6": {
+      "symbol": "TESTPOINT",
+      "value": "BUSACK# TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC BUSACK# TEST"
+    },
+    "TP7": {
+      "symbol": "TESTPOINT",
+      "value": "GND TEST",
+      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+      "description": "Z80ROMlessSBC GND TEST"
+    },
+    "U1": {
+      "symbol": "Z80_CPU",
+      "value": "Z84C0020PEC",
+      "footprint": "Package_DIP:DIP-40_W15.24mm",
+      "description": "Z80ROMlessSBC Z84C0020PEC"
+    },
+    "U10": {
+      "symbol": "LVC245",
+      "value": "SN74LVC245AN bus-to-Pico",
+      "footprint": "Package_DIP:DIP-20_W7.62mm",
+      "description": "Z80ROMlessSBC SN74LVC245AN bus-to-Pico"
+    },
+    "U2": {
+      "symbol": "SRAM",
+      "value": "AS6C1008-55PCN",
+      "footprint": "Package_DIP:DIP-32_W15.24mm",
+      "description": "Z80ROMlessSBC AS6C1008-55PCN"
+    },
+    "U3": {
+      "symbol": "ATF22V10",
+      "value": "ATF22V10B/C",
+      "footprint": "Package_DIP:DIP-24_W7.62mm",
+      "description": "Z80ROMlessSBC ATF22V10B/C"
+    },
+    "U4": {
+      "symbol": "AHCT244",
+      "value": "SN74AHCT244N",
+      "footprint": "Package_DIP:DIP-20_W7.62mm",
+      "description": "Z80ROMlessSBC SN74AHCT244N"
+    },
+    "U7": {
+      "symbol": "LVC244",
+      "value": "SN74LVC244AN",
+      "footprint": "Package_DIP:DIP-20_W7.62mm",
+      "description": "Z80ROMlessSBC SN74LVC244AN"
+    },
+    "U8": {
+      "symbol": "MCP23S17",
+      "value": "MCP23S17-E/SP",
+      "footprint": "Package_DIP:DIP-28_W7.62mm",
+      "description": "Z80ROMlessSBC MCP23S17-E/SP"
+    },
+    "U9": {
+      "symbol": "AHCT245",
+      "value": "SN74AHCT245N Pico-to-bus",
+      "footprint": "Package_DIP:DIP-20_W7.62mm",
+      "description": "Z80ROMlessSBC SN74AHCT245N Pico-to-bus"
+    }
+  },
   "erc_symbols": [
     "#FLG01"
   ],
@@ -223,12 +621,14 @@
     ],
     "BUSACK_N": [
       "R2.1",
+      "TP6.1",
       "U1.23",
       "U3.2",
       "U7.2"
     ],
     "BUSREQ_N": [
       "R1.1",
+      "TP5.1",
       "U1.25",
       "U4.16"
     ],
@@ -330,6 +730,7 @@
       "R28.2",
       "R30.2",
       "RN3.1",
+      "TP7.1",
       "U1.29",
       "U10.1",
       "U10.10",
@@ -522,6 +923,7 @@
     "RESET_N": [
       "A1.5",
       "R23.1",
+      "TP3.1",
       "U1.26",
       "U3.1"
     ],
@@ -562,6 +964,7 @@
     ],
     "WAIT_N": [
       "R11.1",
+      "TP4.1",
       "U1.24",
       "U3.20"
     ],
@@ -572,6 +975,7 @@
       "U7.8"
     ],
     "Z80_CLK": [
+      "TP2.1",
       "U1.6",
       "U4.18"
     ]

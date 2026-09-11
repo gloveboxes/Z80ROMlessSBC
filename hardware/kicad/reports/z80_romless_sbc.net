@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-09-02T22:52:07")
+		(date "2026-09-11T00:24:31")
 		(tool "Eeschema 10.0.6")
 		(sheet
 			(number "1")
@@ -216,9 +216,9 @@
 		)
 		(comp
 			(ref "C1")
-			(value "100n U1 Z80")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U1 Z80")
+			(description "U1 Z80 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -226,7 +226,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U1 Z80")
+					(name "Description") "U1 Z80 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -262,9 +262,9 @@
 		)
 		(comp
 			(ref "C2")
-			(value "100n U2 SRAM")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U2 SRAM")
+			(description "U2 SRAM bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -272,7 +272,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U2 SRAM")
+					(name "Description") "U2 SRAM bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -308,9 +308,9 @@
 		)
 		(comp
 			(ref "C3")
-			(value "100n U3 GAL")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U3 GAL")
+			(description "U3 GAL bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -318,7 +318,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U3 GAL")
+					(name "Description") "U3 GAL bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -354,9 +354,9 @@
 		)
 		(comp
 			(ref "C4")
-			(value "100n U4 AHCT244")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U4 AHCT244")
+			(description "U4 AHCT244 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -364,7 +364,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U4 AHCT244")
+					(name "Description") "U4 AHCT244 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -400,9 +400,9 @@
 		)
 		(comp
 			(ref "C5")
-			(value "100n U7 LVC244")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U7 LVC244")
+			(description "U7 LVC244 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -410,7 +410,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U7 LVC244")
+					(name "Description") "U7 LVC244 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -446,9 +446,9 @@
 		)
 		(comp
 			(ref "C6")
-			(value "100n U8 MCP")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U8 MCP")
+			(description "U8 MCP23S17 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -456,7 +456,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U8 MCP")
+					(name "Description") "U8 MCP23S17 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -492,9 +492,9 @@
 		)
 		(comp
 			(ref "C7")
-			(value "100n U9 AHCT245")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U9 AHCT245")
+			(description "U9 AHCT245 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -502,7 +502,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U9 AHCT245")
+					(name "Description") "U9 AHCT245 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -538,9 +538,9 @@
 		)
 		(comp
 			(ref "C8")
-			(value "100n U10 LVC245")
+			(value "100n")
 			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100n U10 LVC245")
+			(description "U10 LVC245 bypass")
 			(fields
 				(field
 					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
@@ -548,7 +548,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100n U10 LVC245")
+					(name "Description") "U10 LVC245 bypass")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -584,17 +584,17 @@
 		)
 		(comp
 			(ref "C9")
-			(value "22u Memory Board")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 22u Memory Board")
+			(value "22u")
+			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(description "Memory cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 22u Memory Board")
+					(name "Description") "Memory cluster bulk")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -630,17 +630,17 @@
 		)
 		(comp
 			(ref "C10")
-			(value "22u Core Board")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 22u Core Board")
+			(value "22u")
+			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(description "Core cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 22u Core Board")
+					(name "Description") "Core cluster bulk")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -676,17 +676,17 @@
 		)
 		(comp
 			(ref "C11")
-			(value "22u Peripheral Board")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 22u Peripheral Board")
+			(value "22u")
+			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(description "Peripheral cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 22u Peripheral Board")
+					(name "Description") "Peripheral cluster bulk")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -722,17 +722,17 @@
 		)
 		(comp
 			(ref "C12")
-			(value "100u Supply Entry")
-			(footprint "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
-			(description "Z80ROMlessSBC 100u Supply Entry")
+			(value "100u")
+			(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
+			(description "Supply-entry bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 100u Supply Entry")
+					(name "Description") "Supply-entry bulk")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -815,11 +815,11 @@
 		(comp
 			(ref "J1")
 			(value "REGULATED 5V INPUT")
+			(footprint "TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm")
 			(description "Z80ROMlessSBC REGULATED 5V INPUT")
 			(fields
 				(field
-					(name "Footprint")
-				)
+					(name "Footprint") "TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm")
 				(field
 					(name "Datasheet")
 				)
@@ -909,9 +909,9 @@
 		)
 		(comp
 			(ref "R1")
-			(value "10k BUSREQ_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k BUSREQ_N")
+			(description "10k startup bias for BUSREQ_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -919,7 +919,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k BUSREQ_N")
+					(name "Description") "10k startup bias for BUSREQ_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -955,9 +955,9 @@
 		)
 		(comp
 			(ref "R2")
-			(value "10k BUSACK_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k BUSACK_N")
+			(description "10k startup bias for BUSACK_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -965,7 +965,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k BUSACK_N")
+					(name "Description") "10k startup bias for BUSACK_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1001,9 +1001,9 @@
 		)
 		(comp
 			(ref "R3")
-			(value "10k MREQ_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k MREQ_N")
+			(description "10k startup bias for MREQ_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1011,7 +1011,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k MREQ_N")
+					(name "Description") "10k startup bias for MREQ_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1047,9 +1047,9 @@
 		)
 		(comp
 			(ref "R4")
-			(value "10k IORQ_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k IORQ_N")
+			(description "10k startup bias for IORQ_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1057,7 +1057,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k IORQ_N")
+					(name "Description") "10k startup bias for IORQ_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1093,9 +1093,9 @@
 		)
 		(comp
 			(ref "R5")
-			(value "10k RD_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k RD_N")
+			(description "10k startup bias for RD_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1103,7 +1103,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k RD_N")
+					(name "Description") "10k startup bias for RD_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1139,9 +1139,9 @@
 		)
 		(comp
 			(ref "R6")
-			(value "10k WR_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k WR_N")
+			(description "10k startup bias for WR_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1149,7 +1149,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k WR_N")
+					(name "Description") "10k startup bias for WR_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1185,9 +1185,9 @@
 		)
 		(comp
 			(ref "R7")
-			(value "10k MCP_SO")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k MCP_SO")
+			(description "10k startup bias for MCP_SO")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1195,7 +1195,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k MCP_SO")
+					(name "Description") "10k startup bias for MCP_SO")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1231,9 +1231,9 @@
 		)
 		(comp
 			(ref "R8")
-			(value "10k SRAM_CE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_CE_N")
+			(description "10k startup bias for SRAM_CE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1241,7 +1241,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_CE_N")
+					(name "Description") "10k startup bias for SRAM_CE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1277,9 +1277,9 @@
 		)
 		(comp
 			(ref "R9")
-			(value "10k SRAM_OE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_OE_N")
+			(description "10k startup bias for SRAM_OE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1287,7 +1287,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_OE_N")
+					(name "Description") "10k startup bias for SRAM_OE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1323,9 +1323,9 @@
 		)
 		(comp
 			(ref "R10")
-			(value "10k SRAM_WE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_WE_N")
+			(description "10k startup bias for SRAM_WE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1333,7 +1333,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_WE_N")
+					(name "Description") "10k startup bias for SRAM_WE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1369,9 +1369,9 @@
 		)
 		(comp
 			(ref "R11")
-			(value "10k WAIT_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k WAIT_N")
+			(description "10k startup bias for WAIT_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1379,7 +1379,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k WAIT_N")
+					(name "Description") "10k startup bias for WAIT_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1415,9 +1415,9 @@
 		)
 		(comp
 			(ref "R12")
-			(value "10k INT_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k INT_N")
+			(description "10k startup bias for INT_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1425,7 +1425,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k INT_N")
+					(name "Description") "10k startup bias for INT_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1461,9 +1461,9 @@
 		)
 		(comp
 			(ref "R13")
-			(value "10k NMI_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k NMI_N")
+			(description "10k startup bias for NMI_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1471,7 +1471,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k NMI_N")
+					(name "Description") "10k startup bias for NMI_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1507,9 +1507,9 @@
 		)
 		(comp
 			(ref "R14")
-			(value "10k SRAM_WE_PRE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_WE_PRE_N")
+			(description "10k startup bias for SRAM_WE_PRE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1517,7 +1517,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_WE_PRE_N")
+					(name "Description") "10k startup bias for SRAM_WE_PRE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1553,9 +1553,9 @@
 		)
 		(comp
 			(ref "R15")
-			(value "10k SRAM_OE_PRE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_OE_PRE_N")
+			(description "10k startup bias for SRAM_OE_PRE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1563,7 +1563,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_OE_PRE_N")
+					(name "Description") "10k startup bias for SRAM_OE_PRE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1599,9 +1599,9 @@
 		)
 		(comp
 			(ref "R16")
-			(value "10k SRAM_CE_PRE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k SRAM_CE_PRE_N")
+			(description "10k startup bias for SRAM_CE_PRE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1609,7 +1609,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k SRAM_CE_PRE_N")
+					(name "Description") "10k startup bias for SRAM_CE_PRE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1645,9 +1645,9 @@
 		)
 		(comp
 			(ref "R17")
-			(value "10k PICO_BUSREQ_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_BUSREQ_N")
+			(description "10k startup bias for PICO_BUSREQ_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1655,7 +1655,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_BUSREQ_N")
+					(name "Description") "10k startup bias for PICO_BUSREQ_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1691,9 +1691,9 @@
 		)
 		(comp
 			(ref "R18")
-			(value "10k PICO_CE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_CE_N")
+			(description "10k startup bias for PICO_CE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1701,7 +1701,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_CE_N")
+					(name "Description") "10k startup bias for PICO_CE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1737,9 +1737,9 @@
 		)
 		(comp
 			(ref "R19")
-			(value "10k PICO_SPI_CS_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_CS_N")
+			(description "10k startup bias for PICO_SPI_CS_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1747,7 +1747,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_CS_N")
+					(name "Description") "10k startup bias for PICO_SPI_CS_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1783,9 +1783,9 @@
 		)
 		(comp
 			(ref "R20")
-			(value "10k PICO_WE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_WE_N")
+			(description "10k startup bias for PICO_WE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1793,7 +1793,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_WE_N")
+					(name "Description") "10k startup bias for PICO_WE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1829,9 +1829,9 @@
 		)
 		(comp
 			(ref "R21")
-			(value "10k PICO_OE_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_OE_N")
+			(description "10k startup bias for PICO_OE_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1839,7 +1839,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_OE_N")
+					(name "Description") "10k startup bias for PICO_OE_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1875,9 +1875,9 @@
 		)
 		(comp
 			(ref "R22")
-			(value "10k PICO_CLK")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_CLK")
+			(description "10k startup bias for PICO_CLK")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1885,7 +1885,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_CLK")
+					(name "Description") "10k startup bias for PICO_CLK")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1921,9 +1921,9 @@
 		)
 		(comp
 			(ref "R23")
-			(value "10k RESET_N")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k RESET_N")
+			(description "10k startup bias for RESET_N")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1931,7 +1931,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k RESET_N")
+					(name "Description") "10k startup bias for RESET_N")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -1967,9 +1967,9 @@
 		)
 		(comp
 			(ref "R24")
-			(value "10k DATA_ENABLE")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k DATA_ENABLE")
+			(description "10k startup bias for DATA_ENABLE")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -1977,7 +1977,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k DATA_ENABLE")
+					(name "Description") "10k startup bias for DATA_ENABLE")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2013,9 +2013,9 @@
 		)
 		(comp
 			(ref "R25")
-			(value "10k DATA_DIR")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k DATA_DIR")
+			(description "10k startup bias for DATA_DIR")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2023,7 +2023,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k DATA_DIR")
+					(name "Description") "10k startup bias for DATA_DIR")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2059,9 +2059,9 @@
 		)
 		(comp
 			(ref "R26")
-			(value "10k ADDR_ENABLE")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k ADDR_ENABLE")
+			(description "10k startup bias for ADDR_ENABLE")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2069,7 +2069,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k ADDR_ENABLE")
+					(name "Description") "10k startup bias for ADDR_ENABLE")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2105,9 +2105,9 @@
 		)
 		(comp
 			(ref "R27")
-			(value "10k PICO_SPI_SCK")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_SCK")
+			(description "10k startup bias for PICO_SPI_SCK")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2115,7 +2115,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_SCK")
+					(name "Description") "10k startup bias for PICO_SPI_SCK")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2151,9 +2151,9 @@
 		)
 		(comp
 			(ref "R28")
-			(value "10k PICO_SPI_MOSI")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k PICO_SPI_MOSI")
+			(description "10k startup bias for PICO_SPI_MOSI")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2161,7 +2161,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k PICO_SPI_MOSI")
+					(name "Description") "10k startup bias for PICO_SPI_MOSI")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2197,9 +2197,9 @@
 		)
 		(comp
 			(ref "R29")
-			(value "4.7k MCP reset base")
+			(value "4.7k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 4.7k MCP reset base")
+			(description "MCP reset transistor base resistor")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2207,7 +2207,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 4.7k MCP reset base")
+					(name "Description") "MCP reset transistor base resistor")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2243,9 +2243,9 @@
 		)
 		(comp
 			(ref "R30")
-			(value "47k MCP reset base pull-down")
+			(value "47k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 47k MCP reset base pull-down")
+			(description "MCP reset transistor base-emitter pull-down")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2253,7 +2253,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 47k MCP reset base pull-down")
+					(name "Description") "MCP reset transistor base-emitter pull-down")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2289,9 +2289,9 @@
 		)
 		(comp
 			(ref "R31")
-			(value "10k MCP RESET# pull-up")
+			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "Z80ROMlessSBC 10k MCP RESET# pull-up")
+			(description "MCP RESET# pull-up")
 			(fields
 				(field
 					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2299,7 +2299,7 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 10k MCP RESET# pull-up")
+					(name "Description") "MCP RESET# pull-up")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2335,17 +2335,17 @@
 		)
 		(comp
 			(ref "RN1")
-			(value "8x10k A0-A7 pull-up")
-			(description "Z80ROMlessSBC 8x10k A0-A7 pull-up")
+			(value "8x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP9")
+			(description "A0-A7 pull-up network")
 			(fields
 				(field
-					(name "Footprint")
-				)
+					(name "Footprint") "Resistor_THT:R_Array_SIP9")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 8x10k A0-A7 pull-up")
+					(name "Description") "A0-A7 pull-up network")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2402,17 +2402,17 @@
 		)
 		(comp
 			(ref "RN2")
-			(value "8x10k A8-A15 pull-up")
-			(description "Z80ROMlessSBC 8x10k A8-A15 pull-up")
+			(value "8x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP9")
+			(description "A8-A15 pull-up network")
 			(fields
 				(field
-					(name "Footprint")
-				)
+					(name "Footprint") "Resistor_THT:R_Array_SIP9")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 8x10k A8-A15 pull-up")
+					(name "Description") "A8-A15 pull-up network")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2469,17 +2469,17 @@
 		)
 		(comp
 			(ref "RN3")
-			(value "8x10k Pico D0-D7 pull-down")
-			(description "Z80ROMlessSBC 8x10k Pico D0-D7 pull-down")
+			(value "8x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP9")
+			(description "Pico D0-D7 pull-down network")
 			(fields
 				(field
-					(name "Footprint")
-				)
+					(name "Footprint") "Resistor_THT:R_Array_SIP9")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC 8x10k Pico D0-D7 pull-down")
+					(name "Description") "Pico D0-D7 pull-down network")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -2566,6 +2566,264 @@
 				(tstamps "/")
 			)
 			(tstamps "9cd720dd-dd82-50cc-924d-232daebbcb1f")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP2")
+			(value "CLK TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC CLK TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC CLK TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "313234fa-9a09-5925-928a-ffde1f65c7ef")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP3")
+			(value "RESET# TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC RESET# TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC RESET# TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "acd828d8-32e3-53da-a5af-e3494b354ba5")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP4")
+			(value "WAIT# TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC WAIT# TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC WAIT# TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "73c86315-8a9c-5588-a806-77026b21b200")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP5")
+			(value "BUSREQ# TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC BUSREQ# TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC BUSREQ# TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "bc767725-3959-5fdc-adcf-18afa2e68ff8")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP6")
+			(value "BUSACK# TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC BUSACK# TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC BUSACK# TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "ee10098b-3242-58dc-a55c-9ff663759803")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "TP7")
+			(value "GND TEST")
+			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+			(description "Z80ROMlessSBC GND TEST")
+			(fields
+				(field
+					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC GND TEST")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "TESTPOINT")
+				(description "Z80ROMlessSBC project symbol: M1# TEST")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "a8206f66-d9d0-5a6e-a33f-19a843f0dbb1")
 			(units
 				(unit
 					(name "A")
@@ -5984,6 +6242,12 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "TP6")
+				(pin "1")
+				(pinfunction "TP_1")
+				(pintype "passive")
+			)
+			(node
 				(ref "U1")
 				(pin "23")
 				(pinfunction "BUSACK#_23")
@@ -6010,6 +6274,12 @@
 				(ref "R1")
 				(pin "1")
 				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "TP5")
+				(pin "1")
+				(pinfunction "TP_1")
 				(pintype "passive")
 			)
 			(node
@@ -6525,6 +6795,12 @@
 				(ref "RN3")
 				(pin "1")
 				(pinfunction "COMMON_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "TP7")
+				(pin "1")
+				(pinfunction "TP_1")
 				(pintype "passive")
 			)
 			(node
@@ -7435,6 +7711,12 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "TP3")
+				(pin "1")
+				(pinfunction "TP_1")
+				(pintype "passive")
+			)
+			(node
 				(ref "U1")
 				(pin "26")
 				(pinfunction "RESET#_26")
@@ -7613,6 +7895,12 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "TP4")
+				(pin "1")
+				(pinfunction "TP_1")
+				(pintype "passive")
+			)
+			(node
 				(ref "U1")
 				(pin "24")
 				(pinfunction "WAIT#_24")
@@ -7658,6 +7946,12 @@
 			(code "82")
 			(name "/Z80_CLK")
 			(class "Default")
+			(node
+				(ref "TP2")
+				(pin "1")
+				(pinfunction "TP_1")
+				(pintype "passive")
+			)
 			(node
 				(ref "U1")
 				(pin "6")

@@ -394,12 +394,14 @@ schematic = Schematic(
 placements: dict[str, tuple[str, float, float]] = {}
 pin_points: dict[tuple[str, str], tuple[float, float, str]] = {}
 net_endpoints: dict[str, list[str]] = {}
+component_details: dict[str, dict[str, str]] = {}
 references: set[str] = set()
 
 
 def instance_properties(
     reference: str,
     value: str,
+    description: str,
     x: float,
     y: float,
     geometry: SymbolGeometry,
@@ -410,7 +412,7 @@ def instance_properties(
         property_value("Value", value, x, y + geometry.half_height + 5.08),
         property_value("Footprint", footprint, x, y, hide=True),
         property_value("Datasheet", "", x, y, hide=True),
-        property_value("Description", f"Z80ROMlessSBC {value}", x, y, hide=True),
+        property_value("Description", description, x, y, hide=True),
     ]
 
 
@@ -423,6 +425,7 @@ def add_component(
     pin_nets: dict[int | str, str | None],
     *,
     footprint: str = "",
+    description: str | None = None,
 ) -> None:
     if reference in references:
         raise ValueError(f"duplicate reference {reference}")
@@ -444,7 +447,11 @@ def add_component(
         inBom=symbol_name != "PWR_FLAG",
         onBoard=symbol_name != "PWR_FLAG",
         uuid=symbol_uuid,
-        properties=instance_properties(reference, value, x, y, geometry, footprint),
+        properties=instance_properties(
+            reference, value,
+            description or f"Z80ROMlessSBC {value}",
+            x, y, geometry, footprint,
+        ),
         pins={number: uid(f"pin:{reference}:{number}") for number in expected_pins},
         instances=[SymbolProjectInstance(
             name=PROJECT_NAME,
@@ -456,6 +463,12 @@ def add_component(
         )],
     ))
     placements[reference] = (symbol_name, x, y)
+    component_details[reference] = {
+        "symbol": symbol_name,
+        "value": value,
+        "footprint": footprint,
+        "description": description or f"Z80ROMlessSBC {value}",
+    }
 
     for raw_number, net in pin_nets.items():
         number = str(raw_number)
@@ -564,9 +577,24 @@ mcp_nets.update({
 mcp_nets.update({number + 21: f"A{number}" for number in range(8)})
 add_component("U8", "MCP23S17", "MCP23S17-E/SP", 254.0, 482.6, mcp_nets, footprint="Package_DIP:DIP-28_W7.62mm")
 add_component("Q1", "NPN", "2N3904 MCP RESET", 355.6, 482.6, {1: "GND", 2: "MCP_RESET_BASE", 3: "MCP_RESET_N"}, footprint="Package_TO_SOT_THT:TO-92_Inline")
-add_component("RN1", "RN8", "8x10k A0-A7 pull-up", 152.4, 533.4, {1: "+5V", **{number + 2: f"A{number}" for number in range(8)}})
-add_component("RN2", "RN8", "8x10k A8-A15 pull-up", 254.0, 533.4, {1: "+5V", **{number + 2: f"A{number + 8}" for number in range(8)}})
-add_component("RN3", "RN8", "8x10k Pico D0-D7 pull-down", 914.4, 355.6, {1: "GND", **{number + 2: f"PICO_D{number}" for number in range(8)}})
+add_component(
+    "RN1", "RN8", "8x10k bussed", 152.4, 533.4,
+    {1: "+5V", **{number + 2: f"A{number}" for number in range(8)}},
+    footprint="Resistor_THT:R_Array_SIP9",
+    description="A0-A7 pull-up network",
+)
+add_component(
+    "RN2", "RN8", "8x10k bussed", 254.0, 533.4,
+    {1: "+5V", **{number + 2: f"A{number + 8}" for number in range(8)}},
+    footprint="Resistor_THT:R_Array_SIP9",
+    description="A8-A15 pull-up network",
+)
+add_component(
+    "RN3", "RN8", "8x10k bussed", 914.4, 355.6,
+    {1: "GND", **{number + 2: f"PICO_D{number}" for number in range(8)}},
+    footprint="Resistor_THT:R_Array_SIP9",
+    description="Pico D0-D7 pull-down network",
+)
 
 up_nets = {1: "+5V", 10: "GND", 19: "DATA_UP_OE_N", 20: "+5V"}
 down_nets = {1: "GND", 10: "GND", 19: "DATA_DOWN_OE_N", 20: "+3V3"}
@@ -591,10 +619,26 @@ pico_nets = {
 }
 add_component("A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets, footprint="Module:RaspberryPi_Pico_Common_THT")
 
-add_component("J1", "SUPPLY", "REGULATED 5V INPUT", 50.8, 50.8, {1: "+5V", 2: "GND"})
+add_component(
+    "J1", "SUPPLY", "REGULATED 5V INPUT", 50.8, 50.8,
+    {1: "+5V", 2: "GND"},
+    footprint="TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm",
+)
 add_component("D1", "DIODE", "1N5819", 127.0, 50.8, {1: "VSYS", 2: "+5V"}, footprint="Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal")
 add_component("#FLG01", "PWR_FLAG", "PWR_FLAG", 203.2, 50.8, {1: "VSYS"})
 add_component("TP1", "TESTPOINT", "M1# TEST", 482.6, 50.8, {1: "M1_N"}, footprint="TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+for reference, value, net, x in (
+    ("TP2", "CLK TEST", "Z80_CLK", 533.4),
+    ("TP3", "RESET# TEST", "RESET_N", 584.2),
+    ("TP4", "WAIT# TEST", "WAIT_N", 635.0),
+    ("TP5", "BUSREQ# TEST", "BUSREQ_N", 685.8),
+    ("TP6", "BUSACK# TEST", "BUSACK_N", 736.6),
+    ("TP7", "GND TEST", "GND", 787.4),
+):
+    add_component(
+        reference, "TESTPOINT", value, x, 50.8, {1: net},
+        footprint="TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
+    )
 
 
 PULLS = [
@@ -614,32 +658,46 @@ for index, (signal, rail) in enumerate(PULLS, start=1):
     row = (index - 1) // 15
     column = (index - 1) % 15
     add_component(
-        f"R{index}", "RESISTOR", f"10k {signal}",
+        f"R{index}", "RESISTOR", "10k",
         50.8 + column * 71.12, 660.4 + row * 50.8,
         {1: signal, 2: rail},
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+        description=f"10k startup bias for {signal}",
     )
-add_component("R29", "RESISTOR", "4.7k MCP reset base", 50.8, 736.6, {1: "MCP_RESET_DRIVE", 2: "MCP_RESET_BASE"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-add_component("R30", "RESISTOR", "47k MCP reset base pull-down", 127.0, 736.6, {1: "MCP_RESET_BASE", 2: "GND"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-add_component("R31", "RESISTOR", "10k MCP RESET# pull-up", 203.2, 736.6, {1: "MCP_RESET_N", 2: "+5V"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+add_component("R29", "RESISTOR", "4.7k", 50.8, 736.6, {1: "MCP_RESET_DRIVE", 2: "MCP_RESET_BASE"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base resistor")
+add_component("R30", "RESISTOR", "47k", 127.0, 736.6, {1: "MCP_RESET_BASE", 2: "GND"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base-emitter pull-down")
+add_component("R31", "RESISTOR", "10k", 203.2, 736.6, {1: "MCP_RESET_N", 2: "+5V"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP RESET# pull-up")
 
 
 CAPACITORS = [
-    ("100n U1 Z80", "+5V"), ("100n U2 SRAM", "+5V"),
-    ("100n U3 GAL", "+5V"), ("100n U4 AHCT244", "+5V"),
-    ("100n U7 LVC244", "+3V3"), ("100n U8 MCP", "+5V"),
-    ("100n U9 AHCT245", "+5V"), ("100n U10 LVC245", "+3V3"),
-    ("22u Memory Board", "+5V"), ("22u Core Board", "+5V"),
-    ("22u Peripheral Board", "+5V"), ("100u Supply Entry", "+5V"),
+    ("100n", "U1 Z80 bypass", "+5V"),
+    ("100n", "U2 SRAM bypass", "+5V"),
+    ("100n", "U3 GAL bypass", "+5V"),
+    ("100n", "U4 AHCT244 bypass", "+5V"),
+    ("100n", "U7 LVC244 bypass", "+3V3"),
+    ("100n", "U8 MCP23S17 bypass", "+5V"),
+    ("100n", "U9 AHCT245 bypass", "+5V"),
+    ("100n", "U10 LVC245 bypass", "+3V3"),
+    ("22u", "Memory cluster bulk", "+5V"),
+    ("22u", "Core cluster bulk", "+5V"),
+    ("22u", "Peripheral cluster bulk", "+5V"),
+    ("100u", "Supply-entry bulk", "+5V"),
 ]
-if sum(value.startswith("100n") for value, _ in CAPACITORS) != 8:
+if sum(value == "100n" for value, _, _ in CAPACITORS) != 8:
     raise AssertionError("decoupling count must remain 8")
-for index, (value, rail) in enumerate(CAPACITORS, start=1):
+for index, (value, role, rail) in enumerate(CAPACITORS, start=1):
+    if value == "100n":
+        footprint = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm"
+    elif value.startswith("22u"):
+        footprint = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+    else:
+        footprint = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
     add_component(
         f"C{index}", "CAPACITOR", value,
         50.8 + (index - 1) * 76.2, 787.4,
         {1: rail, 2: "GND"},
-        footprint="Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm",
+        footprint=footprint,
+        description=role,
     )
 
 
@@ -793,6 +851,10 @@ manifest = {
     "schematic": str(SCHEMATIC_PATH.relative_to(REPO_ROOT)),
     "component_count": len(physical_references),
     "components": physical_references,
+    "component_details": {
+        reference: component_details[reference]
+        for reference in physical_references
+    },
     "erc_symbols": erc_references,
     "nets": {net: sorted(endpoints) for net, endpoints in sorted(net_endpoints.items())},
 }

@@ -232,21 +232,22 @@ signals pass through an intermediate chip as series logic.
 
 | Artifact | Purpose |
 | --- | --- |
-| [KiCad project](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro) and [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch) | Editable KiCad 10 source |
+| [KiCad project](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro), [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch), and [routed PCB](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pcb) | Editable KiCad 10 sources |
 | [Project symbol library](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80sbc.kicad_sym) | Exact local pin names, numbers, and ERC electrical types |
 | [SVG export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.svg) and [PDF export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.pdf) | Zoomable full schematic renderings |
 | [KiCad netlist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
-| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) | KiCad 10.0.6 result: zero violations with errors, warnings, and exclusions included |
+| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) and [PCB DRC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-drc.json) | KiCad 10.0.6 results: zero violations and zero unconnected PCB items |
 
-The schematic contains 59 physical components, including 31 discrete
-resistors, three SIP networks, and 12 fitted capacitors, plus one nonphysical
-`#FLG01` power marker used only by ERC. KiCad's exported netlist
-matches the independently generated manifest exactly: 79 real nets
-and 349 component pin endpoints. The ERC-only power marker and KiCad's
+The schematic contains 65 physical components, including 31 discrete
+resistors, three SIP networks, 12 fitted capacitors, and seven loop test
+points, plus one nonphysical `#FLG01` power marker used only by ERC. KiCad's
+exported netlist matches the independently generated manifest exactly: 79 real
+nets and 355 component pin endpoints. The ERC-only power marker and KiCad's
 synthetic no-connect nets are excluded from that comparison.
 
-To regenerate and validate the native source, exports, strict ERC
-report, and independent netlist comparison:
+To regenerate and validate the native source, schematic and PCB exports,
+strict ERC/DRC reports, manufacturing package, and independent netlist
+comparison:
 
 ```sh
 python3 -m venv .venv-kicad
@@ -255,11 +256,58 @@ PYTHON=.venv-kicad/bin/python npm run kicad
 ```
 
 The command runs [build-kicad-schematic.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-schematic.py),
-KiCad CLI upgrade/export/ERC, and
+[build-kicad-pcb.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-pcb.py),
+KiCad CLI upgrade/export/ERC/DRC, and
 [check-kicad-netlist.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/check-kicad-netlist.py). Any ERC
-violation or net/endpoint mismatch fails the build.
+or DRC violation, unconnected PCB item, or net/endpoint mismatch fails the
+build. Set `KICAD_PYTHON` when KiCad's `pcbnew` module is not available to the
+normal Python interpreter.
 
-## 3.3 High-Speed Interconnect Routing
+## 3.3 PCB implementation
+
+The PCB alternative preserves the schematic's bus ownership, voltage
+translation, reset, and power-sequencing rules on one 180 x 135 mm,
+two-layer, all-through-hole board. All active devices remain socketable.
+
+- U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 GAL form the short
+  address/control spine. U4 sits immediately beside U1; the local Z80 clock
+  route, including TP2, is about 62 mm of routed copper. Their socket-row
+  center spacing leaves more than 2 mm beyond the combined conventional
+  socket-body half-widths.
+- U9/U10 and U7 sit between the shared buses and the Pico 2 W.
+- A broad bottom-layer GND pour provides short return paths, although
+  bottom-layer signal routing crosses portions of it. All 79 nets are routed,
+  with no DRC violations or unconnected items.
+- The Pico 2 W antenna end sits over a 15 x 11.5 mm board-edge cutout. Its
+  official footprint also supplies the required no-copper keepout. The USB
+  connector faces inward; keep the corridor from the connector toward the
+  upper board edge clear when fitting sockets or mounting the board. BOOTSEL
+  and SWD remain accessible from above.
+- TP1-TP7 expose M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND.
+- `PICO_CLK` and `Z80_CLK` use a dedicated 0.40 mm-clearance netclass.
+  The Pico-side startup-bias resistors sit beside the Pico rather than pulling
+  those controls through the lower-left resistor bank.
+- Four 3.2 mm non-plated holes provide M3 mounting points.
+- J1 is a 5.00 mm-pitch screw terminal. C9-C11 use 8 mm / 3.5 mm-pitch
+  electrolytic footprints and C12 uses a 10 mm / 5 mm-pitch footprint.
+
+The routed design is electrically complete but not hardware-qualified. First
+power-up still begins at 1 MHz and follows the staged checks and
+[frequency qualification procedure](../implementation/frequency-qualification.md).
+
+| PCB artifact | Purpose |
+| --- | --- |
+| `hardware/kicad/z80_romless_sbc.kicad_pcb` | Routed editable PCB |
+| `hardware/kicad/exports/z80_romless_sbc-pcb.png` | 3D assembly preview |
+| `hardware/kicad/exports/z80_romless_sbc-pcb.svg` / `.pdf` | Copper, silkscreen, and outline drawings |
+| `hardware/kicad/reports/z80_romless_sbc-drc.json` | Strict DRC result |
+| `hardware/kicad/reports/z80_romless_sbc-stats.json` | Board dimensions, layers, pads, drills, and routing statistics |
+| `hardware/kicad/fabrication/z80_romless_sbc-gerbers.zip` | Gerber and plated/non-plated drill package |
+| `hardware/kicad/fabrication/z80_romless_sbc-bom.csv` | Generated component BOM |
+| `hardware/kicad/fabrication/z80_romless_sbc-positions.csv` | Through-hole placement coordinates |
+| `hardware/kicad/fabrication/z80_romless_sbc.ipc` | IPC-D-356 electrical test netlist |
+
+## 3.4 High-Speed Interconnect Routing
 
 At the target 1-6 MHz clock rates, propagation skew from a few
 millimetres of wire-length difference is negligible compared with the
@@ -298,7 +346,7 @@ ground probe points near CLK, IORQ#, MREQ#, RD#, WR#, SRAM CE#/OE#/WE#,
 and each bus transceiver. Keep all jumpers as short as the placement
 allows.
 
-## 3.4 Major Chip Interconnection Overview
+## 3.5 Major Chip Interconnection Overview
 
 ```mermaid
 block-beta
