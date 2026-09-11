@@ -122,7 +122,7 @@ of Pico/GAL TTL HIGHs.
 
 ### PCB assembly alternative
 
-The KiCad design provides a single **180 x 135 mm, two-layer, all-through-hole
+The KiCad design provides a single **160 x 135 mm, two-layer, all-through-hole
 PCB** as an alternative to the three-breadboard build. It uses the same nine
 active packages and electrical safeguards. In addition to the semiconductor,
 socket, resistor, capacitor, diode, and power-terminal items above, the PCB

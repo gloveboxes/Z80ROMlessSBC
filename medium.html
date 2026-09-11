@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Dream It, Build It: Designing a Z80 PCB with GitHub
+Copilot</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<h1 id="dream-it-build-it-designing-a-z80-pcb-with-github-copilot">Dream
+It, Build It: Designing a Z80 PCB with GitHub Copilot</h1>
+<p><img src="images/medium-banner.png"
+alt="Z80 ROMless SBC design workflow using GitHub Copilot CLI and GPT-6 Astra, with KiCad PCB layout and 3D board preview." /></p>
+<p><em>From a complete design specification to a routed PCB in a few
+hours with GitHub Copilot CLI and GPT-6 Astra.</em></p>
+<p>Designing this PCB myself would have taken days, probably weeks. With
+GitHub Copilot CLI and GPT-6 Astra doing the agent-led work, it came
+together in a few hours. That still amazes me. Projects that once felt
+out of reach now feel possible, and that's what really excites me.</p>
+<p>The project is my <strong>Z80 ROMless SBC</strong>, a single-board
+computer pairing a Z80 processor with a Raspberry Pi Pico 2 W. The Pico
+loads software into SRAM and provides the clock, storage, and terminal
+services. A little old-school computing with a modern supervisor.</p>
+<p>I used <strong>GPT-5.6 Sol and GPT-6 Astra with GitHub Copilot for
+the engineering design</strong>, then <strong>GPT-6 Astra through
+Copilot CLI to plan and implement the PCB</strong>.</p>
+<p>To be clear, those few hours were the PCB design work, starting from
+a complete engineering specification. The physical board still needs to
+be built and tested. But getting from that specification to a routed
+KiCad design is a substantial piece of work, and that's the part I want
+to share.</p>
+<h2 id="first-give-it-something-to-work-with">First, Give It Something
+to Work With</h2>
+<p>There are plenty of decisions hiding inside "design a Z80 computer."
+Which memory? Who owns the bus? How do you connect 5 V logic to a 3.3 V
+Pico without damaging anything?</p>
+<p>I'd already worked through those questions in the project
+specification. It covered the components, pin assignments, voltage
+levels, bus ownership, firmware responsibilities, and bring-up
+sequence.</p>
+<p>I gave Copilot that specification and used <code>/plan</code> with
+GPT-6 Astra to work out the implementation. The plan covered the
+schematic, component placement, routing, checks, and manufacturing
+files.</p>
+<p>I also set constraints: two copper layers, the specified components,
+careful routing of the timing-sensitive address and data buses,
+accessible connectors, and room for the Pico's USB cable and antenna.
+These sound like small details until you have a nicely routed board with
+nowhere to plug in the cable!</p>
+<p><img src="images/z80-pico-detail.png"
+alt="KiCad close-ups comparing the Pico&#39;s outward-facing USB connector in 3D with the top-copper view of the antenna cutout beneath it." /></p>
+<p><em>Two views of one constraint: USB access on the left, the cutout
+beneath the antenna on the right.</em></p>
+<p>The bus routing deserves a little explanation. Signals take time to
+travel along a PCB trace. A longer route generally adds more delay, so
+bits sent together can arrive at slightly different times. That
+difference is called <em>skew</em>. The address must settle early enough
+for memory to respond, and data must be stable before and briefly after
+the receiving chip samples it. Get those timings wrong and you can read
+the wrong byte or write to the wrong location.</p>
+<p>Keeping related paths similar in length can reduce skew, but this Z80
+board doesn't need every trace to be exactly the same length. The
+routing rules favour short, direct paths with short branches, and flag
+unusually long routes for review rather than adding meanders just to
+match lengths. Fast signal edges still matter, even at a modest clock
+speed. The final proof comes from measurements at the receiving
+pins.</p>
+<p><img src="images/z80-bus-routing-detail.png"
+alt="KiCad routing close-up around the Z80 CPU U1, SRAM U2, and address interface U8, showing copper tracks, pads, vias, and the back-layer ground pour." /></p>
+<p><em>A closer look at the CPU and memory connections. The route
+between pins matters, not just whether they connect.</em></p>
+<h2 id="then-let-the-agent-get-on-with-it">Then Let the Agent Get On
+With It</h2>
+<p>With the plan agreed, GPT-6 Astra carried out the work. Copilot wrote
+Python generators, ran the design tools, inspected reports, and revised
+the design.</p>
+<p>I wasn't placing every component or drawing each trace. My role was
+to provide the requirements, resolve decisions, and review what came
+back. The agent was doing the implementation, including the repetitive
+checking that makes PCB work take time.</p>
+<p>Here's what it had to work with:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GitHub Copilot CLI + GPT-6 Astra</td>
+<td>Plan the work, write files, run tools, and iterate</td>
+</tr>
+<tr>
+<td>Python and <code>kiutils</code></td>
+<td>Generate the schematic and pin-to-net manifest</td>
+</tr>
+<tr>
+<td>KiCad's <code>pcbnew</code> Python API</td>
+<td>Generate placement, board geometry, rules, and copper zones</td>
+</tr>
+<tr>
+<td>Freerouting</td>
+<td>Route the two-layer board</td>
+</tr>
+<tr>
+<td><code>kicad-cli</code></td>
+<td>Run checks and export manufacturing files</td>
+</tr>
+<tr>
+<td>Bash and npm</td>
+<td>Run the repeatable build and validation pipeline</td>
+</tr>
+</tbody>
+</table>
+<p>The whole build runs through one command:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run kicad</span></code></pre></div>
+<p>Underneath that command, Python generates the schematic and board,
+Freerouting connects the tracks, and KiCad checks and exports the
+result. npm is just the entry point.</p>
+<h2 id="give-it-tools-that-can-say-thats-wrong">Give It Tools That Can
+Say "That's Wrong"</h2>
+<p>The useful thing about KiCad here is its command-line interface.
+Copilot could run Electrical Rules Check (ERC) on the schematic and
+Design Rules Check (DRC) on the PCB, then use the reports to guide the
+next change.</p>
+<p>The project also checks the design against its expected <strong>79
+nets and 355 physical endpoints</strong>. That catches a different
+problem: a board can satisfy KiCad's rules and still connect the wrong
+pins for <em>this</em> computer.</p>
+<p>Placement, mounting holes, connector alignment, the antenna cutout,
+and ground zones all have checks too. The finish line was zero ERC
+violations, zero DRC violations, and no unconnected items. Hiding a
+warning with an exclusion wasn't an acceptable shortcut.</p>
+<p>Routing was an iterative process: generate placement, route, refill
+the ground zones, check, and revise. Route-length reports helped flag
+long branches and unnecessary vias for inspection.</p>
+<p>Here's where the specification starts to look like a computer. The
+KiCad layout below shows the copper routes joining the Z80, SRAM, bus
+interfaces, and Pico headers. Those red and blue lines are the
+connections the agent generated through the routing workflow, not traces
+I drew by hand.</p>
+<p><img src="images/z80-pcb.png"
+alt="KiCad PCB layout of the Z80 ROMless SBC, showing component footprints and routing across two copper layers." /></p>
+<p><em>From pin assignments in a specification to connections on a
+two-layer board.</em></p>
+<p>One detail I liked: the accepted Freerouting session is saved, and
+the build checks that it reproduces the same tracks and vias. Running
+the autorouter again can produce a different result, so keeping the
+reviewed route matters.</p>
+<h2 id="now-it-looks-like-a-computer">Now It Looks Like a Computer</h2>
+<p>The 3D view makes the result much easier to picture. You can see the
+large DIP chips, rows of resistors, test points, and the Pico tucked
+into the bottom-left corner with its USB connector facing outwards.</p>
+<p><img src="images/z80-3d-render.png"
+alt="KiCad 3D render of the proposed Z80 ROMless SBC with through-hole components and a Raspberry Pi Pico 2 W at the bottom left." /></p>
+<p><em>A preview of the proposed assembly, not a photograph of a built
+board.</em></p>
+<p>This is a useful change of perspective: the routing view helps
+inspect connections, while the 3D view helps review placement,
+orientation, and access. Seeing the design as a board full of components
+brings that "dream it, build it" idea a little closer. Physical
+clearances still need checking against the actual parts.</p>
+<h2 id="keep-what-you-learn">Keep What You Learn</h2>
+<p>The repository includes a <code>kicad-pcb</code> Copilot skill with
+the tools, commands, constraints, and validation steps for this
+project.</p>
+<p>It records practical lessons such as using KiCad's bundled Python
+environment, keeping bypass capacitors close to their supply pins, and
+leaving the Pico antenna clear of copper and board material.</p>
+<p>That saves explaining everything again in the next session. The agent
+can pick up the project with those decisions already available.</p>
+<h2 id="from-the-screen-to-the-fabricator">From the Screen to the
+Fabricator</h2>
+<p>The agent also used KiCad to generate the manufacturing package, not
+just the images. The upload ZIP contains <strong>Gerber files</strong>
+for the copper layers, solder mask, silkscreen, and board outline, plus
+<strong>Excellon drill files</strong> for plated and non-plated holes.
+Together, these describe the patterns to manufacture, where to drill,
+and the outline and cutouts to machine.</p>
+<p><img src="images/z80-fabrication-layers.png"
+alt="KiCad plot of the Z80 board&#39;s front copper, pad and via drill openings, board outline, and antenna cutout." /></p>
+<p><em>The front copper and board outline, exported directly from KiCad.
+This is a layer plot illustrating the manufacturing geometry, not a
+Gerber Viewer screenshot or the complete production package.</em></p>
+<p>Alongside that ZIP, it generated the bill of materials,
+component-placement CSV, electrical test netlist, and assembly drawings.
+The pipeline stages the outputs and only replaces the existing package
+after validation passes.</p>
+<p>That's a substantial handoff to have ready in a few hours. Before
+uploading it to a PCB manufacturer, I still need to review the
+production files and confirm the board specifications and manufacturing
+options.</p>
+<h2 id="next-stop-the-workbench">Next Stop, the Workbench</h2>
+<p>There is still a real board to build. Clean KiCad reports don't prove
+that the power is stable, the signals are clean, or the computer will
+run reliably. Bring-up starts at 1 MHz, with an oscilloscope and logic
+analyzer to check what actually happens.</p>
+<p>That's the next part of the project, not something I'm claiming the
+agent has already solved.</p>
+<p>But a few hours to get this far? For me, that changes which projects
+feel practical to take on. Days or weeks of PCB design is a big
+commitment. A few hours of agent-led work, with a specification and
+tools to check it, makes exploring an idea much more approachable.</p>
+<p><strong>Dream it, build it.</strong> This project has made that feel
+a lot more achievable.</p>
+<p>The <a href="https://github.com/gloveboxes/Z80ROMlessSBC">source,
+KiCad design, and documentation are on GitHub</a>. Have a look at the
+skill and build scripts as well as the board. They're the parts you can
+adapt to your own project.</p>
+<p>What would you build if the first version took hours rather than
+weeks? Let me know in the comments.</p>
+<p>Cheers, Dave</p>
+</body>
+</html>

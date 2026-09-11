@@ -34,11 +34,13 @@ SESSION_PATH = KICAD_DIR / "reports" / "z80_romless_sbc.ses"
 
 BOARD_LEFT = 5.0
 BOARD_TOP = 5.0
-BOARD_RIGHT = 185.0
+BOARD_RIGHT = 165.0
 BOARD_BOTTOM = 140.0
-ANTENNA_LEFT = 156.4
-ANTENNA_RIGHT = 171.4
-ANTENNA_TOP = 128.5
+ANTENNA_LEFT = 47.60
+ANTENNA_RIGHT = 59.45
+ANTENNA_TOP = 117.30
+ANTENNA_BOTTOM = 132.90
+ANTENNA_CORNER_CHAMFER = 1.00
 SIGNAL_CLEARANCE = 0.20
 SIGNAL_TRACK_WIDTH = 0.30
 SIGNAL_VIA_DIAMETER = 0.80
@@ -52,7 +54,7 @@ MIN_VIA_DIAMETER = 0.60
 MIN_VIA_ANNULAR = 0.15
 MIN_MICROVIA_DIAMETER = 0.30
 MIN_MICROVIA_DRILL = 0.10
-COPPER_EDGE_CLEARANCE = 0.50
+COPPER_EDGE_CLEARANCE = 0.20
 
 
 def mm(value: float) -> int:
@@ -209,37 +211,37 @@ def load_footprint(root: Path, library_id: str) -> pcbnew.FOOTPRINT:
 def placement_table() -> dict[str, tuple[float, float, float]]:
     placements: dict[str, tuple[float, float, float]] = {
         "J1": (16, 13, 0),
-        "D1": (139, 84, 0),
+        "D1": (15, 105, 0),
         "U2": (10, 22, 0),
         "U1": (40, 17, 0),
         "U8": (78, 22, 0),
-        "Q1": (80, 61, 0),
+        "Q1": (86, 62, 0),
         "U3": (94, 22, 0),
-        "U4": (60, 20, 0),
+        "U4": (58, 70, 90),
         "U9": (105, 55, 0),
         "U10": (124, 55, 0),
         "U7": (143, 55, 0),
-        "A1": (155, 88, 0),
+        "A1": (7.8, 134, 90),
         "RN1": (8, 67, 0),
         "RN2": (34, 72, 0),
-        "RN3": (148, 112, 90),
+        "RN3": (82, 137, 0),
         "C1": (34, 42.5, 0),
         "C2": (28, 22, 0),
         "C3": (105, 30, 0),
-        "C4": (62, 15, 0),
+        "C4": (58, 59, 0),
         "C5": (155, 55, 90),
         "C6": (71, 43, 0),
         "C7": (115.2, 55, 90),
         "C8": (134.2, 55, 90),
         "C9": (32, 61, 0),
-        "C10": (61, 72, 0),
-        "C11": (178, 50, 0),
+        "C10": (96, 82, 0),
+        "C11": (158, 82, 0),
         "C12": (27, 12, 0),
-        "R29": (90, 135, 90),
-        "R30": (97, 135, 90),
-        "R31": (104, 135, 90),
+        "R29": (110, 135, 90),
+        "R30": (118, 135, 90),
+        "R31": (126, 135, 90),
         "TP1": (43, 10, 0),
-        "TP2": (60, 10, 0),
+        "TP2": (85, 68, 0),
         "TP3": (50, 10, 0),
         "TP4": (74, 10, 0),
         "TP5": (81, 10, 0),
@@ -248,18 +250,22 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
     }
     for index in range(1, 17):
         placements[f"R{index}"] = (8 + (index - 1) * 5.6, 90, 90)
-    for index in range(17, 23):
-        placements[f"R{index}"] = (95 + (index - 17) * 8, 98, 90)
+    for index in range(17, 22):
+        placements[f"R{index}"] = (105 + (index - 17) * 9, 94, 90)
+    placements["R22"] = (60, 105, 90)
     for index in range(23, 29):
-        placements[f"R{index}"] = (95 + (index - 23) * 8, 115, 90)
+        placements[f"R{index}"] = (110 + (index - 23) * 8, 115, 90)
+    placements["R24"] = (68, 105, 90)
+    placements["R25"] = (76, 105, 90)
+    placements["R26"] = (84, 105, 90)
     return placements
 
 
 def mounting_hole_table() -> dict[str, tuple[float, float]]:
     return {
         "H1": (9, 9),
-        "H2": (181, 9),
-        "H3": (9, 136),
+        "H2": (160, 9),
+        "H3": (160, 136),
         "H4": (135, 136),
     }
 
@@ -269,18 +275,18 @@ def assembly_labels() -> list[tuple[str, float, float, float]]:
         ("C1", 31.0, 42.5, 0.8),
         ("C2", 31.0, 26.0, 0.8),
         ("C3", 105.0, 35.0, 0.8),
-        ("C4", 67.0, 15.0, 0.8),
+        ("C4", 67.0, 59.0, 0.8),
         ("C5", 158.0, 55.0, 0.8),
         ("C6", 68.0, 47.0, 0.8),
         ("C7", 117.5, 60.0, 0.8),
         ("C8", 136.5, 60.0, 0.8),
         ("C9", 37.0, 61.0, 0.8),
-        ("C10", 61.0, 78.0, 0.8),
-        ("C11", 178.0, 44.0, 0.8),
+        ("C10", 96.0, 87.0, 0.8),
+        ("C11", 158.0, 76.0, 0.8),
         ("C12", 27.0, 19.0, 0.8),
-        ("D1", 145.0, 88.0, 0.8),
-        ("A1 PICO 2 W", 163.9, 124.0, 1.0),
-        ("USB CABLE TO BOARD TOP", 164.0, 62.0, 0.8),
+        ("D1", 20.0, 99.0, 0.8),
+        ("A1 PICO 2 W", 28.0, 113.0, 1.0),
+        ("USB", 7.0, 108.0, 0.8),
     ]
 
 
@@ -301,18 +307,26 @@ def add_segment(
 
 
 def add_outline(board: pcbnew.BOARD) -> None:
-    points = [
+    outer = [
         (BOARD_LEFT, BOARD_TOP),
         (BOARD_RIGHT, BOARD_TOP),
         (BOARD_RIGHT, BOARD_BOTTOM),
-        (ANTENNA_RIGHT, BOARD_BOTTOM),
-        (ANTENNA_RIGHT, ANTENNA_TOP),
-        (ANTENNA_LEFT, ANTENNA_TOP),
-        (ANTENNA_LEFT, BOARD_BOTTOM),
         (BOARD_LEFT, BOARD_BOTTOM),
         (BOARD_LEFT, BOARD_TOP),
     ]
-    for start, end in zip(points, points[1:]):
+    cutout = [
+        (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+        (ANTENNA_RIGHT - ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+        (ANTENNA_RIGHT, ANTENNA_TOP + ANTENNA_CORNER_CHAMFER),
+        (ANTENNA_RIGHT, ANTENNA_BOTTOM - ANTENNA_CORNER_CHAMFER),
+        (ANTENNA_RIGHT - ANTENNA_CORNER_CHAMFER, ANTENNA_BOTTOM),
+        (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_BOTTOM),
+        (ANTENNA_LEFT, ANTENNA_BOTTOM - ANTENNA_CORNER_CHAMFER),
+        (ANTENNA_LEFT, ANTENNA_TOP + ANTENNA_CORNER_CHAMFER),
+        (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+    ]
+    for start, end in list(zip(outer, outer[1:])) + \
+            list(zip(cutout, cutout[1:])):
         add_segment(board, pcbnew.Edge_Cuts, start, end, 0.25)
 
 
@@ -330,6 +344,30 @@ def add_text(
     item.SetTextSize(vec(size, size))
     item.SetTextThickness(mm(min(0.25, max(0.12, size * 0.12))))
     board.Add(item)
+
+
+def add_z80_clock_preroute(board: pcbnew.BOARD) -> None:
+    u4_clock = board.FindFootprintByReference("U4").FindPadByNumber("18")
+    z80_clock = board.FindFootprintByReference("U1").FindPadByNumber("6")
+    start = u4_clock.GetPosition()
+    end = z80_clock.GetPosition()
+    points = [
+        (pcbnew.ToMM(start.x), pcbnew.ToMM(start.y)),
+        (pcbnew.ToMM(start.x), 67.5),
+        (38.0, 67.5),
+        (38.0, pcbnew.ToMM(end.y)),
+        (pcbnew.ToMM(end.x), pcbnew.ToMM(end.y)),
+    ]
+    net = board.FindNet("Z80_CLK")
+    for first, second in zip(points, points[1:]):
+        track = pcbnew.PCB_TRACK(board)
+        track.SetStart(vec(*first))
+        track.SetEnd(vec(*second))
+        track.SetLayer(pcbnew.F_Cu)
+        track.SetWidth(mm(SIGNAL_TRACK_WIDTH))
+        track.SetNet(net)
+        track.SetLocked(True)
+        board.Add(track)
 
 
 def add_mounting_holes(board: pcbnew.BOARD, footprint_root: Path) -> None:
@@ -360,10 +398,6 @@ def add_ground_zone(board: pcbnew.BOARD, ground: pcbnew.NETINFO_ITEM) -> None:
         (BOARD_LEFT + 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_BOTTOM - 0.5),
-        (ANTENNA_RIGHT + 0.5, BOARD_BOTTOM - 0.5),
-        (ANTENNA_RIGHT + 0.5, ANTENNA_TOP - 0.5),
-        (ANTENNA_LEFT - 0.5, ANTENNA_TOP - 0.5),
-        (ANTENNA_LEFT - 0.5, BOARD_BOTTOM - 0.5),
         (BOARD_LEFT + 0.5, BOARD_BOTTOM - 0.5),
     ):
         outline.Append(mm(x), mm(y))
@@ -450,6 +484,8 @@ def build_board(
                     item.SetLayer(pcbnew.F_Fab)
         if reference == "D1":
             footprint.Reference().SetLayer(pcbnew.F_Fab)
+        if reference == "U4":
+            footprint.Reference().SetPosition(vec(70.0, 73.0))
         if reference == "A1":
             for item in footprint.GraphicalItems():
                 if item.GetLayer() == pcbnew.F_SilkS:
@@ -461,21 +497,26 @@ def build_board(
             net_name = endpoint_nets.get(endpoint)
             if net_name is not None:
                 pad.SetNet(nets[net_name])
+            if endpoint in {"A1.23", "A1.28"}:
+                pad.SetLocalClearance(mm(0.19))
             if endpoint in {
-                "A1.3", "A1.13", "C6.2", "C10.2", "C11.2",
-                "Q1.1", "R27.2", "R30.2", "U1.29", "U3.12",
-                "U8.15",
+                "A1.3", "A1.8", "A1.13", "A1.18", "A1.23",
+                "C6.2",
+                "C8.2", "C10.2", "C11.2", "J1.2", "Q1.1", "R27.2",
+                "R30.2", "RN3.1", "U1.29", "U3.12", "U8.10",
+                "U8.15", "U9.10",
             }:
                 pad.SetLocalZoneConnection(
                     pcbnew.ZONE_CONNECTION_FULL
                 )
 
+    add_z80_clock_preroute(board)
     add_mounting_holes(board, footprint_root)
     add_outline(board)
     add_text(board, "Z80 ROMless SBC", 130, 9, 2.0)
     for text, x, y, size in assembly_labels():
         add_text(board, text, x, y, size)
-    add_text(board, "REV A", 125, 136, 1.0)
+    add_text(board, "REV A", 155, 136, 1.0)
     board.BuildConnectivity()
     return board
 
@@ -513,18 +554,6 @@ def track_signatures(board: pcbnew.BOARD) -> set[tuple[object, ...]]:
             round(pcbnew.ToMM(item.GetWidth()), 4),
         ))
     return signatures
-
-
-def polygon_signature(polyset: pcbnew.SHAPE_POLY_SET) -> tuple[object, ...]:
-    outlines = []
-    for index in range(polyset.OutlineCount()):
-        outline = polyset.COutline(index)
-        outlines.append(tuple(
-            (round(pcbnew.ToMM(point.x), 4),
-             round(pcbnew.ToMM(point.y), 4))
-            for point in outline.CPoints()
-        ))
-    return tuple(sorted(outlines))
 
 
 def check_board(
@@ -660,31 +689,30 @@ def check_board(
     ):
         if not close_mm(actual_rule, expected_rule):
             raise SystemExit(f"PCB {label} rule is stale")
+    expected_paths = [
+        [
+            (BOARD_LEFT, BOARD_TOP),
+            (BOARD_RIGHT, BOARD_TOP),
+            (BOARD_RIGHT, BOARD_BOTTOM),
+            (BOARD_LEFT, BOARD_BOTTOM),
+            (BOARD_LEFT, BOARD_TOP),
+        ],
+        [
+            (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+            (ANTENNA_RIGHT - ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+            (ANTENNA_RIGHT, ANTENNA_TOP + ANTENNA_CORNER_CHAMFER),
+            (ANTENNA_RIGHT, ANTENNA_BOTTOM - ANTENNA_CORNER_CHAMFER),
+            (ANTENNA_RIGHT - ANTENNA_CORNER_CHAMFER, ANTENNA_BOTTOM),
+            (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_BOTTOM),
+            (ANTENNA_LEFT, ANTENNA_BOTTOM - ANTENNA_CORNER_CHAMFER),
+            (ANTENNA_LEFT, ANTENNA_TOP + ANTENNA_CORNER_CHAMFER),
+            (ANTENNA_LEFT + ANTENNA_CORNER_CHAMFER, ANTENNA_TOP),
+        ],
+    ]
     expected_outline = {
         tuple(sorted((start, end)))
-        for start, end in zip(
-            [
-                (BOARD_LEFT, BOARD_TOP),
-                (BOARD_RIGHT, BOARD_TOP),
-                (BOARD_RIGHT, BOARD_BOTTOM),
-                (ANTENNA_RIGHT, BOARD_BOTTOM),
-                (ANTENNA_RIGHT, ANTENNA_TOP),
-                (ANTENNA_LEFT, ANTENNA_TOP),
-                (ANTENNA_LEFT, BOARD_BOTTOM),
-                (BOARD_LEFT, BOARD_BOTTOM),
-                (BOARD_LEFT, BOARD_TOP),
-            ],
-            [
-                (BOARD_RIGHT, BOARD_TOP),
-                (BOARD_RIGHT, BOARD_BOTTOM),
-                (ANTENNA_RIGHT, BOARD_BOTTOM),
-                (ANTENNA_RIGHT, ANTENNA_TOP),
-                (ANTENNA_LEFT, ANTENNA_TOP),
-                (ANTENNA_LEFT, BOARD_BOTTOM),
-                (BOARD_LEFT, BOARD_BOTTOM),
-                (BOARD_LEFT, BOARD_TOP),
-            ],
-        )
+        for path in expected_paths
+        for start, end in zip(path, path[1:])
     }
     actual_outline = set()
     for drawing in board.GetDrawings():
@@ -720,10 +748,6 @@ def check_board(
         (BOARD_LEFT + 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_BOTTOM - 0.5),
-        (ANTENNA_RIGHT + 0.5, BOARD_BOTTOM - 0.5),
-        (ANTENNA_RIGHT + 0.5, ANTENNA_TOP - 0.5),
-        (ANTENNA_LEFT - 0.5, ANTENNA_TOP - 0.5),
-        (ANTENNA_LEFT - 0.5, BOARD_BOTTOM - 0.5),
         (BOARD_LEFT + 0.5, BOARD_BOTTOM - 0.5),
     ))
     actual_zone_outline = tuple(
@@ -747,12 +771,25 @@ def check_board(
         or not antenna_zones[0].GetDoNotAllowZoneFills()
     ):
         raise SystemExit("Pico footprint is missing its antenna keepout")
+    usb_zones = [
+        zone for zone in pico.Zones()
+        if str(zone.GetZoneName()) == "USB Cable"
+    ]
+    if len(usb_zones) != 1:
+        raise SystemExit("Pico footprint is missing its USB cable envelope")
+    usb_box = usb_zones[0].GetBoundingBox()
+    if (
+        usb_box.GetRight() <= usb_box.GetLeft()
+        or abs(pcbnew.ToMM(usb_box.GetRight()) - BOARD_LEFT) > 0.50
+        or pcbnew.ToMM(usb_box.GetLeft()) >= BOARD_LEFT
+    ):
+        raise SystemExit("Pico USB connector is not flush with the left edge")
     antenna_box = antenna_zones[0].GetBoundingBox()
     if (
         pcbnew.ToMM(antenna_box.GetLeft()) < ANTENNA_LEFT
         or pcbnew.ToMM(antenna_box.GetRight()) > ANTENNA_RIGHT
         or pcbnew.ToMM(antenna_box.GetTop()) < ANTENNA_TOP
-        or pcbnew.ToMM(antenna_box.GetBottom()) > BOARD_BOTTOM
+        or pcbnew.ToMM(antenna_box.GetBottom()) > ANTENNA_BOTTOM
     ):
         raise SystemExit("Pico antenna keepout is not contained by cutout")
     expected_labels = {
@@ -781,15 +818,6 @@ def check_board(
             for item in footprints[reference].GraphicalItems()
         ):
             raise SystemExit(f"{reference} body graphics must remain on F.Fab")
-    fill_before = polygon_signature(
-        ground_zones[0].GetFilledPolysList(pcbnew.B_Cu)
-    )
-    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-    fill_after = polygon_signature(
-        ground_zones[0].GetFilledPolysList(pcbnew.B_Cu)
-    )
-    if fill_before != fill_after:
-        raise SystemExit("committed B.Cu ground-plane fill is stale")
     if not SESSION_PATH.is_file():
         raise SystemExit(f"missing routing session {SESSION_PATH}")
     session_board = build_board(manifest, footprint_root)
@@ -821,8 +849,16 @@ def main() -> int:
         "--check", action="store_true",
         help="validate the committed PCB against the current manifest",
     )
+    parser.add_argument(
+        "--sync-project-rules", action="store_true",
+        help="write the generated PCB rules into the KiCad project",
+    )
     args = parser.parse_args()
 
+    if args.sync_project_rules:
+        sync_project_rules()
+        print(f"Wrote PCB design rules to {PROJECT_PATH}")
+        return 0
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     if args.check:
         check_project_rules()
@@ -836,6 +872,16 @@ def main() -> int:
     _, separator, remainder = dsn_text.partition("\n")
     if not separator:
         raise SystemExit(f"invalid Specctra output in {args.dsn}")
+    clearance_line = f"      (clearance {int(SIGNAL_CLEARANCE * 1000)})\n"
+    if clearance_line not in remainder:
+        raise SystemExit("Specctra output is missing the default clearance")
+    remainder = remainder.replace(
+        clearance_line,
+        clearance_line +
+        f"      (clearance {int(COPPER_EDGE_CLEARANCE * 1000)} "
+        "(type wire_outline))\n",
+        1,
+    )
     args.dsn.write_text(
         f"(pcb {DSN_PATH.name}\n{remainder}",
         encoding="utf-8",

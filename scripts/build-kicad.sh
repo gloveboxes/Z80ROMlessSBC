@@ -40,6 +40,8 @@ command -v kicad-cli >/dev/null
 cd "$kicad_dir"
 kicad-cli sym upgrade --force z80sbc.kicad_sym
 kicad-cli sch upgrade --force z80_romless_sbc.kicad_sch
+"$kicad_python" "$repo_root/scripts/build-kicad-pcb.py" \
+  --sync-project-rules
 kicad-cli sch erc \
   --severity-all \
   --exit-code-violations \
@@ -137,6 +139,9 @@ kicad-cli pcb export svg \
   --layers F.Cu,B.Cu,F.Silkscreen,Edge.Cuts \
   -o "$staged_exports/z80_romless_sbc-pcb.svg" \
   z80_romless_sbc.kicad_pcb
+"$python_bin" -c \
+  'from pathlib import Path; import sys; p=Path(sys.argv[1]); p.write_text("\n".join(line.rstrip() for line in p.read_text().splitlines()) + "\n")' \
+  "$staged_exports/z80_romless_sbc-pcb.svg"
 kicad-cli pcb export pdf \
   --mode-multipage \
   --check-zones \

@@ -1,7 +1,9 @@
 # Z80 ROMless SBC KiCad sources
 
 This directory contains the KiCad 10 schematic and the routed two-layer PCB.
-The board is 180 x 135 mm and uses socket-compatible through-hole footprints.
+The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
+The Pico 2 W is horizontal in the bottom-left corner with USB flush to the
+left edge; its antenna sits above a dedicated internal FR-4/copper cutout.
 
 ## Rebuild and validate
 

@@ -266,23 +266,23 @@ normal Python interpreter.
 ## 3.3 PCB implementation
 
 The PCB alternative preserves the schematic's bus ownership, voltage
-translation, reset, and power-sequencing rules on one 180 x 135 mm,
+translation, reset, and power-sequencing rules on one 160 x 135 mm,
 two-layer, all-through-hole board. All active devices remain socketable.
 
 - U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 GAL form the short
   address/control spine. U4 sits immediately beside U1; the local Z80 clock
-  route, including TP2, is about 62 mm of routed copper. Their socket-row
+  path from U4 to U1 is about 70 mm, with TP2 on a separate short branch. Their socket-row
   center spacing leaves more than 2 mm beyond the combined conventional
   socket-body half-widths.
 - U9/U10 and U7 sit between the shared buses and the Pico 2 W.
 - A broad bottom-layer GND pour provides short return paths, although
   bottom-layer signal routing crosses portions of it. All 79 nets are routed,
   with no DRC violations or unconnected items.
-- The Pico 2 W antenna end sits over a 15 x 11.5 mm board-edge cutout. Its
-  official footprint also supplies the required no-copper keepout. The USB
-  connector faces inward; keep the corridor from the connector toward the
-  upper board edge clear when fitting sockets or mounting the board. BOOTSEL
-  and SWD remain accessible from above.
+- The Pico 2 W is horizontal in the bottom-left corner. Its USB connector is
+  flush with the left board edge and faces outward for unobstructed cable
+  insertion. The antenna sits over a dedicated 9.1 x 14.3 mm internal FR-4
+  cutout that follows the official footprint's no-copper keepout. BOOTSEL and
+  SWD remain accessible from above.
 - TP1-TP7 expose M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND.
 - `PICO_CLK` and `Z80_CLK` use a dedicated 0.40 mm-clearance netclass.
   The Pico-side startup-bias resistors sit beside the Pico rather than pulling

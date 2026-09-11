@@ -21,6 +21,8 @@ Use this workflow to preserve the project's electrical safety, firmware ownershi
 5. Load [documentation lessons](./references/documentation.md) before
    reorganizing MkDocs pages/navigation, editing diagrams, changing
    terminology, or moving documentation assets.
+6. For PCB placement, routing, `pcbnew`, DSN/SES, trace-length, DRC, or
+   fabrication work, also use the project-local `kicad-pcb` skill.
 
 ## Procedure
 
