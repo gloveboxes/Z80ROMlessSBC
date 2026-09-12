@@ -1,6 +1,6 @@
 # Z80 ROMless SBC KiCad sources
 
-This directory contains the KiCad 10 schematic and the routed two-layer PCB.
+This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
 The Pico 2 W is horizontal in the bottom-left corner with USB flush to the
 left edge; its antenna sits above a dedicated internal FR-4/copper cutout.
@@ -38,9 +38,10 @@ The committed session was produced with Freerouting 2.4.1 under Java 25:
 ```sh
 java -jar freerouting-2.4.1.jar \
   --gui.enabled=false \
+  --router.layers.routable=true,false,true,true \
   -de hardware/kicad/reports/z80_romless_sbc.dsn \
   -do hardware/kicad/reports/z80_romless_sbc.ses \
-  -mp 500 -mt 8
+  -mp 500 -mt 1
 ```
 
 After routing, regenerate the board explicitly with:
@@ -63,9 +64,10 @@ selected parts, especially the Pico headers, DIP sockets, electrolytic
 capacitors, terminal block, diode, and 2N3904.
 
 Signal tracks are 0.30 mm, power tracks are 0.60 mm, and the two clock nets
-have 0.40 mm clearance. The bottom GND pour uses thermal reliefs except at a
-small set of explicitly generated pads where the route otherwise starves the
-thermal spokes.
+have 0.40 mm clearance. In1.Cu is reserved as a solid GND plane; Freerouting
+is allowed to route only F.Cu, In2.Cu, and B.Cu. The plane uses thermal reliefs
+except at a small set of explicitly generated pads where the route would
+otherwise starve the thermal spokes.
 
 The DRC-clean layout is not a frequency qualification. Bring up at 1 MHz and
 follow the documented staged validation and frequency-qualification procedure.

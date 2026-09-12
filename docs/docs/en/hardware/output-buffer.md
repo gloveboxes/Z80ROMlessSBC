@@ -24,8 +24,9 @@ outputs:
   This is not complete timing closure: breadboard interconnect and Z80
   setup allowance are additional.
 
-This is why 1-6 MHz is measured rather than assumed, and why this design
-is not a 20 MHz system despite using a 20 MHz-rated CPU.
+This is why the breadboard's 1-6 MHz range and the four-layer PCB's at-least
+8 MHz target are measured rather than assumed, and why this design is not a
+20 MHz system despite using a 20 MHz-rated CPU.
 
 The complete pin-by-pin wiring is installed in
 [Phase 2](../implementation/phase-2-buffer-clock.md#wiring-gal-and-output-buffer).

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Schematic generator | Python 3 + `kiutils==1.4.8` | Symbols, schematic, deterministic UUIDs, net manifest |
 | PCB generator/checker | KiCad 10 bundled Python 3.9, `wx`, `pcbnew` SWIG API | Footprints, nets, placement, rules, cutouts, zones, DSN/SES, invariant checks |
-| Router | Java 25 + Freerouting 2.4.1 | Two-layer autorouting from Specctra DSN to SES |
+| Router | Java 25 + Freerouting 2.4.1 | Four-layer autorouting from Specctra DSN to SES, with In1.Cu disabled for the GND plane |
 | Pipeline | Bash + `kicad-cli` | ERC/DRC, netlists, BOM, drawings, renders, Gerber/drill/IPC exports |
 | Entry point | npm script | `npm run kicad` invokes the Bash pipeline |
 
@@ -43,9 +43,10 @@ The committed route was generated with Freerouting 2.4.1 and Java 25:
 ```sh
 java -jar freerouting-2.4.1.jar \
   --gui.enabled=false \
+  --router.layers.routable=true,false,true,true \
   -de hardware/kicad/reports/z80_romless_sbc.dsn \
   -do hardware/kicad/reports/z80_romless_sbc.ses \
-  -mp 500 -mt 8
+  -mp 500 -mt 1
 ```
 
 The committed SES is authoritative because multithreaded autorouting is not
@@ -57,8 +58,8 @@ as a new intentional artifact.
 ```text
 Python/kiutils -> .kicad_sch + net_manifest.json
 KiCad pcbnew   -> unrouted .kicad_pcb + normalized .dsn
-Java router    -> .ses
-KiCad pcbnew   -> routed .kicad_pcb + filled GND zone
+Java router    -> .ses using F.Cu, In2.Cu and B.Cu
+KiCad pcbnew   -> routed .kicad_pcb + filled In1.Cu GND plane
 kicad-cli      -> ERC/DRC/stats + Gerber/Excellon/BOM/IPC/PDF/SVG/PNG
 ```
 

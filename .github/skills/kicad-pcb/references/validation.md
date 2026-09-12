@@ -39,7 +39,7 @@ Artifacts are generated under a temporary directory and swapped into
 
 The package contains:
 
-- F.Cu/B.Cu Gerbers
+- F.Cu/In1.Cu/In2.Cu/B.Cu Gerbers
 - F.Mask/B.Mask
 - F.Silkscreen/B.Silkscreen
 - Edge.Cuts and Gerber job

@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "date": "2026-09-11T13:30:12",
-    "generator": "KiCad 10.0.6",
+    "date": "2026-09-12T05:11:52",
+    "generator": "KiCad 10.0.6-10.0.6~ubuntu24.04.1",
     "project": "z80_romless_sbc",
     "board_name": "z80_romless_sbc"
   },
@@ -12,8 +12,8 @@
     "area": "21600.00 mm²",
     "front_component_density": "30.72",
     "back_component_density": "5.60",
-    "front_copper_area": "2729.714 mm²",
-    "back_copper_area": "15346.931 mm²",
+    "front_copper_area": "1507.318 mm²",
+    "back_copper_area": "1931.536 mm²",
     "min_track_clearance": "0.2016 mm",
     "min_track_width": "0.3000 mm",
     "min_drill_diameter": "0.4000 mm",
@@ -32,7 +32,7 @@
     "press_fit": 0
   },
   "vias": {
-    "through": 109,
+    "through": 87,
     "blind": 0,
     "buried": 0,
     "micro": 0
@@ -71,7 +71,7 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 108,
+      "count": 87,
       "shape": "Round",
       "x_size": "0.4000 mm",
       "y_size": "0.4000 mm",
@@ -123,16 +123,6 @@
     {
       "count": 2,
       "shape": "Round",
-      "x_size": "1.3000 mm",
-      "y_size": "1.3000 mm",
-      "plated": true,
-      "source": "Pad",
-      "start_layer": "F.Cu",
-      "stop_layer": "B.Cu"
-    },
-    {
-      "count": 2,
-      "shape": "Round",
       "x_size": "1.1000 mm",
       "y_size": "1.1000 mm",
       "plated": true,
@@ -141,12 +131,12 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 1,
+      "count": 2,
       "shape": "Round",
-      "x_size": "0.5000 mm",
-      "y_size": "0.5000 mm",
+      "x_size": "1.3000 mm",
+      "y_size": "1.3000 mm",
       "plated": true,
-      "source": "Via",
+      "source": "Pad",
       "start_layer": "F.Cu",
       "stop_layer": "B.Cu"
     }

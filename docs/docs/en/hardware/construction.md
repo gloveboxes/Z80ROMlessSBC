@@ -267,7 +267,7 @@ normal Python interpreter.
 
 The PCB alternative preserves the schematic's bus ownership, voltage
 translation, reset, and power-sequencing rules on one 160 x 135 mm,
-two-layer, all-through-hole board. All active devices remain socketable.
+four-layer, all-through-hole board. All active devices remain socketable.
 
 - U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 GAL form the short
   address/control spine. U4 sits immediately beside U1; the local Z80 clock
@@ -275,16 +275,19 @@ two-layer, all-through-hole board. All active devices remain socketable.
   center spacing leaves more than 2 mm beyond the combined conventional
   socket-body half-widths.
 - U9/U10 and U7 sit between the shared buses and the Pico 2 W.
-- A broad bottom-layer GND pour provides short return paths, although
-  bottom-layer signal routing crosses portions of it. All 79 nets are routed,
-  with no DRC violations or unconnected items.
+- In1.Cu is a continuous GND reference plane. Signals route on F.Cu, In2.Cu,
+  and B.Cu; the autorouter is explicitly prohibited from routing on In1.Cu.
+  All 79 nets are routed, with no DRC violations or unconnected items.
 - The Pico 2 W is horizontal in the bottom-left corner. Its USB connector is
   flush with the left board edge and faces outward for unobstructed cable
-  insertion. The antenna sits over a dedicated 9.1 x 14.3 mm internal FR-4
-  cutout that follows the official footprint's no-copper keepout. BOOTSEL and
-  SWD remain accessible from above.
+  insertion. The antenna sits over a dedicated chamfered internal FR-4 cutout,
+  approximately 11.9 x 15.6 mm overall, that includes router-radius margin
+  around the official footprint's no-copper keepout. BOOTSEL and SWD remain
+  accessible from above.
 - TP1-TP7 expose M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND.
 - `PICO_CLK` and `Z80_CLK` use a dedicated 0.40 mm-clearance netclass.
+  `PICO_CLK` is locked to a via-free F.Cu route, and the prior D4 data-bus
+  outlier is locked to a via-free In2.Cu route.
   The Pico-side startup-bias resistors sit beside the Pico rather than pulling
   those controls through the lower-left resistor bank.
 - Four 3.2 mm non-plated holes provide M3 mounting points.
@@ -292,8 +295,9 @@ two-layer, all-through-hole board. All active devices remain socketable.
   electrolytic footprints and C12 uses a 10 mm / 5 mm-pitch footprint.
 
 The routed design is electrically complete but not hardware-qualified. First
-power-up still begins at 1 MHz and follows the staged checks and
-[frequency qualification procedure](../implementation/frequency-qualification.md).
+power-up still begins at 1 MHz. The PCB is designed for qualification through
+at least 8 MHz, but that target becomes a claim only after the staged checks
+and [frequency qualification procedure](../implementation/frequency-qualification.md).
 
 | PCB artifact | Purpose |
 | --- | --- |
@@ -309,13 +313,18 @@ power-up still begins at 1 MHz and follows the staged checks and
 
 ## 3.4 High-Speed Interconnect Routing
 
-At the target 1-6 MHz clock rates, propagation skew from a few
+At the breadboard's 1-6 MHz target clock rates, propagation skew from a few
 millimetres of wire-length difference is negligible compared with the
 Z80 timing budget. Solderless-breadboard reliability is instead
 dominated by total wire length, stubs, loop area, contact resistance,
 and fast-edge ringing. Route each bus as a short grouped trunk with
 roughly similar paths, but do not add serpentine wire merely to make
 lengths equal.
+
+The four-layer PCB targets qualification through at least 8 MHz. Its internal
+GND plane and shorter controlled copper reduce breadboard-specific return-path
+and contact problems, but the same receive-pin timing measurements remain
+mandatory.
 
 A **trunk** is a compact route shared by the bus wires, with a short **tap**
 from each wire to each device that uses it. A **star** fans long wires out

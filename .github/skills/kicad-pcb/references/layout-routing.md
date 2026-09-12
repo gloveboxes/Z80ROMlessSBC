@@ -20,15 +20,18 @@ margin around the official keepout.
 
 ## Nets and layers
 
-- Two copper layers only.
+- Four copper layers: F.Cu signals, an In1.Cu solid GND plane, In2.Cu
+  signals, and B.Cu signals.
 - Pico 2 W/RP2350 can run its system/core clock at up to 150 MHz. The generated
-  Z80 clock is much slower, but Pico-driven nets still have fast GPIO edges;
-  do not use the 1-6 MHz Z80 clock rate as the sole signal-integrity model.
+  Z80 clock targets qualification through at least 8 MHz, but Pico-driven nets
+  still have fast GPIO edges; do not use the Z80 clock rate as the sole
+  signal-integrity model.
 - Default signals: 0.30 mm tracks.
 - Power (`+5V`, `+3V3`, `VSYS`): 0.60 mm tracks.
 - Clock (`PICO_CLK`, `Z80_CLK`): 0.40 mm clearance.
-- Broad B.Cu GND pour with thermal reliefs. Use local solid connections only
-  where routing leaves a pad with starved thermal spokes.
+- Solid In1.Cu GND plane with thermal reliefs. Freerouting must keep In1.Cu
+  disabled with `--router.layers.routable=true,false,true,true`. Use local
+  solid connections only where a pad would otherwise have starved spokes.
 - Keep copper away from milled edges and antenna cutouts according to project
   design rules and fabricator capability.
 

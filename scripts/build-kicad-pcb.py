@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the placed two-layer PCB from the schematic net manifest.
+"""Generate the placed four-layer PCB from the schematic net manifest.
 
 Run this script with KiCad's bundled Python interpreter so the ``pcbnew``
 module is available.  Pass ``--session`` to import a Specctra routing session
@@ -346,28 +346,115 @@ def add_text(
     board.Add(item)
 
 
-def add_z80_clock_preroute(board: pcbnew.BOARD) -> None:
-    u4_clock = board.FindFootprintByReference("U4").FindPadByNumber("18")
-    z80_clock = board.FindFootprintByReference("U1").FindPadByNumber("6")
-    start = u4_clock.GetPosition()
-    end = z80_clock.GetPosition()
-    points = [
-        (pcbnew.ToMM(start.x), pcbnew.ToMM(start.y)),
-        (pcbnew.ToMM(start.x), 67.5),
-        (38.0, 67.5),
-        (38.0, pcbnew.ToMM(end.y)),
-        (pcbnew.ToMM(end.x), pcbnew.ToMM(end.y)),
-    ]
-    net = board.FindNet("Z80_CLK")
+def pad_position(
+    board: pcbnew.BOARD,
+    reference: str,
+    number: str,
+) -> tuple[float, float]:
+    pad = board.FindFootprintByReference(reference).FindPadByNumber(number)
+    position = pad.GetPosition()
+    return pcbnew.ToMM(position.x), pcbnew.ToMM(position.y)
+
+
+def add_locked_track_path(
+    board: pcbnew.BOARD,
+    net_name: str,
+    layer: int,
+    points: list[tuple[float, float]],
+) -> None:
+    net = board.FindNet(net_name)
     for first, second in zip(points, points[1:]):
         track = pcbnew.PCB_TRACK(board)
         track.SetStart(vec(*first))
         track.SetEnd(vec(*second))
-        track.SetLayer(pcbnew.F_Cu)
+        track.SetLayer(layer)
         track.SetWidth(mm(SIGNAL_TRACK_WIDTH))
         track.SetNet(net)
         track.SetLocked(True)
         board.Add(track)
+
+
+def add_critical_preroutes(board: pcbnew.BOARD) -> None:
+    u4_clock = pad_position(board, "U4", "18")
+    z80_clock = pad_position(board, "U1", "6")
+    z80_clock_junction = (u4_clock[0], 67.5)
+    add_locked_track_path(
+        board,
+        "Z80_CLK",
+        pcbnew.F_Cu,
+        [
+            u4_clock,
+            z80_clock_junction,
+            (38.0, 67.5),
+            (38.0, z80_clock[1]),
+            z80_clock,
+        ],
+    )
+    pico_clock = pad_position(board, "A1", "4")
+    clock_input = pad_position(board, "U4", "2")
+    clock_bias = pad_position(board, "R22", "1")
+    clock_junction = (45.0, 100.0)
+    add_locked_track_path(
+        board,
+        "PICO_CLK",
+        pcbnew.F_Cu,
+        [
+            pico_clock,
+            (pico_clock[0], 137.0),
+            (6.4, 137.0),
+            (6.4, 100.0),
+            clock_junction,
+            (55.6, 93.0),
+            (55.6, 76.0),
+            (clock_input[0], 73.0),
+            clock_input,
+        ],
+    )
+    add_locked_track_path(
+        board,
+        "PICO_CLK",
+        pcbnew.F_Cu,
+        [clock_junction, clock_bias],
+    )
+
+    d4_z80 = pad_position(board, "U1", "7")
+    d4_sram = pad_position(board, "U2", "18")
+    d4_up = pad_position(board, "U9", "14")
+    d4_down = pad_position(board, "U10", "14")
+    d4_left_junction = (47.97, 76.0)
+    d4_right_junction = (118.207, 69.0401)
+    add_locked_track_path(
+        board,
+        "D4",
+        pcbnew.In2_Cu,
+        [
+            d4_z80,
+            (d4_left_junction[0], d4_z80[1]),
+            d4_left_junction,
+            (102.0, 76.0),
+            (102.0, 88.92),
+            (118.207, 88.92),
+            d4_right_junction,
+        ],
+    )
+    add_locked_track_path(
+        board,
+        "D4",
+        pcbnew.In2_Cu,
+        [d4_sram, (30.0, d4_sram[1]), (30.0, 76.0), d4_left_junction],
+    )
+    add_locked_track_path(
+        board,
+        "D4",
+        pcbnew.In2_Cu,
+        [d4_right_junction, (113.8199, 69.0401), d4_up],
+    )
+    add_locked_track_path(
+        board,
+        "D4",
+        pcbnew.In2_Cu,
+        [d4_right_junction, (130.4201, 69.0401), d4_down],
+    )
 
 
 def add_mounting_holes(board: pcbnew.BOARD, footprint_root: Path) -> None:
@@ -386,9 +473,9 @@ def add_mounting_holes(board: pcbnew.BOARD, footprint_root: Path) -> None:
 
 def add_ground_zone(board: pcbnew.BOARD, ground: pcbnew.NETINFO_ITEM) -> None:
     zone = pcbnew.ZONE(board)
-    zone.SetLayer(pcbnew.B_Cu)
+    zone.SetLayer(pcbnew.In1_Cu)
     zone.SetNet(ground)
-    zone.SetZoneName("BOTTOM_GROUND_PLANE")
+    zone.SetZoneName("INNER_GROUND_PLANE")
     zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
     zone.SetLocalClearance(mm(0.3))
     zone.SetMinThickness(mm(0.25))
@@ -409,7 +496,11 @@ def build_board(
     footprint_root: Path,
 ) -> pcbnew.BOARD:
     board = pcbnew.BOARD()
-    board.SetCopperLayerCount(2)
+    board.SetCopperLayerCount(4)
+    board.SetLayerName(pcbnew.In1_Cu, "GND Plane")
+    board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_MIXED)
+    board.SetLayerName(pcbnew.In2_Cu, "Inner Signal")
+    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
     settings = board.GetDesignSettings()
     default_class = board.GetAllNetClasses()["Default"]
     default_class.SetClearance(mm(SIGNAL_CLEARANCE))
@@ -501,7 +592,7 @@ def build_board(
                 pad.SetLocalClearance(mm(0.19))
             if endpoint in {
                 "A1.3", "A1.8", "A1.13", "A1.18", "A1.23",
-                "C6.2",
+                "C4.2", "C6.2",
                 "C8.2", "C10.2", "C11.2", "J1.2", "Q1.1", "R27.2",
                 "R30.2", "RN3.1", "U1.29", "U3.12", "U8.10",
                 "U8.15", "U9.10",
@@ -510,7 +601,7 @@ def build_board(
                     pcbnew.ZONE_CONNECTION_FULL
                 )
 
-    add_z80_clock_preroute(board)
+    add_critical_preroutes(board)
     add_mounting_holes(board, footprint_root)
     add_outline(board)
     add_text(board, "Z80 ROMless SBC", 130, 9, 2.0)
@@ -532,11 +623,22 @@ def track_signatures(board: pcbnew.BOARD) -> set[tuple[object, ...]]:
         if item.Type() == pcbnew.PCB_VIA_T:
             via = pcbnew.Cast_to_PCB_VIA(item)
             position = item.GetPosition()
+            layer_widths = tuple(
+                (
+                    layer,
+                    round(pcbnew.ToMM(via.GetWidth(layer)), 4),
+                )
+                for layer in board.GetEnabledLayers().CuStack()
+                if via.GetLayerSet().Contains(layer)
+            )
             signatures.add((
                 "via", net_name,
                 round(pcbnew.ToMM(position.x), 4),
                 round(pcbnew.ToMM(position.y), 4),
-                round(pcbnew.ToMM(via.GetWidth(pcbnew.F_Cu)), 4),
+                int(via.GetViaType()),
+                int(via.TopLayer()),
+                int(via.BottomLayer()),
+                layer_widths,
                 round(pcbnew.ToMM(via.GetDrillValue()), 4),
             ))
             continue
@@ -641,10 +743,50 @@ def check_board(
             "PCB net mismatch: "
             f"missing={missing_endpoints}, mismatched={mismatched}"
         )
-    if board.GetCopperLayerCount() != 2:
+    if board.GetCopperLayerCount() != 4:
         raise SystemExit(
-            f"PCB must have exactly two copper layers, got "
+            f"PCB must have exactly four copper layers, got "
             f"{board.GetCopperLayerCount()}"
+        )
+    if (
+        board.GetLayerType(pcbnew.In1_Cu) != pcbnew.LT_MIXED
+        or board.GetLayerType(pcbnew.In2_Cu) != pcbnew.LT_SIGNAL
+    ):
+        raise SystemExit("PCB internal-layer types are stale")
+    critical_layers: dict[str, set[int]] = {
+        "PICO_CLK": set(),
+        "D4": set(),
+    }
+    critical_vias = {"PICO_CLK": 0, "D4": 0}
+    locked_z80_clock_segments = 0
+    z80_clock_vias = 0
+    for item in board.GetTracks():
+        net_name = str(item.GetNetname())
+        if item.GetLayer() == pcbnew.In1_Cu:
+            raise SystemExit("In1.Cu GND plane contains a signal track")
+        if net_name == "Z80_CLK":
+            if item.Type() == pcbnew.PCB_VIA_T:
+                z80_clock_vias += 1
+            elif item.IsLocked() and item.GetLayer() == pcbnew.F_Cu:
+                locked_z80_clock_segments += 1
+        if net_name not in critical_layers:
+            continue
+        if not item.IsLocked():
+            raise SystemExit(f"{net_name} contains unlocked copper")
+        if item.Type() == pcbnew.PCB_VIA_T:
+            critical_vias[net_name] += 1
+        else:
+            critical_layers[net_name].add(item.GetLayer())
+    if critical_layers["PICO_CLK"] != {pcbnew.F_Cu} or \
+            critical_vias["PICO_CLK"] != 0:
+        raise SystemExit("PICO_CLK must remain a via-free F.Cu route")
+    if critical_layers["D4"] != {pcbnew.In2_Cu} or \
+            critical_vias["D4"] != 0:
+        raise SystemExit("D4 must remain a via-free In2.Cu route")
+    if locked_z80_clock_segments != 4 or z80_clock_vias != 0:
+        raise SystemExit(
+            "Z80_CLK CPU path must retain four locked F.Cu segments "
+            "and no vias"
         )
     classes = {
         str(name): netclass
@@ -728,35 +870,35 @@ def check_board(
         ))))
     if actual_outline != expected_outline:
         raise SystemExit("PCB outline does not match the generator")
-    ground_zones = [
-        zone for zone in board.Zones()
-        if str(zone.GetZoneName()) == "BOTTOM_GROUND_PLANE"
-    ]
-    if (
-        len(ground_zones) != 1
-        or str(ground_zones[0].GetNetname()) != "GND"
-        or ground_zones[0].GetLayer() != pcbnew.B_Cu
-        or ground_zones[0].GetPadConnection() !=
-           pcbnew.ZONE_CONNECTION_THERMAL
-        or not close_mm(ground_zones[0].GetLocalClearance(), 0.30)
-        or not close_mm(ground_zones[0].GetMinThickness(), 0.25)
-        or not ground_zones[0].IsFilled()
-        or not ground_zones[0].HasFilledPolysForLayer(pcbnew.B_Cu)
-    ):
-        raise SystemExit("PCB must contain one filled B.Cu ground plane")
     expected_zone_outline = tuple((
         (BOARD_LEFT + 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_BOTTOM - 0.5),
         (BOARD_LEFT + 0.5, BOARD_BOTTOM - 0.5),
     ))
+    matching_zones = [
+        zone for zone in board.Zones()
+        if str(zone.GetZoneName()) == "INNER_GROUND_PLANE"
+    ]
+    if (
+        len(matching_zones) != 1
+        or str(matching_zones[0].GetNetname()) != "GND"
+        or matching_zones[0].GetLayer() != pcbnew.In1_Cu
+        or matching_zones[0].GetPadConnection() !=
+           pcbnew.ZONE_CONNECTION_THERMAL
+        or not close_mm(matching_zones[0].GetLocalClearance(), 0.30)
+        or not close_mm(matching_zones[0].GetMinThickness(), 0.25)
+        or not matching_zones[0].IsFilled()
+        or not matching_zones[0].HasFilledPolysForLayer(pcbnew.In1_Cu)
+    ):
+        raise SystemExit("PCB must contain one filled INNER_GROUND_PLANE")
     actual_zone_outline = tuple(
         (round(pcbnew.ToMM(point.x), 2),
          round(pcbnew.ToMM(point.y), 2))
-        for point in ground_zones[0].Outline().COutline(0).CPoints()
+        for point in matching_zones[0].Outline().COutline(0).CPoints()
     )
     if actual_zone_outline != expected_zone_outline:
-        raise SystemExit("B.Cu ground-plane outline is stale")
+        raise SystemExit("INNER_GROUND_PLANE outline is stale")
     pico = footprints["A1"]
     antenna_zones = [
         zone for zone in pico.Zones()
@@ -827,7 +969,7 @@ def check_board(
         raise SystemExit("committed routing session does not reproduce PCB copper")
     print(
         f"PASS: PCB has {len(footprints)} schematic footprints, "
-        f"{len(actual)} checked endpoints, and two copper layers"
+        f"{len(actual)} checked endpoints, and four copper layers"
     )
 
 

@@ -103,7 +103,7 @@ kicad-cli pcb export stats \
 
 kicad-cli pcb export gerbers \
   --check-zones \
-  --layers F.Cu,B.Cu,F.Mask,B.Mask,F.Silkscreen,B.Silkscreen,Edge.Cuts \
+  --layers F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.Silkscreen,B.Silkscreen,Edge.Cuts \
   -o "$staged_fabrication/gerbers" \
   z80_romless_sbc.kicad_pcb
 kicad-cli pcb export drill \
@@ -136,7 +136,7 @@ kicad-cli pcb export svg \
   --fit-page-to-board \
   --exclude-drawing-sheet \
   --check-zones \
-  --layers F.Cu,B.Cu,F.Silkscreen,Edge.Cuts \
+  --layers F.Cu,In1.Cu,In2.Cu,B.Cu,F.Silkscreen,Edge.Cuts \
   -o "$staged_exports/z80_romless_sbc-pcb.svg" \
   z80_romless_sbc.kicad_pcb
 "$python_bin" -c \
@@ -145,7 +145,7 @@ kicad-cli pcb export svg \
 kicad-cli pcb export pdf \
   --mode-multipage \
   --check-zones \
-  --layers F.Cu,B.Cu,F.Silkscreen,B.Silkscreen,F.Fab,Edge.Cuts \
+  --layers F.Cu,In1.Cu,In2.Cu,B.Cu,F.Silkscreen,B.Silkscreen,F.Fab,Edge.Cuts \
   -o "$staged_exports/z80_romless_sbc-pcb.pdf" \
   z80_romless_sbc.kicad_pcb
 kicad-cli pcb render \

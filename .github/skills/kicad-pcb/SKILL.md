@@ -1,6 +1,6 @@
 ---
 name: kicad-pcb
-description: "Design, route, regenerate, validate, review, or manufacture the Z80ROMlessSBC KiCad PCB. Use for .kicad_sch/.kicad_pcb/.kicad_pro files, footprints, placement, two-layer routing, Pico 2 W USB/antenna geometry, Specctra DSN/SES and Freerouting, pcbnew Python automation, ERC/DRC, trace-length analysis, Gerbers, drills, BOMs, IPC-D-356, assembly drawings, or PCB documentation."
+description: "Design, route, regenerate, validate, review, or manufacture the Z80ROMlessSBC KiCad PCB. Use for .kicad_sch/.kicad_pcb/.kicad_pro files, footprints, placement, four-layer routing, Pico 2 W USB/antenna geometry, Specctra DSN/SES and Freerouting, pcbnew Python automation, ERC/DRC, trace-length analysis, Gerbers, drills, BOMs, IPC-D-356, assembly drawings, or PCB documentation."
 argument-hint: "Describe the KiCad schematic, PCB, routing, fabrication, or validation task"
 user-invocable: true
 ---
@@ -44,6 +44,7 @@ of these surfaces.
    [tooling and formats](references/tooling.md). Import the session through
    `build-kicad-pcb.py --session`; never edit routed copper without also
    updating the authoritative session or an explicit generated fixup.
+   Keep In1.Cu disabled in Freerouting so it remains a continuous GND plane.
 6. Run the canonical build:
 
    ```sh
@@ -67,7 +68,8 @@ of these surfaces.
 - `.kicad_pro` must retain Default, Power, and Clock netclasses and their
   pattern assignments.
 - Placement, rotation, mounting holes, outline, antenna cutout, USB alignment,
-  assembly labels, and filled B.Cu GND pour must match generator invariants.
+  assembly labels, four-layer stack, and filled In1.Cu GND plane must match
+  generator invariants.
 - Fabrication outputs are generated in a staging directory and replace the
   committed package only after all validation succeeds.
 - Never turn a DRC warning into an exclusion merely to finish a route.
@@ -99,11 +101,13 @@ capacitors physically local to supply pins. Never treat the Z80's 20 MHz part
 rating as a board qualification.
 
 The Pico 2 W uses RP2350, whose cores/system clock support up to **150 MHz**.
-That is not the Z80 clock: firmware intentionally generates the external Z80
-clock in the separately qualified 1-6 MHz range. Nevertheless, Pico GPIO edges
-and peripheral activity are fast, so route quality is governed by edge rate,
-return path, stubs, and coupling—not only the external bus frequency. Query
-`clock_get_hz(clk_sys)` when a firmware-specific system-clock value matters.
+That is not the Z80 clock: firmware intentionally generates a much slower
+external Z80 clock. The four-layer PCB targets qualification through at least
+8 MHz, starting at 1 MHz; do not claim that rate until measured. Pico GPIO
+edges and peripheral activity are fast, so route quality is governed by edge
+rate, return path, stubs, and coupling—not only the external bus frequency.
+Query `clock_get_hz(clk_sys)` when a firmware-specific system-clock value
+matters.
 
 ## Completion
 

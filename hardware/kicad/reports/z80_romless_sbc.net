@@ -1,9 +1,9 @@
 (export
 	(version "E")
 	(design
-		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-09-11T13:30:05")
-		(tool "Eeschema 10.0.6")
+		(source "/workspace/hardware/kicad/z80_romless_sbc.kicad_sch")
+		(date "2026-09-12T05:11:48")
+		(tool "Eeschema 10.0.6-10.0.6~ubuntu24.04.1")
 		(sheet
 			(number "1")
 			(name "/")

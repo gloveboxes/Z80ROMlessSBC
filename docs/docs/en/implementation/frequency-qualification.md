@@ -31,7 +31,9 @@ both values.
 
 - **Step sequence:** Test 2 MHz, then increase in 500 kHz steps to
   6 MHz. If and only if 6 MHz passes with margin, continue
-  experimentally in 500 kHz steps to 8 MHz.
+  in 500 kHz steps to 8 MHz. Treat 6.5-8 MHz as experimental on the
+  breadboard; on the four-layer PCB, 8 MHz is the design target but remains
+  unqualified until this complete procedure passes.
 - **Functional checks at each step:** Run `a` for CPU SRAM
   readback/address activity and `h` for the one-hour self-checking
   memory loop plus continuous terminal IN/OUT while measuring stop
@@ -58,12 +60,12 @@ both values.
   16-channel analyzer captured the complete address bus, complete data
   bus, and controls simultaneously.
 
-The qualified frequency is the highest error-free step at or below
-6 MHz for which the DSLogic capture set proves digital ordering and the
-DHO814 proves memory margin and the complete WAIT/clock-stop handshake.
-Report 6.5-8 MHz separately as experimental even if they pass; do not
-claim any rate without equivalent timing evidence and repeated
-cold/runtime tests.
+The qualified frequency is the highest error-free tested step for which the
+DSLogic capture set proves digital ordering and the DHO814 proves memory margin
+and the complete WAIT/clock-stop handshake. For the breadboard, report
+6.5-8 MHz separately as experimental. For the four-layer PCB, qualify through
+8 MHz before claiming that design target. Do not claim any rate without
+equivalent timing evidence and repeated cold/runtime tests.
 
 Record the requested and reported clock, firmware revision, rail voltages,
 functional error counts, worst measured timing margins, and capture filenames

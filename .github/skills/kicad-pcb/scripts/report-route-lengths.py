@@ -29,6 +29,10 @@ def point(item: pcbnew.BOARD_ITEM) -> tuple[int, int]:
     return position.x, position.y
 
 
+def copper_layers(item: pcbnew.BOARD_ITEM) -> list[int]:
+    return list(item.GetLayerSet().CuStack())
+
+
 def graph_for_net(
     board: pcbnew.BOARD,
     net_name: str,
@@ -54,11 +58,14 @@ def graph_for_net(
         end = track.GetEnd()
         if track.Type() == pcbnew.PCB_VIA_T:
             vias += 1
-            connect(
-                (start.x, start.y, pcbnew.F_Cu),
-                (start.x, start.y, pcbnew.B_Cu),
-                0.0,
-            )
+            layers = copper_layers(track)
+            for index, layer in enumerate(layers):
+                for other in layers[index + 1:]:
+                    connect(
+                        (start.x, start.y, layer),
+                        (start.x, start.y, other),
+                        0.0,
+                    )
             continue
         length = mm(track.GetLength())
         total += length
@@ -73,7 +80,12 @@ def graph_for_net(
             if str(pad.GetNetname()) != net_name:
                 continue
             x, y = point(pad)
-            connect((x, y, pcbnew.F_Cu), (x, y, pcbnew.B_Cu), 0.0)
+            layers = copper_layers(pad)
+            for node in ((x, y, layer) for layer in layers):
+                graph.setdefault(node, [])
+            for index, layer in enumerate(layers):
+                for other in layers[index + 1:]:
+                    connect((x, y, layer), (x, y, other), 0.0)
     return graph, total, vias
 
 
@@ -85,14 +97,10 @@ def shortest(
     start: tuple[int, int],
     finish: tuple[int, int],
 ) -> float:
-    starts = [
-        (start[0], start[1], pcbnew.F_Cu),
-        (start[0], start[1], pcbnew.B_Cu),
-    ]
-    finishes = {
-        (finish[0], finish[1], pcbnew.F_Cu),
-        (finish[0], finish[1], pcbnew.B_Cu),
-    }
+    starts = [node for node in graph if node[:2] == start]
+    finishes = {node for node in graph if node[:2] == finish}
+    if not starts or not finishes:
+        return float("inf")
     queue = [(0.0, node) for node in starts]
     distances = {node: 0.0 for node in starts}
     heapq.heapify(queue)

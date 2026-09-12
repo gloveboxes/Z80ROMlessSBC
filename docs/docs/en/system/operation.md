@@ -198,8 +198,9 @@ wear-levelled storage.
     states (or deterministic clock gating), and a PCB-level signal-
     integrity review; changing the Pico PWM frequency is insufficient.
 
-  - *Future PCB:* A PCB should make 6-8 MHz more credible by reducing
-    stubs, contact resistance, loop area, and uncontrolled return paths.
-    It cannot remove the 55 ns SRAM or GAL delays. A true zero-wait
+  - *Four-Layer PCB:* The PCB is designed for qualification through at least
+    8 MHz by reducing stubs, contact resistance, loop area, and uncontrolled
+    return paths. It cannot remove the 55 ns SRAM or GAL delays, so 8 MHz
+    remains a measured target rather than a pre-qualified claim. A true zero-wait
     20 MHz PCB needs roughly 10-15 ns SRAM plus faster decode/control
     logic; alternatively it can apply hardware WAIT# to memory cycles.
