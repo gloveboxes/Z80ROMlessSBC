@@ -175,6 +175,9 @@ For the non-DIP keyed parts:
   ravine, with the dot/common pin toward row 1 and wired to +5 V.
 - **RN3:** place beside the AHCT/LVC A-port node with its dot/common pin
   toward row 1 and wired to GND.
+- **RN4/RN5 (PCB):** the two 9-pin bussed networks replace sixteen discrete
+  10 kOhm control pull-ups. Their marked common pins connect to +5 V. RN4
+  groups Z80 control inputs; RN5 groups MCP/SRAM control nodes.
 - **1N5819 and electrolytics:** the diode band faces Pico VSYS; every
   electrolytic `+` lead goes to its positive rail. Mark polarity on the
   breadboard before insertion.
@@ -238,11 +241,11 @@ signals pass through an intermediate chip as series logic.
 | [KiCad netlist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
 | [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) and [PCB DRC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-drc.json) | KiCad 10.0.6 results: zero violations and zero unconnected PCB items |
 
-The schematic contains 65 physical components, including 31 discrete
-resistors, three SIP networks, 12 fitted capacitors, and seven loop test
+The schematic contains 51 physical components, including 15 discrete
+resistors, five SIP networks, 12 fitted capacitors, and seven loop test
 points, plus one nonphysical `#FLG01` power marker used only by ERC. KiCad's
 exported netlist matches the independently generated manifest exactly: 79 real
-nets and 355 component pin endpoints. The ERC-only power marker and KiCad's
+nets and 341 component pin endpoints. The ERC-only power marker and KiCad's
 synthetic no-connect nets are excluded from that comparison.
 
 To regenerate and validate the native source, schematic and PCB exports,

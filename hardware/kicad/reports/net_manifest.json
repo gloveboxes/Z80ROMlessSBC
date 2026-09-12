@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/build-kicad-schematic.py",
   "schematic": "hardware/kicad/z80_romless_sbc.kicad_sch",
-  "component_count": 65,
+  "component_count": 51,
   "components": [
     "A1",
     "C1",
@@ -19,18 +19,9 @@
     "D1",
     "J1",
     "Q1",
-    "R1",
-    "R10",
-    "R11",
-    "R12",
-    "R13",
-    "R14",
-    "R15",
-    "R16",
     "R17",
     "R18",
     "R19",
-    "R2",
     "R20",
     "R21",
     "R22",
@@ -41,18 +32,13 @@
     "R27",
     "R28",
     "R29",
-    "R3",
     "R30",
     "R31",
-    "R4",
-    "R5",
-    "R6",
-    "R7",
-    "R8",
-    "R9",
     "RN1",
     "RN2",
     "RN3",
+    "RN4",
+    "RN5",
     "TP1",
     "TP2",
     "TP3",
@@ -166,54 +152,6 @@
       "footprint": "Package_TO_SOT_THT:TO-92_Inline",
       "description": "Z80ROMlessSBC 2N3904 MCP RESET"
     },
-    "R1": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for BUSREQ_N"
-    },
-    "R10": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_WE_N"
-    },
-    "R11": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for WAIT_N"
-    },
-    "R12": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for INT_N"
-    },
-    "R13": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for NMI_N"
-    },
-    "R14": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_WE_PRE_N"
-    },
-    "R15": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_OE_PRE_N"
-    },
-    "R16": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_CE_PRE_N"
-    },
     "R17": {
       "symbol": "RESISTOR",
       "value": "10k",
@@ -231,12 +169,6 @@
       "value": "10k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
       "description": "10k startup bias for PICO_SPI_CS_N"
-    },
-    "R2": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for BUSACK_N"
     },
     "R20": {
       "symbol": "RESISTOR",
@@ -298,12 +230,6 @@
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
       "description": "MCP reset transistor base resistor"
     },
-    "R3": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for MREQ_N"
-    },
     "R30": {
       "symbol": "RESISTOR",
       "value": "47k",
@@ -315,42 +241,6 @@
       "value": "10k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
       "description": "MCP RESET# pull-up"
-    },
-    "R4": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for IORQ_N"
-    },
-    "R5": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for RD_N"
-    },
-    "R6": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for WR_N"
-    },
-    "R7": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for MCP_SO"
-    },
-    "R8": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_CE_N"
-    },
-    "R9": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for SRAM_OE_N"
     },
     "RN1": {
       "symbol": "RN8",
@@ -369,6 +259,18 @@
       "value": "8x10k bussed",
       "footprint": "Resistor_THT:R_Array_SIP9",
       "description": "Pico D0-D7 pull-down network"
+    },
+    "RN4": {
+      "symbol": "RN8",
+      "value": "8x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP9",
+      "description": "Z80 control pull-up network"
+    },
+    "RN5": {
+      "symbol": "RN8",
+      "value": "8x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP9",
+      "description": "MCP and SRAM control pull-up network"
     },
     "TP1": {
       "symbol": "TESTPOINT",
@@ -490,25 +392,11 @@
       "C9.1",
       "D1.2",
       "J1.1",
-      "R1.2",
-      "R10.2",
-      "R11.2",
-      "R12.2",
-      "R13.2",
-      "R14.2",
-      "R15.2",
-      "R16.2",
-      "R2.2",
-      "R3.2",
       "R31.2",
-      "R4.2",
-      "R5.2",
-      "R6.2",
-      "R7.2",
-      "R8.2",
-      "R9.2",
       "RN1.1",
       "RN2.1",
+      "RN4.1",
+      "RN5.1",
       "U1.11",
       "U2.30",
       "U2.32",
@@ -620,14 +508,14 @@
       "U3.10"
     ],
     "BUSACK_N": [
-      "R2.1",
+      "RN4.3",
       "TP6.1",
       "U1.23",
       "U3.2",
       "U7.2"
     ],
     "BUSREQ_N": [
-      "R1.1",
+      "RN4.2",
       "TP5.1",
       "U1.25",
       "U4.16"
@@ -753,11 +641,11 @@
       "U9.10"
     ],
     "INT_N": [
-      "R12.1",
+      "RN4.8",
       "U1.16"
     ],
     "IORQ_N": [
-      "R4.1",
+      "RN4.5",
       "U1.20",
       "U3.13",
       "U7.4"
@@ -793,17 +681,17 @@
       "U8.13"
     ],
     "MCP_SO": [
-      "R7.1",
+      "RN5.2",
       "U7.11",
       "U8.14"
     ],
     "MREQ_N": [
-      "R3.1",
+      "RN4.4",
       "U1.19",
       "U3.8"
     ],
     "NMI_N": [
-      "R13.1",
+      "RN4.9",
       "U1.17"
     ],
     "PICO_BUSACK_N": [
@@ -915,7 +803,7 @@
       "U7.12"
     ],
     "RD_N": [
-      "R5.1",
+      "RN4.6",
       "U1.21",
       "U3.6",
       "U7.6"
@@ -928,32 +816,32 @@
       "U3.1"
     ],
     "SRAM_CE_N": [
-      "R8.1",
+      "RN5.3",
       "U2.22",
       "U4.3"
     ],
     "SRAM_CE_PRE_N": [
-      "R16.1",
+      "RN5.9",
       "U3.16",
       "U4.17"
     ],
     "SRAM_OE_N": [
-      "R9.1",
+      "RN5.4",
       "U2.24",
       "U4.5"
     ],
     "SRAM_OE_PRE_N": [
-      "R15.1",
+      "RN5.8",
       "U3.15",
       "U4.15"
     ],
     "SRAM_WE_N": [
-      "R10.1",
+      "RN5.5",
       "U2.29",
       "U4.7"
     ],
     "SRAM_WE_PRE_N": [
-      "R14.1",
+      "RN5.7",
       "U3.14",
       "U4.13"
     ],
@@ -963,13 +851,13 @@
       "D1.1"
     ],
     "WAIT_N": [
-      "R11.1",
+      "RN5.6",
       "TP4.1",
       "U1.24",
       "U3.20"
     ],
     "WR_N": [
-      "R6.1",
+      "RN4.7",
       "U1.22",
       "U3.4",
       "U7.8"

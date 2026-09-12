@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/workspace/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-09-12T05:11:48")
+		(date "2026-09-12T06:35:31")
 		(tool "Eeschema 10.0.6-10.0.6~ubuntu24.04.1")
 		(sheet
 			(number "1")
@@ -908,742 +908,6 @@
 			)
 		)
 		(comp
-			(ref "R1")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for BUSREQ_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for BUSREQ_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "517868e0-6758-5cf6-891e-d2a30521f056")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R2")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for BUSACK_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for BUSACK_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "a7e09e40-fcc5-5676-ae23-5ce8d551ece5")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R3")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for MREQ_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for MREQ_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "2812c908-bda5-5fd2-a9d3-e7fb543b30c8")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R4")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for IORQ_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for IORQ_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "fe7497d5-13a9-585e-8f8e-2d9a9e0e34d8")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R5")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for RD_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for RD_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "4252b852-8c8d-54cc-9244-db715445f36b")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R6")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for WR_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for WR_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "df273625-8f31-57e8-a228-9b6780de2f21")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R7")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for MCP_SO")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for MCP_SO")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "42029cee-edc5-5414-bb32-252c2a9b66c4")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R8")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_CE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_CE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "6c4e2839-1515-54ec-ae50-42b09de30412")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R9")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_OE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_OE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "60a163cb-a3b0-54e1-a668-3f56c9bba55a")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R10")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_WE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_WE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "b312c19c-d09a-5f79-b5dc-c3bc70181a70")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R11")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for WAIT_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for WAIT_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "302ffdb8-be2d-55c7-a50f-eb54bb8ef3d5")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R12")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for INT_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for INT_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "760a8d9d-9626-5035-963d-b2ebe51d27f0")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R13")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for NMI_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for NMI_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "83fcb47c-9d7d-58db-8c67-ddd03bd0753f")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R14")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_WE_PRE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_WE_PRE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "02b41b84-1b8c-5c77-a0f9-d40e8eac06c4")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R15")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_OE_PRE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_OE_PRE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "48312a68-7059-58f2-a3fd-eae4cf8e4ed4")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R16")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for SRAM_CE_PRE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for SRAM_CE_PRE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "664b0a3c-7c0a-5102-a8de-beabe4639f84")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
 			(ref "R17")
 			(value "10k")
 			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
@@ -2499,6 +1763,140 @@
 				(tstamps "/")
 			)
 			(tstamps "1d9c570d-4678-508e-bbbd-768d5ed18a2e")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "RN4")
+			(value "8x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP9")
+			(description "Z80 control pull-up network")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Array_SIP9")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80 control pull-up network")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RN8")
+				(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "908f5be9-ed00-5cf9-a228-c042ff781f8b")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "RN5")
+			(value "8x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP9")
+			(description "MCP and SRAM control pull-up network")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Array_SIP9")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "MCP and SRAM control pull-up network")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "RN8")
+				(description "Z80ROMlessSBC project symbol: 8x10k bussed")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "9696e8c0-de50-50b8-93e2-9166833b4299")
 			(units
 				(unit
 					(name "A")
@@ -5582,103 +4980,7 @@
 				(pintype "power_out")
 			)
 			(node
-				(ref "R1")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R10")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R11")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R12")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R13")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R14")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R15")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R16")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R2")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R3")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
 				(ref "R31")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R4")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R5")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R6")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R7")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R8")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R9")
 				(pin "2")
 				(pinfunction "2_2")
 				(pintype "passive")
@@ -5691,6 +4993,18 @@
 			)
 			(node
 				(ref "RN2")
+				(pin "1")
+				(pinfunction "COMMON_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "RN4")
+				(pin "1")
+				(pinfunction "COMMON_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "RN5")
 				(pin "1")
 				(pinfunction "COMMON_1")
 				(pintype "passive")
@@ -6236,9 +5550,9 @@
 			(name "/BUSACK_N")
 			(class "Default")
 			(node
-				(ref "R2")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "3")
+				(pinfunction "R2_3")
 				(pintype "passive")
 			)
 			(node
@@ -6271,9 +5585,9 @@
 			(name "/BUSREQ_N")
 			(class "Default")
 			(node
-				(ref "R1")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "2")
+				(pinfunction "R1_2")
 				(pintype "passive")
 			)
 			(node
@@ -6929,9 +6243,9 @@
 			(name "/INT_N")
 			(class "Default")
 			(node
-				(ref "R12")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "8")
+				(pinfunction "R7_8")
 				(pintype "passive")
 			)
 			(node
@@ -6946,9 +6260,9 @@
 			(name "/IORQ_N")
 			(class "Default")
 			(node
-				(ref "R4")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "5")
+				(pinfunction "R4_5")
 				(pintype "passive")
 			)
 			(node
@@ -7106,9 +6420,9 @@
 			(name "/MCP_SO")
 			(class "Default")
 			(node
-				(ref "R7")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "2")
+				(pinfunction "R1_2")
 				(pintype "passive")
 			)
 			(node
@@ -7129,9 +6443,9 @@
 			(name "/MREQ_N")
 			(class "Default")
 			(node
-				(ref "R3")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "4")
+				(pinfunction "R3_4")
 				(pintype "passive")
 			)
 			(node
@@ -7152,9 +6466,9 @@
 			(name "/NMI_N")
 			(class "Default")
 			(node
-				(ref "R13")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "9")
+				(pinfunction "R8_9")
 				(pintype "passive")
 			)
 			(node
@@ -7670,9 +6984,9 @@
 			(name "/RD_N")
 			(class "Default")
 			(node
-				(ref "R5")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "6")
+				(pinfunction "R5_6")
 				(pintype "passive")
 			)
 			(node
@@ -7734,9 +7048,9 @@
 			(name "/SRAM_CE_N")
 			(class "Default")
 			(node
-				(ref "R8")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "3")
+				(pinfunction "R2_3")
 				(pintype "passive")
 			)
 			(node
@@ -7757,9 +7071,9 @@
 			(name "/SRAM_CE_PRE_N")
 			(class "Default")
 			(node
-				(ref "R16")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "9")
+				(pinfunction "R8_9")
 				(pintype "passive")
 			)
 			(node
@@ -7780,9 +7094,9 @@
 			(name "/SRAM_OE_N")
 			(class "Default")
 			(node
-				(ref "R9")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "4")
+				(pinfunction "R3_4")
 				(pintype "passive")
 			)
 			(node
@@ -7803,9 +7117,9 @@
 			(name "/SRAM_OE_PRE_N")
 			(class "Default")
 			(node
-				(ref "R15")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "8")
+				(pinfunction "R7_8")
 				(pintype "passive")
 			)
 			(node
@@ -7826,9 +7140,9 @@
 			(name "/SRAM_WE_N")
 			(class "Default")
 			(node
-				(ref "R10")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "5")
+				(pinfunction "R4_5")
 				(pintype "passive")
 			)
 			(node
@@ -7849,9 +7163,9 @@
 			(name "/SRAM_WE_PRE_N")
 			(class "Default")
 			(node
-				(ref "R14")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "7")
+				(pinfunction "R6_7")
 				(pintype "passive")
 			)
 			(node
@@ -7889,9 +7203,9 @@
 			(name "/WAIT_N")
 			(class "Default")
 			(node
-				(ref "R11")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "6")
+				(pinfunction "R5_6")
 				(pintype "passive")
 			)
 			(node
@@ -7918,9 +7232,9 @@
 			(name "/WR_N")
 			(class "Default")
 			(node
-				(ref "R6")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN4")
+				(pin "7")
+				(pinfunction "R6_7")
 				(pintype "passive")
 			)
 			(node

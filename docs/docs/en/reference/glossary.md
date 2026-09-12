@@ -151,7 +151,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `SN74LVC244AN` / `LVC244` | 8-channel low-voltage input buffer with 5 V-tolerant inputs | Buffers Z80 status/control and MCP `SO` into the Pico domain. |
 | `2N3904` / `Q1` | General-purpose NPN transistor / schematic reference for transistor 1 | Pulls MCP `RESET#` LOW under GAL control. |
 | `1N5819` | Schottky rectifier diode | ORs external 5 V into Pico `VSYS` without feeding the USB `VBUS` node. |
-| `RN1`, `RN2`, `RN3` | Resistor-network references | RN1/RN2 pull up address bits; RN3 pulls down Pico data GPIOs. |
+| `RN1`–`RN5` | Resistor-network references | RN1/RN2 pull up address bits; RN3 pulls down Pico data GPIOs; RN4/RN5 provide the sixteen 5 V control pull-ups. |
 | `A1-A8` / `B1-B8` | The two eight-bit ports of a `245` transceiver | A faces the Pico and B faces the 5 V bus in this design. |
 | `1A1`, `1Y1`, etc. | Input and output labels on a `244`/`541` buffer bank | `A` is a buffer input and `Y` is its corresponding output; the leading digit selects a bank where present. |
 | `OE1#` / `OE2#` | Output-enable inputs for buffer bank 1 / 2 | Tied LOW on the always-readable LVC244 and AHCT244 buffers. A `245` transceiver instead has one `OE#` for all eight bits. |

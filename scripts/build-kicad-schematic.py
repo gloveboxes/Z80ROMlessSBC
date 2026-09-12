@@ -595,6 +595,27 @@ add_component(
     footprint="Resistor_THT:R_Array_SIP9",
     description="Pico D0-D7 pull-down network",
 )
+add_component(
+    "RN4", "RN8", "8x10k bussed", 50.8, 660.4,
+    {
+        1: "+5V",
+        2: "BUSREQ_N", 3: "BUSACK_N", 4: "MREQ_N", 5: "IORQ_N",
+        6: "RD_N", 7: "WR_N", 8: "INT_N", 9: "NMI_N",
+    },
+    footprint="Resistor_THT:R_Array_SIP9",
+    description="Z80 control pull-up network",
+)
+add_component(
+    "RN5", "RN8", "8x10k bussed", 152.4, 660.4,
+    {
+        1: "+5V",
+        2: "MCP_SO", 3: "SRAM_CE_N", 4: "SRAM_OE_N", 5: "SRAM_WE_N",
+        6: "WAIT_N", 7: "SRAM_WE_PRE_N", 8: "SRAM_OE_PRE_N",
+        9: "SRAM_CE_PRE_N",
+    },
+    footprint="Resistor_THT:R_Array_SIP9",
+    description="MCP and SRAM control pull-up network",
+)
 
 up_nets = {1: "+5V", 10: "GND", 19: "DATA_UP_OE_N", 20: "+5V"}
 down_nets = {1: "GND", 10: "GND", 19: "DATA_DOWN_OE_N", 20: "+3V3"}
@@ -642,24 +663,18 @@ for reference, value, net, x in (
 
 
 PULLS = [
-    ("BUSREQ_N", "+5V"), ("BUSACK_N", "+5V"), ("MREQ_N", "+5V"),
-    ("IORQ_N", "+5V"), ("RD_N", "+5V"), ("WR_N", "+5V"), ("MCP_SO", "+5V"),
-    ("SRAM_CE_N", "+5V"), ("SRAM_OE_N", "+5V"), ("SRAM_WE_N", "+5V"),
-    ("WAIT_N", "+5V"), ("INT_N", "+5V"), ("NMI_N", "+5V"),
-    ("SRAM_WE_PRE_N", "+5V"), ("SRAM_OE_PRE_N", "+5V"), ("SRAM_CE_PRE_N", "+5V"),
     ("PICO_BUSREQ_N", "+3V3"), ("PICO_CE_N", "+3V3"),
     ("PICO_SPI_CS_N", "+3V3"), ("PICO_WE_N", "+3V3"), ("PICO_OE_N", "+3V3"),
     ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("DATA_ENABLE", "GND"), ("DATA_DIR", "GND"),
     ("ADDR_ENABLE", "GND"), ("PICO_SPI_SCK", "GND"), ("PICO_SPI_MOSI", "GND"),
 ]
-if len(PULLS) != 28:
-    raise AssertionError(f"expected 28 startup resistors, got {len(PULLS)}")
-for index, (signal, rail) in enumerate(PULLS, start=1):
-    row = (index - 1) // 15
-    column = (index - 1) % 15
+if len(PULLS) != 12:
+    raise AssertionError(f"expected 12 discrete startup resistors, got {len(PULLS)}")
+for index, (signal, rail) in enumerate(PULLS, start=17):
+    column = index - 17
     add_component(
         f"R{index}", "RESISTOR", "10k",
-        50.8 + column * 71.12, 660.4 + row * 50.8,
+        50.8 + column * 71.12, 711.2,
         {1: signal, 2: rail},
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
         description=f"10k startup bias for {signal}",
@@ -816,7 +831,7 @@ schematic.texts.extend([
         uuid=uid("text:reset-note"),
     ),
     Text(
-        text="R1-R16: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias.",
+        text="RN4/RN5: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias.",
         position=pos(50.8, 622.3, 0),
         effects=effects(1.27),
         uuid=uid("text:pull-note"),

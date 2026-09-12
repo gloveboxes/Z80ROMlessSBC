@@ -6307,7 +6307,7 @@
 		)
 		(uuid "f9a6ac84-b5b7-574a-acee-bb70893c8030")
 	)
-	(text "R1-R16: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias."
+	(text "RN4/RN5: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias."
 		(exclude_from_sim no)
 		(at 50.8 622.3 0)
 		(effects
@@ -7060,6 +7060,16 @@
 	)
 	(wire
 		(pts
+			(xy 66.04 657.86) (xy 68.58 657.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "023eff1f-a2f3-5520-b422-0dbcf8ca0765")
+	)
+	(wire
+		(pts
 			(xy 828.04 309.88) (xy 830.58 309.88)
 		)
 		(stroke
@@ -7097,6 +7107,16 @@
 			(type default)
 		)
 		(uuid "059efc9d-42f1-5860-b51c-3d255cef8901")
+	)
+	(wire
+		(pts
+			(xy 167.64 665.48) (xy 170.18 665.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05c7e869-c514-564e-8233-6d38c91bce05")
 	)
 	(wire
 		(pts
@@ -7210,16 +7230,6 @@
 	)
 	(wire
 		(pts
-			(xy 706.12 660.4) (xy 708.66 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0ccb9957-e67c-5dbc-a210-9387f1081b1a")
-	)
-	(wire
-		(pts
 			(xy 899.16 314.96) (xy 896.62 314.96)
 		)
 		(stroke
@@ -7250,7 +7260,7 @@
 	)
 	(wire
 		(pts
-			(xy 492.76 711.2) (xy 495.3 711.2)
+			(xy 421.64 711.2) (xy 424.18 711.2)
 		)
 		(stroke
 			(width 0)
@@ -7277,6 +7287,16 @@
 			(type default)
 		)
 		(uuid "10b04cf6-8b42-58fd-88ec-ed47e94db908")
+	)
+	(wire
+		(pts
+			(xy 167.64 655.32) (xy 170.18 655.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "111a03c1-f066-5740-ba1c-1fea47211d54")
 	)
 	(wire
 		(pts
@@ -7417,16 +7437,6 @@
 			(type default)
 		)
 		(uuid "18def60e-5be7-5d60-9d67-f945f0850064")
-	)
-	(wire
-		(pts
-			(xy 177.8 660.4) (xy 175.26 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "19831501-56c3-5284-b100-70303d5c4800")
 	)
 	(wire
 		(pts
@@ -7577,16 +7587,6 @@
 			(type default)
 		)
 		(uuid "25c7847f-ec13-5664-97df-17681c56d3bf")
-	)
-	(wire
-		(pts
-			(xy 391.16 660.4) (xy 388.62 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "261ca20c-91ff-5331-af35-617a8bb6eb94")
 	)
 	(wire
 		(pts
@@ -7790,6 +7790,16 @@
 	)
 	(wire
 		(pts
+			(xy 66.04 652.78) (xy 68.58 652.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "33075445-87de-53cf-8b3c-45a5504e6b87")
+	)
+	(wire
+		(pts
 			(xy 269.24 480.06) (xy 271.78 480.06)
 		)
 		(stroke
@@ -7820,23 +7830,13 @@
 	)
 	(wire
 		(pts
-			(xy 635 660.4) (xy 637.54 660.4)
+			(xy 152.4 674.37) (xy 152.4 671.83)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "3603af5b-3f9a-5ffe-a64d-6d3723f80859")
-	)
-	(wire
-		(pts
-			(xy 35.56 660.4) (xy 33.02 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3707c9f5-3a6f-5ad7-aa24-06f163ec7b82")
+		(uuid "353f0eee-40e6-59b9-b8c4-6a8faafd538d")
 	)
 	(wire
 		(pts
@@ -7930,7 +7930,7 @@
 	)
 	(wire
 		(pts
-			(xy 533.4 711.2) (xy 530.86 711.2)
+			(xy 462.28 711.2) (xy 459.74 711.2)
 		)
 		(stroke
 			(width 0)
@@ -7990,16 +7990,6 @@
 	)
 	(wire
 		(pts
-			(xy 746.76 660.4) (xy 744.22 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3eee6922-3cda-5627-998d-15679fbb5669")
-	)
-	(wire
-		(pts
 			(xy 848.36 175.26) (xy 845.82 175.26)
 		)
 		(stroke
@@ -8020,7 +8010,7 @@
 	)
 	(wire
 		(pts
-			(xy 675.64 711.2) (xy 673.1 711.2)
+			(xy 604.52 711.2) (xy 601.98 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8057,16 +8047,6 @@
 			(type default)
 		)
 		(uuid "41524961-5fd2-57e2-827e-af991b0d41bb")
-	)
-	(wire
-		(pts
-			(xy 919.48 660.4) (xy 922.02 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4228db47-bc35-5669-8778-b2093e4d6cd6")
 	)
 	(wire
 		(pts
@@ -8140,7 +8120,7 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 711.2) (xy 139.7 711.2)
+			(xy 66.04 711.2) (xy 68.58 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8150,7 +8130,7 @@
 	)
 	(wire
 		(pts
-			(xy 248.92 711.2) (xy 246.38 711.2)
+			(xy 177.8 711.2) (xy 175.26 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8167,16 +8147,6 @@
 			(type default)
 		)
 		(uuid "46c50ea8-2d88-5064-8b28-1e20a6ea9bcb")
-	)
-	(wire
-		(pts
-			(xy 248.92 660.4) (xy 246.38 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "46dfbadc-2fc2-5e6b-aa7f-c2fe1b38fbeb")
 	)
 	(wire
 		(pts
@@ -8227,6 +8197,16 @@
 			(type default)
 		)
 		(uuid "48f32f39-16ec-5bca-906a-e215fe338347")
+	)
+	(wire
+		(pts
+			(xy 167.64 662.94) (xy 170.18 662.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "49eb0b8c-0eb3-503f-ae76-802ae67ceefa")
 	)
 	(wire
 		(pts
@@ -8300,7 +8280,7 @@
 	)
 	(wire
 		(pts
-			(xy 604.52 711.2) (xy 601.98 711.2)
+			(xy 533.4 711.2) (xy 530.86 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8400,16 +8380,6 @@
 	)
 	(wire
 		(pts
-			(xy 533.4 660.4) (xy 530.86 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "53c5b995-f18a-5245-9ef8-57d1d51d8f67")
-	)
-	(wire
-		(pts
 			(xy 492.76 342.9) (xy 490.22 342.9)
 		)
 		(stroke
@@ -8430,7 +8400,7 @@
 	)
 	(wire
 		(pts
-			(xy 817.88 711.2) (xy 815.34 711.2)
+			(xy 746.76 711.2) (xy 744.22 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8457,16 +8427,6 @@
 			(type default)
 		)
 		(uuid "5701edaa-8018-5d3f-83f5-519ed0df4e74")
-	)
-	(wire
-		(pts
-			(xy 675.64 660.4) (xy 673.1 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "57250be1-8d18-54dc-a7b7-cca207363013")
 	)
 	(bus
 		(pts
@@ -8520,7 +8480,7 @@
 	)
 	(wire
 		(pts
-			(xy 421.64 711.2) (xy 424.18 711.2)
+			(xy 350.52 711.2) (xy 353.06 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8640,6 +8600,16 @@
 	)
 	(wire
 		(pts
+			(xy 167.64 670.56) (xy 170.18 670.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5efa888d-761a-5ee6-8057-8676411b96ec")
+	)
+	(wire
+		(pts
 			(xy 299.72 226.06) (xy 299.72 220.98)
 		)
 		(stroke
@@ -8710,16 +8680,6 @@
 	)
 	(wire
 		(pts
-			(xy 421.64 660.4) (xy 424.18 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "63803df6-f25a-5f11-83fc-b1d29cdc7a7f")
-	)
-	(wire
-		(pts
 			(xy 50.8 797.56) (xy 50.8 795.02)
 		)
 		(stroke
@@ -8740,7 +8700,7 @@
 	)
 	(wire
 		(pts
-			(xy 919.48 711.2) (xy 922.02 711.2)
+			(xy 848.36 711.2) (xy 850.9 711.2)
 		)
 		(stroke
 			(width 0)
@@ -8867,6 +8827,16 @@
 			(type default)
 		)
 		(uuid "6c760cf5-621f-588f-95df-8b081bc0b8fd")
+	)
+	(wire
+		(pts
+			(xy 167.64 657.86) (xy 170.18 657.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6c9600c5-1670-5f77-90f4-6e7fcc740a67")
 	)
 	(wire
 		(pts
@@ -9160,26 +9130,6 @@
 	)
 	(wire
 		(pts
-			(xy 1031.24 660.4) (xy 1028.7 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7bde97db-ea91-5d59-8e02-34c801772498")
-	)
-	(wire
-		(pts
-			(xy 777.24 660.4) (xy 779.78 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7d4c8928-775b-566f-90d3-074a16b736dd")
-	)
-	(wire
-		(pts
 			(xy 523.24 127) (xy 525.78 127)
 		)
 		(stroke
@@ -9190,7 +9140,7 @@
 	)
 	(wire
 		(pts
-			(xy 563.88 711.2) (xy 566.42 711.2)
+			(xy 492.76 711.2) (xy 495.3 711.2)
 		)
 		(stroke
 			(width 0)
@@ -9220,13 +9170,33 @@
 	)
 	(wire
 		(pts
-			(xy 706.12 711.2) (xy 708.66 711.2)
+			(xy 635 711.2) (xy 637.54 711.2)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "80c5bf7e-3cac-5f96-b3ea-7fbe379f8f47")
+	)
+	(wire
+		(pts
+			(xy 66.04 660.4) (xy 68.58 660.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "80f121bf-020c-556b-90ee-cbb9b566bef3")
+	)
+	(wire
+		(pts
+			(xy 66.04 668.02) (xy 68.58 668.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8261c8bf-6a83-5116-896d-1340037f870c")
 	)
 	(wire
 		(pts
@@ -9250,13 +9220,13 @@
 	)
 	(wire
 		(pts
-			(xy 817.88 660.4) (xy 815.34 660.4)
+			(xy 66.04 662.94) (xy 68.58 662.94)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "856ce008-0ec1-58ec-a9f4-0ca05ccb8ce0")
+		(uuid "841042ea-48ef-536c-9463-2d07d04a1ae4")
 	)
 	(wire
 		(pts
@@ -9350,27 +9320,7 @@
 	)
 	(wire
 		(pts
-			(xy 960.12 660.4) (xy 957.58 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8a7ffc48-fc95-50bc-be6d-8ead1b18c35c")
-	)
-	(wire
-		(pts
-			(xy 990.6 660.4) (xy 993.14 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8b23d1d0-0d65-512f-a602-ca9d1f709552")
-	)
-	(wire
-		(pts
-			(xy 106.68 711.2) (xy 104.14 711.2)
+			(xy 35.56 711.2) (xy 33.02 711.2)
 		)
 		(stroke
 			(width 0)
@@ -9450,33 +9400,13 @@
 	)
 	(wire
 		(pts
-			(xy 604.52 660.4) (xy 601.98 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9095288c-b92a-5fcc-90af-87dfb1f6b21c")
-	)
-	(wire
-		(pts
-			(xy 635 711.2) (xy 637.54 711.2)
+			(xy 563.88 711.2) (xy 566.42 711.2)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "90c4f224-d1d6-5e71-b4ed-dd9606eb6ac0")
-	)
-	(wire
-		(pts
-			(xy 208.28 660.4) (xy 210.82 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "911ed174-f232-52c3-ab2c-789b4898b40a")
 	)
 	(bus
 		(pts
@@ -9740,26 +9670,6 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 711.2) (xy 68.58 711.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a1a194f6-a858-5cfe-bdf2-faaf69b68a4b")
-	)
-	(wire
-		(pts
-			(xy 492.76 660.4) (xy 495.3 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a20f1400-2f82-537e-8e65-6299e50656f8")
-	)
-	(wire
-		(pts
 			(xy 279.4 777.24) (xy 279.4 779.78)
 		)
 		(stroke
@@ -9797,6 +9707,26 @@
 			(type default)
 		)
 		(uuid "a3c10ee0-0bc0-567c-a83c-2a50f9e9c300")
+	)
+	(wire
+		(pts
+			(xy 66.04 665.48) (xy 68.58 665.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a3d3a504-285c-5a35-affe-50ac36057c11")
+	)
+	(wire
+		(pts
+			(xy 66.04 655.32) (xy 68.58 655.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a43b42f5-f3f3-51da-8ce8-8a985945f2ab")
 	)
 	(wire
 		(pts
@@ -9870,7 +9800,7 @@
 	)
 	(wire
 		(pts
-			(xy 746.76 711.2) (xy 744.22 711.2)
+			(xy 675.64 711.2) (xy 673.1 711.2)
 		)
 		(stroke
 			(width 0)
@@ -9910,7 +9840,7 @@
 	)
 	(wire
 		(pts
-			(xy 279.4 711.2) (xy 281.94 711.2)
+			(xy 208.28 711.2) (xy 210.82 711.2)
 		)
 		(stroke
 			(width 0)
@@ -9970,13 +9900,23 @@
 	)
 	(wire
 		(pts
-			(xy 350.52 711.2) (xy 353.06 711.2)
+			(xy 279.4 711.2) (xy 281.94 711.2)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "af0beef9-e4bf-5a6b-81e6-a08f91b3c2a3")
+	)
+	(wire
+		(pts
+			(xy 167.64 660.4) (xy 170.18 660.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b0219960-f806-504d-a289-0b1670f25863")
 	)
 	(wire
 		(pts
@@ -9987,16 +9927,6 @@
 			(type default)
 		)
 		(uuid "b134cc7b-2da4-5ba0-ba26-c01e0b0f5c5d")
-	)
-	(wire
-		(pts
-			(xy 35.56 711.2) (xy 33.02 711.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b1789e4c-a685-5994-afae-6b67e6319012")
 	)
 	(wire
 		(pts
@@ -10070,7 +10000,7 @@
 	)
 	(wire
 		(pts
-			(xy 177.8 711.2) (xy 175.26 711.2)
+			(xy 106.68 711.2) (xy 104.14 711.2)
 		)
 		(stroke
 			(width 0)
@@ -10220,6 +10150,16 @@
 	)
 	(wire
 		(pts
+			(xy 50.8 674.37) (xy 50.8 671.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bab74306-1888-532e-81fb-0883f085a600")
+	)
+	(wire
+		(pts
 			(xy 523.24 322.58) (xy 525.78 322.58)
 		)
 		(stroke
@@ -10260,16 +10200,6 @@
 	)
 	(wire
 		(pts
-			(xy 462.28 660.4) (xy 459.74 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bbe47113-5a63-582a-8d3e-de61c432502c")
-	)
-	(wire
-		(pts
 			(xy 167.64 162.56) (xy 170.18 162.56)
 		)
 		(stroke
@@ -10287,16 +10217,6 @@
 			(type default)
 		)
 		(uuid "bd24132f-865e-5529-9237-e9af48963acd")
-	)
-	(wire
-		(pts
-			(xy 66.04 660.4) (xy 68.58 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "be0b2c33-7c8c-5e88-9ebc-8460cdce2ba8")
 	)
 	(wire
 		(pts
@@ -10360,16 +10280,6 @@
 	)
 	(wire
 		(pts
-			(xy 320.04 660.4) (xy 317.5 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c10e8078-2f5f-5ca3-a689-b98b203926e1")
-	)
-	(wire
-		(pts
 			(xy 228.6 429.26) (xy 228.6 424.18)
 		)
 		(stroke
@@ -10407,16 +10317,6 @@
 			(type default)
 		)
 		(uuid "c2c01624-6bf3-598a-8078-863ecfaf4bfc")
-	)
-	(wire
-		(pts
-			(xy 563.88 660.4) (xy 566.42 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c3fc8b93-ee8e-525c-9936-67bc0c197d2a")
 	)
 	(wire
 		(pts
@@ -10500,16 +10400,6 @@
 	)
 	(wire
 		(pts
-			(xy 1061.72 660.4) (xy 1064.26 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c85f8d4e-0288-51c9-95c1-476e1bc9f79c")
-	)
-	(wire
-		(pts
 			(xy 317.5 226.06) (xy 317.5 220.98)
 		)
 		(stroke
@@ -10570,7 +10460,7 @@
 	)
 	(wire
 		(pts
-			(xy 777.24 711.2) (xy 779.78 711.2)
+			(xy 706.12 711.2) (xy 708.66 711.2)
 		)
 		(stroke
 			(width 0)
@@ -10600,17 +10490,7 @@
 	)
 	(wire
 		(pts
-			(xy 889 660.4) (xy 886.46 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cfcfca26-e5a7-5e66-ae45-2e19c27455cf")
-	)
-	(wire
-		(pts
-			(xy 889 711.2) (xy 886.46 711.2)
+			(xy 817.88 711.2) (xy 815.34 711.2)
 		)
 		(stroke
 			(width 0)
@@ -10630,7 +10510,17 @@
 	)
 	(wire
 		(pts
-			(xy 320.04 711.2) (xy 317.5 711.2)
+			(xy 167.64 652.78) (xy 170.18 652.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d0af7038-7163-53a1-a271-00b808b7d0cf")
+	)
+	(wire
+		(pts
+			(xy 248.92 711.2) (xy 246.38 711.2)
 		)
 		(stroke
 			(width 0)
@@ -11000,16 +10890,6 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 660.4) (xy 139.7 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e75c22a9-fedc-5731-ab99-ab2ab3544bc0")
-	)
-	(wire
-		(pts
 			(xy 584.2 797.56) (xy 584.2 795.02)
 		)
 		(stroke
@@ -11160,16 +11040,6 @@
 	)
 	(wire
 		(pts
-			(xy 279.4 660.4) (xy 281.94 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eed019cf-80e0-5267-8f29-50b9c3e7fdb1")
-	)
-	(wire
-		(pts
 			(xy 736.6 777.24) (xy 736.6 779.78)
 		)
 		(stroke
@@ -11177,6 +11047,16 @@
 			(type default)
 		)
 		(uuid "ef44fabb-e1e8-5982-a95b-27d6edbba602")
+	)
+	(wire
+		(pts
+			(xy 167.64 668.02) (xy 170.18 668.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ef6f2566-a65c-51a8-8496-94b67d598356")
 	)
 	(wire
 		(pts
@@ -11190,7 +11070,7 @@
 	)
 	(wire
 		(pts
-			(xy 391.16 711.2) (xy 388.62 711.2)
+			(xy 320.04 711.2) (xy 317.5 711.2)
 		)
 		(stroke
 			(width 0)
@@ -11227,26 +11107,6 @@
 			(type default)
 		)
 		(uuid "f2b53afe-d1b2-5896-b28b-18f6d16942c7")
-	)
-	(wire
-		(pts
-			(xy 848.36 660.4) (xy 850.9 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f32425b8-a16d-521d-9b3a-2b6142d91ea2")
-	)
-	(wire
-		(pts
-			(xy 350.52 660.4) (xy 353.06 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f4cc4cd9-3ec2-5043-ae8b-60ca120e3a1c")
 	)
 	(wire
 		(pts
@@ -11360,7 +11220,17 @@
 	)
 	(wire
 		(pts
-			(xy 462.28 711.2) (xy 459.74 711.2)
+			(xy 66.04 670.56) (xy 68.58 670.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fb66f764-f29d-5c2f-9fde-7161f4e2afc2")
+	)
+	(wire
+		(pts
+			(xy 391.16 711.2) (xy 388.62 711.2)
 		)
 		(stroke
 			(width 0)
@@ -11410,16 +11280,6 @@
 	)
 	(wire
 		(pts
-			(xy 106.68 660.4) (xy 104.14 660.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ff543155-bb74-59fb-961b-219c9782e2f8")
-	)
-	(wire
-		(pts
 			(xy 929.64 353.06) (xy 932.18 353.06)
 		)
 		(stroke
@@ -11440,7 +11300,7 @@
 	)
 	(wire
 		(pts
-			(xy 848.36 711.2) (xy 850.9 711.2)
+			(xy 777.24 711.2) (xy 779.78 711.2)
 		)
 		(stroke
 			(width 0)
@@ -11450,7 +11310,7 @@
 	)
 	(wire
 		(pts
-			(xy 208.28 711.2) (xy 210.82 711.2)
+			(xy 137.16 711.2) (xy 139.7 711.2)
 		)
 		(stroke
 			(width 0)
@@ -11493,15 +11353,6 @@
 			)
 		)
 		(uuid "00167fa8-6278-5688-bb9a-bdc9485d93b4")
-	)
-	(label "+5V"
-		(at 210.82 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "002a49a8-3f66-5b83-bad5-2900f7955d7b")
 	)
 	(label "GND"
 		(at 914.4 290.83 90)
@@ -11620,15 +11471,6 @@
 		)
 		(uuid "056809b6-8261-507f-8c7b-62e960f6a136")
 	)
-	(label "+5V"
-		(at 424.18 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "06780b43-7df3-5c1f-a344-8dd4dd1e0717")
-	)
 	(label "PICO_D1"
 		(at 845.82 142.24 0)
 		(effects
@@ -11675,7 +11517,7 @@
 		(uuid "095a998d-9bd4-5fb3-b843-435a00fe4e5c")
 	)
 	(label "PICO_WE_N"
-		(at 317.5 711.2 0)
+		(at 246.38 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -11729,7 +11571,7 @@
 		(uuid "0bec1dab-f918-5202-a0a3-ec7d7db4928f")
 	)
 	(label "+3V3"
-		(at 210.82 711.2 0)
+		(at 139.7 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -11745,15 +11587,6 @@
 			)
 		)
 		(uuid "0c8804b6-7dbf-535d-9f8e-3e5d5c239096")
-	)
-	(label "+5V"
-		(at 566.42 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "0c8b171d-69d3-53db-9ef6-1d3af50dea47")
 	)
 	(label "A11"
 		(at 271.78 495.3 0)
@@ -11791,17 +11624,8 @@
 		)
 		(uuid "0ec338a1-9249-5ede-9029-2fbb799644bf")
 	)
-	(label "WAIT_N"
-		(at 744.22 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "10e42abe-7b64-50ca-89b0-c5591332c775")
-	)
 	(label "PICO_CE_N"
-		(at 175.26 711.2 0)
+		(at 104.14 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -11862,24 +11686,6 @@
 			)
 		)
 		(uuid "13e8e753-1f15-56e7-bf22-8870043b7746")
-	)
-	(label "+5V"
-		(at 353.06 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "13ece8ea-f039-5fa2-9a46-e101a217f4b2")
-	)
-	(label "+5V"
-		(at 637.54 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "1400bb13-c877-5092-af7e-c68f9641ed3d")
 	)
 	(label "PICO_D5"
 		(at 896.62 302.26 0)
@@ -11944,15 +11750,6 @@
 		)
 		(uuid "18234f66-0567-5ef0-b42d-dd0e5de69417")
 	)
-	(label "+5V"
-		(at 993.14 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "18af32aa-d08c-5925-9e80-be964704fdc2")
-	)
 	(label "A8"
 		(at 271.78 543.56 0)
 		(effects
@@ -11988,15 +11785,6 @@
 			)
 		)
 		(uuid "1930a8e9-64f0-5632-8770-f2b822cee642")
-	)
-	(label "MREQ_N"
-		(at 175.26 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "198eca5d-a7b5-59a7-8c20-090b1a37e297")
 	)
 	(label "A0"
 		(at 228.6 200.66 90)
@@ -12061,24 +11849,6 @@
 		)
 		(uuid "206e26c7-bbf2-5390-a826-428caf41ac46")
 	)
-	(label "WR_N"
-		(at 388.62 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "20fb5d86-65cd-586e-ad12-01cb1d8da57c")
-	)
-	(label "INT_N"
-		(at 815.34 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "22570fee-96b0-573a-9eef-019da3255a1d")
-	)
 	(label "D[0..7]"
 		(at 220.98 228.6 0)
 		(effects
@@ -12142,6 +11912,15 @@
 		)
 		(uuid "26e3ede2-9afa-5cd1-a6d1-31f93bbb29c8")
 	)
+	(label "MREQ_N"
+		(at 68.58 665.48 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "28384ae7-cd48-5684-bf3c-c3ed959dbdc9")
+	)
 	(label "PICO_BUSREQ_N"
 		(at 642.62 271.78 90)
 		(effects
@@ -12169,6 +11948,15 @@
 		)
 		(uuid "29b980be-f44f-565b-8aaf-c71452275727")
 	)
+	(label "MCP_SO"
+		(at 170.18 670.56 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "29d41481-eda1-5497-9121-b61fb190962c")
+	)
 	(label "+3V3"
 		(at 812.8 496.57 90)
 		(effects
@@ -12188,7 +11976,7 @@
 		(uuid "2a2e5c82-8122-51a9-9cc6-438a423f215b")
 	)
 	(label "GND"
-		(at 708.66 711.2 0)
+		(at 637.54 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -12224,7 +12012,7 @@
 		(uuid "2d6e3467-fa54-5d6b-b915-e598db57dee4")
 	)
 	(label "+3V3"
-		(at 353.06 711.2 0)
+		(at 281.94 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -12250,17 +12038,8 @@
 		)
 		(uuid "304e8f08-82ed-5212-b6cd-b9e19e64dbfb")
 	)
-	(label "SRAM_CE_N"
-		(at 530.86 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "305596a2-b28d-54a7-bdda-e3e8aa317981")
-	)
 	(label "PICO_BUSREQ_N"
-		(at 104.14 711.2 0)
+		(at 33.02 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -12384,6 +12163,15 @@
 			)
 		)
 		(uuid "3609a71f-1c1c-513b-b1bd-98a5ddfc4b18")
+	)
+	(label "NMI_N"
+		(at 68.58 652.78 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "3652fb6f-3d75-53e7-9284-a6e7cdb1f35d")
 	)
 	(label "SRAM_WE_N"
 		(at 170.18 142.24 0)
@@ -12601,6 +12389,24 @@
 		)
 		(uuid "44db7eee-98be-5f47-9fe7-b0ef39ee26ed")
 	)
+	(label "WR_N"
+		(at 68.58 657.86 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "458c2477-ed02-5755-87f4-7c5f062ff8b2")
+	)
+	(label "+5V"
+		(at 50.8 671.83 90)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "459d2370-842d-5495-9c06-af1bcc079a60")
+	)
 	(label "PICO_OE_N"
 		(at 246.38 101.6 90)
 		(effects
@@ -12673,15 +12479,6 @@
 		)
 		(uuid "4b4d893c-87ce-5eb8-89ed-f0de1a0c07ca")
 	)
-	(label "+5V"
-		(at 495.3 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "4bb51856-3b1a-5a99-8a90-e830791e3c75")
-	)
 	(label "PICO_D1"
 		(at 795.02 312.42 0)
 		(effects
@@ -12753,6 +12550,15 @@
 			)
 		)
 		(uuid "506ee8d2-2143-5612-b47f-af885eed1b48")
+	)
+	(label "SRAM_OE_N"
+		(at 170.18 665.48 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "51714612-c989-5266-a344-d938f9b6a0e4")
 	)
 	(label "PICO_WR_N"
 		(at 881.38 144.78 0)
@@ -12908,7 +12714,7 @@
 		(uuid "5c9118ff-57ff-503b-9c04-e34c7725b2c8")
 	)
 	(label "DATA_ENABLE"
-		(at 601.98 711.2 0)
+		(at 530.86 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -12926,7 +12732,7 @@
 		(uuid "5d5b0fc2-847c-564b-9ce2-46e96aa24919")
 	)
 	(label "GND"
-		(at 779.78 711.2 0)
+		(at 708.66 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -12951,6 +12757,15 @@
 			)
 		)
 		(uuid "5e5045f6-e5b8-5791-8ffe-832d2ec9d926")
+	)
+	(label "SRAM_WE_PRE_N"
+		(at 170.18 657.86 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "5eae3783-a333-5f75-94d3-ef9ec593a3d9")
 	)
 	(label "BUSREQ_N"
 		(at 490.22 139.7 0)
@@ -13005,15 +12820,6 @@
 			)
 		)
 		(uuid "61db0c5c-e916-5982-ad8e-e2572c5bb3dc")
-	)
-	(label "SRAM_WE_N"
-		(at 673.1 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "62c1d960-65a8-5b55-8c21-55bd60f1550d")
 	)
 	(label "GND"
 		(at 660.4 779.78 90)
@@ -13105,15 +12911,6 @@
 		)
 		(uuid "68605332-2598-53f5-bb67-2b828d731db3")
 	)
-	(label "RD_N"
-		(at 317.5 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "691a6d12-1790-50d4-b597-56c19b7b0ea8")
-	)
 	(label "GND"
 		(at 508 120.65 90)
 		(effects
@@ -13158,15 +12955,6 @@
 			)
 		)
 		(uuid "6d1ebd27-fb8a-5489-beb7-63568d3f4048")
-	)
-	(label "IORQ_N"
-		(at 246.38 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "6d2b4558-1b75-5827-8e6d-5981998c1acb")
 	)
 	(label "D0"
 		(at 932.18 314.96 0)
@@ -13223,7 +13011,7 @@
 		(uuid "6f80df6a-b30c-59dc-81ce-24627fea91f0")
 	)
 	(label "GND"
-		(at 495.3 711.2 0)
+		(at 424.18 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -13293,6 +13081,15 @@
 			)
 		)
 		(uuid "71359b18-f3cb-513e-9dd9-d71cc45a0c0c")
+	)
+	(label "RD_N"
+		(at 68.58 660.4 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "7225e12e-0346-53f3-afd5-b2e5e85c644e")
 	)
 	(label "D6"
 		(at 490.22 160.02 0)
@@ -13564,14 +13361,14 @@
 		)
 		(uuid "841689d9-e220-516c-a346-a5d5b928f80c")
 	)
-	(label "SRAM_OE_PRE_N"
-		(at 1028.7 660.4 0)
+	(label "WAIT_N"
+		(at 170.18 660.4 0)
 		(effects
 			(font
 				(size 1 1)
 			)
 		)
-		(uuid "85023426-b02f-5b9f-8bce-d8b1eeeccde3")
+		(uuid "85079e32-172a-57d3-83b6-9e4817eefe82")
 	)
 	(label "A8"
 		(at 134.62 137.16 0)
@@ -13617,6 +13414,15 @@
 			)
 		)
 		(uuid "883ee36c-b7b0-5aff-beaf-3f83c682632d")
+	)
+	(label "INT_N"
+		(at 68.58 655.32 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "886e4b97-9910-5d19-88b8-b7f6c8763cf8")
 	)
 	(label "ADDR_ENABLE"
 		(at 134.62 322.58 0)
@@ -13664,7 +13470,7 @@
 		(uuid "89e85cec-a45b-55c4-96c3-dcce96f38a65")
 	)
 	(label "ADDR_ENABLE"
-		(at 744.22 711.2 0)
+		(at 673.1 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -13717,17 +13523,8 @@
 		)
 		(uuid "8eab759c-4106-5ef1-9b69-df07b6303394")
 	)
-	(label "MCP_SO"
-		(at 459.74 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "8ec52e89-8562-5982-b203-e05a360f7e9e")
-	)
 	(label "RESET_N"
-		(at 530.86 711.2 0)
+		(at 459.74 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -13743,15 +13540,6 @@
 			)
 		)
 		(uuid "8fdcb6f3-927f-5377-ac39-953684298d64")
-	)
-	(label "+5V"
-		(at 779.78 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "90cf1e05-d25b-5b49-8805-acfde754df29")
 	)
 	(label "A5"
 		(at 525.78 137.16 0)
@@ -13825,15 +13613,6 @@
 		)
 		(uuid "975f40a4-52b9-5f86-9a89-13ccf1560830")
 	)
-	(label "+5V"
-		(at 922.02 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "9776af4a-c982-581c-803c-d4e373f96540")
-	)
 	(label "PICO_RD_N"
 		(at 660.4 396.24 90)
 		(effects
@@ -13843,8 +13622,17 @@
 		)
 		(uuid "97b986bb-6efb-5eb6-88b1-d0f670d955c9")
 	)
+	(label "+5V"
+		(at 152.4 671.83 90)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "97f7e4fe-cff7-5214-8474-e6894b3be393")
+	)
 	(label "GND"
-		(at 637.54 711.2 0)
+		(at 566.42 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -13869,6 +13657,15 @@
 			)
 		)
 		(uuid "9832f1ea-3b17-53db-87e7-4ad6d84b7bcf")
+	)
+	(label "SRAM_WE_N"
+		(at 170.18 662.94 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "995ded8f-bad2-5702-9ea6-715c9cf1a114")
 	)
 	(label "DATA_ENABLE"
 		(at 246.38 449.58 90)
@@ -13916,7 +13713,7 @@
 		(uuid "9bf33d2b-54f1-5941-ab09-57371e680a8e")
 	)
 	(label "PICO_SPI_CS_N"
-		(at 246.38 711.2 0)
+		(at 175.26 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14078,7 +13875,7 @@
 		(uuid "a382ec3f-a62a-5ff8-805f-4772009b6bae")
 	)
 	(label "+3V3"
-		(at 139.7 711.2 0)
+		(at 68.58 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14103,15 +13900,6 @@
 			)
 		)
 		(uuid "a3ced96e-d33e-54cf-b776-488f555cd499")
-	)
-	(label "SRAM_CE_PRE_N"
-		(at 33.02 711.2 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "a3ea15b8-ea80-5311-b1d1-39b9a34a598a")
 	)
 	(label "PICO_D4"
 		(at 845.82 132.08 0)
@@ -14158,6 +13946,15 @@
 		)
 		(uuid "a731a799-3916-5b43-b64e-3763e2cb8b30")
 	)
+	(label "SRAM_OE_PRE_N"
+		(at 170.18 655.32 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "a8814955-256f-53e5-a885-c237ae857dcd")
+	)
 	(label "NMI_N"
 		(at 490.22 144.78 0)
 		(effects
@@ -14168,7 +13965,7 @@
 		(uuid "a8bd2639-a757-510b-a38f-e6b90f7d2253")
 	)
 	(label "+3V3"
-		(at 281.94 711.2 0)
+		(at 210.82 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14195,7 +13992,7 @@
 		(uuid "aa94951a-e680-567a-8cf7-e9c84c37b8fa")
 	)
 	(label "GND"
-		(at 922.02 711.2 0)
+		(at 850.9 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14257,8 +14054,17 @@
 		)
 		(uuid "adfdb777-3a3d-5b44-bbe1-5d01e871e653")
 	)
+	(label "SRAM_CE_PRE_N"
+		(at 170.18 652.78 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "ae5ad0ed-104c-568b-abf7-0d58130b4fef")
+	)
 	(label "DATA_DIR"
-		(at 673.1 711.2 0)
+		(at 601.98 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14311,14 +14117,14 @@
 		)
 		(uuid "b042c41d-aae7-5cec-b212-fe0219a9eec1")
 	)
-	(label "+5V"
-		(at 1064.26 660.4 0)
+	(label "IORQ_N"
+		(at 68.58 662.94 0)
 		(effects
 			(font
 				(size 1 1)
 			)
 		)
-		(uuid "b2134b88-d926-548d-b007-4b301744769b")
+		(uuid "b18a7d86-f99c-5b70-8c57-3d21dc3088c6")
 	)
 	(label "GND"
 		(at 127 779.78 90)
@@ -14328,6 +14134,15 @@
 			)
 		)
 		(uuid "b235cffe-7b35-5146-af1b-c36647d6358a")
+	)
+	(label "SRAM_CE_N"
+		(at 170.18 668.02 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "b2664f81-6cd1-5026-903b-808ab68e0259")
 	)
 	(label "D6"
 		(at 170.18 152.4 0)
@@ -14392,15 +14207,6 @@
 		)
 		(uuid "b5c9d2a6-b2b8-5b31-abda-7e4fbe7e4900")
 	)
-	(label "BUSREQ_N"
-		(at 33.02 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "b5ea94f3-5ece-5533-a8c0-45a3b074c5eb")
-	)
 	(label "PICO_SPI_MOSI"
 		(at 695.96 271.78 90)
 		(effects
@@ -14427,24 +14233,6 @@
 			)
 		)
 		(uuid "b71d7fc0-fc90-5e3a-ac45-5572a69c53bd")
-	)
-	(label "+5V"
-		(at 139.7 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "b9a553c4-e2e1-5a09-8d97-7ef7d048d872")
-	)
-	(label "+5V"
-		(at 850.9 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "ba95a40a-550a-57fc-8fe8-e91aa7b401f8")
 	)
 	(label "WR_N"
 		(at 678.18 368.3 90)
@@ -14490,15 +14278,6 @@
 			)
 		)
 		(uuid "bc1df0d0-e2f2-5023-b5d1-332f52ffa090")
-	)
-	(label "+5V"
-		(at 708.66 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "bccba726-43d1-5613-a6fe-3985f396580c")
 	)
 	(label "MCP_RESET_N"
 		(at 236.22 477.52 0)
@@ -14582,7 +14361,7 @@
 		(uuid "c36ddb51-fc77-5eb6-abf2-fbdf3a80ec0d")
 	)
 	(label "PICO_OE_N"
-		(at 388.62 711.2 0)
+		(at 317.5 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14689,8 +14468,17 @@
 		)
 		(uuid "cc12bf0b-7e22-52eb-968b-75a33454121d")
 	)
+	(label "BUSACK_N"
+		(at 68.58 668.02 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "cc520ba0-5d96-5309-b5fd-2f6d69eae09d")
+	)
 	(label "GND"
-		(at 850.9 711.2 0)
+		(at 779.78 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14726,7 +14514,7 @@
 		(uuid "cdaf19e5-8605-5223-9fcc-cfd11d2b2b2e")
 	)
 	(label "PICO_CLK"
-		(at 459.74 711.2 0)
+		(at 388.62 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14761,15 +14549,6 @@
 		)
 		(uuid "d1cec1f6-15d1-5315-9743-e48947be1237")
 	)
-	(label "+5V"
-		(at 68.58 711.2 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "d2455db1-fef7-5208-a907-4f5428e70629")
-	)
 	(label "A4"
 		(at 284.48 200.66 90)
 		(effects
@@ -14789,7 +14568,7 @@
 		(uuid "d2f2f1d8-7a93-5a55-9492-934c449f6ebc")
 	)
 	(label "GND"
-		(at 566.42 711.2 0)
+		(at 495.3 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -14833,24 +14612,6 @@
 		)
 		(uuid "d6f5c374-493d-58d6-a8e4-e13ed908a1f6")
 	)
-	(label "SRAM_WE_PRE_N"
-		(at 957.58 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "d79b3fdb-f66d-5c0c-b442-eff01dcc2698")
-	)
-	(label "NMI_N"
-		(at 886.46 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "d8292465-5210-56fa-9d62-3bc84db8af30")
-	)
 	(label "A5"
 		(at 298.45 200.66 90)
 		(effects
@@ -14859,15 +14620,6 @@
 			)
 		)
 		(uuid "d8423135-d05c-5ebe-a279-872420c9f1a2")
-	)
-	(label "BUSACK_N"
-		(at 104.14 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "d8531008-d0f3-581f-9192-f9184bc0a0af")
 	)
 	(label "PICO_D2"
 		(at 660.4 200.66 90)
@@ -14914,15 +14666,6 @@
 		)
 		(uuid "dc38099a-227d-5da1-b4e1-ce9ac325fbe1")
 	)
-	(label "+5V"
-		(at 281.94 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "dcaae693-a77d-5d54-be05-6e1ee2f01160")
-	)
 	(label "ADDR_ENABLE"
 		(at 845.82 149.86 0)
 		(effects
@@ -14940,6 +14683,15 @@
 			)
 		)
 		(uuid "dda42cef-f251-5b64-a1e8-3210aadf3c9b")
+	)
+	(label "BUSREQ_N"
+		(at 68.58 670.56 0)
+		(effects
+			(font
+				(size 1 1)
+			)
+		)
+		(uuid "ddcbf8aa-9df3-5929-970b-500b61b9847d")
 	)
 	(label "DATA_UP_OE_N"
 		(at 264.16 449.58 90)
@@ -15022,15 +14774,6 @@
 		)
 		(uuid "e3df0359-36a1-57e5-b357-a9259082aa24")
 	)
-	(label "+5V"
-		(at 68.58 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "e4646bb4-4d43-5869-a03f-3eb7fcccfddd")
-	)
 	(label "PICO_SPI_SCK"
 		(at 881.38 170.18 0)
 		(effects
@@ -15059,7 +14802,7 @@
 		(uuid "e6b2d016-b08d-52c0-ad77-add443b2009a")
 	)
 	(label "PICO_SPI_SCK"
-		(at 815.34 711.2 0)
+		(at 744.22 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -15104,7 +14847,7 @@
 		(uuid "eaee43f8-033b-5b13-a76b-cf24405be475")
 	)
 	(label "+3V3"
-		(at 424.18 711.2 0)
+		(at 353.06 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -15138,15 +14881,6 @@
 			)
 		)
 		(uuid "ecbbb145-75fa-5f54-b7c7-cd37ddbd54b5")
-	)
-	(label "SRAM_OE_N"
-		(at 601.98 660.4 0)
-		(effects
-			(font
-				(size 1 1)
-			)
-		)
-		(uuid "ecc2ccdc-391c-5ffd-bfad-930c24158308")
 	)
 	(label "PICO_SPI_MISO"
 		(at 695.96 396.24 90)
@@ -15248,7 +14982,7 @@
 		(uuid "f0ae34c9-dbed-5af2-8dcc-fcf5fe8b9763")
 	)
 	(label "PICO_SPI_MOSI"
-		(at 886.46 711.2 0)
+		(at 815.34 711.2 0)
 		(effects
 			(font
 				(size 1 1)
@@ -15410,85 +15144,6 @@
 		(uuid "ffb9eecf-124c-561b-aed1-f0345d6db5e9")
 	)
 	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 975.36 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "02b41b84-1b8c-5c77-a0f9-d40e8eac06c4")
-		(property "Reference" "R14"
-			(at 975.36 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 975.36 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 975.36 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 975.36 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_WE_PRE_N"
-			(at 975.36 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "01ccddb5-9545-5531-8936-72cfdac2c259")
-		)
-		(pin "2"
-			(uuid "a12e9df9-f90a-5c74-954c-bddae7b13063")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R14")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Z80SBC:LVC244")
 		(at 812.8 482.6 0)
 		(unit 1)
@@ -15552,38 +15207,44 @@
 				)
 			)
 		)
-		(pin "3"
-			(uuid "361bd6d4-e35d-5efd-8862-0f412ea0a58f")
+		(pin "20"
+			(uuid "f5bce775-ac7d-5868-9033-94c01ae2f290")
 		)
 		(pin "2"
 			(uuid "24257ea9-82f1-5837-9afd-7adc38d4dea6")
 		)
+		(pin "7"
+			(uuid "7f5420ef-03d9-5bd6-ba40-0a4e317b2191")
+		)
+		(pin "15"
+			(uuid "11b4aaa0-1a27-5911-8ad3-050f89d1421b")
+		)
 		(pin "14"
 			(uuid "734b5938-aeef-5f06-940a-e4f59b26f42c")
 		)
-		(pin "13"
-			(uuid "05b6feb3-f754-588b-8b62-5f9e7a48d66d")
+		(pin "4"
+			(uuid "676eb025-a5ca-5480-a1da-598a83224b79")
 		)
-		(pin "19"
-			(uuid "0e28034a-b94f-5322-aa0b-8a58643d104c")
-		)
-		(pin "6"
-			(uuid "61cc0394-213d-5fb1-982f-6a4f71d030e3")
-		)
-		(pin "18"
-			(uuid "dfba7a52-d2d4-5b58-9d5d-653e28c749d5")
+		(pin "5"
+			(uuid "bcc81806-e017-5739-b827-cb8716954b48")
 		)
 		(pin "12"
 			(uuid "4fa21636-79ad-581a-b609-875b86baa312")
 		)
+		(pin "3"
+			(uuid "361bd6d4-e35d-5efd-8862-0f412ea0a58f")
+		)
+		(pin "18"
+			(uuid "dfba7a52-d2d4-5b58-9d5d-653e28c749d5")
+		)
 		(pin "1"
 			(uuid "bb689f9c-71ab-5b21-84ca-cc5f08a51c73")
 		)
-		(pin "11"
-			(uuid "c33b3190-6fd6-58e1-8f22-344dfbb99aa8")
+		(pin "8"
+			(uuid "89eb0743-873c-5388-b983-22d2eb005838")
 		)
-		(pin "15"
-			(uuid "11b4aaa0-1a27-5911-8ad3-050f89d1421b")
+		(pin "19"
+			(uuid "0e28034a-b94f-5322-aa0b-8a58643d104c")
 		)
 		(pin "9"
 			(uuid "f6eec8fc-d185-5f3a-b6f5-0db537adff88")
@@ -15591,26 +15252,20 @@
 		(pin "10"
 			(uuid "a408eb7d-0de3-5ca6-b21d-f31ca28e0b4d")
 		)
-		(pin "7"
-			(uuid "7f5420ef-03d9-5bd6-ba40-0a4e317b2191")
+		(pin "6"
+			(uuid "61cc0394-213d-5fb1-982f-6a4f71d030e3")
 		)
 		(pin "17"
 			(uuid "4377583e-41d2-51e8-be0c-73760d39fd33")
 		)
-		(pin "20"
-			(uuid "f5bce775-ac7d-5868-9033-94c01ae2f290")
-		)
-		(pin "8"
-			(uuid "89eb0743-873c-5388-b983-22d2eb005838")
-		)
-		(pin "5"
-			(uuid "bcc81806-e017-5739-b827-cb8716954b48")
-		)
-		(pin "4"
-			(uuid "676eb025-a5ca-5480-a1da-598a83224b79")
-		)
 		(pin "16"
 			(uuid "f7a47dc5-1a88-5c4e-adf8-b0dd5a3058c2")
+		)
+		(pin "13"
+			(uuid "05b6feb3-f754-588b-8b62-5f9e7a48d66d")
+		)
+		(pin "11"
+			(uuid "c33b3190-6fd6-58e1-8f22-344dfbb99aa8")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -15685,11 +15340,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "7ae40d75-1d78-52ab-8daf-becddb5657dc")
-		)
 		(pin "2"
 			(uuid "68db8ca6-36d0-56aa-9840-7a4796cd1615")
+		)
+		(pin "1"
+			(uuid "7ae40d75-1d78-52ab-8daf-becddb5657dc")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -15702,7 +15357,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 193.04 711.2 0)
+		(at 121.92 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -15712,7 +15367,7 @@
 		(dnp no)
 		(uuid "0909fa2f-eaaa-5247-abc3-3d6aa6ad206f")
 		(property "Reference" "R18"
-			(at 193.04 698.5 0)
+			(at 121.92 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -15722,7 +15377,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 193.04 723.9 0)
+			(at 121.92 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -15732,7 +15387,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 193.04 711.2 0)
+			(at 121.92 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15743,7 +15398,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 193.04 711.2 0)
+			(at 121.92 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15754,7 +15409,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_CE_N"
-			(at 193.04 711.2 0)
+			(at 121.92 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15764,11 +15419,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "c9fa41e5-7872-5562-abf5-c47285fed6bd")
-		)
 		(pin "2"
 			(uuid "a33a0496-27d6-5a08-8692-0cff1e4edf89")
+		)
+		(pin "1"
+			(uuid "c9fa41e5-7872-5562-abf5-c47285fed6bd")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -15843,11 +15498,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "318f0fe7-60c6-535a-963a-3a9dee7c8a5e")
-		)
 		(pin "2"
 			(uuid "f6daee76-1b0a-5708-bff2-d27d830bc18d")
+		)
+		(pin "1"
+			(uuid "318f0fe7-60c6-535a-963a-3a9dee7c8a5e")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -15922,11 +15577,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "350b006d-efa9-5b20-9958-4581be40c8c6")
-		)
 		(pin "2"
 			(uuid "870602fd-4ad8-51bf-b4aa-6fbf745b8804")
+		)
+		(pin "1"
+			(uuid "350b006d-efa9-5b20-9958-4581be40c8c6")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16001,50 +15656,92 @@
 				)
 			)
 		)
-		(pin "37"
-			(uuid "c15b2144-9128-5f39-a4fa-20f6d3f69797")
+		(pin "20"
+			(uuid "443ba982-6897-5dc5-9e81-c56febd66525")
 		)
-		(pin "24"
-			(uuid "b4788e88-5683-5716-b398-5140b30f3d19")
+		(pin "4"
+			(uuid "0b22217c-09c8-559f-a87e-f85618ca891f")
 		)
-		(pin "26"
-			(uuid "29abd546-aa87-53c2-90fa-9e1e0b4643ac")
+		(pin "5"
+			(uuid "513add71-5719-5da8-b391-85d303f5b6d5")
 		)
-		(pin "13"
-			(uuid "1f93e021-4490-567a-9aaa-f35c25f9ffab")
-		)
-		(pin "23"
-			(uuid "95e6b507-3ae5-5795-a5f2-6fa6e43ca797")
-		)
-		(pin "19"
-			(uuid "ffe942d6-d06d-580c-87b8-4ae2771b0884")
-		)
-		(pin "22"
-			(uuid "89225941-d85c-579d-aa88-2b694b4722df")
-		)
-		(pin "6"
-			(uuid "083e92e4-121d-592d-810b-788f57da45c2")
-		)
-		(pin "18"
-			(uuid "1b938e03-71fa-5ffe-94d7-bf61ec6866ca")
+		(pin "34"
+			(uuid "5d17ac7a-7594-5066-bd0a-2d90cec6e52c")
 		)
 		(pin "12"
 			(uuid "3c47bc6d-9330-5a71-ae27-413683ce1c19")
 		)
-		(pin "32"
-			(uuid "d2d7606b-1cc9-51d1-9bad-718ad0326e34")
+		(pin "26"
+			(uuid "29abd546-aa87-53c2-90fa-9e1e0b4643ac")
 		)
-		(pin "15"
-			(uuid "ae70e248-010e-5cc6-aa72-043d2bdbb256")
+		(pin "1"
+			(uuid "29b49060-2a51-5801-a851-c58f19bfbac7")
 		)
 		(pin "9"
 			(uuid "e1e9a547-7319-57bc-a1f9-5db443478099")
 		)
+		(pin "10"
+			(uuid "8e12ed3e-c35c-597d-9d7f-2ad3af571afc")
+		)
+		(pin "6"
+			(uuid "083e92e4-121d-592d-810b-788f57da45c2")
+		)
+		(pin "39"
+			(uuid "d54e57d4-58b8-5a93-a474-8b992507cc5a")
+		)
+		(pin "13"
+			(uuid "1f93e021-4490-567a-9aaa-f35c25f9ffab")
+		)
+		(pin "37"
+			(uuid "c15b2144-9128-5f39-a4fa-20f6d3f69797")
+		)
+		(pin "11"
+			(uuid "1e9723e9-0682-5786-8bb2-258b92e944b9")
+		)
+		(pin "30"
+			(uuid "14c35478-951d-57bd-9749-5aa0fe2a8279")
+		)
+		(pin "38"
+			(uuid "a46e5ae9-1e2d-5ae9-be6b-7edfdcde4289")
+		)
+		(pin "24"
+			(uuid "b4788e88-5683-5716-b398-5140b30f3d19")
+		)
+		(pin "23"
+			(uuid "95e6b507-3ae5-5795-a5f2-6fa6e43ca797")
+		)
+		(pin "2"
+			(uuid "44897e31-75f1-596e-ab40-9de3d3ca5bba")
+		)
+		(pin "7"
+			(uuid "cd05beb0-1e71-57c7-80ac-fe05b654a417")
+		)
+		(pin "14"
+			(uuid "570ba61e-4c97-539b-a64f-155520a9459d")
+		)
+		(pin "15"
+			(uuid "ae70e248-010e-5cc6-aa72-043d2bdbb256")
+		)
+		(pin "22"
+			(uuid "89225941-d85c-579d-aa88-2b694b4722df")
+		)
+		(pin "32"
+			(uuid "d2d7606b-1cc9-51d1-9bad-718ad0326e34")
+		)
 		(pin "35"
 			(uuid "8df4fd7c-bb36-54c3-b401-fcd0e98acc96")
 		)
-		(pin "17"
-			(uuid "32636d92-abc1-5c90-8ae2-544fa9b8d9da")
+		(pin "29"
+			(uuid "51b09100-0fc6-5657-a374-f74f196bda5b")
+		)
+		(pin "33"
+			(uuid "b273b8e5-9fca-5349-8ad7-62e7741652d9")
+		)
+		(pin "3"
+			(uuid "b0d6a336-f4bb-52af-9ab7-4e10ac11e0a8")
+		)
+		(pin "18"
+			(uuid "1b938e03-71fa-5ffe-94d7-bf61ec6866ca")
 		)
 		(pin "21"
 			(uuid "ab476f37-3b3e-51f8-933a-11c4e680b317")
@@ -16052,74 +15749,32 @@
 		(pin "8"
 			(uuid "0a320bc4-8f81-5de3-83a6-ed418b272c21")
 		)
-		(pin "30"
-			(uuid "14c35478-951d-57bd-9749-5aa0fe2a8279")
+		(pin "28"
+			(uuid "bfe539e6-ae60-5ae4-bc2a-db055d4f002c")
 		)
-		(pin "5"
-			(uuid "513add71-5719-5da8-b391-85d303f5b6d5")
-		)
-		(pin "40"
-			(uuid "ccb23444-4f38-5443-a38d-ff12a32c6fee")
+		(pin "19"
+			(uuid "ffe942d6-d06d-580c-87b8-4ae2771b0884")
 		)
 		(pin "27"
 			(uuid "c5de8077-62cb-52eb-871c-d2b7b1bd8a46")
 		)
-		(pin "34"
-			(uuid "5d17ac7a-7594-5066-bd0a-2d90cec6e52c")
-		)
-		(pin "3"
-			(uuid "b0d6a336-f4bb-52af-9ab7-4e10ac11e0a8")
-		)
-		(pin "2"
-			(uuid "44897e31-75f1-596e-ab40-9de3d3ca5bba")
-		)
-		(pin "14"
-			(uuid "570ba61e-4c97-539b-a64f-155520a9459d")
-		)
-		(pin "36"
-			(uuid "6e627667-bd26-5cec-ba7b-600da716e23a")
-		)
-		(pin "29"
-			(uuid "51b09100-0fc6-5657-a374-f74f196bda5b")
+		(pin "40"
+			(uuid "ccb23444-4f38-5443-a38d-ff12a32c6fee")
 		)
 		(pin "31"
 			(uuid "d8104fc3-0792-54f0-90e3-358e19d29c84")
 		)
-		(pin "1"
-			(uuid "29b49060-2a51-5801-a851-c58f19bfbac7")
-		)
-		(pin "11"
-			(uuid "1e9723e9-0682-5786-8bb2-258b92e944b9")
-		)
-		(pin "33"
-			(uuid "b273b8e5-9fca-5349-8ad7-62e7741652d9")
-		)
-		(pin "39"
-			(uuid "d54e57d4-58b8-5a93-a474-8b992507cc5a")
-		)
-		(pin "10"
-			(uuid "8e12ed3e-c35c-597d-9d7f-2ad3af571afc")
-		)
-		(pin "7"
-			(uuid "cd05beb0-1e71-57c7-80ac-fe05b654a417")
-		)
-		(pin "28"
-			(uuid "bfe539e6-ae60-5ae4-bc2a-db055d4f002c")
-		)
-		(pin "20"
-			(uuid "443ba982-6897-5dc5-9e81-c56febd66525")
-		)
-		(pin "38"
-			(uuid "a46e5ae9-1e2d-5ae9-be6b-7edfdcde4289")
-		)
 		(pin "25"
 			(uuid "1e99f688-1b9b-5297-8f2b-11ceb5167af1")
 		)
-		(pin "4"
-			(uuid "0b22217c-09c8-559f-a87e-f85618ca891f")
+		(pin "17"
+			(uuid "32636d92-abc1-5c90-8ae2-544fa9b8d9da")
 		)
 		(pin "16"
 			(uuid "c4d241e9-287e-5139-8152-f1f30c0cbf0d")
+		)
+		(pin "36"
+			(uuid "6e627667-bd26-5cec-ba7b-600da716e23a")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16194,32 +15849,32 @@
 				)
 			)
 		)
-		(pin "9"
-			(uuid "7159ebdc-e1c7-5614-a878-f4637cf46d4c")
-		)
-		(pin "7"
-			(uuid "687ed7cf-8e86-5043-8bce-5a578bd6bcdf")
-		)
-		(pin "3"
-			(uuid "b31a02b3-a6fd-5d90-995f-eb5cdd27563c")
-		)
-		(pin "2"
-			(uuid "eaa4756a-6d71-5604-ad70-060764b077fe")
+		(pin "1"
+			(uuid "91c19b65-d400-5a4d-875e-875506150a78")
 		)
 		(pin "8"
 			(uuid "ff71a840-a5ea-523b-bafd-057ba5e0bf53")
 		)
-		(pin "5"
-			(uuid "abe22212-c9ae-512e-933a-2b02b4545adf")
+		(pin "2"
+			(uuid "eaa4756a-6d71-5604-ad70-060764b077fe")
+		)
+		(pin "9"
+			(uuid "7159ebdc-e1c7-5614-a878-f4637cf46d4c")
 		)
 		(pin "6"
 			(uuid "f3f2a2a6-7223-517e-8128-dba68d792924")
 		)
+		(pin "7"
+			(uuid "687ed7cf-8e86-5043-8bce-5a578bd6bcdf")
+		)
 		(pin "4"
 			(uuid "3e76e5e8-1276-5dfd-b9be-29efd98912c2")
 		)
-		(pin "1"
-			(uuid "91c19b65-d400-5a4d-875e-875506150a78")
+		(pin "5"
+			(uuid "abe22212-c9ae-512e-933a-2b02b4545adf")
+		)
+		(pin "3"
+			(uuid "b31a02b3-a6fd-5d90-995f-eb5cdd27563c")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16308,7 +15963,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 833.12 711.2 0)
+		(at 762 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -16318,7 +15973,7 @@
 		(dnp no)
 		(uuid "1660bbea-a134-59bf-a292-c22f158da819")
 		(property "Reference" "R27"
-			(at 833.12 698.5 0)
+			(at 762 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -16328,7 +15983,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 833.12 723.9 0)
+			(at 762 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -16338,7 +15993,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 833.12 711.2 0)
+			(at 762 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16349,7 +16004,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 833.12 711.2 0)
+			(at 762 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16360,7 +16015,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_SPI_SCK"
-			(at 833.12 711.2 0)
+			(at 762 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16370,11 +16025,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "7d21778c-6098-5f30-965a-9c572373c4c5")
-		)
 		(pin "2"
 			(uuid "1c75c998-34d3-5123-9f4e-5ab3241b674c")
+		)
+		(pin "1"
+			(uuid "7d21778c-6098-5f30-965a-9c572373c4c5")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16449,38 +16104,44 @@
 				)
 			)
 		)
-		(pin "3"
-			(uuid "5cceea09-c29b-5a96-9db9-561dd7f17fef")
+		(pin "20"
+			(uuid "93a2f8d3-6eb9-5266-8e1d-2743ea031a97")
 		)
 		(pin "2"
 			(uuid "47a5ca87-8e87-52fb-b45f-17ed69ad278f")
 		)
+		(pin "7"
+			(uuid "ec533b00-1572-525e-ad57-fbc192b9fb59")
+		)
+		(pin "15"
+			(uuid "b8ba6d1b-73a6-59a8-bdac-be0e9b475396")
+		)
 		(pin "14"
 			(uuid "7aa02469-364c-5791-a6ed-f804841f8f0f")
 		)
-		(pin "13"
-			(uuid "3e75fcbe-8343-5e56-8e3f-8fd5c516cf1d")
+		(pin "4"
+			(uuid "ff3b134f-c7f9-5c40-9b97-2fbf88a2faea")
 		)
-		(pin "19"
-			(uuid "4e3e6b8a-5bdc-515a-8310-ccf0ecfa4ff7")
-		)
-		(pin "6"
-			(uuid "413697fb-3784-5399-9a65-7381a52a46bb")
-		)
-		(pin "18"
-			(uuid "64ecdb5c-c07d-5d86-9b34-f3e4b5d87a93")
+		(pin "5"
+			(uuid "e9618fea-149a-575f-92b4-6cf4516d3ea4")
 		)
 		(pin "12"
 			(uuid "201a286c-8883-5df3-89ba-ef805633e6d0")
 		)
+		(pin "3"
+			(uuid "5cceea09-c29b-5a96-9db9-561dd7f17fef")
+		)
+		(pin "18"
+			(uuid "64ecdb5c-c07d-5d86-9b34-f3e4b5d87a93")
+		)
 		(pin "1"
 			(uuid "dbf7937a-30aa-562e-81ad-0934db718898")
 		)
-		(pin "11"
-			(uuid "77e6d954-c621-5065-8a13-01f0621b2099")
+		(pin "8"
+			(uuid "3efdf8c4-a814-5587-b543-6538da7901c5")
 		)
-		(pin "15"
-			(uuid "b8ba6d1b-73a6-59a8-bdac-be0e9b475396")
+		(pin "19"
+			(uuid "4e3e6b8a-5bdc-515a-8310-ccf0ecfa4ff7")
 		)
 		(pin "9"
 			(uuid "51b55067-73b2-5b19-83d2-3ca74c33ad98")
@@ -16488,26 +16149,20 @@
 		(pin "10"
 			(uuid "c3c11d4e-8c58-5ba7-9410-5f881e4d8182")
 		)
-		(pin "7"
-			(uuid "ec533b00-1572-525e-ad57-fbc192b9fb59")
+		(pin "6"
+			(uuid "413697fb-3784-5399-9a65-7381a52a46bb")
 		)
 		(pin "17"
 			(uuid "417f49dd-b4b7-5760-b156-53faa7ae3b19")
 		)
-		(pin "20"
-			(uuid "93a2f8d3-6eb9-5266-8e1d-2743ea031a97")
-		)
-		(pin "8"
-			(uuid "3efdf8c4-a814-5587-b543-6538da7901c5")
-		)
-		(pin "5"
-			(uuid "e9618fea-149a-575f-92b4-6cf4516d3ea4")
-		)
-		(pin "4"
-			(uuid "ff3b134f-c7f9-5c40-9b97-2fbf88a2faea")
-		)
 		(pin "16"
 			(uuid "359ee111-69cd-5539-b5ec-9236cd540589")
+		)
+		(pin "13"
+			(uuid "3e75fcbe-8343-5e56-8e3f-8fd5c516cf1d")
+		)
+		(pin "11"
+			(uuid "77e6d954-c621-5065-8a13-01f0621b2099")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16582,116 +16237,37 @@
 				)
 			)
 		)
-		(pin "9"
-			(uuid "d91c45a6-686e-59a0-835f-2a22665dc784")
-		)
-		(pin "7"
-			(uuid "481bf2bb-585d-570c-b293-51e3b558d313")
-		)
-		(pin "3"
-			(uuid "20921a63-955f-581c-ae07-429cbb1a953f")
-		)
-		(pin "2"
-			(uuid "e4c41f17-f17e-5af0-988b-e6c92059a09c")
+		(pin "1"
+			(uuid "d0221947-acac-59df-a34f-aecacc8b9447")
 		)
 		(pin "8"
 			(uuid "d862423e-6d83-5dcc-9478-3ff60fc1af5a")
 		)
-		(pin "5"
-			(uuid "cdffd22b-0c3b-5d65-bf20-da4cbbe399e1")
+		(pin "2"
+			(uuid "e4c41f17-f17e-5af0-988b-e6c92059a09c")
+		)
+		(pin "9"
+			(uuid "d91c45a6-686e-59a0-835f-2a22665dc784")
 		)
 		(pin "6"
 			(uuid "3d19b70a-c91a-50e8-a025-f7b3df27f430")
 		)
+		(pin "7"
+			(uuid "481bf2bb-585d-570c-b293-51e3b558d313")
+		)
 		(pin "4"
 			(uuid "e8d71b40-0736-5229-8502-1479b1d4123c")
 		)
-		(pin "1"
-			(uuid "d0221947-acac-59df-a34f-aecacc8b9447")
+		(pin "5"
+			(uuid "cdffd22b-0c3b-5d65-bf20-da4cbbe399e1")
+		)
+		(pin "3"
+			(uuid "20921a63-955f-581c-ae07-429cbb1a953f")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "RN3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 193.04 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2812c908-bda5-5fd2-a9d3-e7fb543b30c8")
-		(property "Reference" "R3"
-			(at 193.04 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 193.04 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 193.04 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 193.04 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for MREQ_N"
-			(at 193.04 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "cff2e865-c19e-5ac1-9490-9e82a2a451c1")
-		)
-		(pin "2"
-			(uuid "55c6b44f-d0d1-56d0-af87-3520627f5d96")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R3")
 					(unit 1)
 				)
 			)
@@ -16761,38 +16337,44 @@
 				)
 			)
 		)
-		(pin "3"
-			(uuid "67d9fcdd-d06f-59ab-8aec-391a0459f8f7")
+		(pin "20"
+			(uuid "8d97f526-43fb-56fb-b637-c328d99c086e")
 		)
 		(pin "2"
 			(uuid "c064b6bf-6ed4-5e35-beef-d58bb8339ff0")
 		)
+		(pin "7"
+			(uuid "2a2b1699-78c4-5b24-a9da-819f1c1c84be")
+		)
+		(pin "15"
+			(uuid "724dffb2-6043-537b-b1bd-1e34e0c526e5")
+		)
 		(pin "14"
 			(uuid "e5f37038-6734-5faf-b390-92ac51d0e649")
 		)
-		(pin "13"
-			(uuid "cde488ed-4a3e-5807-8919-fe857e8c96ae")
+		(pin "4"
+			(uuid "f9cba02b-c73e-5f2f-af0e-d87b1a5771e1")
 		)
-		(pin "19"
-			(uuid "4eaf46d2-c8b7-5b5e-bf01-8ed0300490cb")
-		)
-		(pin "6"
-			(uuid "cdd2a310-9af2-54d5-8480-4eb8ac532698")
-		)
-		(pin "18"
-			(uuid "aaa1584d-155a-535e-8241-c8bd53b6e8e1")
+		(pin "5"
+			(uuid "0fe756ce-83e3-567a-b5f9-1844f5fec84e")
 		)
 		(pin "12"
 			(uuid "ff086b8d-2ca1-5686-b6c8-4b03f21c2a48")
 		)
+		(pin "3"
+			(uuid "67d9fcdd-d06f-59ab-8aec-391a0459f8f7")
+		)
+		(pin "18"
+			(uuid "aaa1584d-155a-535e-8241-c8bd53b6e8e1")
+		)
 		(pin "1"
 			(uuid "44b5b9b5-0b61-5a81-b10b-c8c50c8d16df")
 		)
-		(pin "11"
-			(uuid "3cf9bb47-28e1-5972-b799-54aa3fe38468")
+		(pin "8"
+			(uuid "d6964dca-4201-580f-a75a-e7f47523d22b")
 		)
-		(pin "15"
-			(uuid "724dffb2-6043-537b-b1bd-1e34e0c526e5")
+		(pin "19"
+			(uuid "4eaf46d2-c8b7-5b5e-bf01-8ed0300490cb")
 		)
 		(pin "9"
 			(uuid "595b4169-ac14-5104-972e-14133f26e749")
@@ -16800,26 +16382,20 @@
 		(pin "10"
 			(uuid "a17ecb19-9ca5-5e39-a2ea-7d09e38feca4")
 		)
-		(pin "7"
-			(uuid "2a2b1699-78c4-5b24-a9da-819f1c1c84be")
+		(pin "6"
+			(uuid "cdd2a310-9af2-54d5-8480-4eb8ac532698")
 		)
 		(pin "17"
 			(uuid "eea793a8-cb1b-597e-9c93-1696050a4cf4")
 		)
-		(pin "20"
-			(uuid "8d97f526-43fb-56fb-b637-c328d99c086e")
-		)
-		(pin "8"
-			(uuid "d6964dca-4201-580f-a75a-e7f47523d22b")
-		)
-		(pin "5"
-			(uuid "0fe756ce-83e3-567a-b5f9-1844f5fec84e")
-		)
-		(pin "4"
-			(uuid "f9cba02b-c73e-5f2f-af0e-d87b1a5771e1")
-		)
 		(pin "16"
 			(uuid "0a5cc2de-7e7a-569b-889c-c060dc15e41c")
+		)
+		(pin "13"
+			(uuid "cde488ed-4a3e-5807-8919-fe857e8c96ae")
+		)
+		(pin "11"
+			(uuid "3cf9bb47-28e1-5972-b799-54aa3fe38468")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -16894,44 +16470,74 @@
 				)
 			)
 		)
-		(pin "24"
-			(uuid "ee27cf4a-79e9-50f3-83df-aba768c857a9")
+		(pin "20"
+			(uuid "350a546f-5186-5061-b699-5dc1952e80b3")
 		)
-		(pin "26"
-			(uuid "cbf9b148-1c45-5f87-8308-034c6ec0dc78")
+		(pin "4"
+			(uuid "0d53e850-94a6-576f-8ad2-1d653ecdf8b3")
 		)
-		(pin "13"
-			(uuid "5d9b2a7e-7935-5127-bf85-5e7fecbd4dd1")
-		)
-		(pin "23"
-			(uuid "5742130a-8c54-5bd5-95c1-faecb870bca2")
-		)
-		(pin "19"
-			(uuid "40fc3661-ee9e-5a39-8c3c-c3286f920e32")
-		)
-		(pin "22"
-			(uuid "c56133a5-b99d-522d-9b83-74c3d06d97b1")
-		)
-		(pin "6"
-			(uuid "e4040195-9b61-5a5b-a3c0-5c4cdb218676")
-		)
-		(pin "18"
-			(uuid "585b7750-f0e2-5a66-8349-961e9f8fd9b5")
+		(pin "5"
+			(uuid "ff19d7c9-95ca-5d50-891e-c8285e9dcc66")
 		)
 		(pin "12"
 			(uuid "367ad531-69a7-58e1-945c-60384723a91f")
 		)
-		(pin "32"
-			(uuid "de76393f-cb19-5718-8286-29d90303448b")
+		(pin "26"
+			(uuid "cbf9b148-1c45-5f87-8308-034c6ec0dc78")
 		)
-		(pin "15"
-			(uuid "05ab5622-282b-5c58-b8ca-1b5af6e6cf31")
+		(pin "1"
+			(uuid "1e88d928-1729-549c-8b7a-1a1119fc1b85")
 		)
 		(pin "9"
 			(uuid "3002ab70-13c6-5ad4-9b7e-3cefab33355f")
 		)
-		(pin "17"
-			(uuid "eb72336f-9ef3-5459-bd5d-0d53dcbdc553")
+		(pin "10"
+			(uuid "c04bef3f-3961-5049-be5a-83fac4bd7773")
+		)
+		(pin "6"
+			(uuid "e4040195-9b61-5a5b-a3c0-5c4cdb218676")
+		)
+		(pin "13"
+			(uuid "5d9b2a7e-7935-5127-bf85-5e7fecbd4dd1")
+		)
+		(pin "11"
+			(uuid "94860471-af86-5d56-a179-aca02333e834")
+		)
+		(pin "30"
+			(uuid "06d3fd81-ded3-589d-a4c5-a065f11f0cab")
+		)
+		(pin "24"
+			(uuid "ee27cf4a-79e9-50f3-83df-aba768c857a9")
+		)
+		(pin "23"
+			(uuid "5742130a-8c54-5bd5-95c1-faecb870bca2")
+		)
+		(pin "2"
+			(uuid "c343d125-c074-57ce-8ff8-d1217d20aaf3")
+		)
+		(pin "7"
+			(uuid "440cdc54-98f1-5f80-8e48-da37dc7711c9")
+		)
+		(pin "14"
+			(uuid "c0e1f19f-d51e-5819-a88b-ad6cb89408e5")
+		)
+		(pin "15"
+			(uuid "05ab5622-282b-5c58-b8ca-1b5af6e6cf31")
+		)
+		(pin "22"
+			(uuid "c56133a5-b99d-522d-9b83-74c3d06d97b1")
+		)
+		(pin "32"
+			(uuid "de76393f-cb19-5718-8286-29d90303448b")
+		)
+		(pin "29"
+			(uuid "b14a2c4e-8b8c-5e83-8917-8f39d8e5b34b")
+		)
+		(pin "3"
+			(uuid "1ff35990-1897-5bc6-b36c-5ff8d8347930")
+		)
+		(pin "18"
+			(uuid "585b7750-f0e2-5a66-8349-961e9f8fd9b5")
 		)
 		(pin "21"
 			(uuid "987c7e21-a3bc-5d0f-b264-83925a3ff154")
@@ -16939,53 +16545,23 @@
 		(pin "8"
 			(uuid "aff03458-1a88-5b78-9663-60b826a71d7f")
 		)
-		(pin "30"
-			(uuid "06d3fd81-ded3-589d-a4c5-a065f11f0cab")
-		)
-		(pin "5"
-			(uuid "ff19d7c9-95ca-5d50-891e-c8285e9dcc66")
+		(pin "28"
+			(uuid "03d6a8e9-0f1b-5ffe-8889-876e6c013bd0")
 		)
 		(pin "27"
 			(uuid "61116ed4-c666-5e80-a24c-d2cf05e33af0")
 		)
-		(pin "3"
-			(uuid "1ff35990-1897-5bc6-b36c-5ff8d8347930")
-		)
-		(pin "2"
-			(uuid "c343d125-c074-57ce-8ff8-d1217d20aaf3")
-		)
-		(pin "14"
-			(uuid "c0e1f19f-d51e-5819-a88b-ad6cb89408e5")
-		)
-		(pin "29"
-			(uuid "b14a2c4e-8b8c-5e83-8917-8f39d8e5b34b")
+		(pin "19"
+			(uuid "40fc3661-ee9e-5a39-8c3c-c3286f920e32")
 		)
 		(pin "31"
 			(uuid "dcc47f67-d937-5843-a0a1-06ee81239d9f")
 		)
-		(pin "1"
-			(uuid "1e88d928-1729-549c-8b7a-1a1119fc1b85")
-		)
-		(pin "11"
-			(uuid "94860471-af86-5d56-a179-aca02333e834")
-		)
-		(pin "10"
-			(uuid "c04bef3f-3961-5049-be5a-83fac4bd7773")
-		)
-		(pin "7"
-			(uuid "440cdc54-98f1-5f80-8e48-da37dc7711c9")
-		)
-		(pin "28"
-			(uuid "03d6a8e9-0f1b-5ffe-8889-876e6c013bd0")
-		)
-		(pin "20"
-			(uuid "350a546f-5186-5061-b699-5dc1952e80b3")
-		)
 		(pin "25"
 			(uuid "eda04b08-9704-5985-a539-cc35f46eace3")
 		)
-		(pin "4"
-			(uuid "0d53e850-94a6-576f-8ad2-1d653ecdf8b3")
+		(pin "17"
+			(uuid "eb72336f-9ef3-5459-bd5d-0d53dcbdc553")
 		)
 		(pin "16"
 			(uuid "607ec443-c898-5826-9e1d-523f1681d6b8")
@@ -16994,85 +16570,6 @@
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "U2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 762 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "302ffdb8-be2d-55c7-a50f-eb54bb8ef3d5")
-		(property "Reference" "R11"
-			(at 762 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 762 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 762 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 762 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for WAIT_N"
-			(at 762 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "1ef14fb6-f6dd-520a-b891-bb30cd7c2c66")
-		)
-		(pin "2"
-			(uuid "27e3acfd-d08b-5f50-a66b-07171d3d1e5b")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R11")
 					(unit 1)
 				)
 			)
@@ -17156,7 +16653,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 762 711.2 0)
+		(at 690.88 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -17166,7 +16663,7 @@
 		(dnp no)
 		(uuid "31f395bf-aebd-5780-a644-4cf5a939c8bb")
 		(property "Reference" "R26"
-			(at 762 698.5 0)
+			(at 690.88 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -17176,7 +16673,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 762 723.9 0)
+			(at 690.88 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -17186,7 +16683,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 762 711.2 0)
+			(at 690.88 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17197,7 +16694,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 762 711.2 0)
+			(at 690.88 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17208,7 +16705,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for ADDR_ENABLE"
-			(at 762 711.2 0)
+			(at 690.88 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17218,174 +16715,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "5e2a6dcc-d3dc-5cb2-b92f-330b1047f0e2")
-		)
 		(pin "2"
 			(uuid "f6438336-920d-5a53-bd24-68721cd45104")
+		)
+		(pin "1"
+			(uuid "5e2a6dcc-d3dc-5cb2-b92f-330b1047f0e2")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "R26")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 477.52 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "42029cee-edc5-5414-bb32-252c2a9b66c4")
-		(property "Reference" "R7"
-			(at 477.52 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 477.52 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 477.52 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 477.52 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for MCP_SO"
-			(at 477.52 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "65d5bd31-6f59-55f8-a417-836b1edeb37c")
-		)
-		(pin "2"
-			(uuid "2916f242-889b-593d-82da-e0531a828e0f")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R7")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 335.28 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "4252b852-8c8d-54cc-9244-db715445f36b")
-		(property "Reference" "R5"
-			(at 335.28 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 335.28 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 335.28 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 335.28 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for RD_N"
-			(at 335.28 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "68062657-eb00-536a-b1ce-251ef771a3a0")
-		)
-		(pin "2"
-			(uuid "0e9b93d9-30f9-5d5b-8b62-bba954e55612")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R5")
 					(unit 1)
 				)
 			)
@@ -17455,11 +16794,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "1a38f75b-d008-55da-9cec-90f972822b41")
-		)
 		(pin "2"
 			(uuid "fd08d405-442b-5bb1-b74e-02c894388013")
+		)
+		(pin "1"
+			(uuid "1a38f75b-d008-55da-9cec-90f972822b41")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -17534,95 +16873,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "82ee2b70-569d-5829-9bc4-c30d6851bf82")
-		)
 		(pin "2"
 			(uuid "312332da-8622-56cf-89bc-98c808c7334c")
+		)
+		(pin "1"
+			(uuid "82ee2b70-569d-5829-9bc4-c30d6851bf82")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "C3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 1046.48 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "48312a68-7059-58f2-a3fd-eae4cf8e4ed4")
-		(property "Reference" "R15"
-			(at 1046.48 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 1046.48 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 1046.48 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 1046.48 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_OE_PRE_N"
-			(at 1046.48 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "b61bb0a6-bbfb-5164-9c21-57529c2dc847")
-		)
-		(pin "2"
-			(uuid "3e7110c9-8525-55aa-8ceb-3dd97dfa7f73")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R15")
 					(unit 1)
 				)
 			)
@@ -17692,95 +16952,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "c3cd4cf8-a918-5bcc-9c88-58730ae57e56")
-		)
 		(pin "2"
 			(uuid "57a16e6c-9198-5879-b369-fbe75bc06704")
+		)
+		(pin "1"
+			(uuid "c3cd4cf8-a918-5bcc-9c88-58730ae57e56")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "C12")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 50.8 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "517868e0-6758-5cf6-891e-d2a30521f056")
-		(property "Reference" "R1"
-			(at 50.8 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 50.8 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 50.8 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 50.8 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for BUSREQ_N"
-			(at 50.8 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0e434e56-c8b1-5e22-a8aa-417c6530cab5")
-		)
-		(pin "2"
-			(uuid "ec7ab0fc-4cd3-5ed5-954c-494a6aa8cf68")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R1")
 					(unit 1)
 				)
 			)
@@ -17850,11 +17031,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "46d91bd3-d39c-51ce-9928-ff6c0484cecb")
-		)
 		(pin "2"
 			(uuid "5b3a58f3-9821-52ec-a1f2-920ab644a069")
+		)
+		(pin "1"
+			(uuid "46d91bd3-d39c-51ce-9928-ff6c0484cecb")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -17929,11 +17110,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "4d9a0b5d-1648-50d4-978d-8e76af7ede04")
-		)
 		(pin "2"
 			(uuid "30316dac-4120-5379-92c7-8f2efde9e7c2")
+		)
+		(pin "1"
+			(uuid "4d9a0b5d-1648-50d4-978d-8e76af7ede04")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -18008,116 +17189,37 @@
 				)
 			)
 		)
-		(pin "9"
-			(uuid "7ee55371-d547-5a68-b257-006f442cbf31")
-		)
-		(pin "7"
-			(uuid "4bc342e9-a1b7-5793-b980-fed923bb8b2e")
-		)
-		(pin "3"
-			(uuid "04854eea-f7a9-56df-b0a9-2b7bce1a4658")
-		)
-		(pin "2"
-			(uuid "ac687cc4-ee46-5801-9017-70ddca8ad948")
+		(pin "1"
+			(uuid "8cc135a9-2d7b-537a-b47f-aa428664a9b2")
 		)
 		(pin "8"
 			(uuid "c251c4d6-6fe1-55a5-916e-a50e62721972")
 		)
-		(pin "5"
-			(uuid "34913cdc-721c-5b3f-aa5b-60dbd0b663e0")
+		(pin "2"
+			(uuid "ac687cc4-ee46-5801-9017-70ddca8ad948")
+		)
+		(pin "9"
+			(uuid "7ee55371-d547-5a68-b257-006f442cbf31")
 		)
 		(pin "6"
 			(uuid "a71242de-e80d-515c-ac90-da41c162b10a")
 		)
+		(pin "7"
+			(uuid "4bc342e9-a1b7-5793-b980-fed923bb8b2e")
+		)
 		(pin "4"
 			(uuid "f1d024c9-2d04-5383-aac5-139c2b28d8b1")
 		)
-		(pin "1"
-			(uuid "8cc135a9-2d7b-537a-b47f-aa428664a9b2")
+		(pin "5"
+			(uuid "34913cdc-721c-5b3f-aa5b-60dbd0b663e0")
+		)
+		(pin "3"
+			(uuid "04854eea-f7a9-56df-b0a9-2b7bce1a4658")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "RN2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 619.76 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "60a163cb-a3b0-54e1-a668-3f56c9bba55a")
-		(property "Reference" "R9"
-			(at 619.76 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 619.76 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 619.76 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 619.76 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_OE_N"
-			(at 619.76 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "4370e0ce-15f0-573f-a46b-cde3998dee07")
-		)
-		(pin "2"
-			(uuid "51d8fd3e-27c6-5a08-b202-d3fa2a8a1f55")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R9")
 					(unit 1)
 				)
 			)
@@ -18190,44 +17292,53 @@
 		(pin "24"
 			(uuid "a3cf47da-c414-5911-87fa-bfd8258f4ba2")
 		)
-		(pin "3"
-			(uuid "eb115bcc-5c6c-510c-aeee-baac8197335d")
-		)
-		(pin "2"
-			(uuid "eb8460c0-d55f-51a3-9b30-1483fd78d2bd")
-		)
-		(pin "14"
-			(uuid "ada6a9a4-ba28-5fff-ba35-b72c64bb3fef")
-		)
-		(pin "13"
-			(uuid "fcab59d9-08cf-5a1f-8b9c-36b011ebfabc")
+		(pin "20"
+			(uuid "e9ddbd83-9d57-5d96-9ab8-d09f36714bc4")
 		)
 		(pin "23"
 			(uuid "dbdafa1a-682a-5df4-abed-4b00d2f95d10")
 		)
-		(pin "19"
-			(uuid "fa8d61a8-028f-5ffa-b49d-44db9bf47250")
+		(pin "2"
+			(uuid "eb8460c0-d55f-51a3-9b30-1483fd78d2bd")
+		)
+		(pin "7"
+			(uuid "9441b4bf-08b5-5a1b-890d-2a46b0cd1e6e")
+		)
+		(pin "14"
+			(uuid "ada6a9a4-ba28-5fff-ba35-b72c64bb3fef")
+		)
+		(pin "15"
+			(uuid "ece9caf5-b6cc-569c-ac7a-50a545a71365")
+		)
+		(pin "4"
+			(uuid "d24a2de9-b26a-5a6a-96ee-eeba1744f4e4")
 		)
 		(pin "22"
 			(uuid "8e6fecbc-4709-5bc9-820e-75cf64d888e9")
 		)
-		(pin "6"
-			(uuid "2648a6f5-4eff-523d-9997-cfa56a8c2971")
-		)
-		(pin "18"
-			(uuid "99bbe8d6-f4ae-50d8-9803-428fa5a76394")
+		(pin "5"
+			(uuid "276abd2e-5e76-5e57-b692-2639c8655c64")
 		)
 		(pin "12"
 			(uuid "b360d4bb-679f-5433-94cb-b06d85a6393d")
 		)
+		(pin "3"
+			(uuid "eb115bcc-5c6c-510c-aeee-baac8197335d")
+		)
+		(pin "18"
+			(uuid "99bbe8d6-f4ae-50d8-9803-428fa5a76394")
+		)
+		(pin "21"
+			(uuid "57705a39-236e-5029-8846-bda071d156e9")
+		)
 		(pin "1"
 			(uuid "646aecb4-16f7-553e-8bc1-3cab2878ccea")
 		)
-		(pin "11"
-			(uuid "05139ac6-a989-5e9c-8786-f55bf43033ff")
+		(pin "8"
+			(uuid "52284683-7ab9-50ff-acea-1dfc2f452b42")
 		)
-		(pin "15"
-			(uuid "ece9caf5-b6cc-569c-ac7a-50a545a71365")
+		(pin "19"
+			(uuid "fa8d61a8-028f-5ffa-b49d-44db9bf47250")
 		)
 		(pin "9"
 			(uuid "f6690e48-33b4-55d4-908d-c44d1d02ffe1")
@@ -18235,29 +17346,20 @@
 		(pin "10"
 			(uuid "c1c2d9ad-ed61-5503-be2b-9e4196d4b59f")
 		)
-		(pin "7"
-			(uuid "9441b4bf-08b5-5a1b-890d-2a46b0cd1e6e")
+		(pin "6"
+			(uuid "2648a6f5-4eff-523d-9997-cfa56a8c2971")
 		)
 		(pin "17"
 			(uuid "d4e36bf0-81ce-5965-96ed-8a1f7db4b8f7")
 		)
-		(pin "20"
-			(uuid "e9ddbd83-9d57-5d96-9ab8-d09f36714bc4")
-		)
-		(pin "21"
-			(uuid "57705a39-236e-5029-8846-bda071d156e9")
-		)
-		(pin "8"
-			(uuid "52284683-7ab9-50ff-acea-1dfc2f452b42")
-		)
-		(pin "5"
-			(uuid "276abd2e-5e76-5e57-b692-2639c8655c64")
-		)
-		(pin "4"
-			(uuid "d24a2de9-b26a-5a6a-96ee-eeba1744f4e4")
-		)
 		(pin "16"
 			(uuid "da8e41ca-32af-5123-9a4d-c783c274a863")
+		)
+		(pin "13"
+			(uuid "fcab59d9-08cf-5a1f-8b9c-36b011ebfabc")
+		)
+		(pin "11"
+			(uuid "05139ac6-a989-5e9c-8786-f55bf43033ff")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -18270,7 +17372,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 335.28 711.2 0)
+		(at 264.16 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18280,7 +17382,7 @@
 		(dnp no)
 		(uuid "65f53010-4d41-55d6-bba0-9bcad863f161")
 		(property "Reference" "R20"
-			(at 335.28 698.5 0)
+			(at 264.16 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18290,7 +17392,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 335.28 723.9 0)
+			(at 264.16 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18300,7 +17402,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 335.28 711.2 0)
+			(at 264.16 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18311,7 +17413,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 335.28 711.2 0)
+			(at 264.16 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18322,7 +17424,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_WE_N"
-			(at 335.28 711.2 0)
+			(at 264.16 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18332,11 +17434,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "a755297a-4d86-534f-badb-c8da959ff4e0")
-		)
 		(pin "2"
 			(uuid "6a1d35d9-82af-537c-8ed9-c5091e30e10f")
+		)
+		(pin "1"
+			(uuid "a755297a-4d86-534f-badb-c8da959ff4e0")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -18349,86 +17451,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 50.8 711.2 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "664b0a3c-7c0a-5102-a8de-beabe4639f84")
-		(property "Reference" "R16"
-			(at 50.8 698.5 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 50.8 723.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 50.8 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 50.8 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_CE_PRE_N"
-			(at 50.8 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "7ae7d814-896c-5ba2-b55c-f0b947ad1a1b")
-		)
-		(pin "2"
-			(uuid "d48ab1e0-0683-5c46-b01a-c84e8e0bdc58")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R16")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 690.88 711.2 0)
+		(at 619.76 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18438,7 +17461,7 @@
 		(dnp no)
 		(uuid "6c340d22-26e1-5eb9-b465-a3b76ef79f8b")
 		(property "Reference" "R25"
-			(at 690.88 698.5 0)
+			(at 619.76 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18448,7 +17471,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 690.88 723.9 0)
+			(at 619.76 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18458,7 +17481,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 690.88 711.2 0)
+			(at 619.76 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18469,7 +17492,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 690.88 711.2 0)
+			(at 619.76 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18480,7 +17503,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for DATA_DIR"
-			(at 690.88 711.2 0)
+			(at 619.76 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18490,95 +17513,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "26b687b7-1624-54a5-8d63-eb8c7e6f8444")
-		)
 		(pin "2"
 			(uuid "b9fb7acd-4c0f-54c8-82a6-ff16231b0dba")
+		)
+		(pin "1"
+			(uuid "26b687b7-1624-54a5-8d63-eb8c7e6f8444")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "R25")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 548.64 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "6c4e2839-1515-54ec-ae50-42b09de30412")
-		(property "Reference" "R8"
-			(at 548.64 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 548.64 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 548.64 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 548.64 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_CE_N"
-			(at 548.64 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e8d6caa7-e074-5ec2-8b2a-5e92774d23e8")
-		)
-		(pin "2"
-			(uuid "b9e8f6bc-902a-5c28-9885-0777cdc38a3a")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R8")
 					(unit 1)
 				)
 			)
@@ -18655,85 +17599,6 @@
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "TP4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 833.12 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "760a8d9d-9626-5035-963d-b2ebe51d27f0")
-		(property "Reference" "R12"
-			(at 833.12 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 833.12 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 833.12 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 833.12 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for INT_N"
-			(at 833.12 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "f6626ea8-02dc-538c-9fc6-ecf8e500e1d5")
-		)
-		(pin "2"
-			(uuid "7c66bf38-28e2-5b66-803c-6ce5d4033baf")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R12")
 					(unit 1)
 				)
 			)
@@ -18820,7 +17685,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 904.24 711.2 0)
+		(at 833.12 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18830,7 +17695,7 @@
 		(dnp no)
 		(uuid "83847cb3-863d-5dc2-b8fa-a7fd8b117025")
 		(property "Reference" "R28"
-			(at 904.24 698.5 0)
+			(at 833.12 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18840,7 +17705,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 904.24 723.9 0)
+			(at 833.12 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18850,7 +17715,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 904.24 711.2 0)
+			(at 833.12 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18861,7 +17726,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 904.24 711.2 0)
+			(at 833.12 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18872,7 +17737,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_SPI_MOSI"
-			(at 904.24 711.2 0)
+			(at 833.12 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18882,95 +17747,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "c16656c5-89f1-5f90-8b67-e467f0ba863c")
-		)
 		(pin "2"
 			(uuid "bbfe3929-da61-5555-bc24-14b6b9dbc02a")
+		)
+		(pin "1"
+			(uuid "c16656c5-89f1-5f90-8b67-e467f0ba863c")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "R28")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 904.24 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "83fcb47c-9d7d-58db-8c67-ddd03bd0753f")
-		(property "Reference" "R13"
-			(at 904.24 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 904.24 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 904.24 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 904.24 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for NMI_N"
-			(at 904.24 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0a815eaf-d0ee-5287-baa7-759f0dbc5075")
-		)
-		(pin "2"
-			(uuid "6193915a-8047-59ae-8157-6068f02879fb")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R13")
 					(unit 1)
 				)
 			)
@@ -19043,11 +17829,11 @@
 		(pin "1"
 			(uuid "aab1f203-e33c-5c35-b114-d6920d875e20")
 		)
-		(pin "3"
-			(uuid "82deca51-d647-5176-98b8-d56dd2fbe8f8")
-		)
 		(pin "2"
 			(uuid "76abf40a-7c6a-50ba-86ea-c56c63ce7808")
+		)
+		(pin "3"
+			(uuid "82deca51-d647-5176-98b8-d56dd2fbe8f8")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19122,11 +17908,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "025c615b-da59-5db7-a05a-7a8d5b78320b")
-		)
 		(pin "2"
 			(uuid "5911730e-d81b-581e-a25b-b32dda3bf86c")
+		)
+		(pin "1"
+			(uuid "025c615b-da59-5db7-a05a-7a8d5b78320b")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19139,7 +17925,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 121.92 711.2 0)
+		(at 50.8 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19149,7 +17935,7 @@
 		(dnp no)
 		(uuid "87b025ad-09d5-5bd9-a88b-2aebe0dd45e7")
 		(property "Reference" "R17"
-			(at 121.92 698.5 0)
+			(at 50.8 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19159,7 +17945,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 121.92 723.9 0)
+			(at 50.8 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19169,7 +17955,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 121.92 711.2 0)
+			(at 50.8 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19180,7 +17966,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 121.92 711.2 0)
+			(at 50.8 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19191,7 +17977,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_BUSREQ_N"
-			(at 121.92 711.2 0)
+			(at 50.8 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19201,11 +17987,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "2534a66c-02f8-5f0b-adc6-d5cf5aa45630")
-		)
 		(pin "2"
 			(uuid "2c112ae0-7c1a-55d9-afd0-efcd2ceddb6a")
+		)
+		(pin "1"
+			(uuid "2534a66c-02f8-5f0b-adc6-d5cf5aa45630")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19218,7 +18004,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 548.64 711.2 0)
+		(at 477.52 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19228,7 +18014,7 @@
 		(dnp no)
 		(uuid "89c84417-7f0e-5870-af2f-68c4d6cf3ad9")
 		(property "Reference" "R23"
-			(at 548.64 698.5 0)
+			(at 477.52 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19238,7 +18024,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 548.64 723.9 0)
+			(at 477.52 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19248,7 +18034,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 548.64 711.2 0)
+			(at 477.52 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19259,7 +18045,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 548.64 711.2 0)
+			(at 477.52 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19270,7 +18056,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for RESET_N"
-			(at 548.64 711.2 0)
+			(at 477.52 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19280,11 +18066,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "bef73f18-746e-54fd-ab5c-d907db8ece54")
-		)
 		(pin "2"
 			(uuid "b82c73d4-dc23-515f-a3ab-9553f4c8c8ff")
+		)
+		(pin "1"
+			(uuid "bef73f18-746e-54fd-ab5c-d907db8ece54")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19359,50 +18145,92 @@
 				)
 			)
 		)
-		(pin "37"
-			(uuid "84b64a21-7282-59d0-96a2-57ffcc53115a")
+		(pin "20"
+			(uuid "dcf6e5d3-3a16-535a-8f67-eaffcdff3ee1")
 		)
-		(pin "24"
-			(uuid "51685c5b-47fb-5c5d-8832-ab91d01ca011")
+		(pin "4"
+			(uuid "8765519d-4e83-5bed-82f6-fc27082ca1be")
 		)
-		(pin "26"
-			(uuid "7e2b967a-3184-5c6a-bc75-84433676cbaa")
+		(pin "5"
+			(uuid "c76eebe8-1c26-5646-b20b-d68257a86d19")
 		)
-		(pin "13"
-			(uuid "5eaa1e4a-c2ae-57df-b2ee-e9dadb3ba50d")
-		)
-		(pin "23"
-			(uuid "21031503-752f-5c2f-a13c-cb2e8856de62")
-		)
-		(pin "19"
-			(uuid "465f79f0-c1aa-5710-86ab-c393c3607fcd")
-		)
-		(pin "22"
-			(uuid "c34b9bee-96bb-51a2-88e5-898872ff71d5")
-		)
-		(pin "6"
-			(uuid "1eacb5eb-9087-5ca3-87b9-098385e12002")
-		)
-		(pin "18"
-			(uuid "832c7a10-626b-5973-a5ea-032c41da6ecc")
+		(pin "34"
+			(uuid "6f3fd525-932c-55d4-9881-67aa8c8d0c00")
 		)
 		(pin "12"
 			(uuid "9ff020f7-7224-5c95-811e-9f24dac6c977")
 		)
-		(pin "32"
-			(uuid "97c52e60-4961-51bc-a5ae-73fd76d9e664")
+		(pin "26"
+			(uuid "7e2b967a-3184-5c6a-bc75-84433676cbaa")
 		)
-		(pin "15"
-			(uuid "51978f2a-8b36-5942-b742-e7fd1fb42875")
+		(pin "1"
+			(uuid "78dd5044-4c67-5b00-a745-4da76aa019a2")
 		)
 		(pin "9"
 			(uuid "54043048-0a21-5daf-8d95-acc031d37642")
 		)
+		(pin "10"
+			(uuid "2e414a8c-cc51-54c4-8b6e-e4e2f4788b0f")
+		)
+		(pin "6"
+			(uuid "1eacb5eb-9087-5ca3-87b9-098385e12002")
+		)
+		(pin "39"
+			(uuid "d9967cf1-aed7-58a5-82b2-b4c78acc7de0")
+		)
+		(pin "13"
+			(uuid "5eaa1e4a-c2ae-57df-b2ee-e9dadb3ba50d")
+		)
+		(pin "37"
+			(uuid "84b64a21-7282-59d0-96a2-57ffcc53115a")
+		)
+		(pin "30"
+			(uuid "98314fdf-b986-5c5e-bfdf-f393f67c6146")
+		)
+		(pin "11"
+			(uuid "00ac31e3-ef11-53dd-b147-491598164893")
+		)
+		(pin "38"
+			(uuid "75724fd1-e92e-563c-9d2a-a466b900aba7")
+		)
+		(pin "24"
+			(uuid "51685c5b-47fb-5c5d-8832-ab91d01ca011")
+		)
+		(pin "23"
+			(uuid "21031503-752f-5c2f-a13c-cb2e8856de62")
+		)
+		(pin "2"
+			(uuid "7c46ec84-7569-5492-97d6-25107067cb7a")
+		)
+		(pin "7"
+			(uuid "3323c1ac-d5d9-51bc-b116-f1598cacccd1")
+		)
+		(pin "14"
+			(uuid "1dcb7932-9eab-5b0c-94ce-e5572df24a7f")
+		)
+		(pin "15"
+			(uuid "51978f2a-8b36-5942-b742-e7fd1fb42875")
+		)
+		(pin "22"
+			(uuid "c34b9bee-96bb-51a2-88e5-898872ff71d5")
+		)
+		(pin "32"
+			(uuid "97c52e60-4961-51bc-a5ae-73fd76d9e664")
+		)
 		(pin "35"
 			(uuid "d07ba593-867c-5823-9677-9964035cd083")
 		)
-		(pin "17"
-			(uuid "761541d0-3f6b-5d01-8127-676e0ae962cc")
+		(pin "29"
+			(uuid "3f07b249-d26c-54f1-9c9d-0d35dabf1d61")
+		)
+		(pin "33"
+			(uuid "2ffe51ae-67b2-5927-b33d-6d083a37decc")
+		)
+		(pin "3"
+			(uuid "7c3db876-4040-5257-8a4b-be45fa1c5c75")
+		)
+		(pin "18"
+			(uuid "832c7a10-626b-5973-a5ea-032c41da6ecc")
 		)
 		(pin "21"
 			(uuid "02a04f33-dfa9-5ff8-ad22-21d82c09a9b0")
@@ -19410,79 +18238,137 @@
 		(pin "8"
 			(uuid "a04a79de-8857-532c-a789-9728a6b8aba7")
 		)
-		(pin "30"
-			(uuid "98314fdf-b986-5c5e-bfdf-f393f67c6146")
+		(pin "28"
+			(uuid "a6cfed38-a251-5b1c-a249-18468b63165e")
 		)
-		(pin "5"
-			(uuid "c76eebe8-1c26-5646-b20b-d68257a86d19")
-		)
-		(pin "40"
-			(uuid "7a3bd861-905f-5916-97b6-df667aa1b5a5")
+		(pin "19"
+			(uuid "465f79f0-c1aa-5710-86ab-c393c3607fcd")
 		)
 		(pin "27"
 			(uuid "ee67c83a-e51b-594f-afbc-fc65af3fd071")
 		)
-		(pin "34"
-			(uuid "6f3fd525-932c-55d4-9881-67aa8c8d0c00")
-		)
-		(pin "3"
-			(uuid "7c3db876-4040-5257-8a4b-be45fa1c5c75")
-		)
-		(pin "2"
-			(uuid "7c46ec84-7569-5492-97d6-25107067cb7a")
-		)
-		(pin "14"
-			(uuid "1dcb7932-9eab-5b0c-94ce-e5572df24a7f")
-		)
-		(pin "36"
-			(uuid "522fd3cf-fed4-5c15-9c52-5ca1ae2e763f")
-		)
-		(pin "29"
-			(uuid "3f07b249-d26c-54f1-9c9d-0d35dabf1d61")
+		(pin "40"
+			(uuid "7a3bd861-905f-5916-97b6-df667aa1b5a5")
 		)
 		(pin "31"
 			(uuid "d498d4e2-35db-5e1a-bf74-71b415743058")
 		)
-		(pin "1"
-			(uuid "78dd5044-4c67-5b00-a745-4da76aa019a2")
-		)
-		(pin "11"
-			(uuid "00ac31e3-ef11-53dd-b147-491598164893")
-		)
-		(pin "33"
-			(uuid "2ffe51ae-67b2-5927-b33d-6d083a37decc")
-		)
-		(pin "39"
-			(uuid "d9967cf1-aed7-58a5-82b2-b4c78acc7de0")
-		)
-		(pin "10"
-			(uuid "2e414a8c-cc51-54c4-8b6e-e4e2f4788b0f")
-		)
-		(pin "7"
-			(uuid "3323c1ac-d5d9-51bc-b116-f1598cacccd1")
-		)
-		(pin "28"
-			(uuid "a6cfed38-a251-5b1c-a249-18468b63165e")
-		)
-		(pin "20"
-			(uuid "dcf6e5d3-3a16-535a-8f67-eaffcdff3ee1")
-		)
-		(pin "38"
-			(uuid "75724fd1-e92e-563c-9d2a-a466b900aba7")
-		)
 		(pin "25"
 			(uuid "82b1fcc2-d96e-50c3-bc67-60451445e8eb")
 		)
-		(pin "4"
-			(uuid "8765519d-4e83-5bed-82f6-fc27082ca1be")
+		(pin "17"
+			(uuid "761541d0-3f6b-5d01-8127-676e0ae962cc")
 		)
 		(pin "16"
 			(uuid "9ccade78-d08c-58cd-ad89-cb4ad3009242")
+		)
+		(pin "36"
+			(uuid "522fd3cf-fed4-5c15-9c52-5ca1ae2e763f")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Z80SBC:RN8")
+		(at 50.8 660.4 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "908f5be9-ed00-5cf9-a228-c042ff781f8b")
+		(property "Reference" "RN4"
+			(at 50.8 643.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "8x10k bussed"
+			(at 50.8 676.91 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Array_SIP9"
+			(at 50.8 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 50.8 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Z80 control pull-up network"
+			(at 50.8 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1ad42629-4b53-5fb7-8acc-b34099fad4ba")
+		)
+		(pin "8"
+			(uuid "45136ede-c563-5247-af0e-7831f389b7c4")
+		)
+		(pin "2"
+			(uuid "39e118a9-cca3-590f-9675-2beb62461ae9")
+		)
+		(pin "9"
+			(uuid "6559ea44-b359-5168-9f8e-38a929fcdf95")
+		)
+		(pin "6"
+			(uuid "84f215cc-85af-5e69-bffa-f6749a4a4dc9")
+		)
+		(pin "7"
+			(uuid "69ef4a8a-fae2-532a-8108-a2929c90599d")
+		)
+		(pin "4"
+			(uuid "5fd2497d-12c9-5528-a40f-cb3fbe10d965")
+		)
+		(pin "5"
+			(uuid "ee8e32ba-5c63-5681-8823-b3aec4ea9183")
+		)
+		(pin "3"
+			(uuid "9be9e16b-80b1-5eaa-8301-ef131b23a00f")
+		)
+		(instances
+			(project "z80_romless_sbc"
+				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
+					(reference "RN4")
 					(unit 1)
 				)
 			)
@@ -19552,11 +18438,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "34ecd8bf-daee-50b5-a5c3-951d777def05")
-		)
 		(pin "2"
 			(uuid "9bc40d12-6b0c-5af3-ae01-d39c01b23f7e")
+		)
+		(pin "1"
+			(uuid "34ecd8bf-daee-50b5-a5c3-951d777def05")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19631,16 +18517,116 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "51bbff8a-c47b-5c65-8529-34a0380e7898")
-		)
 		(pin "2"
 			(uuid "123acbdd-6d73-5e44-a5c9-aa7798d2f2fb")
+		)
+		(pin "1"
+			(uuid "51bbff8a-c47b-5c65-8529-34a0380e7898")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "R30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Z80SBC:RN8")
+		(at 152.4 660.4 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "9696e8c0-de50-50b8-93e2-9166833b4299")
+		(property "Reference" "RN5"
+			(at 152.4 643.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "8x10k bussed"
+			(at 152.4 676.91 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Array_SIP9"
+			(at 152.4 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 152.4 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "MCP and SRAM control pull-up network"
+			(at 152.4 660.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "631696f4-a7d6-5ce8-854d-7947d6319cab")
+		)
+		(pin "8"
+			(uuid "173382df-2bbe-5615-84ad-13892d5d278b")
+		)
+		(pin "2"
+			(uuid "efa0a76a-ed74-549d-88ae-90a7ef566454")
+		)
+		(pin "9"
+			(uuid "78ad8093-72ea-5a90-8f1d-9769a29e1b4c")
+		)
+		(pin "6"
+			(uuid "077e2c98-ea06-519b-9466-fb3b5a3a58d2")
+		)
+		(pin "7"
+			(uuid "caf73f0c-90e8-5d09-a617-271dc29f757d")
+		)
+		(pin "4"
+			(uuid "3e382616-95e5-5161-9534-af66157d6635")
+		)
+		(pin "5"
+			(uuid "d20e68b0-07c7-50c8-952e-1c5638570692")
+		)
+		(pin "3"
+			(uuid "d9ce36e6-bc1e-5d4d-be27-151166ce8fd7")
+		)
+		(instances
+			(project "z80_romless_sbc"
+				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
+					(reference "RN5")
 					(unit 1)
 				)
 			)
@@ -19710,38 +18696,44 @@
 				)
 			)
 		)
-		(pin "3"
-			(uuid "1a9f9b6d-b0e0-5852-a2a7-b86d95b287f7")
+		(pin "20"
+			(uuid "d3626886-f1a3-5afd-85eb-baebe429ba73")
 		)
 		(pin "2"
 			(uuid "ac70e187-5348-5142-84e6-c2a8d49bc3dc")
 		)
+		(pin "7"
+			(uuid "1376786c-a30b-5c0c-b631-0c8e41e383b7")
+		)
+		(pin "15"
+			(uuid "077fda4d-03e6-59aa-95c6-d8bda7eb7bdd")
+		)
 		(pin "14"
 			(uuid "e056cebf-2112-5f4e-b041-9a029d925d7c")
 		)
-		(pin "13"
-			(uuid "05489d8a-49e4-5148-953f-a15ebf2e9e1e")
+		(pin "4"
+			(uuid "4ec5fa0a-07d5-5ec7-91b8-85333c2681e7")
 		)
-		(pin "19"
-			(uuid "b3633c21-c287-5345-947f-46c82e9c3252")
-		)
-		(pin "6"
-			(uuid "be3cfa6e-5390-5127-8e51-559f15420a57")
-		)
-		(pin "18"
-			(uuid "7a2cfd1a-709d-5fc4-b892-e1e620a7d094")
+		(pin "5"
+			(uuid "b5f91e3d-a5af-5760-a0a9-9495148e34f1")
 		)
 		(pin "12"
 			(uuid "a19ed30e-5d5b-56c7-add3-b0b4ce3792b9")
 		)
+		(pin "3"
+			(uuid "1a9f9b6d-b0e0-5852-a2a7-b86d95b287f7")
+		)
+		(pin "18"
+			(uuid "7a2cfd1a-709d-5fc4-b892-e1e620a7d094")
+		)
 		(pin "1"
 			(uuid "bb4e3729-0f40-5dd7-850c-d8981fd08a11")
 		)
-		(pin "11"
-			(uuid "c45bd887-df07-5e5d-87f5-25c7977ba2c9")
+		(pin "8"
+			(uuid "948a3ec3-05ab-53e7-bde4-eb970bc7bb76")
 		)
-		(pin "15"
-			(uuid "077fda4d-03e6-59aa-95c6-d8bda7eb7bdd")
+		(pin "19"
+			(uuid "b3633c21-c287-5345-947f-46c82e9c3252")
 		)
 		(pin "9"
 			(uuid "6df96301-0493-54c4-914e-50270ddb5120")
@@ -19749,26 +18741,20 @@
 		(pin "10"
 			(uuid "85411e9c-5c4b-5775-aa98-eea1842e0e42")
 		)
-		(pin "7"
-			(uuid "1376786c-a30b-5c0c-b631-0c8e41e383b7")
+		(pin "6"
+			(uuid "be3cfa6e-5390-5127-8e51-559f15420a57")
 		)
 		(pin "17"
 			(uuid "daf7b2de-eda5-5d33-b8da-dde744c47ef2")
 		)
-		(pin "20"
-			(uuid "d3626886-f1a3-5afd-85eb-baebe429ba73")
-		)
-		(pin "8"
-			(uuid "948a3ec3-05ab-53e7-bde4-eb970bc7bb76")
-		)
-		(pin "5"
-			(uuid "b5f91e3d-a5af-5760-a0a9-9495148e34f1")
-		)
-		(pin "4"
-			(uuid "4ec5fa0a-07d5-5ec7-91b8-85333c2681e7")
-		)
 		(pin "16"
 			(uuid "60ac516a-dc52-51d4-861f-3624b0d9c615")
+		)
+		(pin "13"
+			(uuid "05489d8a-49e4-5148-953f-a15ebf2e9e1e")
+		)
+		(pin "11"
+			(uuid "c45bd887-df07-5e5d-87f5-25c7977ba2c9")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -19857,7 +18843,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 264.16 711.2 0)
+		(at 193.04 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19867,7 +18853,7 @@
 		(dnp no)
 		(uuid "a67987ff-1e4f-5234-a665-109ec6bb4871")
 		(property "Reference" "R19"
-			(at 264.16 698.5 0)
+			(at 193.04 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19877,7 +18863,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 264.16 723.9 0)
+			(at 193.04 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19887,7 +18873,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 264.16 711.2 0)
+			(at 193.04 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19898,7 +18884,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 264.16 711.2 0)
+			(at 193.04 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19909,7 +18895,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for PICO_SPI_CS_N"
-			(at 264.16 711.2 0)
+			(at 193.04 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19919,95 +18905,16 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "4856d22f-05bc-5abb-9027-b89feb672c0f")
-		)
 		(pin "2"
 			(uuid "9a6384ca-20a1-5979-bf81-40b4220bbd3b")
+		)
+		(pin "1"
+			(uuid "4856d22f-05bc-5abb-9027-b89feb672c0f")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "R19")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 121.92 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "a7e09e40-fcc5-5676-ae23-5ce8d551ece5")
-		(property "Reference" "R2"
-			(at 121.92 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 121.92 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 121.92 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for BUSACK_N"
-			(at 121.92 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "80ab8413-03aa-55c2-86d1-639190c97f5b")
-		)
-		(pin "2"
-			(uuid "b7d3b89d-9ef7-5bc1-9136-793df513ea2f")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R2")
 					(unit 1)
 				)
 			)
@@ -20166,85 +19073,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 690.88 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "b312c19c-d09a-5f79-b5dc-c3bc70181a70")
-		(property "Reference" "R10"
-			(at 690.88 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 690.88 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 690.88 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 690.88 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for SRAM_WE_N"
-			(at 690.88 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "13c51354-3c00-5a64-a723-b117af2e9bf0")
-		)
-		(pin "2"
-			(uuid "55fda9f2-b671-5e56-a366-03c6a7bf9ea7")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R10")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Z80SBC:CAPACITOR")
 		(at 736.6 787.4 0)
 		(unit 1)
@@ -20308,11 +19136,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "9d7c8e0e-b3cd-5e63-bcb2-40487e95f144")
-		)
 		(pin "2"
 			(uuid "68ff0303-9a23-50a8-bcae-2b22cd271aef")
+		)
+		(pin "1"
+			(uuid "9d7c8e0e-b3cd-5e63-bcb2-40487e95f144")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -20387,11 +19215,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "ff3531b3-0faa-5af7-8c6e-5403d794417e")
-		)
 		(pin "2"
 			(uuid "952dff20-d4e4-59cf-8ea5-ee38442e0dbe")
+		)
+		(pin "1"
+			(uuid "ff3531b3-0faa-5af7-8c6e-5403d794417e")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -20480,7 +19308,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 619.76 711.2 0)
+		(at 548.64 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -20490,7 +19318,7 @@
 		(dnp no)
 		(uuid "c59bdc4d-06a9-5de7-9590-95da23d5497d")
 		(property "Reference" "R24"
-			(at 619.76 698.5 0)
+			(at 548.64 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -20500,7 +19328,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 619.76 723.9 0)
+			(at 548.64 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -20510,7 +19338,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 619.76 711.2 0)
+			(at 548.64 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20521,7 +19349,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 619.76 711.2 0)
+			(at 548.64 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20532,7 +19360,7 @@
 			)
 		)
 		(property "Description" "10k startup bias for DATA_ENABLE"
-			(at 619.76 711.2 0)
+			(at 548.64 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20542,11 +19370,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "130630a1-9143-541c-bd30-ae95dd0158c1")
-		)
 		(pin "2"
 			(uuid "f16ef28b-bf74-5f49-8e83-1bf989bd687d")
+		)
+		(pin "1"
+			(uuid "130630a1-9143-541c-bd30-ae95dd0158c1")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -20621,11 +19449,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "7a35bd89-a174-540c-8c30-826c8cb7c1d3")
-		)
 		(pin "2"
 			(uuid "5461f9e8-1238-5df3-8bc3-64856794086a")
+		)
+		(pin "1"
+			(uuid "7a35bd89-a174-540c-8c30-826c8cb7c1d3")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -20700,11 +19528,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "5e33cdf3-91e3-535e-88b0-b720dbdaf42b")
-		)
 		(pin "2"
 			(uuid "58410540-c445-52a3-a263-f6291c988716")
+		)
+		(pin "1"
+			(uuid "5e33cdf3-91e3-535e-88b0-b720dbdaf42b")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -20717,7 +19545,7 @@
 	)
 	(symbol
 		(lib_id "Z80SBC:RESISTOR")
-		(at 406.4 660.4 0)
+		(at 335.28 711.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -20725,9 +19553,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "df273625-8f31-57e8-a228-9b6780de2f21")
-		(property "Reference" "R6"
-			(at 406.4 647.7 0)
+		(uuid "e1049847-de89-5351-8c1d-e4f166bd8e37")
+		(property "Reference" "R21"
+			(at 335.28 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -20737,7 +19565,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 406.4 673.1 0)
+			(at 335.28 723.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -20747,7 +19575,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 406.4 660.4 0)
+			(at 335.28 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20758,7 +19586,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 406.4 660.4 0)
+			(at 335.28 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20768,8 +19596,8 @@
 				)
 			)
 		)
-		(property "Description" "10k startup bias for WR_N"
-			(at 406.4 660.4 0)
+		(property "Description" "10k startup bias for PICO_OE_N"
+			(at 335.28 711.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20778,17 +19606,17 @@
 					(size 1.27 1.27)
 				)
 			)
-		)
-		(pin "1"
-			(uuid "9dd3113a-0776-51f9-bc0a-cb9c673f24e7")
 		)
 		(pin "2"
-			(uuid "d705858a-7bf3-5323-91c8-02bb81cb0549")
+			(uuid "b4a8e1fe-3bad-5f57-9768-82982f2bdd24")
+		)
+		(pin "1"
+			(uuid "0cb8421d-16b1-5221-831c-2394df5d6372")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R6")
+					(reference "R21")
 					(unit 1)
 				)
 			)
@@ -20804,8 +19632,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "e1049847-de89-5351-8c1d-e4f166bd8e37")
-		(property "Reference" "R21"
+		(uuid "e1a1e3c0-1bd3-5d71-bfe1-4166e16779f9")
+		(property "Reference" "R22"
 			(at 406.4 698.5 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20847,7 +19675,7 @@
 				)
 			)
 		)
-		(property "Description" "10k startup bias for PICO_OE_N"
+		(property "Description" "10k startup bias for PICO_CLK"
 			(at 406.4 711.2 0)
 			(hide yes)
 			(show_name no)
@@ -20858,90 +19686,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "0cb8421d-16b1-5221-831c-2394df5d6372")
-		)
 		(pin "2"
-			(uuid "b4a8e1fe-3bad-5f57-9768-82982f2bdd24")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R21")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 477.52 711.2 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "e1a1e3c0-1bd3-5d71-bfe1-4166e16779f9")
-		(property "Reference" "R22"
-			(at 477.52 698.5 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 477.52 723.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 477.52 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 477.52 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for PICO_CLK"
-			(at 477.52 711.2 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+			(uuid "c54d8bc9-701c-511a-83a7-ec83cca0fd89")
 		)
 		(pin "1"
 			(uuid "85754981-2f10-508c-bff4-89982c922ba6")
-		)
-		(pin "2"
-			(uuid "c54d8bc9-701c-511a-83a7-ec83cca0fd89")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -21016,11 +19765,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "90d324b9-4d5c-5430-aba0-0d9e16f856bd")
-		)
 		(pin "2"
 			(uuid "e0acbbdc-a6c0-5f10-957b-23a39bdf95b2")
+		)
+		(pin "1"
+			(uuid "90d324b9-4d5c-5430-aba0-0d9e16f856bd")
 		)
 		(instances
 			(project "z80_romless_sbc"
@@ -21174,47 +19923,62 @@
 		(pin "24"
 			(uuid "8eddc481-e109-5b82-8011-3dd345bf4b79")
 		)
-		(pin "26"
-			(uuid "5e490d75-4d81-52de-b286-373212c673e6")
-		)
-		(pin "3"
-			(uuid "581552a7-29b5-5a46-b178-757fe33ba01a")
-		)
-		(pin "2"
-			(uuid "9fc7cd32-c6df-5d5a-9b0b-87eb9e14e6a1")
-		)
-		(pin "14"
-			(uuid "a7c6d1d3-a8b4-5d8b-954e-f9a08595254e")
-		)
-		(pin "13"
-			(uuid "05f10d20-9931-50df-88b7-07694e3e9e99")
+		(pin "20"
+			(uuid "95ef664a-c5ea-5528-95b0-415bdbdf01a3")
 		)
 		(pin "23"
 			(uuid "7b82bd15-ca35-56d3-9521-209aa3032a50")
 		)
-		(pin "19"
-			(uuid "7f00e15f-cd27-5f58-a6db-f194bc735b31")
+		(pin "2"
+			(uuid "9fc7cd32-c6df-5d5a-9b0b-87eb9e14e6a1")
+		)
+		(pin "7"
+			(uuid "3511a8bd-e4b0-5e13-b99e-1289432d9495")
+		)
+		(pin "14"
+			(uuid "a7c6d1d3-a8b4-5d8b-954e-f9a08595254e")
+		)
+		(pin "15"
+			(uuid "8cb3b2b0-26b2-5d20-9153-a2807a6c4d1f")
+		)
+		(pin "4"
+			(uuid "87e802e7-30fc-58bf-be8e-a63cf17d9493")
 		)
 		(pin "22"
 			(uuid "9477c0d6-1c80-5ba4-87e3-a846088072b8")
 		)
-		(pin "18"
-			(uuid "8ed34f6a-5d5c-599c-9f9c-c1634474311e")
-		)
-		(pin "6"
-			(uuid "19133592-3d14-5b6a-82b2-48ba40c5974d")
+		(pin "5"
+			(uuid "e58536eb-9fbd-5bbb-a802-374b0c797a0e")
 		)
 		(pin "12"
 			(uuid "a516ffe2-d17a-5748-ad3e-b4b0bc093a71")
 		)
+		(pin "18"
+			(uuid "8ed34f6a-5d5c-599c-9f9c-c1634474311e")
+		)
+		(pin "3"
+			(uuid "581552a7-29b5-5a46-b178-757fe33ba01a")
+		)
+		(pin "26"
+			(uuid "5e490d75-4d81-52de-b286-373212c673e6")
+		)
+		(pin "21"
+			(uuid "b12b9f11-1ed9-597e-94e2-9dbd4b0bfa5b")
+		)
 		(pin "1"
 			(uuid "eaa2dfb0-ba5c-5b11-80a2-599d3ae48f1e")
 		)
-		(pin "11"
-			(uuid "8ba4c29c-cb36-52ff-86b3-7cd2447b6447")
+		(pin "8"
+			(uuid "02f8d5fb-269a-51b8-846c-dfc204489f71")
 		)
-		(pin "15"
-			(uuid "8cb3b2b0-26b2-5d20-9153-a2807a6c4d1f")
+		(pin "28"
+			(uuid "fcb3cc69-ae83-53a9-8a8d-fa51594e702b")
+		)
+		(pin "19"
+			(uuid "7f00e15f-cd27-5f58-a6db-f194bc735b31")
+		)
+		(pin "27"
+			(uuid "2a4cc692-112a-5d45-a195-47387a4b9426")
 		)
 		(pin "9"
 			(uuid "77f87aa6-1146-5dbc-bacc-3a8bf09e9834")
@@ -21222,122 +19986,28 @@
 		(pin "10"
 			(uuid "071c915f-3c6a-5d3b-a3fe-e30d4b7d1b54")
 		)
-		(pin "7"
-			(uuid "3511a8bd-e4b0-5e13-b99e-1289432d9495")
-		)
-		(pin "28"
-			(uuid "fcb3cc69-ae83-53a9-8a8d-fa51594e702b")
-		)
-		(pin "17"
-			(uuid "401eb51c-8503-531e-b418-d632393d7145")
-		)
-		(pin "20"
-			(uuid "95ef664a-c5ea-5528-95b0-415bdbdf01a3")
-		)
-		(pin "21"
-			(uuid "b12b9f11-1ed9-597e-94e2-9dbd4b0bfa5b")
-		)
-		(pin "8"
-			(uuid "02f8d5fb-269a-51b8-846c-dfc204489f71")
-		)
-		(pin "5"
-			(uuid "e58536eb-9fbd-5bbb-a802-374b0c797a0e")
+		(pin "6"
+			(uuid "19133592-3d14-5b6a-82b2-48ba40c5974d")
 		)
 		(pin "25"
 			(uuid "70f684a9-1b0f-58bc-b874-a49e867d4bac")
 		)
-		(pin "4"
-			(uuid "87e802e7-30fc-58bf-be8e-a63cf17d9493")
-		)
-		(pin "27"
-			(uuid "2a4cc692-112a-5d45-a195-47387a4b9426")
+		(pin "17"
+			(uuid "401eb51c-8503-531e-b418-d632393d7145")
 		)
 		(pin "16"
 			(uuid "7f3e787f-ade3-5f2a-a731-c68498e40575")
+		)
+		(pin "13"
+			(uuid "05f10d20-9931-50df-88b7-07694e3e9e99")
+		)
+		(pin "11"
+			(uuid "8ba4c29c-cb36-52ff-86b3-7cd2447b6447")
 		)
 		(instances
 			(project "z80_romless_sbc"
 				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
 					(reference "U8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Z80SBC:RESISTOR")
-		(at 264.16 660.4 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "fe7497d5-13a9-585e-8f8e-2d9a9e0e34d8")
-		(property "Reference" "R4"
-			(at 264.16 647.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 264.16 673.1 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 264.16 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 264.16 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "10k startup bias for IORQ_N"
-			(at 264.16 660.4 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0facad8e-01d8-55c9-b6b1-6da2ca2199be")
-		)
-		(pin "2"
-			(uuid "118c5f4f-e0c9-5345-ae6d-123a85c59f90")
-		)
-		(instances
-			(project "z80_romless_sbc"
-				(path "/12094947-27be-5d7c-86a0-a55fc65bfd34"
-					(reference "R4")
 					(unit 1)
 				)
 			)

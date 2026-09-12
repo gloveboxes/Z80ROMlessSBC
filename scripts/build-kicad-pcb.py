@@ -225,6 +225,8 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
         "RN1": (8, 67, 0),
         "RN2": (34, 72, 0),
         "RN3": (82, 137, 0),
+        "RN4": (30, 90, 0),
+        "RN5": (72, 90, 0),
         "C1": (34, 42.5, 0),
         "C2": (28, 22, 0),
         "C3": (105, 30, 0),
@@ -248,8 +250,6 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
         "TP6": (88, 10, 0),
         "TP7": (95, 10, 0),
     }
-    for index in range(1, 17):
-        placements[f"R{index}"] = (8 + (index - 1) * 5.6, 90, 90)
     for index in range(17, 22):
         placements[f"R{index}"] = (105 + (index - 17) * 9, 94, 90)
     placements["R22"] = (60, 105, 90)
@@ -374,6 +374,21 @@ def add_locked_track_path(
         board.Add(track)
 
 
+def add_locked_via(
+    board: pcbnew.BOARD,
+    net_name: str,
+    position: tuple[float, float],
+) -> None:
+    via = pcbnew.PCB_VIA(board)
+    via.SetPosition(vec(*position))
+    via.SetWidth(mm(SIGNAL_VIA_DIAMETER))
+    via.SetDrill(mm(SIGNAL_VIA_DRILL))
+    via.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+    via.SetNet(board.FindNet(net_name))
+    via.SetLocked(True)
+    board.Add(via)
+
+
 def add_critical_preroutes(board: pcbnew.BOARD) -> None:
     u4_clock = pad_position(board, "U4", "18")
     z80_clock = pad_position(board, "U1", "6")
@@ -454,6 +469,28 @@ def add_critical_preroutes(board: pcbnew.BOARD) -> None:
         "D4",
         pcbnew.In2_Cu,
         [d4_right_junction, (130.4201, 69.0401), d4_down],
+    )
+
+    pico_d3 = pad_position(board, "A1", "17")
+    pico_d3_pull = pad_position(board, "RN3", "5")
+    pico_d3_via = (65.5096, 137.7818)
+    add_locked_track_path(
+        board,
+        "PICO_D3",
+        pcbnew.In2_Cu,
+        [pico_d3, (52.2218, 137.7818), pico_d3_via],
+    )
+    add_locked_via(board, "PICO_D3", pico_d3_via)
+    add_locked_track_path(
+        board,
+        "PICO_D3",
+        pcbnew.F_Cu,
+        [
+            pico_d3_via,
+            (67.4899, 135.8015),
+            (90.9615, 135.8015),
+            pico_d3_pull,
+        ],
     )
 
 
@@ -759,15 +796,13 @@ def check_board(
     }
     critical_vias = {"PICO_CLK": 0, "D4": 0}
     locked_z80_clock_segments = 0
-    z80_clock_vias = 0
     for item in board.GetTracks():
         net_name = str(item.GetNetname())
         if item.GetLayer() == pcbnew.In1_Cu:
             raise SystemExit("In1.Cu GND plane contains a signal track")
         if net_name == "Z80_CLK":
-            if item.Type() == pcbnew.PCB_VIA_T:
-                z80_clock_vias += 1
-            elif item.IsLocked() and item.GetLayer() == pcbnew.F_Cu:
+            if item.Type() != pcbnew.PCB_VIA_T and \
+                    item.IsLocked() and item.GetLayer() == pcbnew.F_Cu:
                 locked_z80_clock_segments += 1
         if net_name not in critical_layers:
             continue
@@ -783,10 +818,9 @@ def check_board(
     if critical_layers["D4"] != {pcbnew.In2_Cu} or \
             critical_vias["D4"] != 0:
         raise SystemExit("D4 must remain a via-free In2.Cu route")
-    if locked_z80_clock_segments != 4 or z80_clock_vias != 0:
+    if locked_z80_clock_segments != 4:
         raise SystemExit(
-            "Z80_CLK CPU path must retain four locked F.Cu segments "
-            "and no vias"
+            "Z80_CLK CPU path must retain four locked F.Cu segments"
         )
     classes = {
         str(name): netclass

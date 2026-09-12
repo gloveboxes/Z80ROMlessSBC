@@ -76,9 +76,12 @@ specified below. Do not add point-to-point signal jumpers yet.
 Use the pin maps for the specified level of each unused input; do not ground
 unused **outputs**. A bussed SIP contains eight separate resistors sharing
 one common pin. Verify its common-pin mark before insertion: RN1/RN2 common
-goes to +5 V, while RN3 common goes to GND. A resistor from a signal to a
-rail is a weak default, not a direct jumper to that rail. GP-to-GAL signal
-jumpers are installed in the later wiring phases.
+goes to +5 V, RN3 common goes to GND, and PCB networks RN4/RN5 common
+goes to +5 V. RN4/RN5 replace the sixteen equivalent individual control
+pull-ups on the PCB assembly; a breadboard may implement the same connections
+with discrete 10 kOhm resistors. A resistor from a signal to a rail is a weak
+default, not a direct jumper to that rail. GP-to-GAL signal jumpers are
+installed in the later wiring phases.
 
 ### Power distribution and isolation
 

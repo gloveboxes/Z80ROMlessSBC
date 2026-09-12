@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "date": "2026-09-12T05:11:52",
+    "date": "2026-09-12T06:35:35",
     "generator": "KiCad 10.0.6-10.0.6~ubuntu24.04.1",
     "project": "z80_romless_sbc",
     "board_name": "z80_romless_sbc"
@@ -10,21 +10,21 @@
     "width": "160.0000 mm",
     "height": "135.0000 mm",
     "area": "21600.00 mm²",
-    "front_component_density": "30.72",
-    "back_component_density": "5.60",
-    "front_copper_area": "1507.318 mm²",
-    "back_copper_area": "1931.536 mm²",
+    "front_component_density": "28.69",
+    "back_component_density": "5.41",
+    "front_copper_area": "1455.553 mm²",
+    "back_copper_area": "1916.724 mm²",
     "min_track_clearance": "0.2016 mm",
     "min_track_width": "0.3000 mm",
     "min_drill_diameter": "0.4000 mm",
     "board_thickness": "1.6000 mm",
-    "front_footprint_area": "6636.025 mm²",
-    "back_footprint_area": "1208.708 mm²",
-    "front_footprint_density": "30.72",
-    "back_footprint_density": "5.60"
+    "front_footprint_area": "6196.217 mm²",
+    "back_footprint_area": "1167.65 mm²",
+    "front_footprint_density": "28.69",
+    "back_footprint_density": "5.41"
   },
   "pads": {
-    "through_hole": 371,
+    "through_hole": 357,
     "smd": 0,
     "connector": 0,
     "npth": 4,
@@ -32,16 +32,16 @@
     "press_fit": 0
   },
   "vias": {
-    "through": 87,
+    "through": 80,
     "blind": 0,
     "buried": 0,
     "micro": 0
   },
   "components": {
     "tht": {
-      "front": 65,
+      "front": 51,
       "back": 0,
-      "total": 65
+      "total": 51
     },
     "smd": {
       "front": 0,
@@ -54,14 +54,14 @@
       "total": 4
     },
     "total": {
-      "front": 69,
+      "front": 55,
       "back": 0,
-      "total": 69
+      "total": 55
     }
   },
   "drill_holes": [
     {
-      "count": 315,
+      "count": 301,
       "shape": "Round",
       "x_size": "0.8000 mm",
       "y_size": "0.8000 mm",
@@ -71,7 +71,7 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 87,
+      "count": 80,
       "shape": "Round",
       "x_size": "0.4000 mm",
       "y_size": "0.4000 mm",
@@ -123,8 +123,8 @@
     {
       "count": 2,
       "shape": "Round",
-      "x_size": "1.1000 mm",
-      "y_size": "1.1000 mm",
+      "x_size": "1.3000 mm",
+      "y_size": "1.3000 mm",
       "plated": true,
       "source": "Pad",
       "start_layer": "F.Cu",
@@ -133,8 +133,8 @@
     {
       "count": 2,
       "shape": "Round",
-      "x_size": "1.3000 mm",
-      "y_size": "1.3000 mm",
+      "x_size": "1.1000 mm",
+      "y_size": "1.1000 mm",
       "plated": true,
       "source": "Pad",
       "start_layer": "F.Cu",

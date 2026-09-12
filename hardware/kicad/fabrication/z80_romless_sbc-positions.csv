@@ -15,22 +15,6 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "D1","1N5819","D_DO-41_SOD81_P10.16mm_Horizontal",15.000000,-105.000000,0.000000,top
 "J1","REGULATED 5V INPUT","Altech_AK100_1x02_P5.00mm",16.000000,-13.000000,0.000000,top
 "Q1","2N3904 MCP RESET","TO-92_Inline",86.000000,-62.000000,0.000000,top
-"R1","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",8.000000,-90.000000,90.000000,top
-"R2","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",13.600000,-90.000000,90.000000,top
-"R3","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",19.200000,-90.000000,90.000000,top
-"R4","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",24.800000,-90.000000,90.000000,top
-"R5","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",30.400000,-90.000000,90.000000,top
-"R6","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",36.000000,-90.000000,90.000000,top
-"R7","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",41.600000,-90.000000,90.000000,top
-"R8","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",47.200000,-90.000000,90.000000,top
-"R9","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",52.800000,-90.000000,90.000000,top
-"R10","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",58.400000,-90.000000,90.000000,top
-"R11","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",64.000000,-90.000000,90.000000,top
-"R12","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",69.600000,-90.000000,90.000000,top
-"R13","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",75.200000,-90.000000,90.000000,top
-"R14","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",80.800000,-90.000000,90.000000,top
-"R15","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",86.400000,-90.000000,90.000000,top
-"R16","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",92.000000,-90.000000,90.000000,top
 "R17","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",105.000000,-94.000000,90.000000,top
 "R18","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",114.000000,-94.000000,90.000000,top
 "R19","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",123.000000,-94.000000,90.000000,top
@@ -49,6 +33,8 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "RN1","8x10k bussed","R_Array_SIP9",8.000000,-67.000000,0.000000,top
 "RN2","8x10k bussed","R_Array_SIP9",34.000000,-72.000000,0.000000,top
 "RN3","8x10k bussed","R_Array_SIP9",82.000000,-137.000000,0.000000,top
+"RN4","8x10k bussed","R_Array_SIP9",30.000000,-90.000000,0.000000,top
+"RN5","8x10k bussed","R_Array_SIP9",72.000000,-90.000000,0.000000,top
 "TP1","M1# TEST","TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",43.000000,-10.000000,0.000000,top
 "TP2","CLK TEST","TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",85.000000,-68.000000,0.000000,top
 "TP3","RESET# TEST","TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",50.000000,-10.000000,0.000000,top
