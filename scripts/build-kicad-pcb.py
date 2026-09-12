@@ -213,11 +213,11 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
         "J1": (16, 13, 0),
         "D1": (15, 105, 0),
         "U2": (10, 22, 0),
-        "U1": (40, 17, 0),
+        "U1": (38, 17, 0),
         "U8": (78, 22, 0),
-        "Q1": (86, 62, 0),
+        "Q1": (87, 62, 0),
         "U3": (94, 22, 0),
-        "U4": (58, 70, 90),
+        "U4": (59, 70, 90),
         "U9": (105, 55, 0),
         "U10": (124, 55, 0),
         "U7": (143, 55, 0),
@@ -227,15 +227,15 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
         "RN3": (82, 137, 0),
         "RN4": (30, 90, 0),
         "RN5": (72, 90, 0),
-        "C1": (34, 42.5, 0),
+        "C1": (32, 42.5, 0),
         "C2": (28, 22, 0),
         "C3": (105, 30, 0),
-        "C4": (58, 59, 0),
+        "C4": (59, 59, 0),
         "C5": (155, 55, 90),
         "C6": (71, 43, 0),
         "C7": (115.2, 55, 90),
         "C8": (134.2, 55, 90),
-        "C9": (32, 61, 0),
+        "C9": (32, 61, 90),
         "C10": (96, 82, 0),
         "C11": (158, 82, 0),
         "C12": (27, 12, 0),
@@ -243,7 +243,7 @@ def placement_table() -> dict[str, tuple[float, float, float]]:
         "R30": (118, 135, 90),
         "R31": (126, 135, 90),
         "TP1": (43, 10, 0),
-        "TP2": (85, 68, 0),
+        "TP2": (86, 68, 0),
         "TP3": (50, 10, 0),
         "TP4": (74, 10, 0),
         "TP5": (81, 10, 0),
@@ -272,15 +272,15 @@ def mounting_hole_table() -> dict[str, tuple[float, float]]:
 
 def assembly_labels() -> list[tuple[str, float, float, float]]:
     return [
-        ("C1", 31.0, 42.5, 0.8),
+        ("C1", 29.0, 42.5, 0.8),
         ("C2", 31.0, 26.0, 0.8),
         ("C3", 105.0, 35.0, 0.8),
-        ("C4", 67.0, 59.0, 0.8),
+        ("C4", 68.0, 59.0, 0.8),
         ("C5", 158.0, 55.0, 0.8),
         ("C6", 68.0, 47.0, 0.8),
         ("C7", 117.5, 60.0, 0.8),
         ("C8", 136.5, 60.0, 0.8),
-        ("C9", 37.0, 61.0, 0.8),
+        ("C9", 32.0, 66.0, 0.8),
         ("C10", 96.0, 87.0, 0.8),
         ("C11", 158.0, 76.0, 0.8),
         ("C12", 27.0, 19.0, 0.8),
@@ -400,8 +400,8 @@ def add_critical_preroutes(board: pcbnew.BOARD) -> None:
         [
             u4_clock,
             z80_clock_junction,
-            (38.0, 67.5),
-            (38.0, z80_clock[1]),
+            (36.0, 67.5),
+            (36.0, z80_clock[1]),
             z80_clock,
         ],
     )
@@ -415,8 +415,8 @@ def add_critical_preroutes(board: pcbnew.BOARD) -> None:
         pcbnew.F_Cu,
         [
             pico_clock,
-            (pico_clock[0], 137.0),
-            (6.4, 137.0),
+            (pico_clock[0], 138.0),
+            (6.4, 138.0),
             (6.4, 100.0),
             clock_junction,
             (55.6, 93.0),
@@ -613,7 +613,7 @@ def build_board(
         if reference == "D1":
             footprint.Reference().SetLayer(pcbnew.F_Fab)
         if reference == "U4":
-            footprint.Reference().SetPosition(vec(70.0, 73.0))
+            footprint.Reference().SetPosition(vec(71.0, 73.0))
         if reference == "A1":
             for item in footprint.GraphicalItems():
                 if item.GetLayer() == pcbnew.F_SilkS:
@@ -625,7 +625,7 @@ def build_board(
             net_name = endpoint_nets.get(endpoint)
             if net_name is not None:
                 pad.SetNet(nets[net_name])
-            if endpoint in {"A1.23", "A1.28"}:
+            if endpoint in {"A1.3", "A1.23", "A1.28"}:
                 pad.SetLocalClearance(mm(0.19))
             if endpoint in {
                 "A1.3", "A1.8", "A1.13", "A1.18", "A1.23",
@@ -769,6 +769,17 @@ def check_board(
             endpoint = f"{reference}.{pad.GetNumber()}"
             if endpoint in expected:
                 actual[endpoint] = str(pad.GetNetname())
+
+    u1_right_pin = max(
+        pcbnew.ToMM(pad.GetPosition().x)
+        for pad in footprints["U1"].Pads()
+    )
+    u4_left_pin = min(
+        pcbnew.ToMM(pad.GetPosition().x)
+        for pad in footprints["U4"].Pads()
+    )
+    if u4_left_pin - u1_right_pin < 5.5:
+        raise SystemExit("U1/U4 socket pin-row clearance is below 5.5 mm")
 
     missing_endpoints = sorted(set(expected) - set(actual))
     mismatched = sorted(
