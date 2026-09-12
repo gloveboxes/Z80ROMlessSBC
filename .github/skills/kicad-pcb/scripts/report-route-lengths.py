@@ -211,6 +211,68 @@ def main() -> None:
         )
         print(f"{label},{shortest(graph, left, right):.1f}")
 
+    def report_endpoint_paths(
+        title: str,
+        nets: list[str],
+        source_reference: str,
+        destination_reference: str,
+    ) -> None:
+        print(f"\n{title}")
+        print("net,length_mm")
+        for net_name in nets:
+            endpoint_names = manifest["nets"][net_name]
+            source_endpoint = next(
+                endpoint for endpoint in endpoint_names
+                if endpoint.startswith(source_reference + ".")
+            )
+            destination_endpoint = next(
+                endpoint for endpoint in endpoint_names
+                if endpoint.startswith(destination_reference + ".")
+            )
+            source_ref, source_pin = source_endpoint.split(".", 1)
+            destination_ref, destination_pin = destination_endpoint.split(
+                ".", 1
+            )
+            graph, _, _ = graph_for_net(board, net_name)
+            source_position = point(
+                board.FindFootprintByReference(
+                    source_ref
+                ).FindPadByNumber(source_pin)
+            )
+            destination_position = point(
+                board.FindFootprintByReference(
+                    destination_ref
+                ).FindPadByNumber(destination_pin)
+            )
+            print(
+                f"{net_name},"
+                f"{shortest(graph, source_position, destination_position):.1f}"
+            )
+
+    address_nets = [f"A{bit}" for bit in range(16)]
+    data_nets = [f"D{bit}" for bit in range(8)]
+    report_endpoint_paths(
+        "Z80-to-SRAM address paths", address_nets, "U1", "U2"
+    )
+    report_endpoint_paths(
+        "MCP23S17-to-SRAM address paths", address_nets, "U8", "U2"
+    )
+    report_endpoint_paths(
+        "Z80-to-SRAM data paths", data_nets, "U1", "U2"
+    )
+    report_endpoint_paths(
+        "Pico-write-transceiver-to-SRAM data paths",
+        data_nets,
+        "U9",
+        "U2",
+    )
+    report_endpoint_paths(
+        "SRAM-to-Pico-read-transceiver data paths",
+        data_nets,
+        "U2",
+        "U10",
+    )
+
 
 if __name__ == "__main__":
     main()

@@ -91,6 +91,12 @@ changes, and outliers. A bus does not need serpentine equality at this clock
 rate, but long branches, stars, unnecessary vias, and one-bit outliers require
 inspection.
 
+For multi-master buses, report source-specific path groups separately:
+Z80-to-SRAM and MCP23S17-to-SRAM for address, and Z80-to-SRAM,
+Pico-write-transceiver-to-SRAM, and SRAM-to-Pico-read-transceiver for data.
+Do not claim a bus is length matched from total net copper or from only one
+source/receiver pair.
+
 See [current measured route](references/current-route.md) for the committed
 baseline and known outliers. Re-run the script rather than assuming those
 numbers remain valid after a PCB edit.

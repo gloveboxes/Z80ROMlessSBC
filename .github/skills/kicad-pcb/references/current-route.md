@@ -49,6 +49,29 @@ copper.
 | SRAM OE U4.5 → U2.24 | 62.3 mm |
 | SRAM WE U4.7 → U2.29 | 89.0 mm |
 
+## Source-to-SRAM path groups
+
+The address and data nets are multi-drop trees, so there is no single
+electrically meaningful "length" for a bus bit. The relevant source/receiver
+groups currently measure:
+
+| Group | Path range | Spread |
+| --- | ---: | ---: |
+| Z80 → SRAM address | 18.9–53.8 mm | 34.9 mm |
+| MCP23S17 → SRAM address | 62.2–88.0 mm | 25.8 mm |
+| Z80 ↔ SRAM data | 15.8–92.9 mm | 77.1 mm |
+| Pico write transceiver → SRAM data | 104.7–150.3 mm | 45.6 mm |
+| SRAM → Pico read transceiver data | 125.1–158.1 mm | 33.0 mm |
+
+At typical FR-4 propagation velocity, even the largest spread is below about
+0.5 ns, compared with a 125 ns period at 8 MHz. Matching these paths to 2 mm
+would require independent tuning at each source branch; a single meander on a
+shared trunk changes several groups at once. The required added copper would
+increase capacitance, coupling, and routing density without materially
+improving the timing budget. Keep these source-specific measurements in the
+report, but prefer short, low-via paths and measured receive-pin timing over
+decorative length equality.
+
 ## Review thresholds
 
 These are engineering prompts, not automatic acceptance limits:
