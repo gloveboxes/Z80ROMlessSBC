@@ -29,10 +29,6 @@ nav:
   - System architecture:
       - Operational boundaries: en/system/operation.md
       - Firmware build and provisioning: en/system/firmware-build.md
-  - PCB design:
-      - Overview and fabrication: en/pcb/index.md
-      - PCB inventory: en/pcb/inventory.md
-      - Design considerations: en/pcb/design-considerations.md
   - Breadboard implementation:
       - Plan and prerequisites: en/implementation/index.md
       - Phase 0 - Power distribution: en/implementation/phase-0-power.md
@@ -62,6 +58,10 @@ nav:
       - Terms and abbreviations: en/reference/glossary.md
       - Datasheets: en/reference/datasheets.md
       - Source index: en/reference/source-index.md
+  - PCB design:
+      - Overview and fabrication: en/pcb/index.md
+      - PCB inventory: en/pcb/inventory.md
+      - Design considerations: en/pcb/design-considerations.md
   - Building these docs: en/development/building-docs.md
 
 plugins:
