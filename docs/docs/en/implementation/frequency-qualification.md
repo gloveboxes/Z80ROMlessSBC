@@ -1,5 +1,8 @@
 # 8.12 Frequency Qualification
 
+This procedure qualifies the breadboard prototype. A PCB result is a separate
+qualification record, not evidence that a breadboard has passed.
+
 **Prerequisite:** The [Phase 10 pass gate](phase-10-websocket.md#pass-gate) must pass at
 1 MHz before testing any higher rate.
 
@@ -32,8 +35,7 @@ both values.
 - **Step sequence:** Test 2 MHz, then increase in 500 kHz steps to
   6 MHz. If and only if 6 MHz passes with margin, continue
   in 500 kHz steps to 8 MHz. Treat 6.5-8 MHz as experimental on the
-  breadboard; on the four-layer PCB, 8 MHz is the design target but remains
-  unqualified until this complete procedure passes.
+  breadboard, not as a required design target.
 - **Functional checks at each step:** Run `a` for CPU SRAM
   readback/address activity and `h` for the one-hour self-checking
   memory loop plus continuous terminal IN/OUT while measuring stop
@@ -62,9 +64,8 @@ both values.
 
 The qualified frequency is the highest error-free tested step for which the
 DSLogic capture set proves digital ordering and the DHO814 proves memory margin
-and the complete WAIT/clock-stop handshake. For the breadboard, report
-6.5-8 MHz separately as experimental. For the four-layer PCB, qualify through
-8 MHz before claiming that design target. Do not claim any rate without
+and the complete WAIT/clock-stop handshake. Report 6.5-8 MHz separately as
+experimental. Do not claim any rate without
 equivalent timing evidence and repeated cold/runtime tests.
 
 Record the requested and reported clock, firmware revision, rail voltages,

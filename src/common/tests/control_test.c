@@ -13,6 +13,12 @@
 #include "z80sbc/supervisor.h"
 
 static bool levels[32];
+static bool initialized[32];
+static bool outputs[32];
+static bool pulls_disabled[32];
+static bool preloaded[32];
+static bool check_data_setup;
+static unsigned data_enables;
 static uint8_t registers[32];
 static uint64_t now_us;
 static bool clock_running;
@@ -28,9 +34,18 @@ static jmp_buf reboot_target;
 static void (*irq_callback)(uint, uint32_t);
 spi_inst_t *spi0;
 
-void gpio_init(uint pin) { (void)pin; }
+void gpio_init(uint pin) {
+  if (pin >= PIN_DATA_0 && pin <= PIN_DATA_7)
+    assert(!levels[PIN_DATA_ENABLE]);
+  initialized[pin] = true;
+  outputs[pin] = false;
+  preloaded[pin] = false;
+}
 void gpio_put(uint pin, bool value) {
   levels[pin] = value;
+  preloaded[pin] = true;
+  if (pin == PIN_DATA_ENABLE && value)
+    ++data_enables;
   if (pin == PIN_ADDR_ENABLE && !value) {
     memset(registers, 0, sizeof(registers));
     registers[0] = registers[1] = 0xFF;
@@ -43,9 +58,16 @@ uint32_t gpio_get_all(void) {
     result |= (uint32_t)levels[pin] << pin;
   return result;
 }
-void gpio_set_dir(uint pin, bool output) { (void)pin; (void)output; }
+void gpio_set_dir(uint pin, bool output) {
+  if (check_data_setup && output &&
+      pin >= PIN_DATA_0 && pin <= PIN_DATA_7) {
+    assert(initialized[pin] && preloaded[pin]);
+    assert(!levels[PIN_DATA_ENABLE]);
+  }
+  outputs[pin] = output;
+}
 void gpio_set_function(uint pin, uint function) { (void)pin; (void)function; }
-void gpio_disable_pulls(uint pin) { (void)pin; }
+void gpio_disable_pulls(uint pin) { pulls_disabled[pin] = true; }
 void gpio_set_irq_enabled(uint pin, uint32_t events, bool enabled) {
   (void)pin; (void)events; irq_enabled = enabled;
 }
@@ -56,6 +78,7 @@ void gpio_set_irq_enabled_with_callback(uint pin, uint32_t events, bool enabled,
   irq_callback = callback;
 }
 void busy_wait_us_32(uint32_t delay) { now_us += delay; }
+void sleep_ms(uint32_t delay) { now_us += (uint64_t)delay * 1000; }
 absolute_time_t make_timeout_time_us(uint32_t delay) { return now_us + delay; }
 bool time_reached(absolute_time_t deadline) { return now_us >= deadline; }
 void tight_loop_contents(void) { now_us += 100000; }
@@ -76,11 +99,6 @@ int spi_write_read_blocking(spi_inst_t *spi, const uint8_t *tx, uint8_t *rx, siz
   assert(!levels[PIN_SPI_CS_N] && count == 3 && tx[0] == 0x41);
   rx[2] = registers[tx[1]] ^ (tx[1] == corrupt_register ? 1 : 0);
   return ++spi_reads == fail_read ? 2 : (int)count;
-}
-void output_with_initial_level(uint pin, bool value) { gpio_put(pin, value); }
-void z80_isolate_buses(void) {
-  gpio_put(PIN_ADDR_ENABLE, 0);
-  gpio_put(PIN_DATA_ENABLE, 0);
 }
 bool z80_clock_set_hz(uint32_t hz) { clock_running = hz != 0; return clock_running; }
 void z80_clock_stop(void) { clock_running = false; }
@@ -106,6 +124,12 @@ void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
 
 static void reset_fixture(void) {
   memset(levels, 1, sizeof(levels));
+  memset(initialized, 0, sizeof(initialized));
+  memset(outputs, 0, sizeof(outputs));
+  memset(pulls_disabled, 0, sizeof(pulls_disabled));
+  memset(preloaded, 0, sizeof(preloaded));
+  check_data_setup = false;
+  data_enables = 0;
   memset(registers, 0, sizeof(registers));
   now_us = 0;
   spi_writes = spi_reads = fail_write = fail_read = watchdog_count = 0;
@@ -123,6 +147,37 @@ static void assert_fail_closed(void) {
   assert(!levels[PIN_RESET_N] && levels[PIN_BUSREQ_N]);
   assert(levels[PIN_SRAM_CE_N] && levels[PIN_SRAM_OE_N] && levels[PIN_SRAM_WE_N]);
   assert(!clock_running);
+}
+
+static void test_safe_startup_and_first_write(void) {
+  reset_fixture();
+  check_data_setup = true;
+  z80_safe_startup();
+  assert_isolated();
+  assert(!levels[PIN_RESET_N] && !levels[PIN_CLK] && !levels[PIN_DATA_DIR]);
+  assert(levels[PIN_BUSREQ_N] && levels[PIN_SPI_CS_N]);
+  assert(levels[PIN_SRAM_CE_N] && levels[PIN_SRAM_OE_N] && levels[PIN_SRAM_WE_N]);
+  assert(data_enables == 0);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin) {
+    assert(initialized[pin]);
+    assert(!outputs[pin] && pulls_disabled[pin]);
+  }
+
+  /* Exercise the cold-boot write before any read configures the data pins. */
+  assert(z80_sram_prepare_dma());
+  assert(z80_sram_write_byte(0x1234, 0xA5));
+  assert(levels[PIN_DATA_ENABLE] && levels[PIN_DATA_DIR]);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin) {
+    assert(outputs[pin]);
+    assert(levels[pin] == ((0xA5u >> (pin - PIN_DATA_0)) & 1u));
+  }
+  assert(data_enables == 1);
+
+  z80_safe_startup();
+  assert_isolated();
+  assert(data_enables == 1);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin)
+    assert(!outputs[pin] && pulls_disabled[pin]);
 }
 
 static void test_direction_verification(void) {
@@ -236,10 +291,11 @@ static void test_traps(void) {
 }
 
 int main(void) {
+  test_safe_startup_and_first_write();
   test_direction_verification();
   test_bus_handshake();
   test_dma_preparation();
   test_traps();
-  puts("PASS: simulated direction, partial SPI, BUSACK and I/O fault paths");
+  puts("PASS: safe startup, first SRAM write, direction, partial SPI, BUSACK and I/O fault paths");
   return 0;
 }

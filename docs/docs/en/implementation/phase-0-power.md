@@ -55,9 +55,13 @@ specified below. Do not add point-to-point signal jumpers yet.
 
 - **Pico-side control defaults:** Fit 10 kOhm pull-ups to 3.3 V on GP4
   (BUSREQ#), GP5 (SRAM CE#), GP21 (SPI CS#), GP22 (SRAM WE#), and GP26
-  (SRAM OE#). Fit 10 kOhm pull-downs to GND on GP2 (CLK), GP3 (RESET#), GP6
-  (DATA_DIR), GP7 (DATA_ENABLE), GP9 (ADDR_ENABLE), and GP18/GP19 (SPI
-  SCK/SI). Leave GP8 unconnected.
+  (SRAM OE#). Fit 10 kOhm pull-downs to GND on GP2 (CLK) and GP18/GP19
+  (SPI SCK/SI). Fit **4.7 kOhm, 5% or better** pull-downs on GP3 (RESET#),
+  GP6 (DATA_DIR), GP7 (DATA_ENABLE), and GP9 (ADDR_ENABLE).
+  The supported ATF22V10B can source 100 uA through an input's internal
+  pull-up. A 10 kOhm pull-down cannot guarantee its 0.8 V maximum LOW;
+  4.7 kOhm provides margin for resistor tolerance and other input leakage.
+  Leave GP8 unconnected.
 
 - **Pico data-bus defaults:** Fit the third 8x10 kOhm bussed SIP network from
   GP10-GP17 to GND. This keeps the SN74AHCT245N A inputs defined while the Pico
@@ -76,10 +80,9 @@ specified below. Do not add point-to-point signal jumpers yet.
 Use the pin maps for the specified level of each unused input; do not ground
 unused **outputs**. A bussed SIP contains eight separate resistors sharing
 one common pin. Verify its common-pin mark before insertion: RN1/RN2 common
-goes to +5 V, RN3 common goes to GND, and PCB networks RN4/RN5 common
-goes to +5 V. RN4/RN5 replace the sixteen equivalent individual control
-pull-ups on the PCB assembly; a breadboard may implement the same connections
-with discrete 10 kOhm resistors. A resistor from a signal to a rail is a weak
+goes to +5 V and RN3 common goes to GND. This breadboard plan uses discrete
+10 kOhm resistors for the sixteen 5 V control pull-ups listed above, rather
+than additional SIP networks. A resistor from a signal to a rail is a weak
 default, not a direct jumper to that rail. GP-to-GAL signal jumpers are
 installed in the later wiring phases.
 
@@ -88,8 +91,17 @@ installed in the later wiring phases.
 - Feed the breadboard's +5 V logic rail directly from the regulated supply.
   Feed Pico VSYS from that rail only through the 1N5819, with its anode toward
   external +5 V and banded cathode toward VSYS. The Pico's internal Schottky
-  diode and the 1N5819 safely OR USB and external power. Never connect the
-  external +5 V rail directly to Pico VBUS or VSYS.
+  diode and the 1N5819 OR USB and external power at VSYS, but do not isolate
+  every signal pin between power domains. Never connect the external +5 V
+  rail directly to Pico VBUS or VSYS.
+
+- On the populated board, **apply external +5 V before connecting USB;
+  disconnect USB before removing external +5 V**. Do not operate or program
+  the populated board from USB alone. USB can keep Pico data outputs HIGH
+  while U9's +5 V supply is absent; the AHCT245 data-port clamps can then
+  back-power U9 even with its output enable inactive. Program a removed Pico
+  for USB-only use. Arbitrary external-supply loss while USB remains attached
+  is not protected by this design and requires additional hardware isolation.
 
 - Power the SN74LVC245AN and SN74LVC244AN from the Pico 3.3 V rail. Power the
   SN74AHCT245N and all other logic from the regulated 5 V rail. Tie Pico AGND
@@ -97,7 +109,7 @@ installed in the later wiring phases.
   ground plane.
 
 - Never connect a 5 V output directly to a Pico GPIO. The LVC devices provide
-  power-off isolation, the GAL inputs do not source 5 V into GP6/GP7, and the
+  power-off isolation, GP6/GP7 connect only to biased GAL inputs, and the
   SN74LVC244AN's `Ioff` protection isolates its monitored inputs while its
   3.3 V supply is absent or ramping.
 
@@ -156,8 +168,9 @@ installed in the later wiring phases.
   contact. With external power applied, VSYS must be one Schottky drop
   below the +5 V rail. Verify each 5 V-side active-low control is pulled
   HIGH. With power removed, measure approximately 10 kOhm from every
-  Pico-side pull-up contact to the unpowered 3.3 V rail and from every
-  pull-down contact to GND, as listed in the passive-component installation;
+  Pico-side pull-up contact to the unpowered 3.3 V rail. Require approximately
+  4.7 kOhm from GP3/GP6/GP7/GP9 to GND, and 10 kOhm from the other
+  pull-down contacts to GND, as listed in the passive-component installation;
   powered Pico-side logic levels are checked in
   [Phase 1](phase-1-supervisor.md). Measure approximately 10 kOhm
   from each GP10-GP17 contact to GND through the data SIP network.

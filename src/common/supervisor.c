@@ -31,6 +31,8 @@ void z80_safe_startup(void) {
   output_with_initial_level(PIN_SPI_CS_N, 1);
   output_with_initial_level(PIN_CLK, 0);
   output_with_initial_level(PIN_DATA_DIR, 0);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin)
+    input_with_no_pull(pin);
   input_with_no_pull(PIN_BUSACK_N);
   input_with_no_pull(PIN_IORQ_N);
   input_with_no_pull(PIN_RD_N);

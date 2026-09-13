@@ -21,6 +21,13 @@ design therefore uses two fixed-direction transceivers:
   in the Pico domain, and `Ioff` prevents back-powering while 3.3 V is
   absent.
 
+The AHCT245 data ports do **not** provide the same power-off protection.
+Disabling OE isolates its outputs, not the Pico-facing port's clamp paths.
+With the populated circuit, apply external +5 V before USB and disconnect
+USB before removing external +5 V. USB-only operation/programming and
+arbitrary external-supply loss with USB still attached are not supported;
+see the [power sequence](../implementation/phase-0-power.md#power-distribution-and-isolation).
+
 Every corresponding AHCT245, LVC245, Z84C00, and SRAM data pin below is a tap
 on one common D0-D7 trunk. The separate chip-pair views do not define separate
 nets or a series path through the Z80 or SRAM.
@@ -176,7 +183,7 @@ and product terms. Connect GP7 DATA_ENABLE to GAL pin 9 and GP6
 DATA_DIR to pin 11. GAL pin 17 drives AHCT245 OE# pin 19; pin 18 drives
 LVC245 OE# pin 19. The two equations are documented in
 [SRAM control-source arbitration](pin-mapping.md#12-sram-control-source-arbitration-atf22v10bc).
-No 5 V output drives GP6/GP7: they are GAL inputs with 10 kOhm
+No 5 V output drives GP6/GP7: they are GAL inputs with 4.7 kOhm
 pull-downs. During Pico power-off both inputs read LOW, so both GAL OE#
 outputs are HIGH. The LVC245's `Ioff` specification protects its
 3.3 V-powered side while GAL pin 18 remains at a 5 V-domain HIGH.

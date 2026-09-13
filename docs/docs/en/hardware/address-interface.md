@@ -112,7 +112,9 @@ ADDR_ENABLE feeds GAL pin 10. When LOW, GAL pin 19 drives Q1 and holds
 MCP RESET# LOW, forcing IODIRA/IODIRB to their all-input reset values.
 When HIGH, Q1 releases RESET#; firmware waits, then programs OLAT before
 changing IODIR to outputs. It reasserts reset before releasing the Z80.
-GP9 has a 10 kOhm pull-down, so Pico reset or power loss fails closed.
+GP9 has a 4.7 kOhm pull-down to hold address access disabled during Pico reset
+or loss of its 3.3 V supply while the GAL's 5 V supply remains valid. This is
+not protection against arbitrary supply brownout.
 
 Every corresponding MCP23S17, Z84C00, and SRAM address pin below is a tap on
 one common pulled-up address trunk. The separate chip-pair views do not imply

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(z80_control_tests C CXX)
 enable_testing()
-add_executable(control_test control_test.c ../mcp23s17.c ../bus.c ../cpu.c ../io_trap.c ../sram.c)
+add_executable(control_test control_test.c ../supervisor.c ../mcp23s17.c ../bus.c ../cpu.c ../io_trap.c ../sram.c)
 target_include_directories(control_test PRIVATE fakes ../include)
 target_compile_features(control_test PRIVATE c_std_11)
 target_compile_options(control_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)

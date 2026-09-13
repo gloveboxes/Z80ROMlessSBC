@@ -110,5 +110,5 @@ enables its GPIO drivers.
 
 Pico GP3 RESET# bypasses the AHCT244 and connects directly to Z80 pin 26
 and ATF22V10 pin 1. Its 3.3 V HIGH exceeds the Z84C00's 2.2 V and the
-ATF22V10's 2.0 V input-HIGH minima. Keep its 10 kOhm pull-down to GND
+ATF22V10's 2.0 V input-HIGH minima. Keep its 4.7 kOhm pull-down to GND
 and never fit a 5 V pull-up on this node.

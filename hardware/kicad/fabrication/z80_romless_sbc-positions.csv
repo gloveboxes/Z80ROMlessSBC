@@ -21,10 +21,10 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "R20","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",132.000000,-94.000000,90.000000,top
 "R21","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",141.000000,-94.000000,90.000000,top
 "R22","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",60.000000,-105.000000,90.000000,top
-"R23","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",110.000000,-115.000000,90.000000,top
-"R24","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",68.000000,-105.000000,90.000000,top
-"R25","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",76.000000,-105.000000,90.000000,top
-"R26","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",84.000000,-105.000000,90.000000,top
+"R23","4.7k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",110.000000,-115.000000,90.000000,top
+"R24","4.7k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",68.000000,-105.000000,90.000000,top
+"R25","4.7k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",76.000000,-105.000000,90.000000,top
+"R26","4.7k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",84.000000,-105.000000,90.000000,top
 "R27","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",142.000000,-115.000000,90.000000,top
 "R28","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",150.000000,-115.000000,90.000000,top
 "R29","4.7k","R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",110.000000,-135.000000,90.000000,top

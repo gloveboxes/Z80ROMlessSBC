@@ -5,6 +5,9 @@
 - Use exact purchased package geometry, not just package family names.
 - DIP courtyards model IC packages, not necessarily socket bodies. Check
   socket-body dimensions and placement tolerance separately.
+- Preserve polarized-capacitor and diode polarity marks on F.Silkscreen,
+  and label the power connector's rails. Moving nonpolar bypass outlines to
+  F.Fab must not also remove C9-C12 polarity information.
 - Place every 100 nF bypass within a few millimetres of its target supply pin
   and provide a local GND return.
 - Put supply-entry bulk capacitance beside the input; distribute other bulk

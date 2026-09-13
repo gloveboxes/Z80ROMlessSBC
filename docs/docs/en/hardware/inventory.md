@@ -72,8 +72,10 @@ The quantities below build one complete three-breadboard prototype.
 - **I/O interlock:** GAL pin 13 accepts raw IORQ# and pin 20 drives WAIT#,
   providing deterministic I/O interlocking without another package.
 
-Together, these choices provide deterministic isolation and safe power
-sequencing with nine active packages.
+Together, these choices provide deterministic bus isolation with nine active
+packages. Safe power sequencing requires external +5 V before USB and USB
+removal before external +5 V removal; the AHCT245 does not provide power-off
+isolation on its Pico-facing data ports.
 
 **AHCT244 sourcing:** Specify the exact `SN74AHCT244N` PDIP-20 part. TI lists
 the `N` package as active and in production. It is available from authorized
@@ -101,10 +103,10 @@ of Pico/GAL TTL HIGHs.
 | 8 | 100 nF X7R ceramic capacitors, at least 10 V | One at every DIP logic supply pair |
 | 3 | 22 uF capacitors, at least 10 V | One per breadboard |
 | 1 | 100 uF electrolytic capacitor, at least 10 V | 5 V supply-entry bulk capacitance |
-| 13 | 10 kOhm, 1/4 W resistors | Remaining discrete startup levels and temporary test pulls |
-| 1 | 4.7 kOhm, 1/4 W resistor | GAL-to-2N3904 base current limiting |
+| 25 | 10 kOhm, 1/4 W resistors | Sixteen 5 V control pull-ups plus nine other discrete startup-bias resistors |
+| 5 | 4.7 kOhm, 1/4 W resistors, 5% or better | Four GAL-input pull-downs and GAL-to-2N3904 base current limiting |
 | 1 | 47 kOhm, 1/4 W resistor | 2N3904 base-emitter pull-down |
-| 5 | 8x10 kOhm bussed SIP resistor networks, 9-pin | RN1/RN2 pull up A0-A15, RN3 pulls down Pico D0-D7, and RN4/RN5 replace sixteen discrete 5 V control pull-ups |
+| 3 | 8x10 kOhm bussed SIP resistor networks, 9-pin | RN1/RN2 pull up A0-A15; RN3 pulls down Pico D0-D7 |
 | Reused for tests | 1 kOhm, 1/4 W resistors | First-drive current limiting and manual input tests |
 
 ## 0.4 Construction and Power
@@ -122,22 +124,9 @@ of Pico/GAL TTL HIGHs.
 
 ### PCB assembly alternative
 
-The KiCad design provides a single **160 x 135 mm, four-layer, all-through-hole
-PCB** as an alternative to the three-breadboard build. It uses the same nine
-active packages and electrical safeguards. In addition to the semiconductor,
-socket, resistor, capacitor, diode, and power-terminal items above, the PCB
-assembly needs:
-
-| Quantity | Item | Requirement |
-|----:|----|----|
-| 1 | Fabricated four-layer PCB | 1.6 mm FR-4, manufacturer-controlled stack-up, plated through holes, solder mask both sides |
-| 4 | M3 mounting fastener sets | Match the four 3.2 mm non-plated mounting holes |
-| 7 | Through-hole loop test points | M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND |
-
-The generated BOM and fabrication archive are under
-`hardware/kicad/fabrication/`. Verify the actual Pico headers, DIP sockets,
-electrolytic diameter/pitch, terminal-block pitch, diode body, and purchased
-2N3904 lead order against those footprints before ordering boards.
+Use the separate [PCB inventory](../pcb/inventory.md) for a PCB build.
+Its fitted resistor/network quantities, connectors, and mechanical items
+differ from the breadboard shopping list above.
 
 ## 0.5 Bring-Up Equipment
 

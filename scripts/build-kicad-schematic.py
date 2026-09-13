@@ -672,12 +672,16 @@ if len(PULLS) != 12:
     raise AssertionError(f"expected 12 discrete startup resistors, got {len(PULLS)}")
 for index, (signal, rail) in enumerate(PULLS, start=17):
     column = index - 17
+    # ATF22V10B inputs can source 100 uA; 10k cannot guarantee a 0.8 V LOW.
+    value = "4.7k" if signal in {
+        "RESET_N", "DATA_ENABLE", "DATA_DIR", "ADDR_ENABLE",
+    } else "10k"
     add_component(
-        f"R{index}", "RESISTOR", "10k",
+        f"R{index}", "RESISTOR", value,
         50.8 + column * 71.12, 711.2,
         {1: signal, 2: rail},
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-        description=f"10k startup bias for {signal}",
+        description=f"{value} startup bias for {signal}",
     )
 add_component("R29", "RESISTOR", "4.7k", 50.8, 736.6, {1: "MCP_RESET_DRIVE", 2: "MCP_RESET_BASE"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base resistor")
 add_component("R30", "RESISTOR", "47k", 127.0, 736.6, {1: "MCP_RESET_BASE", 2: "GND"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base-emitter pull-down")

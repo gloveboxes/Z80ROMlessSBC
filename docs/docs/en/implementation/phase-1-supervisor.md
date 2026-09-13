@@ -42,8 +42,11 @@ levels before enabling any GPIO output: GP7 and GP9 LOW to isolate
 the data path and hold MCP RESET# asserted; GP3 LOW to assert Z80 RESET#; GP4, GP5,
 GP21, GP22, and GP26 HIGH to deassert BUSREQ#, SRAM CE#, SPI CS#,
 SRAM WE#, and SRAM OE#; GP2 LOW to stop the clock; and GP6 LOW for
-the inactive data direction. GP8 remains an input. It must also provide a slow
-walking-one GPIO test selected through the USB serial console.
+the inactive data direction. With the data interface disabled, initialize
+GP10-GP17 as SIO inputs before the first SRAM write; changing only SIO direction
+does not clear RP2350's reset-time pad isolation or select the SIO function.
+GP8 remains an input. It must also provide a slow walking-one GPIO test
+selected through the USB serial console.
 
 **Implementation:** [Phase 1 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c),
 backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c).
@@ -98,6 +101,8 @@ static void diagnostic_safe_startup(void) {
   output_with_initial_level(PIN_SPI_CS_N, 1);
   output_with_initial_level(PIN_CLK, 0);
   output_with_initial_level(PIN_DATA_DIR, 0);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin)
+    input_with_no_pull(pin);
   input_with_no_pull(PIN_BUSACK_N);
   input_with_no_pull(PIN_IORQ_N); // External 10 kOhm pull-up holds this input HIGH.
   input_with_no_pull(PIN_RD_N);
@@ -128,8 +133,9 @@ diagnostic after [Phase 3](phase-3-address-generator.md).
 
 1. With the 1N5819 fitted as specified in the
   [Phase 0 power plan](phase-0-power.md#power-distribution-and-isolation),
-  USB and external power may be
-  connected together. Confirm neither source back-powers the other,
+  apply external +5 V before connecting USB, and disconnect USB before
+  removing external +5 V. Both sources may be connected together.
+  Confirm neither source back-powers the other,
   then require 3.20 V to 3.40 V on the Pico 3.3 V rail, at the
   still-absent SN74LVC245AN and SN74LVC244AN VCC contacts.
 2. Scope GP7 and GP9 through reset and startup; GP7 must remain LOW and

@@ -37,11 +37,13 @@ The older LVC8T245 carrier, SD storage, external PSRAM, three AHCT125 packages, 
 
 - All 5 V logic shares one regulated 5 V rail. Every installed 5 V device must be powered whenever that rail is energized.
 - External 5 V reaches Pico `VSYS` only through a 1N5819, anode to external 5 V and banded cathode to `VSYS`. Never tie external 5 V to `VBUS`.
+- On the populated board, apply external 5 V before USB and disconnect USB before removing external 5 V. AHCT245 data ports lack power-off isolation; USB-only operation/programming and arbitrary loss of external power with USB attached are unsupported.
 - Pico 3.3 V powers LVC244/LVC245 and 3.3 V pull resistors. Pico is the only 3.3 V source.
 - Pico GP0-GP25 are FT pads only while IOVDD is present. GP26-GP29 are not FT. Buffer all incoming 5 V signals.
 - LVC244 mappings are BUSACK# to GP0, IORQ# to GP1, MCP SO to GP20, RD# to GP27, and WR# to GP28. Both OEs are tied LOW.
 - RP2350 GP23/24/25/29 are reserved by the Pico 2 W wireless interface; do not repurpose them.
 - Pull-ups protect absent socketed drivers, not installed unpowered ICs.
+- R23-R26 are 4.7 kOhm pull-downs on RESET#, DATA_ENABLE, DATA_DIR, and ADDR_ENABLE. ATF22V10B inputs can source 100 uA; 10 kOhm does not guarantee a valid startup LOW.
 
 ## Arbitration and Buses
 
@@ -51,11 +53,30 @@ The older LVC8T245 carrier, SD storage, external PSRAM, three AHCT125 packages, 
 - AHCT244 also translates CLK, BUSREQ#, MCP CS#, SCK, and SI. Keep AHCT244 on the Core board so its Z80 clock path stays local.
 - Raw IORQ# feeds GAL pin 13. GAL pin 20 drives the pulled-up Z80 WAIT# node with `WAIT# = IORQ# OR DATA_ENABLE`; firmware keeps DATA_ENABLE asserted until the I/O controls release.
 - DATA_ENABLE LOW disables both data paths. Firmware changes DATA_DIR only while disabled. GAL outputs enforce mutually exclusive AHCT245/LVC245 enables.
+- Safe startup initializes GP10-GP17 as SIO inputs with DATA_ENABLE LOW before any write; SIO direction alone does not clear RP2350 pad isolation or select its function. Preload data before enabling GPIO outputs.
 - MCP23S17 connects directly to pulled-up A0-A15. GP9 `ADDR_ENABLE` controls MCP RESET# through GAL pin 19 and Q1. Preload OLAT before setting IODIR outputs; assert reset to isolate.
 - Address and data buses are short shared trunks with taps, not stars or implied series paths.
 - Z80 BUSACK# floats address, data, MREQ#, IORQ#, RD#, and WR#; fitted 5 V pull-ups define monitored controls during the grant.
 
+## Firmware Scope
+
+Pico source and stage applications remain breadboard-first, with one shared
+implementation for electrically equivalent breadboard and PCB builds. Keep
+the common GPIO map and conservative defaults; Stage 10 starts at 1 MHz.
+Do not fork PCB firmware or silently increase startup rates for the PCB
+target. Any necessary hardware-specific configuration must be explicit and
+retain breadboard defaults. Early-stage diagnostics still require their
+specified device population, even when run on a PCB.
+
 ## Physical Placement
+
+The Phase 0-10 implementation plan is for the three-BB830 breadboard
+prototype. Keep the PCB as a separate physical implementation: share
+electrical safeguards and firmware, not assembly instructions, BOM packaging,
+routing assumptions, or qualification evidence. The breadboard uses three
+bussed SIP networks and sixteen discrete control pull-ups; the PCB replaces
+those sixteen resistors with RN4/RN5. PCB-specific documentation belongs in
+`docs/docs/en/pcb/`, not the breadboard implementation phases.
 
 With BB830 row 1 at top and row 63 at bottom:
 

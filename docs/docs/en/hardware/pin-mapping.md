@@ -539,7 +539,8 @@ block-beta
   DDIR --> G11
 ```
 
-DATA_ENABLE, ADDR_ENABLE, and DATA_DIR each have a 10 kOhm pull-down to GND.
+RESET#, DATA_ENABLE, ADDR_ENABLE, and DATA_DIR each have a 4.7 kOhm pull-down
+to GND (R23-R26), sized for the ATF22V10B's internal input pull-ups.
 
 ### Z84C00 to ATF22V10
 

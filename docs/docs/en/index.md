@@ -22,7 +22,10 @@ before beginning the power checks.
 Use the [glossary](reference/glossary.md) for unfamiliar terms. Expect to
 use a multimeter from Phase 0 and a scope for startup/clock checks; the logic
 analyzer is also required for the later bus and speed qualification captures.
-This is a measured prototype build, not a wire-everything-and-power-on kit.
+This is a measured three-BB830 breadboard build, not a
+wire-everything-and-power-on kit. The [PCB design section](pcb/index.md)
+is a separate physical implementation; its assembly, parts counts, and
+qualification do not replace the breadboard phases.
 
 ## How the computer works
 

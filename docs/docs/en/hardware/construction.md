@@ -175,9 +175,6 @@ For the non-DIP keyed parts:
   ravine, with the dot/common pin toward row 1 and wired to +5 V.
 - **RN3:** place beside the AHCT/LVC A-port node with its dot/common pin
   toward row 1 and wired to GND.
-- **RN4/RN5 (PCB):** the two 9-pin bussed networks replace sixteen discrete
-  10 kOhm control pull-ups. Their marked common pins connect to +5 V. RN4
-  groups Z80 control inputs; RN5 groups MCP/SRAM control nodes.
 - **1N5819 and electrolytics:** the diode band faces Pico VSYS; every
   electrolytic `+` lead goes to its positive rail. Mark polarity on the
   breadboard before insertion.
@@ -235,84 +232,28 @@ signals pass through an intermediate chip as series logic.
 
 | Artifact | Purpose |
 | --- | --- |
-| [KiCad project](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro), [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch), and [routed PCB](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pcb) | Editable KiCad 10 sources |
+| [KiCad project](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro) and [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch) | Editable KiCad 10 electrical sources |
 | [Project symbol library](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80sbc.kicad_sym) | Exact local pin names, numbers, and ERC electrical types |
 | [SVG export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.svg) and [PDF export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.pdf) | Zoomable full schematic renderings |
 | [KiCad netlist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
-| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) and [PCB DRC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-drc.json) | KiCad 10.0.6 results: zero violations and zero unconnected PCB items |
+| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) | Generated electrical-rules evidence |
 
-The schematic contains 51 physical components, including 15 discrete
-resistors, five SIP networks, 12 fitted capacitors, and seven loop test
-points, plus one nonphysical `#FLG01` power marker used only by ERC. KiCad's
-exported netlist matches the independently generated manifest exactly: 79 real
-nets and 341 component pin endpoints. The ERC-only power marker and KiCad's
-synthetic no-connect nets are excluded from that comparison.
+The schematic uses the PCB assembly's component references and packaging;
+on the breadboard, implement RN4/RN5 as the sixteen discrete control pull-ups
+specified in [Phase 0](../implementation/phase-0-power.md#passive-component-installation).
+This preserves the electrical nets without imposing PCB packaging on the
+prototype. Use the breadboard inventory for breadboard purchase quantities.
 
-To regenerate and validate the native source, schematic and PCB exports,
-strict ERC/DRC reports, manufacturing package, and independent netlist
-comparison:
-
-```sh
-python3 -m venv .venv-kicad
-.venv-kicad/bin/pip install -r scripts/requirements-kicad.txt
-PYTHON=.venv-kicad/bin/python npm run kicad
-```
-
-The command runs [build-kicad-schematic.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-schematic.py),
-[build-kicad-pcb.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-pcb.py),
-KiCad CLI upgrade/export/ERC/DRC, and
-[check-kicad-netlist.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/check-kicad-netlist.py). Any ERC
-or DRC violation, unconnected PCB item, or net/endpoint mismatch fails the
-build. Set `KICAD_PYTHON` when KiCad's `pcbnew` module is not available to the
-normal Python interpreter.
+The [PCB documentation](../pcb/index.md#source-ownership-and-regeneration)
+describes native-source regeneration, PCB packaging counts, and fabrication
+outputs. These are not prerequisites for wiring the breadboard.
 
 ## 3.3 PCB implementation
 
-The PCB alternative preserves the schematic's bus ownership, voltage
-translation, reset, and power-sequencing rules on one 160 x 135 mm,
-four-layer, all-through-hole board. All active devices remain socketable.
-
-- U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 GAL form the short
-  address/control spine. U4 sits immediately beside U1; the local Z80 clock
-  path from U4 to U1 is about 70 mm, with TP2 on a separate short branch. Their socket-row
-  center spacing leaves more than 2 mm beyond the combined conventional
-  socket-body half-widths.
-- U9/U10 and U7 sit between the shared buses and the Pico 2 W.
-- In1.Cu is a continuous GND reference plane. Signals route on F.Cu, In2.Cu,
-  and B.Cu; the autorouter is explicitly prohibited from routing on In1.Cu.
-  All 79 nets are routed, with no DRC violations or unconnected items.
-- The Pico 2 W is horizontal in the bottom-left corner. Its USB connector is
-  flush with the left board edge and faces outward for unobstructed cable
-  insertion. The antenna sits over a dedicated chamfered internal FR-4 cutout,
-  approximately 11.9 x 15.6 mm overall, that includes router-radius margin
-  around the official footprint's no-copper keepout. BOOTSEL and SWD remain
-  accessible from above.
-- TP1-TP7 expose M1#, CLK, RESET#, WAIT#, BUSREQ#, BUSACK#, and GND.
-- `PICO_CLK` and `Z80_CLK` use a dedicated 0.40 mm-clearance netclass.
-  `PICO_CLK` is locked to a via-free F.Cu route, and the prior D4 data-bus
-  outlier is locked to a via-free In2.Cu route.
-  The Pico-side startup-bias resistors sit beside the Pico rather than pulling
-  those controls through the lower-left resistor bank.
-- Four 3.2 mm non-plated holes provide M3 mounting points.
-- J1 is a 5.00 mm-pitch screw terminal. C9-C11 use 8 mm / 3.5 mm-pitch
-  electrolytic footprints and C12 uses a 10 mm / 5 mm-pitch footprint.
-
-The routed design is electrically complete but not hardware-qualified. First
-power-up still begins at 1 MHz. The PCB is designed for qualification through
-at least 8 MHz, but that target becomes a claim only after the staged checks
-and [frequency qualification procedure](../implementation/frequency-qualification.md).
-
-| PCB artifact | Purpose |
-| --- | --- |
-| `hardware/kicad/z80_romless_sbc.kicad_pcb` | Routed editable PCB |
-| `hardware/kicad/exports/z80_romless_sbc-pcb.png` | 3D assembly preview |
-| `hardware/kicad/exports/z80_romless_sbc-pcb.svg` / `.pdf` | Copper, silkscreen, and outline drawings |
-| `hardware/kicad/reports/z80_romless_sbc-drc.json` | Strict DRC result |
-| `hardware/kicad/reports/z80_romless_sbc-stats.json` | Board dimensions, layers, pads, drills, and routing statistics |
-| `hardware/kicad/fabrication/z80_romless_sbc-gerbers.zip` | Gerber and plated/non-plated drill package |
-| `hardware/kicad/fabrication/z80_romless_sbc-bom.csv` | Generated component BOM |
-| `hardware/kicad/fabrication/z80_romless_sbc-positions.csv` | Through-hole placement coordinates |
-| `hardware/kicad/fabrication/z80_romless_sbc.ipc` | IPC-D-356 electrical test netlist |
+The PCB material has moved to its own [PCB design section](../pcb/index.md),
+including the [PCB inventory](../pcb/inventory.md) and
+[design considerations](../pcb/design-considerations.md). The breadboard
+construction and Phase 0-10 implementation sequence remain separate.
 
 ## 3.4 High-Speed Interconnect Routing
 
@@ -323,11 +264,6 @@ dominated by total wire length, stubs, loop area, contact resistance,
 and fast-edge ringing. Route each bus as a short grouped trunk with
 roughly similar paths, but do not add serpentine wire merely to make
 lengths equal.
-
-The four-layer PCB targets qualification through at least 8 MHz. Its internal
-GND plane and shorter controlled copper reduce breadboard-specific return-path
-and contact problems, but the same receive-pin timing measurements remain
-mandatory.
 
 A **trunk** is a compact route shared by the bus wires, with a short **tap**
 from each wire to each device that uses it. A **star** fans long wires out

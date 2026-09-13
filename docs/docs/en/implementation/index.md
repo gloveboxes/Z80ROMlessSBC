@@ -2,6 +2,13 @@
 
 ## Start here
 
+**Scope: the three-BB830 breadboard prototype.** Phases 0-10 below describe
+incremental socket installation, jumper wiring, and breadboard bring-up.
+The [PCB design section](../pcb/index.md)
+remains separate: do not substitute its BOM, placement, routing, or speed
+target into these steps. Electrical safeguards and maintained firmware apply
+to both builds, but each physical build needs its own qualification evidence.
+
 *Bring-up* means proving a small part of the circuit works before adding the
 next part. Treat each phase like an integration test with a hardware fixture:
 the installed chips, wiring, firmware, and supply settings are all part of

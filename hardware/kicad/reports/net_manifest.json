@@ -190,27 +190,27 @@
     },
     "R23": {
       "symbol": "RESISTOR",
-      "value": "10k",
+      "value": "4.7k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for RESET_N"
+      "description": "4.7k startup bias for RESET_N"
     },
     "R24": {
       "symbol": "RESISTOR",
-      "value": "10k",
+      "value": "4.7k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for DATA_ENABLE"
+      "description": "4.7k startup bias for DATA_ENABLE"
     },
     "R25": {
       "symbol": "RESISTOR",
-      "value": "10k",
+      "value": "4.7k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for DATA_DIR"
+      "description": "4.7k startup bias for DATA_DIR"
     },
     "R26": {
       "symbol": "RESISTOR",
-      "value": "10k",
+      "value": "4.7k",
       "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for ADDR_ENABLE"
+      "description": "4.7k startup bias for ADDR_ENABLE"
     },
     "R27": {
       "symbol": "RESISTOR",

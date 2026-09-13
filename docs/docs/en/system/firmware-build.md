@@ -10,6 +10,26 @@ generation, bus acquisition, synchronous I/O trapping, flash image loading,
 and terminal integration. Do not copy those excerpts in place of the
 maintained source.
 
+## Breadboard-first, shared Pico firmware
+
+The staged Pico applications remain focused on the breadboard construction
+and bring-up plan. The PCB uses the **same maintained firmware**, not a
+separate fork: both implementations share the GPIO assignments in
+`src/common/include/z80sbc/pins.h`, bus-control circuitry, and electrical
+safety requirements.
+
+Keep the shared defaults conservative. Stage 10 starts the Z80 at 1 MHz;
+the PCB's higher qualification target must not silently raise that default
+or bypass startup, bus-ownership, or timing safeguards. Any future
+hardware-specific configuration must be explicit and preserve the breadboard
+defaults. Operating-frequency qualification remains specific to each
+physical build.
+
+Shared firmware does not make every early-stage diagnostic safe on a fully
+populated PCB. Respect each stage's required device population and test
+preconditions, especially walking-output tests intended for empty destination
+sockets.
+
 ## Choose the image for your current phase
 
 There are two processors and two kinds of software: **Pico firmware** runs
@@ -88,8 +108,8 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
   mode, not as the application's serial port. BOOTSEL does not erase flash
   by itself.
 3. Load the stage UF2 and reboot using the Stage 1 commands below.
-4. Disconnect USB before placing the Pico in the board. Apply power as
-  specified by the current phase, then open its USB serial port using a
+4. Disconnect USB before placing the Pico in the board. Apply external +5 V
+  before reconnecting USB, then open its USB serial port using a
   serial terminal. On macOS, inspect `ls /dev/cu.usbmodem*`; identify the
   port belonging to this Pico. No external USB-to-UART adapter is required.
 5. Select 115200 baud, 8 data bits, no parity, 1 stop bit, and no flow control
@@ -97,6 +117,12 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
   speed. Commands are single characters, such as Stage 1 `s` for status and
   `w` for walking outputs; no Enter is required. Only one terminal program
   can use the port at a time.
+
+For subsequent in-board programming, keep external +5 V applied before
+connecting USB and throughout programming. Disconnect USB before removing
+external +5 V. Do not program or run the populated board from USB alone:
+U9's AHCT245 data ports lack power-off isolation. Remove the Pico with both
+supplies disconnected if USB-only programming is needed.
 
 Stage 1 programming commands for step 3, run from the repository root:
 

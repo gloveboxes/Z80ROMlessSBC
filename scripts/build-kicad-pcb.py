@@ -287,6 +287,8 @@ def assembly_labels() -> list[tuple[str, float, float, float]]:
         ("D1", 20.0, 99.0, 0.8),
         ("A1 PICO 2 W", 28.0, 113.0, 1.0),
         ("USB", 7.0, 108.0, 0.8),
+        ("+5V", 16.0, 18.4, 0.8),
+        ("GND", 21.0, 18.4, 0.8),
     ]
 
 
@@ -607,9 +609,10 @@ def build_board(
         footprint.SetOrientationDegrees(rotation)
         if reference.startswith("C"):
             footprint.Reference().SetLayer(pcbnew.F_Fab)
-            for item in footprint.GraphicalItems():
-                if item.GetLayer() == pcbnew.F_SilkS:
-                    item.SetLayer(pcbnew.F_Fab)
+            if reference in {f"C{index}" for index in range(1, 9)}:
+                for item in footprint.GraphicalItems():
+                    if item.GetLayer() == pcbnew.F_SilkS:
+                        item.SetLayer(pcbnew.F_Fab)
         if reference == "D1":
             footprint.Reference().SetLayer(pcbnew.F_Fab)
         if reference == "U4":
@@ -741,6 +744,12 @@ def check_board(
     actual: dict[str, str] = {}
     placements = placement_table()
     for reference, footprint in footprints.items():
+        expected_value = details[reference]["value"]
+        if str(footprint.GetValue()) != expected_value:
+            raise SystemExit(
+                f"{reference} value mismatch: "
+                f"{footprint.GetValue()} != {expected_value}"
+            )
         expected_footprint = details[reference]["footprint"].split(":", 1)[-1]
         actual_footprint = str(footprint.GetFPID().GetLibItemName())
         if actual_footprint != expected_footprint:
@@ -1005,6 +1014,12 @@ def check_board(
             for item in footprints[reference].GraphicalItems()
         ):
             raise SystemExit(f"{reference} body graphics must remain on F.Fab")
+    for reference in ("C9", "C10", "C11", "C12"):
+        if not any(
+            item.GetLayer() == pcbnew.F_SilkS
+            for item in footprints[reference].GraphicalItems()
+        ):
+            raise SystemExit(f"{reference} must retain its polarity silkscreen")
     if not SESSION_PATH.is_file():
         raise SystemExit(f"missing routing session {SESSION_PATH}")
     session_board = build_board(manifest, footprint_root)

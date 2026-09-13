@@ -20,6 +20,7 @@ void gpio_acknowledge_irq(uint pin, uint32_t events);
 void gpio_set_irq_enabled_with_callback(uint pin, uint32_t events, bool enabled,
                                        void (*callback)(uint, uint32_t));
 void busy_wait_us_32(uint32_t delay);
+void sleep_ms(uint32_t delay);
 absolute_time_t make_timeout_time_us(uint32_t delay);
 absolute_time_t make_timeout_time_ms(uint32_t delay);
 bool time_reached(absolute_time_t deadline);

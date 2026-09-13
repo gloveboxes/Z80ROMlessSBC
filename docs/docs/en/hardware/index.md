@@ -12,9 +12,14 @@ chapter order is not the chip-installation order.
 | [0. Project inventory](inventory.md) | Parts, passive components, power distribution, and required bench equipment |
 | [1. Reference pin mapping](pin-mapping.md) | Authoritative IC pin maps, signal ownership, and logic-domain checks |
 | [2. Address interface](address-interface.md) | MCP23S17 address expansion and SPI control |
-| [3. Physical construction](construction.md) | Breadboard topology plus the routed four-layer PCB and fabrication artifacts |
+| [3. Physical construction](construction.md) | Breadboard topology, socket placement, and jumper routing |
 | [4. Output buffer](output-buffer.md) | AHCT244 channel allocation and enable behavior |
 | [5. Bus isolation](bus-isolation.md) | Address, data, and control transceiver operating modes |
+
+The separate [PCB design section](../pcb/index.md) owns the PCB inventory,
+layout considerations, and fabrication references. Shared electrical chapters
+apply to both builds, but PCB parts counts and assembly geometry do not
+replace the breadboard construction plan.
 
 The instrument procedures are cross-cutting qualification references rather
 than additional hardware chapters. Use the

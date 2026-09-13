@@ -62,6 +62,8 @@ of these surfaces.
 
 - Schematic: zero ERC violations.
 - Net parity: all 79 real nets and 341 physical endpoints match the manifest.
+- PCB footprint values and packages must match the schematic manifest; net
+  parity alone cannot detect stale resistor values.
 - PCB: zero DRC violations and zero unconnected items, including after zone
   refill.
 - The committed session must reproduce the exact track/via set.
