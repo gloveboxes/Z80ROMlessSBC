@@ -18,6 +18,18 @@ python3 -m venv .venv
 
 The generated website is written to `docs/site` from the repository root.
 
+### Refresh the PCB preview
+
+The [PCB overview](../pcb/index.md#board-preview) embeds the KiCad-rendered
+board image, not a manually drawn illustration. After regenerating the
+accepted KiCad exports, refresh the documentation asset from the repository
+root before building the site:
+
+```sh
+cp hardware/kicad/exports/z80_romless_sbc-pcb.png \
+  docs/docs/en/images/z80-romless-sbc-pcb.png
+```
+
 ## Serve locally
 
 ```sh

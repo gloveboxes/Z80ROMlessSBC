@@ -19,6 +19,14 @@ incremental jumper-wiring instructions as PCB assembly instructions.
 | [Shared electrical reference](../hardware/pin-mapping.md) | Exact IC pin assignments and SRAM-control logic |
 | [Shared firmware](../system/firmware-build.md) | Stage programs, CP/M images, and Pico provisioning |
 
+## Board preview
+
+![KiCad-rendered Z80 ROMless SBC PCB showing pads, silkscreen, mounting holes, and the Pico antenna cutout](../images/z80-romless-sbc-pcb.png)
+
+*Bare-board preview exported from the current KiCad layout. Click the image
+to enlarge it. Component and socket models are not included, so the preview
+does not establish physical assembly clearance.*
+
 ## Design status and boundaries
 
 The current generated design has 51 physical schematic components, 79 real
