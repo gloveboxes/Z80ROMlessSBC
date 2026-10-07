@@ -23,9 +23,22 @@ together.
 
 ## Wiring - Pico 2 W
 
-With the Pico removed, install and continuity-check every Pico connection
-shown below. Check each destination socket contact against its pin number and
-verify no adjacent GPIOs are shorted before inserting the Pico.
+1. After the Phase 0 pass gate, disconnect external +5 V and USB. Keep both
+  disconnected throughout installation, wiring, and continuity checks.
+2. Fit the Pico 2 W now, before adding signal jumpers that would obstruct
+  access. Follow the
+  [package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1),
+  with the USB connector toward the top of the Peripheral board. Leave all
+  other IC sockets empty.
+3. With the Pico fitted but unpowered, install and continuity-check every
+  Pico connection shown below. Check each destination socket contact
+  against its pin number and check for accidental wire bridges between
+  adjacent GPIOs or to the +5 V rail. The fitted Pico's circuitry can affect
+  resistance readings; investigate unexpected readings rather than treating
+  every continuity beep as a wiring short.
+
+Leave the Pico fitted for the test plan. Apply power only after the wiring
+checks are complete, using the power sequence in test step 1.
 
 {%
   include-markdown "../hardware/pin-mapping.md"
