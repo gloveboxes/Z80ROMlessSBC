@@ -171,20 +171,26 @@ can release Z80 reset; do not use this test on a populated system.
 The Pico produces the voltage:
 do not connect a GPIO to either supply rail to force its level.
 
-- Type `x` to establish safe levels. With the meter's black lead on common
-  GND, use the red probe to measure near 0 V at Pico header pin **5**,
-  Z80 socket pin **26**, and ATF22V10 socket pin **1**.
-- Type `r` once to hold **RESET#/GP3 HIGH**. The console identifies the
-  three contacts to probe. Measure **3.20-3.40 V** at all three
-  contacts. The shared RESET# node must never exceed the Pico 3.3 V rail;
-  no 5 V pull-up is permitted. A digital GPIO read cannot detect overvoltage.
-- Type `r` again to hold **RESET# LOW** and measure near 0 V at all three
-  contacts. Repeat `r` as needed; each press flips only GP3, leaving all
-  other GPIOs unchanged. Scope the node if checking edges or overshoot.
-- Type `x` to finish and restore **all** safe levels, including RESET# LOW.
-  USB disconnect or starting `w` also restores safe levels. A new `d`
-  sequence restores safe levels before driving D0; `r` does not advance or
-  end an already active data-pin test. `s` leaves the pin levels unchanged.
+Type `x` to establish safe levels. With the meter's black lead on common GND,
+use the red probe on each RESET# contact listed below. All three are the same
+electrical node, so they should measure the same voltage. Type `r` to toggle
+RESET#. Expect these voltages at **each** contact:
+
+| Probe point | RESET# LOW | RESET# HIGH |
+| --- | ---: | ---: |
+| Pico header pin 5 (GP3) | 0 V | 3.20-3.40 V (3.3 V) |
+| Z80 socket pin 26 | 0 V | 3.20-3.40 V (3.3 V) |
+| ATF22V10 socket pin 1 | 0 V | 3.20-3.40 V (3.3 V) |
+
+The shared RESET# node must never exceed the Pico 3.3 V rail; no 5 V pull-up
+is permitted. A digital GPIO read cannot detect overvoltage. Repeat `r` as
+needed; each press flips only GP3, leaving all other GPIOs unchanged. Scope
+the node if checking edges or overshoot.
+
+Type `x` to finish and restore **all** safe levels, including RESET# LOW. USB
+disconnect or starting `w` also restores safe levels. A new `d` sequence
+restores safe levels before driving D0; `r` does not advance or end an already
+active data-pin test. `s` leaves the pin levels unchanged.
 
 **This test checks routing and commanded HIGH/LOW levels, not startup.**
 After typing `x`, verify the inactive levels listed above with a meter.
