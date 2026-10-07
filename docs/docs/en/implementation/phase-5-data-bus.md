@@ -38,7 +38,7 @@ transceivers in the stated sequence.
 disable-change-enable sequence and fixed, walking-one, and walking-zero
 patterns on the Pico data GPIOs.
 
-**Implementation:** [Phase 5 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/main.c),
+**Application source:** [src/stage05_data_bus/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/main.c),
 using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 **Test plan:**

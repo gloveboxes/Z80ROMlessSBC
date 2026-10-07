@@ -28,7 +28,7 @@ image injection and readback, run control, and the synchronous IN/OUT
 trap. Maintain counters for boots, DMA failures, readback mismatches,
 trap timeouts, and unexpected RD#/WR# control states.
 
-**Implementation:** [Phase 8 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c),
+**Application source:** [src/stage08_virtual_io/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c),
 using the shared [I/O trap](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c),
 [CPU](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c), and
 [SRAM](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c) modules.

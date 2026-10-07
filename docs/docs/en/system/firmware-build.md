@@ -43,6 +43,29 @@ ready; they are not substitutes for Stage 1 diagnostics. The phase pages link
 their maintained applications, and the [source index](../reference/source-index.md)
 lists the stage directories.
 
+Phase numbers match the `stageNN_*` directory numbers, not the documentation's
+section numbers (for example, section 8.2 is Phase 1). Directory names describe
+the firmware diagnostic, so they need not repeat the hardware phase title.
+`src/stage00_power/` contains only a checklist: Phase 0 has no Pico firmware
+or build target.
+
+| Phase | Source directory | CMake target |
+| ---: | --- | --- |
+| 1 | `src/stage01_supervisor/` | `z80_stage01_supervisor` |
+| 2 | `src/stage02_buffers_clock/` | `z80_stage02_buffers_clock` |
+| 3 | `src/stage03_mcp23s17/` | `z80_stage03_mcp23s17` |
+| 4 | `src/stage04_address_bus/` | `z80_stage04_address_bus` |
+| 5 | `src/stage05_data_bus/` | `z80_stage05_data_bus` |
+| 6 | `src/stage06_sram_dma/` | `z80_stage06_sram_dma` |
+| 7 | `src/stage07_z80_cpu/` | `z80_stage07_z80_cpu` |
+| 8 | `src/stage08_virtual_io/` | `z80_stage08_virtual_io` |
+| 9 | `src/stage09_flash_storage/` | `z80_stage09_flash_storage` |
+| 10 | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal` |
+
+Build the target in the table for your phase. Its UF2 is written to
+`build/src/<source-directory-name>/<target>.uf2`; for example, Phase 3 uses
+`build/src/stage03_mcp23s17/z80_stage03_mcp23s17.uf2`.
+
 ## 7.1 Firmware and CP/M Build
 
 The repository implements the ten cumulative firmware stages under `src/`.
@@ -102,14 +125,18 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 
 1. Disconnect the bench supply and USB before changing installed devices.
   For initial Stage 1 loading, program the Pico off the breadboard so USB
-  cannot energize untested wiring.
+  cannot energize untested wiring. Do this before fitting it and adding
+  signal jumpers in Phase 1.
 2. Hold the Pico's **BOOTSEL** button while connecting its USB data cable to
   the computer, then release it. It appears as a removable drive in this
   mode, not as the application's serial port. BOOTSEL does not erase flash
   by itself.
-3. Load the stage UF2 and reboot using the Stage 1 commands below.
-4. Disconnect USB before placing the Pico in the board. Apply external +5 V
-  before reconnecting USB, then open its USB serial port using a
+3. Load your phase's UF2 and reboot. The commands below are for Stage 1;
+  for later phases, use the UF2 path for that phase from the table above.
+4. For initial Stage 1 setup, disconnect USB, fit the Pico, and complete the
+  [Phase 1 wiring checks](../implementation/phase-1-supervisor.md#wiring-pico-2-w)
+  with all power disconnected. Apply external +5 V before reconnecting USB,
+  then open its USB serial port using a
   serial terminal. On macOS, inspect `ls /dev/cu.usbmodem*`; identify the
   port belonging to this Pico. No external USB-to-UART adapter is required.
 5. Select 115200 baud, 8 data bits, no parity, 1 stop bit, and no flow control

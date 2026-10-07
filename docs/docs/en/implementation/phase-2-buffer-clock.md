@@ -60,7 +60,7 @@ each path at both empty sockets before inserting either device.
 10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
 clocks on GP2.
 
-**Implementation:** [Phase 2 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c),
+**Application source:** [src/stage02_buffers_clock/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c),
 using the shared [clock module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c).
 
 ## Variable-Frequency Clock Generation (Phase 2, Phases 7-8 Run Modes)

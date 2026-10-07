@@ -64,7 +64,7 @@ before inserting the SN74LVC244AN.
 write-then-read register test, and 16-bit walking-one/walking-zero tests
 that can configure both MCP ports as either inputs or outputs.
 
-**Implementation:** [Phase 3 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c),
+**Application source:** [src/stage03_mcp23s17/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c),
 using the shared [MCP23S17 driver](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c).
 
 ## MCP23S17 Register and Port Test (Phases 3-4)

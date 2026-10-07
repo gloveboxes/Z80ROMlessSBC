@@ -23,7 +23,7 @@ electrically as described in the test plan.
 release MCP reset, wait, preload OLAT, and only then set IODIR outputs.
 On every exit they must assert reset again.
 
-**Implementation:** [Phase 4 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/main.c),
+**Application source:** [src/stage04_address_bus/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage04_address_bus/main.c),
 using the shared [bus module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/bus.c).
 
 ## Contention-Safe Bus Isolation (Phases 4-6)

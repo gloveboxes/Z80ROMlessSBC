@@ -25,8 +25,11 @@ together.
 
 1. After the Phase 0 pass gate, disconnect external +5 V and USB. Keep both
   disconnected throughout installation, wiring, and continuity checks.
-2. Fit the Pico 2 W now, before adding signal jumpers that would obstruct
-  access. Follow the
+2. Before fitting the Pico, build and load the **Stage 1 supervisor**
+  diagnostic from `src/stage01_supervisor/main.c`, using the commands in
+  [Stage 1 firmware](#stage-1-firmware) below. Program it off the breadboard,
+  then disconnect USB. Fit the Pico 2 W now, before adding signal jumpers
+  that would obstruct access. Follow the
   [package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1),
   with the USB connector toward the top of the Peripheral board. Leave all
   other IC sockets empty.
@@ -70,8 +73,38 @@ does not clear RP2350's reset-time pad isolation or select the SIO function.
 GP8 remains an input. It must also provide a slow walking-one GPIO test
 selected through the USB serial console.
 
-**Implementation:** [Phase 1 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c),
+**Application source:** [src/stage01_supervisor/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c),
 backed by the shared [supervisor module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c).
+
+### Stage 1 firmware
+
+Use only the **Stage 1 supervisor** image for this phase:
+
+- **Application source:** [src/stage01_supervisor/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c).
+- **Build target:** `z80_stage01_supervisor`.
+- **UF2 to load:** `build/src/stage01_supervisor/z80_stage01_supervisor.uf2`.
+
+After completing the one-time
+[toolchain and CMake setup](../system/firmware-build.md#71-firmware-and-cpm-build),
+run this from the repository root:
+
+```sh
+cmake --build build --target z80_stage01_supervisor -j
+```
+
+With the Pico off the breadboard, hold **BOOTSEL** while connecting its USB
+data cable, then release the button. Load the built image and reboot:
+
+```sh
+picotool load -v build/src/stage01_supervisor/z80_stage01_supervisor.uf2
+picotool reboot
+```
+
+Disconnect USB before fitting the Pico and wiring it. After the wiring checks,
+follow test step 1's power sequence, then open the USB serial console using the
+[console procedure](../system/firmware-build.md#load-a-stage-and-open-its-console).
+The startup banner is `Z80 ROMless SBC - Stage 1 supervisor`; `s` samples the
+monitor inputs and `w` walks the 12 control outputs. It does not walk GP10-GP17.
 
 ## Safe Startup and Walking Output (Phases 1-2)
 

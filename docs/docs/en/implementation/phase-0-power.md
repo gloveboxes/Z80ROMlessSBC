@@ -8,6 +8,9 @@ pull-downs, and power wiring. Install no active device, including the Pico 2 W.
 Signal wiring is added and continuity-checked in the phase that first uses
 each connection.
 
+**Source checklist:** [src/stage00_power/README.md](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md).
+This phase is hardware-only; there is no Pico firmware to build or load.
+
 **What you are proving:** every future chip will receive the correct supply,
 and no wiring fault will short that supply when power is first applied.
 There is no firmware to run yet. Read the

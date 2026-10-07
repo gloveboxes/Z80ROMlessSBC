@@ -50,7 +50,7 @@ walking address/data test, a two-pass full-memory pattern test, and a
 March C- or equivalent RAM test. Every failure must report its address,
 expected byte, and actual byte over USB serial.
 
-**Implementation:** [Phase 6 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/main.c),
+**Application source:** [src/stage06_sram_dma/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/main.c),
 using the shared [SRAM DMA module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c).
 
 ## SRAM DMA Access and Pattern Test (Phase 6)

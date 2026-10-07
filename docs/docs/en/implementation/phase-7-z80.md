@@ -44,7 +44,7 @@ checklist.
 acquisition; and a command that preloads and verifies a small test
 program before releasing reset.
 
-**Implementation:** [Phase 7 application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c),
+**Application source:** [src/stage07_z80_cpu/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c),
 using the shared [CPU ownership module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
 
 ## Z80 Single-Step and Timed Bus Request (Phases 7-8)
