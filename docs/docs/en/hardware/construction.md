@@ -51,7 +51,7 @@ belong; the phase pin diagrams specify individual connections.
 | --- | --- | --- |
 | Continuity / resistance | All power and USB disconnected; capacitors discharged | Measure between two contacts. A direct wire should read close to the resistance of the meter leads; a 10 kOhm pull resistor is not a short and may not beep. |
 | DC voltage | Powered for the stated test | Black lead in COM at common circuit GND; red lead in the voltage/resistance socket at the test point. Measure supply voltage at the IC's supply contact, not only at the power entry. |
-| Current | Use the bench supply readout for routine checks | A separate ammeter must go in series with the supply. Never place a meter in current mode across +5 V and GND; it effectively shorts the rail. Return the red lead to the voltage socket afterward. |
+| Current | Prefer the supply readout; a separate multimeter is only needed when current must be measured | An ammeter must go in series with the supply. With power off, use the meter's fused current jack and a range rated above the expected current. Never connect a meter in current mode across +5 V and GND; it effectively shorts the rail. Turn power off before removing the meter, then return the red lead to the voltage socket. A multimeter does not replace supply current limiting. |
 
 Attach clips with power off, keeping metal tips clear of adjacent pins.
 After disconnecting power, confirm rail voltage has fallen near 0 V before

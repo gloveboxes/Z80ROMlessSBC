@@ -63,9 +63,12 @@ and fit at least one 22 uF bulk capacitor per breadboard. Use a
 current-limited 5 V supply, multimeter, oscilloscope, and a
 DSLogic Plus logic analyzer using the
 [documented capture groups](../hardware/logic-analyzer.md). Start each first
-power-up at a 100 mA current limit and
-remove power immediately if a rail falls by more than 5%, current rises
-unexpectedly, or a device becomes warm.
+power-up of populated hardware at a 100 mA current limit. For the empty-board
+Phase 0 check, a regulated USB-C breadboard supply and multimeter are
+sufficient after the unpowered checks pass; adjustable current limiting is
+recommended extra protection. Remove power immediately if a rail falls by
+more than 5%, the supply's overcurrent indicator activates (if present), or a
+device becomes warm.
 
 Each phase owns the signal wiring first required by that phase. Install and
 continuity-check those jumpers with the affected active devices removed, then
@@ -77,7 +80,8 @@ construction order rather than maintaining duplicate diagrams.
 Fit the [specified pull-ups and pull-downs](phase-0-power.md#passive-component-installation)
 so every signal has its defined state before firmware starts. Use temporary
 1 kOhm series resistors when first connecting two potentially driven nodes.
-Record idle current after every phase. Unless stated otherwise, keep all chips
+Record idle current after each populated phase; Phase 0 needs only resistance
+and voltage readings. Unless stated otherwise, keep all chips
 from later phases out of their sockets.
 
 The following phase pages contain Pico SDK fragments showing the

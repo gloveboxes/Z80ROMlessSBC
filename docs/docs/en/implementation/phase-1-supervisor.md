@@ -37,6 +37,15 @@ Leave GP8/header pin 11 open. Connect the Pico ground pins and leave the
 remaining unused header pins open as specified in the
 [complete Pico pin map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map).
 
+### Pico 2 W startup behavior
+
+- Once the Pico 3.3 V rail is valid, the external resistors establish safe
+  levels before firmware configures SIO.
+- During a cold power ramp, Pico-side pull-ups cannot hold active-low
+  controls HIGH while the 3.3 V rail is still at 0 V.
+- RESET# therefore remains asserted, and SRAM contents remain indeterminate
+  until the boot image is loaded and verified.
+
 **Firmware feature:** A diagnostic image must establish safe output
 levels before enabling any GPIO output: GP7 and GP9 LOW to isolate
 the data path and hold MCP RESET# asserted; GP3 LOW to assert Z80 RESET#; GP4, GP5,

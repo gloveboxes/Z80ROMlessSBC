@@ -1,8 +1,7 @@
 # 8.1 Phase 0 - Empty Sockets and Power Distribution
 
 **Prerequisites:** Review the [inventory](../hardware/inventory.md) and
-[construction plan](../hardware/construction.md). Install no active device in
-this phase.
+[construction plan](../hardware/construction.md).
 
 **Install:** Breadboards, sockets, decoupling capacitors, pull-ups,
 pull-downs, and power wiring. Install no active device, including the Pico 2 W.
@@ -40,28 +39,26 @@ There is no firmware to run yet. Read the
       SN74AHCT245N. Do not connect the two LVC buffers to +5 V; they are
       powered from the Pico-derived +3.3 V rail below.
     - **Pico-derived +3.3 V:** Pico 3V3 header pin 36 supplies VCC pin 20
-      on SN74LVC245AN and SN74LVC244AN. It also feeds the 10 kOhm pull-ups
-      on GP4, GP5, GP21, GP22, and GP26 listed below. The two LVC ICs each
-      have a local 100 nF decoupling capacitor from VCC to GND. These are
-      the external loads on the 3.3 V rail; no other IC is powered from it.
+      on SN74LVC245AN and SN74LVC244AN, plus the Pico-side pull-ups listed
+      below. No other IC is powered from this rail. Leave any plug-in supply
+      module's 3.3 V output disconnected; the Pico is the only 3.3 V source.
 - Connect the 1N5819 in series between external +5 V and Pico VSYS header
   pin 39:
     - Unbanded anode to external +5 V.
     - Banded cathode (stripe) to Pico VSYS, header pin 39.
-- Fit every passive component specified below.
-- Connect pull-ups from each signal to the positive rail specified for its
-  signal group; that rail is not always 3.3 V.
-- Connect pull-downs from each signal to GND.
+- Never connect external +5 V directly to Pico VSYS or VBUS (header pin 40).
 - Do not add point-to-point signal jumpers yet.
 
-### Passive-component installation
+## Passive-component installation
 
 #### IC decoupling and board bulk capacitors
 
-- **Local decoupling:** Fit one 100 nF capacitor directly between the supply
-  and ground pins of each DIP IC. Keep its leads as short as practical and
-  place it close to the IC:
-  
+- **Local decoupling:** Fit one non-polarized 100 nF ceramic capacitor per DIP
+  IC (eight total, excluding the Pico module). Place it close to the supply
+  pin, with short connections to that pin and nearby common GND. The pin pairs
+  below identify the electrical nets; do not stretch the capacitor across the
+  package to reach a distant ground pin. Either capacitor lead can go to GND.
+
     - Z84C0020PEC: VCC pin 11 to GND pin 29.
     - AS6C1008-55PCN: VCC pin 32 to GND pin 16.
     - MCP23S17-E/SP: VDD pin 9 to VSS pin 10.
@@ -71,25 +68,23 @@ There is no firmware to run yet. Read the
     - SN74LVC245AN: VCC pin 20 to GND pin 10.
     - SN74LVC244AN: VCC pin 20 to GND pin 10.
 
-- **Pico 2 W:** The eight capacitors above are for the eight DIP ICs; the
-  Pico module is not part of this count.
-
-- **Ceramic capacitors:** A ceramic 100 nF capacitor is non-polarized; either
-  lead can connect to GND.
-
-- **Electrolytic bulk capacitors:** These are polarized. Connect `+` to the
-  positive rail and the marked negative lead to GND. Check the case markings,
-  not just lead length.
-
 - **Bulk capacitors:**
     - Fit one polarized 22 uF capacitor (at least 10 V) across +5 V and GND
       near the supply feed on each board: Memory, Core, and Peripheral.
     - Fit the polarized 100 uF capacitor (at least 10 V) across +5 V and GND
       at the common supply entry, before power fans out to the boards.
     - Connect all four in parallel: `+` to +5 V and marked `-` to GND. Check
-      the case polarity marks before powering on.
+      the case polarity marks, not just lead length, before powering on.
     - These bulk capacitors supplement the eight local 100 nF IC capacitors;
-      they do not replace them.
+      they do not replace them. No separate bulk capacitor is specified for
+      +3.3 V; retain the local 100 nF capacitor at each LVC IC.
+
+### Pull resistors
+
+Fit one resistor per listed signal, between that signal and the specified
+rail. A pull-up goes to +5 V or +3.3 V as stated; a pull-down goes to common
+GND. Do not join separate signals together. Leave all pull resistors installed
+in the completed circuit; active outputs override their weak bias.
 
 #### Z80 control-signal pull-ups
 
@@ -104,7 +99,7 @@ There is no firmware to run yet. Read the
     - INT# (pin 16).
     - NMI# (pin 17).
 - Do not add a +5 V pull-up to RESET# (pin 26); it is connected directly to
-  Pico GP3.
+  Pico GP3 in Phase 1.
 
 #### MCP23S17 SO and SRAM CE#/OE#/WE# control pull-ups
 
@@ -113,16 +108,22 @@ There is no firmware to run yet. Read the
     - AS6C1008-55PCN SRAM CE# (pin 22).
     - AS6C1008-55PCN SRAM OE# (pin 24).
     - AS6C1008-55PCN SRAM WE# (pin 29).
-- These are not Z80 pins.
+#### SN74AHCT244 control-input pull-ups
 
-#### SN74AHCT244 control-input and SRAM address defaults
-
-- Connect SN74AHCT244 inputs to +5 V through pull-up resistors:
+- Fit a 10 kOhm pull-up from +5 V to each SN74AHCT244N input:
     - 2A2 (pin 13).
     - 2A3 (pin 15).
     - 2A4 (pin 17).
-- These input pull-ups keep the SRAM-control outputs inactive if the GAL is
-  absent.
+- SRAM `CE#`, `OE#`, and `WE#` are active-low: HIGH keeps them inactive.
+  The AHCT244 input pull-ups keep its control outputs HIGH when the GAL is
+  absent; the pull-ups at the SRAM control pins keep those pins HIGH when the
+  AHCT244 is absent. Both sets are required for staged bring-up to prevent
+  floating controls from selecting the SRAM, enabling outputs, or starting
+  a write. They do not isolate installed but unpowered ICs; follow the
+  power safety rules below.
+
+#### SRAM address pull-ups
+
 - Fit one individual 10 kOhm pull-up resistor from +5 V to each
   AS6C1008-55PCN address net (16 resistors total):
     - A0 (pin 12).
@@ -141,82 +142,54 @@ There is no firmware to run yet. Read the
     - A13 (pin 28).
     - A14 (pin 3).
     - A15 (pin 31).
-- Connect each resistor between +5 V and its address signal only; do not
-  connect the address signals together.
-- SRAM `CE#`, `OE#`, and `WE#` are active-low. These pull-ups are required for
-  the documented staged configurations: if the GAL is absent, the AHCT244
-  input pull-ups hold its control outputs HIGH; if the AHCT244 is absent, the
-  pull-ups directly on the SRAM control pins hold them HIGH. This prevents an
-  undriven control from selecting the SRAM, enabling its outputs, or starting
-  a write.
-- Leave these pull-ups installed in the completed circuit. They provide safe
-  default levels when a source is absent or not driving the control signal;
-  an active output overrides the weak pull-up during normal operation. They do
-  not isolate an installed but unpowered GAL or AHCT244. Keep installed 5 V
-  logic powered whenever +5 V is applied, as described in the power warning
-  below.
-
 #### Pico 2 W control-signal defaults
 
 - Fit 10 kOhm pull-ups from 3.3 V to these Pico 2 W GPIOs:
-    - GP4 (BUSREQ#).
-    - GP5 (SRAM CE#).
-    - GP21 (SPI CS#).
-    - GP22 (SRAM WE#).
-    - GP26 (SRAM OE#).
+    - GP4, header pin 6 (BUSREQ#).
+    - GP5, header pin 7 (SRAM CE#).
+    - GP21, header pin 27 (SPI CS#).
+    - GP22, header pin 29 (SRAM WE#).
+    - GP26, header pin 31 (SRAM OE#).
 - Fit 10 kOhm pull-downs from these GPIOs to GND:
-    - GP2 (CLK).
-    - GP18 (SPI SCK).
-    - GP19 (SPI SI).
+    - GP2, header pin 4 (CLK).
+    - GP18, header pin 24 (SPI SCK).
+    - GP19, header pin 25 (SPI SI).
 - Fit **4.7 kOhm, 5% or better** pull-downs from these GPIOs to GND:
-    - GP3 (RESET#).
-    - GP6 (DATA_DIR).
-    - GP7 (DATA_ENABLE).
-    - GP9 (ADDR_ENABLE).
+    - GP3, header pin 5 (RESET#).
+    - GP6, header pin 9 (DATA_DIR).
+    - GP7, header pin 10 (DATA_ENABLE).
+    - GP9, header pin 12 (ADDR_ENABLE).
 - The supported ATF22V10B can source 100 uA through an input's internal
   pull-up. A 10 kOhm pull-down cannot guarantee its 0.8 V maximum LOW;
   4.7 kOhm provides margin for resistor tolerance and other input leakage.
-- Leave GP8 unconnected.
+- Leave GP8, header pin 11, unconnected.
 
 #### SN74AHCT245 and Pico data-bus defaults
 
-- Fit one individual 10 kOhm resistor from each Pico GPIO GP10-GP17 to GND
-  (eight resistors total). Connect each resistor between its GPIO signal and
-  common GND; do not connect the GPIO signals together.
+- Fit one 10 kOhm pull-down from each Pico data GPIO to GND (eight total):
+    - GP10, header pin 14.
+    - GP11, header pin 15.
+    - GP12, header pin 16.
+    - GP13, header pin 17.
+    - GP14, header pin 19.
+    - GP15, header pin 20.
+    - GP16, header pin 21.
+    - GP17, header pin 22.
 - These pull-downs keep the SN74AHCT245N A inputs defined while the Pico GPIOs
   are inputs or the Pico is absent.
-- Each active HIGH GPIO sources only 0.33 mA through its own pull-down.
 
-#### Pico 2 W startup behavior
+## Power distribution and isolation
 
-- Once the Pico 3.3 V rail is valid, the external resistors establish safe
-  levels before firmware configures SIO.
-- During a cold power ramp, Pico-side pull-ups cannot hold active-low
-  controls HIGH while the 3.3 V rail is still at 0 V.
-- RESET# therefore remains asserted, and SRAM contents remain indeterminate
-  until the boot image is loaded and verified.
-
-### Power distribution and isolation
-
-- Feed the breadboard's +5 V logic rail directly from the regulated supply.
-  Feed Pico VSYS from that rail only through the 1N5819, with its anode toward
-  external +5 V and banded cathode toward VSYS. The Pico's internal Schottky
-  diode and the 1N5819 OR USB and external power at VSYS, but do not isolate
-  every signal pin between power domains. Never connect the external +5 V
-  rail directly to Pico VBUS or VSYS.
+These safety rules also apply as devices are installed in later phases.
 
 - On the populated board, **apply external +5 V before connecting USB;
   disconnect USB before removing external +5 V**. Do not operate or program
   the populated board from USB alone. USB can keep Pico data outputs HIGH
-  while U9's +5 V supply is absent; the AHCT245 data-port clamps can then
-  back-power U9 even with its output enable inactive. Program a removed Pico
+  while the SN74AHCT245N's +5 V supply is absent; its data-port clamps can
+  then back-power it even with its output enable inactive. The supply diodes
+  do not isolate these signal paths. Program a removed Pico
   for USB-only use. Arbitrary external-supply loss while USB remains attached
   is not protected by this design and requires additional hardware isolation.
-
-- Power the SN74LVC245AN and SN74LVC244AN from the Pico 3.3 V rail. Power the
-  SN74AHCT245N and all other logic from the regulated 5 V rail. Tie Pico AGND
-  pin 33 to common digital ground; this design needs no separate analogue
-  ground plane.
 
 - Never connect a 5 V output directly to a Pico GPIO. The LVC devices provide
   power-off isolation, GP6/GP7 connect only to biased GAL inputs, and the
@@ -231,67 +204,96 @@ There is no firmware to run yet. Read the
   its socket. Verify 5 V continuity at every installed IC before power-up; a
   missing VCC socket contact is a fault.
 
-- If using the plug-in supply module, leave its 3.3 V output disconnected;
-  the Pico must remain the only 3.3 V source. Follow the
-  [construction plan](../hardware/construction.md#31-package-orientation-and-pin-1)
-  for its placement and polarity.
+## Test plan
 
-**Implementation:** [Phase 0 power checklist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md).
+Keep every active device, including the Pico, removed throughout these tests.
+Do not test output logic levels at empty sockets; only the fitted passive
+connections and supply contacts can be checked in Phase 0.
 
-**Test plan:**
+### Power disconnected
+
+Disconnect external power and USB before resistance or continuity checks.
 
 1. With every IC still removed, verify each socket's occupied rows,
   notch direction, pin-1 corner, and width against the
   [package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1).
-  Mark
-  pin 1 on the breadboard and socket with a paint pen, and photograph
+  Mark pin 1 on the breadboard and socket with a paint pen, and photograph
   the empty-board orientation before wiring over the socket outlines.
 2. With power disconnected, check resistance from each supply rail to
-  ground. Investigate readings below 1 kOhm after capacitors charge.
+  ground. Investigate readings below 1 kOhm after the reading settles as the
+  capacitors charge from the meter.
 3. Check every fitted rail and passive connection end-to-end. Verify no
   continuity between neighboring socket pins or bus contacts except where
-  the passive-component installation explicitly joins them. At the empty GAL socket,
-  verify each fitted passive has no unintended short to GND, 5 V, or an
-  adjacent pin. Do not attempt to verify GAL output levels while it is
-  removed.
-4. Apply 5 V and measure every 5 V-powered DIP socket supply pin.
-  Require 4.75 V to 5.25 V at VCC and less than 50 mV at each ground
-  pin. The AHCT245 and GAL VCC socket contacts must read 5 V, while the
-  LVC245 and LVC244 VCC contacts must remain at 0 V because their 3.3 V
-  source, the absent Pico, is not yet installed. With the GAL removed,
-  do not test GAL output levels. The unpowered continuity checks above must
-  already have passed; do not use continuity mode with the rail energized.
-  GAL output-level verification is performed in
-  [Phase 2](phase-2-buffer-clock.md) after the GAL is installed.
-5. If using the photographed plug-in supply, confirm that its body
-  obscures no more than Core Board rows 1-3. Test its 5 V output separately
-  with a suitable electronic load set to 500 mA; no ICs are fitted for this
-  test. Connect the load with power off, then set the supply current limit
-  high enough for this deliberate load. Require 4.75 V to 5.25 V at the
-  farthest board and check the regulator against its temperature rating.
-  The load dissipates 2.5 W: do not substitute a 1/4 W resistor or use a
-  fingertip as a temperature probe. Power off, remove the load, and restore
-  the 100 mA first-power-up limit afterward. Leave the module's 3.3 V output
-  disconnected.
-6. Verify the external +5 V rail reaches Pico VSYS only through the
-  1N5819 and does not reach Pico VBUS, the 3.3 V rail, or any GPIO
-  contact. With external power applied, VSYS must be one Schottky drop
-  below the +5 V rail. Verify each 5 V-side active-low control is pulled
-  HIGH. With power removed, measure approximately 10 kOhm from every
-  Pico-side pull-up contact to the unpowered 3.3 V rail. Require approximately
-  4.7 kOhm from GP3/GP6/GP7/GP9 to GND, and 10 kOhm from the other
-  pull-down contacts to GND, as listed in the passive-component installation;
-  powered Pico-side logic levels are checked in
-  [Phase 1](phase-1-supervisor.md). Measure approximately 10 kOhm from each
-  GP10-GP17 contact to GND through its individual pull-down resistor.
-  Also measure approximately 10 kOhm from each A0-A15 address contact to
-  +5 V through its individual pull-up resistor.
-  Specifically require approximately 10 kOhm from the Z80 WAIT# pin 24 and
-  GAL pin 20 contacts to +5 V. Their point-to-point connection, and the
-  IORQ# connection to GAL pin 13, are installed and checked in Phase 2.
+  the passive-component installation explicitly joins them. Confirm the
+  +5 V and +3.3 V rails are not directly joined, and check every socket's
+  supply and GND contacts against the wiring list above.
+4. Measure each pull resistor from its signal contact to its specified rail:
+    - Approximately 10 kOhm for every +5 V control pull-up and A0-A15
+      address pull-up.
+    - Approximately 10 kOhm for the Pico-side pull-ups to the unpowered
+      +3.3 V rail and the GP2/GP18/GP19/GP10-GP17 pull-downs to GND.
+    - Approximately 4.7 kOhm for GP3/GP6/GP7/GP9 to GND.
+
+    Check WAIT# at the Z80 pin 24 socket contact only. Its wire to GAL pin 20,
+    and IORQ# to GAL pin 13, are installed and checked in Phase 2; do not expect
+    the WAIT# pull-up to reach GAL pin 20 yet.
+5. Check the 1N5819 with the meter's diode-test mode while power is
+  disconnected: red probe on the anode/external +5 V side and black probe on
+  the banded cathode/Pico VSYS side should show forward conduction; reversing
+  the probes should block current. This verifies diode orientation. Do not
+  use VSYS voltage to infer a forward-voltage drop in Phase 0: with the Pico
+  removed, there is no normal load current through the diode.
+
+### Power applied
+
+Proceed only after all unpowered checks pass. Keep USB disconnected.
+
+- **Supply:** Use the regulated 5 V breadboard supply. Confirm capacitor
+  polarity and supply connections before switching it on.
+- **Meter:** Select DC voltage mode. Connect its black lead to common GND at
+  the supply entry.
+
+An adjustable current-limited supply provides extra protection; if available,
+set it to 5 V with a 100 mA limit for this empty-board check. Phase 0 requires
+only the multimeter resistance and voltage checks. These checks reduce wiring
+risk but do not provide automatic short-circuit protection.
+
+With all ICs removed, the board has no intended steady +5 V load. After the
+bulk capacitors charge, check that the +5 V rails reach the specified range
+below. If a rail is outside the range, switch off power and inspect the wiring
+before continuing.
+
+1. Measure each board's +5 V rail and every +5 V-powered DIP socket supply
+  contact listed above. Require 4.75-5.25 V at each supply contact and less
+  than 50 mV at each GND contact. Stop and disconnect power if a voltage is
+  outside these limits.
+2. Confirm the +3.3 V rail and VCC pin 20 contacts on both LVC sockets remain
+  at 0 V: the Pico that supplies them is absent. Powered Pico-side levels are
+  checked in Phase 1.
+3. Confirm external +5 V does not reach Pico VBUS header contact 40 or the
+  +3.3 V rail. The unpowered diode test above verifies the isolated VSYS
+  connection; the voltage drop is load-dependent and is not a Phase 0 pass
+  criterion.
+4. Check the +5 V control and address contacts listed under the pull-ups;
+  each must read HIGH, close to +5 V, through its resistor.
+5. Disconnect power before changing wiring or inserting any device.
+
+### Optional plug-in supply load test
+
+If using a plug-in supply module, test its 5 V output separately with a
+suitable electronic load set to 500 mA; no ICs are fitted for this test.
+Connect the load with power off. If the source has an adjustable current limit,
+set it high enough for this deliberate load. Require 4.75 V to 5.25 V at the farthest board and
+check the regulator against its temperature rating. The load dissipates
+2.5 W: do not substitute a 1/4 W resistor or use a fingertip as a temperature
+probe. Power off and remove the load before connecting the supply to the board.
 
 ## Pass gate
 
 - No shorts or crossed nets.
-- Correct supply voltage at every socket.
-- Negligible current with all devices removed.
+- All fitted pull resistors measure approximately their specified value.
+- Every +5 V supply contact measures 4.75-5.25 V; every GND contact is less
+  than 50 mV above supply-entry GND.
+- The +3.3 V rail, both LVC VCC contacts, and Pico VBUS remain at 0 V.
+- 1N5819 passes the unpowered forward/reverse diode test; Pico VBUS and the
+  +3.3 V rail remain isolated from external +5 V.
