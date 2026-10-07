@@ -15,6 +15,14 @@ line should change. A walking zero reverses the pattern. These tests reveal
 swapped, shorted, and unconnected wires more clearly than toggling everything
 together.
 
+Before running this test, install and start a USB serial terminal such as
+`picocom` using the
+[macOS console commands](../system/firmware-build.md#macos-console-with-picocom).
+With Stage 1 running and the destination chips still absent, type `s` to
+confirm the console responds, then type `w` (no Enter required) to start one
+walking-one sequence across the 12 control outputs. Type `w` again to repeat
+the sequence while probing another destination.
+
 !!! note "Software PASS is not the phase pass gate"
     Stage 1's `PASS: safe levels restored` reports that the output sequence
     completed. It does not measure the socket voltages. The `w` command
@@ -42,6 +50,31 @@ together.
 
 Leave the Pico fitted for the test plan. Apply power only after the wiring
 checks are complete, using the power sequence in test step 1.
+
+### Wire Length and Routing
+
+**Use short, direct wires; do not make every wire the same length.** Choose
+the shortest practical route with enough slack to avoid pulling on contacts.
+Do not add loops or coils to shorter wires to match a longer wire. The
+[breadboard placement plan](../hardware/construction.md#board-roles-and-placement)
+is a routing aid, not a length-matching requirement.
+
+| Connection group below | Routing guidance |
+| --- | --- |
+| Pico to SN74AHCT244: CLK | Keep the Pico-to-buffer wire short with a nearby common-GND return connection. In Phase 2, keep the buffer-to-Z80 CLK wire especially short and entirely on the Core board. |
+| Pico to SN74AHCT244: SCK, MOSI, CS# | Keep the SPI wires short and direct; precise length matching is unnecessary. Avoid long parallel runs of SCK beside other signals. |
+| Pico to SN74AHCT244: BUSREQ# | No length matching is required. Keep the route direct and away from CLK. |
+| Pico to ATF22V10 and Z80 RESET# | No length matching is required for the GAL controls or shared RESET# node. Keep routes direct and away from CLK. |
+| SN74LVC244 to Pico | No length matching is required for BUSACK#, IORQ#, RD#, WR#, or SPI MISO (MCP SO). Minimize unnecessary wire length, particularly on MISO. |
+| Pico D0-D7 to SN74AHCT245 and SN74LVC245 | Use compact routes with short branches to both transceivers. Similar lengths are convenient, but exact matching is unnecessary; avoid dangling wire ends. |
+| Pico 3.3 V and GND connections | Length matching is irrelevant. Prioritize short supply connections, solid common-GND distribution, and the specified local decoupling capacitors. |
+
+A few centimetres of wire-length difference contributes little arrival-time
+skew for this design. Long breadboard jumpers are more concerning because
+they can cause ringing and coupling into neighboring wires. Logic edges
+remain fast even when the clock frequency is low: short routes and nearby
+ground returns matter more than equal lengths. The later scope checks, not
+wire-length matching, establish whether the clock and bus signals are clean.
 
 {%
   include-markdown "../hardware/pin-mapping.md"
@@ -91,6 +124,12 @@ run this from the repository root:
 ```sh
 cmake --build build --target z80_stage01_supervisor -j
 ```
+
+This requires the configured repository-root `build/` tree, not an empty
+directory created with `mkdir`. If you are working inside
+`src/stage01_supervisor`, use the
+[stage-local configure and build commands](../system/firmware-build.md#building-from-the-stage-1-directory)
+instead; that build tree has a different UF2 path.
 
 With the Pico off the breadboard, hold **BOOTSEL** while connecting its USB
 data cable, then release the button. Load the built image and reboot:

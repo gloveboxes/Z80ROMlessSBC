@@ -97,8 +97,39 @@ Wi-Fi credentials are written only to the generated build tree. An empty SSID
 leaves networking disabled while flash-disk service continues to operate.
 Do not share the generated credentials or CMake cache in diagnostic logs.
 
-The command above builds the first hardware diagnostic. When you reach the
-storage/terminal phases, build the full image set with:
+### Building from the Stage 1 directory
+
+The stage directories are not standalone CMake projects: they depend on the
+repository's top-level CMake configuration. `cmake --build` requires an
+already configured build tree; `mkdir build` alone does not create one.
+If it reports that the build directory is missing or that `CMakeCache.txt`
+is missing, run the configure step first.
+
+To keep a local build tree while working in `src/stage01_supervisor`, run:
+
+```sh
+export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
+cmake -S ../.. -B build -G Ninja \
+  -DPICO_BOARD=pico2_w \
+  -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
+  -DZ80_WIFI_SSID= \
+  -DZ80_WIFI_PASSWORD=
+cmake --build build --target z80_stage01_supervisor -j
+```
+
+As above, adjust the toolchain and SDK paths for your installation. Here,
+`-S ../..` selects the repository root, while `-B build` writes the generated
+build tree inside the current stage directory. The UF2 is therefore at
+`src/stage01_supervisor/build/src/stage01_supervisor/z80_stage01_supervisor.uf2`
+relative to the repository root. Run subsequent build commands from the same
+stage directory; root-level build and flashing examples elsewhere on this
+page assume a repository-root `build/` tree instead.
+
+### Building the full image set
+
+The Stage 1 target builds the first hardware diagnostic. When you reach the
+storage/terminal phases, use the repository-root configuration above and run
+this from the repository root to build the full image set:
 
 ```sh
 cmake --build build --target z80_cpm_images -j
@@ -163,6 +194,30 @@ the application returns. Reconnect the terminal if needed. A missed startup
 banner is not a failed boot: try the stage's status command. If no port
 appears, first check that the cable carries data, the UF2 is for Pico 2 W,
 and the application has left BOOTSEL mode.
+
+### macOS console with picocom
+
+Install `picocom` once, then list the USB serial ports with the Pico running
+the stage firmware (not in BOOTSEL mode):
+
+```sh
+brew install picocom
+ls /dev/cu.usbmodem*
+```
+
+Identify the port belonging to the Pico, then start the terminal, replacing
+the example device name with the one listed on your computer:
+
+```sh
+picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbmodemXXXX
+```
+
+Follow the power sequence above before connecting USB. Keep `picocom` open
+during console-driven tests. For Stage 1, type `s` to sample the inputs and
+`w` to run the control-output walking-one test; neither command needs Enter.
+Run `w` only with the required Phase 1 hardware population. To exit `picocom`,
+press **Ctrl+A**, then **Ctrl+X**. Close it before programming the Pico again
+or opening another terminal on the same port.
 
 ## 7.2 Flash Provisioning
 
