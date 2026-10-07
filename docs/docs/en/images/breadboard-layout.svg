@@ -375,7 +375,7 @@
 
     <g id="chip-MCP">
       <rect x="166.00" y="602.08" width="68" height="174.87" rx="5" fill="#91cf35" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="200" y="663.52">MCP23S17-E/SP</tspan><tspan x="200" y="676.52">28-pin SPDIP</tspan><tspan x="200" y="689.52">+ Q1 / 2x SIP pulls</tspan><tspan x="200" y="702.52">rows 35-48</tspan><tspan x="200" y="715.52">0.3in pin-row span</tspan></text>
+      <text class="chip-label narrow-label"><tspan x="200" y="663.52">MCP23S17-E/SP</tspan><tspan x="200" y="676.52">28-pin SPDIP</tspan><tspan x="200" y="689.52">+ Q1 / A0-A15 pulls</tspan><tspan x="200" y="702.52">rows 35-48</tspan><tspan x="200" y="715.52">0.3in pin-row span</tspan></text>
 
       <path d="M 191 775.9516129032259 Q 200 768.9516129032259 209 775.9516129032259" class="notch-marker"/>
       <circle cx="227" cy="768.9516129032259" r="4" class="pin-one"/><text x="227" y="771.4516129032259" class="pin-one-label">1</text>
@@ -422,7 +422,7 @@
 
     <g id="chip-UP245">
       <rect x="826.00" y="576.92" width="68" height="124.55" rx="5" fill="#52b788" class="chip"/>
-      <text class="chip-label narrow-label"><tspan x="860" y="613.19">SN74AHCT245N</tspan><tspan x="860" y="626.19">Pico -&gt; 5 V bus</tspan><tspan x="860" y="639.19">+ RN3 data pulls</tspan><tspan x="860" y="652.19">rows 33-42</tspan><tspan x="860" y="665.19">0.3in pin-row span</tspan></text>
+      <text class="chip-label narrow-label"><tspan x="860" y="613.19">SN74AHCT245N</tspan><tspan x="860" y="626.19">Pico -&gt; 5 V bus</tspan><tspan x="860" y="639.19">+ 8 data pull-downs</tspan><tspan x="860" y="652.19">rows 33-42</tspan><tspan x="860" y="665.19">0.3in pin-row span</tspan></text>
 
       <path d="M 851 700.4677419354839 Q 860 693.4677419354839 869 700.4677419354839" class="notch-marker"/>
       <circle cx="887" cy="693.4677419354839" r="4" class="pin-one"/><text x="887" y="695.9677419354839" class="pin-one-label">1</text>

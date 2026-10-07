@@ -35,7 +35,7 @@ const WIDTHS = {
 const chips = [
   { key: "GAL", board: "memory", label: ["ATF22V10B/C", "GAL (24-pin)"], start: 5, end: 16, width: "narrow", color: "#36a2bd", orientation: "up" },
   { key: "SRAM", board: "memory", label: ["AS6C1008-55PCN", "SRAM (32-pin)"], start: 18, end: 33, width: "wide", color: "#8ecae6", orientation: "up" },
-  { key: "MCP", board: "memory", label: ["MCP23S17-E/SP", "28-pin SPDIP", "+ Q1 / 2x SIP pulls"], start: 35, end: 48, width: "narrow", color: "#91cf35", orientation: "down" },
+  { key: "MCP", board: "memory", label: ["MCP23S17-E/SP", "28-pin SPDIP", "+ Q1 / A0-A15 pulls"], start: 35, end: 48, width: "narrow", color: "#91cf35", orientation: "down" },
 
   { key: "SUPPLY", board: "core", label: ["5 V supply clearance", "rows 1-3 reserved"], start: 1, end: 3, width: "supply", color: "#d2d2d2", compact: true },
   { key: "AHCT244", board: "core", label: ["SN74AHCT244N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20", orientation: "down" },
@@ -43,7 +43,7 @@ const chips = [
 
   { key: "PICO", board: "peripheral", label: ["Raspberry Pi Pico 2 W", "2x20-pin module"], start: 1, end: 20, width: "pico", color: "#91cf35", orientation: "usb-up" },
   { key: "LVC244", board: "peripheral", label: ["SN74LVC244AN", "monitor (20-pin)"], start: 22, end: 31, width: "narrow", color: "#5fbc98", orientation: "up" },
-  { key: "UP245", board: "peripheral", label: ["SN74AHCT245N", "Pico -> 5 V bus", "+ RN3 data pulls"], start: 33, end: 42, width: "narrow", color: "#52b788", orientation: "down" },
+  { key: "UP245", board: "peripheral", label: ["SN74AHCT245N", "Pico -> 5 V bus", "+ 8 data pull-downs"], start: 33, end: 42, width: "narrow", color: "#52b788", orientation: "down" },
   { key: "DOWN245", board: "peripheral", label: ["SN74LVC245AN", "5 V bus -> Pico"], start: 44, end: 53, width: "narrow", color: "#52b788", orientation: "down" },
 ];
 

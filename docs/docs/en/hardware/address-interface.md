@@ -100,8 +100,9 @@ phase-3-spi-reset-wiring-end</template>
 ## 2.1 MCP23S17 Address-Bus Interconnects
 
 The MCP23S17 connects directly to the shared address bus: GPA0-GPA7 to
-A0-A7 and GPB0-GPB7 to A8-A15. Fit one 8x10 kOhm bussed pull-up network
-per byte, with each common pin at 5 V. The Z84C00 guarantees 4.2 V at
+A0-A7 and GPB0-GPB7 to A8-A15. Fit one individual 10 kOhm pull-up resistor
+from +5 V to each shared address net A0-A15 (16 resistors total). Do not
+connect the address nets to one another. The Z84C00 guarantees 4.2 V at
 its light-load VOH2 point against the MCP's 4.0 V input minimum; the
 external pull-ups improve the static HIGH level and add at most about
 0.5 mA load per LOW bit. MCP GPIO outputs guarantee at least 4.3 V at

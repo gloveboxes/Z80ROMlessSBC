@@ -171,10 +171,13 @@ For the non-DIP keyed parts:
   lead order can vary by manufacturer; use the purchased part's
   datasheet to identify emitter/base/collector and mark `E-B-C` beside
   its holes. Do not rely on flat-face orientation alone.
-- **RN1/RN2:** place as single-row SIPs near SRAM/MCP, parallel to the
-  ravine, with the dot/common pin toward row 1 and wired to +5 V.
-- **RN3:** place beside the AHCT/LVC A-port node with its dot/common pin
-  toward row 1 and wired to GND.
+- **A0-A15 address pull-ups:** place 16 individual 10 kOhm resistors near the
+  shared address trunk by the SRAM/MCP. Connect one resistor from each
+  address signal to +5 V; do not connect the address signals together.
+- **Pico data pull-downs:** place one 10 kOhm resistor from each of GP10-GP17
+  to GND beside the SN74AHCT245 A-port node. Keep the eight GPIO signals
+  separate; do not connect them together. These individual resistors replace
+  RN3, an optional 8x10 kOhm bussed SIP network.
 - **1N5819 and electrolytics:** the diode band faces Pico VSYS; every
   electrolytic `+` lead goes to its positive rail. Mark polarity on the
   breadboard before insertion.
@@ -210,9 +213,10 @@ rather than compressing the Core Board placement.
 
 ![Side-by-side BB830 placement schedule and grouped chip connections](../images/breadboard-layout.svg)
 
-Use one supply-entry point and fan out +5 V and GND to each board; do
-not daisy-chain the boards' power rails end-to-end. Run the Pico 3.3 V
-rail separately to the two LVC devices. Bond adjacent boards with
+Use one supply-entry point to feed three separate physical +5 V rails, one
+on each board, and common GND; do not daisy-chain the boards' power rails
+end-to-end. The Peripheral Board also has a separate Pico-derived +3.3 V rail
+for the two LVC devices; keep it separate from all three +5 V rails. Bond adjacent boards with
 multiple short ground jumpers, especially beside the address/data bus
 crossings and CLK. Verify every BB830 distribution rail end-to-end with
 a meter before fitting links; never assume visually aligned rail

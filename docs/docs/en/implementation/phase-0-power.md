@@ -21,70 +21,180 @@ There is no firmware to run yet. Read the
 
 ## Wiring - sockets, rails, and passive defaults
 
-Place and orient every socket using the
-[package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1).
-Wire the common ground, regulated +5 V, and Pico-derived 3.3 V rails exactly
-as shown in the [construction plan](../hardware/construction.md), including
-the 1N5819 between external +5 V and Pico VSYS. Fit every passive component
-specified below. Do not add point-to-point signal jumpers yet.
+- Place and orient every socket using the
+  [package-orientation plan](../hardware/construction.md#31-package-orientation-and-pin-1).
+- Wire the power rails as shown in the
+  [construction plan](../hardware/construction.md):
+    - Distribute the regulated +5 V supply to three separate physical +5 V
+      rails, one on each Memory, Core, and Peripheral breadboard. The Pico
+      provides a separate +3.3 V rail on the Peripheral breadboard; keep it
+      separate from all +5 V rails.
+    - **Common GND:** Connect Pico GND header pins 3, 8, 13, 18, 23, 28,
+      and 38, plus AGND pin 33, to common GND. Also connect Z84C0020PEC
+      GND pin 29, AS6C1008-55PCN GND pin 16, MCP23S17-E/SP VSS pin 10,
+      ATF22V10B/C GND pin 12, SN74AHCT244N GND pin 10, SN74AHCT245N GND
+      pin 10, SN74LVC245AN GND pin 10, and SN74LVC244AN GND pin 10.
+    - **Regulated +5 V:** Connect to Z84C0020PEC VCC pin 11,
+      AS6C1008-55PCN VCC pin 32, MCP23S17-E/SP VDD pin 9,
+      ATF22V10B/C VCC pin 24, and VCC pin 20 on SN74AHCT244N and
+      SN74AHCT245N. Do not connect the two LVC buffers to +5 V; they are
+      powered from the Pico-derived +3.3 V rail below.
+    - **Pico-derived +3.3 V:** Pico 3V3 header pin 36 supplies VCC pin 20
+      on SN74LVC245AN and SN74LVC244AN. It also feeds the 10 kOhm pull-ups
+      on GP4, GP5, GP21, GP22, and GP26 listed below. The two LVC ICs each
+      have a local 100 nF decoupling capacitor from VCC to GND. These are
+      the external loads on the 3.3 V rail; no other IC is powered from it.
+- Connect the 1N5819 in series between external +5 V and Pico VSYS header
+  pin 39:
+    - Unbanded anode to external +5 V.
+    - Banded cathode (stripe) to Pico VSYS, header pin 39.
+- Fit every passive component specified below.
+- Connect pull-ups from each signal to the positive rail specified for its
+  signal group; that rail is not always 3.3 V.
+- Connect pull-downs from each signal to GND.
+- Do not add point-to-point signal jumpers yet.
 
 ### Passive-component installation
 
-- **Local decoupling:** Place each 100 nF capacitor directly across its IC
-  supply pins with the shortest practical leads. If scope captures show more
-  than 250 mV rail excursion at the farthest board, add 47-100 uF there and
-  repeat the capture. Bulk capacitance does not replace local 100 nF
-  capacitors.
+#### IC decoupling and board bulk capacitors
 
-  A ceramic 100 nF capacitor is non-polarized: either lead can go to GND.
-  Electrolytic bulk capacitors are polarized; connect `+` to the positive
-  rail and the marked negative lead to GND. Check the case markings, not
-  just lead length. Fit the three 22 uF board capacitors and the 100 uF
-  supply-entry capacitor from the inventory as well as the eight ceramics.
+- **Local decoupling:** Fit one 100 nF capacitor directly between the supply
+  and ground pins of each DIP IC. Keep its leads as short as practical and
+  place it close to the IC:
+  
+    - Z84C0020PEC: VCC pin 11 to GND pin 29.
+    - AS6C1008-55PCN: VCC pin 32 to GND pin 16.
+    - MCP23S17-E/SP: VDD pin 9 to VSS pin 10.
+    - ATF22V10B/C: VCC pin 24 to GND pin 12.
+    - SN74AHCT244N: VCC pin 20 to GND pin 10.
+    - SN74AHCT245N: VCC pin 20 to GND pin 10.
+    - SN74LVC245AN: VCC pin 20 to GND pin 10.
+    - SN74LVC244AN: VCC pin 20 to GND pin 10.
 
-- **5 V pull-ups:** Fit 10 kOhm pull-ups to BUSREQ#, BUSACK#, MREQ#, IORQ#,
-  RD#, WR#, MCP SO, SRAM CE#, SRAM OE#, SRAM WE#, WAIT#, INT#, and NMI#.
-  RESET# is the direct GP3 node and must not have a 5 V pull-up.
+- **Pico 2 W:** The eight capacitors above are for the eight DIP ICs; the
+  Pico module is not part of this count.
 
-- **GAL and SRAM defaults:** Pull SN74AHCT244 inputs 2A2, 2A3, and 2A4 up to
-  5 V so its SRAM-control outputs remain inactive if the GAL is absent. Fit
-  10 kOhm pull-ups on A0-A15 using two 9-pin bussed SIP networks. The
-  AHCT244-input pull-ups cover an absent GAL, and the final SRAM-node pull-ups
-  cover an absent AHCT244. They do not provide power-off isolation for an
-  installed source IC.
+- **Ceramic capacitors:** A ceramic 100 nF capacitor is non-polarized; either
+  lead can connect to GND.
 
-- **Pico-side control defaults:** Fit 10 kOhm pull-ups to 3.3 V on GP4
-  (BUSREQ#), GP5 (SRAM CE#), GP21 (SPI CS#), GP22 (SRAM WE#), and GP26
-  (SRAM OE#). Fit 10 kOhm pull-downs to GND on GP2 (CLK) and GP18/GP19
-  (SPI SCK/SI). Fit **4.7 kOhm, 5% or better** pull-downs on GP3 (RESET#),
-  GP6 (DATA_DIR), GP7 (DATA_ENABLE), and GP9 (ADDR_ENABLE).
-  The supported ATF22V10B can source 100 uA through an input's internal
+- **Electrolytic bulk capacitors:** These are polarized. Connect `+` to the
+  positive rail and the marked negative lead to GND. Check the case markings,
+  not just lead length.
+
+- **Bulk capacitors:**
+    - Fit one polarized 22 uF capacitor (at least 10 V) across +5 V and GND
+      near the supply feed on each board: Memory, Core, and Peripheral.
+    - Fit the polarized 100 uF capacitor (at least 10 V) across +5 V and GND
+      at the common supply entry, before power fans out to the boards.
+    - Connect all four in parallel: `+` to +5 V and marked `-` to GND. Check
+      the case polarity marks before powering on.
+    - These bulk capacitors supplement the eight local 100 nF IC capacitors;
+      they do not replace them.
+
+#### Z80 control-signal pull-ups
+
+- Fit a 10 kOhm resistor from +5 V to each listed Z84C0020PEC signal net:
+    - BUSREQ# (pin 25).
+    - BUSACK# (pin 23).
+    - MREQ# (pin 19).
+    - IORQ# (pin 20).
+    - RD# (pin 21).
+    - WR# (pin 22).
+    - WAIT# (pin 24).
+    - INT# (pin 16).
+    - NMI# (pin 17).
+- Do not add a +5 V pull-up to RESET# (pin 26); it is connected directly to
+  Pico GP3.
+
+#### MCP23S17 SO and SRAM CE#/OE#/WE# control pull-ups
+
+- Fit a 10 kOhm resistor from +5 V to each listed signal:
+    - MCP23S17 SO (pin 14).
+    - AS6C1008-55PCN SRAM CE# (pin 22).
+    - AS6C1008-55PCN SRAM OE# (pin 24).
+    - AS6C1008-55PCN SRAM WE# (pin 29).
+- These are not Z80 pins.
+
+#### SN74AHCT244 control-input and SRAM address defaults
+
+- Connect SN74AHCT244 inputs to +5 V through pull-up resistors:
+    - 2A2 (pin 13).
+    - 2A3 (pin 15).
+    - 2A4 (pin 17).
+- These input pull-ups keep the SRAM-control outputs inactive if the GAL is
+  absent.
+- Fit one individual 10 kOhm pull-up resistor from +5 V to each
+  AS6C1008-55PCN address net (16 resistors total):
+    - A0 (pin 12).
+    - A1 (pin 11).
+    - A2 (pin 10).
+    - A3 (pin 9).
+    - A4 (pin 8).
+    - A5 (pin 7).
+    - A6 (pin 6).
+    - A7 (pin 5).
+    - A8 (pin 27).
+    - A9 (pin 26).
+    - A10 (pin 23).
+    - A11 (pin 25).
+    - A12 (pin 4).
+    - A13 (pin 28).
+    - A14 (pin 3).
+    - A15 (pin 31).
+- Connect each resistor between +5 V and its address signal only; do not
+  connect the address signals together.
+- SRAM `CE#`, `OE#`, and `WE#` are active-low. These pull-ups are required for
+  the documented staged configurations: if the GAL is absent, the AHCT244
+  input pull-ups hold its control outputs HIGH; if the AHCT244 is absent, the
+  pull-ups directly on the SRAM control pins hold them HIGH. This prevents an
+  undriven control from selecting the SRAM, enabling its outputs, or starting
+  a write.
+- Leave these pull-ups installed in the completed circuit. They provide safe
+  default levels when a source is absent or not driving the control signal;
+  an active output overrides the weak pull-up during normal operation. They do
+  not isolate an installed but unpowered GAL or AHCT244. Keep installed 5 V
+  logic powered whenever +5 V is applied, as described in the power warning
+  below.
+
+#### Pico 2 W control-signal defaults
+
+- Fit 10 kOhm pull-ups from 3.3 V to these Pico 2 W GPIOs:
+    - GP4 (BUSREQ#).
+    - GP5 (SRAM CE#).
+    - GP21 (SPI CS#).
+    - GP22 (SRAM WE#).
+    - GP26 (SRAM OE#).
+- Fit 10 kOhm pull-downs from these GPIOs to GND:
+    - GP2 (CLK).
+    - GP18 (SPI SCK).
+    - GP19 (SPI SI).
+- Fit **4.7 kOhm, 5% or better** pull-downs from these GPIOs to GND:
+    - GP3 (RESET#).
+    - GP6 (DATA_DIR).
+    - GP7 (DATA_ENABLE).
+    - GP9 (ADDR_ENABLE).
+- The supported ATF22V10B can source 100 uA through an input's internal
   pull-up. A 10 kOhm pull-down cannot guarantee its 0.8 V maximum LOW;
   4.7 kOhm provides margin for resistor tolerance and other input leakage.
-  Leave GP8 unconnected.
+- Leave GP8 unconnected.
 
-- **Pico data-bus defaults:** Fit the third 8x10 kOhm bussed SIP network from
-  GP10-GP17 to GND. This keeps the SN74AHCT245N A inputs defined while the Pico
-  GPIOs are inputs or the Pico is absent, and loads each active HIGH by only
-  0.33 mA at 3.3 V.
+#### SN74AHCT245 and Pico data-bus defaults
 
-- **Startup behavior:** Once the Pico 3.3 V rail is valid, the external
-  resistors establish safe levels before firmware configures SIO. During a
-  cold power ramp, Pico-side pull-ups cannot hold active-low controls HIGH
-  while the 3.3 V rail is still at 0 V. RESET# therefore remains asserted,
-  and SRAM contents remain indeterminate until the boot image is loaded and
-  verified.
+- Fit one individual 10 kOhm resistor from each Pico GPIO GP10-GP17 to GND
+  (eight resistors total). Connect each resistor between its GPIO signal and
+  common GND; do not connect the GPIO signals together.
+- These pull-downs keep the SN74AHCT245N A inputs defined while the Pico GPIOs
+  are inputs or the Pico is absent.
+- Each active HIGH GPIO sources only 0.33 mA through its own pull-down.
 
-- **Unused inputs:** Tie every unused CMOS input to a defined level.
+#### Pico 2 W startup behavior
 
-Use the pin maps for the specified level of each unused input; do not ground
-unused **outputs**. A bussed SIP contains eight separate resistors sharing
-one common pin. Verify its common-pin mark before insertion: RN1/RN2 common
-goes to +5 V and RN3 common goes to GND. This breadboard plan uses discrete
-10 kOhm resistors for the sixteen 5 V control pull-ups listed above, rather
-than additional SIP networks. A resistor from a signal to a rail is a weak
-default, not a direct jumper to that rail. GP-to-GAL signal jumpers are
-installed in the later wiring phases.
+- Once the Pico 3.3 V rail is valid, the external resistors establish safe
+  levels before firmware configures SIO.
+- During a cold power ramp, Pico-side pull-ups cannot hold active-low
+  controls HIGH while the 3.3 V rail is still at 0 V.
+- RESET# therefore remains asserted, and SRAM contents remain indeterminate
+  until the boot image is loaded and verified.
 
 ### Power distribution and isolation
 
@@ -172,13 +282,16 @@ installed in the later wiring phases.
   4.7 kOhm from GP3/GP6/GP7/GP9 to GND, and 10 kOhm from the other
   pull-down contacts to GND, as listed in the passive-component installation;
   powered Pico-side logic levels are checked in
-  [Phase 1](phase-1-supervisor.md). Measure approximately 10 kOhm
-  from each GP10-GP17 contact to GND through the data SIP network.
+  [Phase 1](phase-1-supervisor.md). Measure approximately 10 kOhm from each
+  GP10-GP17 contact to GND through its individual pull-down resistor.
+  Also measure approximately 10 kOhm from each A0-A15 address contact to
+  +5 V through its individual pull-up resistor.
   Specifically require approximately 10 kOhm from the Z80 WAIT# pin 24 and
   GAL pin 20 contacts to +5 V. Their point-to-point connection, and the
   IORQ# connection to GAL pin 13, are installed and checked in Phase 2.
 
 ## Pass gate
 
-No shorts or crossed nets, correct supply voltage at
-every socket, and negligible current with all devices removed.
+- No shorts or crossed nets.
+- Correct supply voltage at every socket.
+- Negligible current with all devices removed.

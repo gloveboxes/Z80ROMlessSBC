@@ -103,10 +103,9 @@ of Pico/GAL TTL HIGHs.
 | 8 | 100 nF X7R ceramic capacitors, at least 10 V | One at every DIP logic supply pair |
 | 3 | 22 uF capacitors, at least 10 V | One per breadboard |
 | 1 | 100 uF electrolytic capacitor, at least 10 V | 5 V supply-entry bulk capacitance |
-| 25 | 10 kOhm, 1/4 W resistors | Sixteen 5 V control pull-ups plus nine other discrete startup-bias resistors |
+| 49 | 10 kOhm, 1/4 W resistors | Sixteen A0-A15 address pull-ups, sixteen 5 V control pull-ups, nine other startup-bias resistors, and eight GP10-GP17 data pull-downs |
 | 5 | 4.7 kOhm, 1/4 W resistors, 5% or better | Four GAL-input pull-downs and GAL-to-2N3904 base current limiting |
 | 1 | 47 kOhm, 1/4 W resistor | 2N3904 base-emitter pull-down |
-| 3 | 8x10 kOhm bussed SIP resistor networks, 9-pin | RN1/RN2 pull up A0-A15; RN3 pulls down Pico D0-D7 |
 | Reused for tests | 1 kOhm, 1/4 W resistors | First-drive current limiting and manual input tests |
 
 ## 0.4 Construction and Power
