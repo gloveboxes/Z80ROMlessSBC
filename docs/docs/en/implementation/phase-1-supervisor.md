@@ -7,7 +7,9 @@
 **What you are proving:** the Pico boots safely and each output reaches the
 intended empty socket. Load the Stage 1 diagnostic using the
 [firmware and USB-console procedure](../system/firmware-build.md#load-a-stage-and-open-its-console).
-Use `s` to sample inputs and `w` for the control-output walking test.
+Use `s` to sample GPIO levels, `w` for the control-output walking test,
+`r` to toggle RESET# HIGH/LOW,
+`d` to single-step the eight data outputs, and `x` to restore safe levels.
 
 A **walking one** drives one tested output HIGH at a time while the others
 are LOW. Probe the named destination and its neighbors: only the intended
@@ -24,10 +26,25 @@ walking-one sequence across the 12 control outputs. Type `w` again to repeat
 the sequence while probing another destination.
 
 !!! note "Software PASS is not the phase pass gate"
-    Stage 1's `PASS: safe levels restored` reports that the output sequence
-    completed. It does not measure the socket voltages. The `w` command
-    exercises the control outputs, not GP10-GP17; the data-GPIO check in the
-    test plan is a separate required measurement/test setup.
+    - `walking 12 outputs` means the firmware started the control-output test.
+    - `PASS: safe levels restored` means the sequence finished and the firmware
+      reapplied the safe GPIO configuration. It does not measure voltages or
+      prove correct wiring.
+    - `s` reports the instantaneous levels at the Pico input pins, not a wiring
+      test. With the SN74LVC244 absent and internal pulls disabled, BUSACK#,
+      IORQ#, RD#, WR#, and MISO can float. All-zero readings alone neither
+      prove a fault nor confirm correct routing; do not expect valid bus
+      status while these sockets are empty.
+    - Each walking-test HIGH lasts only 250 ms. Repeat `w` while probing each
+      destination and its neighbors; use a scope rather than relying on a
+      slow multimeter to catch the pulse.
+    - `w` does not test GP10-GP17. Use `d` for the
+      [single-step data-pin test](#single-step-data-pin-test) below: each
+      selected pin stays HIGH until the next `d`, `x`, `w`, or USB disconnect.
+      Console messages do not replace voltage measurements.
+    - Use `r` to toggle only RESET# HIGH or LOW for measurement. This
+      deliberately overrides RESET#'s safe LOW level; use `x` afterward.
+      All other ICs must be absent.
 
 ## Wiring - Pico 2 W
 
@@ -143,82 +160,118 @@ Disconnect USB before fitting the Pico and wiring it. After the wiring checks,
 follow test step 1's power sequence, then open the USB serial console using the
 [console procedure](../system/firmware-build.md#load-a-stage-and-open-its-console).
 The startup banner is `Z80 ROMless SBC - Stage 1 supervisor`; `s` samples the
-monitor inputs and `w` walks the 12 control outputs. It does not walk GP10-GP17.
+monitor and data GPIOs, `w` walks the 12 control outputs, `d` single-steps
+GP10-GP17, `r` toggles RESET# only, and `x` restores
+safe levels.
+
+### RESET# Toggle Test
+
+**Phase 1 only: keep every IC socket except the Pico empty.** These commands
+can release Z80 reset; do not use this test on a populated system.
+The Pico produces the voltage:
+do not connect a GPIO to either supply rail to force its level.
+
+- Type `x` to establish safe levels. With the meter's black lead on common
+  GND, use the red probe to measure near 0 V at Pico header pin **5**,
+  Z80 socket pin **26**, and ATF22V10 socket pin **1**.
+- Type `r` once to hold **RESET#/GP3 HIGH**. The console identifies the
+  three contacts to probe. Measure **3.20-3.40 V** at all three
+  contacts. The shared RESET# node must never exceed the Pico 3.3 V rail;
+  no 5 V pull-up is permitted. A digital GPIO read cannot detect overvoltage.
+- Type `r` again to hold **RESET# LOW** and measure near 0 V at all three
+  contacts. Repeat `r` as needed; each press flips only GP3, leaving all
+  other GPIOs unchanged. Scope the node if checking edges or overshoot.
+- Type `x` to finish and restore **all** safe levels, including RESET# LOW.
+  USB disconnect or starting `w` also restores safe levels. A new `d`
+  sequence restores safe levels before driving D0; `r` does not advance or
+  end an already active data-pin test. `s` leaves the pin levels unchanged.
+
+**This test checks routing and commanded HIGH/LOW levels, not startup.**
+After typing `x`, verify the inactive levels listed above with a meter.
+To check before, during, and after startup, arm the scope and repeat the
+normal cold-power sequence: disconnect USB before removing external +5 V,
+then apply external +5 V before reconnecting USB. Capture GP3 and Z80 RESET#
+through the ramp and firmware startup; separately capture GP7 and GP9 and
+the other controls as required. Do not issue `r`, `d`, or `w` during
+these startup captures. Firmware cannot observe the interval before it runs,
+and console readings cannot prove the RESET# voltage limit or absence of
+short pulses.
+
+### Single-Step Data-Pin Test
+
+**Use this test only in Phase 1, with the Pico fitted and all other IC sockets
+empty.** The firmware produces the HIGH voltage; do not jumper a GPIO to the
+3.3 V rail. Keep DATA_ENABLE (GP7) and ADDR_ENABLE (GP9) LOW throughout.
+
+- Set the multimeter to DC volts. Connect its black lead to common circuit
+  GND and use the red probe on the named header or empty socket contact.
+  Avoid bridging adjacent contacts; do not change wiring while powered.
+- Type `x`, then `s` (no Enter required). GP10-GP17 are inputs, and the
+  `Data GPIO levels` line must show D0-D7 all zero. Measure all eight LOW
+  before starting; the external RN3 pull-down network establishes these
+  levels, not an internal Pico pull-down.
+- Type `d` once. The firmware checks that all eight data inputs read LOW,
+  configures all eight as outputs initially LOW, then holds **D0/GP10 HIGH**.
+  If it reports `NOT STARTED`, investigate RN3 and the wiring before retrying;
+  it has left the data GPIOs as inputs.
+- Measure **3.20-3.40 V** at the selected Pico header pin and at the matching
+  A-port contact of **both empty transceiver sockets** in the table below.
+  Confirm the other seven data lines remain LOW and neighboring contacts
+  do not change. Take as long as needed; there is no automatic step timer.
+- Type `d` again to lower the previous pin and hold the next one HIGH.
+  Repeat through **D7/GP17**. Each step prints the GPIO, physical Pico header
+  pin, and transceiver socket pin to probe. `s` samples levels without
+  advancing or ending the test.
+- After measuring D7, type `d` once more to finish, or type `x` at any point
+  to stop. The firmware restores safe levels and returns GP10-GP17 to inputs.
+  A USB-console disconnect also ends an active data test; reconnect and
+  start again with `d`. Typing `w` first ends the data test, then runs the
+  separate control-output sequence.
+
+| Selected data line | Pico GPIO | Pico header pin | AHCT245 A-port socket contact | LVC245 A-port socket contact |
+| --- | --- | --- | --- | --- |
+| D0 | GP10 | 14 | A1, pin 2 | A1, pin 2 |
+| D1 | GP11 | 15 | A2, pin 3 | A2, pin 3 |
+| D2 | GP12 | 16 | A3, pin 4 | A3, pin 4 |
+| D3 | GP13 | 17 | A4, pin 5 | A4, pin 5 |
+| D4 | GP14 | 19 | A5, pin 6 | A5, pin 6 |
+| D5 | GP15 | 20 | A6, pin 7 | A6, pin 7 |
+| D6 | GP16 | 21 | A7, pin 8 | A7, pin 8 |
+| D7 | GP17 | 22 | A8, pin 9 | A8, pin 9 |
 
 ## Safe Startup and Walking Output (Phases 1-2)
+
+### Stage 1 Console and Data-Stepping Source
+
+**Maintained source:** [Stage 1 main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c).
+
+The `r`, `d`, `x`, `s`, and `w` commands, pin testing, and
+USB-disconnect cleanup are implemented in the Stage 1 application below.
+This listing is included directly from `src/stage01_supervisor/main.c` when MkDocs builds
+the page, so it follows changes to the actual application source.
+
+```c
+{% include "../../../../src/stage01_supervisor/main.c" %}
+```
+
+### Shared Safe-Startup and Walking Helpers
 
 **Maintained source:** [pins.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/pins.h),
 [supervisor.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/supervisor.h), and
 [supervisor.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/supervisor.c).
 
+These helpers are shared by the phase applications; the Stage 1 console
+commands are in the application listing above, not in this shared module.
 Preload each output latch while the pin is still an input, then enable
 the output driver. This prevents a brief LOW pulse on active-low lines.
+The following listing is included directly from `src/common/supervisor.c`
+when MkDocs builds the page; it is not a separately maintained example.
 
 ```c
-#include <stdint.h>
-#include <stdio.h>
-#include "pico/stdlib.h"
-
-enum {
-  PIN_IORQ_N = 1, PIN_CLK = 2, PIN_RESET_N = 3,
-  PIN_BUSREQ_N = 4, PIN_BUSACK_N = 0,
-  PIN_DATA_DIR = 6, PIN_DATA_ENABLE = 7,
-  PIN_UNUSED_8 = 8, PIN_ADDR_ENABLE = 9,
-  PIN_DATA_0 = 10, PIN_DATA_1 = 11, PIN_DATA_2 = 12, PIN_DATA_3 = 13,
-  PIN_DATA_4 = 14, PIN_DATA_5 = 15, PIN_DATA_6 = 16, PIN_DATA_7 = 17,
-  PIN_SPI_SCK = 18, PIN_SPI_MOSI = 19, PIN_SPI_MISO = 20,
-  PIN_SPI_CS_N = 21,
-  PIN_SRAM_WE_N = 22, PIN_SRAM_CE_N = 5, PIN_SRAM_OE_N = 26,
-  PIN_RD_N = 27, PIN_WR_N = 28
-};
-
-static void output_with_initial_level(uint pin, bool level) {
-  gpio_init(pin);
-  gpio_put(pin, level);       // Preload SIO output latch.
-  gpio_set_dir(pin, GPIO_OUT);
-}
-
-static void input_with_no_pull(uint pin) {
-  gpio_init(pin);
-  gpio_set_dir(pin, GPIO_IN);
-  gpio_disable_pulls(pin);
-}
-
-static void diagnostic_safe_startup(void) {
-  output_with_initial_level(PIN_DATA_ENABLE, 0);
-  output_with_initial_level(PIN_ADDR_ENABLE, 0);
-  output_with_initial_level(PIN_RESET_N, 0); // Hold CPU reset.
-  output_with_initial_level(PIN_BUSREQ_N, 1);
-  output_with_initial_level(PIN_SRAM_WE_N, 1);
-  output_with_initial_level(PIN_SRAM_CE_N, 1);
-  output_with_initial_level(PIN_SRAM_OE_N, 1);
-  output_with_initial_level(PIN_SPI_CS_N, 1);
-  output_with_initial_level(PIN_CLK, 0);
-  output_with_initial_level(PIN_DATA_DIR, 0);
-  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin)
-    input_with_no_pull(pin);
-  input_with_no_pull(PIN_BUSACK_N);
-  input_with_no_pull(PIN_IORQ_N); // External 10 kOhm pull-up holds this input HIGH.
-  input_with_no_pull(PIN_RD_N);
-  input_with_no_pull(PIN_WR_N);
-  input_with_no_pull(PIN_SPI_MISO);
-}
-
-static void walking_output_test(const uint *pins, size_t count,
-    uint32_t dwell_ms) {
-  for (size_t index = 0; index < count; ++index)
-    output_with_initial_level(pins[index], false);
-
-  for (size_t active = 0; active < count; ++active) {
-    for (size_t index = 0; index < count; ++index)
-      gpio_put(pins[index], index == active);
-    sleep_ms(dwell_ms);     // Probe or logic-analyzer capture point.
-  }
-  diagnostic_safe_startup();
-}
+{% include "../../../../src/common/supervisor.c" %}
 ```
 
-Run `walking_output_test(..., 250)` only in this phase and
+Run `z80_walking_output_test(..., 250)` only in this phase and
 [Phase 2](phase-2-buffer-clock.md) while the destination driver/bus chips are
 absent. It deliberately changes raw pin levels and is not safe as an in-system
 diagnostic after [Phase 3](phase-3-address-generator.md).
@@ -239,14 +292,34 @@ diagnostic after [Phase 3](phase-3-address-generator.md).
   Pico control pins have the inactive levels listed above before,
   during, and after startup. Verify the RESET# node never exceeds the
   Pico 3.3 V rail; no 5 V pull-up is permitted on it.
+  Use the [RESET# toggle test](#reset-toggle-test)
+  for separate routing and voltage checks, then type `x` and perform the
+  startup captures without intentionally toggling the pins.
 4. Before configuring GP10-GP17 as outputs, require all eight to read
-  LOW from the external SIP network. Drive each HIGH in turn and verify
-  3.20-3.40 V while the other seven remain LOW.
+  LOW from the external SIP network. Follow the
+  [single-step data-pin test](#single-step-data-pin-test): use `d` to drive
+  each HIGH in turn and verify 3.20-3.40 V while the other seven remain LOW.
+  Finish with `x` or one more `d` after D7 to return the data GPIOs to inputs.
 5. Run the walking-one test and probe each destination socket. Require
   one-to-one routing, 0 V/3.3 V levels, and no change on neighboring
   pins. Restore safe levels when the test ends or the USB link drops.
 
 ## Pass gate
 
-Stable 3.3 V, safe startup levels, and correct routing
-for every Pico signal.
+**Console output alone does not complete Phase 1.** Complete every measurement
+in the test plan above before proceeding:
+
+- Measure **3.20-3.40 V** at the SN74LVC244AN and SN74LVC245AN VCC socket
+  contacts, and confirm the specified power sequence causes no back-powering.
+- Scope **GP7 and GP9 through reset and startup**; both must remain LOW.
+- Verify **GP3 and the Z80 RESET# socket contact are LOW**, RESET# never
+  exceeds the Pico 3.3 V rail, and all other control outputs have their
+  specified safe startup levels.
+- Run `w` repeatedly while checking **every control-output destination and
+  neighboring pins**. Confirm the intended pin alone changes, with
+  0 V/3.3 V levels, and safe levels return afterward.
+- Check **GP10-GP17 separately**: all eight must initially read LOW, then
+  use `d` to verify each reaches 3.20-3.40 V at both transceiver A-port socket
+  contacts while the other seven stay LOW. Restore safe levels with `x` or
+  finish the sequence. Do not mark this complete based on the 12-output `w`
+  test.
