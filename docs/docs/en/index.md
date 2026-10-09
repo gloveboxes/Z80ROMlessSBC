@@ -48,6 +48,117 @@ Z80-assisted loading to populate and verify SRAM, then resets to PC zero for
 normal execution. Once running, virtual I/O disk ports access the
 [onboard flash partition](system/operation.md#63-onboard-flash-cpm-disk-storage).
 
+### How can the Z80 boot without ROM?
+
+**The Z80 does not know whether its instructions come from ROM, RAM, or the
+Pico. It reads instruction bytes from its data pins and executes them.**
+During loading, the Pico temporarily supplies those bytes instead of SRAM.
+Those instructions make the Z80 fill its own RAM.
+
+1. **The Pico starts first.** It boots its firmware from onboard flash, holds
+   the Z80 in reset, and initially keeps the Z80 clock stopped. SRAM contains
+   unknown data at power-on. The Pico recovers the disk journal and validates
+   the CP/M boot package before starting the loader.
+2. **The Pico supplies the first instructions.** It clocks the Z80 through
+   reset, releases reset, and supplies slow, controlled clock pulses. The Z80
+   begins fetching at address `0000`, but SRAM's outputs are disabled.
+   Instead, the Pico supplies instruction bytes through the AHCT245 data
+   buffer at the appropriate read cycles. The Z80 still drives the address
+   bus; the Pico supplies each byte according to the loading sequence.
+3. **The Z80 writes its own RAM.** For example, to store byte `A5` at address
+   `1234`, the Pico supplies `LD HL,1234h` followed by `LD (HL),0A5h`. These
+   instructions are encoded as the bytes `21 34 12 36 A5`. When the Z80
+   executes the write, the Pico stops driving data. The Z80 puts `1234` on
+   the address bus, puts `A5` on the data bus, and generates the SRAM write
+   signals. Repeating this process loads the boot image.
+4. **The Pico checks the result.** It injects instructions such as
+   `LD HL,1234h` and `LD A,(HL)`. For the actual RAM read, the Pico disables
+   its output driver and temporarily enables SRAM's outputs. It observes the
+   returned byte through the LVC245 and compares it with the expected value.
+   A failed verification leaves the Z80 held in reset instead of running CP/M.
+5. **Reset again, then execute from RAM.** After successful verification,
+   the Pico resets the Z80 to return its program counter to `0000`, isolates
+   both Pico data paths, and allows normal SRAM reads. It releases reset with
+   the clock stopped LOW, waits for reset setup, then starts the normal clock.
+   This time SRAM supplies the instructions, and the loaded code starts CP/M.
+
+**The HCT32 contains no boot program and needs no programming.** One of its
+OR gates controls SRAM's active-LOW output enable:
+
+```text
+SRAM_OE# = buffered RD# OR buffered BOOT_READ_DISABLE
+```
+
+When `BOOT_READ_DISABLE` is HIGH, SRAM's data outputs stay disabled, leaving
+the Pico free to supply injected instruction bytes. When it is LOW, SRAM
+can respond to normal reads. This inhibits **SRAM output, not SRAM writes**:
+the Z80 can still write RAM while receiving its instructions from the Pico.
+Firmware keeps the Pico and SRAM from driving the data bus simultaneously.
+
+In short: **the Pico feeds the Z80 instructions to write and verify the boot
+image in RAM, then resets it so it starts again, this time executing from RAM.**
+The Z80 is the only memory-address and write master throughout.
+
+Normal execution starts at **1 MHz**. A nominal **8 MHz** setting is available
+for later qualification; loading uses slow stepped clocks, not that run rate.
+This is the intended sequence, not a claim of measured hardware operation.
+See the [detailed loader protocol](hardware/address-interface.md#loader-sequence),
+[Phase 6 tests](implementation/phase-6-sram.md), and
+[frequency qualification](implementation/frequency-qualification.md).
+
+### How are the Pico and Z80 synchronized during loading?
+
+**The Pico controls the Z80 clock, so it controls when the Z80 can advance
+to the point where it reads a byte.** It does not have to race a freely
+running Z80 during loading.
+
+Think of it as: **advance the Z80, pause, prepare the next byte, then advance
+the Z80 to read it.**
+
+For each injected instruction or immediate operand byte, the current loader
+uses this sequence:
+
+| Step | Pico action | Purpose |
+| --- | --- | --- |
+| 1 | Generate one complete clock cycle, then leave CLK LOW | Advance into the expected Z80 read cycle |
+| 2 | Keep SRAM outputs disabled | Prevent SRAM from answering the read |
+| 3 | Disable both data translators, allow isolation to settle, and prepare the byte on the Pico data pins | Keep intermediate GPIO changes off the Z80 bus |
+| 4 | Allow data to settle, then request the upward AHCT245 path | Present the byte when Z80 RD# is LOW |
+| 5 | Generate two more clock cycles while holding the byte | Advance through the read and its completion |
+| 6 | After the final falling-edge settling interval, disable the Pico data path | Release the bus before subsequent operations |
+| 7 | For an opcode, generate one additional cycle | Complete the four-T-state opcode-fetch cycle, including its refresh portion |
+
+An immediate operand read uses three clock cycles; an opcode fetch uses four.
+The specified CMOS Z80 is **fully static**, meaning its clock can be paused
+without losing its execution state. While CLK is held LOW, it cannot advance
+to a later sampling edge. The Pico prepares the byte before generating that
+edge; a software delay between steps extends the pause instead of letting the
+Z80 run ahead.
+
+The HCT32 adds read-strobe gating to the upward data path:
+
+```text
+AHCT245_OE# = Z80_RD# OR PICO_DATA_UP_OE#
+```
+
+Both inputs must be LOW to enable the translator: the Z80 must be reading,
+and the Pico must have requested upward drive. This gate does not select the
+byte or synchronize the instruction sequence by itself, and it is not an
+all-state interlock against another bus driver.
+
+**The loader counts clocks rather than polling RD# for each byte.** It does
+not use a memory-read interrupt or a request/acknowledge protocol. It relies
+on the expected reset-exit phase, the known instructions being injected, and
+their clock counts. If that phase or a cycle count is wrong, it can supply the
+wrong byte at the wrong time. Slow clocks provide settling time, but do not
+prove the sequence correct: real captures of CLK, M1#, RD#, data, and the
+enables must confirm it.
+
+The [maintained loader source](implementation/phase-6-sram.md#maintained-source)
+and [Phase 6 qualification procedure](implementation/phase-6-sram.md#firmware-and-loader-qualification)
+show the implementation and required checks. Normal-run I/O uses a different
+[hardware-WAIT-assisted trap protocol](system/operation.md#61-hardware-wait-assisted-clock-stop-trap-protocol).
+
 ### CP/M Boot and Disk Flow
 
 The complete software and storage path is:
@@ -62,9 +173,11 @@ The complete software and storage path is:
    flash setup. The separate files allow later updates without replacing the
    rest of flash.
 4. On cold boot, the Pico completes any interrupted disk write, validates
-   `z80boot.pkg`, copies its 64 KiB payload into SRAM, verifies the copy, and
-   releases the Z80 from reset. The BIOS installs CP/M's restart and system-call
-   entry points, then displays the `A>` prompt.
+   `z80boot.pkg`, and uses the injected instructions described above to make
+   the Z80 write and read back its 64 KiB payload in SRAM. After verification,
+   the Pico resets the Z80 again and starts execution from SRAM. The BIOS
+   installs CP/M's restart and system-call entry points, then displays the
+   `A>` prompt.
 5. Drives A-D are persistent read/write disks. During operation, the BIOS
    converts disk requests into 128-byte transfers that the Pico reads from or
    writes to flash. The Pico caches writes, commits them after 250 ms of
