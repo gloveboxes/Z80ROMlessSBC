@@ -23,7 +23,10 @@ A0/A1/A2/A4 and requires exactly one of RD#/WR# active before servicing data.
 For OUT, U10 receives the CPU byte; for IN, U9 supplies a preloaded reply.
 Only after the path is configured does GP9 rise. Firmware completes the I/O
 cycle with slow single clocks, observes IORQ/strobe release, disables both
-paths, lowers GP9, then restores PWM. This prevents a later memory read from
+paths, waits at least 1 us for isolation, lowers GP9, then restores PWM.
+Every slow step includes a fixed 1 us LOW settling interval before the control
+sample, preventing an extra clock caused by propagation or input-synchronizer
+delay. This prevents a later memory read from
 re-enabling the Pico output. RD#-qualified U9 OE provides additional strobe
 gating, not software-independent ownership arbitration.
 
@@ -170,8 +173,10 @@ wear-levelled storage.
     in the [frequency-qualification plan](../implementation/frequency-qualification.md).
     No rate in this range is guaranteed in advance.
 
-  - *Experimental Range:* **6.5 MHz – 8 MHz** may be attempted in
-    500 kHz steps only after 6 MHz passes. These rates are exploratory,
+  - *Experimental Range:* Requests **6.5 MHz – 8 MHz** may be attempted in
+    requested 500 kHz steps only after 6 MHz passes. At 144 MHz `clk_sys`,
+    the 6.5 MHz request still produces 6 MHz; subsequent requests produce
+    approximately 6.545455, 7.2, and exactly 8 MHz nominally. These rates are exploratory,
     not design claims, because the 55 ns SRAM and breadboard margin
     dominate despite the faster buffer.
 

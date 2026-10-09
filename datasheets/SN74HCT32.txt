@@ -25,6 +25,7 @@ the end of the data sheet.
 Functional Block Diagram
 An IMPORTANT NOTICE at the end of this data sheet addresses availability, warranty, changes, use in safety-critical applications,
 intellectual property matters and other important disclaimers. PRODUCTION DATA.
+
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022 www.ti.com
 Table of Contents
@@ -67,6 +68,7 @@ Changes from Revision E (August 2003) to Revision F (February 2022) Page
 modern data sheet standards.............................................................................................................................1
 2 Submit Document Feedback Copyright © 2022 Texas Instruments Incorporated
 Product Folder Links: SN54HCT32 SN74HCT32
+
 www.ti.com
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022
@@ -108,6 +110,7 @@ FK package
 Top View
 Copyright © 2022 Texas Instruments Incorporated Submit Document Feedback 3
 Product Folder Links: SN54HCT32 SN74HCT32
+
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022 www.ti.com
 5 Specifications
@@ -160,6 +163,7 @@ thermal resistance N/A N/A N/A N/A N/A °C/W
 report.
 4 Submit Document Feedback Copyright © 2022 Texas Instruments Incorporated
 Product Folder Links: SN54HCT32 SN74HCT32
+
 www.ti.com
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022
@@ -213,6 +217,7 @@ Test Conditions TYP UNIT
 Cpd Power dissipation capacitance No load 20 pF
 Copyright © 2022 Texas Instruments Incorporated Product Folder Links: SN54HCT32 SN74HCT32
 Submit Document Feedback 5
+
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022 www.ti.com
 6 Parameter Measurement Information
@@ -251,6 +256,7 @@ VOL
 Figure 6-2. Voltage Waveforms, Propagation Delays for TTL-Compatible Inputs
 6 Submit Document Feedback Copyright © 2022 Texas Instruments Incorporated
 Product Folder Links: SN54HCT32 SN74HCT32
+
 www.ti.com
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022
@@ -270,6 +276,7 @@ X H H
 L L L
 Copyright © 2022 Texas Instruments Incorporated Submit Document Feedback 7
 Product Folder Links: SN54HCT32 SN74HCT32
+
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022 www.ti.com
 8 Power Supply Recommendations
@@ -290,6 +297,7 @@ unused input depends on the function of the device. Generally, the inputs are ti
 makes more sense for the logic function or is more convenient.
 8 Submit Document Feedback Copyright © 2022 Texas Instruments Incorporated
 Product Folder Links: SN54HCT32 SN74HCT32
+
 www.ti.com
 SN54HCT32, SN74HCT32
 SCLS064G – NOVEMBER 1988 – REVISED OCTOBER 2022
@@ -325,6 +333,7 @@ current data available for the designated devices. This data is subject to chang
 this document. For browser-based versions of this data sheet, refer to the left-hand navigation.
 Copyright © 2022 Texas Instruments Incorporated Submit Document Feedback 9
 Product Folder Links: SN54HCT32 SN74HCT32
+
 PACKAGE OPTION ADDENDUM
 www.ti.com 31-Oct-2025
 PACKAGING INFORMATION
@@ -369,6 +378,7 @@ Parts may have multiple material finish options. Finish options are separated by
 (5) MSL rating/Peak reflow: The moisture sensitivity level ratings and peak solder (reflow) temperatures. In the event that a part has multiple moisture sensitivity ratings, only the lowest level per JEDEC standards is shown.
 Refer to the shipping label for the actual reflow temperature that will be used to mount the part to the printed circuit board.
 Addendum-Page 1
+
 PACKAGE OPTION ADDENDUM
 www.ti.com 31-Oct-2025
 (6) Part marking: There may be an additional marking, which relates to the logo, the lot trace code information, or the environmental category of the part.
@@ -380,6 +390,7 @@ and accurate information but may not have conducted destructive testing or chemi
 and other limited information may not be available for release.
 In no event shall TI's liability arising out of such information exceed the total purchase price of the TI part(s) at issue in this document sold by TI to Customer on an annual basis.
 Addendum-Page 2
+
 PACKAGE MATERIALS INFORMATION
 www.ti.com 4-Oct-2026
 TAPE AND REEL INFORMATION
@@ -443,6 +454,7 @@ SN74HCT32PWR TSSOP PW 14 2000 330.0 12.4 6.9 5.3 1.6 8.0 12.0 Q1
 SN74HCT32PWR1G4 TSSOP PW 14 2000 330.0 12.4 6.9 5.6 1.6 8.0 12.0 Q1
 SN74HCT32PWR1G4 TSSOP PW 14 2000 330.0 12.4 6.9 5.6 1.6 8.0 12.0 Q1
 Pack Materials-Page 1
+
 PACKAGE MATERIALS INFORMATION
 www.ti.com 4-Oct-2026
 TAPE AND REEL BOX DIMENSIONS
@@ -463,6 +475,7 @@ SN74HCT32PWR TSSOP PW 14 2000 367.0 367.0 35.0
 SN74HCT32PWR1G4 TSSOP PW 14 2000 353.0 353.0 32.0
 SN74HCT32PWR1G4 TSSOP PW 14 2000 356.0 356.0 35.0
 Pack Materials-Page 2
+
 PACKAGE MATERIALS INFORMATION
 www.ti.com 4-Oct-2026
 TUBE
@@ -479,6 +492,7 @@ SN74HCT32N N PDIP 14 25 506 13.97 11230 4.32
 SN74HCT32N.A N PDIP 14 25 506 13.97 11230 4.32
 SN74HCT32N.A N PDIP 14 25 506 13.97 11230 4.32
 Pack Materials-Page 3
+
 D0014A
 PACKAGE OUTLINE
 SOIC - 1.75 mm max height
@@ -534,6 +548,7 @@ exceed 0.15 mm, per side.
 4. This dimension does not include interlead flash. Interlead flash shall not exceed 0.43 mm, per side.
 5. Reference JEDEC registration MS-012, variation AB.
 www.ti.com
+
 EXAMPLE BOARD LAYOUT
 D0014A
 SOIC - 1.75 mm max height
@@ -572,6 +587,7 @@ NOTES: (continued)
 6. Publication IPC-7351 may have alternate designs.
 7. Solder mask tolerances between and around signal pads can vary based on board fabrication site.
 www.ti.com
+
 D0014A
 EXAMPLE STENCIL DESIGN
 SOIC - 1.75 mm max height
@@ -594,6 +610,8 @@ NOTES: (continued)
 design recommendations.
 9. Board assembly site may have different recommendations for stencil design.
 www.ti.com
+
+[No text extracted from PDF page 18; consult the PDF.]
 
 DB0014A
 PACKAGE OUTLINE
@@ -645,6 +663,7 @@ per ASME Y14.5M.
 exceed 0.15 mm per side.
 4. Reference JEDEC registration MO-150.
 www.ti.com
+
 DB0014A
 EXAMPLE BOARD LAYOUT
 SSOP - 2 mm max height
@@ -687,6 +706,7 @@ NOTES: (continued)
 5. Publication IPC-7351 may have alternate designs.
 6. Solder mask tolerances between and around signal pads can vary based on board fabrication site.
 www.ti.com
+
 DB0014A
 EXAMPLE STENCIL DESIGN
 SSOP - 2 mm max height
@@ -710,6 +730,8 @@ NOTES: (continued)
 design recommendations.
 8. Board assembly site may have different recommendations for stencil design.
 www.ti.com
+
+[No text extracted from PDF page 22; consult the PDF.]
 
 PW0014A
 PACKAGE OUTLINE
@@ -763,6 +785,7 @@ exceed 0.15 mm per side.
 5. Reference JEDEC registration MO-153.
 4220202/B 12/2023
 www.ti.com
+
 PW0014A
 EXAMPLE BOARD LAYOUT
 TSSOP - 1.2 mm max height
@@ -805,6 +828,7 @@ NOTES: (continued)
 6. Publication IPC-7351 may have alternate designs.
 7. Solder mask tolerances between and around signal pads can vary based on board fabrication site.
 www.ti.com
+
 PW0014A
 EXAMPLE STENCIL DESIGN
 TSSOP - 1.2 mm max height
@@ -828,6 +852,7 @@ NOTES: (continued)
 design recommendations.
 9. Board assembly site may have different recommendations for stencil design.
 www.ti.com
+
 IMPORTANT NOTICE AND DISCLAIMER
 TI PROVIDES TECHNICAL AND RELIABILITY DATA (INCLUDING DATASHEETS), DESIGN RESOURCES (INCLUDING REFERENCE
 DESIGNS), APPLICATION OR OTHER DESIGN ADVICE, WEB TOOLS, SAFETY INFORMATION, AND OTHER RESOURCES “AS IS”

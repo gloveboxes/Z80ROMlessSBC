@@ -57,7 +57,7 @@ int main(void) {
   z80_safe_startup();
   stdio_init_all();
   printf("\nStage 7: Z80 CPU execution and bus ownership\n");
-    printf("l=load for stepping, s=single 10Hz-equivalent cycle, "
+    printf("l=load for stepping, s=single cycle (50ms minimum half-pulses), "
       "0=run 10Hz, 1=run 1kHz, 2=run 100kHz, 3/r=run 1MHz, "
       "q=BUSREQ round-trip, z=reset/restart, x=fail closed\n");
 

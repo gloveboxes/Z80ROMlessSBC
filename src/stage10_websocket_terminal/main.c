@@ -2,6 +2,7 @@
 
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
+#include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_disk.h"
@@ -12,8 +13,8 @@
 #include "z80sbc/test_progress.h"
 
 enum {
-  QUALIFICATION_DATA_PORT = 0xFE,
-  QUALIFICATION_RESULT_PORT = 0xFD,
+  QUALIFICATION_DATA_PORT = 0x06,
+  QUALIFICATION_RESULT_PORT = 0x05,
   QUALIFICATION_NONE = 0,
   QUALIFICATION_ADDRESS = 1,
   QUALIFICATION_RAM = 2,
@@ -22,6 +23,12 @@ enum {
   QUALIFICATION_STEP_HZ = 500000,
 };
 
+_Static_assert((QUALIFICATION_DATA_PORT & Z80_PORT_ADDRESS_MASK) ==
+                   QUALIFICATION_DATA_PORT &&
+               (QUALIFICATION_RESULT_PORT & Z80_PORT_ADDRESS_MASK) ==
+                   QUALIFICATION_RESULT_PORT,
+               "qualification ports must survive the hardware address mask");
+
 static const uint8_t RAM_CHECK_PROGRAM[] = {
   0x31, 0xFE, 0xFF, 0x21, 0x00, 0x01, 0x36, 0x00,
   0x1E, 0x00, 0x16, 0x41, 0x1C, 0x34, 0x7E, 0xBB,
@@ -29,7 +36,7 @@ static const uint8_t RAM_CHECK_PROGRAM[] = {
   0xE6, 0x01, 0x28, 0x04, 0xDB, 0x00, 0xD3, 0x00,
   0x14, 0x7A, 0xFE, 0x5B, 0x20, 0x02, 0x16, 0x41,
   0x01, 0xFF, 0xFF, 0x0B, 0x78, 0xB1, 0x20, 0xFB,
-  0xC3, 0x0C, 0x00, 0x3E, 0xE1, 0xD3, 0xFE, 0x76,
+  0xC3, 0x0C, 0x00, 0x3E, 0xE1, 0xD3, QUALIFICATION_DATA_PORT, 0x76,
 };
 
 static const uint16_t QUALIFICATION_ADDRESSES[] = {

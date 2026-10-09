@@ -30,3 +30,15 @@ tests in Phase 6 are required.
 
 Sixteen distinct, correctly mapped address nets, no shorts, and valid monitor
 taps. No active-load claim is made until Phase 6.
+
+## Maintained Source
+
+The complete application below is included from the repository at documentation
+build time, not copied into this page. Its active diagnostic remains deferred
+until Phase 6.
+
+??? example "Stage 4 application - src/stage04_address_bus/main.c"
+
+    ```c
+    {% include "../../../../src/stage04_address_bus/main.c" %}
+    ```

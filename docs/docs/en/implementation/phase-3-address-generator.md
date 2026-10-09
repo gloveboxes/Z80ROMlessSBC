@@ -30,3 +30,14 @@ remove the temporary pull. This tests WAIT independently of data direction.
 
 All eight input routes correct; WAIT release works with data paths disabled.
 Decoded address bits match `address & 0x17`, not a full 8-bit decode.
+
+## Maintained Source
+
+The complete application below is included from the repository at documentation
+build time, not copied into this page.
+
+??? example "Stage 3 application - src/stage03_mcp23s17/main.c"
+
+    ```c
+    {% include "../../../../src/stage03_mcp23s17/main.c" %}
+    ```

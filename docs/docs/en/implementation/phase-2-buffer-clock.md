@@ -45,3 +45,20 @@ Never short an active output to a rail. Restore temporary wiring afterward.
 All buffer/gate truth tables and clock levels measured correctly. Start later
 execution at 1 MHz, not the CPU's 20 MHz rating. This phase qualifies the
 unloaded socket clock only; repeat with the CPU fitted.
+
+## Maintained Source
+
+These complete files are included from the repository at documentation build
+time, not copied into this page.
+
+??? example "Stage 2 application - src/stage02_buffers_clock/main.c"
+
+    ```c
+    {% include "../../../../src/stage02_buffers_clock/main.c" %}
+    ```
+
+??? example "Shared clock generation - src/common/clock.c"
+
+    ```c
+    {% include "../../../../src/common/clock.c" %}
+    ```

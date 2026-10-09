@@ -24,6 +24,7 @@ void z80_data_bus_isolate(void) {
 
 void z80_data_bus_drive(uint8_t value) {
   z80_data_bus_isolate();
+  busy_wait_us_32(1);
   for (size_t index = 0; index < 8; ++index) {
     gpio_put(DATA_PINS[index], (value >> index) & 1u);
     gpio_set_dir(DATA_PINS[index], GPIO_OUT);

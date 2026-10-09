@@ -24,9 +24,13 @@ analyzer, alongside scope measurements of CLK and SRAM controls. Confirm:
 
 - Six reset clocks and two reset-exit clocks align the first opcode fetch.
 - Opcode fetches have four T-states; operand reads have three.
+- Each slow clock leaves CLK LOW for at least 1 us before returning. Confirm
+  injected data remains valid through RD# release before firmware isolates it.
 - SRAM OE stays HIGH throughout injected bytes.
 - Upward data is disabled before the CPU's memory-write cycle.
 - Readback enables SRAM only after the Pico stops driving.
+- After disabling both translators, allow at least 1 us before changing Pico
+  data pins to outputs; verify U10 is actually high-impedance at that point.
 - SRAM write pulse, address/data setup/hold, and read sample position meet
   the exact Z80 and SRAM datasheets. Host tests are not this evidence.
 
@@ -43,3 +47,20 @@ Loader phase verified on real hardware; all three RAM tests pass repeatedly,
 including addresses 0000/FFFF, and no overlapping data drive occurs. Save
 captures and cold-start results. No normal-run MHz claim follows from slow
 injected tests alone.
+
+## Maintained Source
+
+These complete files are included from the repository at documentation build
+time, not copied into this page.
+
+??? example "Stage 6 application - src/stage06_sram_dma/main.c"
+
+    ```c
+    {% include "../../../../src/stage06_sram_dma/main.c" %}
+    ```
+
+??? example "Shared assisted loader and RAM tests - src/common/sram.c"
+
+    ```c
+    {% include "../../../../src/common/sram.c" %}
+    ```

@@ -4,6 +4,7 @@
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 #include "pico/util/queue.h"
+#include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/io_trap.h"
@@ -14,7 +15,7 @@
 enum {
   TERMINAL_DATA_PORT = 0x00,
   TERMINAL_STATUS_PORT = 0x01,
-  TEST_RESULT_PORT = 0xFE,
+  TEST_RESULT_PORT = 0x06,
   TERMINAL_RX_DEPTH = 128,
   TERMINAL_TX_DEPTH = 512,
   TERMINAL_STATUS_RX_READY = 1u << 0,
@@ -26,6 +27,9 @@ enum {
   AUTOMATED_BOOT_CYCLES = 100,
 };
 
+_Static_assert((TEST_RESULT_PORT & Z80_PORT_ADDRESS_MASK) == TEST_RESULT_PORT,
+               "test result port must survive the hardware address mask");
+
 static const uint8_t RAM_CHECK_PROGRAM[] = {
   0x31, 0xFE, 0xFF, 0x21, 0x00, 0x01, 0x36, 0x00,
   0x1E, 0x00, 0x16, 0x41, 0x1C, 0x34, 0x7E, 0xBB,
@@ -33,7 +37,7 @@ static const uint8_t RAM_CHECK_PROGRAM[] = {
   0xE6, 0x01, 0x28, 0x04, 0xDB, 0x00, 0xD3, 0x00,
   0x14, 0x7A, 0xFE, 0x5B, 0x20, 0x02, 0x16, 0x41,
   0x01, 0xFF, 0xFF, 0x0B, 0x78, 0xB1, 0x20, 0xFB,
-  0xC3, 0x0C, 0x00, 0x3E, 0xE1, 0xD3, 0xFE, 0x76,
+  0xC3, 0x0C, 0x00, 0x3E, 0xE1, 0xD3, TEST_RESULT_PORT, 0x76,
 };
 
 static const uint8_t SELF_TEST_PORTS[] = {0x00, 0x01, 0x55, 0xAA, 0xFF};
@@ -128,7 +132,8 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
     uint32_t index = __atomic_load_n(&self_test_write_index,
                                      __ATOMIC_RELAXED);
     if (index >= sizeof(SELF_TEST_PORTS) ||
-        port != SELF_TEST_PORTS[index] || value != SELF_TEST_PORTS[index]) {
+        port != (SELF_TEST_PORTS[index] & Z80_PORT_ADDRESS_MASK) ||
+        value != SELF_TEST_PORTS[index]) {
       __atomic_fetch_add(&self_test_errors, 1, __ATOMIC_RELAXED);
       return;
     }
@@ -201,7 +206,7 @@ static void build_self_test_image(void) {
     emit_self_test_byte((uint8_t)address);
     emit_self_test_byte((uint8_t)(address >> 8));
     emit_self_test_byte(0xFE);
-    emit_self_test_byte((uint8_t)(port ^ 0xA5u));
+    emit_self_test_byte((uint8_t)((port & Z80_PORT_ADDRESS_MASK) ^ 0xA5u));
     emit_self_test_byte(0xC2);
     failure_patches[index] = self_test_image_length;
     emit_self_test_byte(0x00);

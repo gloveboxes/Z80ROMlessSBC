@@ -66,256 +66,68 @@ with the shared [terminal bridge](https://github.com/gloveboxes/Z80ROMlessSBC/bl
 [terminal_bridge.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c), and
 [terminal_network.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp).
 
-The terminal bridge follows the `pico-altair-8800` model: initialize the
-queues on core 0, load the boot image from flash through the
+The terminal bridge follows the `pico-altair-8800` model: load the boot image
+from flash through the
 [Section 6.3 path](../system/operation.md#63-onboard-flash-cpm-disk-storage)
-entirely on core 0, then launch core 1 to own Wi-Fi and WebSocket work and
+entirely on core 0, initialize the terminal queues and timers, then launch
+core 1 to own Wi-Fi and WebSocket work and
 the flash disk-write service in the same task. The
 maintained network service supplies the HTTP/WebSocket implementation;
 builders do not need to choose or integrate another server library. Only the
 queue functions are visible to the Z80 trap.
 
-```c
-#include "pico/time.h"
-#include "pico/multicore.h"
-#include "pico/util/queue.h"
+### Maintained Source
 
-enum {
-  TERM_DATA_PORT = 0x00,
-  TERM_STATUS_PORT = 0x01,
-  TERM_RX_DEPTH = 128,
-  TERM_TX_DEPTH = 512,
-  TERM_STATUS_RX_READY = 1u << 0,
-  TERM_STATUS_TX_ROOM = 1u << 1,
-  TERM_STATUS_CLIENT = 1u << 7
-};
+These complete files are included from the repository at documentation build
+time, not copied into this page.
 
-static queue_t terminal_rx_queue;  // Browser/Core 1 -> Z80/Core 0.
-static queue_t terminal_tx_queue;  // Z80/Core 0 -> Browser/Core 1.
-static uint32_t terminal_client_connected;
-static uint32_t terminal_rx_drop_count;
-static uint32_t terminal_tx_drop_count;
+??? example "Stage 10 application - src/stage10_websocket_terminal/main.c"
 
-static void terminal_queues_init(void) {
-  queue_init(&terminal_rx_queue, sizeof(uint8_t), TERM_RX_DEPTH);
-  queue_init(&terminal_tx_queue, sizeof(uint8_t), TERM_TX_DEPTH);
-}
+    ```c
+    {% include "../../../../src/stage10_websocket_terminal/main.c" %}
+    ```
 
-uint8_t process_virtual_io_read(uint8_t port) {
-  if (port >= DISK_COMMAND_STATUS_PORT && port <= DISK_DATA_PORT)
-    return disk_virtual_io_read(port);
+??? example "Terminal queues and polling - src/common/terminal_bridge.c"
 
-  if (port == TERM_DATA_PORT) {
-    uint8_t value = 0;
-    queue_try_remove(&terminal_rx_queue, &value);
-    return value;
-  }
+    ```c
+    {% include "../../../../src/common/terminal_bridge.c" %}
+    ```
 
-  if (port == TERM_STATUS_PORT) {
-    uint8_t status = 0;
-    if (queue_get_level(&terminal_rx_queue) != 0)
-      status |= TERM_STATUS_RX_READY;
-    if (queue_get_level(&terminal_tx_queue) < TERM_TX_DEPTH)
-      status |= TERM_STATUS_TX_ROOM;
-    if (__atomic_load_n(&terminal_client_connected, __ATOMIC_ACQUIRE))
-      status |= TERM_STATUS_CLIENT;
-    return status;
-  }
+??? example "Wi-Fi and HTTP/WebSocket service - src/common/terminal_network.cpp"
 
-  return 0xFF;
-}
+    ```cpp
+    {% include "../../../../src/common/terminal_network.cpp" %}
+    ```
 
-void process_virtual_io_write(uint8_t port, uint8_t value) {
-  if (port >= DISK_COMMAND_STATUS_PORT && port <= DISK_DATA_PORT) {
-    disk_virtual_io_write(port, value);
-    return;
-  }
-  if (port != TERM_DATA_PORT)
-    return;
-  if (!queue_try_add(&terminal_tx_queue, &value))
-    __atomic_fetch_add(&terminal_tx_drop_count, 1, __ATOMIC_RELAXED);
-}
-
-// Called by the WebSocket server on core 1 when browser bytes arrive.
-static bool terminal_ws_receive(const uint8_t *payload, size_t length,
-    void *user_data) {
-  (void)user_data;
-  for (size_t i = 0; i < length; ++i) {
-    uint8_t value = payload[i] == '\n' ? '\r' : payload[i];
-    if (!queue_try_add(&terminal_rx_queue, &value)) {
-      uint8_t discard;
-      queue_try_remove(&terminal_rx_queue, &discard);
-      if (!queue_try_add(&terminal_rx_queue, &value))
-        __atomic_fetch_add(&terminal_rx_drop_count, 1, __ATOMIC_RELAXED);
-    }
-  }
-  return true;
-}
-
-// Called by the WebSocket server on core 1 when it can send browser data.
-static size_t terminal_ws_supply(uint8_t *buffer, size_t max_length,
-    void *user_data) {
-  (void)user_data;
-  size_t count = 0;
-  while (count < max_length && queue_try_remove(&terminal_tx_queue,
-      &buffer[count]))
-    ++count;
-  return count;
-}
-
-static void terminal_ws_connected(void *user_data) {
-  (void)user_data;
-  __atomic_store_n(&terminal_client_connected, 1, __ATOMIC_RELEASE);
-}
-
-static void terminal_ws_disconnected(void *user_data) {
-  (void)user_data;
-  __atomic_store_n(&terminal_client_connected, 0, __ATOMIC_RELEASE);
-  uint8_t discard;
-  while (queue_try_remove(&terminal_rx_queue, &discard)) {}
-  while (queue_try_remove(&terminal_tx_queue, &discard)) {}
-}
-
-enum { WS_OUTPUT_TIMER_INTERVAL_MS = 20, WS_INPUT_TIMER_INTERVAL_MS = 10 };
-
-static uint32_t pending_ws_output;
-static uint32_t pending_ws_input;
-static struct repeating_timer ws_output_timer;
-static struct repeating_timer ws_input_timer;
-
-static bool ws_output_timer_callback(struct repeating_timer *t) {
-  (void)t;
-  __atomic_store_n(&pending_ws_output, 1, __ATOMIC_RELEASE);
-  return true;                      // Keep repeating.
-}
-
-static bool ws_input_timer_callback(struct repeating_timer *t) {
-  (void)t;
-  __atomic_store_n(&pending_ws_input, 1, __ATOMIC_RELEASE);
-  return true;
-}
-
-bool wifi_service_poll(void);
-void terminal_websocket_server_start(uint16_t port,
-  bool (*receive)(const uint8_t *, size_t, void *),
-  size_t (*supply)(uint8_t *, size_t, void *),
-  void (*connected)(void *), void (*disconnected)(void *));
-void terminal_websocket_server_poll_output(void);
-void terminal_websocket_server_poll_input(void);
-void supervisor_usb_poll_nonblocking(void);
-
-// The single core 1 entry point: WebSocket terminal and the Section 6.3
-// flash disk-write service share this one task, as
-// `multicore_launch_core1()` only accepts one function. The boot image
-// is already in SRAM by the time this runs (Section 6.3/8.10).
-static void core1_main(void) {
-  bool websocket_started = false;
-
-  while (true) {
-    core1_service_disk_request();
-
-    bool network_ready = wifi_service_poll();
-    if (network_ready && !websocket_started) {
-      terminal_websocket_server_start(8088, terminal_ws_receive,
-        terminal_ws_supply, terminal_ws_connected, terminal_ws_disconnected);
-      websocket_started = true;
-    }
-    if (network_ready && websocket_started &&
-        __atomic_exchange_n(&pending_ws_output, 0, __ATOMIC_ACQ_REL)) {
-      terminal_websocket_server_poll_output();
-    }
-    if (network_ready && websocket_started &&
-        __atomic_exchange_n(&pending_ws_input, 0, __ATOMIC_ACQ_REL)) {
-      terminal_websocket_server_poll_input();
-    }
-    tight_loop_contents();
-  }
-}
-
-static bool start_core1_services(void) {
-  terminal_queues_init();          // Core 0 creates queues before launch.
-  flash_service_queues_init();
-  disk_service_init();
-  if (!flash_safe_execute_core_init())
-    return false;                  // Core 0 registers as lockout victim.
-  if (!add_repeating_timer_ms(-WS_OUTPUT_TIMER_INTERVAL_MS,
-      ws_output_timer_callback, NULL, &ws_output_timer))
-    return false;
-  if (!add_repeating_timer_ms(-WS_INPUT_TIMER_INTERVAL_MS,
-      ws_input_timer_callback, NULL, &ws_input_timer)) {
-    cancel_repeating_timer(&ws_output_timer);
-    return false;
-  }
-  multicore_launch_core1(core1_main);
-  return true;
-}
-
-static void supervisor_fail_closed(const char *reason) {
-  gpio_put(PIN_RESET_N, 0);
-  isolate_buses();
-  stop_z80_clock();
-  printf("supervisor halted: %s\n", reason);
-  while (true)
-    tight_loop_contents();
-}
-
-int main(void) {
-  diagnostic_safe_startup();       // First GPIO action; RESET# stays LOW.
-  stdio_init_all();
-  mcp_spi_init();
-
-  if (!boot_cpm_from_flash())
-    supervisor_fail_closed("boot package or journal recovery failed");
-  if (!start_core1_services())
-    supervisor_fail_closed("flash lockout or timer initialization failed");
-  if (!set_z80_clock_hz(1000000))
-    supervisor_fail_closed("invalid Z80 clock configuration");
-
-  enable_io_trap();                // Arm before the Z80 can issue I/O.
-  gpio_put(PIN_RESET_N, 1);        // Boot image verified; begin execution.
-
-  while (true) {
-    core0_service_flash_requests();
-    supervisor_usb_poll_nonblocking();
-    tight_loop_contents();
-  }
-}
-```
-
-`wifi_service_poll()`,
-`terminal_websocket_server_start()`, and the two server poll functions
-stand for the network layer, not new Z80-facing logic. Their
-implementation belongs entirely to core 1 and should mirror the
-reference project's `core1_io_mgr.c` pattern. `wifi_service_poll()` is
-an idempotent, bounded lifecycle state machine: it initializes CYW43,
-enables station mode, and associates without sleeping; after a partial
-initialization failure it cleans up and retries with an internal
-backoff. Core 1 calls it on every loop even after the server starts. It
-returns false while unavailable, re-enters association after link loss,
-and returns true once the station link is usable again. This guarantees
-`core1_service_disk_request()` runs even with Wi-Fi absent or reconnecting.
-Once associated, disable power-saving with
-`cyw43_wifi_pm(&cyw43_state, CYW43_NO_POWERSAVE_MODE)` for lower
-terminal latency. `supervisor_usb_poll_nonblocking()` similarly stands
-for an optional command parser that must return promptly so core 0
-cannot starve flash ownership requests.
+`z80_terminal_core1_service()` calls the maintained network lifecycle and
+services the timer-driven input/output polls. The network implementation
+initializes CYW43, associates asynchronously, retries with backoff after
+failure or link loss, and disables power-saving after association.
+The Stage 10 core-1 loop also calls `z80_flash_core1_service()`, so disk
+service continues with Wi-Fi absent or reconnecting. Core 0's nonblocking
+USB command loop continuously services `z80_flash_core0_service()`; network
+code never takes ownership of the bus GPIOs.
 
 ## Required Integration Order
 
 **Maintained source:** [Stage 10 main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c)
 and [Stage 10 CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt).
 
-The command-loop application must call `diagnostic_safe_startup()` as
+The command-loop application must call `z80_safe_startup()` as
 its first GPIO action. The [Phase 3](phase-3-address-generator.md) input buffer
 is always enabled; no expander initialization is required. Keep trapping disabled
-during injected loading and single-step operation; configure the clock first,
-then enable the trap immediately before releasing RESET# for a PWM-run
-test. To reload a running CPU, disable trapping and call
+during injected loading and single-step operation. After storage and terminal
+initialization, launch core 1, enable the I/O trap, and call
+`z80_cpu_release_reset_and_run(1000000)`. That helper resets the CPU with slow
+clocks, lowers the SRAM-read inhibit, releases RESET# while CLK is stopped LOW,
+waits at least 1 us, and starts PWM. Check each initialization result and fail
+closed on error. To reload a running CPU, first quiesce the core-1 disk service
+as the qualification helpers do, then disable trapping and call
 `z80_cpu_prepare_loader()`: isolate, assert reset, clock reset, then release
 into the injection sequence with SRAM reads inhibited. After verification,
 reset to PC zero and lower the inhibit for SRAM execution. Do not use a bus
 grant to load memory: the Pico has no address/write bus master. Drain
-`core0_service_flash_requests()` continuously from core 0's nonblocking
+`z80_flash_core0_service()` continuously from core 0's nonblocking
 foreground loop. For acquisition, leave trapping enabled while
 asserting BUSREQ# and waiting for BUSACK# LOW, then disable it. For
 release, enable trapping while BUSACK# is still LOW, then deassert
@@ -360,7 +172,8 @@ Z80 is held in BUSACK#.
 Before using the qualification controls, issue a CP/M disk flush and wait
 for READY. The final firmware then quiesces the core-1 disk service before
 any CPU ownership or clock change. USB diagnostic `+` and `-` change the
-clock by 500 kHz under BUSREQ#/BUSACK#; `a` loads a CPU-read-only bus pattern
+requested clock by 500 kHz under BUSREQ#/BUSACK#; actual rates follow the
+[qualification table](frequency-qualification.md). `a` loads a CPU-read-only bus pattern
 covering 0000/FFFF/5555/AAAA plus walking-one/walking-zero addresses;
 `t` starts the self-checking RAM/continuous-terminal image; and `h` runs that
 image with an automatic one-hour result. These diagnostic images replace the

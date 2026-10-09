@@ -19,12 +19,23 @@ dependency from the circuit.
    memory-read T-states. Sample the bus before the last clock; inhibit SRAM
    reads again afterward.
 5. Compare every byte. On success, reset the Z80 again so PC is zero, isolate
-   both paths, lower BOOT_READ_DISABLE, start the normal clock, then release
-   RESET#. On failure, hold RESET# LOW and stop the clock.
+   both paths, lower BOOT_READ_DISABLE, release RESET# while CLK is stopped
+   LOW, wait at least 1 us, then start the normal clock. On failure, hold
+   RESET# LOW and stop the clock.
 
 Opcode fetches use four T-states; immediate reads use three. Every byte access
 reloads HL, favoring a simple checked implementation over boot speed. These
 operations require an initialized loader session and are not runtime DMA.
+Each slow clock returns with CLK LOW only after a fixed 1 us settling interval.
+This retains injected data through the Z80's
+RD# release and lets the buffered controls settle before readback or isolation.
+The pulse count, not a fixed slow-clock frequency, defines the instruction
+sequence; software overhead and extra settling extend the low intervals.
+PWM-to-SIO handover adds a one-time 1 us guard; already-SIO steps do not repeat
+that guard. An injected step requests 1 us LOW, 1 us HIGH, and 1 us of trailing
+settling, rather than a fixed 500 kHz clock. At 37 clocks per loaded-and-verified
+byte, the 64 KiB image requires about 7.27 seconds of clock waits alone; data
+turnaround waits, instructions, and other overhead increase the real boot time.
 The host cycle model tests ordering, boundary addresses, patterns, March, and
 readback errors; actual reset phase and bus timing still require bench captures.
 

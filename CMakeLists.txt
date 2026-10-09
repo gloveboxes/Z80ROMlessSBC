@@ -12,6 +12,15 @@ project(z80_romless_sbc C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+# Configure PLL_SYS at SDK startup; PLL_USB retains its independent 48 MHz clock.
+add_compile_definitions(
+  SYS_CLK_HZ=144000000
+  PLL_SYS_REFDIV=1
+  PLL_SYS_VCO_FREQ_HZ=1440000000
+  PLL_SYS_POSTDIV1=5
+  PLL_SYS_POSTDIV2=2
+)
+
 pico_sdk_init()
 
 # Keep every firmware image below the journal/storage partition. This changes

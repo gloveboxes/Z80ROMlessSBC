@@ -25,12 +25,17 @@ GP6 reaches HCT32 pin 10, raw RD# reaches pin 9, and output pin 8 reaches
 U9 OE#. GP7 drives U10 OE# directly. Both GPIOs have 10 kOhm pulls to 3.3 V;
 no 5 V output connects to either. Firmware raises both OEs, preloads data
 before enabling outputs, or initializes all eight inputs before reception.
+Before driving, it waits at least 1 us after disabling both paths so U10 has
+stopped driving the Pico pins before their direction changes to output.
 This is software-controlled exclusion, not an all-state hardware interlock:
 forcing GP6 and GP7 LOW together is prohibited.
 
 The RD# gate disables upward drive at read completion. Runtime firmware
 finishes I/O with slow single clocks, observes IORQ#/RD#/WR# release, disables
-both paths, rearms WAIT, and only then resumes PWM. RD# gating alone would
+both paths, waits at least 1 us for isolation, rearms WAIT, and only then resumes
+PWM. Each slow clock includes at least 1 us of settling after its falling edge;
+firmware must not poll a still-propagating strobe and accidentally step into the
+next memory cycle. RD# gating alone would
 not protect a subsequent memory read if the upward request stayed asserted.
 
 Do not substitute TXS/TXB auto-direction parts, BSS138, or resistor-divider

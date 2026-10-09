@@ -55,7 +55,10 @@ circuit and must not be manufactured or used with this firmware.
 - GP6 up-OE request and GP7 down-OE default HIGH. Both paths must be disabled before preload/direction changes. U9 DIR +5V, U10 DIR GND. RD gating is not an all-state hardware mutual exclusion guarantee.
 - GP5 boot inhibit defaults HIGH; GP9 IO_RELEASE defaults LOW. Trap stops PWM, configures one data path, raises GP9, completes I/O with single clocks, isolates both paths, lowers GP9, then resumes PWM. Polling after free-running resume is unsafe.
 - GPIO output latches are preloaded before output enable; GP10-GP17 begin as inputs. Explicitly select SIO and clear pad isolation. Resume reconnects PWM mux and resets its counter.
+- Slow clocks return only after a fixed 1 us LOW settling interval. Hold a frozen PWM HIGH for at least 1 us before selecting preloaded LOW SIO; do not repeat this handover guard on already-SIO steps. Wait at least 1 us after isolation before driving Pico data pins or resuming trapped execution.
+- Release RESET while CLK is stopped LOW, wait at least 1 us, then start PWM. Integer/even PWM selection must never exceed the requested frequency. Configure clk_sys to 144 MHz at SDK startup (1440 MHz PLL_SYS VCO, reference divider 1, post-dividers 5 and 2); an 8 MHz request produces nominally exact 8 MHz. USB retains its independent 48 MHz PLL.
 - Decode only A0/A1/A2/A4 (mask0x17): console00/01 and disk10-14 remain distinct; A3/A5-A7 and high byte alias.
+- Stage 8 diagnostics use masked result port 06; Stage 10 uses data port 06 and result port 05. Generated test programs and expected alias replies must use the same decode as the trap.
 - Loader resets six clocks, releases RESET, supplies two exit clocks, then injects. Re-reset to PC zero after verification before SRAM execution. Host cycle models do not prove physical reset-exit timing.
 - Address and data buses are short shared trunks with taps, not stars or implied series paths.
 - Z80 BUSACK# floats address, data, MREQ#, IORQ#, RD#, and WR#; fitted 5 V pull-ups define monitored controls during the grant.
@@ -86,7 +89,7 @@ construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
 
 ## Timing
 
-- Qualify at 1 MHz first, then 2-6 MHz in 500 kHz steps. Treat 6.5-8 MHz as experimental even if measured clean.
+- Qualify at 1 MHz first, then increase requests from 2-6 MHz in 500 kHz steps. Actual rates differ: requests of 6 and 6.5 MHz both produce 6 MHz; requests of 7, 7.5 and 8 MHz produce 6.545455, 7.2 and 8 MHz. Qualify distinct actual rates, not duplicate requests; actual rates above 6 MHz are experimental even if measured clean.
 - CPU 20 MHz grade is not a system rating. 55 ns SRAM plus AHCT244/HCT32 propagation and CPU setup/breadboard margins require measurements.
 - I/O uses HCT32 hardware WAIT and stepped completion. WAIT, injected data, reset exit and resumed PWM remain unqualified without bench evidence.
 - Use the 16-channel DSLogic Plus capture groups in

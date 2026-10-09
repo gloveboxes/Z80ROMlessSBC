@@ -52,3 +52,20 @@ SRAM, or any other active device fitted.
 
 Correct routing, isolated defaults, no neighboring pin activity, and valid
 rail voltages. Floating monitor readings are not a pass or a fault by themselves.
+
+## Maintained Source
+
+These complete files are included from the repository at documentation build
+time, not copied into this page.
+
+??? example "Stage 1 application - src/stage01_supervisor/main.c"
+
+    ```c
+    {% include "../../../../src/stage01_supervisor/main.c" %}
+    ```
+
+??? example "Shared startup and isolation - src/common/supervisor.c"
+
+    ```c
+    {% include "../../../../src/common/supervisor.c" %}
+    ```

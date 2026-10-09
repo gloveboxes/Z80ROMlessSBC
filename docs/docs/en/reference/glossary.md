@@ -138,7 +138,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `SN74LVC245AN` / `LVC245` | 8-bit low-voltage bus transceiver with 5 V-tolerant inputs | Implements the fixed 5 V-to-Pico data path. |
 | `SN74LVC244AN` / `LVC244` | 8-channel low-voltage buffer with 5 V-tolerant inputs | Buffers BUSACK/IORQ/RD/WR and A0/A1/A2/A4 into the Pico domain. |
 | `1N5819` | Schottky rectifier diode | ORs external 5 V into Pico `VSYS` without feeding the USB `VBUS` node. |
-| `RN1`–`RN5` | Resistor-network references | RN1/RN2 pull up address bits; RN3 pulls down Pico data GPIOs; RN4/RN5 provide the sixteen 5 V control pull-ups. |
+| `RN1`–`RN4` | Resistor-network references | RN1/RN2 pull up the sixteen address bits; RN3 pulls down the eight Pico data GPIOs; RN4 provides eight 5 V CPU-control pull-ups. |
 | `A1-A8` / `B1-B8` | The two eight-bit ports of a `245` transceiver | A faces the Pico and B faces the 5 V bus in this design. |
 | `1A1`, `1Y1`, etc. | Input and output labels on a `244`/`541` buffer bank | `A` is a buffer input and `Y` is its corresponding output; the leading digit selects a bank where present. |
 | `OE1#` / `OE2#` | Output-enable inputs for buffer bank 1 / 2 | Tied LOW on the always-readable LVC244 and AHCT244 buffers. A `245` transceiver instead has one `OE#` for all eight bits. |
@@ -146,11 +146,11 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `pin 1`, notch, dot | Package orientation references | Identify how to insert a device without rotation or mirroring. |
 | `N`, `AN`, `PCN`, `PEC`, `PU`, `SP` suffixes | Manufacturer package/grade codes | Distinguish exact orderable parts; consult that manufacturer's datasheet rather than assuming suffixes are interchangeable. |
 
-## Pico Pad, Power, and MCP Register Terms
+## Pico Pad and Power Terms
 
 | Term | Meaning | Purpose in this project |
 | --- | --- | --- |
-| RP2350 | Microcontroller chip used by Pico 2 W | Executes the supervisor firmware and provides GPIO, PWM, SPI, flash access, and two CPU cores. |
+| RP2350 | Microcontroller chip used by Pico 2 W | Executes the supervisor firmware and provides GPIO, PWM, flash access, and two CPU cores. |
 | `GP0-GP29` | RP2350 GPIO numbers exposed or used by Pico 2 W | Firmware-level pin names; map them to physical header pins with the [Pico header map](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map). |
 | Pad | Physical input/output cell on the RP2350 die | Determines electrical properties such as 5 V tolerance and ADC capability. |
 | FT pad | Five-volt-tolerant digital pad | GP0-GP25 pad type; tolerance still depends on RP2350 power conditions. |
@@ -164,11 +164,6 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `RUN` | Pico reset input | Left open; pulling it LOW resets the RP2350. |
 | `VBUS` | USB connector's nominal 5 V node | Must not be tied to the external 5 V rail. |
 | `VSYS` | Pico system power input | Receives external 5 V only through the 1N5819 and USB power through Pico's onboard diode. |
-| `IODIRA` / `IODIRB` | MCP port A / B direction registers | Bit value 1 selects input; 0 selects output. Reset makes both registers `0xFF`. |
-| `OLATA` / `OLATB` | MCP port A / B output-latch registers | Preload the next address value before changing port direction to outputs. |
-| `GPIOA` / `GPIOB` | MCP port A / B pin-value registers | Read the actual logic levels present on the address-bus pins. |
-| `IOCON` | MCP I/O configuration register | Holds global expander options, including hardware-address enable. |
-| `HAEN` | MCP hardware-address-enable bit | Enables SPI opcode comparison with A0/A1/A2 pins; those pins are tied LOW here regardless. |
 | Core 0 / Core 1 | The two RP2350 processor cores | Core 0 owns timing and buses; core 1 owns networking and runtime flash writes. |
 | FIFO | First-in, first-out queue | Ordered communication buffer; the multicore FIFO is reserved by Pico flash lockout support. |
 
@@ -228,8 +223,8 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | --- | --- | --- |
 | TTL | Transistor-transistor logic levels | A TTL-compatible input accepts a lower HIGH voltage than a 5 V CMOS input. |
 | CMOS | Complementary metal-oxide-semiconductor logic | Technology used by the static Z80, SRAM, Pico, and most interface devices. |
-| HCT | High-speed CMOS with TTL-compatible inputs | Slower family considered for U4; the final design uses AHCT instead. |
-| AHCT | Faster HCT-family logic | AHCT244 buffers clock/control/SPI and AHCT245 drives the 5 V data bus from Pico 3.3 V outputs. |
+| HCT | High-speed CMOS with TTL-compatible inputs | HCT32 implements SRAM-read inhibit, WAIT release, and upward data-enable gating. HC32 is not a substitute. |
+| AHCT | Advanced high-speed CMOS with TTL-compatible inputs | AHCT244 translates clock, bus request, boot inhibit, and SRAM controls; AHCT245 drives the 5 V data bus from Pico 3.3 V outputs. |
 | LVC | Low-voltage CMOS logic family | LVC244/LVC245 run at 3.3 V while accepting protected 5 V inputs. |
 | HIGH / LOW | The two digital logic states | Voltage ranges, not exact voltages; valid limits are defined by each datasheet. |
 | Assert / deassert | Make a control active / inactive | Independent of voltage wording; asserting `RESET#` means driving it LOW. |
@@ -251,7 +246,6 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | IC | Integrated circuit | A packaged electronic device such as the Z80, SRAM, or logic buffer. |
 | DIP / PDIP | Dual in-line package / plastic dual in-line package | Through-hole IC package with two parallel pin rows, suitable for sockets and breadboards. |
 | SIP | Single in-line package | Resistor network with one common pin and eight resistor pins. |
-| TO-92 | Small three-lead transistor package | Package used by Q1; its lead order must be checked against the purchased datasheet. |
 | Pin 1 / notch / dot | Package orientation marks | Prevent an IC from being inserted rotated or mirrored. |
 | Breadboard ravine | Insulating center gap of a solderless breadboard | Separates the two IC pin rows so opposite pins are not shorted together. |
 | Net | All electrically connected points sharing one signal name | Fundamental connection represented and checked in the KiCad schematic. |

@@ -11,7 +11,7 @@ again before execution from SRAM.
 | Command | Test |
 | --- | --- |
 | `l` | Load/verify for stepping; hold RESET afterward |
-| `s` | Release reset on first step, clock one 10 Hz-equivalent cycle |
+| `s` | Release reset on first step, clock one manual cycle with 50 ms minimum half-pulses |
 | `0/1/2/3` | Reload and run at 10 Hz / 1 kHz / 100 kHz / 1 MHz |
 | `r` | Reload/run 1 MHz |
 | `q` | BUSREQ/BUSACK round-trip; no Pico memory drive |
@@ -22,7 +22,9 @@ again before execution from SRAM.
 
 Capture reset, first fetch at 0000, M1, CE/OE/WE and data. Both Pico data
 enables stay HIGH during SRAM execution and boot inhibit stays LOW. Verify
-normal fetches differ from the injected boot stream; observe the NOP/JP loop.
+RESET# rises while CLK is stopped LOW, with at least 1 us before PWM starts.
+The first clock edge must meet the Z80 reset setup requirement.
+Verify normal fetches differ from the injected boot stream; observe the NOP/JP loop.
 Measure the loaded clock at Z80 pin 6. Progress through slow rates before
 1 MHz. `q` must float the CPU bus while BUSACK LOW without activating either
 Pico path; rearm I/O before releasing a grant in integrated firmware.
@@ -36,3 +38,20 @@ timeout must assert RESET and isolate. Power off before fault wiring changes.
 Verified reset-to-SRAM fetch, repeated cold loads, correct instruction loop,
 and safe bus-grant timeout behavior. Higher rates need the separate
 [qualification plan](frequency-qualification.md).
+
+## Maintained Source
+
+These complete files are included from the repository at documentation build
+time, not copied into this page.
+
+??? example "Stage 7 application - src/stage07_z80_cpu/main.c"
+
+    ```c
+    {% include "../../../../src/stage07_z80_cpu/main.c" %}
+    ```
+
+??? example "Shared CPU reset and bus grants - src/common/cpu.c"
+
+    ```c
+    {% include "../../../../src/common/cpu.c" %}
+    ```

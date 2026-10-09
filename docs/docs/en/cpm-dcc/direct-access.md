@@ -10,10 +10,16 @@ bypasses part of the normal runtime:
 | `inp(port)` | Executes an 8-bit Z80 `IN`; suitable for reading the virtual terminal or disk ports |
 | `outp(port, value)` | Executes an 8-bit Z80 `OUT`; suitable for writing the virtual terminal or disk ports |
 
-Only the low eight bits of a dcc `inp` or `outp` port argument are significant,
-which matches the supervisor's eight-bit I/O decode. Direct terminal code must
-poll receive-ready before reading port `0x00` and transmit-room before writing
-it. Direct disk code must follow the complete command/status and exact
+Only the low eight bits of a dcc `inp` or `outp` port argument are significant
+to that API. The physical supervisor decodes fewer bits: it monitors
+**A0/A1/A2/A4**, giving `decoded_port = port & 0x17`. A3, A5-A7, and the high
+I/O address byte are ignored. Thus `0x08` aliases terminal data port `0x00`,
+and `0x18` aliases disk command/status port `0x10`; these are not spare ports.
+Use the canonical terminal `0x00`/`0x01` and disk `0x10`-`0x14` addresses.
+
+Direct terminal code must poll receive-ready before reading port `0x00` and
+transmit-room before writing it. Direct disk code must follow the complete
+command/status and exact
 128-byte-transfer protocol in the
 [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage).
 Using BDOS is preferred for ordinary

@@ -28,20 +28,64 @@ edge remains at a fixed `clk_sys` position and duty cycle is exactly 50%. It doe
 not use the PWM fractional divider, whose dither can produce alternating edge
 positions on an oscilloscope. Some requested 500 kHz steps cannot be generated
 exactly from the fixed system clock; the generator selects the closest stable
-rate in the same range. The firmware prints both `clock_requested` and
+rate **at or below the request**, never above it. The firmware prints both `clock_requested` and
 `clock_actual`; use the latter for timing and frequency evidence, and record
 both values.
 
-- **Step sequence:** Test 2 MHz, then increase in 500 kHz steps to
+The firmware configures the Pico system clock to 144 MHz during SDK startup,
+below the RP2350's 150 MHz rated maximum. An 8 MHz request selects exactly
+8 MHz nominally (divider 1, count 18); HIGH and LOW each last nine system-clock
+ticks. Crystal tolerance and PLL jitter still require measurement. The system
+clock is not retuned while running, and the Z80 PWM uses no fractional divider.
+The independent USB PLL retains its 48 MHz clock.
+
+The `+`/`-` commands change the **requested** rate by 500 kHz, not necessarily
+the generated rate. At 144 MHz, these are the nominal PWM results:
+
+| Requested MHz | Actual MHz (rounded) | PWM period count |
+| ---: | ---: | ---: |
+| 1.0 | 1.000000 | 144 |
+| 1.5 | 1.500000 | 96 |
+| 2.0 | 2.000000 | 72 |
+| 2.5 | 2.482759 | 58 |
+| 3.0 | 3.000000 | 48 |
+| 3.5 | 3.428571 | 42 |
+| 4.0 | 4.000000 | 36 |
+| 4.5 | 4.500000 | 32 |
+| 5.0 | 4.800000 | 30 |
+| 5.5 | 5.142857 | 28 |
+| 6.0 | 6.000000 | 24 |
+| 6.5 | 6.000000 | 24 |
+| 7.0 | 6.545455 | 22 |
+| 7.5 | 7.200000 | 20 |
+| 8.0 | 8.000000 | 18 |
+
+Every row uses integer divider 1. The 6.5 MHz request repeats the 6 MHz
+waveform; it is not a new qualification point. Record both requested settings,
+but do not count duplicate actual rates as independent speed evidence. The
+last transition is 7.2 to 8 MHz, not a 500 kHz increase. Qualify every distinct
+actual rate and stop increasing the request after any failure.
+
+Stage 10's generated address-test program and RAM checker report on masked
+port `06`; the address-test completion marker uses `05`. These diagnostic ports
+do not collide with terminal `00/01` or disk `10-14`. An `E1` RAM-error report
+must increment the error counter and prevent an hour-test PASS.
+
+- **Step sequence:** Test 2 MHz, then increase the request in 500 kHz steps to
   6 MHz. If and only if 6 MHz passes with margin, continue
-  in 500 kHz steps to 8 MHz. Treat 6.5-8 MHz as experimental on the
+  in requested 500 kHz steps to 8 MHz, using the actual rates above.
+  Treat actual rates above 6 MHz as experimental on the
   breadboard, not as a required design target.
 - **Functional checks at each step:** Run `a` for CPU SRAM
   readback/address activity and `h` for the one-hour self-checking
   memory loop plus continuous terminal IN/OUT while measuring stop
   latency.
-- **Address-pattern captures at 1, 2, 3, 4, 5, and 6 MHz, plus every
-  experimental step:** Apply address patterns 0x0000, 0xFFFF, 0x5555,
+- **Address-pattern captures:** Use requested settings of 1, 2, 3, 4, 5,
+  and 6 MHz, corresponding to nominal actual rates of 1, 2, 3, 4, **4.8**,
+  and 6 MHz, plus every distinct experimental rate in the table above.
+  Label captures with both the requested setting and measured frequency;
+  passing the 5 MHz setting qualifies 4.8 MHz, not 5 MHz.
+  Apply address patterns 0x0000, 0xFFFF, 0x5555,
   0xAAAA, walking one, and walking zero while capturing A0, A7, A8, and
   A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM CE#/OE#/WE#,
   and D0-D7 as well; require valid read data before the Z80 setup
@@ -51,7 +95,10 @@ both values.
   Z80 sampling edge, WAIT# HIGH only after IO_RELEASE and the selected data
   path are valid, and no WAIT# reassertion until IORQ# and RD#/WR# are inactive.
   Capture stepped completion, isolation/rearming, and the first resumed PWM
-  pulse. Both data OEs must be HIGH before PWM resumes.
+  pulse. Require at least 1 us of settled CLK LOW after each manual falling
+  edge before the next step, and no step into the following memory cycle while
+  either data path is enabled. Both actual data OEs must be HIGH before PWM
+  resumes; measure the isolation interval as well as the GPIO requests.
 - **Oscilloscope evidence:** Use the DHO814 groups in the
   [oscilloscope capture plan](../hardware/oscilloscope.md#four-channel-connections-and-expected-results)
   and repeat the listed alternatives for each analogue signal.
@@ -65,7 +112,7 @@ both values.
 
 The qualified frequency is the highest error-free tested step for which the
 DSLogic capture set proves digital ordering and the DHO814 proves memory margin
-and the complete WAIT/clock-stop handshake. Report 6.5-8 MHz separately as
+and the complete WAIT/clock-stop handshake. Report actual rates above 6 MHz separately as
 experimental. Do not claim any rate without
 equivalent timing evidence and repeated cold/runtime tests.
 

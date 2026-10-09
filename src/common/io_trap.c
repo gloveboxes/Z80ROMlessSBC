@@ -34,6 +34,7 @@ static void resume_and_wait_for_release(uint control_pin) {
     z80_clock_one_cycle(1);
   }
   z80_data_bus_isolate();
+  busy_wait_us_32(1);
   gpio_put(PIN_IO_RELEASE, 0);
   z80_clock_resume();
 }
@@ -48,6 +49,7 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   }
 
   z80_clock_stop();
+  busy_wait_us_32(1);
   uint8_t port = z80_port_bus_sample();
 
   uint32_t controls = gpio_get_all();
@@ -64,7 +66,6 @@ static void io_trap_handler(uint gpio, uint32_t events) {
     if (application_write != NULL)
       application_write(port, value, application_context);
     resume_and_wait_for_release(PIN_WR_N);
-    z80_data_bus_isolate();
     return;
   }
 
@@ -73,7 +74,6 @@ static void io_trap_handler(uint gpio, uint32_t events) {
                       : application_read(port, application_context);
   z80_data_bus_drive(value);
   resume_and_wait_for_release(PIN_RD_N);
-  z80_data_bus_isolate();
 }
 
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,

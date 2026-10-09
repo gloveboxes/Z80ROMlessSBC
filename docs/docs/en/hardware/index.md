@@ -16,10 +16,10 @@ chapter order is not the chip-installation order.
 | [4. Output buffer](output-buffer.md) | AHCT244 channel allocation and enable behavior |
 | [5. Bus isolation](bus-isolation.md) | Address, data, and control transceiver operating modes |
 
-The separate [PCB design section](../pcb/index.md) owns the PCB inventory,
-layout considerations, and fabrication references for the previous circuit.
-The existing PCB is unchanged and incompatible with this assisted-loader
-revision. Do not manufacture its current fabrication package for this build.
+The historical PCB documentation is hidden while migration is deferred.
+The existing PCB, BOM, and fabrication files are unchanged and incompatible
+with this assisted-loader revision. Do not manufacture that package for this
+build.
 
 The instrument procedures are cross-cutting qualification references rather
 than additional hardware chapters. Use the

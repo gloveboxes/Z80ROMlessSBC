@@ -18,17 +18,34 @@ python3 -m venv .venv
 
 The generated website is written to `docs/site` from the repository root.
 
-### Refresh the PCB preview
+## Source-backed phase code
 
-The [PCB overview](../pcb/index.md#board-preview) embeds the KiCad-rendered
-board image, not a manually drawn illustration. After regenerating the
-accepted KiCad exports, refresh the documentation asset from the repository
-root before building the site:
+Phases 1-10 use the existing `include-markdown` plugin's plain `include`
+directive inside fenced code blocks and collapsed `??? example` sections.
+Each section includes one complete maintained file from `src/`; do not paste
+firmware into Markdown or use line-number slices that drift when code changes.
+Use `include`, not `include-markdown`, for source code so Markdown link and
+heading transformations do not alter it.
 
-```sh
-cp hardware/kicad/exports/z80_romless_sbc-pcb.png \
-  docs/docs/en/images/z80-romless-sbc-pcb.png
-```
+Paths are relative to the phase page. From `en/implementation/`, the repository
+source tree is `../../../../src/`. Keep the source path in the section title
+and retain links to related headers and build definitions in the
+[source index](../reference/source-index.md).
+
+Every documentation build reads the current checkout. The MkDocs configuration
+explicitly watches `../../src` during `mkdocs serve`, so source edits continue
+to trigger preview rebuilds even if the include plugin loses its per-file
+watches after a rebuild. A published site reflects its last deployed revision,
+not subsequent local changes. Build from the complete repository so the included
+sources are available; a missing include is a build error.
+
+## Deferred PCB documentation
+
+The historical PCB pages remain in `docs/docs/en/pcb/`, but `exclude_docs`
+in the MkDocs configuration excludes them from generated pages and search.
+They are also absent from navigation. Keep them hidden until PCB migration
+is separately reviewed; do not regenerate the historical PCB or fabrication
+artifacts as part of a documentation build.
 
 ## Serve locally
 

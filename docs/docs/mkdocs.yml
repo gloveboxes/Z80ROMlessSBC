@@ -6,6 +6,10 @@ site_description: >-
 
 docs_dir: en
 site_dir: ../site
+exclude_docs: |
+  /pcb/
+watch:
+  - ../../src
 
 repo_name: Z80ROMlessSBC
 repo_url: https://github.com/gloveboxes/Z80ROMlessSBC
@@ -58,10 +62,6 @@ nav:
       - Terms and abbreviations: en/reference/glossary.md
       - Datasheets: en/reference/datasheets.md
       - Source index: en/reference/source-index.md
-  - PCB design:
-      - Overview and fabrication: en/pcb/index.md
-      - PCB inventory: en/pcb/inventory.md
-      - Design considerations: en/pcb/design-considerations.md
   - Building these docs: en/development/building-docs.md
 
 plugins:

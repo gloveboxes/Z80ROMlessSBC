@@ -4,10 +4,9 @@
 
 **Scope: the three-BB830 breadboard prototype.** Phases 0-10 below describe
 incremental socket installation, jumper wiring, and breadboard bring-up.
-The [PCB design section](../pcb/index.md)
-remains separate: do not substitute its BOM, placement, routing, or speed
-target into these steps. Electrical safeguards and maintained firmware apply
-to both builds, but each physical build needs its own qualification evidence.
+PCB migration is deferred and its historical documentation is hidden from
+this site. The existing PCB is incompatible with the current firmware;
+do not substitute its BOM, placement, routing, or speed target into these steps.
 
 *Bring-up* means proving a small part of the circuit works before adding the
 next part. Treat each phase like an integration test with a hardware fixture:
@@ -18,8 +17,8 @@ Read the [construction guide](../hardware/construction.md) before handling
 the boards, then complete Phase 0 onward in order. Use the hardware pages as
 references, not as an instruction to wire and populate the whole computer at
 once. Prepare the [firmware build tools](../system/firmware-build.md) before
-Phase 1; use the maintained stage programs rather than assembling the example
-C fragments into your own test firmware.
+Phase 1; use the maintained stage programs rather than assembling displayed
+source files into your own test firmware.
 
 For each phase:
 
@@ -84,17 +83,17 @@ Record idle current after each populated phase; Phase 0 needs only resistance
 and voltage readings. Unless stated otherwise, keep all chips
 from later phases out of their sockets.
 
-The following phase pages contain Pico SDK fragments showing the
-safety-critical behavior and finish with the required two-core `main()`
-integration order. The maintained applications provide the actual command
-parsers and networking. Test plans include both existing diagnostic commands
+Phases 1-10 embed the complete maintained applications and relevant shared
+modules in collapsed **Maintained Source** sections. Expand a file to read
+the code compiled by the firmware build; MkDocs includes it directly from
+`src/` on every documentation build. Test plans include both existing diagnostic commands
 and manual measurements or test-only fault setups; they are not all automated.
 A command printing `PASS` does not replace the listed electrical checks.
 Record any test not performed as **not verified**, rather than inferring a pass.
 
-The fragments simplify or rename identifiers for exposition; the adjacent
-**Maintained source** links identify the authoritative, compilable
-implementation.
+The [source index](../reference/source-index.md) links the public headers,
+shared modules, and build definitions. Build each stage from the repository,
+not by compiling the displayed files as standalone programs.
 
 `PIN_BUSACK_N` is GP0, driven from Z80 BUSACK# pin 23 through the
 [SN74LVC244 input buffer](../hardware/bus-isolation.md#53-sn74lvc244an-5-v-to-33-v-input-buffer).

@@ -36,14 +36,21 @@ bool z80_cpu_load_and_verify(const uint8_t *image, uint32_t length) {
 }
 
 bool z80_cpu_release_reset_and_run(uint32_t clock_hz) {
+  if (clock_hz < Z80_CLOCK_MIN_HZ || clock_hz > Z80_CLOCK_MAX_HZ) {
+    z80_cpu_fail_closed();
+    return false;
+  }
   z80_isolate_buses();
   z80_reset_with_clock_cycles(6, 1);
   gpio_put(PIN_BOOT_READ_DISABLE, 0);
   gpio_put(PIN_IO_RELEASE, 0);
   gpio_put(PIN_BUSREQ_N, 1);
-  if (!z80_clock_set_hz(clock_hz))
-    return false;
   gpio_put(PIN_RESET_N, 1);
+  busy_wait_us_32(1);
+  if (!z80_clock_set_hz(clock_hz)) {
+    z80_cpu_fail_closed();
+    return false;
+  }
   return true;
 }
 

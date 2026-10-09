@@ -3,12 +3,13 @@
 The maintained, buildable firmware is the canonical implementation:
 [browse the source tree](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src)
 or use the [complete source index](../reference/source-index.md). The
-corresponding [implementation phase pages](../implementation/index.md) provide
-design-level excerpts for
+corresponding [implementation phase pages](../implementation/index.md) embed
+complete source files in collapsible sections alongside explanations of
 the safety invariants and integration order: variable-frequency clock
 generation, bus acquisition, synchronous I/O trapping, flash image loading,
-and terminal integration. Do not copy those excerpts in place of the
-maintained source.
+and terminal integration. The code is included directly from the checkout at
+documentation build time. Build from the repository rather than copying
+displayed files into a separate project.
 
 ## Breadboard-first, shared Pico firmware
 
@@ -23,6 +24,14 @@ or bypass startup, bus-ownership, or timing safeguards. Any future
 hardware-specific configuration must be explicit and preserve the breadboard
 defaults. Operating-frequency qualification remains specific to each
 physical build.
+
+All stages configure `clk_sys` to 144 MHz at SDK startup. The 12 MHz crystal
+feeds PLL_SYS with reference divider 1, a 1440 MHz VCO, and post-dividers 5 and 2.
+This stays within the RP2350's rated limits and lets integer PWM generate a
+nominally exact 8 MHz Z80 clock (`144 MHz / 18`) with 50% duty cycle. USB keeps
+its separate 48 MHz PLL; peripheral/PIO timing uses the configured system clock.
+This does not change the 1 MHz Z80 startup default or qualify 8 MHz hardware
+operation. See the [frequency qualification plan](../implementation/frequency-qualification.md).
 
 Shared firmware does not make every early-stage diagnostic safe on a fully
 populated PCB. Respect each stage's required device population and test
