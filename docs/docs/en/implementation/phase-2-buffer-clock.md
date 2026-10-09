@@ -1,193 +1,47 @@
-# 8.3 Phase 2 - ATF22V10 Arbitration and SN74AHCT244 Buffer
+# Phase 2 - Output Buffer, Fixed Logic, and Clock
 
-**Prerequisite:** The [Phase 1 pass gate](phase-1-supervisor.md#pass-gate) must pass.
+**Prerequisite:** [Phase 1](phase-1-supervisor.md#pass-gate).
+**Install:** U4 SN74AHCT244N and U3 SN74HCT32N. CPU/SRAM/data translators
+remain absent. No device requires programming.
 
-**Install:** Program and verify the ATF22V10 outside the circuit, then
-install it with the SN74AHCT244 and SRAM still removed. After the GAL
-truth-table tests pass, install the AHCT244. Keep the Z80, MCP23S17, and
-SRAM removed. Connect GAL pins 9/10/11 to GP7/GP9/GP6 with their fitted
-pull-downs, connect raw IORQ# to GAL pin 13, connect GAL pin 20 to the
-pulled-up Z80 WAIT# node, and tie both AHCT244
-output-enable pins LOW. Require 4.75 V to 5.25 V at GAL VCC before
-testing any pulled-up GAL output.
+## Wiring - Output Buffer and Fixed Logic
 
-**What you are proving:** the GAL chooses the right control source and the
-AHCT244 converts its signals to valid 5 V levels. Think of the GAL as a small
-hardware implementation of Boolean expressions: it responds without waiting
-for Pico firmware to run.
-
-The `.pld` file is source, not a ready-to-program image. Compile/fit it with
-a toolchain supporting the selected ATF22V10 to produce a `.jed` file, then
-program and verify that file with the exact device algorithm. The Pico CMake
-build does not do this step. If you do not have a verified JEDEC image and
-compatible programmer, stop here; an unprogrammed GAL cannot pass this phase.
-
-### Manual input tests
-
-"Pull LOW through 1 kOhm" means connect the **named input node** to GND
-through a 1 kOhm resistor. Remove that connection to let its fitted pull-up
-restore HIGH. Attach or remove the test lead with power off, then power up
-to measure. This is permitted only where the normal driving device, such as
-the Z80, is absent; never use a jumper to fight a powered output.
-
-Change one input at a time and record the resulting output against the
-[GAL truth table](../hardware/pin-mapping.md#12-sram-control-source-arbitration-atf22v10bc).
-A meter can check held levels; use the scope to check unwanted short pulses.
-The Stage 2 `w`/`t` commands do not automate the complete GAL truth table.
-Remove all temporary test leads and power off before installing the AHCT244.
-
-## Wiring - GAL and output buffer
-
-With the GAL and AHCT244 removed, install and continuity-check the complete
-GAL arbitration, interlock, reset, and WAIT# wiring below. Then wire the
-AHCT244 input and output pairs and its fixed power and enable pins. Verify
-each path at both empty sockets before inserting either device.
-
-{%
-  include-markdown "../hardware/pin-mapping.md"
-  start='<template id="phase-2-gal-wiring">'
-  end="phase-2-gal-wiring-end</template>"
-%}
+Wire every channel and supply from [the buffer and gate tables](../hardware/output-buffer.md).
+Keep U4 pin 18 to Z80 socket pin 6 entirely on Core. Tie both U4 OEs to GND,
+unused U4 inputs 15/17 and U3 inputs 12/13 to GND; leave their outputs open.
+Check continuity before inserting either device.
 
 {%
   include-markdown "../hardware/output-buffer.md"
   start='<template id="phase-2-output-buffer-wiring">'
   end="phase-2-output-buffer-wiring-end</template>"
-  heading-offset=1
 %}
 
-**Firmware feature:** Add commands to toggle each supervisor output at
-10 Hz and generate selectable 1 kHz, 100 kHz, and 1 MHz 50% duty-cycle
-clocks on GP2.
+## Firmware and Tests
 
-**Application source:** [src/stage02_buffers_clock/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c),
-using the shared [clock module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c).
+Build `z80_stage02_buffers_clock`; load its UF2 from
+`build/src/stage02_buffers_clock/`.
+[Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c).
 
-## Variable-Frequency Clock Generation (Phase 2, Phases 7-8 Run Modes)
+`d` holds LOW then HIGH on GP2, GP4, GP5 in order. Probe U4 input/output pairs
+2/18, 4/16, 6/14 and their empty destinations. Inputs should be near 0/3.3 V;
+outputs near 0/+5 V, LOW below 0.3 V and HIGH at least 4.4 V. The seventh
+step restores defaults; `x` restores at any time.
 
-**Maintained source:** [clock.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/clock.h)
-and [clock.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/clock.c).
+`1`, `2`, `3` select 1 kHz, 100 kHz, 1 MHz. Probe U4 pin 18 and Z80 socket
+pin 6: correct frequency, 45-55% duty, no runt pulses or ringing across CPU
+thresholds. The clock HIGH must satisfy the Z80 clock's VCC-minus-0.5 V
+requirement; a meter does not qualify pulse shape.
 
-Configure `PIN_CLK` as a PWM output once during Phase 2 bring-up. Reuse
-the same slice for the selectable 10 Hz/1 kHz/100 kHz/1 MHz run modes in
-[Phase 7](phase-7-z80.md) and [Phase 8](phase-8-virtual-io.md), and to freeze
-the clock during the Phase 8 I/O trap. Use integer PWM dividers and even period
-counts during frequency qualification. Fractional dividers improve average
-frequency accuracy by dithering source-clock intervals, but that produces
-alternating edge positions and is unsuitable for timing-margin captures. The
-selector chooses the closest stable rate in the same range. Query
-`z80_clock_get_hz()` and report that actual result alongside the requested rate.
+With CPU absent, manually drive raw RD#/IORQ# through 1 kOhm to GND, one
+signal at a time. Confirm SRAM OE remains HIGH while boot inhibit is HIGH;
+confirm WAIT LOW only while IORQ LOW and IO_RELEASE LOW. Test all four input
+combinations of each OR gate using isolated, current-limited logic sources;
+do not use the walking Stage 1 image after these devices are installed.
+Never short an active output to a rail. Restore temporary wiring afterward.
 
-```c
-#include "hardware/pwm.h"
-#include "hardware/clocks.h"
+## Pass Gate
 
-static bool set_z80_clock_hz(uint32_t hz) {
-  if (hz < 10 || hz > 8000000)
-    return false;
-
-  uint slice_num = pwm_gpio_to_slice_num(PIN_CLK);
-  pwm_set_enabled(slice_num, false);
-  uint32_t sys_clk = clock_get_hz(clk_sys);
-  uint32_t best_divider = 0;
-  uint32_t best_count = 0;
-  uint64_t best_error = UINT64_MAX;
-
-  // Integer dividers avoid fractional-divider edge jitter.
-  for (uint32_t divider = 1; divider <= 255; ++divider) {
-    uint64_t denominator = (uint64_t)hz * divider;
-    uint32_t count = (uint32_t)(((uint64_t)sys_clk + denominator / 2u) /
-                                denominator);
-    if (count < 2) count = 2;
-    if (count > 65536) count = 65536;
-    count &= ~1u;
-    if (count < 2) count = 2;
-
-    uint32_t candidates[2] = {count, count < 65536 ? count + 2 : count};
-    for (size_t i = 0; i < 2; ++i) {
-      uint64_t product = (uint64_t)divider * candidates[i];
-      uint64_t target_product = (uint64_t)hz * product;
-      uint64_t error = sys_clk > target_product ?
-        sys_clk - target_product : target_product - sys_clk;
-      uint64_t best_product = (uint64_t)best_divider * best_count;
-      if (best_divider == 0 ||
-        error * best_product < best_error * product) {
-        best_divider = divider;
-        best_count = candidates[i];
-        best_error = error;
-      }
-    }
-  }
-
-  uint16_t wrap = (uint16_t)(best_count - 1u);
-  pwm_set_clkdiv_int_frac4(slice_num, (uint8_t)best_divider, 0);
-  pwm_set_wrap(slice_num, wrap);
-  pwm_set_chan_level(slice_num, pwm_gpio_to_channel(PIN_CLK),
-    (uint16_t)(best_count / 2u)); // Exact 50% when count is even.
-  pwm_set_counter(slice_num, 0);
-  gpio_set_function(PIN_CLK, GPIO_FUNC_PWM);
-  pwm_set_enabled(slice_num, true);
-  return true;
-}
-
-static void stop_z80_clock(void) {
-  pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), false); // May freeze HIGH or LOW.
-}
-
-static void resume_z80_clock(void) {
-  pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), true);
-}
-```
-
-**Test plan:**
-
-1. Require a successful programmer readback/verify of the exact
-  `src/pld/sram_control.pld` JEDEC image before inserting the GAL.
-2. With RESET# LOW, toggle Pico CE#/OE#/WE# one at a time and require
-  the corresponding GAL pin 16/15/14 to follow while the other two
-  remain HIGH. Then set RESET# HIGH and manually exercise pulled-up
-  BUSACK#/MREQ#/RD#/WR# through 1 kOhm; verify all three CPU-side truth
-  table paths and the BUSACK# LOW override.
-3. With each Pico and Z80 candidate control held HIGH, toggle RESET#
-  and BUSACK# separately while observing GAL pins 14-16 on the scope.
-  The consensus terms must hold every output continuously HIGH; any
-  active-low pulse fails the programmed image.
-4. **GAL installed; data transceivers removed:** Hold DATA_ENABLE pin 9
-  LOW and toggle DATA_DIR pin 11; GAL pins 17
-  and 18 must both remain HIGH. Drive DATA_ENABLE HIGH: pin 17 must be
-  LOW only when DATA_DIR is HIGH, and pin 18 must be LOW only when
-  DATA_DIR is LOW. Scope both outputs while changing DATA_DIR with
-  DATA_ENABLE LOW; neither may pulse LOW.
-5. Hold DATA_ENABLE LOW. Drive the pulled-up pin-13 IORQ# test node LOW
-  through 1 kOhm and require GAL pin 20 / WAIT# LOW. Raise DATA_ENABLE
-  and require WAIT# HIGH; release IORQ# and require WAIT# to remain HIGH
-  for either DATA_ENABLE state. Scope IORQ#-to-WAIT# assertion and
-  DATA_ENABLE-to-WAIT# release; any glitch or inverted case fails.
-6. Install the AHCT244. Use the Stage 2 walking command to toggle its
-  eight functional input paths independently; RESET# was already tested
-  at the [Phase 1 pass gate](phase-1-supervisor.md#pass-gate) and is not an
-  AHCT244 input. At the selected output require
-  LOW below 0.3 V, correct polarity, and no activity on adjacent outputs.
-  Require each non-clock HIGH to reach at least 4.4 V. At Z80 CLK pin 6,
-  require HIGH to reach at least the simultaneously measured Z80
-  $V_{CC}-0.5$ V, which gives 100 mV margin above the Z84C00
-  $V_{IHC}=V_{CC}-0.6$ V minimum across the permitted rail range.
-  Use command `t` to toggle each path independently at 10 Hz and command
-  `w` for the walking-output capture.
-7. Test AHCT244 channel 1A1 at each clock frequency. Require 45% to 55%
-  duty cycle and clean transitions at Z80 socket pin 6.
-8. After the Pico 3.3 V rail reaches 3.20 V, verify RESET# remains LOW
-  while BUSREQ#, SRAM CE#/WE#/OE#, and SPI CS# remain HIGH for at least
-  100 ms. Before 3.3 V is valid, RESET# must remain LOW but SRAM control
-  levels are not used as a retention guarantee.
-9. Power-cycle ten times while monitoring these signals. Any active-low
-  transition after 3.3 V becomes valid fails the phase.
-
-## Pass gate
-
-Clock commands report `stage=2 clock_requested=... clock_actual=... verification=unmeasured`; `s` reports the calculated configured rate. Toggle/walking commands report `DONE`, not electrical PASS. The [MCP acceptance runner](../hardware/oscilloscope.md#mcp-acceptance-runner) checks the clock-translation subset without replacing this complete gate.
-
-Programmer verification and every GAL truth-table case
-pass, all eight AHCT244 outputs have valid 5 V levels and correct
-polarity, the 1 MHz clock is clean, and startup creates no active-low
-glitch.
+All buffer/gate truth tables and clock levels measured correctly. Start later
+execution at 1 MHz, not the CPU's 20 MHz rating. This phase qualifies the
+unloaded socket clock only; repeat with the CPU fitted.

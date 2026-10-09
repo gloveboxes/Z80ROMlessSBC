@@ -5,6 +5,7 @@
 
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
+#include "z80sbc/clock.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
 
@@ -15,28 +16,44 @@ static bool report_failure(uint16_t address, uint8_t expected,
   return false;
 }
 
-bool z80_sram_prepare_dma(void) {
+bool z80_sram_prepare_loader(void) {
   z80_isolate_buses();
-  gpio_put(PIN_RESET_N, 0);
-  gpio_put(PIN_SRAM_CE_N, 1);
-  gpio_put(PIN_SRAM_OE_N, 1);
-  gpio_put(PIN_SRAM_WE_N, 1);
+  gpio_put(PIN_BOOT_READ_DISABLE, 1);
+  gpio_put(PIN_BUSREQ_N, 1);
+  z80_reset_with_clock_cycles(6, 1);
+  gpio_put(PIN_RESET_N, 1);
+  z80_clock_one_cycle(1);
+  z80_clock_one_cycle(1);
   return true;
 }
 
-bool z80_sram_write_byte(uint16_t address, uint8_t value) {
-  gpio_put(PIN_SRAM_CE_N, 1);
-  gpio_put(PIN_SRAM_OE_N, 1);
-  gpio_put(PIN_SRAM_WE_N, 1);
-  if (!z80_address_bus_drive(address))
-    return false;
+static void pulse_clock(unsigned cycles) {
+  for (unsigned cycle = 0; cycle < cycles; ++cycle)
+    z80_clock_one_cycle(1);
+}
+
+static void inject_read(uint8_t value, bool opcode) {
+  pulse_clock(1);
+  gpio_put(PIN_BOOT_READ_DISABLE, 1);
+  busy_wait_us_32(1);
   z80_data_bus_drive(value);
-  gpio_put(PIN_SRAM_CE_N, 0);
-  busy_wait_us_32(1);
-  gpio_put(PIN_SRAM_WE_N, 0);
-  busy_wait_us_32(1);
-  gpio_put(PIN_SRAM_WE_N, 1);
-  gpio_put(PIN_SRAM_CE_N, 1);
+  pulse_clock(2);
+  z80_data_bus_isolate();
+  if (opcode)
+    pulse_clock(1);
+}
+
+static void load_hl(uint16_t address) {
+  inject_read(0x21, true);
+  inject_read((uint8_t)address, false);
+  inject_read((uint8_t)(address >> 8), false);
+}
+
+bool z80_sram_write_byte(uint16_t address, uint8_t value) {
+  load_hl(address);
+  inject_read(0x36, true);
+  inject_read(value, false);
+  pulse_clock(3);
   return true;
 }
 
@@ -44,18 +61,16 @@ bool z80_sram_read_byte(uint16_t address, uint8_t *value) {
   if (value == NULL)
     return false;
 
-  gpio_put(PIN_SRAM_CE_N, 1);
-  gpio_put(PIN_SRAM_WE_N, 1);
-  if (!z80_address_bus_drive(address))
-    return false;
+  load_hl(address);
+  inject_read(0x7E, true);
   z80_data_bus_prepare_input();
-  gpio_put(PIN_SRAM_CE_N, 0);
-  gpio_put(PIN_SRAM_OE_N, 0);
+  gpio_put(PIN_BOOT_READ_DISABLE, 0);
+  pulse_clock(2);
   busy_wait_us_32(1);
   *value = z80_data_bus_sample();
-  gpio_put(PIN_SRAM_OE_N, 1);
-  gpio_put(PIN_SRAM_CE_N, 1);
+  pulse_clock(1);
   z80_data_bus_isolate();
+  gpio_put(PIN_BOOT_READ_DISABLE, 1);
   return true;
 }
 

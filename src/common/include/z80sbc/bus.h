@@ -5,10 +5,7 @@
 #include <stdint.h>
 #include "pico/types.h"
 
-bool z80_address_bus_drive(uint16_t address);
-bool z80_address_bus_prepare_input(void);
-bool z80_address_bus_sample(uint16_t *address);
-void z80_address_bus_isolate(void);
+uint8_t z80_port_bus_sample(void);
 void z80_data_bus_drive(uint8_t value);
 void z80_data_bus_prepare_input(void);
 uint8_t z80_data_bus_sample(void);

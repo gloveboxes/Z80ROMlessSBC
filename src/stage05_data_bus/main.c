@@ -2,7 +2,6 @@
 
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/supervisor.h"
 
 static void output_data_patterns(void) {
@@ -42,8 +41,7 @@ static bool data_endurance_test(void) {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  mcp23s17_init(4000000);
-  printf("\nStage 5: all-PDIP data transceivers and interlock\n");
+  printf("\nStage 5: data transceivers; CPU/SRAM absent\n");
     printf("d=output patterns, i=sample data, e=1000 cycles with external "
       "AA test pulls, x=isolate\n");
 

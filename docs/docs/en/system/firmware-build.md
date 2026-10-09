@@ -13,10 +13,9 @@ maintained source.
 ## Breadboard-first, shared Pico firmware
 
 The staged Pico applications remain focused on the breadboard construction
-and bring-up plan. The PCB uses the **same maintained firmware**, not a
-separate fork: both implementations share the GPIO assignments in
-`src/common/include/z80sbc/pins.h`, bus-control circuitry, and electrical
-safety requirements.
+and bring-up plan. The existing PCB is for the superseded circuit and is not
+compatible with this firmware. Its migration is deferred; do not manufacture
+it or use the new firmware on that layout without separately updating wiring.
 
 Keep the shared defaults conservative. Stage 10 starts the Z80 at 1 MHz;
 the PCB's higher qualification target must not silently raise that default
@@ -34,8 +33,8 @@ sockets.
 
 There are two processors and two kinds of software: **Pico firmware** runs
 the supervisor and diagnostics; **Z80 programs** run from SRAM after the Pico
-loads them. Programming the Pico does not program the GAL. The ATF22V10 needs
-a separate programmer and compiled JEDEC file in Phase 2.
+loads them by feeding instructions to the Z80. No PLD or external programmer
+is required; the HCT32 implements fixed combinational logic.
 
 During construction, load only the Pico stage matching the hardware you have
 installed. Stage 10 and the complete flash image assume the whole circuit is
@@ -53,10 +52,10 @@ or build target.
 | ---: | --- | --- |
 | 1 | `src/stage01_supervisor/` | `z80_stage01_supervisor` |
 | 2 | `src/stage02_buffers_clock/` | `z80_stage02_buffers_clock` |
-| 3 | `src/stage03_mcp23s17/` | `z80_stage03_mcp23s17` |
+| 3 | `src/stage03_mcp23s17/` | `z80_stage03_control_inputs` |
 | 4 | `src/stage04_address_bus/` | `z80_stage04_address_bus` |
 | 5 | `src/stage05_data_bus/` | `z80_stage05_data_bus` |
-| 6 | `src/stage06_sram_dma/` | `z80_stage06_sram_dma` |
+| 6 | `src/stage06_sram_dma/` | `z80_stage06_sram_loader` |
 | 7 | `src/stage07_z80_cpu/` | `z80_stage07_z80_cpu` |
 | 8 | `src/stage08_virtual_io/` | `z80_stage08_virtual_io` |
 | 9 | `src/stage09_flash_storage/` | `z80_stage09_flash_storage` |
@@ -64,7 +63,7 @@ or build target.
 
 Build the target in the table for your phase. Its UF2 is written to
 `build/src/<source-directory-name>/<target>.uf2`; for example, Phase 3 uses
-`build/src/stage03_mcp23s17/z80_stage03_mcp23s17.uf2`.
+`build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2`.
 
 ## 7.1 Firmware and CP/M Build
 

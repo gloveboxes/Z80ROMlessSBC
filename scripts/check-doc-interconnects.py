@@ -20,28 +20,28 @@ AGGREGATE_HEADINGS = {"Memory Control", "Power and Fixed Pins"}
 FIXED_ENDPOINT_NETS = {
     "U1.11": "+5V", "U1.16": "INT_N", "U1.17": "NMI_N", "U1.29": "GND",
     "U2.2": "GND", "U2.16": "GND", "U2.30": "+5V", "U2.32": "+5V",
-    "U3.12": "GND", "U3.24": "+5V",
+    "U3.7": "GND", "U3.12": "GND", "U3.13": "GND", "U3.14": "+5V",
+    "U3.1": "RD_5V_N", "U3.2": "BOOT_READ_DISABLE_5V", "U3.3": "SRAM_OE_N",
+    "U3.4": "IORQ_N", "U3.5": "IO_RELEASE", "U3.6": "WAIT_N",
+    "U3.8": "DATA_UP_OE_N", "U3.9": "RD_N", "U3.10": "PICO_DATA_UP_OE_N",
     "U4.1": "GND", "U4.10": "GND", "U4.19": "GND", "U4.20": "+5V",
-    "U7.1": "GND", "U7.10": "GND", "U7.13": "GND", "U7.15": "GND",
-    "U7.17": "GND", "U7.19": "GND", "U7.20": "+3V3",
-    "U8.9": "+5V", "U8.10": "GND", "U8.15": "GND", "U8.16": "GND",
-    "U8.17": "GND",
+    "U4.15": "GND", "U4.17": "GND",
+    "U7.1": "GND", "U7.10": "GND", "U7.13": "A1", "U7.15": "A2",
+    "U7.17": "A4", "U7.19": "GND", "U7.20": "+3V3",
     "U9.1": "+5V", "U9.10": "GND", "U9.19": "DATA_UP_OE_N", "U9.20": "+5V",
     "U10.1": "GND", "U10.10": "GND", "U10.19": "DATA_DOWN_OE_N", "U10.20": "+3V3",
-    "Q1.1": "GND", "Q1.2": "MCP_RESET_BASE", "Q1.3": "MCP_RESET_N",
     "D1.1": "VSYS", "D1.2": "+5V",
 }
 DOCUMENTED_NO_CONNECTS = {
-    "U1.18", "U1.28", "U2.1", "U3.21", "U3.22", "U3.23",
-    "U7.3", "U7.5", "U7.7", "U8.19", "U8.20",
-    "A1.11", "A1.30", "A1.35", "A1.37", "A1.40",
+    "U1.18", "U1.28", "U2.1", "U3.11", "U4.3", "U4.5",
+    "A1.11", "A1.29", "A1.30", "A1.31", "A1.35", "A1.37", "A1.40",
 }
 DEVICE_REFS = [
     ("SN74AHCT244", "U4"), ("AHCT244", "U4"),
     ("SN74AHCT245", "U9"), ("AHCT245", "U9"),
     ("SN74LVC245", "U10"), ("LVC245", "U10"),
     ("SN74LVC244", "U7"), ("LVC244", "U7"),
-    ("ATF22V10", "U3"), ("MCP23S17", "U8"), ("MCP ", "U8"),
+    ("SN74HCT32", "U3"), ("HCT32", "U3"),
     ("Z84C00", "U1"), ("Z80", "U1"), ("SRAM", "U2"), ("Pico", "A1"),
 ]
 PICO_HEADER_BY_GP = {

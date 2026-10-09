@@ -33,11 +33,11 @@ nav:
       - Plan and prerequisites: en/implementation/index.md
       - Phase 0 - Power distribution: en/implementation/phase-0-power.md
       - Phase 1 - Pico supervisor: en/implementation/phase-1-supervisor.md
-      - Phase 2 - GAL, buffer, and clock: en/implementation/phase-2-buffer-clock.md
-      - Phase 3 - Address generator: en/implementation/phase-3-address-generator.md
+      - Phase 2 - Fixed logic and clock: en/implementation/phase-2-buffer-clock.md
+      - Phase 3 - Control and port monitor: en/implementation/phase-3-address-generator.md
       - Phase 4 - Address bus: en/implementation/phase-4-address-bus.md
       - Phase 5 - Data bus: en/implementation/phase-5-data-bus.md
-      - Phase 6 - SRAM and DMA: en/implementation/phase-6-sram.md
+      - Phase 6 - Z80-assisted SRAM loading: en/implementation/phase-6-sram.md
       - Phase 7 - Z80 CPU: en/implementation/phase-7-z80.md
       - Phase 8 - Virtual I/O: en/implementation/phase-8-virtual-io.md
       - Phase 9 - Flash storage: en/implementation/phase-9-flash-storage.md

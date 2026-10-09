@@ -6,7 +6,6 @@
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_disk.h"
 #include "z80sbc/io_trap.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
@@ -284,7 +283,6 @@ static _Noreturn void fail_closed(const char *reason) {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  mcp23s17_init(4000000);
   printf("\nStage 10: CP/M flash disks and WebSocket terminal\n");
 
   if (!z80_flash_storage_init())

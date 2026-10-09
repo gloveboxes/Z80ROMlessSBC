@@ -87,7 +87,7 @@ so copy out any test result that must be retained.
 The launcher intentionally substitutes host files for the physical Pico flash
 backend. It therefore does not validate Pico package/CRC handling, the physical
 flash cache and journal implementation, power-loss recovery, the Pico-to-SRAM
-DMA transfer, WAIT#/bus timing, voltage translation, or the assembled board.
+injected loading, WAIT#/bus timing, voltage translation, or the assembled board.
 Those remain [Phase 8](../implementation/phase-8-virtual-io.md),
 [Phase 9](../implementation/phase-9-flash-storage.md), and
 [Phase 10](../implementation/phase-10-websocket.md) hardware and firmware

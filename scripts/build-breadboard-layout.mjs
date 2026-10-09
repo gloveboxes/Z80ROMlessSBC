@@ -33,9 +33,8 @@ const WIDTHS = {
 };
 
 const chips = [
-  { key: "GAL", board: "memory", label: ["ATF22V10B/C", "GAL (24-pin)"], start: 5, end: 16, width: "narrow", color: "#36a2bd", orientation: "up" },
+  { key: "HCT32", board: "memory", label: ["SN74HCT32N", "OR gates (14-pin)"], start: 5, end: 11, width: "narrow", color: "#36a2bd", orientation: "up" },
   { key: "SRAM", board: "memory", label: ["AS6C1008-55PCN", "SRAM (32-pin)"], start: 18, end: 33, width: "wide", color: "#8ecae6", orientation: "up" },
-  { key: "MCP", board: "memory", label: ["MCP23S17-E/SP", "28-pin SPDIP", "+ Q1 / A0-A15 pulls"], start: 35, end: 48, width: "narrow", color: "#91cf35", orientation: "down" },
 
   { key: "SUPPLY", board: "core", label: ["5 V supply clearance", "rows 1-3 reserved"], start: 1, end: 3, width: "supply", color: "#d2d2d2", compact: true },
   { key: "AHCT244", board: "core", label: ["SN74AHCT244N", "buffer (20-pin)"], start: 8, end: 17, width: "narrow", color: "#ffbd20", orientation: "down" },
@@ -51,27 +50,22 @@ const connections = [
   { a: "Z80", b: "AHCT244", kind: "clock" },
   { a: "UP245", b: "PICO", kind: "bus" },
   { a: "DOWN245", b: "PICO", kind: "bus" },
-  { a: "GAL", b: "UP245", kind: "control" },
-  { a: "GAL", b: "DOWN245", kind: "control" },
+  { a: "HCT32", b: "UP245", kind: "control" },
   { a: "LVC244", b: "PICO", kind: "control" },
-  { a: "MCP", b: "LVC244", kind: "spi", long: true, longLane: 1 },
 
-  { a: "GAL", b: "Z80", kind: "control" },
-  { a: "GAL", b: "AHCT244", kind: "control" },
+  { a: "HCT32", b: "Z80", kind: "control" },
+  { a: "HCT32", b: "AHCT244", kind: "control" },
+  { a: "HCT32", b: "SRAM", kind: "control" },
   { a: "AHCT244", b: "SRAM", kind: "control" },
   { a: "SRAM", b: "Z80", kind: "bus" },
 
   { a: "AHCT244", b: "PICO", kind: "clock" },
-  { a: "AHCT244", b: "MCP", kind: "spi" },
-  { a: "MCP", b: "Z80", kind: "bus" },
-  { a: "MCP", b: "SRAM", kind: "bus" },
-  { a: "GAL", b: "MCP", kind: "control" },
   { a: "Z80", b: "LVC244", kind: "control" },
   { a: "Z80", b: "UP245", kind: "bus" },
   { a: "Z80", b: "DOWN245", kind: "bus" },
   { a: "Z80", b: "PICO", kind: "control" },
 
-  { a: "GAL", b: "PICO", kind: "control", long: true },
+  { a: "HCT32", b: "PICO", kind: "control", long: true },
 ];
 
 const styles = {
@@ -244,7 +238,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <rect width="${VIEW_WIDTH}" height="1110" fill="#fafafa"/>
   <text x="${VIEW_WIDTH / 2}" y="38" class="title">BB830 physical placement and grouped chip connections</text>
   <text x="${VIEW_WIDTH / 2}" y="64" class="subtitle">Boards are side by side with long edges parallel; equal terminal-row numbers align laterally</text>
-  <text x="${VIEW_WIDTH / 2}" y="91" class="direct-label">GAL controls data OE# and MCP RESET#; MCP ports connect directly to pulled-up A0-A15</text>
+  <text x="${VIEW_WIDTH / 2}" y="91" class="direct-label">Z80 alone drives SRAM addresses and writes; HCT32 gates boot reads, WAIT and Pico data output</text>
 
   ${Object.keys(BOARD_X).map(boardSvg).join("\n")}
   ${connections.map(connectionPath).join("\n")}
@@ -253,7 +247,6 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <g id="legend">
     ${legendLine(70, 1012, "bus", "Address/data bus group")}
     ${legendLine(335, 1012, "control", "Control/status group")}
-    ${legendLine(600, 1012, "spi", "SPI group")}
     ${legendLine(790, 1012, "clock", "Path containing CLK")}
   </g>
   <text x="${VIEW_WIDTH / 2}" y="1048" class="note">One line represents a signal group. Blue paths are shared trunks; intermediate chips are taps, not series logic.</text>

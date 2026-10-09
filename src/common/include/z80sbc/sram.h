@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool z80_sram_prepare_dma(void);
+bool z80_sram_prepare_loader(void);
 bool z80_sram_write_byte(uint16_t address, uint8_t value);
 bool z80_sram_read_byte(uint16_t address, uint8_t *value);
 bool z80_sram_load(uint16_t address, const uint8_t *data, uint32_t length);

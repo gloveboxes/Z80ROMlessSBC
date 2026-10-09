@@ -14,7 +14,7 @@ dcc's optional direct-BIOS functions. Its principal mappings are:
 | `LIST` / `PUNCH` | Discard output; printer and punch devices are intentionally not implemented |
 | `LISTST` | Return not ready because no list device exists |
 | `SELDSK` | Validate drives A-D and return the corresponding disk parameter header |
-| `SETTRK` / `SETSEC` / `SETDMA` | Record the logical CP/M transfer location and SRAM DMA address |
+| `SETTRK` / `SETSEC` / `SETDMA` | Record the logical disk location and software transfer-buffer address in SRAM; no Pico hardware DMA |
 | `READ` / `WRITE` | Convert track and sector to a linear 128-byte LBA, transfer through ports `0x10`-`0x14`, and preserve CP/M write-type semantics for flash caching |
 | `SECTRAN` | Return the sector unchanged because native disk images use linear sector order |
 

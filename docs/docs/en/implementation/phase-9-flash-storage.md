@@ -11,8 +11,8 @@ Provision the manifest-backed boot package and all four 320 KiB disk slots
 with the verified `picotool` commands there.
 
 **Wiring:** Make no hardware changes. Keep the Phase 8 board intact and
-recheck only the existing ownership and SRAM-control paths if the cold-boot
-DMA checks fail.
+recheck boot inhibit, injected data, and CPU SRAM-control paths if cold-boot
+loading checks fail.
 
 **What you are proving:** persistent images survive reboot, load into SRAM
 correctly, and recover safely from interrupted writes. SRAM is volatile
@@ -46,12 +46,12 @@ USB error/status first. Do not bypass verification merely to get a prompt.
     port/fault cases require the stated Z80 test program or test-only setup;
     a startup `PASS` line does not run them automatically.
 
-**Firmware feature:** With RESET# held LOW, recover any valid journal,
-validate the boot manifest and CRC32, DMA-write its payload to SRAM,
-and compare every byte before RESET# release. Do not wait for BUSACK#
-during this cold-boot path: RESET# itself selects the Pico's SRAM
-controls through the
-[GAL equations](../hardware/pin-mapping.md#12-sram-control-source-arbitration-atf22v10bc).
+**Firmware feature:** Recover any valid journal and validate the boot manifest
+and CRC32 while the CPU is held reset. Then initialize the assisted loader,
+release reset, inject instructions to write SRAM, and compare every byte.
+Reset again before normal execution. The Pico never drives addresses or SRAM
+write control; BUSACK is not required for cold loading. Follow the
+[injection protocol](../hardware/address-interface.md).
 Once running, ports `0x10`-`0x14`
 provide command/status, drive, 16-bit LBA, and 128-byte data transfers.
 Reads are synchronous XIP copies; writes use the journaled core-1
@@ -92,6 +92,7 @@ using those same [storage ownership rules](../system/operation.md#63-onboard-fla
 #include "hardware/watchdog.h"
 #include "pico/flash.h"
 #include "pico/util/queue.h"
+#include "z80sbc/cpu.h"
 
 enum {
   FLASH_JOURNAL_BASE_OFFSET = 0x290000u,
@@ -154,22 +155,6 @@ typedef struct {
 _Static_assert(sizeof(z80_boot_manifest_t) == 20,
   "boot manifest layout must match the host packer");
 
-// Core 0 only, entirely synchronous: a flash read needs no filesystem,
-// queue, or core 1 task.
-static bool prepare_reset_held_dma(void) {
-  isolate_buses();
-  gpio_put(PIN_RESET_N, 0);
-  for (unsigned int cycle = 0; cycle < 3; ++cycle)
-    clock_one_cycle(1); // Bit-banged SIO pulses; set_z80_clock_hz() runs later.
-  stop_z80_clock();
-
-  if (!gpio_get(PIN_BUSACK_N) || !gpio_get(PIN_IORQ_N) ||
-      !gpio_get(PIN_RD_N) || !gpio_get(PIN_WR_N))
-    return false;
-
-  return true;  // RESET# LOW selects the Pico SRAM controls (Section 1.2).
-}
-
 static bool boot_image_from_flash(void) {
   const z80_boot_manifest_t *manifest =
     (const z80_boot_manifest_t *)(XIP_BASE + FLASH_BOOT_BASE_OFFSET);
@@ -188,27 +173,13 @@ static bool boot_image_from_flash(void) {
       crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32)
     return false;
 
-  if (!prepare_reset_held_dma())
-    return false;
-
-  for (uint32_t i = 0; i < manifest->image_bytes; ++i)
-    dma_write_byte((uint16_t)i, source[i]);
-
-  bool ok = true;
-  for (uint32_t i = 0; i < manifest->image_bytes; ++i) {
-    if (dma_read_byte((uint16_t)i) != source[i]) {
-      printf("boot verify failed near %04lx\n", (unsigned long)i);
-      ok = false;
-      break;
-    }
-  }
+  bool ok = z80_cpu_load_and_verify(source, manifest->image_bytes);
 
   if (ok)
     printf("loaded boot bytes=%lu crc32=%08lx\n",
       (unsigned long)manifest->image_bytes,
       (unsigned long)manifest->image_crc32);
-  isolate_buses();
-  // RESET# remains asserted; the caller releases it only after success.
+  z80_cpu_fail_closed();
   return ok;
 }
 
@@ -722,7 +693,7 @@ No erase, program, blocking queue, or flash-safe call runs inside
   `C:ATTNC11`; and use `PIP` to copy files across drives. Reboot and compare
   the affected records and directories byte-for-byte with the expected host
   images.
-9. Use [DSLogic Group D](../hardware/logic-analyzer.md#group-d-sram-ownership-and-control-propagation)
+9. Use [DSLogic Group D](../hardware/logic-analyzer.md#group-d-sram-boot-inhibit-and-control-propagation)
   during a write to prove BUSREQ#/BUSACK#/CLK ownership and SRAM-control
   propagation. Repeat with [Group C](../hardware/logic-analyzer.md#group-c-trapped-io-and-data-path-interlock)
   to prove the trap remains armed until BUSACK# is LOW and is armed again

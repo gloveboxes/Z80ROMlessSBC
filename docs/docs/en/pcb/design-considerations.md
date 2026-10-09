@@ -1,5 +1,10 @@
 # PCB Design Considerations
 
+!!! warning "Historical routing, not the current circuit"
+  The PCB has not been migrated to Z80-assisted loading. Its layout and
+  manufacturing artifacts are unchanged and incompatible with the new
+  schematic and firmware. The considerations below describe the previous board.
+
 The PCB preserves the shared electrical architecture, but has its own
 placement, return paths, manufacturing constraints, and qualification
 requirements. The considerations below apply to this routed board, not to
@@ -26,7 +31,7 @@ Do not weaken clearance rules or suppress warnings to make a route pass.
 
 ## Placement and mechanical clearance
 
-U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 GAL form the main
+U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 ATF22V10 form the main
 address/control cluster. U4 remains local to U1's clock input. U9/U10 and U7
 sit between the shared buses and the Pico.
 
@@ -89,7 +94,7 @@ PCB routing does not relax these electrical requirements:
 
 - `CPU_OWNS_SRAM = RESET# AND BUSACK#`; reset or a granted bus selects the
   Pico's SRAM controls.
-- GAL SRAM-control outputs pass through the AHCT244 because the GAL's
+- ATF22V10 SRAM-control outputs pass through the AHCT244 because the ATF22V10's
   guaranteed 2.4 V HIGH is insufficient for direct SRAM CMOS inputs.
 - DATA_ENABLE LOW disables both data paths. Firmware changes DATA_DIR only
   while disabled and initializes GP10-GP17 as SIO inputs before the first
@@ -98,7 +103,7 @@ PCB routing does not relax these electrical requirements:
   to isolate the address bus.
 - Incoming 5 V signals reach Pico GPIOs through the specified LVC buffers.
 
-The GAL equations require their consensus terms to remain effective in the
+The ATF22V10 equations require their consensus terms to remain effective in the
 fitted device. Source-level truth tables do not prove the programmed fuse
 map's hazard behavior or actual ownership-transition timing.
 

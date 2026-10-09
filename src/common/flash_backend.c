@@ -256,7 +256,7 @@ static bool load_boot_image(void) {
                   offsetof(boot_manifest_t, header_crc32)) !=
           manifest->header_crc32 ||
       crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32 ||
-      !z80_cpu_prepare_reset_dma())
+      !z80_cpu_prepare_loader())
     return false;
 
   return z80_sram_load(0, source, manifest->image_bytes) &&

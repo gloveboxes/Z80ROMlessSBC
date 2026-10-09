@@ -14,15 +14,15 @@ all electrical and timing claims as proposed until the staged bench tests pass.
 - [PCB design, inventory, and fabrication](docs/docs/en/pcb/index.md)
 
 The documentation covers the component inventory, pin maps, voltage domains,
-breadboard construction, bus arbitration, firmware architecture, CP/M storage,
+breadboard construction, Z80-assisted loading, firmware architecture, CP/M storage,
 DHO814/DSLogic Plus measurements, and the complete phase-by-phase bring-up
 procedure.
 
 Phases 0-10 build the three-BB830 breadboard prototype. The PCB is a separate
-physical implementation, not a replacement for those wiring and bring-up
-steps. Pin assignments, electrical safeguards, and firmware are shared;
-parts counts, assembly instructions, routing, and qualification evidence
-remain specific to each build.
+physical implementation of the **previous circuit**, left unchanged for now.
+Do not manufacture its existing Gerbers for this redesign. The current
+eight-package breadboard circuit uses fixed HCT32 logic and Z80-executed RAM
+loading, with no PLD programmer or address expander.
 
 ## Build
 

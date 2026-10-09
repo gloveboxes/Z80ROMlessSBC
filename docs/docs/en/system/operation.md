@@ -4,42 +4,32 @@
 
 | State | Who controls the buses? | What you should expect |
 | --- | --- | --- |
-| Reset-held loading | Pico controls SRAM through the MCP, data translators, and GAL | Z80 RESET# is LOW; the Pico loads and verifies the boot image before allowing execution. |
-| Normal execution | Z80 addresses SRAM directly | The Pico's data drivers and MCP address outputs are isolated. Ordinary memory access does not pass through SPI or Pico software. |
-| Trapped I/O | Z80 holds its address while the Pico services one byte | WAIT# and clock stopping hold the cycle; MCP inputs sample the port, and one selected data path transfers the byte. |
+| Injected loading | Z80 alone drives SRAM addresses and writes | RESET# is released after slow reset clocks; Pico supplies instructions with SRAM reads inhibited and verifies CPU-written RAM. |
+| Normal execution | Z80 addresses SRAM directly | Both Pico data paths are isolated; ordinary memory access needs no Pico software. |
+| Trapped I/O | Z80 holds its address while the Pico services one byte | HCT32 WAIT and clock stopping hold the cycle; four buffered address bits select the port. |
 
 Runtime flash writes temporarily request the Z80 bus using BUSREQ#/BUSACK#.
 This is different from cold boot: a running CPU must acknowledge the request
-before the Pico may take over. The detailed rules below protect that boundary.
+before flash programming. The Pico never drives memory addresses or writes,
+even during a bus grant. The detailed rules below protect that boundary.
 
 ## 6.1 Hardware-WAIT-Assisted Clock-Stop Trap Protocol
 
-When the Z80 executes an I/O instruction, IORQ# LOW reaches ATF22V10
-pin 13 and drives WAIT# LOW through GAL pin 20 while DATA_ENABLE remains
-LOW. In parallel, the buffered IORQ# falling edge trips a Pico interrupt.
-The handler disables the hardware PWM clock slice after GPIO
-synchronization and interrupt-entry latency. Because the Z84C00 is fully
-static, the clock can then remain stopped indefinitely in either a HIGH
-or LOW state.
+IORQ# LOW reaches HCT32 pin 4 and makes WAIT# pin 6 LOW while Pico GP9
+IO_RELEASE is LOW. The buffered falling edge interrupts core 0, which stops
+PWM. The fully static CMOS Z80 tolerates the stopped clock. Firmware samples
+A0/A1/A2/A4 and requires exactly one of RD#/WR# active before servicing data.
 
-After resolving RD#/WR#, the handler configures the appropriate data
-path. The data-bus helper raises DATA_ENABLE only after direction and
-data are stable; the GAL then releases WAIT#. The handler resumes CLK,
-waits until both IORQ# and the active RD#/WR# control are HIGH, and only
-then lowers DATA_ENABLE to isolate the bus and re-arm WAIT# for the next
-cycle. Hardware WAIT# removes dependence on interrupt latency alone, but
-the maximum qualified frequency remains measured because GAL delay, Z80
-WAIT setup/hold, clock phase, and breadboard signal integrity still need
-logic-analyzer evidence.
+For OUT, U10 receives the CPU byte; for IN, U9 supplies a preloaded reply.
+Only after the path is configured does GP9 rise. Firmware completes the I/O
+cycle with slow single clocks, observes IORQ/strobe release, disables both
+paths, lowers GP9, then restores PWM. This prevents a later memory read from
+re-enabling the Pico output. RD#-qualified U9 OE provides additional strobe
+gating, not software-independent ownership arbitration.
 
-PIO is deliberately not placed in the WAIT# assertion path. Raw IORQ#
-already reaches the GAL directly, so WAIT# is asserted after the GAL's
-combinational propagation delay without GPIO synchronization, PIO sampling,
-or processor interrupt latency. A PIO state machine could notify firmware or
-gate a PIO-generated clock, but it would not make this existing assertion path
-faster and C would still perform the MCP23S17 and data-bus service. The design
-therefore keeps the GAL as the timing-critical interlock and uses the RP2350
-interrupt only after the Z80 has been held safely.
+WAIT assertion is fixed logic, not IRQ/PIO dependent. HCT32 propagation,
+WAIT setup/hold, PWM-to-SIO transitions, and data setup still require captures.
+The 500 ms release timeout fails closed through RESET and watchdog recovery.
 
 ## 6.2 Terminal I/O over Pico WebSocket
 
@@ -69,8 +59,8 @@ USB the final user interface.
 
 The WebSocket server must run on the Pico's other core so Wi-Fi, lwIP,
 HTTP serving, and WebSocket polling cannot interfere with the timing of
-the Z80-facing supervisor path. Core 0 owns GPIO, MCP23S17 SPI, clock
-stop/resume, DMA, and the I/O trap. Core 1 owns Wi-Fi association, the
+the Z80-facing supervisor path. Core 0 owns GPIO, clock stop/resume, assisted
+loading, and the I/O trap. Core 1 owns Wi-Fi association, the
 embedded terminal page, WebSocket accept/send/receive, and network
 polling. The cores share terminal byte queues, one immutable disk-write
 queue, a small request/result pair for Z80 bus ownership, and atomic
@@ -141,7 +131,7 @@ existing disk contents, so keep backups.
 
 **Runtime behavior.** On cold boot, the Pico recovers any interrupted disk
 update, validates `z80boot.pkg`, copies its image to Z80 SRAM, and verifies the
-copy before releasing reset. The BIOS transfers one 128-byte disk record at a
+copy, then resets to PC zero before execution. The BIOS transfers one 128-byte disk record at a
 time. Core 0 serves reads from memory-mapped flash and queues writes to core 1,
 which maintains one 4 KiB cache in RP2350 internal SRAM, separate from the
 Z80's external SRAM. Directory writes flush immediately. Other writes flush
@@ -160,14 +150,14 @@ wear-levelled storage.
 
 ## 6.4 System Performance Envelope & Constraints
 
-- **I/O Decode Width:** Strictly limited to **8-bit** decoding
-  (monitoring address lines A0-A7 via the lower expander port).
+- **I/O Decode Width:** Four buffered lines A0/A1/A2/A4, mask `0x17`.
+  A3/A5-A7 and the high byte alias; terminal 00/01 and disk 10-14 remain distinct.
 
-- **Trap Latency Profile:** GAL-generated WAIT# covers the interval from
-  IORQ# falling until DATA_ENABLE reports a configured data path. The
-  Pico still stops the static CPU clock for unrestricted SPI servicing.
+- **Trap Latency Profile:** HCT32-generated WAIT# covers the interval from
+  IORQ# falling until IO_RELEASE reports a configured data path. The
+  Pico stops the static CPU clock while servicing the cycle.
   Measure IORQ#-to-WAIT#, WAIT# setup/hold, the final PWM edge, and
-  DATA_ENABLE-to-WAIT# release at every claimed rate. The design remains
+  IO_RELEASE-to-WAIT# release and stepped completion at every claimed rate. The design remains
   suitable for low-rate virtual peripherals, not high-speed line tracing.
 
 - **Clock Validation Targets:**
@@ -191,16 +181,12 @@ wear-levelled storage.
 
   - *20 MHz CPU Rating:* The `Z84C0020PEC` rating applies to the CPU,
     not this breadboard system with no memory wait states. At 20 MHz a clock period
-    is 50 ns, shorter than the conservative 79.5 ns component-delay sum
-    for the worst-case GAL + AHCT244 + SRAM select-to-data path. That sum
-    excludes Z80 setup and breadboard delay. Reaching 20 MHz requires a
+    is 50 ns, shorter than the SRAM's 55 ns rated access time even before
+    AHCT244/HCT32 propagation, Z80 setup, and breadboard delay. Reaching 20 MHz requires a
     redesigned control path, hardware-generated memory and I/O wait
     states (or deterministic clock gating), and a PCB-level signal-
     integrity review; changing the Pico PWM frequency is insufficient.
 
-  - *Four-Layer PCB:* The PCB is designed for qualification through at least
-    8 MHz by reducing stubs, contact resistance, loop area, and uncontrolled
-    return paths. It cannot remove the 55 ns SRAM or GAL delays, so 8 MHz
-    remains a measured target rather than a pre-qualified claim. A true zero-wait
-    20 MHz PCB needs roughly 10-15 ns SRAM plus faster decode/control
-    logic; alternatively it can apply hardware WAIT# to memory cycles.
+  - *PCB Deferred:* The existing layout implements the previous circuit.
+    It provides no qualification evidence or manufacturing package for this
+    assisted-loader revision.

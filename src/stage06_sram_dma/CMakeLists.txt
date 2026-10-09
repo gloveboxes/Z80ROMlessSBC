@@ -1,1 +1,1 @@
-add_z80_stage(z80_stage06_sram_dma main.c z80_sram)
+add_z80_stage(z80_stage06_sram_loader main.c z80_cpu)

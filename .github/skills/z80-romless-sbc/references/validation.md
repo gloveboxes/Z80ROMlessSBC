@@ -50,15 +50,18 @@ For any pin, part, package, resistor, capacitor, or layout change, also verify:
 - KiCad ERC, net count, and endpoint count
 - affected bring-up phases and pass gates
 
-## PLD
+## Fixed Logic and Assisted Loader
 
-The current source is `src/pld/sram_control.pld`. After equation changes:
-
-- Exhaustively compare steady-state truth tables.
-- Check consensus/hazard behavior during RESET#/BUSACK# ownership changes.
-- Confirm product-term capacity for the selected ATF22V10 variant.
-- Compile a JEDEC file with the project's supported PLD toolchain.
-- Program, read back, and verify using the exact device algorithm before installation.
+- No PLD/JEDEC/programmer is used. Check the exact HCT32 OR-gate pinout.
+- Run `PYTHON=.venv-kicad/bin/python npm run kicad`: schematic-only ERC,
+  netlist parity, documented connections and schematic exports.
+- Do not run the historical `--full` pipeline or regenerate PCB/project,
+  DSN/SES, routing, fabrication, or PCB renders while migration is deferred.
+- Run `npm run test:control` for injection, data-path and trap regression tests.
+- Physically measure reset-exit phase, injected-read data setup, SRAM inhibit,
+  stepped I/O completion, both actual OEs, and resumed PWM before qualification.
+- Scope evidence's single-pause evaluator is inconclusive for stepped release;
+  raw captures and manual timing review are required.
 
 ## Documentation
 
@@ -100,7 +103,7 @@ Do not report a clock rate as qualified without captures and error-free tests at
 - DSLogic Plus Group A-D captures using 16-channel, 100 MHz Buffer Mode,
   threshold appropriate to each group, Filter=None, and RLE disabled.
 - SRAM setup/write-pulse evidence and ownership-transition evidence.
-- Repeated cold boots, DMA verification, I/O tests, and fault-injection results
+- Repeated cold boots, assisted-load verification, I/O tests, and fault-injection results
   required by the implementation phase pages.
 
 Separate theoretical calculations, simulated/host-tested behavior, and physical bench measurements in every report.

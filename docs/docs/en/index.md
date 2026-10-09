@@ -30,12 +30,11 @@ qualification do not replace the breadboard phases.
 ## How the computer works
 
 The design pairs a Z80 without a ROM chip with a Raspberry Pi Pico 2 W. The
-Pico supplies the clock, controls reset, takes ownership of the bus, and loads
-a boot image into static RAM (SRAM) before allowing the Z80 to run. The lower
-64 KiB of a 128 KiB SRAM chip provides the Z80 memory space. Buffers and bus transceivers isolate
-the Pico's 3.3 V pins from the 5 V bus, while an MCP23S17 I/O expander drives
-the 16-bit address bus during direct memory access (DMA) and paused
-input/output cycles.
+Pico supplies the clock and reset, then feeds instructions to the Z80 with
+SRAM reads inhibited. The Z80 writes and verifies its own RAM; it is the only
+address/write master. The lower 64 KiB of a 128 KiB SRAM provides memory.
+AHCT/LVC buffers separate 3.3 V and 5 V domains, and one HCT32 implements
+fixed read-inhibit, WAIT, and data-output gates. No PLD programmer is needed.
 
 The Pico also provides virtual peripherals. During a Z80 input/output request,
 hardware pauses the processor while the Pico identifies the requested port and
@@ -45,8 +44,8 @@ not affect Z80 timing.
 
 Z80 boot software and CP/M disks occupy reserved regions of the Pico's onboard
 flash rather than removable media. The Pico reads the flash directly and uses
-DMA to populate SRAM before releasing the Z80. Once the Z80 is running, the
-same mechanism provides virtual disk access backed by the
+Z80-assisted loading to populate and verify SRAM, then resets to PC zero for
+normal execution. Once running, virtual I/O disk ports access the
 [onboard flash partition](system/operation.md#63-onboard-flash-cpm-disk-storage).
 
 ### CP/M Boot and Disk Flow
@@ -80,7 +79,7 @@ and [CP/M appendix](cpm-dcc/index.md) for construction details, addresses,
 protocols, and validation evidence.
 
 The build plan proves each subsystem before relying on it in the next phase.
-It progresses from power, bus isolation, and SRAM DMA through Z80 execution,
+It progresses from power and bus isolation through injected loading and Z80 execution,
 virtual peripherals, flash storage, the browser terminal, and measurement of
 the maximum reliable clock speed.
 

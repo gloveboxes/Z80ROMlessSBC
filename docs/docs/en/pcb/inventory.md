@@ -1,5 +1,10 @@
 # PCB Inventory
 
+!!! warning "Previous circuit only"
+	This BOM and the unchanged fabrication package are not for the new
+	assisted-loader schematic. PCB migration is deferred; do not order them
+	for the redesign. Use the current [breadboard inventory](../hardware/inventory.md).
+
 This inventory is for **one PCB assembly**, not the three-breadboard
 prototype. The [generated BOM](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/fabrication/z80_romless_sbc-bom.csv)
 is authoritative for fitted references, values, and footprints. Sockets,
@@ -30,7 +35,7 @@ are not interchangeable, even where their physical pin arrangements match.
 | References | Quantity | Value / form | Function |
 | --- | ---: | --- | --- |
 | R17-R22, R27, R28, R31 | 9 | 10 kOhm, 1/4 W axial | Remaining discrete startup bias |
-| R23-R26, R29 | 5 | 4.7 kOhm, 1/4 W axial, 5% or better | Four GAL-input pull-downs and Q1 base current limiting |
+| R23-R26, R29 | 5 | 4.7 kOhm, 1/4 W axial, 5% or better | Four ATF22V10-input pull-downs and Q1 base current limiting |
 | R30 | 1 | 47 kOhm, 1/4 W axial | Q1 base-emitter pull-down |
 | RN1-RN2 | 2 | 8x10 kOhm bussed SIP, 9 pins | A0-A15 pull-ups; common pins to +5 V |
 | RN3 | 1 | 8x10 kOhm bussed SIP, 9 pins | Pico D0-D7 pull-downs; common pin to GND |
@@ -100,7 +105,7 @@ USB is optional for operation. Follow the
 [power-sequencing restrictions](design-considerations.md#power-and-startup-safety)
 when attaching USB for programming or diagnostics.
 
-Provide a suitable GAL programmer and fitter, a USB data cable, a multimeter,
+Provide a suitable ATF22V10 programmer and fitter, a USB data cable, a multimeter,
 and the shared [oscilloscope](../hardware/oscilloscope.md) and
 [logic-analyzer](../hardware/logic-analyzer.md) equipment. Bench equipment
 and temporary diagnostic resistors are not fitted PCB BOM entries.

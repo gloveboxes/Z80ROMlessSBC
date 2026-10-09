@@ -108,14 +108,14 @@ alternative while leaving the other channels in place where possible.
 | --- | --- | --- | --- | --- | --- |
 | Clock translation | Pico GP2, header pin 4 | AHCT244 pin 18 | Z80 CLK pin 6 | Z80 RESET# pin 26 | CH1 rising. At 1 kHz, 100 kHz, 1 MHz, and each qualification rate, CH1 is about 0-3.3 V and CH2/CH3 about 0-5 V. CH2 and CH3 match frequency and duty cycle, contain no extra edges, and differ only by interconnect delay. RESET# stays HIGH while running. |
 | Reset sequence | Z80 RESET# pin 26 | Z80 CLK pin 6 | Z80 M1# pin 27 | Z80 MREQ# pin 19 | CH1 rising, Single. RESET# remains LOW for at least three complete clocks. After release, M1# and MREQ# produce valid active-LOW opcode-fetch activity with no runt RESET# or CLK pulse. |
-| DMA ownership | Z80 BUSREQ# pin 25 | Z80 BUSACK# pin 23 | Z80 RESET# pin 26 | Z80 CLK pin 6 | CH1 falling, Single. BUSACK# subsequently falls and remains LOW for DMA; CLK is deliberately stopped only by the firmware sequence. On release, BUSREQ# rises before BUSACK# returns HIGH and normal clocks resume without a runt edge. |
-| SRAM write control | Z80 CLK pin 6 | Z80 MREQ# pin 19 | Z80 WR# pin 22 | SRAM WE# pin 29 | CH1 rising. During a CPU write, MREQ# and WR# assert LOW and SRAM WE# follows the selected write control through GAL/AHCT244 propagation. WE# has no extra pulse and its LOW width is at least 45 ns. |
+| Flash quiescence | Z80 BUSREQ# pin 25 | Z80 BUSACK# pin 23 | Z80 RESET# pin 26 | Z80 CLK pin 6 | CH1 falling, Single. BUSACK# subsequently falls for flash erase/program, not memory DMA. Pico data paths remain isolated. Trap is rearmed before release; clocks contain no runt edges. |
+| SRAM write control | Z80 CLK pin 6 | Z80 MREQ# pin 19 | Z80 WR# pin 22 | SRAM WE# pin 29 | CH1 rising. During CPU writes, including injected LD (HL),n, SRAM WE# follows WR# through AHCT244. WE# has no extra pulse and its LOW width is at least 45 ns. |
 | SRAM read timing | Z80 CLK pin 6 | Z80 MREQ# pin 19 | SRAM OE# pin 24 | One SRAM data pin D0-D7: pins 13-15, 17-21 | CH1 rising. Repeat CH4 for all eight bits and the 00/FF/55/AA patterns. MREQ# and OE# assert LOW once per read; CH4 reaches the expected 0 V or 5 V state and is stable before the Z80 sampling edge. Use the DSLogic Group B capture to prove the complete byte and digital ordering. |
 | Address integrity | Z80 CLK pin 6 | SRAM A0 pin 12 or A7 pin 5 | SRAM A8 pin 27 | SRAM A15 pin 31 | CH1 rising. Repeat with A0 and A7 on CH2 at 1, 2, 3, and 4 MHz, then at every [frequency-qualification rate](../implementation/frequency-qualification.md). For 0000/FFFF/5555/AAAA and walking patterns, each observed line matches the commanded bit, reaches valid 0/5 V levels, is stable during the active memory control interval, and has no double edge or excessive ringing. The DSLogic Group A capture proves A0-A15 together. |
-| GAL ownership mux | RESET# at Z80 pin 26 or BUSACK# at Z80 pin 23 | Selected Z80 control: WR# pin 22, RD# pin 21, or MREQ# pin 19 | Matching GAL output: pin 14, 15, or 16 | Matching SRAM control: WE# pin 29, OE# pin 24, or CE# pin 22 | Trigger on the ownership input transition, Single; repeat rising/falling and all three paths. GAL and SRAM outputs remain inactive HIGH while ownership changes when both candidate controls are HIGH. Under CPU ownership they follow the Z80 control; under RESET#/BUSACK# DMA ownership they follow the Pico control. No active-LOW glitch is permitted. |
-| Data-transceiver interlock | DATA_ENABLE at Pico GP7, header pin 10 | DATA_DIR at Pico GP6, header pin 9 | GAL pin 17 / AHCT245 OE# pin 19 | GAL pin 18 / LVC245 OE# pin 19 | CH1 rising and falling, Single. With DATA_ENABLE LOW both OE# outputs remain HIGH. With DATA_ENABLE HIGH and DATA_DIR HIGH, CH3 is LOW and CH4 HIGH; with DATA_DIR LOW, CH3 is HIGH and CH4 LOW. CH3 and CH4 must never be LOW simultaneously, including during transitions. |
-| I/O trap and WAIT# | Z80 IORQ# pin 20 | Z80 WAIT# pin 24 | Z80 CLK pin 6 | DATA_ENABLE at Pico GP7, header pin 10 | CH1 falling, Single. WAIT# falls from GAL hardware before the Z80 sampling edge; the clock stops at a complete edge. WAIT# rises only after DATA_ENABLE and direction are valid, then clocking resumes. WAIT# does not reassert before IORQ# and RD#/WR# are inactive. Use a second capture with CH4 on RD# pin 21, then WR# pin 22. |
-| Supply integrity | +5 V logic-rail entry at the 100 uF bulk capacitor | Farthest-board +5 V rail | Pico 3V3 header pin 36 | Z80 CLK pin 6 | Trigger on CH4 rising for repetitive operation; use Single on the relevant command for transients. Repeat at idle, DMA patterns, Z80 memory loop, disk write, and Wi-Fi traffic. CH1/CH2 remain 4.75-5.25 V and CH3 remains within the Pico 3.3 V rail specification; no capture may show more than 250 mV rail droop or a reset/clock disturbance. For ripple detail, AC coupling or a bandwidth limit is allowed only in an additional labelled capture; retain the DC-coupled full-bandwidth capture as pass evidence. |
+| Boot-read inhibit | BOOT_READ_DISABLE at GP5, header pin 7 | Buffered RD# at AHCT244 pin 7 | SRAM OE# pin 24 | Z80 CLK pin 6 | CH1 edge, Single. Inhibit HIGH keeps OE# HIGH throughout injected instruction reads. Lower it only with Pico output isolated for intentional SRAM reads or normal execution. Repeat CH1 at AHCT244 pin 14. No unintended OE pulse is permitted. |
+| Data-path exclusion | GP6 up-OE request, header pin 9 | GP7 down-OE, header pin 10 | AHCT245 OE# pin 19 | LVC245 OE# pin 19 | CH1 edge, Single; repeat CH2 edge and RD# at pin 21. Both OEs default HIGH. Up OE is GP6 OR RD#; down OE follows GP7. Both actual OEs must never be LOW together. This is a firmware rule with RD qualification, not an all-state hardware interlock; do not force both requests LOW. |
+| I/O trap and WAIT# | Z80 IORQ# pin 20 | Z80 WAIT# pin 24 | Z80 CLK pin 6 | IO_RELEASE at GP9, header pin 12 | CH1 falling, Single. HCT32 asserts WAIT before the sampling edge. GP9 rises only after the data path is ready. Slow clocks complete I/O, then isolate/rearm before PWM resumes. WAIT must not reassert while IORQ/strobe remain active. Repeat CH4 at RD#, WR#, and both actual OEs. |
+| Supply integrity | +5 V logic-rail entry at the 100 uF bulk capacitor | Farthest-board +5 V rail | Pico 3V3 header pin 36 | Z80 CLK pin 6 | Trigger on CH4 rising for repetitive operation; use Single on commands. Repeat at idle, injected RAM patterns, Z80 memory loop, disk write, and Wi-Fi traffic. CH1/CH2 remain 4.75-5.25 V; CH3 meets the Pico rail specification. No capture may show more than 250 mV droop or reset/clock disturbance. Keep DC-coupled full-bandwidth pass evidence. |
 
 For logic nodes, a measured LOW must satisfy the receiving device's LOW
 limit and a measured HIGH must satisfy its HIGH limit; use the device-specific
@@ -134,11 +134,11 @@ claim.
 
 ## MCP Acceptance Runner
 
-The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Stage 2 clock translation, Stage 8 I/O timing, or MCP23S17 SPI evidence. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent phase gates pass.
+The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Stage 2 clock translation or Stage 8 I/O captures. External SPI mode is retired. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent gates pass. The legacy single-pause evaluator returns inconclusive for multi-step completion: inspect the raw clocks, data OEs, and rearming manually before accepting this revision.
 
 ### Preparation
 
-1. Build the correct cumulative firmware and pass the preceding phases. Stage 2 uses the empty Z80 socket. Stage 8 and SPI modes require a working Stage 8 board at the 1 MHz baseline.
+1. Build the correct cumulative firmware and pass preceding phases. Stage 2 uses the empty Z80 socket; Stage 8 requires the assisted-loader board at the 1 MHz baseline.
 2. Power off before changing probes. Use compensated 10X probes, full bandwidth, DC coupling, 1 MOhm inputs, verified deskew and common circuit ground. Scope ground clips are not floating inputs.
 3. Install Node.js 20 or later and run `npm ci`. Build the current [rigol-mcp image](https://github.com/gloveboxes/rigol-mcp) in the selected runtime and initialize its capture volume using that project's instructions.
 4. Stop the registered Rigol MCP server yourself and close the Pico serial terminal. The runner starts one dedicated server and calls it sequentially. `--exclusive-session` is your acknowledgement, not automatic proof that no other client is connected.
@@ -157,11 +157,11 @@ npm run scope:acceptance -- --mode stage2 --runtime container \
 
 Use `--runtime docker` for Docker. Commands `1`, `2`, and `3` report requested and calculated actual clock rates. The runner compares hardware frequency to the calculated rate within 1%, requires 45-55% duty and corresponding pulse widths, checks the 4.75-5.25 V supply, and compares settled Z80 clock HIGH against measured VCC minus 0.5 V. The 1% check detects gross errors, not oscillator accuracy or jitter. Sentinel/missing readings are inconclusive, never zero or PASS.
 
-Use robust settled levels for logic swing and raw extrema for overshoot/undershoot; inspect both against receiving-device limits. Check extra threshold crossings and the first/last pulses. Full phase qualification still requires every buffer path, GAL logic, startup and power-cycle tests. A firmware `DONE` message means only that the stimulus completed.
+Use robust settled levels for logic swing and raw extrema for overshoot/undershoot; inspect both against receiving-device limits. Check extra threshold crossings and the first/last pulses. Full qualification still requires every buffer path, HCT32 gates, startup and power-cycle tests. A firmware `DONE` message means only that stimulus completed.
 
 ### Stage 8 Clock Stop and Resume
 
-Connect CH1=Z80 IORQ# pin 20, CH2=WAIT# pin 24, CH3=CLK pin 6, CH4=Pico DATA_ENABLE GP7. Thresholds are 2.5 V on the 5 V side and 1.65 V on the Pico side. Verify actual rails in a separate supply capture. Set the following variables using the exact CPU datasheet and an approved latency/pause budget; the runner deliberately has no guessed timing limits:
+Connect CH1=Z80 IORQ# pin 20, CH2=WAIT# pin 24, CH3=CLK pin 6, CH4=Pico IO_RELEASE GP9 (header pin 12). Thresholds are 2.5 V on the 5 V side and 1.65 V on the Pico side. Verify actual rails separately. Set these variables using the CPU datasheet and approved latency/pause budget; the runner has no guessed limits:
 
 ```sh
 npm run scope:acceptance -- --mode stage8 --runtime container \
@@ -174,25 +174,12 @@ npm run scope:acceptance -- --mode stage8 --runtime container \
 
 The runner starts the existing one-hour RAM/USB checker, samples I/O events, checks fault-counter deltas, and holds the CPU in reset on exit. A 60-second run is not a one-hour pass. For a full run use `--duration 3600`; the firmware's one-hour PASS message must also be observed. Exercise USB traffic externally; later-stage Wi-Fi/storage workload evidence remains separate. Discrete captures cannot prove there were no faults between records.
 
-Aligned stopped RAW CSV captures are streamed to the host. The evaluator separates ordinary high/low pulse minima from extended intervals associated with complete IORQ assertions. It checks last-clock-edge latency, pause duration, WAIT assertion/release, DATA_ENABLE ordering, and premature WAIT reassertion. Unaligned data fails; insufficient sampling or incomplete events are inconclusive. Never include intentional pauses in ordinary periodic-jitter statistics.
+Aligned stopped RAW CSV captures are streamed to the host. The evaluator separates ordinary pulse minima from extended intervals, checks WAIT and IO_RELEASE ordering, and rejects unaligned data. Its exactly-one-pause assumption is not sufficient for stepped completion; retain inconclusive results and review every completion clock manually. Insufficient sampling or incomplete events are inconclusive. Never include deliberate pauses/steps in periodic-jitter statistics.
 
-The last observed edge is not the instant PWM stopped: uncertainty includes clock phase. Do not describe it as exact ISR-entry latency. Repeat CH4 on RD#, WR#, DATA_DIR and both transceiver OE# nodes. Measure WAIT setup/hold and data setup/hold at the Z80 sampling edge separately. Keep the DSLogic Group A-D captures for whole-bus ordering.
+The last observed edge is not the instant PWM stopped: uncertainty includes clock phase. Do not describe it as exact ISR-entry latency. Repeat CH4 on RD#, WR#, GP6/GP7 and both actual transceiver OEs. Measure WAIT and data setup/hold separately. Prove both OEs HIGH and GP9 LOW before PWM resumes. Keep DSLogic Group A-D captures for whole-bus ordering.
 
-IODIR verification adds two SPI read transactions to each direction configuration, including I/O servicing. Requalify service time, throughput, first resumed pulse, and watchdog margins after this change; the 500 ms software deadline is not a CPU timing specification.
-
-### MCP23S17 SPI Evidence
-
-Use Stage 8 firmware. Connect CH1=MCP SCK, CH2=MCP CS#, CH3=MCP SI, CH4=MCP SO on the expander's 5 V side. Never bypass the LVC buffer into Pico MISO.
-
-```sh
-npm run scope:acceptance -- --mode spi --runtime container \
-   --ip 192.168.1.43 --port /dev/cu.usbmodemYOUR_DEVICE \
-   --output build/bench/spi-first --exclusive-session --bench-confirmed
-```
-
-The runner uses mode-0, MSB-first decoding, real active-LOW chip select and explicit 2.5 V thresholds. Review the saved transaction data against opcodes `0x40`/`0x41`, IODIRA/B `0x00`/`0x01`, GPIOA `0x12`, and OLATA/B `0x14`/`0x15`. For reads, the third MISO byte is the returned register; MOSI contains dummy data. Compare IODIR reads to preceding writes. Verify actual SCK rate and CS setup/hold, then repeat captures across voltage translators.
-
-SPI byte counts prove transfer completion, not peripheral acknowledgement. Firmware reads both direction registers back and asserts ADDR_ENABLE LOW on short transfers or mismatch. Latch preload remains before output enable. A disconnected device returning zeros can mimic an all-output direction register: retain the Stage 3 alternating-pattern register test and SRAM verification. Do not blindly retry uncertain ownership transitions.
+Requalify service time, throughput, first resumed pulse, and watchdog margins
+after trap changes; the 500 ms software deadline is not a CPU timing limit.
 
 ### Reports and Restoration
 
@@ -209,14 +196,18 @@ npm run test:control
 npm run test:scope
 ```
 
-Native tests compile production expander, bus, CPU and trap code against GPIO/SPI/time fakes. They cover short first/second SPI writes/reads, both IODIR mismatches, absent/stuck BUSACK, stuck IORQ/RD/WR, invalid RD/WR combinations, and peripheral failure during a trap. They prove code-path behavior, not analogue safety or actual timing.
+Native tests compile production bus, CPU, loader, and trap code against GPIO,
+clock, and time fakes. They cover injection cycle/byte behavior, data exclusion,
+address boundaries, verification corruption, absent/stuck BUSACK, stuck I/O
+controls, and invalid RD/WR combinations. They prove code behavior, not real
+Z80 reset-exit phase, analogue safety, or timing.
 
 | Fault | Required observed behavior |
 | --- | --- |
-| BUSACK never asserts | Request timeout, BUSREQ HIGH, address/data isolated, no SRAM DMA. The current request-timeout path leaves the CPU running. |
-| BUSACK stuck LOW on release | RESET LOW, address/data isolated, Pico SRAM CE/OE/WE HIGH, clock stopped. Capture translated SRAM pins too. |
+| BUSACK never asserts | Request timeout, BUSREQ HIGH, Pico data isolated, no flash programming. The request-timeout path leaves the CPU running. |
+| BUSACK stuck LOW on release | RESET LOW, Pico data isolated, boot inhibit HIGH, clock stopped. Capture translated SRAM controls too. |
 | IORQ or selected RD/WR stuck LOW | Release deadline expires; isolate, assert reset, supply reset clocks and reboot via watchdog. Capture the transient recovery, not just the final pins. |
-| Partial SPI or direction mismatch | Hold ADDR_ENABLE LOW; trap callers follow fail-closed watchdog recovery. Do not treat a completed write as verified configuration. |
-| Early DATA_ENABLE release or overlapping transceiver OEs | Reject qualification; capture direction and both OEs separately and with the logic analyzer. |
+| Injected image verification failure | Hold RESET LOW, both data OEs HIGH, inhibit HIGH and clock stopped; do not execute an unverified image. |
+| Early IO_RELEASE or overlapping transceiver OEs | Reject qualification; capture GP9, both actual OEs, and data setup at the CPU sampling edge. |
 
 Physical fault injection needs an approved interposer that disconnects the real driver before forcing a level, power-off fixture changes, and explicit operator approval. Never short active push-pull outputs, bypass voltage translation, or leave installed 5 V ICs unpowered while driven. No electrical fault injection is automated here. Persistent faults may reboot repeatedly. Record recovery at receiving pins and repeat baseline qualification after wiring changes.

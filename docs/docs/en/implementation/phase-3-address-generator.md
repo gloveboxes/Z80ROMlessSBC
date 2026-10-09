@@ -1,171 +1,32 @@
-# 8.4 Phase 3 - MCP23S17 SPI Address Generator
+# Phase 3 - Control and Port Monitor
 
-**Prerequisite:** The [Phase 2 pass gate](phase-2-buffer-clock.md#pass-gate) must pass.
+**Prerequisite:** [Phase 2](phase-2-buffer-clock.md#pass-gate).
+**Install:** U7 SN74LVC244AN only; Z80/SRAM remain absent.
+The historical source-directory name is retained, but no address expander is fitted.
 
-**Install:** The 3.3 V-powered SN74LVC244AN first, then Q1 and the
-MCP23S17-E/SP. The already-tested AHCT244 supplies all three SPI inputs.
-Keep Z80 and SRAM removed; their empty sockets expose the pulled-up
-shared address bus for probing.
+## Wiring - Control and Port Monitor
 
-**What you are proving:** the Pico can set and read the sixteen wires that
-will select Z80 memory addresses. First prove the SPI link with `m`, then
-test the physical address outputs with `o`. Register readback alone does not
-prove that the far end of an address wire is connected.
+Wire all eight channels from the
+[monitor table](../hardware/address-interface.md#port-address-monitor).
+U7 pins 1/10/19 go to GND, pin 20 to Pico-derived 3.3 V, with 100 nF nearby.
+No unused monitor channels remain. Never feed 5 V directly into the Pico.
 
-The MCP has two unrelated sets of similarly named pins: **A0/A1/A2** select
-its SPI hardware address and are tied to GND; **GPA0-GPA7 and GPB0-GPB7** are
-its sixteen GPIOs connected to the computer's A0-A15 bus. Do not confuse
-either set with Pico GP numbers.
+## Firmware and Tests
 
-**Electrical hold point:** Fit level translation on all SPI inputs. The
-MCP23S17 datasheet specifies $V_{IH} \ge 0.8V_{DD}$ for CS#, SCK, and
-SI, which is 4.0 V with a 5 V supply; a Pico 3.3 V HIGH is therefore
-not compliant. Translate Pico CS#, SCK, and MOSI through SN74AHCT244
-channels 3-5 in the [output-buffer map](../hardware/output-buffer.md).
-Buffer MCP SO/MISO down through SN74LVC244AN channel 2A1/2Y1 in the
-[input-buffer map](../hardware/bus-isolation.md#53-sn74lvc244an-5-v-to-33-v-input-buffer);
-do not connect it directly to GP20. Tie the MCP23S17 A0/A1/A2 hardware
-address pins to GND as shown in the
-[address-interface map](../hardware/address-interface.md). Confirm
-this wiring against the schematic before proceeding.
+Build `z80_stage03_control_inputs`; UF2:
+`build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2`.
+[Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c).
 
-## Wiring - SPI and MCP23S17 reset
+`s` samples BUSACK/IORQ/RD/WR and `port`. With CPU absent and pulls fitted,
+controls are HIGH and port is `17`. Pull each input LOW through a temporary
+1 kOhm resistor; confirm only the matching GPIO/decoded bit changes and U7
+outputs remain in the 3.3 V domain. Never short output pins to a rail.
 
-Install and continuity-check these connections before inserting the MCP23S17.
-The diagrams are included from the authoritative hardware reference so the
-phase instructions and consolidated pin maps cannot drift.
+Pull IORQ LOW and verify WAIT LOW. Type `w` to raise IO_RELEASE: WAIT must
+rise without either data OE becoming active. Type `x` to rearm WAIT, then
+remove the temporary pull. This tests WAIT independently of data direction.
 
-{%
-  include-markdown "../hardware/address-interface.md"
-  start='<template id="phase-3-spi-reset-wiring">'
-  end="phase-3-spi-reset-wiring-end</template>"
-%}
+## Pass Gate
 
-Install the two pulled-up address trunks from the MCP23S17 to the empty Z80
-and SRAM sockets. Repeated A0-A15 labels in the chip-pair views are taps on
-the same physical nets, not separate or serial paths.
-
-{%
-  include-markdown "../hardware/address-interface.md"
-  start='<template id="phase-3-address-trunk-wiring">'
-  end="phase-3-address-trunk-wiring-end</template>"
-%}
-
-Install and continuity-check the complete 5 V-to-3.3 V input-buffer wiring
-before inserting the SN74LVC244AN.
-
-{%
-  include-markdown "../hardware/bus-isolation.md"
-  start='<template id="phase-3-input-buffer-wiring">'
-  end="phase-3-input-buffer-wiring-end</template>"
-%}
-
-**Firmware feature:** Add byte-level SPI register read/write, a
-write-then-read register test, and 16-bit walking-one/walking-zero tests
-that can configure both MCP ports as either inputs or outputs.
-
-**Application source:** [src/stage03_mcp23s17/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c),
-using the shared [MCP23S17 driver](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c).
-
-## MCP23S17 Register and Port Test (Phases 3-4)
-
-**Maintained source:** [mcp23s17.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/mcp23s17.h)
-and [mcp23s17.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/mcp23s17.c).
-
-The SPI translator sits between these Pico pins and the 5 V MCP23S17;
-MISO/SO returns through the SN74LVC244AN. The register test proves
-communication before the full address-pattern tests. There are no separate
-address transceivers: the MCP ports drive the shared address bus directly.
-
-```c
-#include "hardware/spi.h"
-
-enum { MCP_WRITE = 0x40, MCP_READ = 0x41 };
-enum { IODIRA = 0x00, IODIRB = 0x01, GPIOA = 0x12, GPIOB = 0x13,
-     OLATA = 0x14, OLATB = 0x15 };
-
-static void mcp_spi_init(void) {
-  output_with_initial_level(PIN_SPI_CS_N, 1);
-  spi_init(spi0, 4000000);
-  gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
-  gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
-  gpio_set_function(PIN_SPI_MISO, GPIO_FUNC_SPI);
-}
-
-static void mcp_write(uint8_t reg, uint8_t value) {
-  uint8_t frame[] = { MCP_WRITE, reg, value };
-  gpio_put(PIN_SPI_CS_N, 0);
-  spi_write_blocking(spi0, frame, sizeof frame);
-  gpio_put(PIN_SPI_CS_N, 1);
-}
-
-static uint8_t mcp_read(uint8_t reg) {
-  uint8_t tx[] = { MCP_READ, reg, 0x00 };
-  uint8_t rx[sizeof tx];
-  gpio_put(PIN_SPI_CS_N, 0);
-  spi_write_read_blocking(spi0, tx, rx, sizeof tx);
-  gpio_put(PIN_SPI_CS_N, 1);
-  return rx[2];
-}
-
-static bool mcp_register_test(void) {
-  const uint8_t patterns[] = { 0x55, 0xAA };
-  gpio_put(PIN_ADDR_ENABLE, 0); // Reset and isolate the MCP23S17 outputs.
-  busy_wait_us_32(1);
-  gpio_put(PIN_ADDR_ENABLE, 1);
-  busy_wait_us_32(1);
-
-  bool passed = true;
-  for (size_t i = 0; i < sizeof patterns; ++i) {
-    mcp_write(IODIRA, patterns[i]);
-    mcp_write(IODIRB, (uint8_t)~patterns[i]);
-    if (mcp_read(IODIRA) != patterns[i] ||
-      mcp_read(IODIRB) != (uint8_t)~patterns[i]) {
-      passed = false;
-      break;
-    }
-    mcp_write(OLATA, patterns[i]);
-    mcp_write(OLATB, (uint8_t)~patterns[i]);
-    if (mcp_read(OLATA) != patterns[i] ||
-      mcp_read(OLATB) != (uint8_t)~patterns[i]) {
-      passed = false;
-      break;
-    }
-  }
-
-  mcp_write(IODIRA, 0xFF);
-  mcp_write(IODIRB, 0xFF);
-  bool restored = mcp_read(IODIRA) == 0xFF && mcp_read(IODIRB) == 0xFF;
-  gpio_put(PIN_ADDR_ENABLE, 0);
-  return passed && restored;
-}
-```
-
-**Test plan:**
-
-1. Before fitting the MCP, pull each used LVC244 input LOW through
-  1 kOhm, then release it HIGH through its fitted 10 kOhm pull-up.
-  Verify the matching Pico input reads LOW and HIGH at 3.3 V levels
-  and unused channels do not change.
-2. With GP9 LOW, verify Q1 holds MCP RESET# LOW and all A0-A15 nodes
-  read HIGH through the two SIP networks. Drive GP9 HIGH and require a
-  clean 5 V RESET# release.
-3. With compliant translation fitted, write and read back 0x55 and 0xAA
-  in IODIRA, IODIRB, OLATA, and OLATB with command `m`.
-4. Configure outputs and probe walking-one and walking-zero patterns at
-  the empty Z80 and SRAM sockets with command `o`.
-5. With the MCP ports in input mode, use command `i`: with no temporary
-  test lead, the fitted pull-ups should give `inputs=ffff`. Power off and
-  connect one address line to GND through 1 kOhm, then power up and run `i`
-  again. Only that bit should become 0; A0 gives `fffe`, A15 gives `7fff`.
-  Repeat for every line, disconnecting power before moving the lead. Do not
-  use a 10 kOhm pull-down against the fitted 10 kOhm pull-up: it produces
-  about 2.5 V, not a valid LOW. Remove the temporary lead before running
-  output or register tests.
-6. Run command `e` for 10,000 alternating register writes and reads with
-  zero errors.
-
-## Pass gate
-
-Compliant SPI levels, error-free register access, and
-correct operation of all 16 port bits in both directions.
+All eight input routes correct; WAIT release works with data paths disabled.
+Decoded address bits match `address & 0x17`, not a full 8-bit decode.

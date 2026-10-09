@@ -7,7 +7,6 @@
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/io_trap.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/test_progress.h"
@@ -156,7 +155,7 @@ static bool load_and_start(const uint8_t *program, size_t length,
   z80_io_trap_disable();
   z80_cpu_fail_closed();
   __atomic_fetch_add(&boot_attempts, 1, __ATOMIC_RELAXED);
-  if (!z80_cpu_prepare_reset_dma() ||
+  if (!z80_cpu_prepare_loader() ||
       !z80_sram_load(0, full_test_image, sizeof(full_test_image))) {
     __atomic_fetch_add(&dma_failures, 1, __ATOMIC_RELAXED);
     return false;
@@ -396,7 +395,6 @@ static void service_hour_test(void) {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  mcp23s17_init(4000000);
   queue_init(&terminal_rx_queue, sizeof(uint8_t), TERMINAL_RX_DEPTH);
   queue_init(&terminal_tx_queue, sizeof(uint8_t), TERMINAL_TX_DEPTH);
   build_self_test_image();

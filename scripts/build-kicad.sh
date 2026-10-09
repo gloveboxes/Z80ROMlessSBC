@@ -22,6 +22,38 @@ mkdir -p "$staged_exports" "$staged_fabrication/gerbers" \
   "$staged_fabrication/drill" "$staged_reports"
 trap 'rm -rf "$temporary_dir"' EXIT
 
+if [[ "${1:---schematic-only}" == "--schematic-only" ]]; then
+  command -v kicad-cli >/dev/null
+  "$python_bin" "$repo_root/scripts/build-kicad-schematic.py"
+  cd "$kicad_dir"
+  kicad-cli sch erc --severity-all --exit-code-violations --format json \
+    -o "$staged_reports/z80_romless_sbc-erc.json" z80_romless_sbc.kicad_sch
+  kicad-cli sch export netlist --format kicadxml \
+    -o "$temporary_netlist" z80_romless_sbc.kicad_sch
+  "$python_bin" "$repo_root/scripts/check-kicad-netlist.py" \
+    reports/net_manifest.json "$temporary_netlist"
+  "$python_bin" "$repo_root/scripts/check-doc-interconnects.py"
+  kicad-cli sch export svg --exclude-drawing-sheet \
+    -o "$staged_exports" z80_romless_sbc.kicad_sch
+  perl -pi -e 's/[ \t]+$//' "$staged_exports/z80_romless_sbc.svg"
+  kicad-cli sch export pdf \
+    -o "$staged_exports/z80_romless_sbc.pdf" z80_romless_sbc.kicad_sch
+  kicad-cli sch export bom --fields Reference,Value,Footprint,QUANTITY,DNP \
+    --labels Refs,Value,Footprint,Qty,DNP --group-by Value,Footprint --exclude-dnp \
+    -o "$staged_exports/z80_romless_sbc-bom.csv" z80_romless_sbc.kicad_sch
+  kicad-cli sch export netlist --format kicadsexpr \
+    -o "$staged_reports/z80_romless_sbc.net" z80_romless_sbc.kicad_sch
+  cp "$staged_exports/"* exports/
+  cp "$staged_reports/"* reports/
+  cp "$temporary_netlist" reports/netlist.xml
+  echo "Schematic validated and exported; PCB and fabrication outputs unchanged."
+  exit 0
+fi
+if [[ "$1" != "--full" ]]; then
+  echo "usage: $0 [--schematic-only|--full]" >&2
+  exit 1
+fi
+
 if [[ -n "${KICAD_PYTHON:-}" ]]; then
   kicad_python="$KICAD_PYTHON"
 elif "$python_bin" -c 'import pcbnew' >/dev/null 2>&1; then

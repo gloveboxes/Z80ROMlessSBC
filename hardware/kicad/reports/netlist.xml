@@ -1,0 +1,1988 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
+    <date>2026-10-09T10:36:24</date>
+    <tool>Eeschema 10.0.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Z80ROMlessSBC - Exact Breadboard Electrical Schematic</title>
+        <company>Z80ROMlessSBC</company>
+        <rev>1</rev>
+        <date>2026-08-23</date>
+        <source>z80_romless_sbc.kicad_sch</source>
+        <comment number="1" value="Native KiCad 10 schematic generated from the verified README pin map"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="A1">
+      <value>Raspberry Pi Pico 2 W</value>
+      <footprint>Module:RaspberryPi_Pico_Common_THT</footprint>
+      <description>Z80ROMlessSBC Raspberry Pi Pico 2 W</description>
+      <fields>
+        <field name="Footprint">Module:RaspberryPi_Pico_Common_THT</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC Raspberry Pi Pico 2 W</field>
+      </fields>
+      <libsource lib="Z80SBC" part="PICO2" description="Z80ROMlessSBC project symbol: Raspberry Pi Pico 2"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0e7fc882-3f53-591b-9538-2c9522930405</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="20"/>
+            <pin num="19"/>
+            <pin num="18"/>
+            <pin num="17"/>
+            <pin num="16"/>
+            <pin num="15"/>
+            <pin num="14"/>
+            <pin num="13"/>
+            <pin num="12"/>
+            <pin num="11"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="40"/>
+            <pin num="39"/>
+            <pin num="38"/>
+            <pin num="37"/>
+            <pin num="36"/>
+            <pin num="35"/>
+            <pin num="34"/>
+            <pin num="33"/>
+            <pin num="32"/>
+            <pin num="31"/>
+            <pin num="30"/>
+            <pin num="29"/>
+            <pin num="28"/>
+            <pin num="27"/>
+            <pin num="26"/>
+            <pin num="25"/>
+            <pin num="24"/>
+            <pin num="23"/>
+            <pin num="22"/>
+            <pin num="21"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C1">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U1 Z80 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U1 Z80 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>59ae212b-a1fb-5742-8817-cb92e76ddbfe</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C2">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U2 SRAM bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U2 SRAM bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0839f9ec-becc-5c79-bea1-80d2e6466887</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C3">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U3 HCT32 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U3 HCT32 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>45bcb70d-cefa-5f18-b210-b8cd755c07e1</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C4">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U4 AHCT244 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U4 AHCT244 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>86ab5bd7-0c7c-5ca2-afa4-ebd5a73da3d7</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C5">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U7 LVC244 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U7 LVC244 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4339683e-404f-5dc0-b804-8bfd80374ef9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C6">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U9 AHCT245 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U9 AHCT245 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cd8a422d-32cb-50b2-b06d-0de4f9df1b5d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C7">
+      <value>100n</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</footprint>
+      <description>U10 LVC245 bypass</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">U10 LVC245 bypass</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e24e6145-bdc3-59c2-a375-f8ffea36d821</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C8">
+      <value>22u</value>
+      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <description>Memory cluster bulk</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Memory cluster bulk</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0ca49643-0f30-52b8-9186-7f71598d26ee</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C9">
+      <value>22u</value>
+      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <description>Core cluster bulk</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Core cluster bulk</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b61b110a-2f7f-530a-8d5a-f4dfe1b20d8c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C10">
+      <value>22u</value>
+      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <description>Peripheral cluster bulk</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Peripheral cluster bulk</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b3d6cc80-4eca-582d-85e0-0421fd8fd3e8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C11">
+      <value>100u</value>
+      <footprint>Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</footprint>
+      <description>Supply-entry bulk</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Supply-entry bulk</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>dadc8238-6ff4-5ec4-849a-c1f30b9887c5</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D1">
+      <value>1N5819</value>
+      <footprint>Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal</footprint>
+      <description>Z80ROMlessSBC 1N5819</description>
+      <fields>
+        <field name="Footprint">Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC 1N5819</field>
+      </fields>
+      <libsource lib="Z80SBC" part="DIODE" description="Z80ROMlessSBC project symbol: 1N5819"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>81d30684-ca39-5cf3-8329-396f1296431a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J1">
+      <value>REGULATED 5V INPUT</value>
+      <footprint>TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm</footprint>
+      <description>Z80ROMlessSBC REGULATED 5V INPUT</description>
+      <fields>
+        <field name="Footprint">TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC REGULATED 5V INPUT</field>
+      </fields>
+      <libsource lib="Z80SBC" part="SUPPLY" description="Z80ROMlessSBC project symbol: 5V INPUT"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0d49d022-f741-5a3c-9698-cb92a98d26ea</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R17">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for PICO_BUSREQ_N</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for PICO_BUSREQ_N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>87b025ad-09d5-5bd9-a88b-2aebe0dd45e7</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R18">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for BOOT_READ_DISABLE</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for BOOT_READ_DISABLE</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0909fa2f-eaaa-5247-abc3-3d6aa6ad206f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R19">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for PICO_DATA_UP_OE_N</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for PICO_DATA_UP_OE_N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a67987ff-1e4f-5234-a665-109ec6bb4871</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R20">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for DATA_DOWN_OE_N</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for DATA_DOWN_OE_N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>65f53010-4d41-55d6-bba0-9bcad863f161</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R21">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for PICO_CLK</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for PICO_CLK</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e1049847-de89-5351-8c1d-e4f166bd8e37</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R22">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for RESET_N</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for RESET_N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e1a1e3c0-1bd3-5d71-bfe1-4166e16779f9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R23">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k startup bias for IO_RELEASE</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k startup bias for IO_RELEASE</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>89c84417-7f0e-5870-af2f-68c4d6cf3ad9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="RN1">
+      <value>8x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP9</footprint>
+      <description>A0-A7 pull-up network</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Array_SIP9</field>
+        <field name="Datasheet"/>
+        <field name="Description">A0-A7 pull-up network</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RN8" description="Z80ROMlessSBC project symbol: 8x10k bussed"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0f20059a-3717-5e6c-b695-4dd6ac20227f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="RN2">
+      <value>8x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP9</footprint>
+      <description>A8-A15 pull-up network</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Array_SIP9</field>
+        <field name="Datasheet"/>
+        <field name="Description">A8-A15 pull-up network</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RN8" description="Z80ROMlessSBC project symbol: 8x10k bussed"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5dc49cbb-1936-5de1-8764-40ccdb3434e0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="RN3">
+      <value>8x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP9</footprint>
+      <description>Pico D0-D7 pull-down network</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Array_SIP9</field>
+        <field name="Datasheet"/>
+        <field name="Description">Pico D0-D7 pull-down network</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RN8" description="Z80ROMlessSBC project symbol: 8x10k bussed"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1d9c570d-4678-508e-bbbd-768d5ed18a2e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="RN4">
+      <value>8x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP9</footprint>
+      <description>Z80 control pull-up network</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Array_SIP9</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80 control pull-up network</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RN8" description="Z80ROMlessSBC project symbol: 8x10k bussed"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>908f5be9-ed00-5cf9-a228-c042ff781f8b</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP1">
+      <value>M1# TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC M1# TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC M1# TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9cd720dd-dd82-50cc-924d-232daebbcb1f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP2">
+      <value>CLK TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC CLK TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC CLK TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>313234fa-9a09-5925-928a-ffde1f65c7ef</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP3">
+      <value>RESET# TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC RESET# TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC RESET# TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>acd828d8-32e3-53da-a5af-e3494b354ba5</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP4">
+      <value>WAIT# TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC WAIT# TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC WAIT# TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>73c86315-8a9c-5588-a806-77026b21b200</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP5">
+      <value>BUSREQ# TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC BUSREQ# TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC BUSREQ# TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bc767725-3959-5fdc-adcf-18afa2e68ff8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP6">
+      <value>BUSACK# TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC BUSACK# TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC BUSACK# TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ee10098b-3242-58dc-a55c-9ff663759803</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP7">
+      <value>GND TEST</value>
+      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
+      <description>Z80ROMlessSBC GND TEST</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC GND TEST</field>
+      </fields>
+      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a8206f66-d9d0-5a6e-a33f-19a843f0dbb1</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U1">
+      <value>Z84C0020PEC</value>
+      <footprint>Package_DIP:DIP-40_W15.24mm</footprint>
+      <description>Z80ROMlessSBC Z84C0020PEC</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-40_W15.24mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC Z84C0020PEC</field>
+      </fields>
+      <libsource lib="Z80SBC" part="Z80_CPU" description="Z80ROMlessSBC project symbol: Z84C0020PEC"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8eeaeda5-facb-5283-bc7e-596538d8024e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="26"/>
+            <pin num="25"/>
+            <pin num="24"/>
+            <pin num="17"/>
+            <pin num="16"/>
+            <pin num="15"/>
+            <pin num="14"/>
+            <pin num="13"/>
+            <pin num="12"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="29"/>
+            <pin num="11"/>
+            <pin num="40"/>
+            <pin num="39"/>
+            <pin num="38"/>
+            <pin num="37"/>
+            <pin num="36"/>
+            <pin num="35"/>
+            <pin num="34"/>
+            <pin num="33"/>
+            <pin num="32"/>
+            <pin num="31"/>
+            <pin num="30"/>
+            <pin num="28"/>
+            <pin num="27"/>
+            <pin num="23"/>
+            <pin num="22"/>
+            <pin num="21"/>
+            <pin num="20"/>
+            <pin num="19"/>
+            <pin num="18"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U2">
+      <value>AS6C1008-55PCN</value>
+      <footprint>Package_DIP:DIP-32_W15.24mm</footprint>
+      <description>Z80ROMlessSBC AS6C1008-55PCN</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-32_W15.24mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC AS6C1008-55PCN</field>
+      </fields>
+      <libsource lib="Z80SBC" part="SRAM" description="Z80ROMlessSBC project symbol: AS6C1008-55PCN"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2a964ff4-f278-596e-899a-535ef723ce37</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="31"/>
+            <pin num="28"/>
+            <pin num="27"/>
+            <pin num="26"/>
+            <pin num="25"/>
+            <pin num="23"/>
+            <pin num="12"/>
+            <pin num="11"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="16"/>
+            <pin num="32"/>
+            <pin num="30"/>
+            <pin num="29"/>
+            <pin num="24"/>
+            <pin num="22"/>
+            <pin num="21"/>
+            <pin num="20"/>
+            <pin num="19"/>
+            <pin num="18"/>
+            <pin num="17"/>
+            <pin num="15"/>
+            <pin num="14"/>
+            <pin num="13"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U3">
+      <value>SN74HCT32N</value>
+      <footprint>Package_DIP:DIP-14_W7.62mm</footprint>
+      <description>Z80ROMlessSBC SN74HCT32N</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-14_W7.62mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC SN74HCT32N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="HCT32" description="Z80ROMlessSBC project symbol: SN74HCT32N"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>63914e99-152b-5e9a-bf60-d07272716224</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="13"/>
+            <pin num="12"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="7"/>
+            <pin num="14"/>
+            <pin num="11"/>
+            <pin num="8"/>
+            <pin num="6"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U4">
+      <value>SN74AHCT244N</value>
+      <footprint>Package_DIP:DIP-20_W7.62mm</footprint>
+      <description>Z80ROMlessSBC SN74AHCT244N</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-20_W7.62mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC SN74AHCT244N</field>
+      </fields>
+      <libsource lib="Z80SBC" part="AHCT244" description="Z80ROMlessSBC project symbol: SN74AHCT244N"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1a27d62e-af97-5587-b96b-961db535ab90</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="19"/>
+            <pin num="17"/>
+            <pin num="15"/>
+            <pin num="13"/>
+            <pin num="11"/>
+            <pin num="8"/>
+            <pin num="6"/>
+            <pin num="4"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="10"/>
+            <pin num="20"/>
+            <pin num="18"/>
+            <pin num="16"/>
+            <pin num="14"/>
+            <pin num="12"/>
+            <pin num="9"/>
+            <pin num="7"/>
+            <pin num="5"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U7">
+      <value>SN74LVC244AN</value>
+      <footprint>Package_DIP:DIP-20_W7.62mm</footprint>
+      <description>Z80ROMlessSBC SN74LVC244AN</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-20_W7.62mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC SN74LVC244AN</field>
+      </fields>
+      <libsource lib="Z80SBC" part="LVC244" description="Z80ROMlessSBC project symbol: SN74LVC244AN"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>079fe717-fbde-50b7-bc2d-46e851f5c6cb</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="19"/>
+            <pin num="17"/>
+            <pin num="15"/>
+            <pin num="13"/>
+            <pin num="11"/>
+            <pin num="8"/>
+            <pin num="6"/>
+            <pin num="4"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="10"/>
+            <pin num="20"/>
+            <pin num="18"/>
+            <pin num="16"/>
+            <pin num="14"/>
+            <pin num="12"/>
+            <pin num="9"/>
+            <pin num="7"/>
+            <pin num="5"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U9">
+      <value>SN74AHCT245N Pico-to-bus</value>
+      <footprint>Package_DIP:DIP-20_W7.62mm</footprint>
+      <description>Z80ROMlessSBC SN74AHCT245N Pico-to-bus</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-20_W7.62mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC SN74AHCT245N Pico-to-bus</field>
+      </fields>
+      <libsource lib="Z80SBC" part="AHCT245" description="Z80ROMlessSBC project symbol: SN74AHCT245N"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>293a718f-35da-5e18-992f-8c190c4d7adf</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="19"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="10"/>
+            <pin num="20"/>
+            <pin num="11"/>
+            <pin num="12"/>
+            <pin num="13"/>
+            <pin num="14"/>
+            <pin num="15"/>
+            <pin num="16"/>
+            <pin num="17"/>
+            <pin num="18"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U10">
+      <value>SN74LVC245AN bus-to-Pico</value>
+      <footprint>Package_DIP:DIP-20_W7.62mm</footprint>
+      <description>Z80ROMlessSBC SN74LVC245AN bus-to-Pico</description>
+      <fields>
+        <field name="Footprint">Package_DIP:DIP-20_W7.62mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC SN74LVC245AN bus-to-Pico</field>
+      </fields>
+      <libsource lib="Z80SBC" part="LVC245" description="Z80ROMlessSBC project symbol: SN74LVC245AN"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>989c0815-8fb0-5f2c-90f3-8e4c4cb83240</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="19"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+            <pin num="10"/>
+            <pin num="20"/>
+            <pin num="11"/>
+            <pin num="12"/>
+            <pin num="13"/>
+            <pin num="14"/>
+            <pin num="15"/>
+            <pin num="16"/>
+            <pin num="17"/>
+            <pin num="18"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Z80SBC" part="AHCT244">
+      <description>Z80ROMlessSBC project symbol: SN74AHCT244N</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74AHCT244N</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: SN74AHCT244N</field>
+      </fields>
+      <pins>
+        <pin num="1" name="OE1#" type="input"/>
+        <pin num="2" name="1A1" type="input"/>
+        <pin num="3" name="2Y4" type="tri_state"/>
+        <pin num="4" name="1A2" type="input"/>
+        <pin num="5" name="2Y3" type="tri_state"/>
+        <pin num="6" name="1A3" type="input"/>
+        <pin num="7" name="2Y2" type="tri_state"/>
+        <pin num="8" name="1A4" type="input"/>
+        <pin num="9" name="2Y1" type="tri_state"/>
+        <pin num="10" name="GND" type="power_in"/>
+        <pin num="11" name="2A1" type="input"/>
+        <pin num="12" name="1Y4" type="tri_state"/>
+        <pin num="13" name="2A2" type="input"/>
+        <pin num="14" name="1Y3" type="tri_state"/>
+        <pin num="15" name="2A3" type="input"/>
+        <pin num="16" name="1Y2" type="tri_state"/>
+        <pin num="17" name="2A4" type="input"/>
+        <pin num="18" name="1Y1" type="tri_state"/>
+        <pin num="19" name="OE2#" type="input"/>
+        <pin num="20" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="AHCT245">
+      <description>Z80ROMlessSBC project symbol: SN74AHCT245N</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74AHCT245N</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: SN74AHCT245N</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DIR" type="input"/>
+        <pin num="2" name="A1" type="bidirectional"/>
+        <pin num="3" name="A2" type="bidirectional"/>
+        <pin num="4" name="A3" type="bidirectional"/>
+        <pin num="5" name="A4" type="bidirectional"/>
+        <pin num="6" name="A5" type="bidirectional"/>
+        <pin num="7" name="A6" type="bidirectional"/>
+        <pin num="8" name="A7" type="bidirectional"/>
+        <pin num="9" name="A8" type="bidirectional"/>
+        <pin num="10" name="GND" type="power_in"/>
+        <pin num="11" name="B8" type="bidirectional"/>
+        <pin num="12" name="B7" type="bidirectional"/>
+        <pin num="13" name="B6" type="bidirectional"/>
+        <pin num="14" name="B5" type="bidirectional"/>
+        <pin num="15" name="B4" type="bidirectional"/>
+        <pin num="16" name="B3" type="bidirectional"/>
+        <pin num="17" name="B2" type="bidirectional"/>
+        <pin num="18" name="B1" type="bidirectional"/>
+        <pin num="19" name="OE#" type="input"/>
+        <pin num="20" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="CAPACITOR">
+      <description>Z80ROMlessSBC project symbol: C</description>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+" type="passive"/>
+        <pin num="2" name="-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="DIODE">
+      <description>Z80ROMlessSBC project symbol: 1N5819</description>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">1N5819</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: 1N5819</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="HCT32">
+      <description>Z80ROMlessSBC project symbol: SN74HCT32N</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74HCT32N</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: SN74HCT32N</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1A" type="input"/>
+        <pin num="2" name="1B" type="input"/>
+        <pin num="3" name="1Y" type="output"/>
+        <pin num="4" name="2A" type="input"/>
+        <pin num="5" name="2B" type="input"/>
+        <pin num="6" name="2Y" type="output"/>
+        <pin num="7" name="GND" type="power_in"/>
+        <pin num="8" name="3Y" type="output"/>
+        <pin num="9" name="3A" type="input"/>
+        <pin num="10" name="3B" type="input"/>
+        <pin num="11" name="4Y" type="output"/>
+        <pin num="12" name="4A" type="input"/>
+        <pin num="13" name="4B" type="input"/>
+        <pin num="14" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="LVC244">
+      <description>Z80ROMlessSBC project symbol: SN74LVC244AN</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74LVC244AN</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: SN74LVC244AN</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1OE#" type="input"/>
+        <pin num="2" name="1A1" type="input"/>
+        <pin num="3" name="2Y4" type="tri_state"/>
+        <pin num="4" name="1A2" type="input"/>
+        <pin num="5" name="2Y3" type="tri_state"/>
+        <pin num="6" name="1A3" type="input"/>
+        <pin num="7" name="2Y2" type="tri_state"/>
+        <pin num="8" name="1A4" type="input"/>
+        <pin num="9" name="2Y1" type="tri_state"/>
+        <pin num="10" name="GND" type="power_in"/>
+        <pin num="11" name="2A1" type="input"/>
+        <pin num="12" name="1Y4" type="tri_state"/>
+        <pin num="13" name="2A2" type="input"/>
+        <pin num="14" name="1Y3" type="tri_state"/>
+        <pin num="15" name="2A3" type="input"/>
+        <pin num="16" name="1Y2" type="tri_state"/>
+        <pin num="17" name="2A4" type="input"/>
+        <pin num="18" name="1Y1" type="tri_state"/>
+        <pin num="19" name="2OE#" type="input"/>
+        <pin num="20" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="LVC245">
+      <description>Z80ROMlessSBC project symbol: SN74LVC245AN</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74LVC245AN</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: SN74LVC245AN</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DIR" type="input"/>
+        <pin num="2" name="A1" type="bidirectional"/>
+        <pin num="3" name="A2" type="bidirectional"/>
+        <pin num="4" name="A3" type="bidirectional"/>
+        <pin num="5" name="A4" type="bidirectional"/>
+        <pin num="6" name="A5" type="bidirectional"/>
+        <pin num="7" name="A6" type="bidirectional"/>
+        <pin num="8" name="A7" type="bidirectional"/>
+        <pin num="9" name="A8" type="bidirectional"/>
+        <pin num="10" name="GND" type="power_in"/>
+        <pin num="11" name="B8" type="bidirectional"/>
+        <pin num="12" name="B7" type="bidirectional"/>
+        <pin num="13" name="B6" type="bidirectional"/>
+        <pin num="14" name="B5" type="bidirectional"/>
+        <pin num="15" name="B4" type="bidirectional"/>
+        <pin num="16" name="B3" type="bidirectional"/>
+        <pin num="17" name="B2" type="bidirectional"/>
+        <pin num="18" name="B1" type="bidirectional"/>
+        <pin num="19" name="OE#" type="input"/>
+        <pin num="20" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="PICO2">
+      <description>Z80ROMlessSBC project symbol: Raspberry Pi Pico 2</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">Raspberry Pi Pico 2</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: Raspberry Pi Pico 2</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GP0" type="bidirectional"/>
+        <pin num="2" name="GP1" type="bidirectional"/>
+        <pin num="3" name="GND1" type="power_in"/>
+        <pin num="4" name="GP2" type="bidirectional"/>
+        <pin num="5" name="GP3" type="bidirectional"/>
+        <pin num="6" name="GP4" type="bidirectional"/>
+        <pin num="7" name="GP5" type="bidirectional"/>
+        <pin num="8" name="GND2" type="power_in"/>
+        <pin num="9" name="GP6" type="bidirectional"/>
+        <pin num="10" name="GP7" type="bidirectional"/>
+        <pin num="11" name="GP8" type="bidirectional"/>
+        <pin num="12" name="GP9" type="bidirectional"/>
+        <pin num="13" name="GND3" type="power_in"/>
+        <pin num="14" name="GP10" type="bidirectional"/>
+        <pin num="15" name="GP11" type="bidirectional"/>
+        <pin num="16" name="GP12" type="bidirectional"/>
+        <pin num="17" name="GP13" type="bidirectional"/>
+        <pin num="18" name="GND4" type="power_in"/>
+        <pin num="19" name="GP14" type="bidirectional"/>
+        <pin num="20" name="GP15" type="bidirectional"/>
+        <pin num="21" name="GP16" type="bidirectional"/>
+        <pin num="22" name="GP17" type="bidirectional"/>
+        <pin num="23" name="GND5" type="power_in"/>
+        <pin num="24" name="GP18" type="bidirectional"/>
+        <pin num="25" name="GP19" type="bidirectional"/>
+        <pin num="26" name="GP20" type="bidirectional"/>
+        <pin num="27" name="GP21" type="bidirectional"/>
+        <pin num="28" name="GND6" type="power_in"/>
+        <pin num="29" name="GP22" type="bidirectional"/>
+        <pin num="30" name="RUN" type="input"/>
+        <pin num="31" name="GP26" type="bidirectional"/>
+        <pin num="32" name="GP27" type="bidirectional"/>
+        <pin num="33" name="AGND" type="power_in"/>
+        <pin num="34" name="GP28" type="bidirectional"/>
+        <pin num="35" name="ADC_VREF" type="power_in"/>
+        <pin num="36" name="3V3_OUT" type="power_out"/>
+        <pin num="37" name="3V3_EN" type="input"/>
+        <pin num="38" name="GND7" type="power_in"/>
+        <pin num="39" name="VSYS" type="power_in"/>
+        <pin num="40" name="VBUS" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="RESISTOR">
+      <description>Z80ROMlessSBC project symbol: 10k</description>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">10k</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: 10k</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="RN8">
+      <description>Z80ROMlessSBC project symbol: 8x10k bussed</description>
+      <fields>
+        <field name="Reference">RN</field>
+        <field name="Value">8x10k bussed</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: 8x10k bussed</field>
+      </fields>
+      <pins>
+        <pin num="1" name="COMMON" type="passive"/>
+        <pin num="2" name="R1" type="passive"/>
+        <pin num="3" name="R2" type="passive"/>
+        <pin num="4" name="R3" type="passive"/>
+        <pin num="5" name="R4" type="passive"/>
+        <pin num="6" name="R5" type="passive"/>
+        <pin num="7" name="R6" type="passive"/>
+        <pin num="8" name="R7" type="passive"/>
+        <pin num="9" name="R8" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="SRAM">
+      <description>Z80ROMlessSBC project symbol: AS6C1008-55PCN</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">AS6C1008-55PCN</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: AS6C1008-55PCN</field>
+      </fields>
+      <pins>
+        <pin num="1" name="NC" type="no_connect"/>
+        <pin num="2" name="A16" type="input"/>
+        <pin num="3" name="A14" type="input"/>
+        <pin num="4" name="A12" type="input"/>
+        <pin num="5" name="A7" type="input"/>
+        <pin num="6" name="A6" type="input"/>
+        <pin num="7" name="A5" type="input"/>
+        <pin num="8" name="A4" type="input"/>
+        <pin num="9" name="A3" type="input"/>
+        <pin num="10" name="A2" type="input"/>
+        <pin num="11" name="A1" type="input"/>
+        <pin num="12" name="A0" type="input"/>
+        <pin num="13" name="D0" type="bidirectional"/>
+        <pin num="14" name="D1" type="bidirectional"/>
+        <pin num="15" name="D2" type="bidirectional"/>
+        <pin num="16" name="GND" type="power_in"/>
+        <pin num="17" name="D3" type="bidirectional"/>
+        <pin num="18" name="D4" type="bidirectional"/>
+        <pin num="19" name="D5" type="bidirectional"/>
+        <pin num="20" name="D6" type="bidirectional"/>
+        <pin num="21" name="D7" type="bidirectional"/>
+        <pin num="22" name="CE#" type="input"/>
+        <pin num="23" name="A10" type="input"/>
+        <pin num="24" name="OE#" type="input"/>
+        <pin num="25" name="A11" type="input"/>
+        <pin num="26" name="A9" type="input"/>
+        <pin num="27" name="A8" type="input"/>
+        <pin num="28" name="A13" type="input"/>
+        <pin num="29" name="WE#" type="input"/>
+        <pin num="30" name="CE2" type="input"/>
+        <pin num="31" name="A15" type="input"/>
+        <pin num="32" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="SUPPLY">
+      <description>Z80ROMlessSBC project symbol: 5V INPUT</description>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">5V INPUT</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: 5V INPUT</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+5V" type="power_out"/>
+        <pin num="2" name="GND" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="TESTPOINT">
+      <description>Z80ROMlessSBC project symbol: M1# TEST</description>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">M1# TEST</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: M1# TEST</field>
+      </fields>
+      <pins>
+        <pin num="1" name="TP" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="Z80_CPU">
+      <description>Z80ROMlessSBC project symbol: Z84C0020PEC</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">Z84C0020PEC</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: Z84C0020PEC</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A11" type="tri_state"/>
+        <pin num="2" name="A12" type="tri_state"/>
+        <pin num="3" name="A13" type="tri_state"/>
+        <pin num="4" name="A14" type="tri_state"/>
+        <pin num="5" name="A15" type="tri_state"/>
+        <pin num="6" name="CLK" type="input"/>
+        <pin num="7" name="D4" type="bidirectional"/>
+        <pin num="8" name="D3" type="bidirectional"/>
+        <pin num="9" name="D5" type="bidirectional"/>
+        <pin num="10" name="D6" type="bidirectional"/>
+        <pin num="11" name="VCC" type="power_in"/>
+        <pin num="12" name="D2" type="bidirectional"/>
+        <pin num="13" name="D7" type="bidirectional"/>
+        <pin num="14" name="D0" type="bidirectional"/>
+        <pin num="15" name="D1" type="bidirectional"/>
+        <pin num="16" name="INT#" type="input"/>
+        <pin num="17" name="NMI#" type="input"/>
+        <pin num="18" name="HALT#" type="tri_state"/>
+        <pin num="19" name="MREQ#" type="tri_state"/>
+        <pin num="20" name="IORQ#" type="tri_state"/>
+        <pin num="21" name="RD#" type="tri_state"/>
+        <pin num="22" name="WR#" type="tri_state"/>
+        <pin num="23" name="BUSACK#" type="tri_state"/>
+        <pin num="24" name="WAIT#" type="input"/>
+        <pin num="25" name="BUSREQ#" type="input"/>
+        <pin num="26" name="RESET#" type="input"/>
+        <pin num="27" name="M1#" type="tri_state"/>
+        <pin num="28" name="RFSH#" type="tri_state"/>
+        <pin num="29" name="GND" type="power_in"/>
+        <pin num="30" name="A0" type="tri_state"/>
+        <pin num="31" name="A1" type="tri_state"/>
+        <pin num="32" name="A2" type="tri_state"/>
+        <pin num="33" name="A3" type="tri_state"/>
+        <pin num="34" name="A4" type="tri_state"/>
+        <pin num="35" name="A5" type="tri_state"/>
+        <pin num="36" name="A6" type="tri_state"/>
+        <pin num="37" name="A7" type="tri_state"/>
+        <pin num="38" name="A8" type="tri_state"/>
+        <pin num="39" name="A9" type="tri_state"/>
+        <pin num="40" name="A10" type="tri_state"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Z80SBC">
+      <uri>${KIPRJMOD}/z80sbc.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="/+3V3" class="Default">
+      <node ref="A1" pin="36" pinfunction="3V3_OUT_36" pintype="power_out"/>
+      <node ref="C5" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C7" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="R17" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R18" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R19" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R20" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="U10" pin="20" pinfunction="VCC_20" pintype="power_in"/>
+      <node ref="U7" pin="20" pinfunction="VCC_20" pintype="power_in"/>
+    </net>
+    <net code="2" name="/+5V" class="Default">
+      <node ref="C1" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C10" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C11" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C2" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C3" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C4" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C6" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C8" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="C9" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="D1" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="J1" pin="1" pinfunction="+5V_1" pintype="power_out"/>
+      <node ref="RN1" pin="1" pinfunction="COMMON_1" pintype="passive"/>
+      <node ref="RN2" pin="1" pinfunction="COMMON_1" pintype="passive"/>
+      <node ref="RN4" pin="1" pinfunction="COMMON_1" pintype="passive"/>
+      <node ref="U1" pin="11" pinfunction="VCC_11" pintype="power_in"/>
+      <node ref="U2" pin="30" pinfunction="CE2_30" pintype="input"/>
+      <node ref="U2" pin="32" pinfunction="VCC_32" pintype="power_in"/>
+      <node ref="U3" pin="14" pinfunction="VCC_14" pintype="power_in"/>
+      <node ref="U4" pin="20" pinfunction="VCC_20" pintype="power_in"/>
+      <node ref="U9" pin="1" pinfunction="DIR_1" pintype="input"/>
+      <node ref="U9" pin="20" pinfunction="VCC_20" pintype="power_in"/>
+    </net>
+    <net code="3" name="/A0" class="Default">
+      <node ref="RN1" pin="2" pinfunction="R1_2" pintype="passive"/>
+      <node ref="U1" pin="30" pinfunction="A0_30" pintype="tri_state"/>
+      <node ref="U2" pin="12" pinfunction="A0_12" pintype="input"/>
+      <node ref="U7" pin="11" pinfunction="2A1_11" pintype="input"/>
+    </net>
+    <net code="4" name="/A1" class="Default">
+      <node ref="RN1" pin="3" pinfunction="R2_3" pintype="passive"/>
+      <node ref="U1" pin="31" pinfunction="A1_31" pintype="tri_state"/>
+      <node ref="U2" pin="11" pinfunction="A1_11" pintype="input"/>
+      <node ref="U7" pin="13" pinfunction="2A2_13" pintype="input"/>
+    </net>
+    <net code="5" name="/A2" class="Default">
+      <node ref="RN1" pin="4" pinfunction="R3_4" pintype="passive"/>
+      <node ref="U1" pin="32" pinfunction="A2_32" pintype="tri_state"/>
+      <node ref="U2" pin="10" pinfunction="A2_10" pintype="input"/>
+      <node ref="U7" pin="15" pinfunction="2A3_15" pintype="input"/>
+    </net>
+    <net code="6" name="/A3" class="Default">
+      <node ref="RN1" pin="5" pinfunction="R4_5" pintype="passive"/>
+      <node ref="U1" pin="33" pinfunction="A3_33" pintype="tri_state"/>
+      <node ref="U2" pin="9" pinfunction="A3_9" pintype="input"/>
+    </net>
+    <net code="7" name="/A4" class="Default">
+      <node ref="RN1" pin="6" pinfunction="R5_6" pintype="passive"/>
+      <node ref="U1" pin="34" pinfunction="A4_34" pintype="tri_state"/>
+      <node ref="U2" pin="8" pinfunction="A4_8" pintype="input"/>
+      <node ref="U7" pin="17" pinfunction="2A4_17" pintype="input"/>
+    </net>
+    <net code="8" name="/A5" class="Default">
+      <node ref="RN1" pin="7" pinfunction="R6_7" pintype="passive"/>
+      <node ref="U1" pin="35" pinfunction="A5_35" pintype="tri_state"/>
+      <node ref="U2" pin="7" pinfunction="A5_7" pintype="input"/>
+    </net>
+    <net code="9" name="/A6" class="Default">
+      <node ref="RN1" pin="8" pinfunction="R7_8" pintype="passive"/>
+      <node ref="U1" pin="36" pinfunction="A6_36" pintype="tri_state"/>
+      <node ref="U2" pin="6" pinfunction="A6_6" pintype="input"/>
+    </net>
+    <net code="10" name="/A7" class="Default">
+      <node ref="RN1" pin="9" pinfunction="R8_9" pintype="passive"/>
+      <node ref="U1" pin="37" pinfunction="A7_37" pintype="tri_state"/>
+      <node ref="U2" pin="5" pinfunction="A7_5" pintype="input"/>
+    </net>
+    <net code="11" name="/A8" class="Default">
+      <node ref="RN2" pin="2" pinfunction="R1_2" pintype="passive"/>
+      <node ref="U1" pin="38" pinfunction="A8_38" pintype="tri_state"/>
+      <node ref="U2" pin="27" pinfunction="A8_27" pintype="input"/>
+    </net>
+    <net code="12" name="/A9" class="Default">
+      <node ref="RN2" pin="3" pinfunction="R2_3" pintype="passive"/>
+      <node ref="U1" pin="39" pinfunction="A9_39" pintype="tri_state"/>
+      <node ref="U2" pin="26" pinfunction="A9_26" pintype="input"/>
+    </net>
+    <net code="13" name="/A10" class="Default">
+      <node ref="RN2" pin="4" pinfunction="R3_4" pintype="passive"/>
+      <node ref="U1" pin="40" pinfunction="A10_40" pintype="tri_state"/>
+      <node ref="U2" pin="23" pinfunction="A10_23" pintype="input"/>
+    </net>
+    <net code="14" name="/A11" class="Default">
+      <node ref="RN2" pin="5" pinfunction="R4_5" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="A11_1" pintype="tri_state"/>
+      <node ref="U2" pin="25" pinfunction="A11_25" pintype="input"/>
+    </net>
+    <net code="15" name="/A12" class="Default">
+      <node ref="RN2" pin="6" pinfunction="R5_6" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="A12_2" pintype="tri_state"/>
+      <node ref="U2" pin="4" pinfunction="A12_4" pintype="input"/>
+    </net>
+    <net code="16" name="/A13" class="Default">
+      <node ref="RN2" pin="7" pinfunction="R6_7" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="A13_3" pintype="tri_state"/>
+      <node ref="U2" pin="28" pinfunction="A13_28" pintype="input"/>
+    </net>
+    <net code="17" name="/A14" class="Default">
+      <node ref="RN2" pin="8" pinfunction="R7_8" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="A14_4" pintype="tri_state"/>
+      <node ref="U2" pin="3" pinfunction="A14_3" pintype="input"/>
+    </net>
+    <net code="18" name="/A15" class="Default">
+      <node ref="RN2" pin="9" pinfunction="R8_9" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="A15_5" pintype="tri_state"/>
+      <node ref="U2" pin="31" pinfunction="A15_31" pintype="input"/>
+    </net>
+    <net code="20" name="/BOOT_READ_DISABLE" class="Default">
+      <node ref="A1" pin="7" pinfunction="GP5_7" pintype="bidirectional"/>
+      <node ref="R18" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U4" pin="6" pinfunction="1A3_6" pintype="input"/>
+    </net>
+    <net code="21" name="/BOOT_READ_DISABLE_5V" class="Default">
+      <node ref="U3" pin="2" pinfunction="1B_2" pintype="input"/>
+      <node ref="U4" pin="14" pinfunction="1Y3_14" pintype="tri_state"/>
+    </net>
+    <net code="22" name="/BUSACK_N" class="Default">
+      <node ref="RN4" pin="3" pinfunction="R2_3" pintype="passive"/>
+      <node ref="TP6" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="23" pinfunction="BUSACK#_23" pintype="tri_state"/>
+      <node ref="U7" pin="2" pinfunction="1A1_2" pintype="input"/>
+    </net>
+    <net code="23" name="/BUSREQ_N" class="Default">
+      <node ref="RN4" pin="2" pinfunction="R1_2" pintype="passive"/>
+      <node ref="TP5" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="25" pinfunction="BUSREQ#_25" pintype="input"/>
+      <node ref="U4" pin="16" pinfunction="1Y2_16" pintype="tri_state"/>
+    </net>
+    <net code="24" name="/D0" class="Default">
+      <node ref="U1" pin="14" pinfunction="D0_14" pintype="bidirectional"/>
+      <node ref="U10" pin="18" pinfunction="B1_18" pintype="bidirectional"/>
+      <node ref="U2" pin="13" pinfunction="D0_13" pintype="bidirectional"/>
+      <node ref="U9" pin="18" pinfunction="B1_18" pintype="bidirectional"/>
+    </net>
+    <net code="25" name="/D1" class="Default">
+      <node ref="U1" pin="15" pinfunction="D1_15" pintype="bidirectional"/>
+      <node ref="U10" pin="17" pinfunction="B2_17" pintype="bidirectional"/>
+      <node ref="U2" pin="14" pinfunction="D1_14" pintype="bidirectional"/>
+      <node ref="U9" pin="17" pinfunction="B2_17" pintype="bidirectional"/>
+    </net>
+    <net code="26" name="/D2" class="Default">
+      <node ref="U1" pin="12" pinfunction="D2_12" pintype="bidirectional"/>
+      <node ref="U10" pin="16" pinfunction="B3_16" pintype="bidirectional"/>
+      <node ref="U2" pin="15" pinfunction="D2_15" pintype="bidirectional"/>
+      <node ref="U9" pin="16" pinfunction="B3_16" pintype="bidirectional"/>
+    </net>
+    <net code="27" name="/D3" class="Default">
+      <node ref="U1" pin="8" pinfunction="D3_8" pintype="bidirectional"/>
+      <node ref="U10" pin="15" pinfunction="B4_15" pintype="bidirectional"/>
+      <node ref="U2" pin="17" pinfunction="D3_17" pintype="bidirectional"/>
+      <node ref="U9" pin="15" pinfunction="B4_15" pintype="bidirectional"/>
+    </net>
+    <net code="28" name="/D4" class="Default">
+      <node ref="U1" pin="7" pinfunction="D4_7" pintype="bidirectional"/>
+      <node ref="U10" pin="14" pinfunction="B5_14" pintype="bidirectional"/>
+      <node ref="U2" pin="18" pinfunction="D4_18" pintype="bidirectional"/>
+      <node ref="U9" pin="14" pinfunction="B5_14" pintype="bidirectional"/>
+    </net>
+    <net code="29" name="/D5" class="Default">
+      <node ref="U1" pin="9" pinfunction="D5_9" pintype="bidirectional"/>
+      <node ref="U10" pin="13" pinfunction="B6_13" pintype="bidirectional"/>
+      <node ref="U2" pin="19" pinfunction="D5_19" pintype="bidirectional"/>
+      <node ref="U9" pin="13" pinfunction="B6_13" pintype="bidirectional"/>
+    </net>
+    <net code="30" name="/D6" class="Default">
+      <node ref="U1" pin="10" pinfunction="D6_10" pintype="bidirectional"/>
+      <node ref="U10" pin="12" pinfunction="B7_12" pintype="bidirectional"/>
+      <node ref="U2" pin="20" pinfunction="D6_20" pintype="bidirectional"/>
+      <node ref="U9" pin="12" pinfunction="B7_12" pintype="bidirectional"/>
+    </net>
+    <net code="31" name="/D7" class="Default">
+      <node ref="U1" pin="13" pinfunction="D7_13" pintype="bidirectional"/>
+      <node ref="U10" pin="11" pinfunction="B8_11" pintype="bidirectional"/>
+      <node ref="U2" pin="21" pinfunction="D7_21" pintype="bidirectional"/>
+      <node ref="U9" pin="11" pinfunction="B8_11" pintype="bidirectional"/>
+    </net>
+    <net code="32" name="/DATA_DOWN_OE_N" class="Default">
+      <node ref="A1" pin="10" pinfunction="GP7_10" pintype="bidirectional"/>
+      <node ref="R20" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U10" pin="19" pinfunction="OE#_19" pintype="input"/>
+    </net>
+    <net code="33" name="/DATA_UP_OE_N" class="Default">
+      <node ref="U3" pin="8" pinfunction="3Y_8" pintype="output"/>
+      <node ref="U9" pin="19" pinfunction="OE#_19" pintype="input"/>
+    </net>
+    <net code="35" name="/GND" class="Default">
+      <node ref="A1" pin="13" pinfunction="GND3_13" pintype="power_in"/>
+      <node ref="A1" pin="18" pinfunction="GND4_18" pintype="power_in"/>
+      <node ref="A1" pin="23" pinfunction="GND5_23" pintype="power_in"/>
+      <node ref="A1" pin="28" pinfunction="GND6_28" pintype="power_in"/>
+      <node ref="A1" pin="3" pinfunction="GND1_3" pintype="power_in"/>
+      <node ref="A1" pin="33" pinfunction="AGND_33" pintype="power_in"/>
+      <node ref="A1" pin="38" pinfunction="GND7_38" pintype="power_in"/>
+      <node ref="A1" pin="8" pinfunction="GND2_8" pintype="power_in"/>
+      <node ref="C1" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C10" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C11" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C2" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C3" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C4" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C5" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C6" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C7" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C8" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C9" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="J1" pin="2" pinfunction="GND_2" pintype="power_out"/>
+      <node ref="R21" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R22" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R23" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="RN3" pin="1" pinfunction="COMMON_1" pintype="passive"/>
+      <node ref="TP7" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="29" pinfunction="GND_29" pintype="power_in"/>
+      <node ref="U10" pin="1" pinfunction="DIR_1" pintype="input"/>
+      <node ref="U10" pin="10" pinfunction="GND_10" pintype="power_in"/>
+      <node ref="U2" pin="16" pinfunction="GND_16" pintype="power_in"/>
+      <node ref="U2" pin="2" pinfunction="A16_2" pintype="input"/>
+      <node ref="U3" pin="12" pinfunction="4A_12" pintype="input"/>
+      <node ref="U3" pin="13" pinfunction="4B_13" pintype="input"/>
+      <node ref="U3" pin="7" pinfunction="GND_7" pintype="power_in"/>
+      <node ref="U4" pin="1" pinfunction="OE1#_1" pintype="input"/>
+      <node ref="U4" pin="10" pinfunction="GND_10" pintype="power_in"/>
+      <node ref="U4" pin="15" pinfunction="2A3_15" pintype="input"/>
+      <node ref="U4" pin="17" pinfunction="2A4_17" pintype="input"/>
+      <node ref="U4" pin="19" pinfunction="OE2#_19" pintype="input"/>
+      <node ref="U7" pin="1" pinfunction="1OE#_1" pintype="input"/>
+      <node ref="U7" pin="10" pinfunction="GND_10" pintype="power_in"/>
+      <node ref="U7" pin="19" pinfunction="2OE#_19" pintype="input"/>
+      <node ref="U9" pin="10" pinfunction="GND_10" pintype="power_in"/>
+    </net>
+    <net code="36" name="/INT_N" class="Default">
+      <node ref="RN4" pin="8" pinfunction="R7_8" pintype="passive"/>
+      <node ref="U1" pin="16" pinfunction="INT#_16" pintype="input"/>
+    </net>
+    <net code="37" name="/IORQ_N" class="Default">
+      <node ref="RN4" pin="5" pinfunction="R4_5" pintype="passive"/>
+      <node ref="U1" pin="20" pinfunction="IORQ#_20" pintype="tri_state"/>
+      <node ref="U3" pin="4" pinfunction="2A_4" pintype="input"/>
+      <node ref="U7" pin="4" pinfunction="1A2_4" pintype="input"/>
+    </net>
+    <net code="38" name="/IO_RELEASE" class="Default">
+      <node ref="A1" pin="12" pinfunction="GP9_12" pintype="bidirectional"/>
+      <node ref="R23" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="2B_5" pintype="input"/>
+    </net>
+    <net code="39" name="/M1_N" class="Default">
+      <node ref="TP1" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="27" pinfunction="M1#_27" pintype="tri_state"/>
+    </net>
+    <net code="40" name="/MREQ_N" class="Default">
+      <node ref="RN4" pin="4" pinfunction="R3_4" pintype="passive"/>
+      <node ref="U1" pin="19" pinfunction="MREQ#_19" pintype="tri_state"/>
+      <node ref="U4" pin="8" pinfunction="1A4_8" pintype="input"/>
+    </net>
+    <net code="41" name="/NMI_N" class="Default">
+      <node ref="RN4" pin="9" pinfunction="R8_9" pintype="passive"/>
+      <node ref="U1" pin="17" pinfunction="NMI#_17" pintype="input"/>
+    </net>
+    <net code="42" name="/PICO_A0" class="Default">
+      <node ref="A1" pin="24" pinfunction="GP18_24" pintype="bidirectional"/>
+      <node ref="U7" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
+    </net>
+    <net code="43" name="/PICO_A1" class="Default">
+      <node ref="A1" pin="25" pinfunction="GP19_25" pintype="bidirectional"/>
+      <node ref="U7" pin="7" pinfunction="2Y2_7" pintype="tri_state"/>
+    </net>
+    <net code="44" name="/PICO_A2" class="Default">
+      <node ref="A1" pin="26" pinfunction="GP20_26" pintype="bidirectional"/>
+      <node ref="U7" pin="5" pinfunction="2Y3_5" pintype="tri_state"/>
+    </net>
+    <net code="45" name="/PICO_A4" class="Default">
+      <node ref="A1" pin="27" pinfunction="GP21_27" pintype="bidirectional"/>
+      <node ref="U7" pin="3" pinfunction="2Y4_3" pintype="tri_state"/>
+    </net>
+    <net code="46" name="/PICO_BUSACK_N" class="Default">
+      <node ref="A1" pin="1" pinfunction="GP0_1" pintype="bidirectional"/>
+      <node ref="U7" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
+    </net>
+    <net code="47" name="/PICO_BUSREQ_N" class="Default">
+      <node ref="A1" pin="6" pinfunction="GP4_6" pintype="bidirectional"/>
+      <node ref="R17" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U4" pin="4" pinfunction="1A2_4" pintype="input"/>
+    </net>
+    <net code="48" name="/PICO_CLK" class="Default">
+      <node ref="A1" pin="4" pinfunction="GP2_4" pintype="bidirectional"/>
+      <node ref="R21" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="1A1_2" pintype="input"/>
+    </net>
+    <net code="49" name="/PICO_D0" class="Default">
+      <node ref="A1" pin="14" pinfunction="GP10_14" pintype="bidirectional"/>
+      <node ref="RN3" pin="2" pinfunction="R1_2" pintype="passive"/>
+      <node ref="U10" pin="2" pinfunction="A1_2" pintype="bidirectional"/>
+      <node ref="U9" pin="2" pinfunction="A1_2" pintype="bidirectional"/>
+    </net>
+    <net code="50" name="/PICO_D1" class="Default">
+      <node ref="A1" pin="15" pinfunction="GP11_15" pintype="bidirectional"/>
+      <node ref="RN3" pin="3" pinfunction="R2_3" pintype="passive"/>
+      <node ref="U10" pin="3" pinfunction="A2_3" pintype="bidirectional"/>
+      <node ref="U9" pin="3" pinfunction="A2_3" pintype="bidirectional"/>
+    </net>
+    <net code="51" name="/PICO_D2" class="Default">
+      <node ref="A1" pin="16" pinfunction="GP12_16" pintype="bidirectional"/>
+      <node ref="RN3" pin="4" pinfunction="R3_4" pintype="passive"/>
+      <node ref="U10" pin="4" pinfunction="A3_4" pintype="bidirectional"/>
+      <node ref="U9" pin="4" pinfunction="A3_4" pintype="bidirectional"/>
+    </net>
+    <net code="52" name="/PICO_D3" class="Default">
+      <node ref="A1" pin="17" pinfunction="GP13_17" pintype="bidirectional"/>
+      <node ref="RN3" pin="5" pinfunction="R4_5" pintype="passive"/>
+      <node ref="U10" pin="5" pinfunction="A4_5" pintype="bidirectional"/>
+      <node ref="U9" pin="5" pinfunction="A4_5" pintype="bidirectional"/>
+    </net>
+    <net code="53" name="/PICO_D4" class="Default">
+      <node ref="A1" pin="19" pinfunction="GP14_19" pintype="bidirectional"/>
+      <node ref="RN3" pin="6" pinfunction="R5_6" pintype="passive"/>
+      <node ref="U10" pin="6" pinfunction="A5_6" pintype="bidirectional"/>
+      <node ref="U9" pin="6" pinfunction="A5_6" pintype="bidirectional"/>
+    </net>
+    <net code="54" name="/PICO_D5" class="Default">
+      <node ref="A1" pin="20" pinfunction="GP15_20" pintype="bidirectional"/>
+      <node ref="RN3" pin="7" pinfunction="R6_7" pintype="passive"/>
+      <node ref="U10" pin="7" pinfunction="A6_7" pintype="bidirectional"/>
+      <node ref="U9" pin="7" pinfunction="A6_7" pintype="bidirectional"/>
+    </net>
+    <net code="55" name="/PICO_D6" class="Default">
+      <node ref="A1" pin="21" pinfunction="GP16_21" pintype="bidirectional"/>
+      <node ref="RN3" pin="8" pinfunction="R7_8" pintype="passive"/>
+      <node ref="U10" pin="8" pinfunction="A7_8" pintype="bidirectional"/>
+      <node ref="U9" pin="8" pinfunction="A7_8" pintype="bidirectional"/>
+    </net>
+    <net code="56" name="/PICO_D7" class="Default">
+      <node ref="A1" pin="22" pinfunction="GP17_22" pintype="bidirectional"/>
+      <node ref="RN3" pin="9" pinfunction="R8_9" pintype="passive"/>
+      <node ref="U10" pin="9" pinfunction="A8_9" pintype="bidirectional"/>
+      <node ref="U9" pin="9" pinfunction="A8_9" pintype="bidirectional"/>
+    </net>
+    <net code="57" name="/PICO_DATA_UP_OE_N" class="Default">
+      <node ref="A1" pin="9" pinfunction="GP6_9" pintype="bidirectional"/>
+      <node ref="R19" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U3" pin="10" pinfunction="3B_10" pintype="input"/>
+    </net>
+    <net code="59" name="/PICO_IORQ_N" class="Default">
+      <node ref="A1" pin="2" pinfunction="GP1_2" pintype="bidirectional"/>
+      <node ref="U7" pin="16" pinfunction="1Y2_16" pintype="tri_state"/>
+    </net>
+    <net code="60" name="/PICO_RD_N" class="Default">
+      <node ref="A1" pin="32" pinfunction="GP27_32" pintype="bidirectional"/>
+      <node ref="U7" pin="14" pinfunction="1Y3_14" pintype="tri_state"/>
+    </net>
+    <net code="61" name="/PICO_WR_N" class="Default">
+      <node ref="A1" pin="34" pinfunction="GP28_34" pintype="bidirectional"/>
+      <node ref="U7" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
+    </net>
+    <net code="62" name="/RD_5V_N" class="Default">
+      <node ref="U3" pin="1" pinfunction="1A_1" pintype="input"/>
+      <node ref="U4" pin="7" pinfunction="2Y2_7" pintype="tri_state"/>
+    </net>
+    <net code="63" name="/RD_N" class="Default">
+      <node ref="RN4" pin="6" pinfunction="R5_6" pintype="passive"/>
+      <node ref="U1" pin="21" pinfunction="RD#_21" pintype="tri_state"/>
+      <node ref="U3" pin="9" pinfunction="3A_9" pintype="input"/>
+      <node ref="U4" pin="13" pinfunction="2A2_13" pintype="input"/>
+      <node ref="U7" pin="6" pinfunction="1A3_6" pintype="input"/>
+    </net>
+    <net code="64" name="/RESET_N" class="Default">
+      <node ref="A1" pin="5" pinfunction="GP3_5" pintype="bidirectional"/>
+      <node ref="R22" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="TP3" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="26" pinfunction="RESET#_26" pintype="input"/>
+    </net>
+    <net code="65" name="/SRAM_CE_N" class="Default">
+      <node ref="U2" pin="22" pinfunction="CE#_22" pintype="input"/>
+      <node ref="U4" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
+    </net>
+    <net code="66" name="/SRAM_OE_N" class="Default">
+      <node ref="U2" pin="24" pinfunction="OE#_24" pintype="input"/>
+      <node ref="U3" pin="3" pinfunction="1Y_3" pintype="output"/>
+    </net>
+    <net code="67" name="/SRAM_WE_N" class="Default">
+      <node ref="U2" pin="29" pinfunction="WE#_29" pintype="input"/>
+      <node ref="U4" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
+    </net>
+    <net code="68" name="/VSYS" class="Default">
+      <node ref="A1" pin="39" pinfunction="VSYS_39" pintype="power_in"/>
+      <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
+    </net>
+    <net code="69" name="/WAIT_N" class="Default">
+      <node ref="TP4" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="24" pinfunction="WAIT#_24" pintype="input"/>
+      <node ref="U3" pin="6" pinfunction="2Y_6" pintype="output"/>
+    </net>
+    <net code="70" name="/WR_N" class="Default">
+      <node ref="RN4" pin="7" pinfunction="R6_7" pintype="passive"/>
+      <node ref="U1" pin="22" pinfunction="WR#_22" pintype="tri_state"/>
+      <node ref="U4" pin="11" pinfunction="2A1_11" pintype="input"/>
+      <node ref="U7" pin="8" pinfunction="1A4_8" pintype="input"/>
+    </net>
+    <net code="71" name="/Z80_CLK" class="Default">
+      <node ref="TP2" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="CLK_6" pintype="input"/>
+      <node ref="U4" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
+    </net>
+    <net code="82" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
+      <node ref="A1" pin="37" pinfunction="3V3_EN_37" pintype="input+no_connect"/>
+    </net>
+    <net code="83" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
+      <node ref="A1" pin="35" pinfunction="ADC_VREF_35" pintype="power_in+no_connect"/>
+    </net>
+    <net code="84" name="unconnected-(A1-GP8-Pad11)" class="Default">
+      <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="85" name="unconnected-(A1-GP22-Pad29)" class="Default">
+      <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="86" name="unconnected-(A1-GP26-Pad31)" class="Default">
+      <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="87" name="unconnected-(A1-RUN-Pad30)" class="Default">
+      <node ref="A1" pin="30" pinfunction="RUN_30" pintype="input+no_connect"/>
+    </net>
+    <net code="88" name="unconnected-(A1-VBUS-Pad40)" class="Default">
+      <node ref="A1" pin="40" pinfunction="VBUS_40" pintype="power_in+no_connect"/>
+    </net>
+    <net code="89" name="unconnected-(U1-HALT#-Pad18)" class="Default">
+      <node ref="U1" pin="18" pinfunction="HALT#_18" pintype="tri_state+no_connect"/>
+    </net>
+    <net code="90" name="unconnected-(U1-RFSH#-Pad28)" class="Default">
+      <node ref="U1" pin="28" pinfunction="RFSH#_28" pintype="tri_state+no_connect"/>
+    </net>
+    <net code="91" name="unconnected-(U2-NC-Pad1)" class="Default">
+      <node ref="U2" pin="1" pinfunction="NC_1" pintype="no_connect"/>
+    </net>
+    <net code="92" name="unconnected-(U3-4Y-Pad11)" class="Default">
+      <node ref="U3" pin="11" pinfunction="4Y_11" pintype="output+no_connect"/>
+    </net>
+    <net code="93" name="unconnected-(U4-2Y3-Pad5)" class="Default">
+      <node ref="U4" pin="5" pinfunction="2Y3_5" pintype="tri_state+no_connect"/>
+    </net>
+    <net code="94" name="unconnected-(U4-2Y4-Pad3)" class="Default">
+      <node ref="U4" pin="3" pinfunction="2Y4_3" pintype="tri_state+no_connect"/>
+    </net>
+  </nets>
+</export>

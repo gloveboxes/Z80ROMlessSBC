@@ -3,7 +3,6 @@
 #include "pico/stdlib.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
 
@@ -30,6 +29,7 @@ static bool load_for_single_step(void) {
   step_image_loaded = z80_cpu_load_and_verify(
       CPU_TEST_PROGRAM, sizeof(CPU_TEST_PROGRAM));
   running_clock_hz = 0;
+  z80_reset_with_clock_cycles(6, 1);
   return step_image_loaded;
 }
 
@@ -37,9 +37,7 @@ static bool single_step(void) {
   if (!step_image_loaded)
     return false;
   if (!gpio_get(PIN_RESET_N)) {
-    gpio_put(PIN_SRAM_CE_N, 1);
-    gpio_put(PIN_SRAM_OE_N, 1);
-    gpio_put(PIN_SRAM_WE_N, 1);
+    gpio_put(PIN_BOOT_READ_DISABLE, 0);
     z80_isolate_buses();
     gpio_put(PIN_BUSREQ_N, 1);
     gpio_put(PIN_RESET_N, 1);
@@ -58,7 +56,6 @@ static bool reset_running_cpu(void) {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  mcp23s17_init(4000000);
   printf("\nStage 7: Z80 CPU execution and bus ownership\n");
     printf("l=load for stepping, s=single 10Hz-equivalent cycle, "
       "0=run 10Hz, 1=run 1kHz, 2=run 100kHz, 3/r=run 1MHz, "

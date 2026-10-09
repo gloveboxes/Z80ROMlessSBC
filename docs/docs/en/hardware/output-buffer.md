@@ -1,114 +1,65 @@
-# 4. Output Buffer Mapping: SN74AHCT244N (DIP-20)
+# 4. Output Buffer and Fixed Logic
 
-This is a **non-inverting** buffer: a LOW input produces a LOW output and a
-HIGH input produces a HIGH output, at the required output voltage. Buffer
-pin names `A` and `Y` mean input and output; they are not memory address bits.
-Its two active-LOW enable pins are tied to GND, so all eight channels are
-always enabled. Unlike the data transceivers, it is not switched off by
-DATA_ENABLE.
+## SN74AHCT244N
 
-The 5 V-powered SN74AHCT244 provides all eight required high-level
-outputs:
+Power U4 from +5 V at pin 20, GND at pin 10, and tie enables pins 1/19 LOW.
+Its TTL-compatible inputs accept Pico 3.3 V and Z80 TTL HIGH levels; its
+outputs meet the SRAM CMOS-control and Z80 clock requirements. Use **AHCT**,
+not AHC. Keep output pin 18 to Z80 CLK pin 6 short and local to the Core board.
 
-- **Input compatibility:** Its TTL-compatible inputs accept both Pico
-  3.3 V signals and the ATF22V10's guaranteed 2.4 V HIGH.
-- **Output threshold compliance:** At the light CMOS loads used here,
-  its 5 V outputs satisfy the Z80 clock's strict $V_{IHC}$ threshold,
-  the MCP23S17's $0.8V_{DD}$ SPI threshold, and the SRAM's CMOS
-  control-input threshold.
-- **Component-delay budget:** Its current TI datasheet specifies a
-  worst-case 9.5 ns A-to-Y delay at 5 V with a 50 pF load over -40°C to
-  85°C. Combined with the ATF22V10C-15's 15 ns combinational delay and
-  the SRAM's 55 ns chip-enable access, these datasheet maxima give a
-  conservative 79.5 ns component-delay sum for the control-to-data path.
-  This is not complete timing closure: breadboard interconnect and Z80
-  setup allowance are additional.
-
-This is why the breadboard's 1-6 MHz range and the four-layer PCB's at-least
-8 MHz target are measured rather than assumed, and why this design is not a
-20 MHz system despite using a 20 MHz-rated CPU.
-
-The complete pin-by-pin wiring is installed in
-[Phase 2](../implementation/phase-2-buffer-clock.md#wiring-gal-and-output-buffer).
+| Source | U4 input | U4 output | Destination |
+| --- | ---: | ---: | --- |
+| Pico GP2, header 4 | 2 | 18 | Z80 CLK pin 6 |
+| Pico GP4, header 6 | 4 | 16 | Z80 BUSREQ# pin 25 |
+| Pico GP5, header 7 | 6 | 14 | HCT32 pin 2, BOOT_READ_DISABLE_5V |
+| Z80 MREQ# pin 19 | 8 | 12 | SRAM CE# pin 22 |
+| Z80 WR# pin 22 | 11 | 9 | SRAM WE# pin 29 |
+| Z80 RD# pin 21 | 13 | 7 | HCT32 pin 1, RD_5V# |
+| GND | 15 | 5 | Leave output open |
+| GND | 17 | 3 | Leave output open |
 
 <template id="phase-2-output-buffer-wiring">
 
-## Pico 2 W to SN74AHCT244
-
 ```mermaid
 block-beta
-	columns 2
-	PCLK["Pico CLK - GP2"] BCLK["AHCT244 1A1 - pin 2"]
-	PREQ["Pico BUSREQ# - GP4"] BREQ["AHCT244 1A2 - pin 4"]
-	PCS["Pico CS# - GP21"] BCS["AHCT244 1A3 - pin 6"]
-	PSCK["Pico SCK - GP18"] BSCK["AHCT244 1A4 - pin 8"]
-	PMOSI["Pico MOSI - GP19"] BMOSI["AHCT244 2A1 - pin 11"]
-	PCLK --> BCLK
-	PREQ --> BREQ
-	PCS --> BCS
-	PSCK --> BSCK
-	PMOSI --> BMOSI
-```
-
-## SN74AHCT244 to Z84C00
-
-```mermaid
-block-beta
-	columns 2
-	BCLK["AHCT244 1Y1 - pin 18"] ZCLK["Z80 CLK - pin 6"]
-	BREQ["AHCT244 1Y2 - pin 16"] ZREQ["Z80 BUSREQ# - pin 25"]
-	BCLK --> ZCLK
-	BREQ --> ZREQ
-```
-
-## SN74AHCT244 to MCP23S17
-
-```mermaid
-block-beta
-	columns 2
-	BCS["AHCT244 1Y3 - pin 14"] MCS["MCP23S17 CS# - pin 11"]
-	BSCK["AHCT244 1Y4 - pin 12"] MSCK["MCP23S17 SCK - pin 12"]
-	BMOSI["AHCT244 2Y1 - pin 9"] MSI["MCP23S17 SI - pin 13"]
-	BCS --> MCS
-	BSCK --> MSCK
-	BMOSI --> MSI
-```
-
-## ATF22V10 to SN74AHCT244
-
-```mermaid
-block-beta
-	columns 2
-	GWE["ATF22V10 WE# - pin 14"] BWE["AHCT244 2A2 - pin 13"]
-	GOE["ATF22V10 OE# - pin 15"] BOE["AHCT244 2A3 - pin 15"]
-	GCE["ATF22V10 CE# - pin 16"] BCE["AHCT244 2A4 - pin 17"]
-	GWE --> BWE
-	GOE --> BOE
-	GCE --> BCE
-```
-
-## SN74AHCT244 to AS6C1008 SRAM
-
-```mermaid
-block-beta
-	columns 2
-	BWE["AHCT244 2Y2 - pin 7"] RWE["SRAM WE# - pin 29"]
-	BOE["AHCT244 2Y3 - pin 5"] ROE["SRAM OE# - pin 24"]
-	BCE["AHCT244 2Y4 - pin 3"] RCE["SRAM CE# - pin 22"]
-	BWE --> RWE
-	BOE --> ROE
-	BCE --> RCE
+  columns 2
+  BCLK["AHCT244 output - pin 18"] ZCLK["Z80 CLK - pin 6"]
+  BREQ["AHCT244 output - pin 16"] ZREQ["Z80 BUSREQ# - pin 25"]
+  BCE["AHCT244 output - pin 12"] RCE["SRAM CE# - pin 22"]
+  BWE["AHCT244 output - pin 9"] RWE["SRAM WE# - pin 29"]
+  BCLK --> ZCLK
+  BREQ --> ZREQ
+  BCE --> RCE
+  BWE --> RWE
 ```
 
 phase-2-output-buffer-wiring-end</template>
 
-Tie both active-low output enables, OE1# pin 1 and OE2# pin 19, to GND.
-Connect VCC pin 20 to regulated +5 V and GND pin 10 to common ground.
-The buffer is permanently enabled; the Pico-side defaults and GAL
-equations therefore establish safe inactive outputs before firmware
-enables its GPIO drivers.
+## HCT32 Quad OR Logic
 
-Pico GP3 RESET# bypasses the AHCT244 and connects directly to Z80 pin 26
-and ATF22V10 pin 1. Its 3.3 V HIGH exceeds the Z84C00's 2.2 V and the
-ATF22V10's 2.0 V input-HIGH minima. Keep its 4.7 kOhm pull-down to GND
-and never fit a 5 V pull-up on this node.
+Use **SN74HCT32N**, PDIP-14, powered from +5 V at pin 14 and GND at pin 7.
+Do not substitute HC32: TTL and 3.3 V HIGH recognition is required.
+The TI SCLS064G datasheet specifies 2.0 V minimum VIH over 4.5-5.5 V VCC.
+
+| Gate | Input A | Input B | Output | Function |
+| --- | --- | --- | --- | --- |
+| 1 | Pin 1: U4 pin 7 | Pin 2: U4 pin 14 | Pin 3: SRAM OE# pin 24 | Inhibit SRAM reads during injection |
+| 2 | Pin 4: Z80 IORQ# pin 20 | Pin 5: Pico GP9 | Pin 6: Z80 WAIT# pin 24 | Hold I/O until IO_RELEASE HIGH |
+| 3 | Pin 9: Z80 RD# pin 21 | Pin 10: Pico GP6 | Pin 8: U9 OE# pin 19 | Drive only during Z80 read strobes |
+| 4 | Pin 12: GND | Pin 13: GND | Pin 11: open | Unused, defined inputs |
+
+```mermaid
+block-beta
+  columns 2
+  H3["HCT32 output - pin 3"] R24["SRAM OE# - pin 24"]
+  H6["HCT32 output - pin 6"] Z24["Z80 WAIT# - pin 24"]
+  H8["HCT32 output - pin 8"] U19["AHCT245 OE# - pin 19"]
+  H3 --> R24
+  H6 --> Z24
+  H8 --> U19
+```
+
+Pico GP3 RESET# connects directly to Z80 pin 26, with a 10 kOhm pull-down.
+Never connect a +5 V pull-up to it. Add one local 100 nF capacitor per IC.
+These fixed gates require no programming. Propagation delays, clock shape,
+memory setup, and WAIT timing remain measured qualification requirements.

@@ -5,7 +5,6 @@
 #include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/pins.h"
 
 enum { TRAP_RELEASE_TIMEOUT_US = 500000 };
@@ -26,14 +25,17 @@ static _Noreturn void trap_fail_closed(void) {
 
 static void resume_and_wait_for_release(uint control_pin) {
   absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
-  z80_clock_resume();
+  gpio_put(PIN_IO_RELEASE, 1);
   while (!gpio_get(PIN_IORQ_N) || !gpio_get(control_pin)) {
     if (time_reached(deadline)) {
       __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
       trap_fail_closed();
     }
-    tight_loop_contents();
+    z80_clock_one_cycle(1);
   }
+  z80_data_bus_isolate();
+  gpio_put(PIN_IO_RELEASE, 0);
+  z80_clock_resume();
 }
 
 static void io_trap_handler(uint gpio, uint32_t events) {
@@ -46,11 +48,7 @@ static void io_trap_handler(uint gpio, uint32_t events) {
   }
 
   z80_clock_stop();
-  uint8_t port = 0;
-  if (!z80_address_bus_prepare_input() ||
-      !mcp23s17_read_port_a(&port))
-    trap_fail_closed();
-  z80_address_bus_isolate();
+  uint8_t port = z80_port_bus_sample();
 
   uint32_t controls = gpio_get_all();
   bool is_read = (controls & (1u << PIN_RD_N)) == 0;

@@ -23,21 +23,21 @@ const { values } = parseArgs({ options: {
 } });
 if (values.help) {
   console.log(`Opt-in Z80 bench acceptance. Never run beside a registered scope server.
-node scripts/scope-acceptance.mjs --mode stage2|stage8|spi --ip ADDRESS
+node scripts/scope-acceptance.mjs --mode stage2|stage8 --ip ADDRESS
   --port /dev/cu.usbmodem... --runtime container|docker --output NEW_DIRECTORY
   --exclusive-session --bench-confirmed
 Stage 8 also requires datasheet/bench limits:
   --minimum-high-ns N --minimum-low-ns N --maximum-last-edge-us N --maximum-pause-us N
   --duration SECONDS (10..3600) --captures COUNT (1..20)
 Stage 2: CH1=GP2 (3.3V), CH2=Z80 socket CLK (5V), CH3=Z80 VCC.
-Stage 8: CH1=Z80 IORQ#, CH2=Z80 WAIT#, CH3=Z80 CLK, CH4=Pico DATA_ENABLE.
-SPI: CH1=MCP SCK, CH2=MCP CS#, CH3=MCP SI, CH4=MCP SO (all 5V side).
-Firmware identity must match stage2 or stage8 (SPI uses Stage 8).
+Stage 8: CH1=Z80 IORQ#, CH2=Z80 WAIT#, CH3=Z80 CLK, CH4=IO_RELEASE GP9.
+Stepped completion requires manual waveform review; single-pause evaluation is inconclusive.
+Firmware identity must match stage2 or stage8. No external SPI device is fitted.
 All probes: compensated 10X, grounded; inputs 1 MOhm, deskew checked.
 The runner does not flash firmware or inject electrical faults.`);
   process.exit(0);
 }
-if (!['stage2', 'stage8', 'spi'].includes(values.mode) || !['container', 'docker'].includes(values.runtime) ||
+if (!['stage2', 'stage8'].includes(values.mode) || !['container', 'docker'].includes(values.runtime) ||
     !values.ip || !values.port || !values.output || !values['exclusive-session'] || !values['bench-confirmed']) {
   throw new Error('Read --help; supply mode, runtime, IP, port, new output directory and both safety confirmations');
 }
@@ -216,7 +216,7 @@ try {
     if (!(baseline.clock_actual > 0)) throw new Error('Stage 8 clock is not configured');
     if (values.mode === 'stage8') {
       await configure([channel(1, 'Z80 IORQ#', 5), channel(2, 'Z80 WAIT#', 5),
-        channel(3, 'Z80 CLK', 5), channel(4, 'Pico DATA_ENABLE', 3.3)],
+        channel(3, 'Z80 CLK', 5), channel(4, 'Pico IO_RELEASE GP9', 3.3)],
       { channel: 1, slope: 'NEG', level_v: 2.5 }, 100e-6);
       const started = Date.now();
       await command('\x1dh', /\[diag\] one-hour RAM\/USB test started/);

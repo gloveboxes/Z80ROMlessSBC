@@ -75,6 +75,8 @@ void z80_clock_stop(void) {
 }
 
 void z80_clock_resume(void) {
+  pwm_set_counter(pwm_gpio_to_slice_num(PIN_CLK), 0);
+  gpio_set_function(PIN_CLK, GPIO_FUNC_PWM);
   pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), true);
 }
 

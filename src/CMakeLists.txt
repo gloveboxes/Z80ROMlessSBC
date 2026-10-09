@@ -18,19 +18,14 @@ target_include_directories(z80_clock PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/inc
 target_link_libraries(z80_clock PUBLIC z80_supervisor_common hardware_pwm hardware_clocks)
 target_compile_options(z80_clock PRIVATE -Wall -Wextra -Werror)
 
-add_library(z80_mcp23s17 STATIC common/mcp23s17.c)
-target_include_directories(z80_mcp23s17 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_link_libraries(z80_mcp23s17 PUBLIC z80_supervisor_common hardware_spi)
-target_compile_options(z80_mcp23s17 PRIVATE -Wall -Wextra -Werror)
-
 add_library(z80_bus STATIC common/bus.c)
 target_include_directories(z80_bus PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_link_libraries(z80_bus PUBLIC z80_mcp23s17)
+target_link_libraries(z80_bus PUBLIC z80_supervisor_common)
 target_compile_options(z80_bus PRIVATE -Wall -Wextra -Werror)
 
 add_library(z80_sram STATIC common/sram.c)
 target_include_directories(z80_sram PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_link_libraries(z80_sram PUBLIC z80_bus)
+target_link_libraries(z80_sram PUBLIC z80_bus z80_clock)
 target_compile_options(z80_sram PRIVATE -Wall -Wextra -Werror)
 
 add_library(z80_cpu STATIC common/cpu.c)

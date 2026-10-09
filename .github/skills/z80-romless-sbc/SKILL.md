@@ -1,6 +1,6 @@
 ---
 name: z80-romless-sbc
-description: 'Engineer, review, debug, build, test, or document the Z80ROMlessSBC project. Use for Pico 2 W supervisor firmware, Z80/SRAM/GAL/MCP23S17 buses, voltage translation, breadboard placement, CP/M images, onboard-flash storage, staged bring-up, KiCad checks, MkDocs maintenance, DSLogic Plus/DHO814 captures, timing qualification, or BOM and pin-map changes.'
+description: 'Engineer, review, debug, build, test, or document the Z80ROMlessSBC project. Use for Pico 2 W supervisor firmware, Z80-assisted SRAM loading, HCT32 logic, voltage translation, breadboard placement, CP/M images, onboard-flash storage, staged bring-up, KiCad schematic checks, MkDocs maintenance, DSLogic Plus/DHO814 captures, timing qualification, or BOM and pin-map changes.'
 argument-hint: 'Describe the hardware, firmware, documentation, or validation task'
 user-invocable: true
 ---
@@ -43,8 +43,9 @@ Use this workflow to preserve the project's electrical safety, firmware ownershi
 
 - Do not revive superseded SD-card, PSRAM, LVC8T245-carrier, or 74HCT157/74HCT08 architectures without an explicit redesign request.
 - Do not connect a 5 V output directly to a Pico GPIO.
-- Do not bypass the AHCT244 on GAL-to-SRAM controls.
-- Do not share SPI0 across cores or introduce a second bus master on SCK/MOSI.
+- Do not bypass the AHCT244 on Z80-to-SRAM controls; Z80 TTL HIGH is not sufficient for SRAM CMOS inputs.
+- Do not revive the retired address expander/PLD or add Pico memory bus mastering without an explicit redesign request.
+- The existing PCB is the previous circuit. Keep PCB/project/routing/fabrication files unchanged until migration is separately authorized; the default KiCad build is schematic-only.
 - Do not treat a physically installed but unpowered 5 V IC as equivalent to an absent socketed device.
 - Bond the DHO814 chassis to protective earth before connecting any input or
    output lead; ordinary passive probes are not isolated.

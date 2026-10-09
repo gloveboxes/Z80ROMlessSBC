@@ -42,7 +42,7 @@ after core 0 has completed safe GPIO startup, queue initialization, and
 the [Phase 9 boot-image load](phase-9-flash-storage.md) (which finishes
 entirely on core 0 before
 core 1 is launched). Core 0 continues to own the Z80 clock, bus
-transceivers, MCP23S17, SRAM DMA, and I/O trap. Core 1 owns Wi-Fi
+transceivers, injected SRAM loading, and I/O trap. Core 1 owns Wi-Fi
 connection management, the embedded HTTP terminal page, WebSocket
 client state, network polling, and the
 [flash disk-write service](../system/operation.md#63-onboard-flash-cpm-disk-storage)
@@ -306,18 +306,15 @@ cannot starve flash ownership requests.
 and [Stage 10 CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt).
 
 The command-loop application must call `diagnostic_safe_startup()` as
-its first GPIO action. After [Phase 3](phase-3-address-generator.md) hardware
-is fitted, call
-`mcp_spi_init()` before any MCP access. Keep `enable_io_trap()` disabled
-during DMA and single-step operation; call `set_z80_clock_hz()` first,
+its first GPIO action. The [Phase 3](phase-3-address-generator.md) input buffer
+is always enabled; no expander initialization is required. Keep trapping disabled
+during injected loading and single-step operation; configure the clock first,
 then enable the trap immediately before releasing RESET# for a PWM-run
-test. Before returning to DMA from a running CPU, call
-`disable_io_trap()` and either request the CPU bus while the clock still
-runs or assert RESET# and supply at least three further full clocks.
-Only after the selected ownership procedure completes and the Z80 bus
-is verified high-impedance may the firmware enable either transceiver.
-While the trap is enabled, reserve SPI0 for the handler: no other IRQ,
-core, or main-loop operation may access the MCP23S17. Drain
+test. To reload a running CPU, disable trapping and call
+`z80_cpu_prepare_loader()`: isolate, assert reset, clock reset, then release
+into the injection sequence with SRAM reads inhibited. After verification,
+reset to PC zero and lower the inhibit for SRAM execution. Do not use a bus
+grant to load memory: the Pico has no address/write bus master. Drain
 `core0_service_flash_requests()` continuously from core 0's nonblocking
 foreground loop. For acquisition, leave trapping enabled while
 asserting BUSREQ# and waiting for BUSACK# LOW, then disable it. For

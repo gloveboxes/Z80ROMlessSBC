@@ -1,12 +1,18 @@
 # PCB Design
 
+!!! warning "Historical PCB; migration deferred"
+	This section, its renders, BOM, routing, and fabrication outputs describe
+	the previous circuit. The current schematic and firmware use eight-package
+	Z80-assisted loading and are **not compatible** with this PCB. Do not order
+	these Gerbers for the redesign. The PCB design remains unchanged.
+
 The PCB is a **separate physical implementation** of the Z80 ROMless SBC:
 a 160 x 135 mm, four-layer, through-hole board with socket-compatible active
-devices. It shares the breadboard's pin assignments, bus ownership, voltage
-translation, electrical safeguards, and maintained firmware.
+devices. The following historical details must not be interpreted as current
+pin-map or firmware compatibility claims.
 
-Pico firmware remains [breadboard-first and shared](../system/firmware-build.md#breadboard-first-shared-pico-firmware).
-The PCB does not introduce a separate source tree or faster startup defaults.
+Current Pico firmware is [breadboard-first](../system/firmware-build.md#breadboard-first-shared-pico-firmware).
+PCB integration is outside this revision.
 
 The [Phase 0-10 implementation plan](../implementation/index.md) remains the
 three-BB830 breadboard build. Do not use its socket-row positions or
@@ -17,7 +23,7 @@ incremental jumper-wiring instructions as PCB assembly instructions.
 | [PCB inventory](inventory.md) | PCB-specific fitted parts, sockets, connectors, mechanical items, and differences from the breadboard BOM |
 | [Design considerations](design-considerations.md) | Layer stack, component placement, power sequencing, routing, timing, and assembly constraints |
 | [Shared electrical reference](../hardware/pin-mapping.md) | Exact IC pin assignments and SRAM-control logic |
-| [Shared firmware](../system/firmware-build.md) | Stage programs, CP/M images, and Pico provisioning |
+| [Current breadboard firmware](../system/firmware-build.md) | Stage programs, CP/M images, Pico provisioning; not compatible with this previous PCB |
 
 ## Board preview
 

@@ -16,28 +16,28 @@ void input_with_no_pull(uint pin) {
 }
 
 void z80_isolate_buses(void) {
-  gpio_put(PIN_ADDR_ENABLE, 0);
-  gpio_put(PIN_DATA_ENABLE, 0);
+  gpio_put(PIN_DATA_UP_OE_N, 1);
+  gpio_put(PIN_DATA_DOWN_OE_N, 1);
 }
 
 void z80_safe_startup(void) {
-  output_with_initial_level(PIN_DATA_ENABLE, 0);
-  output_with_initial_level(PIN_ADDR_ENABLE, 0);
+  output_with_initial_level(PIN_DATA_UP_OE_N, 1);
+  output_with_initial_level(PIN_DATA_DOWN_OE_N, 1);
   output_with_initial_level(PIN_RESET_N, 0);
   output_with_initial_level(PIN_BUSREQ_N, 1);
-  output_with_initial_level(PIN_SRAM_WE_N, 1);
-  output_with_initial_level(PIN_SRAM_CE_N, 1);
-  output_with_initial_level(PIN_SRAM_OE_N, 1);
-  output_with_initial_level(PIN_SPI_CS_N, 1);
+  output_with_initial_level(PIN_BOOT_READ_DISABLE, 1);
+  output_with_initial_level(PIN_IO_RELEASE, 0);
   output_with_initial_level(PIN_CLK, 0);
-  output_with_initial_level(PIN_DATA_DIR, 0);
   for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin)
     input_with_no_pull(pin);
   input_with_no_pull(PIN_BUSACK_N);
   input_with_no_pull(PIN_IORQ_N);
   input_with_no_pull(PIN_RD_N);
   input_with_no_pull(PIN_WR_N);
-  input_with_no_pull(PIN_SPI_MISO);
+  input_with_no_pull(PIN_PORT_A0);
+  input_with_no_pull(PIN_PORT_A1);
+  input_with_no_pull(PIN_PORT_A2);
+  input_with_no_pull(PIN_PORT_A4);
 }
 
 void z80_walking_output_test(const uint *pins, size_t count,

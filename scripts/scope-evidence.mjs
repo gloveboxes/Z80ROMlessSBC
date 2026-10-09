@@ -154,11 +154,11 @@ export function evaluateTrap(traces, actualHz, limits) {
     const eventChecks = [];
     eventChecks.push({ name: 'exactly one intentional pause', status: pauses.length === 1 ? 'pass' : 'inconclusive' });
     eventChecks.push({ name: 'WAIT assertion and release captured', status: waitLow && waitHigh ? 'pass' : 'inconclusive' });
-    eventChecks.push({ name: 'WAIT released after data enabled', status: waitHigh && enable
+    eventChecks.push({ name: 'WAIT released after IO_RELEASE', status: waitHigh && enable
       ? waitHigh.time + sample >= enable.time ? 'pass' : 'fail' : 'inconclusive' });
     if (enable) {
       const earlyDisable = traces.CHAN4.edges.some(edge => !edge.rising && edge.time > enable.time && edge.time < request.end - sample);
-      eventChecks.push({ name: 'data enabled until IORQ releases', status: earlyDisable ? 'fail' : 'pass' });
+      eventChecks.push({ name: 'IO_RELEASE held until IORQ releases', status: earlyDisable ? 'fail' : 'pass' });
     }
     if (waitHigh) {
       const reasserted = traces.CHAN2.edges.some(edge => !edge.rising && edge.time > waitHigh.time && edge.time < request.end - sample);
@@ -182,7 +182,8 @@ export function evaluateTrap(traces, actualHz, limits) {
     manual_checks_pending: [
       'Last-edge latency is not the instant PWM stopped; bound that uncertainty using a clock half-period.',
       'Verify WAIT setup/hold at the Z80 sampling edge and data setup/hold in separate captures.',
-      'Repeat CH4 on RD#, WR#, DATA_DIR and both OE# nodes; prove no bus contention.',
+      'Review all slow completion clocks; the single-pause evaluator cannot qualify stepped release.',
+      'Repeat CH4 on RD#, WR#, GP6, GP7 and both actual OE# nodes; prove no bus contention.',
       'Retain DSLogic Group A-D captures and one-hour functional workload results.',
     ] };
 }

@@ -11,7 +11,7 @@ A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
 baseline and change only the clock setting between tests, not the wiring,
 power arrangement, and probe layout at the same time.
 
-Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Stage 2 and Stage 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing SPI readback or trap code.
+Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Stage 2 and Stage 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing injection or trap code.
 
 **Setup time** is how long data must be valid before the CPU samples it;
 **hold time** is how long it must remain valid afterward. Measure at the
@@ -46,11 +46,12 @@ both values.
   A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM CE#/OE#/WE#,
   and D0-D7 as well; require valid read data before the Z80 setup
   deadline and every SRAM write pulse to meet the 45 ns minimum after
-  propagation through the GAL and AHCT244.
+  propagation through the AHCT244.
 - **WAIT# handshake, every I/O cycle:** Require WAIT# LOW before the
-  Z80 sampling edge, WAIT# HIGH only after DATA_ENABLE and data
-  direction are valid, and no WAIT# reassertion until IORQ# and
-  RD#/WR# are inactive.
+  Z80 sampling edge, WAIT# HIGH only after IO_RELEASE and the selected data
+  path are valid, and no WAIT# reassertion until IORQ# and RD#/WR# are inactive.
+  Capture stepped completion, isolation/rearming, and the first resumed PWM
+  pulse. Both data OEs must be HIGH before PWM resumes.
 - **Oscilloscope evidence:** Use the DHO814 groups in the
   [oscilloscope capture plan](../hardware/oscilloscope.md#four-channel-connections-and-expected-results)
   and repeat the listed alternatives for each analogue signal.

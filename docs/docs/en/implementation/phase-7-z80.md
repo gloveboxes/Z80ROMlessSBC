@@ -1,128 +1,38 @@
-# 8.8 Phase 7 - Z84C0020PEC CPU, Installed Last
+# Phase 7 - Z80 Execution and Bus Grants
 
-**Prerequisite:** The [Phase 6 pass gate](phase-6-sram.md#pass-gate) must pass.
+**Prerequisite:** [Phase 6](phase-6-sram.md#pass-gate).
+**Install:** No additional chips; CPU was fitted in Phase 6.
 
-**Install:** Disconnect external power and USB, then insert the Z84C0020PEC
-in its verified orientation. Never insert it into a powered socket. On the
-next power-up, Stage 7 firmware must disable both bus transceivers, drive
-the Pico-side SRAM CE#/OE#/WE# controls inactive, hold RESET# LOW and
-BUSREQ# HIGH, and keep the clock LOW. Load and verify the test program
-**after power-up and before releasing RESET#**; SRAM cannot retain a preload
-through power removal. RESET# LOW deliberately keeps the programmed
-logic on the inactive Pico side; the GAL equations switch to CPU controls
-automatically only when RESET# is released with BUSACK# HIGH.
+Build `z80_stage07_z80_cpu`; UF2 lives in `build/src/stage07_z80_cpu/`.
+[Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c).
+The test image is `NOP; NOP; JP 0000`. It is injected, read back, then reset
+again before execution from SRAM.
 
-**What you are proving:** the real Z80 fetches instructions from SRAM and
-releases the buses when the Pico requests them. Start with `l` to load the
-test loop while holding reset, then `s` to advance **one clock cycle** at a
-time. This is not an instruction-level debugger step: each instruction takes
-several cycles, and refresh activity is normal. Use M1#, MREQ#, and RD# to
-identify opcode fetches rather than expecting every step to fetch an opcode.
+| Command | Test |
+| --- | --- |
+| `l` | Load/verify for stepping; hold RESET afterward |
+| `s` | Release reset on first step, clock one 10 Hz-equivalent cycle |
+| `0/1/2/3` | Reload and run at 10 Hz / 1 kHz / 100 kHz / 1 MHz |
+| `r` | Reload/run 1 MHz |
+| `q` | BUSREQ/BUSACK round-trip; no Pico memory drive |
+| `z` | Reset/restart current run rate |
+| `x` | Assert reset, disable paths, stop clock |
 
-If there is no fetch, check power and CLK at the CPU first, then RESET#,
-WAIT#, and BUSREQ#. Only after those levels are correct should you investigate
-the address/data path. A `PASS: CPU running` message means the Pico completed
-load/start; it is not independent proof of Z80 execution.
+## Test Plan
 
-## Wiring - final CPU socket verification
+Capture reset, first fetch at 0000, M1, CE/OE/WE and data. Both Pico data
+enables stay HIGH during SRAM execution and boot inhibit stays LOW. Verify
+normal fetches differ from the injected boot stream; observe the NOP/JP loop.
+Measure the loaded clock at Z80 pin 6. Progress through slow rates before
+1 MHz. `q` must float the CPU bus while BUSACK LOW without activating either
+Pico path; rearm I/O before releasing a grant in integrated firmware.
 
-Add no new signal jumpers in this phase: the Z80 socket received its clock,
-reset, arbitration, monitor, address, and data connections in Phases 1-6.
-With the Z80 removed, continuity-check every CPU pin against the relevant
-pairwise diagram and verify no adjacent address, data, or control pins are
-shorted. Confirm all fixed Z80 inputs have their specified inactive levels
-before insertion. Use the consolidated
-[Pico wiring](phase-1-supervisor.md#wiring-pico-2-w),
-[GAL and output-buffer wiring](phase-2-buffer-clock.md#wiring-gal-and-output-buffer),
-[address and input-buffer wiring](phase-3-address-generator.md#wiring-spi-and-mcp23s17-reset),
-[data-path wiring](phase-5-data-bus.md#wiring-bidirectional-data-path), and
-[SRAM wiring](phase-6-sram.md#wiring-sram-socket) as the final socket
-checklist.
+Test a missing BUSACK using a test-only isolated input fixture, not by
+shorting the CPU output. Timeout must not authorize memory access; release
+timeout must assert RESET and isolate. Power off before fault wiring changes.
 
-**Firmware feature:** Add clock single-step and selectable 10 Hz, 1 kHz,
-100 kHz, and 1 MHz run modes; reset pulse control; timed BUSREQ#/BUSACK#
-acquisition; and a command that preloads and verifies a small test
-program before releasing reset.
+## Pass Gate
 
-**Application source:** [src/stage07_z80_cpu/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c),
-using the shared [CPU ownership module](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
-
-## Z80 Single-Step and Timed Bus Request (Phases 7-8)
-
-**Maintained source:** [cpu.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/cpu.h)
-and [cpu.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
-
-Single-step uses SIO rather than PWM. `request_cpu_bus()` and
-`release_cpu_bus()` each take an explicit `timeout_us` bound so a
-wiring fault or a missing Z80 cannot hang the supervisor waiting on
-BUSACK#. The clock must be running while requesting or releasing BUSREQ#;
-after using `clock_one_cycle()`, call `set_z80_clock_hz()` to restore
-the CLK pin's PWM function before either handshake.
-
-```c
-static void clock_one_cycle(uint32_t half_period_us) {
-  pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), false);
-  gpio_set_function(PIN_CLK, GPIO_FUNC_SIO);
-  gpio_set_dir(PIN_CLK, GPIO_OUT);
-  gpio_put(PIN_CLK, 0);
-  busy_wait_us_32(half_period_us);
-  gpio_put(PIN_CLK, 1);
-  busy_wait_us_32(half_period_us);
-  gpio_put(PIN_CLK, 0);
-}
-
-static bool request_cpu_bus(uint32_t timeout_us) {
-  absolute_time_t deadline = make_timeout_time_us(timeout_us);
-  isolate_buses();
-  gpio_put(PIN_BUSREQ_N, 0);
-  while (gpio_get(PIN_BUSACK_N) != 0) {
-    if (time_reached(deadline)) {
-      gpio_put(PIN_BUSREQ_N, 1);
-      return false;
-    }
-    tight_loop_contents();
-  }
-  return true;               // RESET# HIGH: BUSACK# LOW selects DMA controls.
-}
-
-static bool release_cpu_bus(uint32_t timeout_us) {
-  absolute_time_t deadline = make_timeout_time_us(timeout_us);
-  gpio_put(PIN_SRAM_CE_N, 1);
-  gpio_put(PIN_SRAM_OE_N, 1);
-  gpio_put(PIN_SRAM_WE_N, 1);
-  isolate_buses();
-  gpio_put(PIN_BUSREQ_N, 1);
-  while (gpio_get(PIN_BUSACK_N) == 0) {
-    if (time_reached(deadline)) {
-      gpio_put(PIN_RESET_N, 0);
-      return false;
-    }
-    tight_loop_contents();
-  }
-  return true;               // BUSACK# HIGH restores CPU controls.
-}
-```
-
-**Test plan:**
-
-1. Verify RESET# LOW, BUSREQ# HIGH, both transceiver OE# signals HIGH,
-  and SRAM write inactive immediately after power-up.
-2. Clock at 10 Hz with RESET# asserted for at least three full cycles.
-  Use command `0`, release reset, and verify the first opcode fetch at
-  0x0000, including
-  the expected M1#, MREQ#, and RD# sequence.
-3. Preload `NOP; NOP; JP 0000h`. Single-step and verify address
-  progression with `l` followed by repeated `s` commands while Pico bus
-  drivers stay high-impedance.
-4. Repeat with commands `1`, `2`, and `3` for 1 kHz, 100 kHz, and 1 MHz
-  respectively, with no unexpected SRAM writes.
-5. Use command `q` to assert BUSREQ# while clocking. Require BUSACK# LOW after the current
-  machine cycle and verify CPU bus outputs are high-impedance. Release
-  BUSREQ# and require execution to resume.
-6. Use command `z` to assert RESET# for at least three clocks during
-  execution, release it, and verify a new fetch from 0x0000.
-
-## Pass gate
-
-Correct reset fetch and execution through 1 MHz, valid
-BUSREQ#/BUSACK# transfer, and no bus contention.
+Verified reset-to-SRAM fetch, repeated cold loads, correct instruction loop,
+and safe bus-grant timeout behavior. Higher rates need the separate
+[qualification plan](frequency-qualification.md).

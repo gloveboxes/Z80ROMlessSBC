@@ -26,8 +26,8 @@ const renderMermaidDiagrams = async () => {
   }
 };
 
+await renderMermaidDiagrams();
+
 if (globalThis.document$) {
   globalThis.document$.subscribe(renderMermaidDiagrams);
-} else {
-  await renderMermaidDiagrams();
 }

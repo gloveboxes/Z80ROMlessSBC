@@ -5,7 +5,6 @@
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_disk.h"
 #include "z80sbc/io_trap.h"
-#include "z80sbc/mcp23s17.h"
 #include "z80sbc/supervisor.h"
 
 static uint8_t virtual_read(uint8_t port, void *context) {
@@ -56,7 +55,6 @@ static const char *fault_name(z80_flash_fault_point_t point) {
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  mcp23s17_init(4000000);
   printf("\nStage 9: manifest boot and journaled flash disks\n");
   printf("1-8=arm one-shot flash fault, s=status\n");
 

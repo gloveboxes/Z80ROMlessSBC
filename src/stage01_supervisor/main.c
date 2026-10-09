@@ -9,15 +9,10 @@ static const uint TEST_OUTPUT_PINS[] = {
   PIN_CLK,
   PIN_RESET_N,
   PIN_BUSREQ_N,
-  PIN_SRAM_CE_N,
-  PIN_DATA_DIR,
-  PIN_DATA_ENABLE,
-  PIN_ADDR_ENABLE,
-  PIN_SPI_SCK,
-  PIN_SPI_MOSI,
-  PIN_SPI_CS_N,
-  PIN_SRAM_WE_N,
-  PIN_SRAM_OE_N,
+  PIN_BOOT_READ_DISABLE,
+  PIN_DATA_UP_OE_N,
+  PIN_DATA_DOWN_OE_N,
+  PIN_IO_RELEASE,
 };
 
 static const uint DATA_HEADER_PINS[] = {14, 15, 16, 17, 19, 20, 21, 22};
@@ -45,9 +40,9 @@ static void restore_safe_levels(void) {
 static void toggle_reset_output(void) {
   reset_high = !reset_high;
   gpio_put(PIN_RESET_N, reset_high);
-  printf("RESET# GP3 commanded %s: Pico header pin 5, Z80 socket pin 26, GAL socket pin 1\n",
+  printf("RESET# GP3 commanded %s: Pico header pin 5, Z80 socket pin 26\n",
          reset_high ? "HIGH" : "LOW");
-    printf("Expected voltage at all three contacts: %s (measure relative to common GND)\n",
+    printf("Expected voltage at both contacts: %s (measure relative to common GND)\n",
       reset_high ? "3.20-3.40 V" : "near 0 V");
     printf("RESET# must never exceed the Pico 3.3 V rail; no 5 V pull-up permitted\n");
   printf("r: toggle RESET#, x: restore safe levels (Phase 1 only); measure the voltage\n");
@@ -81,10 +76,9 @@ static void step_data_output(void) {
 }
 
 static void print_status(void) {
-  printf("BUSACK#=%u IORQ#=%u RD#=%u WR#=%u MISO=%u\n",
+  printf("BUSACK#=%u IORQ#=%u RD#=%u WR#=%u\n",
          gpio_get(PIN_BUSACK_N), gpio_get(PIN_IORQ_N),
-         gpio_get(PIN_RD_N), gpio_get(PIN_WR_N),
-         gpio_get(PIN_SPI_MISO));
+         gpio_get(PIN_RD_N), gpio_get(PIN_WR_N));
   print_data_levels();
 }
 

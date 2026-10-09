@@ -1,315 +1,84 @@
-# 3. Physical Partitioning & Breadboard Topology
+# 3. Construction and Breadboard Topology
 
-## Before you wire
+Build the [phase sequence](../implementation/index.md); leave later devices
+absent until instructed. Every pin map is a **top view**. Matching schematic
+net labels mean an electrical connection even without a continuous drawn wire.
 
-This page describes the final layout. Build it in the
-[phase sequence](../implementation/index.md), leaving later-phase chips out
-of their sockets. All pin diagrams are **top views**, looking down at the
-chip body, not at its underside.
+## Before You Wire
 
-### How breadboard connections work
+On each BB830, A-E at one numbered row are one connection; F-J at that row
+are a separate connection. The center ravine isolates them. Adjacent numbered
+rows are not connected. Check power-rail continuity with a meter: stripes
+do not prove internal continuity or voltage.
 
-- On a BB830, holes A-E in one numbered row are one electrical connection;
-  holes F-J in that row are a separate connection. The center gap separates
-  them. Row 18 does not connect to row 19.
-- Power rails run along the board edges. A printed red or blue stripe is
-  only a label: it supplies no voltage and does not prove continuity. Check
-  each rail segment with a meter, then label its assigned voltage.
-- A wire, socket pin, and resistor lead placed in the same connected strip
-  share a **net**. Moving a jumper by one row can therefore leave the intended
-  pin open while connecting a different pin instead.
-- A DIP straddles the center gap so opposite pins are not shorted. With its
-  notch at the top, pin 1 is top-left; numbering runs down the left side,
-  then up the right. Rotating the chip rotates the pin map. Several chips
-  here deliberately have their notches at the bottom; use the table below.
+Wire one named source pin to one named destination pin, then check continuity
+at the actual socket contacts and shorts to adjacent contacts. GP2 is Pico
+header pin 4, not header pin 2. A0-A15 means sixteen independent nets. Strip
+only enough insulation to seat the jumper, with no exposed bridges.
 
-### Turn a diagram into wires
+### Use the Meter Safely
 
-1. Find the source and destination **device, signal name, and physical pin**.
-   Do not treat a Pico GPIO number as a header position: for example, GP2 is
-   physical header pin 4, not header pin 2.
-2. Locate both pins using the orientation table, then mark their breadboard
-   rows. Wire one connection at a time using short insulated jumpers. Strip
-   only enough insulation to seat the ends; exposed copper above the board
-   must not touch a neighboring pin or jumper.
-3. With external power and USB disconnected, measure continuity from the
-   actual source socket contact to the destination contact. Also check for
-   unintended shorts to adjacent contacts. A beep proves a conductive path,
-   not that you chose the right two pins.
-4. Mark the connection checked before moving on. For a bus, repeat for every
-   bit: `A0-A15` means sixteen separate wires, not one connection. Probe at
-   the receiving socket as well as the source.
+Use resistance/continuity only with external power and USB disconnected and
+capacitors discharged. Do not discharge capacitors by shorting them. In voltage
+mode, black COM goes to circuit GND and red goes to the named pin. Measure IC
+supply contacts, not only the supply entry. Prefer the supply current readout;
+an ammeter goes **in series**, never across +5 V and GND. Return its lead to
+the voltage socket after any current measurement. Attach clips with power off.
 
-Matching net labels in the schematic mean the points are connected even
-when no continuous line is drawn between them. A crossing without a junction
-is not a connection. The placement image shows where parts and signal groups
-belong; the phase pin diagrams specify individual connections.
+## Board Roles and Placement
 
-### Use the meter safely
-
-| Check | Board state | Probe placement and meaning |
-| --- | --- | --- |
-| Continuity / resistance | All power and USB disconnected; capacitors discharged | Measure between two contacts. A direct wire should read close to the resistance of the meter leads; a 10 kOhm pull resistor is not a short and may not beep. |
-| DC voltage | Powered for the stated test | Black lead in COM at common circuit GND; red lead in the voltage/resistance socket at the test point. Measure supply voltage at the IC's supply contact, not only at the power entry. |
-| Current | Prefer the supply readout; a separate multimeter is only needed when current must be measured | An ammeter must go in series with the supply. With power off, use the meter's fused current jack and a range rated above the expected current. Never connect a meter in current mode across +5 V and GND; it effectively shorts the rail. Turn power off before removing the meter, then return the red lead to the voltage socket. A multimeter does not replace supply current limiting. |
-
-Attach clips with power off, keeping metal tips clear of adjacent pins.
-After disconnecting power, confirm rail voltage has fallen near 0 V before
-switching to resistance mode; do not discharge capacitors by shorting them
-with a tool. A changing resistance reading can be the meter charging a
-capacitor, so allow it to settle.
-
-## Board roles and placement
-
-The layout enforces a strict three-zone model across three 830-point
-breadboards to minimize cross-talk and propagation delay across the
-distinct 3.3 V and 5 V power domains. Each zone below lists the specific
-chips to place on that board and where to seat them.
-
-Place the three BB830s side by side with their long edges parallel:
-Memory on the left, Core in the center, and Peripheral on the right.
-Rows 1-63 run in the same direction on all three boards, so equal row
-numbers align across both board boundaries. The Core Board's central
-position is deliberate: the dominant Memory/Core paths are the shared
-16-bit address and 8-bit data buses plus the MCP23S17 address/SPI
-interface, while the dominant Core/Peripheral paths are the Pico's
-8-bit data interface and supervisor controls. Seven Pico-to-GAL signals span both board boundaries
-without a buffer: PICO_CE#, PICO_OE#, PICO_WE#, RESET#, DATA_ENABLE,
-DATA_DIR, and ADDR_ENABLE. RESET# is a
-three-way node also tapped by the Z80 on the Core Board; the others
-simply cross the Core Board without connecting to a Core component.
-MCP SO also crosses both boundaries to the Peripheral Board's LVC244.
-Keep these low-activity paths away from CLK. Putting either outer cluster
-in the center would shorten these eight paths only by forcing one of the
-much wider address/data interfaces to span two board widths.
-
-- **Memory Board (Left Zone):** AS6C1008-55PCN SRAM, the programmed
-  ATF22V10, and MCP23S17. The GAL's five CPU-side inputs (BUSACK#,
-  MREQ#, IORQ#, RD#, WR#)
-  cross from the Core Board, and its three pre-buffer outputs cross
-  back to the Core Board's SN74AHCT244 before the buffered result
-  returns here as SRAM CE#/OE#/WE#. This deliberate round trip keeps
-  the AHCT244's clock channel local to the Z80 instead (see below), which
-  matters far more than SRAM control length since SRAM CE#/OE#/WE# only
-  toggle at the Z80 bus-cycle rate, the same class as MREQ#/RD#/WR#. The
-  MCP23S17 now sits here so its 16 port lines join the pulled-up shared
-  address bus at the Memory/Core boundary. Q1 beside it provides
-  reset-based hardware isolation. AHCT244 SPI outputs also cross only
-  the Memory/Core boundary. Its SO output is
-  the one MCP signal that continues across Core to the LVC244. Row
-  budget: 16 (SRAM) + 12 (ATF22V10) + 14 (MCP23S17) = 42 of 63 rows.
-
-- **Core Board (Center Zone):** Z84C0020PEC CPU and the SN74AHCT244N
-  output buffer. Keep the
-  AHCT244 beside the Z80 so its
-  Y1 clock output never crosses a board boundary, the same placement
-  rule the discrete design used for its dedicated clock buffer. The
-  Z80 address pins join the SRAM/MCP address trunk directly. The
-  photographed plug-in supply reserves rows 1-3, leaving 60 usable
-  terminal rows.
-  The chip budget is 20 (Z80) + 10 (SN74AHCT244N) = 30 of those 60
-  rows, leaving 30 rows for socket-body
-  clearance, decoupling, and wiring. *No separate wait-state latch or
-  flip-flop is used; the GAL drives WAIT# combinationally.*
-
-- **Peripheral Board (Right Zone):** Raspberry Pi Pico 2 W,
-  SN74LVC244AN monitor buffer, SN74AHCT245N upward data path,
-  and SN74LVC245AN downward data path. The ATF22V10 on Memory provides
-  the mutually exclusive enables. Rotate both data transceivers so
-  their B-port pin rows face the Core Board and their A-port pin rows
-  face the Pico; tie AHCT DIR HIGH and LVC DIR LOW. Orient the LVC244 so its 1A input pin
-  row faces the Core Board and its 1Y output pin row faces inward toward
-  the Pico; its fifth input, MCP SO, arrives from Memory across Core.
-  Row budget: 20 (Pico) + 10 (LVC244) + 10 (AHCT245) + 10 (LVC245) =
-  50 of 63 rows.
-
-The following row-aligned schedule was selected by evaluating every
-valid per-board package ordering and gap distribution against grouped
-signal-count weights, iterating the comparison across all three boards.
-This is a routing aid, not an instruction to equalize individual wire
-lengths:
-
-| Board | Terminal-row schedule | Unallocated rows |
-|----|----|----:|
-| Memory | Unallocated 1-4; GAL 5-16; gap 17; SRAM 18-33; gap 34; MCP23S17 35-48 | 1-4 and 49-63 (19) |
-| Core / middle | Supply clearance 1-3; unallocated 4-7; AHCT244 8-17; gap 18; Z80 19-38 | 4-7 and 39-63 (29) |
-| Peripheral | Pico 1-20; gap 21; LVC244 22-31; gap 32; AHCT245 33-42; gap 43; LVC245 44-53 | 54-63 (10) |
+Place Memory, Core, and Peripheral boards left-to-right with long edges
+parallel, row 1 at the top, A-E left and F-J right. Do not mirror a board.
+Keep the AHCT244 next to the Z80 so CLK never crosses a board boundary.
+Signal-group placement is a routing aid, not a wire-length-matching requirement.
 
 ## 3.1 Package Orientation and Pin 1
 
-Use this convention for both the table and the placement image: view
-each BB830 from above and rotate it 90 degrees counter-clockwise from
-the manufacturer's landscape drawing, so **row 1 is at the top, row 63
-is at the bottom, A-E are on the left, and F-J are on the right**.
-Memory, Core, and Peripheral then sit left-to-right. Do not mirror any
-board.
+| Board / device | Rows | Orientation | Pin 1 | Opposite corner |
+| --- | --- | --- | --- | --- |
+| Memory / HCT32 | 5-11 | Notch up | E5 | Pin 14 at F5 |
+| Memory / SRAM | 18-33 | Notch up | Left pin-row side, row 18 | Pin 32 right, row 18 |
+| Core / AHCT244 | 8-17 | Notch down | F17 | Pin 20 E17 |
+| Core / Z80 | 19-38 | Notch up | Left pin-row side, row 19 | Pin 40 right, row 19 |
+| Peripheral / Pico | 1-20 | USB up | Header 1 left, row 1 | Header 40 right, row 1 |
+| Peripheral / LVC244 | 22-31 | Notch up | E22 | Pin 20 F22 |
+| Peripheral / AHCT245 | 33-42 | Notch down | F42 | Pin 20 E42 |
+| Peripheral / LVC245 | 44-53 | Notch down | F53 | Pin 20 E53 |
 
-Seat every DIP socket across the center ravine before wiring it. A
-0.3-inch DIP uses the E/F holes immediately beside the ravine. The Z80
-and SRAM are 0.6-inch-wide DIPs: dry-fit their specified 0.6-inch
-sockets in two terminal columns matching the actual 15.24 mm lead-row
-span; do not force or bend them into E/F. Both pin rows must remain on
-opposite, electrically isolated sides of the ravine. Install the IC
-only after marking the socket's pin-1 corner and matching the IC notch
-or dot to the socket.
+Narrow 7.62 mm DIPs straddle the ravine in E/F. Dry-fit the Z80/SRAM wide
+15.24 mm sockets in columns matching their actual pin-row spacing; do not bend
+them into E/F. Both sides must remain electrically isolated. Reserve Core
+rows 1-3 for supply-module clearance; if the module needs more, mount it
+off-board rather than compressing the clock/CPU region.
 
-| Board / device | Occupied rows | Body orientation | Pin 1 location (top view) | Opposite corner check |
-| --- | ---: | --- | --- | --- |
-| Memory / ATF22V10 | 5-16 | Notch toward row 1 | E5 | Pin 24 at F5 |
-| Memory / AS6C1008 SRAM | 18-33 | Notch toward row 1 | A-E pin-row side at row 18 | Pin 32 on F-J side at row 18 |
-| Memory / MCP23S17 | 35-48 | Notch toward row 63 | F48 | Pin 28 at E48 |
-| Core / SN74AHCT244 | 8-17 | Notch toward row 63 | F17 | Pin 20 at E17; 1Y1 pin 18 is then close to Z80 CLK |
-| Core / Z84C0020 | 19-38 | Notch toward row 1 | A-E pin-row side at row 19 | Pin 40 on F-J side at row 19 |
-| Peripheral / Pico 2 W | 1-20 | USB connector toward row 1 | Header pin 1 on A-E side at row 1 | Header pin 40 on F-J side at row 1 |
-| Peripheral / SN74LVC244 | 22-31 | Notch toward row 1 | E22 | Pin 20 at F22; 1A inputs face Core |
-| Peripheral / SN74AHCT245 | 33-42 | Notch toward row 63 | F42 | Pin 20 at E42; B1-B8 face Core |
-| Peripheral / SN74LVC245 | 44-53 | Notch toward row 63 | F53 | Pin 20 at E53; B1-B8 face Core |
+![Assisted-loader breadboard placement](../images/breadboard-layout.svg)
 
-For the non-DIP keyed parts:
+Memory uses 23 terminal rows for ICs, Core 30, and Peripheral 50. Leave gaps,
+keep bypass capacitors near supply pins, and place address pulls by the SRAM
+trunk and Pico data pulls beside U9/U10 A pins. No reset transistor is fitted.
 
-- **Q1 (2N3904):** place beside the MCP, not across the ravine. TO-92
-  lead order can vary by manufacturer; use the purchased part's
-  datasheet to identify emitter/base/collector and mark `E-B-C` beside
-  its holes. Do not rely on flat-face orientation alone.
-- **A0-A15 address pull-ups:** place 16 individual 10 kOhm resistors near the
-  shared address trunk by the SRAM/MCP. Connect one resistor from each
-  address signal to +5 V; do not connect the address signals together.
-- **Pico data pull-downs:** place one 10 kOhm resistor from each of GP10-GP17
-  to GND beside the SN74AHCT245 A-port node. Keep the eight GPIO signals
-  separate; do not connect them together. These individual resistors replace
-  RN3, an optional 8x10 kOhm bussed SIP network.
-- **1N5819 and electrolytics:** the diode band faces Pico VSYS; every
-  electrolytic `+` lead goes to its positive rail. Mark polarity on the
-  breadboard before insertion.
-- **Plug-in supply module:** orient it only from its printed `+`, `-`,
-  input, and output labels, then confirm every rail with a meter while
-  unloaded. There is no generic module orientation; never infer
-  polarity from USB-jack position or board color.
+## Power Distribution
 
-Before applying power, inspect every socket from above and verify the
-pin-1 location against this table. Then use continuity mode to prove
-that opposite-side pins at the same row are not shorted through a
-terminal strip.
+Feed the three +5 V rails from one supply-entry star, with multiple short
+common-GND links near bus crossings. The Peripheral +3.3 V rail is supplied
+only by Pico header 36 and powers U7/U10. Do not connect a plug-in module's
+3.3 V output to it. Fit seven local 100 nF capacitors, three 22 uF board
+capacitors, and one 100 uF entry capacitor. Observe electrolytic polarity;
+the 1N5819 band faces VSYS.
 
-This placement uses row alignment to reduce diagonal jumper length:
-
-- **Memory/Core:** SRAM rows 18-33 overlap the Z80's rows 19-38 for the
-  full A0-A15/D0-D7 trunk. GAL rows 5-16 overlap the AHCT244, while
-  MCP23S17 rows 35-48 meet the lower end of the direct Z80 address trunk.
-- **Core/Peripheral:** Pico rows 1-20 overlap AHCT244 and the top of the
-  Z80. LVC244 rows 22-31 overlap the Z80 monitor sources. Both data
-  transceivers overlap the lower Z80 region while remaining
-  directly adjacent to the Pico on the same board.
-- **Peripheral/Memory:** Pico rows 1-20 overlap GAL rows 5-16, reducing
-  the vertical component of the seven Pico-to-GAL paths and two OE#
-  returns. MCP SO
-  remains one grouped low-activity crossing to the LVC244.
-
-This schedule includes one empty row between every socket or module and
-still fits all three boards. Mark the actual supply-module overhang and
-socket outlines on the empty boards before wiring. If the supply consumes
-more than the assumed three rows, move it off-board or to the Memory Board
-rather than compressing the Core Board placement.
-
-![Side-by-side BB830 placement schedule and grouped chip connections](../images/breadboard-layout.svg)
-
-Use one supply-entry point to feed three separate physical +5 V rails, one
-on each board, and common GND; do not daisy-chain the boards' power rails
-end-to-end. The Peripheral Board also has a separate Pico-derived +3.3 V rail
-for the two LVC devices; keep it separate from all three +5 V rails. Bond adjacent boards with
-multiple short ground jumpers, especially beside the address/data bus
-crossings and CLK. Verify every BB830 distribution rail end-to-end with
-a meter before fitting links; never assume visually aligned rail
-segments are internally continuous.
+All installed 5 V ICs must be powered whenever the 5 V rail is on. Pulls do
+not isolate installed unpowered devices. Follow [Phase 0](../implementation/phase-0-power.md#power-distribution-and-isolation).
 
 ## 3.2 KiCad Electrical Schematic
 
-The native KiCad 10 schematic is the electrical source of truth for
-pin numbers, named nets, explicit no-connect markers, and ERC. It uses
-project-local symbols so the exact ATF22V10, Z80, SRAM, Pico, and
-translator pin definitions travel with the repository. RESET# is drawn
-as an explicit three-way Pico/Z80/GAL wire junction. Address, data,
-SPI, monitor, and control paths are shown as unfolded KiCad vector or
-group buses with every member named; matching labels on the chip-pin
-stubs provide the exact electrical connections without implying that
-signals pass through an intermediate chip as series logic.
+The [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch)
+and [net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json)
+are generated by
+[build-kicad-schematic.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/build-kicad-schematic.py).
+Current validation: **zero ERC violations, 68 real nets, 276 pin endpoints**.
+This establishes connectivity, not bench timing or supply-transient safety.
 
-| Artifact | Purpose |
-| --- | --- |
-| [KiCad project](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_pro) and [native schematic](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80_romless_sbc.kicad_sch) | Editable KiCad 10 electrical sources |
-| [Project symbol library](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/z80sbc.kicad_sym) | Exact local pin names, numbers, and ERC electrical types |
-| [SVG export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.svg) and [PDF export](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/exports/z80_romless_sbc.pdf) | Zoomable full schematic renderings |
-| [KiCad netlist](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc.net) and [independent net manifest](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/net_manifest.json) | Machine-readable connectivity |
-| [ERC report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/z80_romless_sbc-erc.json) | Generated electrical-rules evidence |
-
-The schematic uses the PCB assembly's component references and packaging;
-on the breadboard, implement RN4/RN5 as the sixteen discrete control pull-ups
-specified in [Phase 0](../implementation/phase-0-power.md#passive-component-installation).
-This preserves the electrical nets without imposing PCB packaging on the
-prototype. Use the breadboard inventory for breadboard purchase quantities.
-
-The [PCB documentation](../pcb/index.md#source-ownership-and-regeneration)
-describes native-source regeneration, PCB packaging counts, and fabrication
-outputs. These are not prerequisites for wiring the breadboard.
-
-## 3.3 PCB implementation
-
-The PCB material has moved to its own [PCB design section](../pcb/index.md),
-including the [PCB inventory](../pcb/inventory.md) and
-[design considerations](../pcb/design-considerations.md). The breadboard
-construction and Phase 0-10 implementation sequence remain separate.
-
-## 3.4 High-Speed Interconnect Routing
-
-At the breadboard's 1-6 MHz target clock rates, propagation skew from a few
-millimetres of wire-length difference is negligible compared with the
-Z80 timing budget. Solderless-breadboard reliability is instead
-dominated by total wire length, stubs, loop area, contact resistance,
-and fast-edge ringing. Route each bus as a short grouped trunk with
-roughly similar paths, but do not add serpentine wire merely to make
-lengths equal.
-
-A **trunk** is a compact route shared by the bus wires, with a short **tap**
-from each wire to each device that uses it. A **star** fans long wires out
-from one central point; a **stub** is a branch off the main route. Long
-branches can reflect fast voltage transitions even when the clock frequency
-is low. Keep a nearby GND return alongside each inter-board signal group.
-
-- **A0-A15 (hard construction rule):** keep the Z80, SRAM, MCP23S17,
-  and both SIP pull-up networks on one short common trunk. Do not build
-  this as a star and do not leave long branches to any device. A layout
-  that cannot satisfy this rule fails the placement review and must be
-  rearranged before wiring the remaining signals.
-- **D0-D7:** join both Peripheral data-transceiver B ports to one short
-  5 V trunk crossing to the Core Board, then continue that shared trunk
-  through the Z80 to the adjacent SRAM. Keep the two A-port taps to the
-  Pico short and parallel; never route one translator through the other.
-- **SN74AHCT244 2Y2-2Y4 to SRAM WE#/OE#/CE#:** these cross from the Core
-  Board's AHCT244 to the Memory Board's SRAM; route them as one grouped
-  trunk at the board boundary. Exact length matching is unnecessary.
-- **CLK (SN74AHCT244 1Y1 pin 18 to Z80 pin 6):** route this as the
-  single shortest, most direct jumper, kept away from the address bus.
-  Do not lengthen it to match other nets; clock is the most
-  edge-rate-sensitive signal in the design. This is why the AHCT244 is
-  seated on the Core Board rather than beside the GAL.
-
-Route a ground jumper alongside every inter-board signal group and add
-ground probe points near CLK, IORQ#, MREQ#, RD#, WR#, SRAM CE#/OE#/WE#,
-and each bus transceiver. Keep all jumpers as short as the placement
-allows.
-
-## 3.5 Major Chip Interconnection Overview
-
-```mermaid
-block-beta
-  columns 3
-  MEMORY1["Memory Board<br/>GAL + SRAM + MCP23S17"] MC["A0-A15 + D0-D7<br/>GAL pre-controls + SRAM controls"] CORE1["Core Board<br/>AHCT244 + Z80"]
-  CORE2["Core Board<br/>AHCT244 + Z80"] CP["CLK + BUSREQ# + SPI<br/>status monitors + translated data"] PERIPHERAL2["Peripheral Board<br/>Pico + LVC244 + data transceivers"]
-  PERIPHERAL3["Peripheral Board<br/>Pico + data transceivers"] PM["RESET# + DMA controls<br/>address/data interlocks"] MEMORY3["Memory Board<br/>GAL + SRAM + MCP23S17"]
-  MEMORY1 <--> MC
-  MC <--> CORE1
-  CORE2 <--> CP
-  CP <--> PERIPHERAL2
-  PERIPHERAL3 --> PM
-  PM --> MEMORY3
-```
+The existing PCB, session, Gerbers, drills, and PCB assembly outputs are
+unchanged and belong to the previous circuit. Do not manufacture them for the
+assisted-loader revision. Do not run the full PCB regeneration pipeline until
+a separate PCB migration is authorized.

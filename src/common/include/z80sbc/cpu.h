@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool z80_cpu_prepare_reset_dma(void);
+bool z80_cpu_prepare_loader(void);
 bool z80_cpu_load_and_verify(const uint8_t *image, uint32_t length);
 bool z80_cpu_release_reset_and_run(uint32_t clock_hz);
 bool z80_cpu_request_bus(uint32_t timeout_us);

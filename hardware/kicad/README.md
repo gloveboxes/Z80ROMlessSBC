@@ -1,5 +1,12 @@
 # Z80 ROMless SBC KiCad sources
 
+**Current revision:** the schematic uses Pico + Z80-assisted loading, eight
+active packages, and fixed HCT32 logic. The PCB, project routing rules,
+DSN/SES, renders, and fabrication package below remain the **previous circuit**.
+Their migration is deferred. Do not manufacture them for the new schematic
+or use the new firmware on the old board. No PLD programmer is needed for the
+new breadboard build.
+
 This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
 The Pico 2 W is horizontal in the bottom-left corner with USB flush to the
@@ -8,10 +15,9 @@ left edge; its antenna sits above a dedicated internal FR-4/copper cutout.
 This is a separate physical implementation from the three-BB830 prototype.
 See the dedicated [PCB documentation](../../docs/docs/en/pcb/index.md) for
 its inventory, design considerations, and fabrication references.
-The documentation's Phase 0-10 installation and jumper-wiring sequence remains
-the breadboard plan. Share electrical safeguards, pin assignments, firmware,
-and applicable functional tests, but use the PCB BOM and keep PCB assembly
-and qualification evidence separate.
+The documentation's Phase 0-10 installation sequence describes the new
+breadboard circuit. Its current pin map and firmware must not be applied to
+the previous PCB. Historical PCB assembly and qualification remain separate.
 
 ## Rebuild and validate
 
@@ -23,12 +29,17 @@ python3 -m venv .venv-kicad
 PYTHON=.venv-kicad/bin/python npm run kicad
 ```
 
-`scripts/build-kicad.sh` regenerates the schematic, validates its netlist,
-checks the committed PCB against the generated manifest, runs strict ERC and
-DRC, verifies the exact committed routing-session copper and project design
-rules, then transactionally replaces the drawing and fabrication outputs.
+The default `scripts/build-kicad.sh --schematic-only` regenerates the schematic,
+checks exact netlist parity and documented interconnects, runs strict ERC,
+and exports its SVG, PDF, BOM, and netlist. It never loads or modifies the PCB,
+project routing rules, or fabrication outputs. Use `PYTHON=.venv-kicad/bin/python`.
 
-The PCB route is represented by:
+The historical full pipeline now requires explicit `--full`; do not run it
+for this revision until a PCB migration is separately authorized and completed.
+
+## Historical PCB (Deferred)
+
+The previous PCB route is represented by:
 
 - `z80_romless_sbc.kicad_pcb`, the editable routed board;
 - `reports/z80_romless_sbc.dsn`, the unrouted Specctra input generated from

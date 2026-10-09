@@ -165,15 +165,15 @@ for OUT with WR# on CH10.
 | CH9 | IORQ# | Z80 pin 20 |
 | CH10 | RD# for IN; WR# for OUT | Z80 pin 21; repeat at pin 22 |
 | CH11 | WAIT# | Z80 pin 24 |
-| CH12 | DATA_ENABLE | Pico GP7, header pin 10 |
-| CH13 | DATA_DIR | Pico GP6, header pin 9 |
+| CH12 | IO_RELEASE | Pico GP9, header pin 12 |
+| CH13 | PICO_DATA_UP_OE# request | Pico GP6, header pin 9 |
 | CH14 | Pico-to-bus transceiver OE# | SN74AHCT245 pin 19 |
 | CH15 | Bus-to-Pico transceiver OE# | SN74LVC245 pin 19 |
 
-## Group D: SRAM ownership and control propagation
+## Group D: SRAM boot inhibit and control propagation
 
-Use threshold **1.6 V**. This mixed group follows CPU/Pico ownership through the
-GAL and AHCT244 to the final SRAM pins.
+Use threshold **1.6 V**. This mixed group follows CPU controls through the
+AHCT244 and HCT32 to SRAM, and checks injected loading and flash quiescence.
 
 | DSLogic channel | Signal | Physical probe point |
 | --- | --- | --- |
@@ -183,15 +183,15 @@ GAL and AHCT244 to the final SRAM pins.
 | CH3 | Z80 MREQ# | Z80 pin 19 |
 | CH4 | Z80 RD# | Z80 pin 21 |
 | CH5 | Z80 WR# | Z80 pin 22 |
-| CH6 | SRAM_CE_PRE# | ATF22V10 pin 16 |
-| CH7 | SRAM_OE_PRE# | ATF22V10 pin 15 |
-| CH8 | SRAM_WE_PRE# | ATF22V10 pin 14 |
+| CH6 | Buffered MREQ# / SRAM CE# | AHCT244 pin 12 |
+| CH7 | Buffered RD# | AHCT244 pin 7 |
+| CH8 | Buffered WR# / SRAM WE# | AHCT244 pin 9 |
 | CH9 | SRAM CE# | SRAM pin 22 |
 | CH10 | SRAM OE# | SRAM pin 24 |
 | CH11 | SRAM WE# | SRAM pin 29 |
-| CH12 | PICO_CE# | Pico GP5, header pin 7 |
-| CH13 | PICO_OE# | Pico GP26, header pin 31 |
-| CH14 | PICO_WE# | Pico GP22, header pin 29 |
+| CH12 | BOOT_READ_DISABLE | Pico GP5, header pin 7 |
+| CH13 | PICO_DATA_UP_OE# request | Pico GP6, header pin 9 |
+| CH14 | DATA_DOWN_OE# | Pico GP7, header pin 10 |
 | CH15 | CLK | Z80 pin 6 |
 
 ## Trigger and expected outcomes
@@ -202,11 +202,11 @@ GAL and AHCT244 to the final SRAM pins.
 | Opcode fetch | Group B, CH15 M1# falling. | M1#, MREQ#, RD#, CE#, and OE# assert in the expected active-LOW sequence; WE# remains HIGH and D0-D7 contain the fetched opcode before the Z80 sampling edge. |
 | SRAM read | Group B, CH10 RD# falling with CH9 MREQ# LOW. | CE# and OE# assert once, WE# remains HIGH, and all eight data bits settle to the expected byte before the sampling edge. No extra control transition is permitted. |
 | SRAM write | Group B, CH11 WR# falling with CH9 MREQ# LOW. | D0-D7 contain the expected byte before WE# falls and remain stable through its LOW pulse; CE# and WE# assert once and OE# remains HIGH. DSLogic screens pulse presence and ordering only; the DHO814 must prove the exact 45 ns minimum WE# LOW width. |
-| Reset and restart | Group D, CH0 RESET# rising, trigger position 30%. | RESET# was LOW for at least three clocks. While LOW, final SRAM controls follow inactive Pico controls. After release, the Z80-side controls become authoritative without any active-LOW glitch. |
-| DMA ownership | Group D, CH2 BUSACK# falling for acquisition; repeat rising for release. | BUSREQ# falls before BUSACK#. Once BUSACK# is LOW, GAL and SRAM controls select the Pico candidates. On release, Pico controls are inactive before BUSREQ# rises; BUSACK# then rises and CPU controls resume without overlap. |
-| Ownership hazard | Group D, CH0 or CH2 either edge while both candidate controls are HIGH. | GAL pre-controls and final SRAM controls remain continuously HIGH through the ownership transition. Any sampled LOW pulse fails the phase and requires a DHO814 close-up. |
-| Trapped IN | Group C with RD# on CH10; trigger CH9 IORQ# falling. | WAIT# falls before the Z80 WAIT sampling edge. DATA_DIR selects bus-to-Pico, only the LVC245 OE# falls, D0-D7 are sampled, DATA_ENABLE releases WAIT#, and both IORQ#/RD# return HIGH before the path is disabled. |
-| Trapped OUT | Group C with WR# on CH10; trigger CH9 IORQ# falling. | WAIT# falls first. DATA_DIR selects Pico-to-bus, only the AHCT245 OE# falls, D0-D7 contain the expected output byte, and WAIT#/clock release ordering matches the trap protocol. The two OE# signals are never LOW together. |
+| Reset and restart | Group D, CH0 RESET# rising, trigger position 30%. | RESET# was LOW for six complete clocks. Injection starts with inhibit HIGH after the two exit clocks. Normal restart has both data paths isolated and inhibit LOW; CPU controls alone operate SRAM. Verify real reset-exit phase before accepting the cycle model. |
+| Flash quiescence | Group D, CH2 BUSACK# falling for acquisition; repeat rising for release. | BUSREQ# falls before BUSACK#. CPU address/control outputs float; pulls make SRAM controls inactive. Pico does not drive memory. Trap is armed before BUSREQ# release. |
+| Injected loading | Group D, CH12 inhibit and CH4 RD# edges. | SRAM OE# stays HIGH during injected instructions. It falls only for a deliberate SRAM read, with Pico output isolated. SRAM WE# follows CPU writes, never a Pico-generated write pulse. |
+| Trapped IN | Group C with RD# on CH10; trigger CH9 IORQ# falling. | WAIT# falls before sampling. Only AHCT245 OE# falls; the Pico supplies the reply byte. GP9 releases WAIT after preload. Slow clocks complete the cycle; both OEs are HIGH and GP9 LOW before PWM resumes. |
+| Trapped OUT | Group C with WR# on CH10; trigger CH9 IORQ# falling. | WAIT# falls first. Only LVC245 OE# falls; the Pico samples the CPU byte. GP9 releases WAIT. Stepped completion isolates/rearms before PWM. The two OE# signals are never LOW together. |
 
 For the final frequency claim, save Group A, B, C-IN, C-OUT, and D captures at
 each tested rate. The separate groups must use the same firmware build, clock

@@ -143,22 +143,17 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(31, "A15", "input", "left"), pin(32, "VCC", "power_in", "top"),
         ],
     ),
-    "ATF22V10": (
+    "HCT32": (
         "U",
-        "ATF22V10B/C",
+        "SN74HCT32N",
         [
-            pin(1, "RESET#", "input", "left"), pin(2, "BUSACK#", "input", "left"),
-            pin(3, "PICO_WE#", "input", "left"), pin(4, "Z80_WR#", "input", "left"),
-            pin(5, "PICO_OE#", "input", "left"), pin(6, "Z80_RD#", "input", "left"),
-            pin(7, "PICO_CE#", "input", "left"), pin(8, "Z80_MREQ#", "input", "left"),
-            pin(9, "DATA_ENABLE", "input", "left"), pin(10, "ADDR_ENABLE", "input", "left"),
-            pin(11, "DATA_DIR", "input", "left"), pin(12, "GND", "power_in", "bottom"),
-            pin(13, "Z80_IORQ#", "input", "left"), pin(14, "SRAM_WE_PRE#", "output", "right"),
-            pin(15, "SRAM_OE_PRE#", "output", "right"), pin(16, "SRAM_CE_PRE#", "output", "right"),
-            pin(17, "DATA_UP_OE#", "output", "right"), pin(18, "DATA_DOWN_OE#", "output", "right"),
-            pin(19, "MCP_RESET_DRIVE", "output", "right"), pin(20, "WAIT#", "output", "right"),
-            *[pin(number, f"CONST_LOW{number - 20}", "output", "right") for number in range(21, 24)],
-            pin(24, "VCC", "power_in", "top"),
+            pin(1, "1A", "input", "left"), pin(2, "1B", "input", "left"),
+            pin(3, "1Y", "output", "right"), pin(4, "2A", "input", "left"),
+            pin(5, "2B", "input", "left"), pin(6, "2Y", "output", "right"),
+            pin(7, "GND", "power_in", "bottom"), pin(8, "3Y", "output", "right"),
+            pin(9, "3A", "input", "left"), pin(10, "3B", "input", "left"),
+            pin(11, "4Y", "output", "right"), pin(12, "4A", "input", "left"),
+            pin(13, "4B", "input", "left"), pin(14, "VCC", "power_in", "top"),
         ],
     ),
     "AHCT244": (
@@ -541,42 +536,32 @@ sram_nets = {
 }
 add_component("U2", "SRAM", "AS6C1008-55PCN", 152.4, 152.4, sram_nets, footprint="Package_DIP:DIP-32_W15.24mm")
 
-gal_nets = {
-    1: "@RESET_JUNCTION", 2: "BUSACK_N", 3: "PICO_WE_N", 4: "WR_N",
-    5: "PICO_OE_N", 6: "RD_N", 7: "PICO_CE_N", 8: "MREQ_N",
-    9: "DATA_ENABLE", 10: "ADDR_ENABLE", 11: "DATA_DIR", 12: "GND", 13: "IORQ_N",
-    14: "SRAM_WE_PRE_N", 15: "SRAM_OE_PRE_N", 16: "SRAM_CE_PRE_N",
-    17: "DATA_UP_OE_N", 18: "DATA_DOWN_OE_N",
-    19: "MCP_RESET_DRIVE", 20: "WAIT_N", 21: None, 22: None, 23: None, 24: "+5V",
+hct32_nets = {
+    1: "RD_5V_N", 2: "BOOT_READ_DISABLE_5V", 3: "SRAM_OE_N",
+    4: "IORQ_N", 5: "IO_RELEASE", 6: "WAIT_N", 7: "GND",
+    8: "DATA_UP_OE_N", 9: "RD_N", 10: "PICO_DATA_UP_OE_N",
+    11: None, 12: "GND", 13: "GND", 14: "+5V",
 }
-add_component("U3", "ATF22V10", "ATF22V10B/C", 152.4, 330.2, gal_nets, footprint="Package_DIP:DIP-24_W7.62mm")
+add_component("U3", "HCT32", "SN74HCT32N", 152.4, 330.2, hct32_nets, footprint="Package_DIP:DIP-14_W7.62mm")
 
 ahct244_nets = {
-    1: "GND", 2: "PICO_CLK", 3: "SRAM_CE_N", 4: "PICO_BUSREQ_N",
-    5: "SRAM_OE_N", 6: "PICO_SPI_CS_N", 7: "SRAM_WE_N",
-    8: "PICO_SPI_SCK", 9: "MCP_SI", 10: "GND", 11: "PICO_SPI_MOSI",
-    12: "MCP_SCK", 13: "SRAM_WE_PRE_N", 14: "MCP_CS_N",
-    15: "SRAM_OE_PRE_N", 16: "BUSREQ_N", 17: "SRAM_CE_PRE_N",
+    1: "GND", 2: "PICO_CLK", 3: None, 4: "PICO_BUSREQ_N",
+    5: None, 6: "BOOT_READ_DISABLE", 7: "RD_5V_N",
+    8: "MREQ_N", 9: "SRAM_WE_N", 10: "GND", 11: "WR_N",
+    12: "SRAM_CE_N", 13: "RD_N", 14: "BOOT_READ_DISABLE_5V",
+    15: "GND", 16: "BUSREQ_N", 17: "GND",
     18: "Z80_CLK", 19: "GND", 20: "+5V",
 }
 add_component("U4", "AHCT244", "SN74AHCT244N", 508.0, 330.2, ahct244_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
 lvc244_nets = {
-    1: "GND", 2: "BUSACK_N", 3: None, 4: "IORQ_N", 5: None, 6: "RD_N",
-    7: None, 8: "WR_N", 9: "PICO_SPI_MISO", 10: "GND", 11: "MCP_SO",
-    12: "PICO_WR_N", 13: "GND", 14: "PICO_RD_N", 15: "GND",
-    16: "PICO_IORQ_N", 17: "GND", 18: "PICO_BUSACK_N", 19: "GND", 20: "+3V3",
+    1: "GND", 2: "BUSACK_N", 3: "PICO_A4", 4: "IORQ_N", 5: "PICO_A2", 6: "RD_N",
+    7: "PICO_A1", 8: "WR_N", 9: "PICO_A0", 10: "GND", 11: "A0",
+    12: "PICO_WR_N", 13: "A1", 14: "PICO_RD_N", 15: "A2",
+    16: "PICO_IORQ_N", 17: "A4", 18: "PICO_BUSACK_N", 19: "GND", 20: "+3V3",
 }
 add_component("U7", "LVC244", "SN74LVC244AN", 812.8, 482.6, lvc244_nets, footprint="Package_DIP:DIP-20_W7.62mm")
 
-mcp_nets = {number + 1: f"A{number + 8}" for number in range(8)}
-mcp_nets.update({
-    9: "+5V", 10: "GND", 11: "MCP_CS_N", 12: "MCP_SCK", 13: "MCP_SI",
-    14: "MCP_SO", 15: "GND", 16: "GND", 17: "GND", 18: "MCP_RESET_N", 19: None, 20: None,
-})
-mcp_nets.update({number + 21: f"A{number}" for number in range(8)})
-add_component("U8", "MCP23S17", "MCP23S17-E/SP", 254.0, 482.6, mcp_nets, footprint="Package_DIP:DIP-28_W7.62mm")
-add_component("Q1", "NPN", "2N3904 MCP RESET", 355.6, 482.6, {1: "GND", 2: "MCP_RESET_BASE", 3: "MCP_RESET_N"}, footprint="Package_TO_SOT_THT:TO-92_Inline")
 add_component(
     "RN1", "RN8", "8x10k bussed", 152.4, 533.4,
     {1: "+5V", **{number + 2: f"A{number}" for number in range(8)}},
@@ -605,17 +590,6 @@ add_component(
     footprint="Resistor_THT:R_Array_SIP9",
     description="Z80 control pull-up network",
 )
-add_component(
-    "RN5", "RN8", "8x10k bussed", 152.4, 660.4,
-    {
-        1: "+5V",
-        2: "MCP_SO", 3: "SRAM_CE_N", 4: "SRAM_OE_N", 5: "SRAM_WE_N",
-        6: "WAIT_N", 7: "SRAM_WE_PRE_N", 8: "SRAM_OE_PRE_N",
-        9: "SRAM_CE_PRE_N",
-    },
-    footprint="Resistor_THT:R_Array_SIP9",
-    description="MCP and SRAM control pull-up network",
-)
 
 up_nets = {1: "+5V", 10: "GND", 19: "DATA_UP_OE_N", 20: "+5V"}
 down_nets = {1: "GND", 10: "GND", 19: "DATA_DOWN_OE_N", 20: "+3V3"}
@@ -629,13 +603,13 @@ add_component("U10", "LVC245", "SN74LVC245AN bus-to-Pico", 914.4, 304.8, down_ne
 
 pico_nets = {
     1: "PICO_BUSACK_N", 2: "PICO_IORQ_N", 3: "GND", 4: "PICO_CLK",
-    5: "@RESET_JUNCTION", 6: "PICO_BUSREQ_N", 7: "PICO_CE_N", 8: "GND",
-    9: "DATA_DIR", 10: "DATA_ENABLE", 11: None, 12: "ADDR_ENABLE", 13: "GND",
+    5: "@RESET_JUNCTION", 6: "PICO_BUSREQ_N", 7: "BOOT_READ_DISABLE", 8: "GND",
+    9: "PICO_DATA_UP_OE_N", 10: "DATA_DOWN_OE_N", 11: None, 12: "IO_RELEASE", 13: "GND",
     14: "PICO_D0", 15: "PICO_D1", 16: "PICO_D2", 17: "PICO_D3", 18: "GND",
     19: "PICO_D4", 20: "PICO_D5", 21: "PICO_D6", 22: "PICO_D7", 23: "GND",
-    24: "PICO_SPI_SCK", 25: "PICO_SPI_MOSI", 26: "PICO_SPI_MISO",
-    27: "PICO_SPI_CS_N", 28: "GND", 29: "PICO_WE_N", 30: None,
-    31: "PICO_OE_N", 32: "PICO_RD_N", 33: "GND", 34: "PICO_WR_N",
+    24: "PICO_A0", 25: "PICO_A1", 26: "PICO_A2",
+    27: "PICO_A4", 28: "GND", 29: None, 30: None,
+    31: None, 32: "PICO_RD_N", 33: "GND", 34: "PICO_WR_N",
     35: None, 36: "+3V3", 37: None, 38: "GND", 39: "VSYS", 40: None,
 }
 add_component("A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets, footprint="Module:RaspberryPi_Pico_Common_THT")
@@ -663,19 +637,15 @@ for reference, value, net, x in (
 
 
 PULLS = [
-    ("PICO_BUSREQ_N", "+3V3"), ("PICO_CE_N", "+3V3"),
-    ("PICO_SPI_CS_N", "+3V3"), ("PICO_WE_N", "+3V3"), ("PICO_OE_N", "+3V3"),
-    ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("DATA_ENABLE", "GND"), ("DATA_DIR", "GND"),
-    ("ADDR_ENABLE", "GND"), ("PICO_SPI_SCK", "GND"), ("PICO_SPI_MOSI", "GND"),
+    ("PICO_BUSREQ_N", "+3V3"), ("BOOT_READ_DISABLE", "+3V3"),
+    ("PICO_DATA_UP_OE_N", "+3V3"), ("DATA_DOWN_OE_N", "+3V3"),
+    ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("IO_RELEASE", "GND"),
 ]
-if len(PULLS) != 12:
-    raise AssertionError(f"expected 12 discrete startup resistors, got {len(PULLS)}")
+if len(PULLS) != 7:
+    raise AssertionError(f"expected 7 discrete startup resistors, got {len(PULLS)}")
 for index, (signal, rail) in enumerate(PULLS, start=17):
     column = index - 17
-    # ATF22V10B inputs can source 100 uA; 10k cannot guarantee a 0.8 V LOW.
-    value = "4.7k" if signal in {
-        "RESET_N", "DATA_ENABLE", "DATA_DIR", "ADDR_ENABLE",
-    } else "10k"
+    value = "10k"
     add_component(
         f"R{index}", "RESISTOR", value,
         50.8 + column * 71.12, 711.2,
@@ -683,18 +653,14 @@ for index, (signal, rail) in enumerate(PULLS, start=17):
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
         description=f"{value} startup bias for {signal}",
     )
-add_component("R29", "RESISTOR", "4.7k", 50.8, 736.6, {1: "MCP_RESET_DRIVE", 2: "MCP_RESET_BASE"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base resistor")
-add_component("R30", "RESISTOR", "47k", 127.0, 736.6, {1: "MCP_RESET_BASE", 2: "GND"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP reset transistor base-emitter pull-down")
-add_component("R31", "RESISTOR", "10k", 203.2, 736.6, {1: "MCP_RESET_N", 2: "+5V"}, footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", description="MCP RESET# pull-up")
 
 
 CAPACITORS = [
     ("100n", "U1 Z80 bypass", "+5V"),
     ("100n", "U2 SRAM bypass", "+5V"),
-    ("100n", "U3 GAL bypass", "+5V"),
+    ("100n", "U3 HCT32 bypass", "+5V"),
     ("100n", "U4 AHCT244 bypass", "+5V"),
     ("100n", "U7 LVC244 bypass", "+3V3"),
-    ("100n", "U8 MCP23S17 bypass", "+5V"),
     ("100n", "U9 AHCT245 bypass", "+5V"),
     ("100n", "U10 LVC245 bypass", "+3V3"),
     ("22u", "Memory cluster bulk", "+5V"),
@@ -702,8 +668,8 @@ CAPACITORS = [
     ("22u", "Peripheral cluster bulk", "+5V"),
     ("100u", "Supply-entry bulk", "+5V"),
 ]
-if sum(value == "100n" for value, _, _ in CAPACITORS) != 8:
-    raise AssertionError("decoupling count must remain 8")
+if sum(value == "100n" for value, _, _ in CAPACITORS) != 7:
+    raise AssertionError("decoupling count must remain 7")
 for index, (value, role, rail) in enumerate(CAPACITORS, start=1):
     if value == "100n":
         footprint = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm"
@@ -723,18 +689,17 @@ for index, (value, role, rail) in enumerate(CAPACITORS, start=1):
 BUS_ROUTES = [
     ("ADDRESS", [f"A{bit}" for bit in range(16)], [(220.98, 208.28), (439.42, 208.28)]),
     ("DATA", [f"D{bit}" for bit in range(8)], [(220.98, 228.6), (439.42, 228.6)]),
-    ("CPU_TO_GAL", ["BUSACK_N", "MREQ_N", "RD_N", "WR_N"], [(220.98, 299.72), (439.42, 299.72)]),
-    ("GAL_TO_HCT", ["SRAM_WE_PRE_N", "SRAM_OE_PRE_N", "SRAM_CE_PRE_N"], [(220.98, 327.66), (439.42, 327.66)]),
+    ("CPU_TO_BUFFERS", ["BUSACK_N", "MREQ_N", "RD_N", "WR_N"], [(220.98, 299.72), (439.42, 299.72)]),
+    ("BUFFERED_CONTROLS", ["SRAM_WE_N", "RD_5V_N", "SRAM_CE_N"], [(220.98, 327.66), (439.42, 327.66)]),
     ("HCT_TO_SRAM", ["SRAM_WE_N", "SRAM_OE_N", "SRAM_CE_N"], [(220.98, 355.6), (439.42, 355.6)]),
-    ("PICO_TO_GAL", ["PICO_CE_N", "PICO_OE_N", "PICO_WE_N"], [(220.98, 109.22), (779.78, 109.22)]),
+    ("BOOT_CONTROL", ["BOOT_READ_DISABLE", "BOOT_READ_DISABLE_5V", "IO_RELEASE"], [(220.98, 109.22), (779.78, 109.22)]),
     ("HCT_TO_CPU", ["Z80_CLK", "BUSREQ_N"], [(457.2, 261.62), (558.8, 261.62)]),
     ("PICO_DATA", [f"PICO_D{bit}" for bit in range(8)], [(617.22, 208.28), (779.78, 208.28)]),
-    ("PICO_TO_HCT", ["PICO_CLK", "PICO_BUSREQ_N", "PICO_SPI_CS_N", "PICO_SPI_SCK", "PICO_SPI_MOSI"], [(617.22, 279.4), (779.78, 279.4)]),
-    ("HCT_TO_MCP", ["MCP_CS_N", "MCP_SCK", "MCP_SI"], [(220.98, 584.2), (558.8, 584.2)]),
+    ("PICO_TO_BUFFER", ["PICO_CLK", "PICO_BUSREQ_N", "BOOT_READ_DISABLE"], [(617.22, 279.4), (779.78, 279.4)]),
     ("CPU_MONITOR", ["BUSACK_N", "IORQ_N", "RD_N", "WR_N"], [(617.22, 375.92), (779.78, 375.92)]),
-    ("PICO_MONITOR", ["PICO_BUSACK_N", "PICO_IORQ_N", "PICO_RD_N", "PICO_WR_N", "PICO_SPI_MISO"], [(617.22, 403.86), (779.78, 403.86)]),
-    ("ADDRESS_RESET", ["ADDR_ENABLE", "MCP_RESET_DRIVE", "MCP_RESET_N"], [(220.98, 431.8), (779.78, 431.8)]),
-    ("DATA_CONTROL", ["DATA_DIR", "DATA_ENABLE", "DATA_UP_OE_N", "DATA_DOWN_OE_N"], [(220.98, 457.2), (779.78, 457.2)]),
+    ("PICO_MONITOR", ["PICO_BUSACK_N", "PICO_IORQ_N", "PICO_RD_N", "PICO_WR_N"], [(617.22, 403.86), (779.78, 403.86)]),
+    ("PORT_MONITOR", ["PICO_A0", "PICO_A1", "PICO_A2", "PICO_A4"], [(220.98, 431.8), (779.78, 431.8)]),
+    ("DATA_CONTROL", ["PICO_DATA_UP_OE_N", "DATA_UP_OE_N", "DATA_DOWN_OE_N"], [(220.98, 457.2), (779.78, 457.2)]),
 ]
 VECTOR_BUS_LABELS = {
     "ADDRESS": "A[0..15]",
@@ -791,7 +756,7 @@ for alias_name, members, points in BUS_ROUTES:
         ))
 
 
-reset_points = [pin_points[("U3", "1")], pin_points[("U1", "26")], pin_points[("A1", "5")]]
+reset_points = [pin_points[("U1", "26")], pin_points[("A1", "5")]]
 reset_bus_y = 76.2
 reset_xs = [point[0] for point in reset_points]
 schematic.graphicalItems.append(Connection(
@@ -829,13 +794,13 @@ for text, x in (("MEMORY BOARD", 152.4), ("CORE BOARD", 508.0), ("PERIPHERAL BOA
     ))
 schematic.texts.extend([
     Text(
-        text="Named KiCad buses show complete grouped routes; member pin stubs carry exact net labels. RESET_N is an explicit Pico / Z80 / GAL three-way wire junction.",
+        text="Z80 is the sole SRAM address/write master. Pico injects instructions with SRAM reads inhibited. RESET_N directly joins Pico and Z80 at 3.3V.",
         position=pos(508.0, 38.1, 0),
         effects=effects(1.27),
         uuid=uid("text:reset-note"),
     ),
     Text(
-        text="RN4/RN5: 5V fail-safe pulls. R17-R21: 3V3 pulls. R22-R28: GPIO pull-downs. R29-R31: MCP reset transistor bias.",
+        text="RN4: 5V control pull-ups. R17-R20: 3V3 pull-ups. R21-R23: GPIO pull-downs. Both data paths default disabled; no PLD/programmer required.",
         position=pos(50.8, 622.3, 0),
         effects=effects(1.27),
         uuid=uid("text:pull-note"),
@@ -844,19 +809,16 @@ schematic.texts.extend([
 
 
 required_endpoints = {
-    "A0": {"U1.30", "U2.12", "U8.21", "RN1.2"},
-    "A8": {"U1.38", "U2.27", "U8.1", "RN2.2"},
+    "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
+    "A8": {"U1.38", "U2.27", "RN2.2"},
     "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},
     "PICO_D0": {"A1.14", "U9.2", "U10.2", "RN3.2"},
-    "DATA_ENABLE": {"A1.10", "R24.1", "U3.9"},
-    "DATA_DIR": {"A1.9", "R25.1", "U3.11"},
-    "DATA_UP_OE_N": {"U3.17", "U9.19"},
-    "DATA_DOWN_OE_N": {"U3.18", "U10.19"},
-    "ADDR_ENABLE": {"A1.12", "R26.1", "U3.10"},
-    "MCP_RESET_DRIVE": {"U3.19", "R29.1"},
-    "MCP_RESET_BASE": {"Q1.2", "R29.2", "R30.1"},
-    "MCP_RESET_N": {"Q1.3", "R31.1", "U8.18"},
-    "RESET_N": {"U1.26", "U3.1", "A1.5", "R23.1"},
+    "PICO_DATA_UP_OE_N": {"A1.9", "R19.1", "U3.10"},
+    "DATA_UP_OE_N": {"U3.8", "U9.19"},
+    "DATA_DOWN_OE_N": {"A1.10", "R20.1", "U10.19"},
+    "BOOT_READ_DISABLE": {"A1.7", "R18.1", "U4.6"},
+    "IO_RELEASE": {"A1.12", "R23.1", "U3.5"},
+    "RESET_N": {"U1.26", "A1.5", "R22.1"},
 }
 for net, required in required_endpoints.items():
     actual = set(net_endpoints.get(net, []))
