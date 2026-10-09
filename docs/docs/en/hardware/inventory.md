@@ -29,14 +29,34 @@ reference gaps retain continuity with existing project labels.
 | 7 | 100 nF ceramic, at least 10 V | One per DIP IC |
 | 3 | 22 uF, at least 10 V | One +5 V bulk capacitor per board |
 | 1 | 100 uF, at least 10 V | Supply-entry bulk |
-| 4 | Bussed SIP-9, 8x10 kOhm | RN1/RN2 address pulls, RN3 Pico data pulls, RN4 CPU control pulls |
-| 7 | 10 kOhm discrete | R17-R23 startup controls |
+| 39 | Individual 10 kOhm resistors | 16 address pull-ups, eight Pico data pull-downs, eight CPU control pull-ups, seven startup pulls |
 | Test only | 1 kOhm discrete | Manual input and first-drive current limiting |
 
-The four networks contain 32 independent resistor branches. For discrete
-breadboard construction use **39 individual 10 kOhm resistors instead of the
-four networks plus seven discrete resistors**, not both alternatives. No
-4.7 kOhm or 47 kOhm reset-transistor parts remain.
+### Permanent breadboard resistors
+
+**Use 39 individual (discrete) 10 kOhm resistors. No resistor-network packages
+are fitted on the breadboard.** Each resistor connects one signal to its
+specified supply rail or GND; signal wires must not be joined together.
+A resistor to a supply is a **pull-up**, and a resistor to GND is a
+**pull-down**. These establish defaults when no active output drives a signal.
+
+| Quantity | Signals | Other end of each resistor |
+| ---: | --- | --- |
+| 16 | Address A0-A15, one resistor per bit | +5 V |
+| 8 | Pico data GP10-GP17, one resistor per bit | GND |
+| 8 | BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, INT#, NMI# | +5 V |
+| 4 | Pico GP4, GP5, GP6, GP7 startup controls | +3.3 V |
+| 3 | Pico GP2, GP3, GP9 startup controls | GND |
+| **39** | **Total permanent resistors** | |
+
+Install all permanent resistors in Phase 0, following the
+[installation table](../implementation/phase-0-power.md#passive-component-installation).
+This is before fitting any active devices.
+
+Temporary test resistors are additional bench items, not part of the 39
+permanent branches. Later phases specify when to fit and remove 1 kOhm test
+resistors and extra 10 kOhm data-pattern pulls. Keep spares for those tests.
+No 4.7 kOhm or 47 kOhm reset-transistor parts remain.
 
 ## Construction and Equipment
 

@@ -8,7 +8,8 @@
 Wire every D0-D7 branch from the [data table](../hardware/pin-mapping.md#sram-address-and-data-trunks)
 and [translator fixed pins](../hardware/bus-isolation.md#51-data-paths).
 U9 runs at +5 V with DIR HIGH; U10 at 3.3 V with DIR LOW. Check both OE routes
-and RN3 pulls. Confirm no raw 5 V bus reaches Pico GPIOs.
+and the eight individual 10 kOhm Pico data pull-downs. Confirm no raw 5 V bus
+reaches Pico GPIOs.
 
 ## Firmware and Tests
 

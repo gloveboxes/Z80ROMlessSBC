@@ -138,7 +138,6 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `SN74LVC245AN` / `LVC245` | 8-bit low-voltage bus transceiver with 5 V-tolerant inputs | Implements the fixed 5 V-to-Pico data path. |
 | `SN74LVC244AN` / `LVC244` | 8-channel low-voltage buffer with 5 V-tolerant inputs | Buffers BUSACK/IORQ/RD/WR and A0/A1/A2/A4 into the Pico domain. |
 | `1N5819` | Schottky rectifier diode | ORs external 5 V into Pico `VSYS` without feeding the USB `VBUS` node. |
-| `RN1`–`RN4` | Resistor-network references | RN1/RN2 pull up the sixteen address bits; RN3 pulls down the eight Pico data GPIOs; RN4 provides eight 5 V CPU-control pull-ups. |
 | `A1-A8` / `B1-B8` | The two eight-bit ports of a `245` transceiver | A faces the Pico and B faces the 5 V bus in this design. |
 | `1A1`, `1Y1`, etc. | Input and output labels on a `244`/`541` buffer bank | `A` is a buffer input and `Y` is its corresponding output; the leading digit selects a bank where present. |
 | `OE1#` / `OE2#` | Output-enable inputs for buffer bank 1 / 2 | Tied LOW on the always-readable LVC244 and AHCT244 buffers. A `245` transceiver instead has one `OE#` for all eight bits. |
@@ -245,7 +244,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | --- | --- | --- |
 | IC | Integrated circuit | A packaged electronic device such as the Z80, SRAM, or logic buffer. |
 | DIP / PDIP | Dual in-line package / plastic dual in-line package | Through-hole IC package with two parallel pin rows, suitable for sockets and breadboards. |
-| SIP | Single in-line package | Resistor network with one common pin and eight resistor pins. |
+| Discrete resistor | One resistor in its own component body | The breadboard uses 39 individual 10 kOhm resistors, not packaged resistor networks. |
 | Pin 1 / notch / dot | Package orientation marks | Prevent an IC from being inserted rotated or mirrored. |
 | Breadboard ravine | Insulating center gap of a solderless breadboard | Separates the two IC pin rows so opposite pins are not shorted together. |
 | Net | All electrically connected points sharing one signal name | Fundamental connection represented and checked in the KiCad schematic. |

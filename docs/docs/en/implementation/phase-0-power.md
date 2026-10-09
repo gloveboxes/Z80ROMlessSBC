@@ -22,12 +22,12 @@ Fit seven local 100 nF capacitors, one at each DIP supply, three 22 uF board
 bulk capacitors and one 100 uF supply-entry capacitor, rated at least 10 V.
 Keep leads short; electrolytic positive leads go to +5 V.
 
-| Reference / alternative discrete branches | Common rail | Individual signal branches |
+| Individual 10 kOhm resistors | Rail at one end of each resistor | Signal at the other end |
 | --- | --- | --- |
-| RN1, 8x10 kOhm | +5 V | A0-A7 |
-| RN2, 8x10 kOhm | +5 V | A8-A15 |
-| RN3, 8x10 kOhm | GND | Pico GP10-GP17 |
-| RN4, 8x10 kOhm | +5 V | BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, INT#, NMI# |
+| 8 address pulls | +5 V | A0-A7, one resistor per bit |
+| 8 address pulls | +5 V | A8-A15, one resistor per bit |
+| 8 Pico data pulls | GND | Pico GP10-GP17, one resistor per bit |
+| 8 CPU control pulls | +5 V | BUSREQ#, BUSACK#, MREQ#, IORQ#, RD#, WR#, INT#, NMI#, one resistor per signal |
 | R17, 10 kOhm | +3.3 V | GP4 BUSREQ# |
 | R18, 10 kOhm | +3.3 V | GP5 BOOT_READ_DISABLE |
 | R19, 10 kOhm | +3.3 V | GP6 upward OE# request |
@@ -36,8 +36,8 @@ Keep leads short; electrolytic positive leads go to +5 V.
 | R22, 10 kOhm | GND | GP3 RESET# |
 | R23, 10 kOhm | GND | GP9 IO_RELEASE |
 
-Use bussed networks, not isolated arrays, or 39 individual 10 kOhm resistors
-for all branches. Each signal has its own resistor. Never join bus bits.
+Fit **39 individual 10 kOhm resistors**, not resistor-network packages.
+Each signal has its own resistor. Never join bus bits.
 RESET# must have no +5 V pull-up. WAIT# is driven by U3; no additional WAIT
 pull-up is fitted. Tie U3 inputs 12/13 and U4 inputs 15/17 to GND.
 

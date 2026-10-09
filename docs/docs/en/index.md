@@ -65,6 +65,29 @@ Those instructions make the Z80 fill its own RAM.
    Instead, the Pico supplies instruction bytes through the AHCT245 data
    buffer at the appropriate read cycles. The Z80 still drives the address
    bus; the Pico supplies each byte according to the loading sequence.
+
+    **How slow are these pulses?** They are individual software-controlled
+    pulses, not a continuous fixed-frequency clock. Each loader cycle has
+    these explicit waits:
+
+    | Part of cycle | Programmed wait |
+    | --- | ---: |
+    | CLK LOW before rising | 1 us |
+    | CLK HIGH | 1 us |
+    | CLK LOW settling after falling | 1 us |
+    | **Total** | **3 us per cycle** |
+
+    Here, `us` means microseconds. Back-to-back pulses therefore have a
+    wait-only rate of approximately **333 kHz**; software overhead makes the
+    actual rate lower. Between consecutive pulses, the trailing LOW settling
+    and the next leading LOW wait add to at least approximately 2 us LOW.
+    Data preparation and other work extend that LOW interval further, so the
+    loading clock is irregular rather than a steady 333 kHz waveform.
+    The loader's reset and reset-exit clocks use the same slow stepping.
+    These are firmware timing settings, not measured waveforms. They are
+    separate from the **1 MHz normal startup clock** and the nominal **8 MHz**
+    setting available for later qualification.
+
 3. **The Z80 writes its own RAM.** For example, to store byte `A5` at address
    `1234`, the Pico supplies `LD HL,1234h` followed by `LD (HL),0A5h`. These
    instructions are encoded as the bytes `21 34 12 36 A5`. When the Z80
@@ -105,6 +128,82 @@ This is the intended sequence, not a claim of measured hardware operation.
 See the [detailed loader protocol](hardware/address-interface.md#loader-sequence),
 [Phase 6 tests](implementation/phase-6-sram.md), and
 [frequency qualification](implementation/frequency-qualification.md).
+
+### How long does loading take?
+
+Allow **roughly 10 seconds or somewhat longer to load and verify the complete
+64 KiB boot image** with the current firmware. This is a calculation-based
+estimate, not a measured startup time.
+
+| Operation | Explicit waits per byte | For 65,536 bytes |
+| --- | ---: | ---: |
+| Write the image into SRAM | 75 us | 4.92 seconds |
+| Read back and verify every byte | 65 us | 4.26 seconds |
+| **Total loading and verification** | **140 us** | **9.18 seconds** |
+
+Writing each byte takes 20 stepped clocks; verification takes another 17.
+At 3 us of programmed waits per clock, clock waits alone total approximately
+7.27 seconds. The additional SRAM-inhibit, data-preparation, isolation, and
+readback waits bring the total explicit waits to approximately 9.18 seconds.
+GPIO operations, function execution, and interrupts add time beyond that.
+
+Initial flash validation, any journal recovery, CP/M startup, and Wi-Fi
+connection are separate from this load-and-verify estimate. **Only the boot
+image is loaded into SRAM:** the four CP/M disks remain in Pico flash and are
+accessed as needed, not copied during boot.
+
+### How does the Z80 write the boot image into SRAM?
+
+**The Pico gives the Z80 a "write this byte to this address" instruction for
+every byte of the boot image.** The Z80 executes those instructions using its
+normal memory-write hardware. There are two different things to distinguish:
+
+- **Loader instructions:** bytes supplied by the Pico directly to the Z80
+  through the AHCT245.
+- **Boot-image bytes:** the contents those instructions tell the Z80 to store
+  in SRAM.
+
+For example, suppose the first boot-image byte is `C3`. To store it at address
+`0000`, the Pico supplies this illustrative instruction sequence:
+
+```asm
+LD HL,0000h
+LD (HL),0C3h
+```
+
+| Step | Who drives the data bus? | What happens |
+| --- | --- | --- |
+| 1 | Pico | Supplies `21 00 00`, the bytes for `LD HL,0000h`. The Z80 sets its HL register to destination address `0000`. |
+| 2 | Pico | Supplies `36 C3`, the bytes for `LD (HL),0C3h`. The Z80 takes `C3` as the value to store. |
+| 3 | Neither Pico nor SRAM | The Pico disables its data driver before the write. SRAM outputs remain disabled. |
+| 4 | Z80 | Places address `0000` on A0-A15 and byte `C3` on D0-D7. |
+| 5 | Z80 | Asserts MREQ# and WR#. Through the AHCT244, these make SRAM CE# and WE# LOW. |
+| 6 | Z80 | Completes the write cycle. With the required timing met, SRAM now holds `C3` at address `0000`. |
+
+**The byte `C3` is data in this operation, not an instruction being executed.**
+It follows opcode `36`, which tells the Z80 to treat the next byte as the value
+to write at the address in HL.
+
+For the next boot-image byte, the Pico supplies `LD HL,0001h` followed by
+`LD (HL),value`, using that next byte as `value`. It repeats for addresses
+`0002`, `0003`, and so on through `FFFF` for the complete 64 KiB image.
+
+The injected loader instructions **are not automatically stored in SRAM**.
+Reading an instruction from the data bus does not write memory; the explicit
+`LD (HL),value` operation performs the write.
+
+Only SRAM's **output enable, OE#**, is inhibited during instruction injection.
+Its **write enable, WE#**, still works:
+
+- During injected instruction reads: **Pico to Z80**.
+- During memory writes: **Z80 to SRAM**, with the Pico data driver disabled.
+
+After loading and verification, the Pico resets the Z80 to address `0000` and
+allows normal SRAM reads. **The stored boot-image bytes now become the
+instructions the Z80 executes.** The
+[maintained loader](implementation/phase-6-sram.md#maintained-source) implements
+this sequence; the example above explains the byte roles rather than replacing
+that source.
 
 ### How are the Pico and Z80 synchronized during loading?
 

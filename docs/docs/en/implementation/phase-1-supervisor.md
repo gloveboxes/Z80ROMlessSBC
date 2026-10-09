@@ -37,7 +37,8 @@ Build `z80_stage01_supervisor`; load
 
 Type `d` without Enter. One GP10-GP17 output stays HIGH until the next `d`;
 all others remain LOW. The ninth step restores input mode. If the initial
-inputs are not all LOW, firmware refuses the test: check the eight RN3 pulls.
+inputs are not all LOW, firmware refuses the test: check the eight individual
+10 kOhm GP10-GP17 pull-down resistors.
 Use `x` to stop. USB disconnect restores any held data/reset test.
 
 ## Test Plan
