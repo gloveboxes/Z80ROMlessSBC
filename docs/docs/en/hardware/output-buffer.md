@@ -20,18 +20,70 @@ not AHC. Keep output pin 18 to Z80 CLK pin 6 short and local to the Core board.
 
 <template id="phase-2-output-buffer-wiring">
 
-```mermaid
-block-beta
-  columns 2
-  BCLK["AHCT244 output - pin 18"] ZCLK["Z80 CLK - pin 6"]
-  BREQ["AHCT244 output - pin 16"] ZREQ["Z80 BUSREQ# - pin 25"]
-  BCE["AHCT244 output - pin 12"] RCE["SRAM CE# - pin 22"]
-  BWE["AHCT244 output - pin 9"] RWE["SRAM WE# - pin 29"]
-  BCLK --> ZCLK
-  BREQ --> ZREQ
-  BCE --> RCE
-  BWE --> RWE
-```
+### U4 AHCT244 input connections
+
+| Done | Signal | Source socket/header contact | Destination socket contact |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-u4-input-2" aria-label="U4 clock input pin 2 continuity checked"> | CLK | Pico GP2 - header pin 4 | U4 AHCT244 input - pin 2 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-4" aria-label="U4 bus request input pin 4 continuity checked"> | BUSREQ# | Pico GP4 - header pin 6 | U4 AHCT244 input - pin 4 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-6" aria-label="U4 boot inhibit input pin 6 continuity checked"> | BOOT_READ_DISABLE | Pico GP5 - header pin 7 | U4 AHCT244 input - pin 6 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-8" aria-label="U4 memory request input pin 8 continuity checked"> | MREQ# | U1 Z80 MREQ# - pin 19 | U4 AHCT244 input - pin 8 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-11" aria-label="U4 write input pin 11 continuity checked"> | WR# | U1 Z80 WR# - pin 22 | U4 AHCT244 input - pin 11 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-13" aria-label="U4 read input pin 13 continuity checked"> | RD# | U1 Z80 RD# - pin 21 | U4 AHCT244 input - pin 13 |
+
+### U4 AHCT244 outputs to CPU and SRAM
+
+| Done | Signal | Source socket contact | Destination socket contact |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-u4-9" aria-label="AHCT244 pin 9 to SRAM write enable wire continuity checked"> | SRAM WE# | U4 AHCT244 output - pin 9 | U2 SRAM WE# - pin 29 |
+| <input type="checkbox" data-checklist-id="wire-u4-12" aria-label="AHCT244 pin 12 to SRAM chip enable wire continuity checked"> | SRAM CE# | U4 AHCT244 output - pin 12 | U2 SRAM CE# - pin 22 |
+| <input type="checkbox" data-checklist-id="wire-u4-16" aria-label="AHCT244 pin 16 to Z80 bus request wire continuity checked"> | BUSREQ# | U4 AHCT244 output - pin 16 | U1 Z80 BUSREQ# - pin 25 |
+| <input type="checkbox" data-checklist-id="wire-u4-18" aria-label="AHCT244 pin 18 to Z80 clock wire continuity checked"> | CLK | U4 AHCT244 output - pin 18 | U1 Z80 CLK - pin 6 |
+
+The remaining U4 outputs, pins 7 and 14, connect to U3 in the next table.
+
+### U3 HCT32 gate connections
+
+Rows are ordered by U3 pin number. Inputs and outputs are identified explicitly.
+
+| Done | Signal | Source socket/header contact | Destination socket contact |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-u3-1" aria-label="U3 buffered read input pin 1 continuity checked"> | Buffered RD# | U4 AHCT244 output - pin 7 | U3 HCT32 input - pin 1 |
+| <input type="checkbox" data-checklist-id="wire-u3-2" aria-label="U3 buffered boot inhibit input pin 2 continuity checked"> | Buffered BOOT_READ_DISABLE | U4 AHCT244 output - pin 14 | U3 HCT32 input - pin 2 |
+| <input type="checkbox" data-checklist-id="wire-u3-3" aria-label="U3 SRAM output enable pin 3 continuity checked"> | SRAM OE# | U3 HCT32 output - pin 3 | U2 SRAM OE# - pin 24 |
+| <input type="checkbox" data-checklist-id="wire-u3-4" aria-label="U3 IO request input pin 4 continuity checked"> | Raw IORQ# | U1 Z80 IORQ# - pin 20 | U3 HCT32 input - pin 4 |
+| <input type="checkbox" data-checklist-id="wire-u3-5" aria-label="U3 IO release input pin 5 continuity checked"> | IO_RELEASE | Pico GP9 - header pin 12 | U3 HCT32 input - pin 5 |
+| <input type="checkbox" data-checklist-id="wire-u3-6" aria-label="U3 WAIT output pin 6 continuity checked"> | WAIT# | U3 HCT32 output - pin 6 | U1 Z80 WAIT# - pin 24 |
+| <input type="checkbox" data-checklist-id="wire-u3-8" aria-label="U3 upward data enable output pin 8 continuity checked"> | DATA_UP_OE# | U3 HCT32 output - pin 8 | U9 AHCT245 OE# - pin 19 |
+| <input type="checkbox" data-checklist-id="wire-u3-9" aria-label="U3 raw read input pin 9 continuity checked"> | Raw RD# | U1 Z80 RD# - pin 21 | U3 HCT32 input - pin 9 |
+| <input type="checkbox" data-checklist-id="wire-u3-10" aria-label="U3 upward enable request input pin 10 continuity checked"> | PICO_DATA_UP_OE# | Pico GP6 - header pin 9 | U3 HCT32 input - pin 10 |
+
+### Supplies, grounded pins and unused outputs
+
+These supply and ground connections are **direct links, not resistors**.
+The local capacitors are additional to the direct supply/ground wires.
+
+| Done | Device | Pin / component | Required connection |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="fixed-u4-1" aria-label="U4 enable pin 1 grounded"> | U4 AHCT244 | Pin 1, OE# | Common GND |
+| <input type="checkbox" data-checklist-id="open-u4-3" aria-label="U4 unused output pin 3 left open"> | U4 AHCT244 | Pin 3, unused output | Leave open |
+| <input type="checkbox" data-checklist-id="open-u4-5" aria-label="U4 unused output pin 5 left open"> | U4 AHCT244 | Pin 5, unused output | Leave open |
+| <input type="checkbox" data-checklist-id="fixed-u4-10" aria-label="U4 power ground pin 10 connected"> | U4 AHCT244 | Pin 10, power GND | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u4-15" aria-label="U4 unused input pin 15 grounded"> | U4 AHCT244 | Pin 15, unused input | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u4-17" aria-label="U4 unused input pin 17 grounded"> | U4 AHCT244 | Pin 17, unused input | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u4-19" aria-label="U4 enable pin 19 grounded"> | U4 AHCT244 | Pin 19, OE# | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u4-20" aria-label="U4 supply pin 20 connected to 5 V"> | U4 AHCT244 | Pin 20, VCC | Core +5 V rail |
+| <input type="checkbox" data-checklist-id="bypass-u4" aria-label="U4 local 100 nF bypass checked"> | U4 AHCT244 | C4, 100 nF | Close to pin 20, between +5 V and nearby common GND |
+| <input type="checkbox" data-checklist-id="fixed-u3-7" aria-label="U3 power ground pin 7 connected"> | U3 HCT32 | Pin 7, power GND | Common GND |
+| <input type="checkbox" data-checklist-id="open-u3-11" aria-label="U3 unused output pin 11 left open"> | U3 HCT32 | Pin 11, unused output | Leave open |
+| <input type="checkbox" data-checklist-id="fixed-u3-12" aria-label="U3 unused input pin 12 grounded"> | U3 HCT32 | Pin 12, unused input | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u3-13" aria-label="U3 unused input pin 13 grounded"> | U3 HCT32 | Pin 13, unused input | Common GND |
+| <input type="checkbox" data-checklist-id="fixed-u3-14" aria-label="U3 supply pin 14 connected to 5 V"> | U3 HCT32 | Pin 14, VCC | Memory +5 V rail |
+| <input type="checkbox" data-checklist-id="bypass-u3" aria-label="U3 local 100 nF bypass checked"> | U3 HCT32 | C3, 100 nF | Close to pin 14, between +5 V and nearby common GND |
+
+With power and USB disconnected, tick each row after checking continuity
+at both actual socket contacts and isolation from adjacent pins. Progress
+is saved in the Phase 2 checklist. Keep the CLK connection entirely on Core.
 
 phase-2-output-buffer-wiring-end</template>
 
