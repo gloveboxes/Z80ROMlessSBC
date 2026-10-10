@@ -90,21 +90,21 @@ The resistor can face either way. Leave SRAM absent.
 
 | Signal | SRAM socket pin | Resistor's other end |
 | --- | ---: | --- |
-| A0 | 12 | +5 V |
-| A1 | 11 | +5 V |
-| A2 | 10 | +5 V |
-| A3 | 9 | +5 V |
-| A4 | 8 | +5 V |
-| A5 | 7 | +5 V |
-| A6 | 6 | +5 V |
+| A14 | 3 | +5 V |
+| A12 | 4 | +5 V |
 | A7 | 5 | +5 V |
-| A8 | 27 | +5 V |
-| A9 | 26 | +5 V |
+| A6 | 6 | +5 V |
+| A5 | 7 | +5 V |
+| A4 | 8 | +5 V |
+| A3 | 9 | +5 V |
+| A2 | 10 | +5 V |
+| A1 | 11 | +5 V |
+| A0 | 12 | +5 V |
 | A10 | 23 | +5 V |
 | A11 | 25 | +5 V |
-| A12 | 4 | +5 V |
+| A9 | 26 | +5 V |
+| A8 | 27 | +5 V |
 | A13 | 28 | +5 V |
-| A14 | 3 | +5 V |
 | A15 | 31 | +5 V |
 
 Do not join the address pins together. **A16, socket pin 2, connects directly
@@ -118,14 +118,14 @@ the CPU is absent or its bus outputs are floating.
 
 | Signal | Z80 socket pin | Resistor's other end |
 | --- | ---: | --- |
-| BUSREQ# | 25 | +5 V |
-| BUSACK# | 23 | +5 V |
+| INT# | 16 | +5 V |
+| NMI# | 17 | +5 V |
 | MREQ# | 19 | +5 V |
 | IORQ# | 20 | +5 V |
 | RD# | 21 | +5 V |
 | WR# | 22 | +5 V |
-| INT# | 16 | +5 V |
-| NMI# | 17 | +5 V |
+| BUSACK# | 23 | +5 V |
+| BUSREQ# | 25 | +5 V |
 
 **Do not add a +5 V pull-up to RESET# pin 26.** It will be connected directly
 to a Pico output. **Do not add a WAIT# pull-up at pin 24**; HCT32 drives WAIT#
@@ -162,12 +162,12 @@ in Phase 1 and supplies it from header pin 36.
 
 | Resistor | Signal / GPIO | Physical Pico header pin | Resistor's other end | Default |
 | --- | --- | ---: | --- | --- |
+| R21 | CLK output, GP2 | 4 | GND | LOW |
+| R22 | RESET# output, GP3 | 5 | GND | LOW, reset asserted |
 | R17 | BUSREQ# output, GP4 | 6 | +3.3 V | HIGH |
 | R18 | BOOT_READ_DISABLE, GP5 | 7 | +3.3 V | HIGH |
 | R19 | Upward OE# request, GP6 | 9 | +3.3 V | HIGH, path disabled |
 | R20 | Downward OE#, GP7 | 10 | +3.3 V | HIGH, path disabled |
-| R21 | CLK output, GP2 | 4 | GND | LOW |
-| R22 | RESET# output, GP3 | 5 | GND | LOW, reset asserted |
 | R23 | IO_RELEASE, GP9 | 12 | GND | LOW |
 
 ### Step 7 - Ground the unused logic inputs
