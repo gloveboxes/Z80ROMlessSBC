@@ -39,27 +39,20 @@ GP23/24/25/29 are reserved by Pico 2 W wireless hardware.
 
 ### Pico Control Outputs
 
-```mermaid
-block-beta
-  columns 2
-  P2["Pico GP2 - header pin 4"] B2["AHCT244 input - pin 2"]
-  P4["Pico GP4 - header pin 6"] B4["AHCT244 input - pin 4"]
-  P5["Pico GP5 - header pin 7"] B5["AHCT244 input - pin 6"]
-  P3["Pico GP3 - header pin 5"] Z3["Z80 RESET# - pin 26"]
-  P6["Pico GP6 - header pin 9"] H6["HCT32 input - pin 10"]
-  P7["Pico GP7 - header pin 10"] L7["LVC245 OE# - pin 19"]
-  P9["Pico GP9 - header pin 12"] H9["HCT32 input - pin 5"]
-  P2 --> B2
-  P4 --> B4
-  P5 --> B5
-  P3 --> Z3
-  P6 --> H6
-  P7 --> L7
-  P9 --> H9
-```
+| Done | Signal | Pico connection | Destination socket contact |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-gp2" aria-label="Pico GP2 clock wire continuity checked"> | CLK | Pico GP2 - header pin 4 | U4 AHCT244 input - pin 2 |
+| <input type="checkbox" data-checklist-id="wire-gp3" aria-label="Pico GP3 reset wire continuity checked"> | RESET# | Pico GP3 - header pin 5 | U1 Z80 RESET# - pin 26 |
+| <input type="checkbox" data-checklist-id="wire-gp4" aria-label="Pico GP4 bus request wire continuity checked"> | BUSREQ# | Pico GP4 - header pin 6 | U4 AHCT244 input - pin 4 |
+| <input type="checkbox" data-checklist-id="wire-gp5" aria-label="Pico GP5 boot read disable wire continuity checked"> | BOOT_READ_DISABLE | Pico GP5 - header pin 7 | U4 AHCT244 input - pin 6 |
+| <input type="checkbox" data-checklist-id="wire-gp6" aria-label="Pico GP6 upward enable request wire continuity checked"> | PICO_DATA_UP_OE# | Pico GP6 - header pin 9 | U3 HCT32 input - pin 10 |
+| <input type="checkbox" data-checklist-id="wire-gp7" aria-label="Pico GP7 downward enable wire continuity checked"> | DATA_DOWN_OE# | Pico GP7 - header pin 10 | U10 LVC245 OE# - pin 19 |
+| <input type="checkbox" data-checklist-id="wire-gp9" aria-label="Pico GP9 IO release wire continuity checked"> | IO_RELEASE | Pico GP9 - header pin 12 | U3 HCT32 input - pin 5 |
 
 Wire all Pico connections from the table above with other active devices
 absent. Continuity-check every destination socket contact and adjacent pins.
+Tick each row after checking its connection; progress is saved in the Phase 1
+checklist.
 
 phase-1-pico-wiring-end</template>
 

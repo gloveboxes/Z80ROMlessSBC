@@ -270,13 +270,30 @@ These wire connections do not change the resistor or capacitor totals.
 
 ### Installation count before testing
 
-| Board / location | Permanent resistors | Capacitors |
-| --- | ---: | --- |
-| Memory | 16 address pull-ups | Three: two 100 nF, one 22 uF |
-| Core | Eight CPU control pull-ups | Three: two 100 nF, one 22 uF |
-| Peripheral | 15: eleven pull-downs to GND plus four pull-ups to +3.3 V | Four: three 100 nF, one 22 uF |
-| Common supply entry | None | One 100 uF |
-| **Total** | **39 individual 10 kOhm resistors** | **11 capacitors** |
+| IC / component group | Permanent resistors | External capacitors | GND pins | +5 V pins | +3.3 V pins |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Pico 2 W | 15: eleven pull-downs plus four pull-ups | None | 8 | 0 | 1 |
+| U1 Z80 | Eight CPU control pull-ups | C1, 100 nF | 1 | 1 | 0 |
+| U2 SRAM | 16 address pull-ups | C2, 100 nF | 2 | 2 | 0 |
+| U3 HCT32 | None | C3, 100 nF | 3 | 1 | 0 |
+| U4 AHCT244 | None | C4, 100 nF | 5 | 1 | 0 |
+| U7 LVC244 | None | C5, 100 nF | 3 | 0 | 1 |
+| U9 AHCT245 | None | C6, 100 nF | 1 | 2 | 0 |
+| U10 LVC245 | None | C7, 100 nF | 2 | 0 | 1 |
+| Board bulk capacitors | None | C8-C10, three 22 uF | 0 | 0 | 0 |
+| Common supply entry | None | C11, 100 uF | 0 | 0 | 0 |
+| **Total** | **39 individual 10 kOhm resistors** | **11 capacitors** | **25** | **7** | **3** |
+
+The pin columns count the direct socket/header connections in Steps 7 and 8,
+including grounded or fixed-HIGH control pins. They do not count resistor
+or capacitor leads, rail bridges, or supply-entry wiring. The Pico counts
+include all eight ground contacts and its 3.3 V output pin 36.
+There is **one additional diode-fed Pico VSYS connection at header pin 39**;
+it is not a direct +5 V connection and is not included in the +5 V column.
+Resistors are counted once at their installation point: Pico pulls at the
+Pico, CPU control pulls at U1, and address pulls at U2, even though the
+signal nets also connect to other ICs. The Pico's onboard capacitors are
+not included in the 11 external capacitors.
 
 Leave all permanent resistors and capacitors installed for subsequent phases.
 Temporary diagnostic pulls are added only when a later phase requests them.

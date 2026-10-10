@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify documented chip-pair Mermaid edges against the KiCad net manifest."""
+"""Verify documented chip-pair diagrams and wiring tables against KiCad nets."""
 
 from __future__ import annotations
 
@@ -121,6 +121,7 @@ def main() -> None:
     errors: list[str] = []
     checked_edges = 0
     checked_blocks = 0
+    checked_table_edges = 0
     aggregate_blocks: list[str] = []
 
     for endpoint, expected_net in FIXED_ENDPOINT_NETS.items():
@@ -136,6 +137,26 @@ def main() -> None:
             )
 
     for path in DOC_PATHS:
+        for line, text in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if 'data-checklist-id="wire-' not in text:
+                continue
+            cells = [cell.strip() for cell in text.split("|")[1:-1]]
+            location = f"{path.relative_to(REPO_ROOT)}:{line} (wiring table)"
+            if len(cells) != 4:
+                errors.append(f"{location}: expected four wiring-table columns")
+                continue
+            try:
+                left, right = (endpoint_for(label) for label in cells[2:])
+            except ValueError as error:
+                errors.append(f"{location}: {error}")
+                continue
+            if left not in endpoint_net or right not in endpoint_net:
+                errors.append(f"{location}: unresolved or absent endpoint: {cells[2:]}")
+            elif endpoint_net[left] != endpoint_net[right]:
+                errors.append(f"{location}: {left} and {right} do not share a net")
+            else:
+                checked_table_edges += 1
+
         for heading, line, body in mermaid_blocks(path):
             if not body.startswith("block-beta"):
                 continue
@@ -206,6 +227,7 @@ def main() -> None:
         f"PASS: {checked_edges} chip-pair edges in {checked_blocks} diagrams "
         "match KiCad net membership"
     )
+    print(f"PASS: {checked_table_edges} wiring-table edges match KiCad net membership")
     print(
         f"PASS: {len(FIXED_ENDPOINT_NETS)} fixed endpoints and "
         f"{len(DOCUMENTED_NO_CONNECTS)} no-connects match KiCad"
