@@ -1,0 +1,2449 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+      
+        <link rel="next" href="hardware/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="stylesheets/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#z80-romless-sbc-wip-engineering-and-build-specification" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-path-for-a-first-hardware-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading path for a first hardware build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-computer-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the computer works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the computer works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-can-the-z80-boot-without-rom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can the Z80 boot without ROM?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-long-does-loading-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How long does loading take?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-does-the-z80-write-the-boot-image-into-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How does the Z80 write the boot image into SRAM?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-are-the-pico-and-z80-synchronized-during-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How are the Pico and Z80 synchronized during loading?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cpm-boot-and-disk-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CP/M Boot and Disk Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-path-for-a-first-hardware-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading path for a first hardware build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-computer-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the computer works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the computer works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-can-the-z80-boot-without-rom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can the Z80 boot without ROM?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-long-does-loading-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How long does loading take?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-does-the-z80-write-the-boot-image-into-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How does the Z80 write the boot image into SRAM?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-are-the-pico-and-z80-synchronized-during-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How are the Pico and Z80 synchronized during loading?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cpm-boot-and-disk-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CP/M Boot and Disk Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="z80-romless-sbc-wip-engineering-and-build-specification">Z80 ROMless SBC - WIP Engineering and Build Specification<a class="headerlink" href="#z80-romless-sbc-wip-engineering-and-build-specification" title="Permanent link">¶</a></h1>
+<p><strong>Repository:</strong> <a href="https://github.com/gloveboxes/Z80ROMlessSBC">github.com/gloveboxes/Z80ROMlessSBC</a></p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">¶</a></h2>
+<p>This is a theoretical Z80 single-board computer design that has not yet been
+built or validated in hardware. Treat it as an engineering proposal and
+bring-up plan, not a proven reference design. Its electrical assumptions,
+timing margins, and firmware interactions require bench validation through
+the staged <a href="implementation/">implementation plan</a>.</p>
+<h2 id="reading-path-for-a-first-hardware-build">Reading path for a first hardware build<a class="headerlink" href="#reading-path-for-a-first-hardware-build" title="Permanent link">¶</a></h2>
+<p>Start with the <a href="hardware/inventory/">inventory</a> and the
+<a href="hardware/construction/#before-you-wire">breadboard and meter basics</a>, then
+follow the <a href="implementation/">implementation plan</a> in order. It tells
+you what to install, wire, and test at each step. The hardware chapters are
+pin-level references; you do not need to understand every firmware excerpt
+before beginning the power checks.</p>
+<p>Use the <a href="reference/glossary/">glossary</a> for unfamiliar terms. Expect to
+use a multimeter from Phase 0 and a scope for startup/clock checks; the logic
+analyzer is also required for the later bus and speed qualification captures.
+This is a measured three-BB830 breadboard build, not a
+wire-everything-and-power-on kit. PCB migration is deferred, and the historical
+PCB documentation is hidden from this site. The existing PCB and fabrication
+files describe the previous circuit and must not be used for this build.</p>
+<h2 id="how-the-computer-works">How the computer works<a class="headerlink" href="#how-the-computer-works" title="Permanent link">¶</a></h2>
+<p>The design pairs a Z80 without a ROM chip with a Raspberry Pi Pico 2 W. The
+Pico supplies the clock and reset, then feeds instructions to the Z80 with
+SRAM reads inhibited. The Z80 writes and verifies its own RAM; it is the only
+address/write master. The lower 64 KiB of a 128 KiB SRAM provides memory.
+AHCT/LVC buffers separate 3.3 V and 5 V domains, and one HCT32 implements
+fixed read-inhibit, WAIT, and data-output gates. No PLD programmer is needed.</p>
+<p>The Pico also provides virtual peripherals. During a Z80 input/output request,
+hardware pauses the processor while the Pico identifies the requested port and
+exchanges one byte. Z80 <code>IN</code> and <code>OUT</code> instructions feed terminal queues; a
+WebSocket VT100 terminal runs on the Pico's other core so network traffic does
+not affect Z80 timing.</p>
+<p>Z80 boot software and CP/M disks occupy reserved regions of the Pico's onboard
+flash rather than removable media. The Pico reads the flash directly and uses
+Z80-assisted loading to populate and verify SRAM, then resets to PC zero for
+normal execution. Once running, virtual I/O disk ports access the
+<a href="system/operation/#63-onboard-flash-cpm-disk-storage">onboard flash partition</a>.</p>
+<h3 id="how-can-the-z80-boot-without-rom">How can the Z80 boot without ROM?<a class="headerlink" href="#how-can-the-z80-boot-without-rom" title="Permanent link">¶</a></h3>
+<p><strong>The Z80 does not know whether its instructions come from ROM, RAM, or the
+Pico. It reads instruction bytes from its data pins and executes them.</strong>
+During loading, the Pico temporarily supplies those bytes instead of SRAM.
+Those instructions make the Z80 fill its own RAM.</p>
+<ol>
+<li><strong>The Pico starts first.</strong> It boots its firmware from onboard flash, holds
+   the Z80 in reset, and initially keeps the Z80 clock stopped. SRAM contains
+   unknown data at power-on. The Pico recovers the disk journal and validates
+   the CP/M boot package before starting the loader.</li>
+<li>
+<p><strong>The Pico supplies the first instructions.</strong> It clocks the Z80 through
+   reset, releases reset, and supplies slow, controlled clock pulses. The Z80
+   begins fetching at address <code>0000</code>, but SRAM's outputs are disabled.
+   Instead, the Pico supplies instruction bytes through the AHCT245 data
+   buffer at the appropriate read cycles. The Z80 still drives the address
+   bus; the Pico supplies each byte according to the loading sequence.</p>
+<p><strong>How slow are these pulses?</strong> They are individual software-controlled
+pulses, not a continuous fixed-frequency clock. Each loader cycle has
+these explicit waits:</p>
+<table>
+<thead>
+<tr>
+<th>Part of cycle</th>
+<th style="text-align: right;">Programmed wait</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLK LOW before rising</td>
+<td style="text-align: right;">1 us</td>
+</tr>
+<tr>
+<td>CLK HIGH</td>
+<td style="text-align: right;">1 us</td>
+</tr>
+<tr>
+<td>CLK LOW settling after falling</td>
+<td style="text-align: right;">1 us</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td style="text-align: right;"><strong>3 us per cycle</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Here, <code>us</code> means microseconds. Back-to-back pulses therefore have a
+wait-only rate of approximately <strong>333 kHz</strong>; software overhead makes the
+actual rate lower. Between consecutive pulses, the trailing LOW settling
+and the next leading LOW wait add to at least approximately 2 us LOW.
+Data preparation and other work extend that LOW interval further, so the
+loading clock is irregular rather than a steady 333 kHz waveform.
+The loader's reset and reset-exit clocks use the same slow stepping.
+These are firmware timing settings, not measured waveforms. They are
+separate from the <strong>1 MHz normal startup clock</strong> and the nominal <strong>8 MHz</strong>
+setting available for later qualification.</p>
+</li>
+<li>
+<p><strong>The Z80 writes its own RAM.</strong> For example, to store byte <code>A5</code> at address
+   <code>1234</code>, the Pico supplies <code>LD HL,1234h</code> followed by <code>LD (HL),0A5h</code>. These
+   instructions are encoded as the bytes <code>21 34 12 36 A5</code>. When the Z80
+   executes the write, the Pico stops driving data. The Z80 puts <code>1234</code> on
+   the address bus, puts <code>A5</code> on the data bus, and generates the SRAM write
+   signals. Repeating this process loads the boot image.</p>
+</li>
+<li><strong>The Pico checks the result.</strong> It injects instructions such as
+   <code>LD HL,1234h</code> and <code>LD A,(HL)</code>. For the actual RAM read, the Pico disables
+   its output driver and temporarily enables SRAM's outputs. It observes the
+   returned byte through the LVC245 and compares it with the expected value.
+   A failed verification leaves the Z80 held in reset instead of running CP/M.</li>
+<li><strong>Reset again, then execute from RAM.</strong> After successful verification,
+   the Pico resets the Z80 to return its program counter to <code>0000</code>, isolates
+   both Pico data paths, and allows normal SRAM reads. It releases reset with
+   the clock stopped LOW, waits for reset setup, then starts the normal clock.
+   This time SRAM supplies the instructions, and the loaded code starts CP/M.</li>
+</ol>
+<p><strong>The HCT32 contains no boot program and needs no programming.</strong> One of its
+OR gates controls SRAM's active-LOW output enable:</p>
+<div class="highlight"><pre><span></span><code>SRAM_OE# = buffered RD# OR buffered BOOT_READ_DISABLE
+</code></pre></div>
+<p>When <code>BOOT_READ_DISABLE</code> is HIGH, SRAM's data outputs stay disabled, leaving
+the Pico free to supply injected instruction bytes. When it is LOW, SRAM
+can respond to normal reads. This inhibits <strong>SRAM output, not SRAM writes</strong>:
+the Z80 can still write RAM while receiving its instructions from the Pico.
+Firmware keeps the Pico and SRAM from driving the data bus simultaneously.</p>
+<p>In short: <strong>the Pico feeds the Z80 instructions to write and verify the boot
+image in RAM, then resets it so it starts again, this time executing from RAM.</strong>
+The Z80 is the only memory-address and write master throughout.</p>
+<p>Normal execution starts at <strong>1 MHz</strong>. A nominal <strong>8 MHz</strong> setting is available
+for later qualification; loading uses slow stepped clocks, not that run rate.
+This is the intended sequence, not a claim of measured hardware operation.
+See the <a href="hardware/address-interface/#loader-sequence">detailed loader protocol</a>,
+<a href="implementation/phase-6-sram/">Phase 6 tests</a>, and
+<a href="implementation/frequency-qualification/">frequency qualification</a>.</p>
+<h3 id="how-long-does-loading-take">How long does loading take?<a class="headerlink" href="#how-long-does-loading-take" title="Permanent link">¶</a></h3>
+<p>Allow <strong>roughly 10 seconds or somewhat longer to load and verify the complete
+64 KiB boot image</strong> with the current firmware. This is a calculation-based
+estimate, not a measured startup time.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th style="text-align: right;">Explicit waits per byte</th>
+<th style="text-align: right;">For 65,536 bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write the image into SRAM</td>
+<td style="text-align: right;">75 us</td>
+<td style="text-align: right;">4.92 seconds</td>
+</tr>
+<tr>
+<td>Read back and verify every byte</td>
+<td style="text-align: right;">65 us</td>
+<td style="text-align: right;">4.26 seconds</td>
+</tr>
+<tr>
+<td><strong>Total loading and verification</strong></td>
+<td style="text-align: right;"><strong>140 us</strong></td>
+<td style="text-align: right;"><strong>9.18 seconds</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Writing each byte takes 20 stepped clocks; verification takes another 17.
+At 3 us of programmed waits per clock, clock waits alone total approximately
+7.27 seconds. The additional SRAM-inhibit, data-preparation, isolation, and
+readback waits bring the total explicit waits to approximately 9.18 seconds.
+GPIO operations, function execution, and interrupts add time beyond that.</p>
+<p>Initial flash validation, any journal recovery, CP/M startup, and Wi-Fi
+connection are separate from this load-and-verify estimate. <strong>Only the boot
+image is loaded into SRAM:</strong> the four CP/M disks remain in Pico flash and are
+accessed as needed, not copied during boot.</p>
+<h3 id="how-does-the-z80-write-the-boot-image-into-sram">How does the Z80 write the boot image into SRAM?<a class="headerlink" href="#how-does-the-z80-write-the-boot-image-into-sram" title="Permanent link">¶</a></h3>
+<p><strong>The Pico gives the Z80 a "write this byte to this address" instruction for
+every byte of the boot image.</strong> The Z80 executes those instructions using its
+normal memory-write hardware. There are two different things to distinguish:</p>
+<ul>
+<li><strong>Loader instructions:</strong> bytes supplied by the Pico directly to the Z80
+  through the AHCT245.</li>
+<li><strong>Boot-image bytes:</strong> the contents those instructions tell the Z80 to store
+  in SRAM.</li>
+</ul>
+<p>For example, suppose the first boot-image byte is <code>C3</code>. To store it at address
+<code>0000</code>, the Pico supplies this illustrative instruction sequence:</p>
+<div class="highlight"><pre><span></span><code><span class="nf">LD</span><span class="w"> </span><span class="no">HL</span><span class="p">,</span><span class="mi">0000</span><span class="no">h</span>
+<span class="nf">LD</span><span class="w"> </span><span class="p">(</span><span class="no">HL</span><span class="p">),</span><span class="mi">0</span><span class="no">C3h</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Who drives the data bus?</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Pico</td>
+<td>Supplies <code>21 00 00</code>, the bytes for <code>LD HL,0000h</code>. The Z80 sets its HL register to destination address <code>0000</code>.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Pico</td>
+<td>Supplies <code>36 C3</code>, the bytes for <code>LD (HL),0C3h</code>. The Z80 takes <code>C3</code> as the value to store.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Neither Pico nor SRAM</td>
+<td>The Pico disables its data driver before the write. SRAM outputs remain disabled.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Z80</td>
+<td>Places address <code>0000</code> on A0-A15 and byte <code>C3</code> on D0-D7.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Z80</td>
+<td>Asserts MREQ# and WR#. Through the AHCT244, these make SRAM CE# and WE# LOW.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Z80</td>
+<td>Completes the write cycle. With the required timing met, SRAM now holds <code>C3</code> at address <code>0000</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The byte <code>C3</code> is data in this operation, not an instruction being executed.</strong>
+It follows opcode <code>36</code>, which tells the Z80 to treat the next byte as the value
+to write at the address in HL.</p>
+<p>For the next boot-image byte, the Pico supplies <code>LD HL,0001h</code> followed by
+<code>LD (HL),value</code>, using that next byte as <code>value</code>. It repeats for addresses
+<code>0002</code>, <code>0003</code>, and so on through <code>FFFF</code> for the complete 64 KiB image.</p>
+<p>The injected loader instructions <strong>are not automatically stored in SRAM</strong>.
+Reading an instruction from the data bus does not write memory; the explicit
+<code>LD (HL),value</code> operation performs the write.</p>
+<p>Only SRAM's <strong>output enable, OE#</strong>, is inhibited during instruction injection.
+Its <strong>write enable, WE#</strong>, still works:</p>
+<ul>
+<li>During injected instruction reads: <strong>Pico to Z80</strong>.</li>
+<li>During memory writes: <strong>Z80 to SRAM</strong>, with the Pico data driver disabled.</li>
+</ul>
+<p>After loading and verification, the Pico resets the Z80 to address <code>0000</code> and
+allows normal SRAM reads. <strong>The stored boot-image bytes now become the
+instructions the Z80 executes.</strong> The
+<a href="implementation/phase-6-sram/#maintained-source">maintained loader</a> implements
+this sequence; the example above explains the byte roles rather than replacing
+that source.</p>
+<h3 id="how-are-the-pico-and-z80-synchronized-during-loading">How are the Pico and Z80 synchronized during loading?<a class="headerlink" href="#how-are-the-pico-and-z80-synchronized-during-loading" title="Permanent link">¶</a></h3>
+<p><strong>The Pico controls the Z80 clock, so it controls when the Z80 can advance
+to the point where it reads a byte.</strong> It does not have to race a freely
+running Z80 during loading.</p>
+<p>Think of it as: <strong>advance the Z80, pause, prepare the next byte, then advance
+the Z80 to read it.</strong></p>
+<p>For each injected instruction or immediate operand byte, the current loader
+uses this sequence:</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Pico action</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Generate one complete clock cycle, then leave CLK LOW</td>
+<td>Advance into the expected Z80 read cycle</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Keep SRAM outputs disabled</td>
+<td>Prevent SRAM from answering the read</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Disable both data translators, allow isolation to settle, and prepare the byte on the Pico data pins</td>
+<td>Keep intermediate GPIO changes off the Z80 bus</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Allow data to settle, then request the upward AHCT245 path</td>
+<td>Present the byte when Z80 RD# is LOW</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Generate two more clock cycles while holding the byte</td>
+<td>Advance through the read and its completion</td>
+</tr>
+<tr>
+<td>6</td>
+<td>After the final falling-edge settling interval, disable the Pico data path</td>
+<td>Release the bus before subsequent operations</td>
+</tr>
+<tr>
+<td>7</td>
+<td>For an opcode, generate one additional cycle</td>
+<td>Complete the four-T-state opcode-fetch cycle, including its refresh portion</td>
+</tr>
+</tbody>
+</table>
+<p>An immediate operand read uses three clock cycles; an opcode fetch uses four.
+The specified CMOS Z80 is <strong>fully static</strong>, meaning its clock can be paused
+without losing its execution state. While CLK is held LOW, it cannot advance
+to a later sampling edge. The Pico prepares the byte before generating that
+edge; a software delay between steps extends the pause instead of letting the
+Z80 run ahead.</p>
+<p>The HCT32 adds read-strobe gating to the upward data path:</p>
+<div class="highlight"><pre><span></span><code>AHCT245_OE# = Z80_RD# OR PICO_DATA_UP_OE#
+</code></pre></div>
+<p>Both inputs must be LOW to enable the translator: the Z80 must be reading,
+and the Pico must have requested upward drive. This gate does not select the
+byte or synchronize the instruction sequence by itself, and it is not an
+all-state interlock against another bus driver.</p>
+<p><strong>The loader counts clocks rather than polling RD# for each byte.</strong> It does
+not use a memory-read interrupt or a request/acknowledge protocol. It relies
+on the expected reset-exit phase, the known instructions being injected, and
+their clock counts. If that phase or a cycle count is wrong, it can supply the
+wrong byte at the wrong time. Slow clocks provide settling time, but do not
+prove the sequence correct: real captures of CLK, M1#, RD#, data, and the
+enables must confirm it.</p>
+<p>The <a href="implementation/phase-6-sram/#maintained-source">maintained loader source</a>
+and <a href="implementation/phase-6-sram/#firmware-and-loader-qualification">Phase 6 qualification procedure</a>
+show the implementation and required checks. Normal-run I/O uses a different
+<a href="system/operation/#61-hardware-wait-assisted-clock-stop-trap-protocol">hardware-WAIT-assisted trap protocol</a>.</p>
+<h3 id="cpm-boot-and-disk-flow">CP/M Boot and Disk Flow<a class="headerlink" href="#cpm-boot-and-disk-flow" title="Permanent link">¶</a></h3>
+<p>The complete software and storage path is:</p>
+<ol>
+<li>The image build combines CP/M's command processor (CCP), core operating
+   system (BDOS), and board input/output layer (BIOS) in <code>z80boot.img</code>. It adds
+   an integrity header and checksums to create <code>z80boot.pkg</code>.</li>
+<li>The build also writes the CCP, BDOS, and BIOS to Drive A's reserved boot
+   area and emits Drives A-D as separate 320 KiB CP/M disk images.</li>
+<li>It combines the final software for the Pico 2 W, <code>z80boot.pkg</code>, and all four
+   disks in <code>z80romless-flash.bin</code>, the complete 4 MiB image used for initial
+   flash setup. The separate files allow later updates without replacing the
+   rest of flash.</li>
+<li>On cold boot, the Pico completes any interrupted disk write, validates
+   <code>z80boot.pkg</code>, and uses the injected instructions described above to make
+   the Z80 write and read back its 64 KiB payload in SRAM. After verification,
+   the Pico resets the Z80 again and starts execution from SRAM. The BIOS
+   installs CP/M's restart and system-call entry points, then displays the
+   <code>A&gt;</code> prompt.</li>
+<li>Drives A-D are persistent read/write disks. During operation, the BIOS
+   converts disk requests into 128-byte transfers that the Pico reads from or
+   writes to flash. The Pico caches writes, commits them after 250 ms of
+   inactivity or when CP/M requests an immediate save, and uses a recovery log
+   to protect each flash update. A warm boot does not use <code>z80boot.pkg</code>; the
+   BIOS reloads the CCP and BDOS from Drive A before returning to the prompt.</li>
+</ol>
+<p>See the <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md">CP/M boot-image README</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md">disk-media README</a>,
+<a href="system/operation/#63-onboard-flash-cpm-disk-storage">flash-storage design</a>,
+and <a href="cpm-dcc/">CP/M appendix</a> for construction details, addresses,
+protocols, and validation evidence.</p>
+<p>The build plan proves each subsystem before relying on it in the next phase.
+It progresses from power and bus isolation through injected loading and Z80 execution,
+virtual peripherals, flash storage, the browser terminal, and measurement of
+the maximum reliable clock speed.</p>
+<h2 id="project-documentation">Project Documentation<a class="headerlink" href="#project-documentation" title="Permanent link">¶</a></h2>
+<p>The repository includes these focused implementation guides:</p>
+<ul>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage00_power/README.md">Stage 0: Power and passive wiring</a> -
+   power, continuity, resistance, rail-voltage, and diode-OR checks.</li>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md">Native CP/M boot image</a> -
+   memory layout, Z80 optimization, image construction, BIOS behavior, and host
+   tests.</li>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/README.md">DCC debug I/O adapter</a> -
+   Altair-compatible I/O drivers, native disks, interrupts, configuration, and
+   ANSI terminal input.</li>
+<li><a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md">CP/M disk media</a> -
+   source formats, conversion, native geometry, generated images, and flash
+   provisioning.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+        
+          
+          <a href="hardware/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Overview
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

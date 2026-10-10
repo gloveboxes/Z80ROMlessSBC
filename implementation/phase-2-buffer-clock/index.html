@@ -1,0 +1,2754 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../phase-1-supervisor/">
+      
+      
+        <link rel="next" href="../phase-3-address-generator/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Phase 2 - Fixed logic and clock - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#phase-2-output-buffer-fixed-logic-and-clock" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Phase 2 - Fixed logic and clock
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#phase-setup-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase Setup Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring-output-buffer-and-fixed-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - Output Buffer and Fixed Logic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring - Output Buffer and Fixed Logic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#u4-ahct244-input-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U4 AHCT244 input connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#u4-ahct244-outputs-to-cpu-and-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U4 AHCT244 outputs to CPU and SRAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#u3-hct32-gate-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U3 HCT32 gate connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supplies-grounded-pins-and-unused-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supplies, grounded pins and unused outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-checks-before-inserting-u3-and-u4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final checks before inserting U3 and U4
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#firmware-and-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firmware and Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Firmware and Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#or-gate-truth-table-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OR-gate truth-table fixture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass Gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintained-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintained Source
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#phase-setup-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase Setup Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring-output-buffer-and-fixed-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - Output Buffer and Fixed Logic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring - Output Buffer and Fixed Logic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#u4-ahct244-input-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U4 AHCT244 input connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#u4-ahct244-outputs-to-cpu-and-sram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U4 AHCT244 outputs to CPU and SRAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#u3-hct32-gate-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        U3 HCT32 gate connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supplies-grounded-pins-and-unused-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supplies, grounded pins and unused outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-checks-before-inserting-u3-and-u4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final checks before inserting U3 and U4
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#firmware-and-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firmware and Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Firmware and Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#or-gate-truth-table-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OR-gate truth-table fixture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass Gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintained-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintained Source
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="phase-2-output-buffer-fixed-logic-and-clock">Phase 2 - Output Buffer, Fixed Logic, and Clock<a class="headerlink" href="#phase-2-output-buffer-fixed-logic-and-clock" title="Permanent link">¶</a></h1>
+<div data-checklist="phase-2" data-checklist-label="Phase 2">
+<p>Tick setup items when complete and tests only after recording the measured
+result. Progress is saved in this browser; ticks are not automatic verification.</p>
+<p><button type="button" class="md-button" data-checklist-clear="" hidden="">Clear checklist</button></p>
+<p aria-live="polite" data-checklist-status="data-checklist-status" role="status"></p>
+<h2 id="phase-setup-checklist">Phase Setup Checklist<a class="headerlink" href="#phase-setup-checklist" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 2 prerequisite passed"></td>
+<td><a href="../phase-1-supervisor/#pass-gate">Phase 1 pass gate</a> completed</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="later-devices-absent" aria-label="CPU SRAM and data translators absent for Phase 2"></td>
+<td>CPU, SRAM and data translators remain absent</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="install-u4" aria-label="U4 fitted after wiring checks passed with power disconnected"></td>
+<td>U4 SN74AHCT244N fitted <strong>after the wiring checks below pass</strong>, with external power and USB disconnected</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="install-u3" aria-label="U3 fitted after wiring checks passed with power disconnected"></td>
+<td>U3 SN74HCT32N fitted <strong>after the wiring checks below pass</strong>, with external power and USB disconnected</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wiring-output-buffer-and-fixed-logic">Wiring - Output Buffer and Fixed Logic<a class="headerlink" href="#wiring-output-buffer-and-fixed-logic" title="Permanent link">¶</a></h2>
+<p>Disconnect external power and USB. Keep U3/U4 out of their sockets while
+wiring and checking the tables below. CPU, SRAM and later-phase devices
+also remain absent. Previously fitted Phase 0/1 connections need checking,
+not a second wire. The <a href="../../hardware/output-buffer/">buffer and gate reference</a>
+explains the channel functions.</p>
+<h3 id="u4-ahct244-input-connections">U4 AHCT244 input connections<a class="headerlink" href="#u4-ahct244-input-connections" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal</th>
+<th>Source socket/header contact</th>
+<th>Destination socket contact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-2" aria-label="U4 clock input pin 2 continuity checked"></td>
+<td>CLK</td>
+<td>Pico GP2 - header pin 4</td>
+<td>U4 AHCT244 input - pin 2</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-4" aria-label="U4 bus request input pin 4 continuity checked"></td>
+<td>BUSREQ#</td>
+<td>Pico GP4 - header pin 6</td>
+<td>U4 AHCT244 input - pin 4</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-6" aria-label="U4 boot inhibit input pin 6 continuity checked"></td>
+<td>BOOT_READ_DISABLE</td>
+<td>Pico GP5 - header pin 7</td>
+<td>U4 AHCT244 input - pin 6</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-8" aria-label="U4 memory request input pin 8 continuity checked"></td>
+<td>MREQ#</td>
+<td>U1 Z80 MREQ# - pin 19</td>
+<td>U4 AHCT244 input - pin 8</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-11" aria-label="U4 write input pin 11 continuity checked"></td>
+<td>WR#</td>
+<td>U1 Z80 WR# - pin 22</td>
+<td>U4 AHCT244 input - pin 11</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-input-13" aria-label="U4 read input pin 13 continuity checked"></td>
+<td>RD#</td>
+<td>U1 Z80 RD# - pin 21</td>
+<td>U4 AHCT244 input - pin 13</td>
+</tr>
+</tbody>
+</table>
+<h3 id="u4-ahct244-outputs-to-cpu-and-sram">U4 AHCT244 outputs to CPU and SRAM<a class="headerlink" href="#u4-ahct244-outputs-to-cpu-and-sram" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal</th>
+<th>Source socket contact</th>
+<th>Destination socket contact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-9" aria-label="AHCT244 pin 9 to SRAM write enable wire continuity checked"></td>
+<td>SRAM WE#</td>
+<td>U4 AHCT244 output - pin 9</td>
+<td>U2 SRAM WE# - pin 29</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-12" aria-label="AHCT244 pin 12 to SRAM chip enable wire continuity checked"></td>
+<td>SRAM CE#</td>
+<td>U4 AHCT244 output - pin 12</td>
+<td>U2 SRAM CE# - pin 22</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-16" aria-label="AHCT244 pin 16 to Z80 bus request wire continuity checked"></td>
+<td>BUSREQ#</td>
+<td>U4 AHCT244 output - pin 16</td>
+<td>U1 Z80 BUSREQ# - pin 25</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u4-18" aria-label="AHCT244 pin 18 to Z80 clock wire continuity checked"></td>
+<td>CLK</td>
+<td>U4 AHCT244 output - pin 18</td>
+<td>U1 Z80 CLK - pin 6</td>
+</tr>
+</tbody>
+</table>
+<p>The remaining U4 outputs, pins 7 and 14, connect to U3 in the next table.</p>
+<h3 id="u3-hct32-gate-connections">U3 HCT32 gate connections<a class="headerlink" href="#u3-hct32-gate-connections" title="Permanent link">¶</a></h3>
+<p>Rows are ordered by U3 pin number. Inputs and outputs are identified explicitly.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal</th>
+<th>Source socket/header contact</th>
+<th>Destination socket contact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-1" aria-label="U3 buffered read input pin 1 continuity checked"></td>
+<td>Buffered RD#</td>
+<td>U4 AHCT244 output - pin 7</td>
+<td>U3 HCT32 input - pin 1</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-2" aria-label="U3 buffered boot inhibit input pin 2 continuity checked"></td>
+<td>Buffered BOOT_READ_DISABLE</td>
+<td>U4 AHCT244 output - pin 14</td>
+<td>U3 HCT32 input - pin 2</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-3" aria-label="U3 SRAM output enable pin 3 continuity checked"></td>
+<td>SRAM OE#</td>
+<td>U3 HCT32 output - pin 3</td>
+<td>U2 SRAM OE# - pin 24</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-4" aria-label="U3 IO request input pin 4 continuity checked"></td>
+<td>Raw IORQ#</td>
+<td>U1 Z80 IORQ# - pin 20</td>
+<td>U3 HCT32 input - pin 4</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-5" aria-label="U3 IO release input pin 5 continuity checked"></td>
+<td>IO_RELEASE</td>
+<td>Pico GP9 - header pin 12</td>
+<td>U3 HCT32 input - pin 5</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-6" aria-label="U3 WAIT output pin 6 continuity checked"></td>
+<td>WAIT#</td>
+<td>U3 HCT32 output - pin 6</td>
+<td>U1 Z80 WAIT# - pin 24</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-8" aria-label="U3 upward data enable output pin 8 continuity checked"></td>
+<td>DATA_UP_OE#</td>
+<td>U3 HCT32 output - pin 8</td>
+<td>U9 AHCT245 OE# - pin 19</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-9" aria-label="U3 raw read input pin 9 continuity checked"></td>
+<td>Raw RD#</td>
+<td>U1 Z80 RD# - pin 21</td>
+<td>U3 HCT32 input - pin 9</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="wire-u3-10" aria-label="U3 upward enable request input pin 10 continuity checked"></td>
+<td>PICO_DATA_UP_OE#</td>
+<td>Pico GP6 - header pin 9</td>
+<td>U3 HCT32 input - pin 10</td>
+</tr>
+</tbody>
+</table>
+<h3 id="supplies-grounded-pins-and-unused-outputs">Supplies, grounded pins and unused outputs<a class="headerlink" href="#supplies-grounded-pins-and-unused-outputs" title="Permanent link">¶</a></h3>
+<p>These supply and ground connections are <strong>direct links, not resistors</strong>.
+The local capacitors are additional to the direct supply/ground wires.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Device</th>
+<th>Pin / component</th>
+<th>Required connection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-1" aria-label="U4 enable pin 1 grounded"></td>
+<td>U4 AHCT244</td>
+<td>Pin 1, OE#</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="open-u4-3" aria-label="U4 unused output pin 3 left open"></td>
+<td>U4 AHCT244</td>
+<td>Pin 3, unused output</td>
+<td>Leave open</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="open-u4-5" aria-label="U4 unused output pin 5 left open"></td>
+<td>U4 AHCT244</td>
+<td>Pin 5, unused output</td>
+<td>Leave open</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-10" aria-label="U4 power ground pin 10 connected"></td>
+<td>U4 AHCT244</td>
+<td>Pin 10, power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-15" aria-label="U4 unused input pin 15 grounded"></td>
+<td>U4 AHCT244</td>
+<td>Pin 15, unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-17" aria-label="U4 unused input pin 17 grounded"></td>
+<td>U4 AHCT244</td>
+<td>Pin 17, unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-19" aria-label="U4 enable pin 19 grounded"></td>
+<td>U4 AHCT244</td>
+<td>Pin 19, OE#</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u4-20" aria-label="U4 supply pin 20 connected to 5 V"></td>
+<td>U4 AHCT244</td>
+<td>Pin 20, VCC</td>
+<td>Core +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="bypass-u4" aria-label="U4 local 100 nF bypass checked"></td>
+<td>U4 AHCT244</td>
+<td>C4, 100 nF</td>
+<td>Close to pin 20, between +5 V and nearby common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u3-7" aria-label="U3 power ground pin 7 connected"></td>
+<td>U3 HCT32</td>
+<td>Pin 7, power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="open-u3-11" aria-label="U3 unused output pin 11 left open"></td>
+<td>U3 HCT32</td>
+<td>Pin 11, unused output</td>
+<td>Leave open</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u3-12" aria-label="U3 unused input pin 12 grounded"></td>
+<td>U3 HCT32</td>
+<td>Pin 12, unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u3-13" aria-label="U3 unused input pin 13 grounded"></td>
+<td>U3 HCT32</td>
+<td>Pin 13, unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-u3-14" aria-label="U3 supply pin 14 connected to 5 V"></td>
+<td>U3 HCT32</td>
+<td>Pin 14, VCC</td>
+<td>Memory +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="bypass-u3" aria-label="U3 local 100 nF bypass checked"></td>
+<td>U3 HCT32</td>
+<td>C3, 100 nF</td>
+<td>Close to pin 14, between +5 V and nearby common GND</td>
+</tr>
+</tbody>
+</table>
+<p>With power and USB disconnected, tick each row after checking continuity
+at both actual socket contacts and isolation from adjacent pins. Progress
+is saved in the Phase 2 checklist. Keep the CLK connection entirely on Core.</p>
+<h3 id="final-checks-before-inserting-u3-and-u4">Final checks before inserting U3 and U4<a class="headerlink" href="#final-checks-before-inserting-u3-and-u4" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="buffer-gate-wiring" aria-label="Buffer and gate channels and supplies wired"></td>
+<td>All listed signal and supply connections complete; U4 pin 18 to Z80 socket pin 6 stays short and entirely on Core</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixed-pins" aria-label="Buffer and gate fixed pins checked"></td>
+<td>Both U4 OEs grounded, all unused inputs grounded, unused outputs left open</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="continuity-install" aria-label="Buffer and gate continuity checked before installation"></td>
+<td>Continuity checked at every actual socket contact, no neighboring shorts, correct supply rails and pin-1 orientation verified before inserting either device</td>
+</tr>
+</tbody>
+</table>
+<h2 id="firmware-and-tests">Firmware and Tests<a class="headerlink" href="#firmware-and-tests" title="Permanent link">¶</a></h2>
+<p>Keep the CPU, SRAM and data translators absent throughout this phase.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Test</th>
+<th>Procedure and pass condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 2 firmware built and loaded"></td>
+<td>Firmware</td>
+<td>Build <code>z80_stage02_buffers_clock</code> and load its UF2 from <code>build/src/stage02_buffers_clock/</code>. See the <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c">maintained application</a></td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="held-buffer-levels" aria-label="All three buffer input and output level pairs measured"></td>
+<td>Buffer levels</td>
+<td>Press <code>d</code> for each LOW/HIGH step and probe U4 pairs 2/18, 4/16 and 6/14. Inputs are near 0/3.3 V; outputs are near 0/+5 V, LOW below 0.3 V and HIGH at least 4.4 V. The seventh step or <code>x</code> restores defaults</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="clock-waveforms" aria-label="All three unloaded clock rates qualified"></td>
+<td>Clock</td>
+<td>Use <code>1</code>, <code>2</code>, <code>3</code> for 1 kHz, 100 kHz and 1 MHz. At U4 pin 18 and Z80 socket pin 6 verify frequency, 45-55% duty, and no runt pulses or threshold-crossing ringing. HIGH must reach measured CPU VCC minus 0.5 V: at 5.0 V, at least 4.5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="inhibit-wait" aria-label="SRAM inhibit and WAIT behavior measured"></td>
+<td>Inhibit and WAIT</td>
+<td>Drive raw RD# and IORQ# LOW one at a time through 1 kOhm. SRAM OE stays HIGH while boot inhibit is HIGH; WAIT is LOW only while IORQ and IO_RELEASE are both LOW</td>
+</tr>
+</tbody>
+</table>
+<h3 id="or-gate-truth-table-fixture">OR-gate truth-table fixture<a class="headerlink" href="#or-gate-truth-table-fixture" title="Permanent link">¶</a></h3>
+<p>For every gate, test LOW/LOW, LOW/HIGH, HIGH/LOW and HIGH/HIGH. The expected
+outputs are LOW, HIGH, HIGH and HIGH respectively.</p>
+<p>Use current-limited fixture outputs referenced to common circuit GND and
+limited to 0 V through measured U3 VCC. Disconnect external power and USB
+before every fixture change, and define both inputs before powering up.
+Never drive a connected Pico GPIO or another active output.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-fixture-ready" aria-label="OR gate fixture configured safely"></td>
+<td>Set the fixture ground, voltage range and current limit; keep Stage 2 loaded and do not use the Stage 1 walking test</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-1-input-1-isolated" aria-label="U4 output 7 disconnected from U3 input 1"></td>
+<td>Gate 1: disconnect U4 output 7 from U3 input 1</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-1-input-2-isolated" aria-label="U4 output 14 disconnected from U3 input 2"></td>
+<td>Gate 1: disconnect U4 output 14 from U3 input 2</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-1-input-1-fixture" aria-label="Fixture output A connected to U3 input 1"></td>
+<td>Gate 1: attach fixture output A to U3 input 1</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-1-input-2-fixture" aria-label="Fixture output B connected to U3 input 2"></td>
+<td>Gate 1: attach fixture output B to U3 input 2</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-1-truth-table" aria-label="All four U3 gate 1 combinations measured"></td>
+<td>Gate 1: test all four combinations at output 3, SRAM OE#</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-2-truth-table" aria-label="U3 gate 2 isolated and all four combinations measured"></td>
+<td>Gate 2: disconnect Pico GP9/header 12 from input 5, attach fixture outputs to inputs 4/5, then test all four combinations at output 6, WAIT#. CPU-absent IORQ# at input 4 has no active driver</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-3-truth-table" aria-label="U3 gate 3 isolated and all four combinations measured"></td>
+<td>Gate 3: disconnect Pico GP6/header 9 from input 10, attach fixture outputs to inputs 9/10, then test all four combinations at output 8, DATA_UP_OE#. CPU-absent RD# at input 9 has no active driver</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-4-fixed" aria-label="Unused U3 gate remains correctly fixed"></td>
+<td>Unused gate: leave inputs 12/13 grounded and output 11 unconnected</td>
+</tr>
+</tbody>
+</table>
+<h4 id="restore-normal-wiring">Restore normal wiring<a class="headerlink" href="#restore-normal-wiring" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-fixture-sources-removed" aria-label="OR gate fixture removed with power disconnected"></td>
+<td>Disconnect external power and USB, then remove the fixture outputs and ground</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-fixture-u4-restored" aria-label="U4 to U3 driver jumpers restored"></td>
+<td>Reconnect U4 output 7 to U3 input 1 and U4 output 14 to U3 input 2</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="gate-fixture-pico-restored" aria-label="Pico to U3 driver jumpers restored"></td>
+<td>Reconnect Pico GP9/header 12 to U3 input 5 and Pico GP6/header 9 to U3 input 10</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="fixture-removed" aria-label="Phase 2 temporary wiring restored and defaults selected"></td>
+<td>Check continuity and adjacent-pin isolation, power up, then press <code>x</code> to restore defaults</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pass-gate">Pass Gate<a class="headerlink" href="#pass-gate" title="Permanent link">¶</a></h2>
+<ul>
+<li><input type="checkbox" data-checklist-id="gate-buffers" aria-label="Phase 2 buffer and gate measurements passed"> Buffer tests and all three used-gate truth tables passed; unused gate inputs grounded and output open.</li>
+<li><input type="checkbox" data-checklist-id="gate-clock" aria-label="Phase 2 unloaded clock levels passed"> Clock levels measured correctly.</li>
+</ul>
+<p>Start later
+execution at 1 MHz, not the CPU's 20 MHz rating. This phase qualifies the
+unloaded socket clock only; repeat with the CPU fitted.</p>
+</div>
+<h2 id="maintained-source">Maintained Source<a class="headerlink" href="#maintained-source" title="Permanent link">¶</a></h2>
+<p>These complete files are included from the repository at documentation build
+time, not copied into this page.</p>
+<details class="example">
+<summary>Stage 2 application - src/stage02_buffers_clock/main.c</summary>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"pico/stdlib.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"z80sbc/clock.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"z80sbc/pins.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"z80sbc/supervisor.h"</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">uint</span><span class="w"> </span><span class="n">BUFFER_INPUT_PINS</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="n">PIN_BUSREQ_N</span><span class="p">,</span><span class="w"> </span><span class="n">PIN_BOOT_READ_DISABLE</span><span class="p">};</span>
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">uint</span><span class="w"> </span><span class="n">BUFFER_OUTPUT_CONTACTS</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">18</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">14</span><span class="p">};</span>
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">uint</span><span class="w"> </span><span class="n">BUFFER_INPUT_CONTACTS</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">};</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">held_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">restore_test_outputs</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">z80_clock_stop</span><span class="p">();</span>
+<span class="w">  </span><span class="n">z80_safe_startup</span><span class="p">();</span>
+<span class="w">  </span><span class="n">held_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">step_buffer_output</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">next_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">held_step</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">  </span><span class="n">restore_test_outputs</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">next_step</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">6</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"DONE: safe levels restored</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">held_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">next_step</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="p">)</span><span class="n">held_step</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">held_step</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">BUFFER_INPUT_PINS</span><span class="p">[</span><span class="n">index</span><span class="p">],</span><span class="w"> </span><span class="n">high</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">"GP%u -&gt; AHCT244 input %u -&gt; output %u: HELD %s; verification=unmeasured</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
+<span class="w">         </span><span class="n">BUFFER_INPUT_PINS</span><span class="p">[</span><span class="n">index</span><span class="p">],</span><span class="w"> </span><span class="n">BUFFER_INPUT_CONTACTS</span><span class="p">[</span><span class="n">index</span><span class="p">],</span>
+<span class="w">         </span><span class="n">BUFFER_OUTPUT_CONTACTS</span><span class="p">[</span><span class="n">index</span><span class="p">],</span><span class="w"> </span><span class="n">high</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"HIGH"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">"LOW"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">restore_test_outputs</span><span class="p">();</span>
+<span class="w">  </span><span class="n">stdio_init_all</span><span class="p">();</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">Stage 2: AHCT244 clock and boot-read inhibit; CPU/SRAM absent</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">"d=held LOW/HIGH steps, 1=1kHz, 2=100kHz, 3=1MHz, x=safe restore</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getchar_timeout_us</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'d'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">step_buffer_output</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="sc">'1'</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">'3'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">restore_test_outputs</span><span class="p">();</span>
+<span class="w">      </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">hz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'1'</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'2'</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">100000</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">1000000</span><span class="p">;</span>
+<span class="w">      </span><span class="n">printf</span><span class="p">(</span><span class="n">z80_clock_set_hz</span><span class="p">(</span><span class="n">hz</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"clock_actual=%lu verification=unmeasured</span><span class="se">\n</span><span class="s">"</span>
+<span class="w">                                </span><span class="o">:</span><span class="w"> </span><span class="s">"FAIL: clock configuration %lu</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
+<span class="w">             </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">z80_clock_get_hz</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'x'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">restore_test_outputs</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">tight_loop_contents</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Shared clock generation - src/common/clock.c</summary>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"z80sbc/clock.h"</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"hardware/clocks.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"hardware/pwm.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"pico/stdlib.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"z80sbc/pins.h"</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">actual_clock_hz</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">select_stopped_sio</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">z80_clock_stop</span><span class="p">();</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_dir</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_OUT</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gpio_get_function</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">GPIO_FUNC_SIO</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Extend a frozen PWM HIGH before the mux can create a falling edge.</span>
+<span class="w">    </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_SIO</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">bool</span><span class="w"> </span><span class="nf">z80_clock_set_hz</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">hz</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">hz</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">Z80_CLOCK_MIN_HZ</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">hz</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">Z80_CLOCK_MAX_HZ</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">uint</span><span class="w"> </span><span class="n">slice_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pwm_gpio_to_slice_num</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">);</span>
+<span class="w">  </span><span class="n">uint</span><span class="w"> </span><span class="n">channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pwm_gpio_to_channel</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sys_clk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">clock_get_hz</span><span class="p">(</span><span class="n">clk_sys</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">best_divider</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">best_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">divider</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">divider</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">255</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">divider</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">denominator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">hz</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">divider</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">sys_clk</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">denominator</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">denominator</span><span class="p">;</span>
+<span class="w">    </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1u</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="n">UINT64_C</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">      </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">65536</span><span class="p">)</span>
+<span class="w">      </span><span class="k">continue</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">divider</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">count</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">best_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">best_divider</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">best_count</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">best_divider</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">best_product</span><span class="w"> </span><span class="o">||</span>
+<span class="w">        </span><span class="p">(</span><span class="n">product</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">best_product</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">best_count</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">best_divider</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">divider</span><span class="p">;</span>
+<span class="w">      </span><span class="n">best_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">count</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">best_divider</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">select_stopped_sio</span><span class="p">();</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">pwm_set_clkdiv_int_frac4</span><span class="p">(</span><span class="n">slice_num</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">)</span><span class="n">best_divider</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">pwm_set_wrap</span><span class="p">(</span><span class="n">slice_num</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)(</span><span class="n">best_count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1u</span><span class="p">));</span>
+<span class="w">  </span><span class="n">pwm_set_chan_level</span><span class="p">(</span><span class="n">slice_num</span><span class="p">,</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)(</span><span class="n">best_count</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2u</span><span class="p">));</span>
+<span class="w">  </span><span class="n">pwm_set_counter</span><span class="p">(</span><span class="n">slice_num</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_PWM</span><span class="p">);</span>
+<span class="w">  </span><span class="n">pwm_set_enabled</span><span class="p">(</span><span class="n">slice_num</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">best_divider</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">best_count</span><span class="p">;</span>
+<span class="w">  </span><span class="n">actual_clock_hz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)(((</span><span class="kt">uint64_t</span><span class="p">)</span><span class="n">sys_clk</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2u</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">product</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">uint32_t</span><span class="w"> </span><span class="nf">z80_clock_get_hz</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">actual_clock_hz</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">z80_clock_stop</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">pwm_set_enabled</span><span class="p">(</span><span class="n">pwm_gpio_to_slice_num</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">),</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">z80_clock_resume</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">pwm_set_counter</span><span class="p">(</span><span class="n">pwm_gpio_to_slice_num</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_set_function</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="n">GPIO_FUNC_PWM</span><span class="p">);</span>
+<span class="w">  </span><span class="n">pwm_set_enabled</span><span class="p">(</span><span class="n">pwm_gpio_to_slice_num</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">),</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">z80_clock_one_cycle</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">half_period_us</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">select_stopped_sio</span><span class="p">();</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="n">half_period_us</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="n">half_period_us</span><span class="p">);</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_CLK</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// Let CPU controls, translators and input synchronizers settle before return.</span>
+<span class="w">  </span><span class="n">busy_wait_us_32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">z80_reset_with_clock_cycles</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cycles</span><span class="p">,</span>
+<span class="w">                                 </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">half_period_us</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">gpio_put</span><span class="p">(</span><span class="n">PIN_RESET_N</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cycle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">cycle</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">cycles</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">cycle</span><span class="p">)</span>
+<span class="w">    </span><span class="n">z80_clock_one_cycle</span><span class="p">(</span><span class="n">half_period_us</span><span class="p">);</span>
+<span class="w">  </span><span class="n">z80_clock_stop</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../phase-1-supervisor/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Phase 1 - Pico supervisor">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Phase 1 - Pico supervisor
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../phase-3-address-generator/" class="md-footer__link md-footer__link--next" aria-label="Next: Phase 3 - Control and port monitor">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Phase 3 - Control and port monitor
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="../../javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,3201 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../phase-1-supervisor/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Phase 0 - Power distribution - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#phase-0-empty-sockets-and-power-distribution" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Phase 0 - Power distribution
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#wiring-sockets-and-rails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - Sockets and Rails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#passive-component-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passive-Component Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Passive-Component Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-these-connection-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use these connection instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-1-fit-seven-local-100-nf-ceramic-capacitors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 - Fit seven local 100 nF ceramic capacitors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-fit-four-bulk-capacitors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 - Fit four bulk capacitors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-fit-sixteen-sram-address-pull-ups-on-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 - Fit sixteen SRAM address pull-ups on Memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-fit-eight-z80-control-pull-ups-on-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 - Fit eight Z80 control pull-ups on Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-fit-eleven-pico-pull-downs-on-peripheral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 - Fit eleven Pico pull-downs on Peripheral
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-fit-four-pico-pull-ups-on-peripheral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 - Fit four Pico pull-ups on Peripheral
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-ground-the-unused-logic-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7 - Connect all IC grounds and grounded fixed pins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-connect-ic-supplies-and-fixed-high-pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8 - Connect IC supplies and fixed-HIGH pins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation-count-before-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation count before testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-distribution-and-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Power Distribution and Isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass Gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#wiring-sockets-and-rails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring - Sockets and Rails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#passive-component-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passive-Component Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Passive-Component Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-these-connection-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use these connection instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-1-fit-seven-local-100-nf-ceramic-capacitors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 - Fit seven local 100 nF ceramic capacitors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-fit-four-bulk-capacitors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 - Fit four bulk capacitors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-fit-sixteen-sram-address-pull-ups-on-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 - Fit sixteen SRAM address pull-ups on Memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-fit-eight-z80-control-pull-ups-on-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 - Fit eight Z80 control pull-ups on Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-fit-eleven-pico-pull-downs-on-peripheral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 - Fit eleven Pico pull-downs on Peripheral
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-fit-four-pico-pull-ups-on-peripheral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 - Fit four Pico pull-ups on Peripheral
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-ground-the-unused-logic-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7 - Connect all IC grounds and grounded fixed pins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-connect-ic-supplies-and-fixed-high-pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8 - Connect IC supplies and fixed-HIGH pins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation-count-before-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation count before testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-distribution-and-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Power Distribution and Isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pass-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass Gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="phase-0-empty-sockets-and-power-distribution">Phase 0 - Empty Sockets and Power Distribution<a class="headerlink" href="#phase-0-empty-sockets-and-power-distribution" title="Permanent link">¶</a></h1>
+<p><strong>Install:</strong> Three boards, empty sockets, all passive defaults and supply
+wiring. No active devices, including the Pico. Use the <a href="../../hardware/inventory/">inventory</a>
+and <a href="../../hardware/construction/#31-package-orientation-and-pin-1">orientation table</a>.
+This phase has no firmware target.</p>
+<h2 id="wiring-sockets-and-rails">Wiring - Sockets and Rails<a class="headerlink" href="#wiring-sockets-and-rails" title="Permanent link">¶</a></h2>
+<p>Feed three separate +5 V rails from one regulated supply-entry star and bond
+all grounds with short links. Confirm rail segments are continuous with a
+meter. Keep a separate Peripheral 3.3 V rail for Pico header 36, U7 and U10;
+leave any supply-module 3.3 V output disconnected.</p>
+<p>Wire supply contacts from the <a href="../../hardware/pin-mapping/#power-and-fixed-pins">fixed-pin table</a>.
+External +5 V goes to the 1N5819 anode; its banded cathode goes to VSYS header
+39. Leave VBUS header 40 open. Do not bypass the diode.</p>
+<h2 id="passive-component-installation">Passive-Component Installation<a class="headerlink" href="#passive-component-installation" title="Permanent link">¶</a></h2>
+<div data-checklist="phase-0-passives" data-checklist-label="Phase 0 installation">
+<p><strong>Keep external power and USB disconnected throughout installation. All IC
+sockets and the Pico socket strips remain empty.</strong> Fit 39 individual 10 kOhm
+resistors and 11 capacitors using the steps below.</p>
+<p>Tick the <strong>Done</strong> box beside each component as you fit it. With JavaScript
+enabled, progress is saved in this browser on this device and restored when
+you return. It does not sync across devices; clearing site data removes it.
+Use <strong>Clear checklist</strong> to start again. Ticks record installation only, not
+electrical verification or a passed test gate.</p>
+<p><button type="button" class="md-button" id="clear-phase-0-checklist" data-checklist-clear="" hidden="">Clear checklist</button></p>
+<p aria-live="polite" data-checklist-status="data-checklist-status" id="phase-0-checklist-status" role="status"></p>
+<h3 id="how-to-use-these-connection-instructions">How to use these connection instructions<a class="headerlink" href="#how-to-use-these-connection-instructions" title="Permanent link">¶</a></h3>
+<ul>
+<li>A <strong>socket pin</strong> means the contact where that IC pin will go when the chip
+  is fitted later. A <strong>Pico header pin</strong> is its physical header position,
+  not its GP number.</li>
+<li>Put a component lead into a free hole electrically connected to the named
+  socket contact. Do not force two leads into one hole. If necessary, use a
+  short jumper from that contact to a separate terminal strip.</li>
+<li>On a BB830, A-E in one numbered row are connected together, and F-J in
+  that row are a separate connected group. Adjacent rows are not connected.
+  Both leads in the same connected group would short out the component.</li>
+<li>Use the <a href="../../hardware/construction/#31-package-orientation-and-pin-1">orientation table</a>
+  to identify socket pins. Do not guess universal hole coordinates: chip
+  rotations differ, and the wide Z80/SRAM sockets do not straddle E/F like
+  the narrow logic ICs.</li>
+<li>Check each endpoint at the actual socket contact with a meter. Signal
+  jumpers to other devices are added in later phases; the passive can be
+  attached to its named socket now.</li>
+</ul>
+<h3 id="step-1-fit-seven-local-100-nf-ceramic-capacitors">Step 1 - Fit seven local 100 nF ceramic capacitors<a class="headerlink" href="#step-1-fit-seven-local-100-nf-ceramic-capacitors" title="Permanent link">¶</a></h3>
+<p>A local bypass capacitor supplies short bursts of current at an IC. Fit one
+beside each DIP socket's supply pin, with short connections to that supply
+contact and nearby common GND. These ceramic capacitors are <strong>not polarized</strong>:
+either lead can face GND. Use capacitors rated at least 10 V.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Board</th>
+<th>Capacitor</th>
+<th>Socket / device</th>
+<th>One lead connects to</th>
+<th>Other lead connects to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="c1" aria-label="C1 installed"></td>
+<td>Core</td>
+<td>C1, 100 nF</td>
+<td>U1 Z80</td>
+<td>VCC socket pin 11, +5 V</td>
+<td>Common GND, also connected to socket pin 29</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c2" aria-label="C2 installed"></td>
+<td>Memory</td>
+<td>C2, 100 nF</td>
+<td>U2 SRAM</td>
+<td>VCC socket pin 32, +5 V</td>
+<td>Common GND, also connected to socket pin 16</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c3" aria-label="C3 installed"></td>
+<td>Memory</td>
+<td>C3, 100 nF</td>
+<td>U3 HCT32</td>
+<td>VCC socket pin 14, +5 V</td>
+<td>Common GND, also connected to socket pin 7</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c4" aria-label="C4 installed"></td>
+<td>Core</td>
+<td>C4, 100 nF</td>
+<td>U4 AHCT244</td>
+<td>VCC socket pin 20, +5 V</td>
+<td>Common GND, also connected to socket pin 10</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c5" aria-label="C5 installed"></td>
+<td>Peripheral</td>
+<td>C5, 100 nF</td>
+<td>U7 LVC244</td>
+<td>VCC socket pin 20, <strong>+3.3 V</strong></td>
+<td>Common GND, also connected to socket pin 10</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c6" aria-label="C6 installed"></td>
+<td>Peripheral</td>
+<td>C6, 100 nF</td>
+<td>U9 AHCT245</td>
+<td>VCC socket pin 20, +5 V</td>
+<td>Common GND, also connected to socket pin 10</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c7" aria-label="C7 installed"></td>
+<td>Peripheral</td>
+<td>C7, 100 nF</td>
+<td>U10 LVC245</td>
+<td>VCC socket pin 20, <strong>+3.3 V</strong></td>
+<td>Common GND, also connected to socket pin 10</td>
+</tr>
+</tbody>
+</table>
+<p>The GND pin numbers identify the electrical connection; do not stretch the
+capacitor across the whole package to reach a distant GND pin. Use nearby GND
+with a short return path. The Pico module already has onboard decoupling;
+it is not an eighth DIP capacitor in this list.</p>
+<h3 id="step-2-fit-four-bulk-capacitors">Step 2 - Fit four bulk capacitors<a class="headerlink" href="#step-2-fit-four-bulk-capacitors" title="Permanent link">¶</a></h3>
+<p>Bulk capacitors support the supply rails. These are <strong>polarized</strong>: connect
+the positive lead to +5 V and the negative lead to GND. Identify polarity
+from the case markings, not just lead length. Use capacitors rated at least
+10 V.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Capacitor</th>
+<th>Where to place it</th>
+<th>Positive lead</th>
+<th>Negative lead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="c8" aria-label="C8 installed"></td>
+<td>C8, 22 uF</td>
+<td>Memory board, beside its +5 V supply feed</td>
+<td>Memory +5 V rail</td>
+<td>Memory GND rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c9" aria-label="C9 installed"></td>
+<td>C9, 22 uF</td>
+<td>Core board, beside its +5 V supply feed</td>
+<td>Core +5 V rail</td>
+<td>Core GND rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c10" aria-label="C10 installed"></td>
+<td>C10, 22 uF</td>
+<td>Peripheral board, beside its +5 V supply feed</td>
+<td>Peripheral <strong>+5 V</strong> rail, not +3.3 V</td>
+<td>Peripheral GND rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="c11" aria-label="C11 installed"></td>
+<td>C11, 100 uF</td>
+<td>Common supply entry, before the feed fans out to the three boards</td>
+<td>External +5 V entry</td>
+<td>Common GND entry</td>
+</tr>
+</tbody>
+</table>
+<p>All four go <strong>across</strong> their supply and GND, not in series with the supply
+wire. They supplement the seven local ceramic capacitors, not replace them.
+The current parts list specifies no separate 3.3 V bulk capacitor; retain
+the local 100 nF capacitors at both LVC sockets.</p>
+<h3 id="step-3-fit-sixteen-sram-address-pull-ups-on-memory">Step 3 - Fit sixteen SRAM address pull-ups on Memory<a class="headerlink" href="#step-3-fit-sixteen-sram-address-pull-ups-on-memory" title="Permanent link">¶</a></h3>
+<p>For <strong>each row below</strong>, fit one individual 10 kOhm resistor. Connect one end
+to the Memory +5 V rail and the other end to the listed U2 SRAM socket pin.
+The resistor can face either way. Leave SRAM absent.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal</th>
+<th style="text-align: right;">SRAM socket pin</th>
+<th>Resistor's other end</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a14" aria-label="SRAM A14 pull-up installed"></td>
+<td>A14</td>
+<td style="text-align: right;">3</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a12" aria-label="SRAM A12 pull-up installed"></td>
+<td>A12</td>
+<td style="text-align: right;">4</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a7" aria-label="SRAM A7 pull-up installed"></td>
+<td>A7</td>
+<td style="text-align: right;">5</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a6" aria-label="SRAM A6 pull-up installed"></td>
+<td>A6</td>
+<td style="text-align: right;">6</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a5" aria-label="SRAM A5 pull-up installed"></td>
+<td>A5</td>
+<td style="text-align: right;">7</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a4" aria-label="SRAM A4 pull-up installed"></td>
+<td>A4</td>
+<td style="text-align: right;">8</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a3" aria-label="SRAM A3 pull-up installed"></td>
+<td>A3</td>
+<td style="text-align: right;">9</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a2" aria-label="SRAM A2 pull-up installed"></td>
+<td>A2</td>
+<td style="text-align: right;">10</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a1" aria-label="SRAM A1 pull-up installed"></td>
+<td>A1</td>
+<td style="text-align: right;">11</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a0" aria-label="SRAM A0 pull-up installed"></td>
+<td>A0</td>
+<td style="text-align: right;">12</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a10" aria-label="SRAM A10 pull-up installed"></td>
+<td>A10</td>
+<td style="text-align: right;">23</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a11" aria-label="SRAM A11 pull-up installed"></td>
+<td>A11</td>
+<td style="text-align: right;">25</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a9" aria-label="SRAM A9 pull-up installed"></td>
+<td>A9</td>
+<td style="text-align: right;">26</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a8" aria-label="SRAM A8 pull-up installed"></td>
+<td>A8</td>
+<td style="text-align: right;">27</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a13" aria-label="SRAM A13 pull-up installed"></td>
+<td>A13</td>
+<td style="text-align: right;">28</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="sram-a15" aria-label="SRAM A15 pull-up installed"></td>
+<td>A15</td>
+<td style="text-align: right;">31</td>
+<td>+5 V</td>
+</tr>
+</tbody>
+</table>
+<p>Do not join the address pins together. <strong>A16, socket pin 2, connects directly
+to GND</strong>, not through a pull-up; it selects the lower 64 KiB.</p>
+<h3 id="step-4-fit-eight-z80-control-pull-ups-on-core">Step 4 - Fit eight Z80 control pull-ups on Core<a class="headerlink" href="#step-4-fit-eight-z80-control-pull-ups-on-core" title="Permanent link">¶</a></h3>
+<p>For <strong>each row below</strong>, fit one individual 10 kOhm resistor from the Core
++5 V rail to the listed U1 Z80 socket contact. These define controls while
+the CPU is absent or its bus outputs are floating.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal</th>
+<th style="text-align: right;">Z80 socket pin</th>
+<th>Resistor's other end</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-int" aria-label="Z80 INT# pull-up installed"></td>
+<td>INT#</td>
+<td style="text-align: right;">16</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-nmi" aria-label="Z80 NMI# pull-up installed"></td>
+<td>NMI#</td>
+<td style="text-align: right;">17</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-mreq" aria-label="Z80 MREQ# pull-up installed"></td>
+<td>MREQ#</td>
+<td style="text-align: right;">19</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-iorq" aria-label="Z80 IORQ# pull-up installed"></td>
+<td>IORQ#</td>
+<td style="text-align: right;">20</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-rd" aria-label="Z80 RD# pull-up installed"></td>
+<td>RD#</td>
+<td style="text-align: right;">21</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-wr" aria-label="Z80 WR# pull-up installed"></td>
+<td>WR#</td>
+<td style="text-align: right;">22</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-busack" aria-label="Z80 BUSACK# pull-up installed"></td>
+<td>BUSACK#</td>
+<td style="text-align: right;">23</td>
+<td>+5 V</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="z80-busreq" aria-label="Z80 BUSREQ# pull-up installed"></td>
+<td>BUSREQ#</td>
+<td style="text-align: right;">25</td>
+<td>+5 V</td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-5-fit-eleven-pico-pull-downs-on-peripheral">Step 5 - Fit eleven Pico pull-downs on Peripheral<a class="headerlink" href="#step-5-fit-eleven-pico-pull-downs-on-peripheral" title="Permanent link">¶</a></h3>
+<p>For <strong>each row below</strong>, fit one individual 10 kOhm resistor from the listed
+empty Pico header contact to <strong>Peripheral GND</strong>. This group contains three
+startup pull-downs and eight data pull-downs. Each pin has its own resistor.
+All eleven connect to GND, not to either positive supply rail.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal / GPIO (reference)</th>
+<th style="text-align: right;">Physical Pico header pin</th>
+<th>Resistor's other end</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="r21" aria-label="R21 GP2 startup pull-down installed"></td>
+<td>CLK output, GP2 (R21)</td>
+<td style="text-align: right;">4</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="r22" aria-label="R22 GP3 startup pull-down installed"></td>
+<td>RESET# output, GP3 (R22)</td>
+<td style="text-align: right;">5</td>
+<td>GND</td>
+<td>LOW, reset asserted</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="r23" aria-label="R23 GP9 startup pull-down installed"></td>
+<td>IO_RELEASE, GP9 (R23)</td>
+<td style="text-align: right;">12</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp10" aria-label="Pico GP10 data pull-down installed"></td>
+<td>D0, GP10</td>
+<td style="text-align: right;">14</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp11" aria-label="Pico GP11 data pull-down installed"></td>
+<td>D1, GP11</td>
+<td style="text-align: right;">15</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp12" aria-label="Pico GP12 data pull-down installed"></td>
+<td>D2, GP12</td>
+<td style="text-align: right;">16</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp13" aria-label="Pico GP13 data pull-down installed"></td>
+<td>D3, GP13</td>
+<td style="text-align: right;">17</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp14" aria-label="Pico GP14 data pull-down installed"></td>
+<td>D4, GP14</td>
+<td style="text-align: right;">19</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp15" aria-label="Pico GP15 data pull-down installed"></td>
+<td>D5, GP15</td>
+<td style="text-align: right;">20</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp16" aria-label="Pico GP16 data pull-down installed"></td>
+<td>D6, GP16</td>
+<td style="text-align: right;">21</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-gp17" aria-label="Pico GP17 data pull-down installed"></td>
+<td>D7, GP17</td>
+<td style="text-align: right;">22</td>
+<td>GND</td>
+<td>LOW</td>
+</tr>
+</tbody>
+</table>
+<p>The GP10-GP17 pulls keep the Pico-side data inputs defined before firmware
+drives them. They are not pulls on the 5 V Z80 data bus. Keep these eight
+resistors near the Pico/data-translator region. Later data jumpers join
+these contacts to U9/U10 A pins; do not add a second set of pull-downs at
+those devices.</p>
+<h3 id="step-6-fit-four-pico-pull-ups-on-peripheral">Step 6 - Fit four Pico pull-ups on Peripheral<a class="headerlink" href="#step-6-fit-four-pico-pull-ups-on-peripheral" title="Permanent link">¶</a></h3>
+<p>For <strong>each row below</strong>, fit one individual 10 kOhm resistor from the listed
+empty Pico header contact to <strong>Peripheral +3.3 V</strong>, not +5 V or GND.
+The 3.3 V rail remains unpowered until the Pico is fitted in Phase 1 and
+supplies it from header pin 36.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Signal / GPIO (reference)</th>
+<th style="text-align: right;">Physical Pico header pin</th>
+<th>Resistor's other end</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="r17" aria-label="R17 GP4 startup pull-up installed"></td>
+<td>BUSREQ# output, GP4 (R17)</td>
+<td style="text-align: right;">6</td>
+<td>+3.3 V</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="r18" aria-label="R18 GP5 startup pull-up installed"></td>
+<td>BOOT_READ_DISABLE, GP5 (R18)</td>
+<td style="text-align: right;">7</td>
+<td>+3.3 V</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="r19" aria-label="R19 GP6 startup pull-up installed"></td>
+<td>Upward OE# request, GP6 (R19)</td>
+<td style="text-align: right;">9</td>
+<td>+3.3 V</td>
+<td>HIGH, path disabled</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="r20" aria-label="R20 GP7 startup pull-up installed"></td>
+<td>Downward OE#, GP7 (R20)</td>
+<td style="text-align: right;">10</td>
+<td>+3.3 V</td>
+<td>HIGH, path disabled</td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-7-ground-the-unused-logic-inputs">Step 7 - Connect all IC grounds and grounded fixed pins<a class="headerlink" href="#step-7-ground-the-unused-logic-inputs" title="Permanent link">¶</a></h3>
+<p>These are <strong>direct wire links, not additional resistors</strong>. Connect every
+listed empty socket contact to common GND. The checklist includes each
+IC's power ground, permanently enabled buffer controls, unused inputs,
+SRAM A16, and the downward translator's fixed direction.</p>
+<p>The Pico rows use <strong>physical header pin numbers</strong>, not GPIO numbers. Connect
+these empty header contacts now while the Pico is absent; Phase 1 checks
+them again before fitting it. Connect AGND pin 33 to the same common GND.</p>
+<p>If already fitted during supply or capacitor wiring, verify continuity
+at the actual socket contact before ticking it. A capacitor to nearby GND
+does not replace the IC's direct power-ground connection.</p>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Board / socket</th>
+<th style="text-align: right;">Pin</th>
+<th>Function</th>
+<th>Connect directly to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="u1-ground-29" aria-label="U1 Z80 power ground pin 29 connected"></td>
+<td>Core / U1 Z80</td>
+<td style="text-align: right;">29</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-ground-1" aria-label="U4 output enable pin 1 grounded"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">1</td>
+<td>OE#, permanently enabled</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-ground-10" aria-label="U4 power ground pin 10 connected"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">10</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-ground-15" aria-label="U4 unused input pin 15 grounded"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">15</td>
+<td>Unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-ground-17" aria-label="U4 unused input pin 17 grounded"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">17</td>
+<td>Unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-ground-19" aria-label="U4 output enable pin 19 grounded"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">19</td>
+<td>OE#, permanently enabled</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u2-ground-2" aria-label="U2 SRAM address A16 pin 2 grounded"></td>
+<td>Memory / U2 SRAM</td>
+<td style="text-align: right;">2</td>
+<td>A16, selects lower 64 KiB</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u2-ground-16" aria-label="U2 SRAM power ground pin 16 connected"></td>
+<td>Memory / U2 SRAM</td>
+<td style="text-align: right;">16</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u3-ground-7" aria-label="U3 power ground pin 7 connected"></td>
+<td>Memory / U3 HCT32</td>
+<td style="text-align: right;">7</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u3-ground-12" aria-label="U3 unused input pin 12 grounded"></td>
+<td>Memory / U3 HCT32</td>
+<td style="text-align: right;">12</td>
+<td>Unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u3-ground-13" aria-label="U3 unused input pin 13 grounded"></td>
+<td>Memory / U3 HCT32</td>
+<td style="text-align: right;">13</td>
+<td>Unused input</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-3" aria-label="Pico header pin 3 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">3</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-8" aria-label="Pico header pin 8 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">8</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-13" aria-label="Pico header pin 13 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">13</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-18" aria-label="Pico header pin 18 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">18</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-23" aria-label="Pico header pin 23 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">23</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-28" aria-label="Pico header pin 28 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">28</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-33" aria-label="Pico header pin 33 analog ground connected to common ground"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">33</td>
+<td>AGND (analog ground)</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-ground-38" aria-label="Pico header pin 38 grounded"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">38</td>
+<td>GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u7-ground-1" aria-label="U7 output enable pin 1 grounded"></td>
+<td>Peripheral / U7 LVC244</td>
+<td style="text-align: right;">1</td>
+<td>OE#, permanently enabled</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u7-ground-10" aria-label="U7 power ground pin 10 connected"></td>
+<td>Peripheral / U7 LVC244</td>
+<td style="text-align: right;">10</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u7-ground-19" aria-label="U7 output enable pin 19 grounded"></td>
+<td>Peripheral / U7 LVC244</td>
+<td style="text-align: right;">19</td>
+<td>OE#, permanently enabled</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u9-ground-10" aria-label="U9 power ground pin 10 connected"></td>
+<td>Peripheral / U9 AHCT245</td>
+<td style="text-align: right;">10</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u10-ground-1" aria-label="U10 direction pin 1 grounded for B to A"></td>
+<td>Peripheral / U10 LVC245</td>
+<td style="text-align: right;">1</td>
+<td>DIR, fixed B to A</td>
+<td>Common GND</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u10-ground-10" aria-label="U10 power ground pin 10 connected"></td>
+<td>Peripheral / U10 LVC245</td>
+<td style="text-align: right;">10</td>
+<td>Power GND</td>
+<td>Common GND</td>
+</tr>
+</tbody>
+</table>
+<p>Leave U3 output pin 11 and U4 output pins 3 and 5 open; do not ground them.</p>
+<p>No resistor goes in these ground links. They do not change the resistor or
+capacitor totals below.</p>
+<h3 id="step-8-connect-ic-supplies-and-fixed-high-pins">Step 8 - Connect IC supplies and fixed-HIGH pins<a class="headerlink" href="#step-8-connect-ic-supplies-and-fixed-high-pins" title="Permanent link">¶</a></h3>
+<p>Keep external power and USB disconnected, with all devices absent. Fit or
+continuity-check each connection below at the actual socket contact. These
+are <strong>direct wire connections, not pull resistors</strong>. A bypass capacitor
+does not replace the direct supply connection.</p>
+<h4 id="connections-to-5-v">Connections to +5 V<a class="headerlink" href="#connections-to-5-v" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Board / socket</th>
+<th style="text-align: right;">Pin</th>
+<th>Function</th>
+<th>Connect directly to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="u1-supply-11" aria-label="U1 Z80 supply pin 11 connected to 5 V"></td>
+<td>Core / U1 Z80</td>
+<td style="text-align: right;">11</td>
+<td>VCC supply</td>
+<td>Core +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u4-supply-20" aria-label="U4 supply pin 20 connected to 5 V"></td>
+<td>Core / U4 AHCT244</td>
+<td style="text-align: right;">20</td>
+<td>VCC supply</td>
+<td>Core +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u2-high-30" aria-label="U2 SRAM CE2 pin 30 connected to 5 V"></td>
+<td>Memory / U2 SRAM</td>
+<td style="text-align: right;">30</td>
+<td>CE2, fixed HIGH</td>
+<td>Memory +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u2-supply-32" aria-label="U2 SRAM supply pin 32 connected to 5 V"></td>
+<td>Memory / U2 SRAM</td>
+<td style="text-align: right;">32</td>
+<td>VCC supply</td>
+<td>Memory +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u3-supply-14" aria-label="U3 supply pin 14 connected to 5 V"></td>
+<td>Memory / U3 HCT32</td>
+<td style="text-align: right;">14</td>
+<td>VCC supply</td>
+<td>Memory +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u9-high-1" aria-label="U9 direction pin 1 connected to 5 V for A to B"></td>
+<td>Peripheral / U9 AHCT245</td>
+<td style="text-align: right;">1</td>
+<td>DIR, fixed A to B</td>
+<td>Peripheral +5 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u9-supply-20" aria-label="U9 supply pin 20 connected to 5 V"></td>
+<td>Peripheral / U9 AHCT245</td>
+<td style="text-align: right;">20</td>
+<td>VCC supply</td>
+<td>Peripheral +5 V rail</td>
+</tr>
+</tbody>
+</table>
+<h4 id="connections-to-pico-derived-33-v">Connections to Pico-derived +3.3 V<a class="headerlink" href="#connections-to-pico-derived-33-v" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Board / socket</th>
+<th style="text-align: right;">Pin</th>
+<th>Function</th>
+<th>Connect directly to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-3v3-36" aria-label="Pico 3.3 V output header pin 36 connected to Peripheral 3.3 V rail"></td>
+<td>Peripheral / Pico header</td>
+<td style="text-align: right;">36</td>
+<td>3V3 OUT, <strong>source</strong> of this rail</td>
+<td>Peripheral +3.3 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u7-supply-20" aria-label="U7 supply pin 20 connected to Pico-derived 3.3 V"></td>
+<td>Peripheral / U7 LVC244</td>
+<td style="text-align: right;">20</td>
+<td>VCC supply</td>
+<td>Peripheral +3.3 V rail</td>
+</tr>
+<tr>
+<td><input type="checkbox" data-checklist-id="u10-supply-20" aria-label="U10 supply pin 20 connected to Pico-derived 3.3 V"></td>
+<td>Peripheral / U10 LVC245</td>
+<td style="text-align: right;">20</td>
+<td>VCC supply</td>
+<td>Peripheral +3.3 V rail</td>
+</tr>
+</tbody>
+</table>
+<p>The +3.3 V rail stays unpowered in Phase 0. In Phase 1 the fitted Pico
+supplies it from header pin 36; do not feed this rail from an external
+3.3 V supply or connect either LVC supply pin to +5 V.</p>
+<h4 id="pico-power-input-through-the-isolation-diode">Pico power input through the isolation diode<a class="headerlink" href="#pico-power-input-through-the-isolation-diode" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>Done</th>
+<th>Connection</th>
+<th>Required wiring</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" data-checklist-id="pico-vsys-diode" aria-label="Pico VSYS header pin 39 connected through correctly oriented 1N5819 diode"></td>
+<td>External +5 V to Pico VSYS, header pin 39</td>
+<td>External +5 V to 1N5819 anode; banded cathode to header pin 39</td>
+</tr>
+</tbody>
+</table>
+<p>Header pin 39 receives the diode-fed supply, <strong>not</strong> the +3.3 V rail.
+Leave VBUS header pin 40 externally unconnected and do not bypass the diode.
+These wire connections do not change the resistor or capacitor totals.</p>
+<h3 id="installation-count-before-testing">Installation count before testing<a class="headerlink" href="#installation-count-before-testing" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>IC / component group</th>
+<th style="text-align: right;">Permanent resistors</th>
+<th>External capacitors</th>
+<th style="text-align: right;">GND pins</th>
+<th style="text-align: right;">+5 V pins</th>
+<th style="text-align: right;">+3.3 V pins</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pico 2 W</td>
+<td style="text-align: right;">15: eleven pull-downs plus four pull-ups</td>
+<td>None</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>U1 Z80</td>
+<td style="text-align: right;">Eight CPU control pull-ups</td>
+<td>C1, 100 nF</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>U2 SRAM</td>
+<td style="text-align: right;">16 address pull-ups</td>
+<td>C2, 100 nF</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>U3 HCT32</td>
+<td style="text-align: right;">None</td>
+<td>C3, 100 nF</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>U4 AHCT244</td>
+<td style="text-align: right;">None</td>
+<td>C4, 100 nF</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>U7 LVC244</td>
+<td style="text-align: right;">None</td>
+<td>C5, 100 nF</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>U9 AHCT245</td>
+<td style="text-align: right;">None</td>
+<td>C6, 100 nF</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>U10 LVC245</td>
+<td style="text-align: right;">None</td>
+<td>C7, 100 nF</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>Board bulk capacitors</td>
+<td style="text-align: right;">None</td>
+<td>C8-C10, three 22 uF</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>Common supply entry</td>
+<td style="text-align: right;">None</td>
+<td>C11, 100 uF</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td style="text-align: right;"><strong>39 individual 10 kOhm resistors</strong></td>
+<td><strong>11 capacitors</strong></td>
+<td style="text-align: right;"><strong>25</strong></td>
+<td style="text-align: right;"><strong>7</strong></td>
+<td style="text-align: right;"><strong>3</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The pin columns count the direct socket/header connections in Steps 7 and 8,
+including grounded or fixed-HIGH control pins. They do not count resistor
+or capacitor leads, rail bridges, or supply-entry wiring. The Pico counts
+include all eight ground contacts and its 3.3 V output pin 36.
+There is <strong>one additional diode-fed Pico VSYS connection at header pin 39</strong>;
+it is not a direct +5 V connection and is not included in the +5 V column.
+Resistors are counted once at their installation point: Pico pulls at the
+Pico, CPU control pulls at U1, and address pulls at U2, even though the
+signal nets also connect to other ICs. The Pico's onboard capacitors are
+not included in the 11 external capacitors.</p>
+<p>Leave all permanent resistors and capacitors installed for subsequent phases.
+Temporary diagnostic pulls are added only when a later phase requests them.</p>
+</div>
+<h2 id="power-distribution-and-isolation">Power Distribution and Isolation<a class="headerlink" href="#power-distribution-and-isolation" title="Permanent link">¶</a></h2>
+<ul>
+<li>Apply external +5 V before USB; unplug USB before removing external +5 V.
+  Do not operate a populated board from USB alone: U9 data ports lack <code>Ioff</code>.
+  Program a removed Pico off-board if USB-only programming is needed.</li>
+<li>All fitted 5 V ICs must be powered together. A fitted unpowered device is
+  not equivalent to an empty socket. Pull resistors do not isolate it.</li>
+<li>Never connect a 5 V output directly to a Pico GPIO. Both LVC devices run
+  from Pico 3.3 V, not from +5 V. During ramp, asserted RESET and stopped
+  clock prevent execution; RAM is indeterminate until loaded and verified.</li>
+<li>Arbitrary external-power loss with USB attached is not protected. Add
+  hardware isolation in a separately reviewed redesign if that is required.</li>
+<li>Power and USB must be disconnected before changing wiring or measuring
+  resistance. Stop on a collapsed rail, excessive current, or warm device.</li>
+</ul>
+<h2 id="test-plan">Test Plan<a class="headerlink" href="#test-plan" title="Permanent link">¶</a></h2>
+<ol>
+<li>With everything disconnected, verify every socket power contact, diode
+   polarity, capacitor polarity, and no +5 V/3.3 V/GND short. Let capacitor
+   resistance readings settle; inspect any near-zero sustained resistance.
+   Check each of the 39 resistor paths from its named socket/header contact
+   to its specified rail: expect approximately 10 kOhm with devices absent.
+   The direct GND links should have continuity, not 10 kOhm. If a resistor
+   reading is unexpected, inspect parallel wiring paths and isolate one
+   resistor lead with power disconnected if needed to verify its value.</li>
+<li>With active devices absent, apply +5 V using a 100 mA initial limit.
+   Measure 4.75-5.25 V at every 5 V socket; the unpowered 3.3 V rail must not
+   be driven. Remove power if a rail droops more than 5% or the limit trips.</li>
+<li>Record resistance, voltage, and unloaded current. Disconnect power and
+   confirm discharge before fitting the Pico in Phase 1.</li>
+</ol>
+<h2 id="pass-gate">Pass Gate<a class="headerlink" href="#pass-gate" title="Permanent link">¶</a></h2>
+<p>Correct polarity and supplies at all contacts, no shorts, no unexpected
+current, and all startup resistors fitted. A blank board's voltage test does
+not establish loaded-regulator performance; repeat measurements each phase.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Plan and prerequisites">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Plan and prerequisites
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../phase-1-supervisor/" class="md-footer__link md-footer__link--next" aria-label="Next: Phase 1 - Pico supervisor">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Phase 1 - Pico supervisor
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="../../javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>
