@@ -227,6 +227,47 @@ Leave U3 output pin 11 and U4 output pins 3 and 5 open; do not ground them.
 No resistor goes in these ground links. They do not change the resistor or
 capacitor totals below.
 
+### Step 8 - Connect IC supplies and fixed-HIGH pins
+
+Keep external power and USB disconnected, with all devices absent. Fit or
+continuity-check each connection below at the actual socket contact. These
+are **direct wire connections, not pull resistors**. A bypass capacitor
+does not replace the direct supply connection.
+
+#### Connections to +5 V
+
+| Done | Board / socket | Pin | Function | Connect directly to |
+| --- | --- | ---: | --- | --- |
+| <input type="checkbox" data-checklist-id="u1-supply-11" aria-label="U1 Z80 supply pin 11 connected to 5 V"> | Core / U1 Z80 | 11 | VCC supply | Core +5 V rail |
+| <input type="checkbox" data-checklist-id="u4-supply-20" aria-label="U4 supply pin 20 connected to 5 V"> | Core / U4 AHCT244 | 20 | VCC supply | Core +5 V rail |
+| <input type="checkbox" data-checklist-id="u2-high-30" aria-label="U2 SRAM CE2 pin 30 connected to 5 V"> | Memory / U2 SRAM | 30 | CE2, fixed HIGH | Memory +5 V rail |
+| <input type="checkbox" data-checklist-id="u2-supply-32" aria-label="U2 SRAM supply pin 32 connected to 5 V"> | Memory / U2 SRAM | 32 | VCC supply | Memory +5 V rail |
+| <input type="checkbox" data-checklist-id="u3-supply-14" aria-label="U3 supply pin 14 connected to 5 V"> | Memory / U3 HCT32 | 14 | VCC supply | Memory +5 V rail |
+| <input type="checkbox" data-checklist-id="u9-high-1" aria-label="U9 direction pin 1 connected to 5 V for A to B"> | Peripheral / U9 AHCT245 | 1 | DIR, fixed A to B | Peripheral +5 V rail |
+| <input type="checkbox" data-checklist-id="u9-supply-20" aria-label="U9 supply pin 20 connected to 5 V"> | Peripheral / U9 AHCT245 | 20 | VCC supply | Peripheral +5 V rail |
+
+#### Connections to Pico-derived +3.3 V
+
+| Done | Board / socket | Pin | Function | Connect directly to |
+| --- | --- | ---: | --- | --- |
+| <input type="checkbox" data-checklist-id="pico-3v3-36" aria-label="Pico 3.3 V output header pin 36 connected to Peripheral 3.3 V rail"> | Peripheral / Pico header | 36 | 3V3 OUT, **source** of this rail | Peripheral +3.3 V rail |
+| <input type="checkbox" data-checklist-id="u7-supply-20" aria-label="U7 supply pin 20 connected to Pico-derived 3.3 V"> | Peripheral / U7 LVC244 | 20 | VCC supply | Peripheral +3.3 V rail |
+| <input type="checkbox" data-checklist-id="u10-supply-20" aria-label="U10 supply pin 20 connected to Pico-derived 3.3 V"> | Peripheral / U10 LVC245 | 20 | VCC supply | Peripheral +3.3 V rail |
+
+The +3.3 V rail stays unpowered in Phase 0. In Phase 1 the fitted Pico
+supplies it from header pin 36; do not feed this rail from an external
+3.3 V supply or connect either LVC supply pin to +5 V.
+
+#### Pico power input through the isolation diode
+
+| Done | Connection | Required wiring |
+| --- | --- | --- |
+| <input type="checkbox" data-checklist-id="pico-vsys-diode" aria-label="Pico VSYS header pin 39 connected through correctly oriented 1N5819 diode"> | External +5 V to Pico VSYS, header pin 39 | External +5 V to 1N5819 anode; banded cathode to header pin 39 |
+
+Header pin 39 receives the diode-fed supply, **not** the +3.3 V rail.
+Leave VBUS header pin 40 externally unconnected and do not bypass the diode.
+These wire connections do not change the resistor or capacitor totals.
+
 ### Installation count before testing
 
 | Board / location | Permanent resistors | Capacitors |
