@@ -1,7 +1,17 @@
 # Phase 8 - Integrated Boot and Virtual I/O
 
-**Prerequisite:** [Phase 7](phase-7-z80.md#pass-gate).
-**Install:** No further chips. Build `z80_stage08_virtual_io`; UF2 lives in
+<div data-checklist="phase-8" data-checklist-label="Phase 8" markdown="1">
+
+Tick setup items when complete and tests only after recording the measured
+result. Progress is saved in this browser; ticks are not automatic verification.
+
+<button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
+<p data-checklist-status role="status" aria-live="polite"></p>
+
+<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 8 prerequisite passed"> **Prerequisite:** [Phase 7](phase-7-z80.md#pass-gate).
+**Install:** No further chips.
+
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 8 firmware built and loaded"> Build `z80_stage08_virtual_io`; UF2 lives in
 `build/src/stage08_virtual_io/`.
 [Application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c)
 and [trap implementation](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
@@ -40,7 +50,7 @@ bounded spinlock critical sections, not lock-free access.
 
 ## USB Diagnostic Commands
 
-Ordinary console bytes go to the Z80. Ctrl-] followed by one command byte
+<input type="checkbox" data-checklist-id="usb-diagnostics" aria-label="Framed USB diagnostics and serial escape configured and tested"> Ordinary console bytes go to the Z80. Ctrl-] followed by one command byte
 selects framed supervisor diagnostics; configure the serial terminal to pass
 this escape through. Use `Ctrl-] s` for clock and fault-counter status, and
 the application's command list for echo, port, RAM, reboot, and rate tests.
@@ -48,22 +58,33 @@ Do not treat supervisor diagnostics as CP/M input.
 
 ## Test Plan
 
-Capture IORQ, WAIT, CLK, RD/WR and both OEs. Confirm WAIT asserts before the
+<input type="checkbox" data-checklist-id="trap-release-captures" aria-label="WAIT clock handover stepped release and isolation captured"> Capture IORQ, WAIT, CLK, RD/WR and both OEs. Confirm WAIT asserts before the
 CPU could complete the I/O cycle, and the stepped release isolates before
-the next memory fetch. Check `IN` replies and `OUT` bytes at every bit pattern,
-all supported ports, and intentional aliases. Run sustained USB echo and
+the next memory fetch. Include both stopped clock phases described above.
+
+<input type="checkbox" data-checklist-id="port-pattern-alias-tests" aria-label="All IN and OUT patterns supported ports and aliases passed"> Check `IN` replies and `OUT` bytes at every bit pattern,
+all supported ports, and intentional aliases.
+
+<input type="checkbox" data-checklist-id="sustained-usb-ram-tests" aria-label="Sustained USB and repeated boot verification RAM tests passed"> Run sustained USB echo and
 repeated boot/verify/RAM tests; counters must not increase.
 
-Use isolated test-only inputs to exercise neither/both strobes asserted,
+<input type="checkbox" data-checklist-id="trap-fault-tests" aria-label="Invalid strobes stuck controls and BUSACK races fail closed"> Use isolated test-only inputs to exercise neither/both strobes asserted,
 stuck IORQ/RD/WR, and BUSACK races. Do not short CPU-driven outputs. Faults
 must leave RESET LOW, both OEs HIGH, boot inhibit HIGH, and clock stopped
-before watchdog reboot. Repeat after cold power cycles.
+before watchdog reboot.
+
+<input type="checkbox" data-checklist-id="cold-fault-repeats" aria-label="Virtual IO fault tests repeated after cold power cycles"> Repeat after cold power cycles.
 
 ## Pass Gate
 
-Correct terminal bytes and aliases, no RAM corruption, no enable overlap,
-bounded WAIT release, and zero unexpected control/timeout/readback failures.
-Save analog and digital evidence before adding flash/network concurrency.
+- <input type="checkbox" data-checklist-id="gate-terminal" aria-label="Phase 8 terminal bytes and aliases passed"> Correct terminal bytes and aliases.
+- <input type="checkbox" data-checklist-id="gate-ram" aria-label="Phase 8 no RAM corruption"> No RAM corruption.
+- <input type="checkbox" data-checklist-id="gate-enables" aria-label="Phase 8 no enable overlap measured"> No enable overlap.
+- <input type="checkbox" data-checklist-id="gate-wait" aria-label="Phase 8 bounded WAIT release measured"> Bounded WAIT release.
+- <input type="checkbox" data-checklist-id="gate-counters" aria-label="Phase 8 unexpected control timeout and readback counters remain zero"> Zero unexpected control/timeout/readback failures.
+- <input type="checkbox" data-checklist-id="gate-evidence" aria-label="Phase 8 analog and digital evidence saved"> Save analog and digital evidence before adding flash/network concurrency.
+
+</div>
 
 ## Maintained Source
 

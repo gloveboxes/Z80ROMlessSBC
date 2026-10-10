@@ -91,6 +91,21 @@ and manual measurements or test-only fault setups; they are not all automated.
 A command printing `PASS` does not replace the listed electrical checks.
 Record any test not performed as **not verified**, rather than inferring a pass.
 
+### Saved phase checklists
+
+The **Done** boxes and inline checkboxes on Phases 0-10 save progress in your
+browser on this device. Each phase has its own **Clear checklist** button
+with confirmation; clearing one phase does not clear another. Progress is
+not synced across devices and is removed if you clear the site's browser
+data. If storage is blocked or full, a warning appears and the checkboxes
+still work without reliable saving.
+
+Tick wiring/setup items only after completing their instructions, and tick
+test or pass-gate items only after measuring and recording the required
+result. A saved tick is a personal record, not automated verification,
+permission to skip a prerequisite, or evidence that hardware timing is
+qualified. Leave deferred, optional, or unperformed tests unticked.
+
 The [source index](../reference/source-index.md) links the public headers,
 shared modules, and build definitions. Build each stage from the repository,
 not by compiling the displayed files as standalone programs.

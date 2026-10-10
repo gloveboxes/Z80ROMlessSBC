@@ -18,6 +18,8 @@ External +5 V goes to the 1N5819 anode; its banded cathode goes to VSYS header
 
 ## Passive-Component Installation
 
+<div data-checklist="phase-0-passives" data-checklist-label="Phase 0 installation" markdown="1">
+
 **Keep external power and USB disconnected throughout installation. All IC
 sockets and the Pico socket strips remain empty.** Fit 39 individual 10 kOhm
 resistors and 11 capacitors using the steps below.
@@ -28,8 +30,8 @@ you return. It does not sync across devices; clearing site data removes it.
 Use **Clear checklist** to start again. Ticks record installation only, not
 electrical verification or a passed test gate.
 
-<button type="button" class="md-button" id="clear-phase-0-checklist" hidden>Clear checklist</button>
-<p id="phase-0-checklist-status" role="status" aria-live="polite"></p>
+<button type="button" class="md-button" id="clear-phase-0-checklist" data-checklist-clear hidden>Clear checklist</button>
+<p id="phase-0-checklist-status" data-checklist-status role="status" aria-live="polite"></p>
 
 ### How to use these connection instructions
 
@@ -136,55 +138,94 @@ the CPU is absent or its bus outputs are floating.
 | <input type="checkbox" data-checklist-id="z80-busack" aria-label="Z80 BUSACK# pull-up installed"> | BUSACK# | 23 | +5 V |
 | <input type="checkbox" data-checklist-id="z80-busreq" aria-label="Z80 BUSREQ# pull-up installed"> | BUSREQ# | 25 | +5 V |
 
-**Do not add a +5 V pull-up to RESET# pin 26.** It will be connected directly
-to a Pico output. **Do not add a WAIT# pull-up at pin 24**; HCT32 drives WAIT#
-in this design.
-
-### Step 5 - Fit eight Pico data pull-downs on Peripheral
+### Step 5 - Fit eleven Pico pull-downs on Peripheral
 
 For **each row below**, fit one individual 10 kOhm resistor from the listed
-empty Pico header contact to Peripheral GND. These keep the Pico-side data
-inputs defined before firmware drives them. They are not pulls on the
-5 V Z80 data bus.
+empty Pico header contact to **Peripheral GND**. This group contains three
+startup pull-downs and eight data pull-downs. Each pin has its own resistor.
+All eleven connect to GND, not to either positive supply rail.
 
-| Done | Data bit | Pico GPIO | Physical Pico header pin | Resistor's other end |
-| --- | --- | --- | ---: | --- |
-| <input type="checkbox" data-checklist-id="pico-gp10" aria-label="Pico GP10 data pull-down installed"> | D0 | GP10 | 14 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp11" aria-label="Pico GP11 data pull-down installed"> | D1 | GP11 | 15 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp12" aria-label="Pico GP12 data pull-down installed"> | D2 | GP12 | 16 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp13" aria-label="Pico GP13 data pull-down installed"> | D3 | GP13 | 17 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp14" aria-label="Pico GP14 data pull-down installed"> | D4 | GP14 | 19 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp15" aria-label="Pico GP15 data pull-down installed"> | D5 | GP15 | 20 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp16" aria-label="Pico GP16 data pull-down installed"> | D6 | GP16 | 21 | GND |
-| <input type="checkbox" data-checklist-id="pico-gp17" aria-label="Pico GP17 data pull-down installed"> | D7 | GP17 | 22 | GND |
+| Done | Signal / GPIO (reference) | Physical Pico header pin | Resistor's other end | Default |
+| --- | --- | ---: | --- | --- |
+| <input type="checkbox" data-checklist-id="r21" aria-label="R21 GP2 startup pull-down installed"> | CLK output, GP2 (R21) | 4 | GND | LOW |
+| <input type="checkbox" data-checklist-id="r22" aria-label="R22 GP3 startup pull-down installed"> | RESET# output, GP3 (R22) | 5 | GND | LOW, reset asserted |
+| <input type="checkbox" data-checklist-id="r23" aria-label="R23 GP9 startup pull-down installed"> | IO_RELEASE, GP9 (R23) | 12 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp10" aria-label="Pico GP10 data pull-down installed"> | D0, GP10 | 14 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp11" aria-label="Pico GP11 data pull-down installed"> | D1, GP11 | 15 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp12" aria-label="Pico GP12 data pull-down installed"> | D2, GP12 | 16 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp13" aria-label="Pico GP13 data pull-down installed"> | D3, GP13 | 17 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp14" aria-label="Pico GP14 data pull-down installed"> | D4, GP14 | 19 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp15" aria-label="Pico GP15 data pull-down installed"> | D5, GP15 | 20 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp16" aria-label="Pico GP16 data pull-down installed"> | D6, GP16 | 21 | GND | LOW |
+| <input type="checkbox" data-checklist-id="pico-gp17" aria-label="Pico GP17 data pull-down installed"> | D7, GP17 | 22 | GND | LOW |
 
-Keep these resistors near the Pico/data-translator region. Later data jumpers
-join these contacts to U9/U10 A pins; do not add a second set of pull-downs
-at those devices.
+The GP10-GP17 pulls keep the Pico-side data inputs defined before firmware
+drives them. They are not pulls on the 5 V Z80 data bus. Keep these eight
+resistors near the Pico/data-translator region. Later data jumpers join
+these contacts to U9/U10 A pins; do not add a second set of pull-downs at
+those devices.
 
-### Step 6 - Fit seven Pico startup resistors on Peripheral
+### Step 6 - Fit four Pico pull-ups on Peripheral
 
-Fit one individual 10 kOhm resistor for each row. These are additional to
-the eight data pull-downs above. Use the **3.3 V rail**, not +5 V, for the
-four pull-ups. The 3.3 V rail remains unpowered until the Pico is fitted
-in Phase 1 and supplies it from header pin 36.
+For **each row below**, fit one individual 10 kOhm resistor from the listed
+empty Pico header contact to **Peripheral +3.3 V**, not +5 V or GND.
+The 3.3 V rail remains unpowered until the Pico is fitted in Phase 1 and
+supplies it from header pin 36.
 
-| Done | Resistor | Signal / GPIO | Physical Pico header pin | Resistor's other end | Default |
-| --- | --- | --- | ---: | --- | --- |
-| <input type="checkbox" data-checklist-id="r21" aria-label="R21 GP2 startup pull-down installed"> | R21 | CLK output, GP2 | 4 | GND | LOW |
-| <input type="checkbox" data-checklist-id="r22" aria-label="R22 GP3 startup pull-down installed"> | R22 | RESET# output, GP3 | 5 | GND | LOW, reset asserted |
-| <input type="checkbox" data-checklist-id="r17" aria-label="R17 GP4 startup pull-up installed"> | R17 | BUSREQ# output, GP4 | 6 | +3.3 V | HIGH |
-| <input type="checkbox" data-checklist-id="r18" aria-label="R18 GP5 startup pull-up installed"> | R18 | BOOT_READ_DISABLE, GP5 | 7 | +3.3 V | HIGH |
-| <input type="checkbox" data-checklist-id="r19" aria-label="R19 GP6 startup pull-up installed"> | R19 | Upward OE# request, GP6 | 9 | +3.3 V | HIGH, path disabled |
-| <input type="checkbox" data-checklist-id="r20" aria-label="R20 GP7 startup pull-up installed"> | R20 | Downward OE#, GP7 | 10 | +3.3 V | HIGH, path disabled |
-| <input type="checkbox" data-checklist-id="r23" aria-label="R23 GP9 startup pull-down installed"> | R23 | IO_RELEASE, GP9 | 12 | GND | LOW |
+| Done | Signal / GPIO (reference) | Physical Pico header pin | Resistor's other end | Default |
+| --- | --- | ---: | --- | --- |
+| <input type="checkbox" data-checklist-id="r17" aria-label="R17 GP4 startup pull-up installed"> | BUSREQ# output, GP4 (R17) | 6 | +3.3 V | HIGH |
+| <input type="checkbox" data-checklist-id="r18" aria-label="R18 GP5 startup pull-up installed"> | BOOT_READ_DISABLE, GP5 (R18) | 7 | +3.3 V | HIGH |
+| <input type="checkbox" data-checklist-id="r19" aria-label="R19 GP6 startup pull-up installed"> | Upward OE# request, GP6 (R19) | 9 | +3.3 V | HIGH, path disabled |
+| <input type="checkbox" data-checklist-id="r20" aria-label="R20 GP7 startup pull-up installed"> | Downward OE#, GP7 (R20) | 10 | +3.3 V | HIGH, path disabled |
 
-### Step 7 - Ground the unused logic inputs
+### Step 7 - Connect all IC grounds and grounded fixed pins {#step-7-ground-the-unused-logic-inputs}
 
-These are **direct wire links, not additional resistors**:
+These are **direct wire links, not additional resistors**. Connect every
+listed empty socket contact to common GND. The checklist includes each
+IC's power ground, permanently enabled buffer controls, unused inputs,
+SRAM A16, and the downward translator's fixed direction.
 
-- Memory: U3 HCT32 socket pins **12 and 13** to GND; leave output pin 11 open.
-- Core: U4 AHCT244 socket pins **15 and 17** to GND; leave outputs 5 and 3 open.
+The Pico rows use **physical header pin numbers**, not GPIO numbers. Connect
+these empty header contacts now while the Pico is absent; Phase 1 checks
+them again before fitting it. Connect AGND pin 33 to the same common GND.
+
+If already fitted during supply or capacitor wiring, verify continuity
+at the actual socket contact before ticking it. A capacitor to nearby GND
+does not replace the IC's direct power-ground connection.
+
+| Done | Board / socket | Pin | Function | Connect directly to |
+| --- | --- | ---: | --- | --- |
+| <input type="checkbox" data-checklist-id="u1-ground-29" aria-label="U1 Z80 power ground pin 29 connected"> | Core / U1 Z80 | 29 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u4-ground-1" aria-label="U4 output enable pin 1 grounded"> | Core / U4 AHCT244 | 1 | OE#, permanently enabled | Common GND |
+| <input type="checkbox" data-checklist-id="u4-ground-10" aria-label="U4 power ground pin 10 connected"> | Core / U4 AHCT244 | 10 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u4-ground-15" aria-label="U4 unused input pin 15 grounded"> | Core / U4 AHCT244 | 15 | Unused input | Common GND |
+| <input type="checkbox" data-checklist-id="u4-ground-17" aria-label="U4 unused input pin 17 grounded"> | Core / U4 AHCT244 | 17 | Unused input | Common GND |
+| <input type="checkbox" data-checklist-id="u4-ground-19" aria-label="U4 output enable pin 19 grounded"> | Core / U4 AHCT244 | 19 | OE#, permanently enabled | Common GND |
+| <input type="checkbox" data-checklist-id="u2-ground-2" aria-label="U2 SRAM address A16 pin 2 grounded"> | Memory / U2 SRAM | 2 | A16, selects lower 64 KiB | Common GND |
+| <input type="checkbox" data-checklist-id="u2-ground-16" aria-label="U2 SRAM power ground pin 16 connected"> | Memory / U2 SRAM | 16 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u3-ground-7" aria-label="U3 power ground pin 7 connected"> | Memory / U3 HCT32 | 7 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u3-ground-12" aria-label="U3 unused input pin 12 grounded"> | Memory / U3 HCT32 | 12 | Unused input | Common GND |
+| <input type="checkbox" data-checklist-id="u3-ground-13" aria-label="U3 unused input pin 13 grounded"> | Memory / U3 HCT32 | 13 | Unused input | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-3" aria-label="Pico header pin 3 grounded"> | Peripheral / Pico header | 3 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-8" aria-label="Pico header pin 8 grounded"> | Peripheral / Pico header | 8 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-13" aria-label="Pico header pin 13 grounded"> | Peripheral / Pico header | 13 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-18" aria-label="Pico header pin 18 grounded"> | Peripheral / Pico header | 18 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-23" aria-label="Pico header pin 23 grounded"> | Peripheral / Pico header | 23 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-28" aria-label="Pico header pin 28 grounded"> | Peripheral / Pico header | 28 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-33" aria-label="Pico header pin 33 analog ground connected to common ground"> | Peripheral / Pico header | 33 | AGND (analog ground) | Common GND |
+| <input type="checkbox" data-checklist-id="pico-ground-38" aria-label="Pico header pin 38 grounded"> | Peripheral / Pico header | 38 | GND | Common GND |
+| <input type="checkbox" data-checklist-id="u7-ground-1" aria-label="U7 output enable pin 1 grounded"> | Peripheral / U7 LVC244 | 1 | OE#, permanently enabled | Common GND |
+| <input type="checkbox" data-checklist-id="u7-ground-10" aria-label="U7 power ground pin 10 connected"> | Peripheral / U7 LVC244 | 10 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u7-ground-19" aria-label="U7 output enable pin 19 grounded"> | Peripheral / U7 LVC244 | 19 | OE#, permanently enabled | Common GND |
+| <input type="checkbox" data-checklist-id="u9-ground-10" aria-label="U9 power ground pin 10 connected"> | Peripheral / U9 AHCT245 | 10 | Power GND | Common GND |
+| <input type="checkbox" data-checklist-id="u10-ground-1" aria-label="U10 direction pin 1 grounded for B to A"> | Peripheral / U10 LVC245 | 1 | DIR, fixed B to A | Common GND |
+| <input type="checkbox" data-checklist-id="u10-ground-10" aria-label="U10 power ground pin 10 connected"> | Peripheral / U10 LVC245 | 10 | Power GND | Common GND |
+
+Leave U3 output pin 11 and U4 output pins 3 and 5 open; do not ground them.
+
+No resistor goes in these ground links. They do not change the resistor or
+capacitor totals below.
 
 ### Installation count before testing
 
@@ -192,12 +233,14 @@ These are **direct wire links, not additional resistors**:
 | --- | ---: | --- |
 | Memory | 16 address pull-ups | Three: two 100 nF, one 22 uF |
 | Core | Eight CPU control pull-ups | Three: two 100 nF, one 22 uF |
-| Peripheral | 15: eight data pull-downs plus seven startup pulls | Four: three 100 nF, one 22 uF |
+| Peripheral | 15: eleven pull-downs to GND plus four pull-ups to +3.3 V | Four: three 100 nF, one 22 uF |
 | Common supply entry | None | One 100 uF |
 | **Total** | **39 individual 10 kOhm resistors** | **11 capacitors** |
 
 Leave all permanent resistors and capacitors installed for subsequent phases.
 Temporary diagnostic pulls are added only when a later phase requests them.
+
+</div>
 
 ## Power Distribution and Isolation
 

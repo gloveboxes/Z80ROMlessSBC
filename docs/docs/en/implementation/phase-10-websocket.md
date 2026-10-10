@@ -1,6 +1,16 @@
 # 8.11 Phase 10 - WebSocket Terminal Console
 
-**Prerequisite:** The [Phase 9 bring-up checkpoint](phase-9-flash-storage.md#bring-up-checkpoint)
+<div data-checklist="phase-10" data-checklist-label="Phase 10" markdown="1">
+
+Tick setup items when complete and tests only after recording the measured
+result. Progress is saved in this browser; ticks are not automatic verification.
+Leave conditional troubleshooting and optional higher-rate diagnostics
+unticked if they are not needed.
+
+<button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
+<p data-checklist-status role="status" aria-live="polite"></p>
+
+<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 10 prerequisite bring-up checkpoint passed"> **Prerequisite:** The [Phase 9 bring-up checkpoint](phase-9-flash-storage.md#bring-up-checkpoint)
 must pass. Use this terminal to finish the interactive and network-dependent
 parts of the Phase 9 storage acceptance tests.
 
@@ -23,17 +33,17 @@ Ctrl-] prefix.
 
 ### First connection and fault isolation
 
-1. Build with the intended Wi-Fi credentials and load the Stage 10 firmware.
+1. <input type="checkbox" data-checklist-id="firmware-first-connection" aria-label="Stage 10 firmware loaded and browser connected at 1 MHz"> Build with the intended Wi-Fi credentials and load the Stage 10 firmware.
   Keep the clock at 1 MHz. Find the Pico's DHCP address in the network log
   or your router's client list, then open `http://<pico-ip>:8088/` from a
   computer on the same reachable local network.
-2. If the page does not load, check association, the address, and client
+2. <input type="checkbox" data-checklist-id="conditional-network-diagnosis" aria-label="Conditional network troubleshooting completed if needed"> If the page does not load, check association, the address, and client
   isolation/firewall settings before changing breadboard wiring. Guest
   networks may block clients from communicating with each other.
-3. If the page loads but no CP/M output appears, inspect USB `s` for client,
+3. <input type="checkbox" data-checklist-id="conditional-boot-diagnosis" aria-label="Conditional boot and disk troubleshooting completed if needed"> If the page loads but no CP/M output appears, inspect USB `s` for client,
   disk/fatal, and queue-drop status. A served web page proves the Pico's
   network path, not the Z80 boot or disk path.
-4. Once CP/M responds, run the functional tests below before trying a higher
+4. <input type="checkbox" data-checklist-id="functional-tests-trusted-network" aria-label="Functional tests completed before higher rates on a trusted network"> Once CP/M responds, run the functional tests below before trying a higher
   clock. Keep this unauthenticated HTTP/WebSocket terminal on a trusted
   local network; do not expose port 8088 to the Internet.
 
@@ -113,6 +123,9 @@ code never takes ownership of the bus GPIOs.
 **Maintained source:** [Stage 10 main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c)
 and [Stage 10 CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt).
 
+<input type="checkbox" data-checklist-id="integration-order" aria-label="Maintained Stage 10 startup and ownership order reviewed and verified"> Verify the maintained startup and ownership sequence below; do not
+assemble a separate firmware implementation from this description.
+
 The command-loop application must call `z80_safe_startup()` as
 its first GPIO action. The [Phase 3](phase-3-address-generator.md) input buffer
 is always enabled; no expander initialization is required. Keep trapping disabled
@@ -140,36 +153,36 @@ Z80 is held in BUSACK#.
 
 **Test plan:**
 
-1. Boot with no browser connected. Verify the Z80 still runs the
+1. <input type="checkbox" data-checklist-id="no-client-test" aria-label="No-client Z80 IO status and bounded output tested"> Boot with no browser connected. Verify the Z80 still runs the
   [Phase 8 I/O tests](phase-8-virtual-io.md#pass-gate), `IN 0x01` reports no
   client, and terminal output does not
   accumulate without bound.
-2. Connect a browser to `http://<pico-ip>:8088/`, or a WebSocket client
+2. <input type="checkbox" data-checklist-id="client-status-test" aria-label="Client-connected status and undisturbed Z80 clock measured"> Connect a browser to `http://<pico-ip>:8088/`, or a WebSocket client
   to `ws://<pico-ip>:8088/`. Verify `IN 0x01` sets the client-connected
   bit without disturbing the Z80 clock.
-3. Run a Z80 program that writes a continuous alphabet pattern to
+3. <input type="checkbox" data-checklist-id="tx-order-overflow" aria-label="Terminal output order and counted queue overflow tested"> Run a Z80 program that writes a continuous alphabet pattern to
   `OUT 0x00`. Verify the browser receives the stream in order and that
   queue-full conditions are counted rather than blocking the trap.
-4. Type from the browser and verify the Z80 receives each byte through
+4. <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="Input queue RX_READY and control characters tested"> Type from the browser and verify the Z80 receives each byte through
   `IN 0x00` only after `IN 0x01` reports data available. Test single
   characters, pasted bursts, delayed characters, an empty queue, and queue
   overflow; RX_READY must never be asserted unless an immediate data read
   returns a real queued byte.
   Verify Ctrl+C sends `0x03` and Ctrl+Z sends `0x1A`, not printable letters.
-5. At the CP/M prompt, run `DIR`, `LS`, switch through B-D, and repeat the
+5. <input type="checkbox" data-checklist-id="cpm-storage-acceptance" aria-label="Combined terminal and disk CP/M acceptance passed"> At the CP/M prompt, run `DIR`, `LS`, switch through B-D, and repeat the
   [Phase 9 sentinel and cross-drive checks](phase-9-flash-storage.md#pass-gate).
   This proves the terminal and disk
   port ranges remain independently routed in the final combined firmware.
-6. Disconnect and reconnect the browser while the Z80 test program runs.
+6. <input type="checkbox" data-checklist-id="reconnect-races" aria-label="Client reconnection and between-poll races tested"> Disconnect and reconnect the browser while the Z80 test program runs.
   Verify stale input is cleared, output resumes for the new client, and
   no trap timeout counter increments.
   Also test a disconnect/reconnect between network polls: the new client
   must remain connected and its first input must survive queue cleanup.
-7. Exhaust the default alarm pool before service startup and require the
+7. <input type="checkbox" data-checklist-id="alarm-pool-fault" aria-label="Alarm pool exhaustion fails closed before core 1 launch"> Exhaust the default alarm pool before service startup and require the
   supervisor to remain fail-closed rather than launching core 1 without
   both WebSocket polling timers.
 
-Before using the qualification controls, issue a CP/M disk flush and wait
+<input type="checkbox" data-checklist-id="optional-qualification-controls" aria-label="Optional qualification controls used only after disk flush and quiescence"> Before using the qualification controls, issue a CP/M disk flush and wait
 for READY. The final firmware then quiesces the core-1 disk service before
 any CPU ownership or clock change. USB diagnostic `+` and `-` change the
 requested clock by 500 kHz under BUSREQ#/BUSACK#; actual rates follow the
@@ -183,11 +196,11 @@ five seconds without a heartbeat, even if all error counters remain zero.
 
 ## Pass gate
 
-The WebSocket service remains responsive while the Z80
-runs at the [Phase 8 qualified 1 MHz setting](phase-8-virtual-io.md#pass-gate);
-terminal status never claims
-data that cannot be read; interactive CP/M commands, warm boot, distinct
-A-D directories, and cross-drive copies still pass in the final combined
-firmware; no network path runs on the core that services Z80 timing; and all
-terminal queue overflow or client disconnect conditions are visible through
-counters rather than blocking the CPU trap.
+- <input type="checkbox" data-checklist-id="gate-responsive" aria-label="Phase 10 terminal responsive at the qualified 1 MHz setting"> The WebSocket service remains responsive while the Z80 runs at the [Phase 8 qualified 1 MHz setting](phase-8-virtual-io.md#pass-gate).
+- <input type="checkbox" data-checklist-id="gate-rx-ready" aria-label="Phase 10 terminal status always corresponds to readable data"> Terminal status never claims data that cannot be read.
+- <input type="checkbox" data-checklist-id="gate-cpm" aria-label="Phase 10 combined firmware CP/M commands warm boot and drive copies passed"> Interactive CP/M commands, warm boot, distinct A-D directories, and cross-drive copies still pass in the final combined firmware.
+- <input type="checkbox" data-checklist-id="gate-core-ownership" aria-label="Phase 10 network paths never run on the Z80 timing core"> No network path runs on the core that services Z80 timing.
+- <input type="checkbox" data-checklist-id="gate-counters" aria-label="Phase 10 overflow and disconnect counters are visible without blocking the trap"> All terminal queue overflow or client disconnect conditions are visible through counters rather than blocking the CPU trap.
+- <input type="checkbox" data-checklist-id="gate-storage-final" aria-label="Phase 9 final storage acceptance completed with Stage 10"> Return to the [Phase 9 final storage pass gate](phase-9-flash-storage.md#pass-gate) and complete its outstanding acceptance tests.
+
+</div>

@@ -1,15 +1,15 @@
-const storagePrefix = "z80romlesssbc:phase-0-passives:v1:";
 const initialized = new WeakSet();
 
-const initializeChecklist = () => {
-  const status = document.getElementById("phase-0-checklist-status");
-  const clear = document.getElementById("clear-phase-0-checklist");
-  if (!status || !clear || initialized.has(status)) {
+const initializeChecklist = (checklist) => {
+  const status = checklist.querySelector("[data-checklist-status]");
+  const clear = checklist.querySelector("[data-checklist-clear]");
+  if (!status || !clear || initialized.has(checklist)) {
     return;
   }
-  initialized.add(status);
+  initialized.add(checklist);
 
-  const boxes = [...document.querySelectorAll("input[data-checklist-id]")];
+  const storagePrefix = `z80romlesssbc:${checklist.dataset.checklist}:v1:`;
+  const boxes = [...checklist.querySelectorAll("input[data-checklist-id]")];
   const keyFor = (box) => storagePrefix + box.dataset.checklistId;
   let storageFailed = false;
   const reportError = (message, error) => {
@@ -52,7 +52,7 @@ const initializeChecklist = () => {
 
   clear.hidden = false;
   clear.addEventListener("click", () => {
-    if (!globalThis.confirm("Clear all Phase 0 installation ticks in this browser?")) {
+    if (!globalThis.confirm(`Clear all ${checklist.dataset.checklistLabel} ticks in this browser?`)) {
       return;
     }
     for (const box of boxes) {
@@ -73,8 +73,12 @@ const initializeChecklist = () => {
   });
 };
 
-initializeChecklist();
+const initializeChecklists = () => {
+  document.querySelectorAll("[data-checklist]").forEach(initializeChecklist);
+};
+
+initializeChecklists();
 
 if (globalThis.document$) {
-  globalThis.document$.subscribe(initializeChecklist);
+  globalThis.document$.subscribe(initializeChecklists);
 }
