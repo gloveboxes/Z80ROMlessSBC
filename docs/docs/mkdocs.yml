@@ -103,6 +103,8 @@ theme:
 extra_javascript:
   - path: javascripts/mermaid.mjs
     type: module
+  - path: javascripts/checklist.mjs
+    type: module
 
 extra_css:
   - stylesheets/extra.css
