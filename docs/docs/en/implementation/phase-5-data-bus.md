@@ -13,13 +13,90 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 
 ## Wiring - Bidirectional Data Path
 
-<input type="checkbox" data-checklist-id="data-wiring" aria-label="All data branches and translator fixed pins wired and checked"> Wire every D0-D7 branch from the [data table](../hardware/pin-mapping.md#sram-address-and-data-trunks)
-and [translator fixed pins](../hardware/bus-isolation.md#51-data-paths).
-<input type="checkbox" data-checklist-id="supplies-directions" aria-label="Translator supplies and directions checked before insertion"> U9 runs at +5 V with DIR HIGH; U10 at 3.3 V with DIR LOW.
+**U9 is the SN74AHCT245N Pico-to-5 V translator; U10 is the SN74LVC245AN
+5 V-to-Pico translator.** Disconnect external power and USB and keep both
+translators out of their sockets until wiring checks pass. CPU and SRAM
+remain absent.
 
-<input type="checkbox" data-checklist-id="oe-pulls-isolation" aria-label="Both OE routes data pulls and Pico voltage isolation checked"> Check both OE routes
-and the eight individual 10 kOhm Pico data pull-downs. Confirm no raw 5 V bus
-reaches Pico GPIOs.
+Each row below is one shared net with branches, not a series path through
+a chip. Tick each row after checking every listed contact and isolation
+from adjacent pins. See the [data table](../hardware/pin-mapping.md#sram-address-and-data-trunks)
+and [translator reference](../hardware/bus-isolation.md#51-data-paths).
+
+### 5 V data-bus branches
+
+#### Z80 to SRAM
+
+Rows are ordered by SRAM pin number, highest to lowest.
+
+| Done | Signal | Z80 socket → SRAM socket |
+| --- | --- | --- |
+| <input type="checkbox" data-checklist-id="data-sram-d7" aria-label="D7 Z80 to SRAM hop checked"> | D7 | Z80 pin 13 → SRAM pin 21 |
+| <input type="checkbox" data-checklist-id="data-sram-d6" aria-label="D6 Z80 to SRAM hop checked"> | D6 | Z80 pin 10 → SRAM pin 20 |
+| <input type="checkbox" data-checklist-id="data-sram-d5" aria-label="D5 Z80 to SRAM hop checked"> | D5 | Z80 pin 9 → SRAM pin 19 |
+| <input type="checkbox" data-checklist-id="data-sram-d4" aria-label="D4 Z80 to SRAM hop checked"> | D4 | Z80 pin 7 → SRAM pin 18 |
+| <input type="checkbox" data-checklist-id="data-sram-d3" aria-label="D3 Z80 to SRAM hop checked"> | D3 | Z80 pin 8 → SRAM pin 17 |
+| <input type="checkbox" data-checklist-id="data-sram-d2" aria-label="D2 Z80 to SRAM hop checked"> | D2 | Z80 pin 12 → SRAM pin 15 |
+| <input type="checkbox" data-checklist-id="data-sram-d1" aria-label="D1 Z80 to SRAM hop checked"> | D1 | Z80 pin 15 → SRAM pin 14 |
+| <input type="checkbox" data-checklist-id="data-sram-d0" aria-label="D0 Z80 to SRAM hop checked"> | D0 | Z80 pin 14 → SRAM pin 13 |
+
+#### Z80 to U9 AHCT245, then U10 LVC245
+
+Keep the same D7-to-D0 order. Use the second free hole connected to each
+Z80 data pin for the hop to U9. At U9, use another hole in the same connected
+breadboard group for the hop to U10. The signal does not pass through U9's
+circuitry: all four IC contacts for a bit remain on one shared net.
+Tick each row after checking both hops.
+
+| Done | Signal | Z80 socket → U9 AHCT245 B pin | U9 AHCT245 B pin → U10 LVC245 B pin |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="data-translators-d7" aria-label="D7 Z80 to U9 and U9 to U10 hops checked"> | D7 | Z80 pin 13 → U9 pin 11 | U9 pin 11 → U10 pin 11 |
+| <input type="checkbox" data-checklist-id="data-translators-d6" aria-label="D6 Z80 to U9 and U9 to U10 hops checked"> | D6 | Z80 pin 10 → U9 pin 12 | U9 pin 12 → U10 pin 12 |
+| <input type="checkbox" data-checklist-id="data-translators-d5" aria-label="D5 Z80 to U9 and U9 to U10 hops checked"> | D5 | Z80 pin 9 → U9 pin 13 | U9 pin 13 → U10 pin 13 |
+| <input type="checkbox" data-checklist-id="data-translators-d4" aria-label="D4 Z80 to U9 and U9 to U10 hops checked"> | D4 | Z80 pin 7 → U9 pin 14 | U9 pin 14 → U10 pin 14 |
+| <input type="checkbox" data-checklist-id="data-translators-d3" aria-label="D3 Z80 to U9 and U9 to U10 hops checked"> | D3 | Z80 pin 8 → U9 pin 15 | U9 pin 15 → U10 pin 15 |
+| <input type="checkbox" data-checklist-id="data-translators-d2" aria-label="D2 Z80 to U9 and U9 to U10 hops checked"> | D2 | Z80 pin 12 → U9 pin 16 | U9 pin 16 → U10 pin 16 |
+| <input type="checkbox" data-checklist-id="data-translators-d1" aria-label="D1 Z80 to U9 and U9 to U10 hops checked"> | D1 | Z80 pin 15 → U9 pin 17 | U9 pin 17 → U10 pin 17 |
+| <input type="checkbox" data-checklist-id="data-translators-d0" aria-label="D0 Z80 to U9 and U9 to U10 hops checked"> | D0 | Z80 pin 14 → U9 pin 18 | U9 pin 18 → U10 pin 18 |
+
+### Pico-side data branches and pull-downs
+
+Pico pin numbers are physical pin positions; GPIO names are in parentheses.
+Verify the eight individual 10 kOhm pull-downs fitted in Phase 0, not a
+second set. These pulls belong on the Pico side, not the 5 V data bus.
+
+| Done | Signal | Pico pin | U9 AHCT245 A pin | U10 LVC245 A pin | Existing pull-down |
+| --- | --- | --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="data-pico-d0" aria-label="D0 Pico branches and pull-down checked"> | D0 | Pico pin 14 (GP10) | U9 pin 2 | U10 pin 2 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d1" aria-label="D1 Pico branches and pull-down checked"> | D1 | Pico pin 15 (GP11) | U9 pin 3 | U10 pin 3 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d2" aria-label="D2 Pico branches and pull-down checked"> | D2 | Pico pin 16 (GP12) | U9 pin 4 | U10 pin 4 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d3" aria-label="D3 Pico branches and pull-down checked"> | D3 | Pico pin 17 (GP13) | U9 pin 5 | U10 pin 5 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d4" aria-label="D4 Pico branches and pull-down checked"> | D4 | Pico pin 19 (GP14) | U9 pin 6 | U10 pin 6 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d5" aria-label="D5 Pico branches and pull-down checked"> | D5 | Pico pin 20 (GP15) | U9 pin 7 | U10 pin 7 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d6" aria-label="D6 Pico branches and pull-down checked"> | D6 | Pico pin 21 (GP16) | U9 pin 8 | U10 pin 8 | 10 kOhm to GND |
+| <input type="checkbox" data-checklist-id="data-pico-d7" aria-label="D7 Pico branches and pull-down checked"> | D7 | Pico pin 22 (GP17) | U9 pin 9 | U10 pin 9 | 10 kOhm to GND |
+
+### Supplies, directions and enables
+
+Verify existing Phase 0/1/2 connections rather than adding duplicate wires
+or capacitors. Supply, ground and DIR links are direct wires, not resistors.
+
+| Done | Pin / component | Required connection |
+| --- | --- | --- |
+| <input type="checkbox" data-checklist-id="data-u9-supply" aria-label="U9 5 V supply checked"> | U9 pin 20, VCC | +5 V |
+| <input type="checkbox" data-checklist-id="data-u9-ground" aria-label="U9 ground checked"> | U9 pin 10, GND | Common GND |
+| <input type="checkbox" data-checklist-id="data-u9-direction" aria-label="U9 A to B direction checked"> | U9 pin 1, DIR | +5 V: A to B |
+| <input type="checkbox" data-checklist-id="data-u10-supply" aria-label="U10 Pico derived 3.3 V supply checked"> | U10 pin 20, VCC | Pico-derived +3.3 V, not +5 V |
+| <input type="checkbox" data-checklist-id="data-u10-ground" aria-label="U10 ground checked"> | U10 pin 10, GND | Common GND |
+| <input type="checkbox" data-checklist-id="data-u10-direction" aria-label="U10 B to A direction checked"> | U10 pin 1, DIR | Common GND: B to A |
+| <input type="checkbox" data-checklist-id="data-u9-oe" aria-label="U9 gated output enable route checked"> | U9 pin 19, OE# | U3 HCT32 output pin 8; U3 input pin 9 receives Z80 RD# pin 21 and input pin 10 receives Pico pin 9 (GP6) |
+| <input type="checkbox" data-checklist-id="data-u10-oe" aria-label="U10 output enable route checked"> | U10 pin 19, OE# | Pico pin 10 (GP7) |
+| <input type="checkbox" data-checklist-id="data-bypass" aria-label="Both translator bypass capacitors checked"> | C6/C7, 100 nF each | C6 near U9 pin 20 across +5 V/GND; C7 near U10 pin 20 across +3.3 V/GND |
+| <input type="checkbox" data-checklist-id="data-install" aria-label="Translator voltage isolation and orientation checked before insertion"> | Installation | Confirm no raw 5 V bus reaches Pico pins; verify rails, continuity, adjacent-pin isolation and pin-1 orientation before fitting U9/U10 with power and USB disconnected |
+
+Once fitted, apply external +5 V before USB and disconnect USB before
+removing +5 V. U9 lacks data-port power-off isolation; disabling OE does
+not make USB-only operation safe. Never enable both data paths at once.
 
 ## Firmware and Tests
 
