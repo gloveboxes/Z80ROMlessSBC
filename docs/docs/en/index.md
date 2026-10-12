@@ -42,6 +42,9 @@ exchanges one byte. Z80 `IN` and `OUT` instructions feed terminal queues; a
 WebSocket VT100 terminal runs on the Pico's other core so network traffic does
 not affect Z80 timing.
 
+See [I/O ports and services](system/io-ports.md) for the fixed terminal/disk
+port map and proposed timer, clock, random, environment and file services.
+
 Z80 boot software and CP/M disks occupy reserved regions of the Pico's onboard
 flash rather than removable media. The Pico reads the flash directly and uses
 Z80-assisted loading to populate and verify SRAM, then resets to PC zero for

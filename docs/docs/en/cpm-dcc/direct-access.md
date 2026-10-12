@@ -17,6 +17,10 @@ I/O address byte are ignored. Thus `0x08` aliases terminal data port `0x00`,
 and `0x18` aliases disk command/status port `0x10`; these are not spare ports.
 Use the canonical terminal `0x00`/`0x01` and disk `0x10`-`0x14` addresses.
 
+The [I/O ports and services](../system/io-ports.md) page owns the complete
+allocation and proposed command/request/response examples. Those proposed
+services are not available in the current firmware.
+
 Direct terminal code must poll receive-ready before reading port `0x00` and
 transmit-room before writing it. Direct disk code must follow the complete
 command/status and exact

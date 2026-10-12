@@ -93,6 +93,10 @@ This omission applies only to **I/O monitoring**, not memory addressing.
 A3 still connects **Z80 pin 33 to SRAM pin 9** in
 [Phase 4](phase-4-address-bus.md#wiring-address-trunk); do not connect it to U7.
 
+The four monitored bits provide 16 distinct I/O ports. See
+[I/O ports and services](../system/io-ports.md) for fixed terminal/disk
+assignments and the proposed shared service allocation.
+
 ## Firmware and Tests
 
 <input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 3 firmware built and loaded"> Build `z80_stage03_control_inputs`; UF2:

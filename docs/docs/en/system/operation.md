@@ -36,6 +36,9 @@ The 500 ms release timeout fails closed through RESET and watchdog recovery.
 
 ## 6.2 Terminal I/O over Pico WebSocket
 
+See [I/O ports and services](io-ports.md) for the overall allocation of fixed
+terminal/disk ports, reserved diagnostics and proposed extensions.
+
 The final terminal is a virtual I/O peripheral implemented by the Pico,
 not a Z80-side UART. Z80 software performs ordinary `IN` and `OUT`
 instructions against a small terminal port pair; the Pico intercepts
