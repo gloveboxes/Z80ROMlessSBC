@@ -67,6 +67,37 @@ Multi-byte durations and results use repeated byte transfers; they do not
 need a separate port for each byte. Timers continue running independently
 after their start transaction completes.
 
+### How many services can three ports support?
+
+The three port addresses are transport channels, not a limit of three
+functions. With a one-byte command written to `0x02`:
+
+```text
+8 command bits -> 2^8 = 256 possible command codes
+```
+
+Parameters sent through `0x03` can select a service instance or operation.
+For example, one timer command could accept a timer number and an action
+such as start, cancel or query. Results are read through `0x04`.
+
+| Proposed command format | Addressable choices |
+| --- | --- |
+| One command byte | Up to 256 command codes |
+| One command byte plus a service-selector byte | Up to 256 services with 256 operations each |
+| Two-byte command identifier | Up to 65,536 command codes |
+
+The extended formats are possible protocol designs, not implemented
+features. They require explicit framing and interpretation of the extra
+byte, but no additional physical I/O ports. Reserve some command codes for
+protocol identification, cancellation and recovery.
+
+**Logical services are not extra Z80 port numbers.** The current hardware
+still decodes 16 distinct port addresses, and this interface uses only three.
+A one-byte command scheme is ample for the proposed timers, stopwatches,
+time, random numbers, environment variables and reboot. Memory, buffer
+capacity and implementation complexity remain practical limits; the code
+space does not guarantee that all possible services can be implemented.
+
 ### Worked examples
 
 !!! note "Illustrative dcc C, not implemented firmware"
