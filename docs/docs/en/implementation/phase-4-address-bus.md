@@ -40,17 +40,12 @@ Rows are ordered by SRAM pin number, highest to lowest.
 | <input type="checkbox" data-checklist-id="address-a12" aria-label="A12 wire and pull-up checked"> | A12 | Z80 pin 2 → SRAM pin 4 | 10 kOhm to +5 V |
 | <input type="checkbox" data-checklist-id="address-a14" aria-label="A14 wire and pull-up checked"> | A14 | Z80 pin 4 → SRAM pin 3 | 10 kOhm to +5 V |
 
-### Monitor taps and fixed address
-
-U7 is the SN74LVC244AN input buffer. Verify the four taps already wired in
-Phase 3; do not add duplicate wires. A3 is used by SRAM but is not monitored.
+The U7 monitor taps were wired in
+[Phase 3](phase-3-address-generator.md#wiring-control-and-port-monitor);
+no additional monitor wires are needed here.
 
 | Done | Signal / check | Required connection |
 | --- | --- | --- |
-| <input type="checkbox" data-checklist-id="monitor-a0" aria-label="A0 shared net tap to U7 checked"> | A0 | Z80 pin 30 / SRAM pin 12 net → U7 input pin 11 |
-| <input type="checkbox" data-checklist-id="monitor-a1" aria-label="A1 shared net tap to U7 checked"> | A1 | Z80 pin 31 / SRAM pin 11 net → U7 input pin 13 |
-| <input type="checkbox" data-checklist-id="monitor-a2" aria-label="A2 shared net tap to U7 checked"> | A2 | Z80 pin 32 / SRAM pin 10 net → U7 input pin 15 |
-| <input type="checkbox" data-checklist-id="monitor-a4" aria-label="A4 shared net tap to U7 checked"> | A4 | Z80 pin 34 / SRAM pin 8 net → U7 input pin 17 |
 | <input type="checkbox" data-checklist-id="address-cpu-only" aria-label="Exclusive CPU address drive checked"> | Address ownership | No Pico or expander output connects to any address bit; only the Z80 drives A0-A15 |
 | <input type="checkbox" data-checklist-id="a16-ground" aria-label="SRAM A16 pin 2 ground connection checked"> | A16 | Verify SRAM pin 2 is directly connected to common GND, selecting the lower 64 KiB |
 

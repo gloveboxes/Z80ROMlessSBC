@@ -43,6 +43,60 @@ This reserves **14 ports and leaves two spare**, while preserving terminal,
 disk and diagnostic assignments. A port supports both IN and OUT, so a
 command and its status can share one number.
 
+## Why A4 is monitored but A3 is not
+
+The Pico decodes I/O ports using `address & 0x17`. The `&` operator is
+**bitwise AND**: a result bit is 1 only when both corresponding bits are 1.
+The hexadecimal mask `0x17` is binary `0001 0111`:
+
+```text
+Address bit:  A7 A6 A5 A4 A3 A2 A1 A0
+Mask 0x17:     0  0  0  1  0  1  1  1
+```
+
+This keeps **A4, A2, A1 and A0**, matching the four address connections to U7.
+A3, A5-A7 and the high address byte are deliberately ignored for I/O decoding.
+
+For example, `0x08` differs from `0x00` only in A3. Masking removes that bit:
+
+```text
+Address 0x08:  0000 1000
+Mask    0x17:  0001 0111
+               ---------
+AND result:    0000 0000 = 0x00
+```
+
+Thus `0x08` **aliases** `0x00`: the Pico treats both as the same port.
+Similarly, `0x09 & 0x17` gives `0x01`.
+
+**A4 represents 16 (`0x10`)**, so keeping it distinguishes console ports
+`0x00/01` from disk ports `0x10-14`:
+
+| Port | Binary address | After AND with `0001 0111` | Decoded port |
+| --- | --- | --- | --- |
+| Console `0x00` | `0000 0000` | `0000 0000` | `0x00` |
+| Console `0x01` | `0000 0001` | `0000 0001` | `0x01` |
+| Disk `0x10` | `0001 0000` | `0001 0000` | `0x10` |
+| Disk `0x11` | `0001 0001` | `0001 0001` | `0x11` |
+| Disk `0x12` | `0001 0010` | `0001 0010` | `0x12` |
+| Disk `0x13` | `0001 0011` | `0001 0011` | `0x13` |
+| Disk `0x14` | `0001 0100` | `0001 0100` | `0x14` |
+
+If only A0-A2 were monitored, the mask would be `0x07` and disk port `0x10`
+would become indistinguishable from console port `0x00`:
+
+```text
+Disk address:  0001 0000 = 0x10
+Mask:          0000 0111 = 0x07
+               ---------
+AND result:    0000 0000 = 0x00
+```
+
+This omission applies only to **I/O monitoring**, not memory addressing.
+A3 still connects **Z80 pin 33 to SRAM pin 9** in
+[Phase 4](../implementation/phase-4-address-bus.md#wiring-address-trunk);
+do not connect it to U7.
+
 ## Shared service interface
 
 Three ports can serve many functions by using command and parameter bytes
@@ -296,7 +350,7 @@ while waiting for a network or flash operation.
 ## Related wiring and validation
 
 - [Phase 3: control and port monitor](../implementation/phase-3-address-generator.md)
-  explains the A0/A1/A2/A4 wiring and why A3 is omitted.
+  provides the A0/A1/A2/A4 wiring checklist.
 - [Phase 8: virtual I/O](../implementation/phase-8-virtual-io.md) validates
   current traps and intentional aliases, not the proposed services.
 - [CP/M direct access](../cpm-dcc/direct-access.md) explains `IN`/`OUT` access
