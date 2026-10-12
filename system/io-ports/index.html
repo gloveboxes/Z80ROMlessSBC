@@ -1,0 +1,2574 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../operation/">
+      
+      
+        <link rel="next" href="../firmware-build/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>I/O ports and services - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#io-ports-and-services" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              I/O ports and services
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8">
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O ports and services
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O ports and services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#port-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port allocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a4-is-monitored-but-a3-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why A4 is monitored but A3 is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-service-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared service interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared service interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-many-services-can-three-ports-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How many services can three ports support?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protocol-and-implementation-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol and implementation requirements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-wiring-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related wiring and validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-7-z80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 7 - Z80 CPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Virtual I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - Flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/console-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Console and file I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/direct-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Direct access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#port-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port allocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a4-is-monitored-but-a3-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why A4 is monitored but A3 is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-service-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared service interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared service interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-many-services-can-three-ports-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How many services can three ports support?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protocol-and-implementation-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol and implementation requirements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-wiring-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related wiring and validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="io-ports-and-services">I/O Ports and Services<a class="headerlink" href="#io-ports-and-services" title="Permanent link">¶</a></h1>
+<p>The Pico provides virtual peripherals through Z80 <code>IN</code> and <code>OUT</code> instructions.
+This page owns the overall port allocation. See
+<a href="../operation/">operational boundaries</a> for the implemented terminal, disk
+and clock-stop trap contracts.</p>
+<div class="admonition important">
+<p class="admonition-title">Implemented ports versus proposed services</p>
+<p>Terminal and disk ports are fixed by the current firmware and CP/M
+interface. Keep their assigned numbers unchanged. Shared services and
+file transfer below are proposals: they are not implemented by the
+current firmware and are not bring-up pass-gate requirements.</p>
+</div>
+<h2 id="port-allocation">Port allocation<a class="headerlink" href="#port-allocation" title="Permanent link">¶</a></h2>
+<p>The four monitored address bits, A0/A1/A2/A4, provide <strong>16 distinct ports</strong>:
+<code>0x00-0x07</code> and <code>0x10-0x17</code>, using <code>address &amp; 0x17</code>.
+Other addresses are aliases, not additional ports. For example, <code>0x08</code>
+aliases <code>0x00</code> and <code>0x18</code> aliases <code>0x10</code>.
+The proposed allocation fits the existing wiring; no extra address buffer
+or Pico GPIO is required.</p>
+<table>
+<thead>
+<tr>
+<th>Port (hex)</th>
+<th style="text-align: right;">Decimal</th>
+<th>Function</th>
+<th>Allocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td style="text-align: right;">0</td>
+<td>Terminal data, IN/OUT</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x01</code></td>
+<td style="text-align: right;">1</td>
+<td>Terminal status</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x02</code></td>
+<td style="text-align: right;">2</td>
+<td>Shared service command (OUT) / status (IN)</td>
+<td>Suggested</td>
+</tr>
+<tr>
+<td><code>0x03</code></td>
+<td style="text-align: right;">3</td>
+<td>Shared service request bytes (OUT)</td>
+<td>Suggested</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td style="text-align: right;">4</td>
+<td>Shared service response bytes (IN)</td>
+<td>Suggested</td>
+</tr>
+<tr>
+<td><code>0x05</code></td>
+<td style="text-align: right;">5</td>
+<td>Stage 10 qualification result</td>
+<td>Reserved for diagnostics</td>
+</tr>
+<tr>
+<td><code>0x06</code></td>
+<td style="text-align: right;">6</td>
+<td>Qualification data; Stage 8 also uses this port for test results</td>
+<td>Reserved for diagnostics</td>
+</tr>
+<tr>
+<td><code>0x07</code></td>
+<td style="text-align: right;">7</td>
+<td>Spare</td>
+<td>Unallocated</td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td style="text-align: right;">16</td>
+<td>Disk command (OUT) / status (IN)</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x11</code></td>
+<td style="text-align: right;">17</td>
+<td>Disk drive selection</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x12</code></td>
+<td style="text-align: right;">18</td>
+<td>Disk sector address, low byte</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x13</code></td>
+<td style="text-align: right;">19</td>
+<td>Disk sector address, high byte</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x14</code></td>
+<td style="text-align: right;">20</td>
+<td>Disk data, IN/OUT</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x15</code></td>
+<td style="text-align: right;">21</td>
+<td>File-transfer command (OUT) / status (IN)</td>
+<td>Suggested</td>
+</tr>
+<tr>
+<td><code>0x16</code></td>
+<td style="text-align: right;">22</td>
+<td>File-transfer filename/data bytes</td>
+<td>Suggested</td>
+</tr>
+<tr>
+<td><code>0x17</code></td>
+<td style="text-align: right;">23</td>
+<td>Spare</td>
+<td>Unallocated</td>
+</tr>
+</tbody>
+</table>
+<p>This reserves <strong>14 ports and leaves two spare</strong>, while preserving terminal,
+disk and diagnostic assignments. A port supports both IN and OUT, so a
+command and its status can share one number.</p>
+<h2 id="why-a4-is-monitored-but-a3-is-not">Why A4 is monitored but A3 is not<a class="headerlink" href="#why-a4-is-monitored-but-a3-is-not" title="Permanent link">¶</a></h2>
+<p>The Pico decodes I/O ports using <code>address &amp; 0x17</code>. The <code>&amp;</code> operator is
+<strong>bitwise AND</strong>: a result bit is 1 only when both corresponding bits are 1.
+The hexadecimal mask <code>0x17</code> is binary <code>0001 0111</code>:</p>
+<div class="highlight"><pre><span></span><code>Address bit:  A7 A6 A5 A4 A3 A2 A1 A0
+Mask 0x17:     0  0  0  1  0  1  1  1
+</code></pre></div>
+<p>This keeps <strong>A4, A2, A1 and A0</strong>, matching the four address connections to U7.
+A3, A5-A7 and the high address byte are deliberately ignored for I/O decoding.</p>
+<p>For example, <code>0x08</code> differs from <code>0x00</code> only in A3. Masking removes that bit:</p>
+<div class="highlight"><pre><span></span><code>Address 0x08:  0000 1000
+Mask    0x17:  0001 0111
+               ---------
+AND result:    0000 0000 = 0x00
+</code></pre></div>
+<p>Thus <code>0x08</code> <strong>aliases</strong> <code>0x00</code>: the Pico treats both as the same port.
+Similarly, <code>0x09 &amp; 0x17</code> gives <code>0x01</code>.</p>
+<p><strong>A4 represents 16 (<code>0x10</code>)</strong>, so keeping it distinguishes console ports
+<code>0x00/01</code> from disk ports <code>0x10-14</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Binary address</th>
+<th>After AND with <code>0001 0111</code></th>
+<th>Decoded port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Console <code>0x00</code></td>
+<td><code>0000 0000</code></td>
+<td><code>0000 0000</code></td>
+<td><code>0x00</code></td>
+</tr>
+<tr>
+<td>Console <code>0x01</code></td>
+<td><code>0000 0001</code></td>
+<td><code>0000 0001</code></td>
+<td><code>0x01</code></td>
+</tr>
+<tr>
+<td>Disk <code>0x10</code></td>
+<td><code>0001 0000</code></td>
+<td><code>0001 0000</code></td>
+<td><code>0x10</code></td>
+</tr>
+<tr>
+<td>Disk <code>0x11</code></td>
+<td><code>0001 0001</code></td>
+<td><code>0001 0001</code></td>
+<td><code>0x11</code></td>
+</tr>
+<tr>
+<td>Disk <code>0x12</code></td>
+<td><code>0001 0010</code></td>
+<td><code>0001 0010</code></td>
+<td><code>0x12</code></td>
+</tr>
+<tr>
+<td>Disk <code>0x13</code></td>
+<td><code>0001 0011</code></td>
+<td><code>0001 0011</code></td>
+<td><code>0x13</code></td>
+</tr>
+<tr>
+<td>Disk <code>0x14</code></td>
+<td><code>0001 0100</code></td>
+<td><code>0001 0100</code></td>
+<td><code>0x14</code></td>
+</tr>
+</tbody>
+</table>
+<p>If only A0-A2 were monitored, the mask would be <code>0x07</code> and disk port <code>0x10</code>
+would become indistinguishable from console port <code>0x00</code>:</p>
+<div class="highlight"><pre><span></span><code>Disk address:  0001 0000 = 0x10
+Mask:          0000 0111 = 0x07
+               ---------
+AND result:    0000 0000 = 0x00
+</code></pre></div>
+<p>This omission applies only to <strong>I/O monitoring</strong>, not memory addressing.
+A3 still connects <strong>Z80 pin 33 to SRAM pin 9</strong> in
+<a href="../../implementation/phase-4-address-bus/#wiring-address-trunk">Phase 4</a>;
+do not connect it to U7.</p>
+<h2 id="shared-service-interface">Shared service interface<a class="headerlink" href="#shared-service-interface" title="Permanent link">¶</a></h2>
+<p>Three ports can serve many functions by using command and parameter bytes
+to select an operation, rather than allocating one port per function:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Proposed operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Two expiry timers</td>
+<td>Select timer 0/1, set duration, start, cancel, query running/expired</td>
+</tr>
+<tr>
+<td>Two stopwatches</td>
+<td>Select stopwatch 0/1, start/reset, read elapsed time</td>
+</tr>
+<tr>
+<td>Date/time and uptime</td>
+<td>Select uptime, UTC/local date/time, or a formatted date</td>
+</tr>
+<tr>
+<td>Random numbers</td>
+<td>Request a result and read its bytes</td>
+</tr>
+<tr>
+<td>Environment variables</td>
+<td>Get, set or delete a named value</td>
+</tr>
+<tr>
+<td>Reboot</td>
+<td>Request reboot with explicit confirmation</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Role</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x02</code></td>
+<td>OUT selects a command; IN reports transaction status</td>
+<td>Start expiry timer 0; report awaiting parameters, busy, complete or error</td>
+</tr>
+<tr>
+<td><code>0x03</code></td>
+<td>OUT supplies request parameters</td>
+<td>Send a duration, a variable name, or a name/value pair</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td>IN retrieves response bytes</td>
+<td>Read elapsed time, a date/time string, random bytes or an environment value</td>
+</tr>
+</tbody>
+</table>
+<p>Multi-byte durations and results use repeated byte transfers; they do not
+need a separate port for each byte. Timers continue running independently
+after their start transaction completes.</p>
+<h3 id="how-many-services-can-three-ports-support">How many services can three ports support?<a class="headerlink" href="#how-many-services-can-three-ports-support" title="Permanent link">¶</a></h3>
+<p>The three port addresses are transport channels, not a limit of three
+functions. With a one-byte command written to <code>0x02</code>:</p>
+<div class="highlight"><pre><span></span><code>8 command bits -&gt; 2^8 = 256 possible command codes
+</code></pre></div>
+<p>Parameters sent through <code>0x03</code> can select a service instance or operation.
+For example, one timer command could accept a timer number and an action
+such as start, cancel or query. Results are read through <code>0x04</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Proposed command format</th>
+<th>Addressable choices</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One command byte</td>
+<td>Up to 256 command codes</td>
+</tr>
+<tr>
+<td>One command byte plus a service-selector byte</td>
+<td>Up to 256 services with 256 operations each</td>
+</tr>
+<tr>
+<td>Two-byte command identifier</td>
+<td>Up to 65,536 command codes</td>
+</tr>
+</tbody>
+</table>
+<p>The extended formats are possible protocol designs, not implemented
+features. They require explicit framing and interpretation of the extra
+byte, but no additional physical I/O ports. Reserve some command codes for
+protocol identification, cancellation and recovery.</p>
+<p><strong>Logical services are not extra Z80 port numbers.</strong> The current hardware
+still decodes 16 distinct port addresses, and this interface uses only three.
+A one-byte command scheme is ample for the proposed timers, stopwatches,
+time, random numbers, environment variables and reboot. Memory, buffer
+capacity and implementation complexity remain practical limits; the code
+space does not guarantee that all possible services can be implemented.</p>
+<h3 id="worked-examples">Worked examples<a class="headerlink" href="#worked-examples" title="Permanent link">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Illustrative dcc C, not implemented firmware</p>
+<p>The examples below use dcc's <code>inp()</code> and <code>outp()</code> functions, declared in
+<code>&lt;stdlib.h&gt;</code>. They illustrate a command-first protocol with automatic
+execution after all required parameters arrive. Command/status byte codes
+below are example values only, not a finalized interface. The protocol still
+needs specification and implementation before these examples can run.
+Binary values use four-byte unsigned integers, least significant byte first.</p>
+</div>
+<p>dcc has 16-bit <code>int</code> and 32-bit <code>unsigned long</code>. Use <code>unsigned long</code> for
+durations and cast received bytes to that type <strong>before</strong> shifting by 16 or
+24 bits. See <a href="../../cpm-dcc/direct-access/">direct CP/M and port access</a>.</p>
+<h4 id="common-definitions-and-bounded-status-polling">Common definitions and bounded status polling<a class="headerlink" href="#common-definitions-and-bounded-status-polling" title="Permanent link">¶</a></h4>
+<p>Use these definitions with each example below. A new command is sent only
+when the interface is ready. Error and polling-limit failures are reported,
+not mistaken for a valid result.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span>
+
+<span class="cp">#define SERVICE_COMMAND  0x02</span>
+<span class="cp">#define SERVICE_REQUEST  0x03</span>
+<span class="cp">#define SERVICE_RESPONSE 0x04</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">READY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">COMPLETE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">RESPONSE_READY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span>
+<span class="w">    </span><span class="n">START_TIMER_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span>
+<span class="w">    </span><span class="n">GET_UPTIME_MS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ENV_GET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">48</span>
+<span class="p">};</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">service_ready</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">inp</span><span class="p">(</span><span class="n">SERVICE_COMMAND</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">READY</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">puts</span><span class="p">(</span><span class="s">"Service not ready; finish or cancel the previous request."</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">wait_status</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">wanted</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">polls</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">status</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">polls</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10000u</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">polls</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inp</span><span class="p">(</span><span class="n">SERVICE_COMMAND</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ERROR</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">puts</span><span class="p">(</span><span class="s">"Service reported an error."</span><span class="p">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">wanted</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">puts</span><span class="p">(</span><span class="s">"Service polling limit reached; recovery is required."</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The 10,000-read limit prevents an infinite loop; it is <strong>not a calibrated
+wall-clock timeout</strong>. A final client needs a defined timeout/recovery policy.
+The draft assumes COMPLETE is acknowledged by the next status read, leaving
+READY, and that consuming the final response byte also returns the interface
+to READY. No further commands should be issued after a failed transaction
+until recovery is complete.</p>
+<h4 id="start-expiry-timer-0-for-five-seconds">Start expiry timer 0 for five seconds<a class="headerlink" href="#start-expiry-timer-0-for-five-seconds" title="Permanent link">¶</a></h4>
+<p>Five seconds is 5,000 milliseconds: <code>0x00001388</code>. Its four request bytes,
+least significant first, are <code>88 13 00 00</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">start_timer_0</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">duration_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5000UL</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">byte</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">service_ready</span><span class="p">())</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_COMMAND</span><span class="p">,</span><span class="w"> </span><span class="n">START_TIMER_0</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="kt">byte</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="p">)(</span><span class="n">duration_ms</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0xffUL</span><span class="p">));</span>
+<span class="w">        </span><span class="n">duration_ms</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">wait_status</span><span class="p">(</span><span class="n">COMPLETE</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Transaction completion means the timer was started, <strong>not that it expired</strong>.
+A later <code>QUERY_TIMER_0</code> command would return a running/expired result through
+<code>0x04</code>. Timer 1 uses the same three ports with a different command.</p>
+<h4 id="read-uptime-in-milliseconds">Read uptime in milliseconds<a class="headerlink" href="#read-uptime-in-milliseconds" title="Permanent link">¶</a></h4>
+<p>This request needs no parameter bytes, so it does not write to <code>0x03</code>.
+For an illustrative uptime of 5,000 milliseconds:</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">show_uptime</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">uptime_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0UL</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">byte</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">service_ready</span><span class="p">())</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_COMMAND</span><span class="p">,</span><span class="w"> </span><span class="n">GET_UPTIME_MS</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">wait_status</span><span class="p">(</span><span class="n">RESPONSE_READY</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="kt">byte</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">uptime_ms</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">inp</span><span class="p">(</span><span class="n">SERVICE_RESPONSE</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"Uptime: %lu ms</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">uptime_ms</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Reassemble the bytes as:</p>
+<div class="highlight"><pre><span></span><code>value = byte0 | (byte1 &lt;&lt; 8) | (byte2 &lt;&lt; 16) | (byte3 &lt;&lt; 24)
+      = 0x88  | (0x13  &lt;&lt; 8) | (0x00  &lt;&lt; 16) | (0x00  &lt;&lt; 24)
+      = 0x00001388 = 5000 milliseconds
+</code></pre></div>
+<p>The same pattern serves a stopwatch or random-number result. A four-byte
+millisecond count wraps after about 49.7 days; the final protocol must
+document wrap behaviour or choose a wider uptime representation.</p>
+<h4 id="get-an-environment-variable">Get an environment variable<a class="headerlink" href="#get-an-environment-variable" title="Permanent link">¶</a></h4>
+<p>For an illustrative request to read <code>TZ</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">show_timezone</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">value</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">length</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">byte</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">service_ready</span><span class="p">())</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_COMMAND</span><span class="p">,</span><span class="w"> </span><span class="n">ENV_GET</span><span class="p">);</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="sc">'T'</span><span class="p">);</span>
+<span class="w">    </span><span class="n">outp</span><span class="p">(</span><span class="n">SERVICE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="sc">'Z'</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">wait_status</span><span class="p">(</span><span class="n">RESPONSE_READY</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="p">)</span><span class="n">inp</span><span class="p">(</span><span class="n">SERVICE_RESPONSE</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="kt">byte</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="kt">byte</span><span class="p">)</span>
+<span class="w">        </span><span class="n">value</span><span class="p">[</span><span class="kt">byte</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="p">)</span><span class="n">inp</span><span class="p">(</span><span class="n">SERVICE_RESPONSE</span><span class="p">);</span>
+<span class="w">    </span><span class="n">value</span><span class="p">[</span><span class="n">length</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">'\0'</span><span class="p">;</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"TZ=%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This example assumes a one-byte length prefix, limiting a value to 255
+bytes. An absent variable must produce an explicit error, not be confused
+with an empty value. Final framing may use wider lengths.
+Date/time strings can use the same length-prefixed response pattern.</p>
+<h2 id="protocol-and-implementation-requirements">Protocol and implementation requirements<a class="headerlink" href="#protocol-and-implementation-requirements" title="Permanent link">¶</a></h2>
+<p>Before implementing the services, define:</p>
+<ul>
+<li>Command codes, parameter lengths, result lengths, byte order and units.</li>
+<li>Status codes for ready, collecting parameters, busy, complete,
+  response available and error, including how completion/errors are acknowledged.</li>
+<li>One outstanding transaction at a time, with an explicit reject or cancel
+  policy for new commands while a request or unread response exists.</li>
+<li>Bounded polling, recovery from incomplete requests and response underflow.</li>
+<li>Explicit errors for unavailable services, missing variables and a wall
+  clock that has not synchronized; do not return uptime as valid calendar time.</li>
+<li>A flash allocation and safe update mechanism for persistent environment
+  variables, without overwriting firmware, boot images, journal or CP/M disks.</li>
+<li>Deliberate reboot confirmation, followed by safe Z80 stop/reset and
+  data-path isolation before restarting the supervisor.</li>
+</ul>
+<p>Keep proposed file transfer on its own two ports so it does not share the
+service response stream. Define its filename, chunk, completion and error
+protocol separately; allocating ports alone does not implement uploads or
+downloads.</p>
+<p>The <a href="../operation/#61-hardware-wait-assisted-clock-stop-trap-protocol">I/O trap</a>
+must remain bounded. Network transfers and slow service work must run outside
+the trap; status polling reports progress instead of holding the Z80 paused
+while waiting for a network or flash operation.</p>
+<h2 id="related-wiring-and-validation">Related wiring and validation<a class="headerlink" href="#related-wiring-and-validation" title="Permanent link">¶</a></h2>
+<ul>
+<li><a href="../../implementation/phase-3-address-generator/">Phase 3: control and port monitor</a>
+  provides the A0/A1/A2/A4 wiring checklist.</li>
+<li><a href="../../implementation/phase-8-virtual-io/">Phase 8: virtual I/O</a> validates
+  current traps and intentional aliases, not the proposed services.</li>
+<li><a href="../../cpm-dcc/direct-access/">CP/M direct access</a> explains <code>IN</code>/<code>OUT</code> access
+  versus the usual BDOS and BIOS interfaces.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../operation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Operational boundaries">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Operational boundaries
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../firmware-build/" class="md-footer__link md-footer__link--next" aria-label="Next: Firmware build and provisioning">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Firmware build and provisioning
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="../../javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>
