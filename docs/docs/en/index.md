@@ -4,8 +4,8 @@
 
 ## Overview
 
-This Z80 single-board computer has been built, and its hardware design has
-been validated on a breadboard. The staged
+This Z80 single-board computer design has been built and validated as a working
+breadboard prototype. The staged
 [implementation plan](implementation/index.md) guides you through reproducing
 the build and checking each stage. Validate your own wiring and operation as
 you go; clock-rate qualification and timing margins require measurements on
