@@ -4,11 +4,12 @@
 
 ## Overview
 
-This is a theoretical Z80 single-board computer design that has not yet been
-built or validated in hardware. Treat it as an engineering proposal and
-bring-up plan, not a proven reference design. Its electrical assumptions,
-timing margins, and firmware interactions require bench validation through
-the staged [implementation plan](implementation/index.md).
+This Z80 single-board computer has been built, and its hardware design has
+been validated on a breadboard. The staged
+[implementation plan](implementation/index.md) guides you through reproducing
+the build and checking each stage. Validate your own wiring and operation as
+you go; clock-rate qualification and timing margins require measurements on
+your build.
 
 ## Reading path for a first hardware build
 
