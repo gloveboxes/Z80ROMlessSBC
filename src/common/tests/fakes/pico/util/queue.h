@@ -14,4 +14,6 @@ bool queue_try_add(queue_t *queue, const void *item);
 bool queue_try_remove(queue_t *queue, void *item);
 bool queue_is_empty(queue_t *queue);
 unsigned queue_get_level(queue_t *queue);
+void queue_add_blocking(queue_t *queue, const void *item);
+void queue_remove_blocking(queue_t *queue, void *item);
 #endif

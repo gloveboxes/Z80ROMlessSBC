@@ -33,6 +33,12 @@ its separate 48 MHz PLL; peripheral/PIO timing uses the configured system clock.
 This does not change the 1 MHz Z80 startup default or qualify 8 MHz hardware
 operation. See the [frequency qualification plan](../implementation/frequency-qualification.md).
 
+Stage 9 is an explicit exception: after safe startup and before initializing
+USB it selects a 120 MHz supervisor clock, then uses nominal 20 MHz PWM only
+after manual SRAM loading/verification. Its clock/CPU/trap chain is compiled
+separately with the existing 20 MHz opt-in; other stages retain their own
+limits/defaults. This is an operating assumption, not new bench qualification.
+
 Shared firmware does not make every early-stage diagnostic safe on a fully
 populated PCB. Respect each stage's required device population and test
 preconditions, especially walking-output tests intended for empty destination
@@ -84,7 +90,7 @@ terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
 assembles the optimized CCP/BDOS from `cpm64_z80.asm`, and emits all
 provisionable images.
 
-Install CMake, Ninja, Python 3, `picotool`, and `z80asm`. The firmware needs a
+Install CMake, Ninja, Python 3.11 or newer, `picotool`, and `z80asm`. The firmware needs a
 complete Arm GNU bare-metal toolchain with Newlib; the Homebrew compiler alone
 does not provide the required runtime. Install the
 [Pico SDK](https://github.com/raspberrypi/pico-sdk) with its Git submodules
@@ -155,6 +161,19 @@ The
 | `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 320 KiB disks |
 | `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
 | `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
+
+For the USB-only Phase 9 baseline, build this instead:
+
+```sh
+cmake --build build --target z80_stage09_cpm_images -j
+```
+
+It writes the same artifact names to `build/cpm-stage09/`, but the complete
+flash image contains Stage 9 firmware, not Stage 10. Stage 9 waits with RESET
+LOW until Ctrl+] `l` loads/verifies SRAM and Ctrl+] `g` starts at nominal
+20 MHz. Its optional Ctrl+] `t` read-only Z80 disk test requires a reboot
+and fresh load before CP/M execution. See the
+[Phase 9 USB workflow](../implementation/phase-9-flash-storage.md#controlled-usb-workflow).
 
 Run the host regression checks with:
 
@@ -231,6 +250,40 @@ or opening another terminal on the same port.
 
 ## 7.2 Flash Provisioning
 
+!!! warning "Finish any running hardware test before provisioning"
+    Building does not deploy. Do not replace firmware, open a second serial
+    owner, or reset the Pico during an active soak. Back up disk contents
+    before any full-image or individual drive update.
+
+For **Stage 9**, build `z80_stage09_cpm_images`, enter BOOTSEL with the
+documented external-5-V-before-USB sequence, then provision new/disposable
+storage using:
+
+```sh
+picotool load -v build/cpm-stage09/z80romless-flash.bin -t bin -o 0x10000000
+picotool reboot
+```
+
+To preserve drives B-D and the journal, selectively update the Stage 9
+firmware, boot package and matching Drive A system image:
+
+```sh
+picotool load -v build/src/stage09_flash_storage/z80_stage09_flash_storage.uf2
+picotool load -v build/cpm-stage09/z80boot.pkg -t bin -o 0x102A0000
+picotool load -v build/cpm-stage09/drive_a_cpm63k-z80.img -t bin -o 0x102C0000
+picotool reboot
+```
+
+Updating Drive A replaces its files: retain a backup. Updating only the boot
+package leaves stale BIOS bytes in Drive A's reserved tracks and is not a
+complete matching-system update. Open USB CDC and follow the Phase 9
+load/start procedure; no Wi-Fi credentials or browser are needed.
+
+Before a selective disk-image update, complete a clean stop/flush. If a fault
+left a committed journal entry, recover and verify that old/new block first;
+do not let a pending replay overwrite part of a newly provisioned disk image.
+
+The remaining examples provision the final **Stage 10** network image.
 For a new or disposable flash, put the Pico in BOOTSEL mode and write the
 complete image. This erases existing CP/M disk contents and the journal:
 

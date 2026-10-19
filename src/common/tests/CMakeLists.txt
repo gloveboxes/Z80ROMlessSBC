@@ -82,6 +82,9 @@ if(SOAK_Z80ASM)
       "${CMAKE_CURRENT_SOURCE_DIR}/math_soak_z80_test.py"
       --image-builder "$<TARGET_FILE:scope_test>" --scope)
     set_tests_properties(scope_z80_execution PROPERTIES TIMEOUT 60)
+    add_test(NAME cpm_bios_z80_execution COMMAND "${SOAK_EMULATOR_PYTHON}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/cpm_boot_z80_test.py")
+    set_tests_properties(cpm_bios_z80_execution PROPERTIES TIMEOUT 60)
   else()
     message(STATUS "Independent math soak execution disabled; set SOAK_EMULATOR_PYTHON")
   endif()
@@ -166,6 +169,24 @@ target_compile_features(disk_test PRIVATE c_std_11)
 target_compile_options(disk_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME disk_protocol COMMAND disk_test)
 set_tests_properties(disk_protocol PROPERTIES TIMEOUT 5)
+
+add_executable(flash_backend_test flash_backend_test.c)
+target_include_directories(flash_backend_test PRIVATE fakes ../include)
+target_compile_features(flash_backend_test PRIVATE c_std_11)
+target_compile_options(flash_backend_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME flash_backend_recovery COMMAND flash_backend_test)
+set_tests_properties(flash_backend_recovery PROPERTIES TIMEOUT 15)
+
+include(../../stage09_flash_storage/disk_diagnostic_build.cmake)
+add_executable(stage09_test stage09_test.c ../terminal_queue.c
+  "${diagnostic_header}")
+target_include_directories(stage09_test PRIVATE fakes ../include
+  "${CMAKE_CURRENT_BINARY_DIR}")
+target_compile_definitions(stage09_test PRIVATE Z80_EXPERIMENTAL_20MHZ=1)
+target_compile_features(stage09_test PRIVATE c_std_11)
+target_compile_options(stage09_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME stage09_usb_cpm COMMAND stage09_test)
+set_tests_properties(stage09_usb_cpm PROPERTIES TIMEOUT 5)
 
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/wifi_config.h"
 	"#define Z80_WIFI_SSID \"test\"\n#define Z80_WIFI_PASSWORD \"\"\n")

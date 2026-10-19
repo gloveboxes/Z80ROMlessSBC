@@ -8,7 +8,7 @@ The memory map is:
 | --- | ---: | ---: |
 | CCP | `0xE700` | 2,048 bytes |
 | BDOS | `0xEF00` | 3,584 bytes |
-| BIOS | `0xFD00` | 710 bytes currently |
+| BIOS | `0xFD00` | 718 bytes currently |
 
 The checked-in `cpm64_system.bin` was captured from RAM after the matching
 Burcon `MOVCPM 64` and `SYSGEN` utilities produced and booted a 64K system. It
@@ -55,6 +55,11 @@ same fixed-size sections upward by `0x0400`.
 `z80_bios.asm` is assembled at `0xFD00`. It uses terminal data/status ports
 `0x00`/`0x01` and disk command, drive, LBA-low, LBA-high, and data ports
 `0x10`-`0x14`. Warm boot reloads 44 sequential records from native Drive A.
+The BIOS reports `B0h` on reserved port `0x05` at cold entry and `C0h`
+immediately before handing control to CCP, including warm boot. These reports
+prove execution milestones, not a usable prompt. Phase 9 exposes CP/M over
+USB CDC at nominal 20 MHz after explicit slow load/verification and start
+commands; Stage 10 retains its separate network transport and 1 MHz default.
 The source deliberately uses the Z80 instruction set, including `DJNZ`,
 relative branches, rotate/carry status polling, carry-to-mask `SBC A,A`, and
 `INIR`/`OTIR` block I/O; it is not restricted to the 8080-compatible subset.
@@ -87,6 +92,22 @@ optionally composes the complete 4 MiB flash image.
 ```sh
 python3 src/cpm/build_images.py --output-dir build/cpm
 ```
+
+The boot packer rejects incomplete images and a reset vector other than
+`JP FD00h`; firmware independently checks the same shape and both CRCs.
+`z80_stage09_cpm_images` generates a complete Stage 9 provisioning set in
+`build/cpm-stage09/`; `z80_cpm_images` retains Stage 10 in `build/cpm/`.
+Use a matching boot package and Drive A system image after BIOS changes.
+
+The independent core used by the SRAM soak can also execute the actual BIOS,
+all-drive directory reads, transient exit/warm boot and the read-only Z80
+disk diagnostic:
+
+```sh
+build/math-soak-emulator/bin/python src/common/tests/cpm_boot_z80_test.py
+```
+
+This is host-model evidence, not physical 20 MHz or flash timing qualification.
 
 To run the end-to-end test with the project-owned `z80-debug-host`:
 

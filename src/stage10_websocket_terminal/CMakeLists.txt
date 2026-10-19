@@ -72,6 +72,7 @@ target_include_directories(z80_terminal PUBLIC
   ${stage10_generated_dir}
 )
 target_link_libraries(z80_terminal PUBLIC
+  z80_terminal_queue
   z80_flash_disk
   z80_pico_ws_server
   pico_cyw43_arch_lwip_threadsafe_background

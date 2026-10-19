@@ -8,7 +8,7 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Transient Program Area (TPA) | `0x0100`-`0xE6FF` | `.COM` program, dcc runtime, static data, heap, and stack |
 | CCP | `0xE700`-`0xEEFF` | Console Command Processor, reloaded after a warm boot |
 | BDOS | `0xEF00`-`0xFCFF` | CP/M console, file, and disk service layer; entry at `0xEF06` |
-| BIOS | `0xFD00`-`0xFFC5` | 710-byte Z80-optimized boot, console, disk, and translation routines |
+| BIOS | `0xFD00`-`0xFFCD` | 718-byte Z80-optimized boot, console, disk, translation and startup-report routines |
 
 The TPA contains `0xE600` bytes, or 58,880 bytes, before the CCP boundary. A
 dcc program and every runtime block selected for it must fit in this space

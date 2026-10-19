@@ -48,7 +48,7 @@ nav:
           - 20 MHz arithmetic and SRAM soak: en/implementation/20mhz-soak.md
           - No-I/O 20 MHz scope test: en/implementation/20mhz-scope.md
       - Phase 8 - Bidirectional I/O and USB terminal: en/implementation/phase-8-virtual-io.md
-      - Phase 9 - Flash storage: en/implementation/phase-9-flash-storage.md
+      - Phase 9 - USB CP/M and flash storage: en/implementation/phase-9-flash-storage.md
       - Phase 10 - WebSocket terminal: en/implementation/phase-10-websocket.md
       - Frequency qualification: en/implementation/frequency-qualification.md
   - CP/M and dcc:

@@ -1,10 +1,10 @@
-# 8.10 Phase 9 - Flash Disk Image Loader and CP/M Storage
+# 8.10 Phase 9 - USB CP/M Terminal and Flash Storage
 
 <div data-checklist="phase-9" data-checklist-label="Phase 9" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured
 result. Progress is saved in this browser; ticks are not automatic verification.
-Leave Stage 10-dependent tests unticked until completed with that terminal.
+Leave Stage 10 network-dependent tests unticked until completed there.
 The bring-up checkpoint is not the final storage pass gate.
 
 <button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
@@ -33,9 +33,11 @@ virtual disks. A **cold boot** starts the Pico and reloads SRAM; a CP/M
 <input type="checkbox" data-checklist-id="storage-provisioning" aria-label="Storage provisioned with host backups and Stage 9 firmware loaded"> The maintained build already sets the linker boundary and flash definitions
 above; you do not need to edit CMake for normal construction. Use the
 [provisioning procedure](../system/firmware-build.md#72-flash-provisioning)
-and retain host backups. The full 4 MiB image includes Stage 10 firmware;
-after initial provisioning, load the Stage 9 UF2 for this phase, preserving
-the storage regions. Do not mistake the disk image files for Pico firmware.
+and retain host backups. Build `z80_stage09_cpm_images` for a complete
+Stage 9 image in `build/cpm-stage09/`; this starts with the CPU held reset
+and does not temporarily boot Stage 10. The existing `z80_cpm_images` target
+still packages Stage 10 in `build/cpm/`. Do not mistake disk image files
+for Pico firmware.
 
 !!! warning "Use disposable disk contents for fault tests"
     Complete normal boot/read/write checks before injecting faults. Tests
@@ -48,15 +50,128 @@ the storage regions. Do not mistake the disk image files for Pico firmware.
 reboots into recovery instead of executing an unverified image. Capture the
 USB error/status first. Do not bypass verification merely to get a prompt.
 
-!!! note "Stage 9 is a disk-only diagnostic"
-    Its stock application implements ports 0x10-0x14 and USB status/fault
-    commands, but no CP/M terminal. Do not expect an interactive `A>` prompt
-    over USB. The interactive filesystem and Wi-Fi cases below are storage
-    acceptance requirements completed with the Stage 10 terminal. Other
-    port/fault cases require the stated Z80 test program or test-only setup;
-    a startup `PASS` line does not run them automatically.
+!!! important "USB terminal first; nominal 20 MHz after loading"
+    Stage 9 implements the same `0x00`/`0x01` terminal contract as Stage 8
+    and Stage 10, using USB CDC rather than Wi-Fi. It does not automatically
+    load or run CP/M. Slow, Z80-assisted loading and complete readback happen
+    first; a separate command starts execution at **nominal 20,000,000 Hz,
+    50% duty** (`120 MHz / 6`). This is the requested operating assumption,
+    not a claim that CP/M, disk I/O or timing margin has passed bench
+    qualification at that frequency. I/O traps and flash writes still pause
+    execution. Stage 10 retains its separate 1 MHz default.
 
-**Firmware feature:** Recover any valid journal and validate the boot manifest
+## Controlled USB workflow
+
+Do not deploy this firmware while another physical test or soak is running.
+No probing, wiring changes or firmware replacement is required to build it.
+After that test finishes, follow the
+[power and provisioning procedure](../system/firmware-build.md#72-flash-provisioning).
+Both the Pico firmware and the boot package/Drive A system tracks must come
+from the same new build: the BIOS now emits startup evidence.
+
+```sh
+cmake --build build --target z80_stage09_cpm_images -j
+```
+
+For an already provisioned board, selectively update the Stage 9 UF2,
+`z80boot.pkg`, and matching `drive_a_cpm63k-z80.img` using Section 7's
+addresses. Updating Drive A overwrites its existing files, so back it up first.
+For disposable/new storage, the complete `build/cpm-stage09/z80romless-flash.bin`
+contains everything. Building either target never flashes the board.
+
+Open the Pico's USB CDC port with a terminal, using your actual port name:
+
+```sh
+picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbmodemXXXX
+```
+
+Do not open a second serial owner. Disable local echo. In picocom,
+**Ctrl+A then Ctrl+X** exits the host terminal; **Ctrl+] then a command**
+controls the supervisor. Ordinary letters, digits and CP/M control keys
+are terminal input, not diagnostic commands.
+
+| Sequence | Supervisor action |
+| --- | --- |
+| Ctrl+] then `l` | Recover journal; validate manifest/CRCs, exact 65,536-byte payload and `JP FD00h`; load and independently read back every SRAM byte; leave RESET LOW |
+| Ctrl+] then `g` | Start the verified image from a fresh reset at nominal 20 MHz |
+| Ctrl+] then `t` | After loading, replace the SRAM entry code with a read-only Z80 disk diagnostic; compare every byte of all four drives; reboot afterward |
+| Ctrl+] then `s` | Print run state, configured clock, BIOS evidence, disk/fatal state, queue drops and trap error counts |
+| Ctrl+] then `x` | While running CP/M, complete/flush disk work, pause the flash worker, then hold RESET LOW and stop PWM; during the read-only diagnostic, stop directly |
+| Ctrl+] then `r` | Reboot the Pico only while stopped; journal recovery runs on the next `l` |
+| Ctrl+] then `0` | Disarm a fault while running |
+| Ctrl+] then `1`-`8` | Arm a one-shot journal/flash-safe watchdog fault while running; disposable disks only |
+| Ctrl+] then `h` | Print help |
+| Ctrl+] then Ctrl+] | Send a literal Ctrl+] to CP/M |
+
+### 1. Prove loading without executing CP/M
+
+Type **Ctrl+] then `l`**. Loading reports recovery, manifest validation,
+load and verify progress every 4 KiB. Cancellation is checked every 256 bytes:
+type `x` (plain or after Ctrl+]) to cancel; loss of the USB connection also
+cancels at the next checkpoint. Failure/cancellation asserts reset, inhibits
+SRAM reads, isolates the data paths and stops PWM. The first fault includes
+phase, address, expected/actual bytes and error category.
+
+Success says **65,536 bytes loaded and independently read back; CPU not
+running**. Check RESET LOW before proceeding. One load attempt is allowed
+per Pico boot; reboot after cancellation/failure or a stopped run instead
+of reinitializing live queues or replaying flash recovery alongside core 1.
+
+### 2. Optional read-only Z80 disk qualification
+
+After `l`, type **Ctrl+] then `t`**. The actual Z80 program selects drives
+A-D and LBAs 0-2559, reads exactly 128 bytes per record using `INIR`, and
+reports those bytes using `OTIR` on diagnostic port `0x06`. The Pico compares
+them in order with the recovered XIP flash image. A PASS requires exactly
+**1,310,720 matching bytes**, all 10,240 records, and the final success
+report on port `0x05`. The test issues no disk write or flush commands.
+It stops at the first mismatch, disk-reported failure, or five-minute timeout.
+
+The byte offset in a mismatch identifies the drive (`offset / 327680`), LBA
+within that drive (`(offset % 327680) / 128`) and byte within the record
+(`offset % 128`). This is stronger than calling the C handlers directly,
+but is not proof of journal durability, filesystem behavior or analogue
+timing margins. Progress is printed every 64 KiB.
+
+The diagnostic overwrites part of SRAM, so it cannot subsequently start
+CP/M from that image. Use **Ctrl+] `r`**, reconnect if needed, then **Ctrl+]
+`l`** to load CP/M again. Flash disk contents remain unchanged.
+
+### 3. Start CP/M and prove it is alive
+
+After a fresh successful `l`, type **Ctrl+] then `g`**. These are separate
+milestones:
+
+1. The supervisor reports reset released and the configured clock.
+2. The Z80 BIOS reports cold entry (`OUT (05h),B0h`).
+3. The BIOS reports handoff to CCP (`OUT (05h),C0h`); warm boot reports this too.
+4. The **CP/M banner and `A>` prompt**, followed by successful commands, prove
+   the console and operating system are functioning.
+
+The first three are not an automatic CP/M PASS. Missing BIOS/handoff evidence
+after ten seconds requests a safe stop; check that the matching BIOS package
+was provisioned. Read-only disk testing and a real CP/M prompt remain distinct
+acceptance results.
+
+Start with `DIR`, `DIR B:`, `DIR C:` and `DIR D:`; check the distinct sentinels
+listed below. Run `LS` and require a natural return through BIOS warm boot to
+the prompt. Only then test copies/writes on disposable contents. The file
+named `drive_d_blank.img` currently contains the documented `DOCTOR.COM`
+sentinel; its historical filename is not evidence that it is empty.
+
+The shared terminal queues hold 128 input and 512 output bytes. The BIOS
+waits for transmit room; USB output is pumped only when the CDC transport
+has space. Disconnecting preserves queued output and reconnecting resumes it,
+although bytes already in flight at disconnect are not guaranteed. CRLF
+input becomes one CP/M carriage return. Overflow is counted and printed as
+FAIL; reduce paste rate and repeat any affected acceptance test.
+
+To stop, use **Ctrl+] then `x`** and wait for **Disk quiescent; RESET held
+LOW, PWM stopped**. Do not remove power or request reboot before that
+confirmation. A fatal storage error instead holds reset and requires reboot
+recovery; preserve the error log first.
+
+**Firmware feature:** On explicit `l`, recover any valid journal and validate the boot manifest
 and CRC32 while the CPU is held reset. Then initialize the assisted loader,
 release reset, inject instructions to write SRAM, and compare every byte.
 Reset again before normal execution. The Pico never drives addresses or SRAM
@@ -68,8 +183,14 @@ Reads are synchronous XIP copies; writes use the journaled core-1
 service and BUSY/READY/ERROR behavior defined in the
 [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage).
 
+Before erasing a target sector, the backend reads back and compares the
+complete journal data sector and header page. A failed journal program
+therefore leaves the old target intact and latches a storage error. Target
+readback and header-clear checks remain required after programming.
+
 **Application source:** [src/stage09_flash_storage/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c),
 with the shared [disk device](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c),
+[terminal queues](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_queue.c),
 [flash backend](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c), and
 [flash layout](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/flash_layout.h).
 
@@ -106,6 +227,18 @@ time, not copied into this page.
 
     ```c
     {% include "../../../../src/common/include/z80sbc/flash_layout.h" %}
+    ```
+
+??? example "Shared USB/WebSocket terminal queues - src/common/terminal_queue.c"
+
+    ```c
+    {% include "../../../../src/common/terminal_queue.c" %}
+    ```
+
+??? example "Read-only all-record Z80 program - src/stage09_flash_storage/disk_diagnostic.asm"
+
+    ```asm
+    {% include "../../../../src/stage09_flash_storage/disk_diagnostic.asm" %}
     ```
 
 ??? example "Disk protocol and core-1 service - src/common/disk_device.c"
@@ -172,7 +305,7 @@ No erase, program, blocking queue, or flash-safe call runs inside
   services its queue. Verify the completed write uses the drive, LBA, write
   type, and 128-byte payload captured when the command began and changes no
   other record.
-8. <input type="checkbox" data-checklist-id="cpm-filesystem-stage10" aria-label="CPM filesystem acceptance completed with Stage 10 terminal"> Boot the packaged image and exercise the filesystem through CP/M itself:
+8. <input type="checkbox" data-checklist-id="cpm-filesystem-usb" aria-label="CPM filesystem acceptance completed with Stage 9 USB terminal"> Boot the packaged image using the Stage 9 USB terminal and exercise the filesystem through CP/M itself:
   run `DIR` on A-D and require each sentinel on only its expected drive; run
   `LS` through natural transient exit and BIOS warm boot; run multi-extent
   `C:ATTNC11`; and use `PIP` to copy files across drives. Reboot and compare
@@ -201,8 +334,8 @@ No erase, program, blocking queue, or flash-safe call runs inside
   the core-0 release queue; recovery must retain the verified old or new
   disk block.
 
-Stage 9 USB diagnostic keys `1` through `6` arm the six power-cut points
-in test 10; keys `7` and `8` arm safe-execute entry and exit failure in
+Stage 9 **Ctrl+] then `1` through `6`** arms the six power-cut points
+in test 10; **Ctrl+] then `7` or `8`** arms safe-execute entry and exit failure in
 test 13. Each key arms one watchdog reset for the next CP/M write or flush.
 Before arming, preserve host copies of the old and intended new 4 KiB block;
 after reboot, read back and compare the complete block before proceeding to
@@ -210,15 +343,46 @@ the next injection point.
 
 ## Bring-up checkpoint
 
-Before adding the Stage 10 terminal:
+Before adding the Stage 10 network transport:
 
 - <input type="checkbox" data-checklist-id="checkpoint-provisioning" aria-label="Stage 9 checkpoint provisioning verified"> Require verified provisioning.
 - <input type="checkbox" data-checklist-id="checkpoint-boot-recovery" aria-label="Stage 9 checkpoint journal recovery and full SRAM boot verification passed"> Require successful journal recovery and full SRAM boot-image verification.
 - <input type="checkbox" data-checklist-id="checkpoint-status" aria-label="Stage 9 checkpoint has no fatal storage status"> Require no fatal storage status.
 - <input type="checkbox" data-checklist-id="checkpoint-phase8" aria-label="Stage 9 checkpoint Phase 8 bus and IO measurements still pass"> Require the Phase 8 bus/I/O measurements still passing.
-- <input type="checkbox" data-checklist-id="checkpoint-outstanding" aria-label="Outstanding interactive network and fault tests recorded"> Record the interactive, network, and fault-injection cases that remain outstanding.
+- <input type="checkbox" data-checklist-id="checkpoint-usb" aria-label="Stage 9 USB CPM prompt directory transient and warm boot verified"> Require the USB CP/M prompt, per-drive directories, transient execution and warm boot.
+- <input type="checkbox" data-checklist-id="checkpoint-disk-reader" aria-label="Read-only Z80 all-record disk diagnostic verified"> Record the read-only all-record Z80 diagnostic separately from CP/M filesystem tests.
+- <input type="checkbox" data-checklist-id="checkpoint-outstanding" aria-label="Outstanding network and fault tests recorded"> Record network and any fault-injection cases that remain outstanding.
 
-Proceeding to Stage 10 enables those tests; it does not mark them passed.
+Proceeding to Stage 10 enables network concurrency tests; it does not mark
+them passed or replace the USB baseline.
+
+## Host validation versus bench evidence
+
+The control suite now executes the actual flash backend with modeled flash
+erase/program operations, not just disk-device stubs. It covers exact image
+shape, CRCs, cancellation, first SRAM faults, journal staging verification,
+all eight watchdog fault points, recovery, cache behavior, rotation and bounds.
+The Phase 9 controller tests use the real terminal queues and check framed
+commands, a 20 MHz start request, backpressure, overflow, startup reports
+and safe stop/flush interleavings.
+
+With the existing independent-core environment configured, the suite also
+executes the real packaged BIOS/CP/M through cold boot, all-drive directory
+reads and transient/warm boot, plus the complete read-only disk diagnostic:
+
+```sh
+cmake --build build/host-control --target flash_backend_test stage09_test disk_test
+ctest --test-dir build/host-control \
+  -R '^(flash_backend_recovery|stage09_usb_cpm|disk_protocol|cpm_bios_z80_execution)$' \
+  --output-on-failure
+python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+```
+
+Use Python 3.11 or newer for the image tests. The independent-core test
+requires the existing `SOAK_EMULATOR_PYTHON` CMake setting and pinned
+`src/common/tests/requirements-soak.txt`; it does not prove physical
+20 MHz I/O, setup/hold margins or real flash endurance. Bench checklist
+items remain unticked until measured.
 
 ## Pass gate
 

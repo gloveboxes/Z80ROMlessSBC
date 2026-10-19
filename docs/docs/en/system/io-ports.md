@@ -27,8 +27,8 @@ or Pico GPIO is required.
 | `0x02` | 2 | Shared service command (OUT) / status (IN) | Suggested |
 | `0x03` | 3 | Shared service request bytes (OUT) | Suggested |
 | `0x04` | 4 | Shared service response bytes (IN) | Suggested |
-| `0x05` | 5 | Stage 10 qualification result | Reserved for diagnostics |
-| `0x06` | 6 | Qualification data; Stage 8 also uses this port for test results | Reserved for diagnostics |
+| `0x05` | 5 | BIOS cold-entry/CCP-handoff reports; Stage 9 disk-test and Stage 10 qualification results | Reserved for diagnostics |
+| `0x06` | 6 | Stage 9 disk-test bytes and Stage 10 qualification data; Stage 8 test results | Reserved for diagnostics |
 | `0x07` | 7 | Spare | Unallocated |
 | `0x10` | 16 | Disk command (OUT) / status (IN) | Fixed |
 | `0x11` | 17 | Disk drive selection | Fixed |
@@ -42,6 +42,13 @@ or Pico GPIO is required.
 This reserves **14 ports and leaves two spare**, while preserving terminal,
 disk and diagnostic assignments. A port supports both IN and OUT, so a
 command and its status can share one number.
+
+The BIOS emits `B0h` on port `0x05` at cold entry and `C0h` immediately before
+handoff to CCP (including warm boot). Stage 9 observes these as execution
+milestones, not proof of a working CP/M prompt. Its read-only disk test uses
+port `0x06` for compared bytes and `5Ah`/`E1h` on port `0x05` for completion/
+failure. These diagnostic meanings are mode-specific and do not change the
+fixed terminal or disk ABI.
 
 ## Why A4 is monitored but A3 is not
 

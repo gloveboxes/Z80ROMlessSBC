@@ -32,4 +32,6 @@ absolute_time_t make_timeout_time_us(uint32_t delay);
 absolute_time_t make_timeout_time_ms(uint32_t delay);
 bool time_reached(absolute_time_t deadline);
 void tight_loop_contents(void);
+void stdio_init_all(void);
+int getchar_timeout_us(uint32_t timeout_us);
 #endif

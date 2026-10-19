@@ -181,6 +181,10 @@ def build_z80_image(cpm_system: bytes, bios: bytes) -> bytes:
 
 
 def build_boot_package(image: bytes) -> bytes:
+    if len(image) != Z80_IMAGE_BYTES:
+        raise ValueError("CP/M boot image must contain exactly 65536 bytes")
+    if image[:3] != bytes((0xC3, BIOS_BASE & 0xFF, BIOS_BASE >> 8)):
+        raise ValueError("CP/M reset vector must jump to the BIOS at FD00h")
     image_crc = binascii.crc32(image) & 0xFFFFFFFF
     header = struct.pack(
         "<IHHII",

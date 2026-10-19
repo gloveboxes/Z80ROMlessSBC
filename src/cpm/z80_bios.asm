@@ -6,6 +6,7 @@ TERM_DATA:      equ 00h
 TERM_STATUS:    equ 01h
 TERM_RX_READY:  equ 01h
 TERM_TX_ROOM:   equ 02h
+BOOT_REPORT:    equ 05h
 
 DISK_COMMAND:   equ 10h
 DISK_DRIVE_PORT: equ 11h
@@ -47,6 +48,8 @@ reader_input_entry:
                 jp translate_sector
 
 cold_boot:
+                ld a,0b0h
+                out (BOOT_REPORT),a
                 ld sp,0080h
                 ld hl,0
                 ld (0003h),hl
@@ -107,6 +110,8 @@ enter_cpm:
                 ld (dma_address),hl
                 ld a,(0004h)
                 ld c,a
+                ld a,0c0h
+                out (BOOT_REPORT),a
                 jp CCP_BASE+3
 
 console_status:

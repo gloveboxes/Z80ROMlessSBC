@@ -53,7 +53,7 @@ For each phase:
 | [20 MHz arithmetic and SRAM soak](20mhz-soak.md) | Optional one-hour resident CPU/stack/SRAM workload after earlier bring-up and frequency screens |
 | [No-I/O 20 MHz scope test](20mhz-scope.md) | Separate continuous CPU/SRAM workload for scope captures; results retrieved from SRAM only after stopping |
 | [8 - Bidirectional I/O and USB terminal](phase-8-virtual-io.md) | IN replies, port aliases, terminal round-trip and repeated boot/I/O integration |
-| [9 - Flash storage](phase-9-flash-storage.md) | Manifest boot, journal recovery, and CP/M disks |
+| [9 - USB CP/M and flash storage](phase-9-flash-storage.md) | Controlled load/verify, nominal 20 MHz execution, USB terminal, all-record disk diagnostic and journal recovery |
 | [10 - WebSocket terminal](phase-10-websocket.md) | Final multicore network terminal and disk integration |
 | [Frequency qualification](frequency-qualification.md) | Measured operating limit and complete timing evidence |
 

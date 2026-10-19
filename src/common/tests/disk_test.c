@@ -49,6 +49,10 @@ bool queue_try_remove(queue_t *queue, void *item) {
 
 bool queue_is_empty(queue_t *queue) { return queue->count == 0; }
 bool z80_flash_backend_init(void) { return true; }
+bool z80_flash_backend_init_observed(z80_boot_observer_t observer,
+                                     void *context) {
+  (void)observer; (void)context; return true;
+}
 void z80_flash_backend_core0_service(void) {}
 bool z80_flash_backend_read_record(unsigned drive, uint16_t lba,
                                     uint8_t *data, size_t length) {

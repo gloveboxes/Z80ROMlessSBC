@@ -10,6 +10,8 @@ extern "C" {
 #endif
 
 bool z80_terminal_init(void);
+void z80_terminal_queue_init(void);
+void z80_terminal_set_connected(bool connected);
 void z80_terminal_core1_service(void);
 uint8_t z80_terminal_io_read(uint8_t port);
 void z80_terminal_io_write(uint8_t port, uint8_t value);

@@ -51,12 +51,13 @@ server running on the Pico 2 W.
 
 Wi-Fi/WebSocket is the intended final and day-one operating terminal.
 Before networking is introduced, [Phase 8](../implementation/phase-8-virtual-io.md)
-uses USB CDC over the Pico's
+and [Phase 9](../implementation/phase-9-flash-storage.md)
+use USB CDC over the Pico's
 existing USB connector as an intermediate terminal transport. USB CDC
 consumes no GPIO and appears as `/dev/cu.usbmodem...` on macOS. It lets
 the same `0x00`/`0x01` virtual-port contract and bounded queues be tested
 without lwIP timing in the loop. Keep diagnostics framed or on a separate
-CDC interface so debug text cannot become CP/M input. That firmware
+CDC interface so debug text cannot become CP/M input. Those applications
 uses ordinary bytes as terminal input and reserves Ctrl-] followed by one
 command byte for framed diagnostics. [Phase 10](../implementation/phase-10-websocket.md)
 replaces the USB transport
@@ -88,9 +89,9 @@ The initial terminal decode is intentionally small:
 
 | Port | Direction | Function |
 |----:|----|----|
-| `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to browser |
-| `0x00` | Z80 `IN` | Terminal receive byte from browser to Z80; returns `0x00` if empty |
-| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit queue has room, bit 7 = WebSocket client connected |
+| `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to host terminal |
+| `0x00` | Z80 `IN` | Terminal receive byte from host to Z80; returns `0x00` if empty |
+| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit queue has room, bit 7 = transport connected (USB in Stage 9, WebSocket in Stage 10) |
 
 This is enough for ROM monitors, BASIC, CP/M console glue, and small
 diagnostics. If later software needs modem-control style signals, add
@@ -135,7 +136,7 @@ Use separate artifacts only for selective updates. The
 and addresses. Full provisioning, `flash_nuke.uf2`, and mass erase destroy
 existing disk contents, so keep backups.
 
-**Runtime behavior.** On cold boot, the Pico recovers any interrupted disk
+**Runtime behavior.** On boot-image initialization, the Pico recovers any interrupted disk
 update, validates `z80boot.pkg`, copies its image to Z80 SRAM, and verifies the
 copy, then resets to PC zero before execution. The BIOS transfers one 128-byte disk record at a
 time. Core 0 serves reads from memory-mapped flash and queues writes to core 1,
@@ -144,9 +145,20 @@ Z80's external SRAM. Directory writes flush immediately. Other writes flush
 on cache eviction, an explicit BIOS request, warm boot, or 250 ms of
 inactivity.
 
+Stage 9 waits for USB commands rather than automatically executing CP/M:
+Ctrl+] `l` loads/verifies with slow injected clocks and holds reset afterward;
+Ctrl+] `g` starts at nominal 20 MHz using a 120 MHz supervisor clock.
+The manifest must describe a complete 65,536-byte image beginning with
+`JP FD00h`. BIOS reports on reserved port `0x05` distinguish cold entry
+(`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
+and filesystem tests remain necessary. Stage 10 continues automatic startup
+at its separate 1 MHz default.
+
 A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
 At startup, firmware replays complete, CRC-valid committed entries and rejects
-invalid or out-of-range entries. The
+invalid or out-of-range entries. Before erasing a target, it verifies the
+staged journal data sector and header page by readback; afterward it verifies
+the complete new target and clears the header. The
 [Phase 9 implementation guide](../implementation/phase-9-flash-storage.md)
 defines the journal sequence, multicore lockout, failure handling, and tests.
 

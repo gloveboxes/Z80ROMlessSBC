@@ -8,6 +8,8 @@
 #include "z80sbc/flash_disk.h"
 
 bool z80_flash_backend_init(void);
+bool z80_flash_backend_init_observed(z80_boot_observer_t observer,
+                                     void *context);
 void z80_flash_backend_core0_service(void);
 bool z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
                                    uint8_t *data, size_t length);

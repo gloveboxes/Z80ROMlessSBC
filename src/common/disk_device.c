@@ -176,11 +176,16 @@ void z80_flash_core1_service(void) {
 }
 
 bool z80_flash_storage_init(void) {
+  return z80_flash_storage_init_observed(NULL, NULL);
+}
+
+bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
+                                     void *context) {
   queue_init(&disk_write_queue, sizeof(disk_request_t),
              DISK_WRITE_QUEUE_DEPTH);
   __atomic_store_n(&disk_fatal_error, 0, __ATOMIC_RELEASE);
   disk_status_store(DISK_STATUS_READY);
-  return z80_flash_backend_init();
+  return z80_flash_backend_init_observed(observer, context);
 }
 
 void z80_flash_core0_service(void) {

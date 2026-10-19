@@ -73,6 +73,7 @@ with the shared [terminal bridge](https://github.com/gloveboxes/Z80ROMlessSBC/bl
 ## WebSocket Terminal I/O Bridge (Final Phase 10 Integration)
 
 **Maintained source:** [terminal.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/terminal.h),
+[terminal_queue.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_queue.c),
 [terminal_bridge.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c), and
 [terminal_network.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp).
 
@@ -97,7 +98,13 @@ time, not copied into this page.
     {% include "../../../../src/stage10_websocket_terminal/main.c" %}
     ```
 
-??? example "Terminal queues and polling - src/common/terminal_bridge.c"
+??? example "Terminal queues shared with Stage 9 USB - src/common/terminal_queue.c"
+
+    ```c
+    {% include "../../../../src/common/terminal_queue.c" %}
+    ```
+
+??? example "Network polling - src/common/terminal_bridge.c"
 
     ```c
     {% include "../../../../src/common/terminal_bridge.c" %}

@@ -80,6 +80,14 @@ class BuildImagesTest(unittest.TestCase):
             self.bios,
         )
 
+    def test_boot_package_rejects_incomplete_or_wrong_reset_image(self) -> None:
+        for size in (0, 1, 65535, 65537):
+            with self.subTest(size=size):
+                with self.assertRaisesRegex(ValueError, "exactly 65536"):
+                    build_images.build_boot_package(bytes(size))
+        with self.assertRaisesRegex(ValueError, "reset vector"):
+            build_images.build_boot_package(bytes(65536))
+
     def test_native_drive_only_replaces_system_tracks(self) -> None:
         system = self.z80_system + self.bios
         self.assertEqual(self.native_drive[: len(system)], system)

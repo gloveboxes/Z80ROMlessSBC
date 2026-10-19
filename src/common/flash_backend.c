@@ -25,7 +25,9 @@ enum {
   DISK_CACHE_IDLE_FLUSH_MS = 250,
   Z80_BOOT_MAGIC = 0x5442385Au,
   Z80_BOOT_VERSION = 1u,
-  FLASH_SERVICE_ACQUIRE_BUS,
+  Z80_BOOT_IMAGE_BYTES = 65536u,
+  BOOT_PROGRESS_BYTES = 256u,
+  FLASH_SERVICE_ACQUIRE_BUS = 0,
   FLASH_SERVICE_RELEASE_BUS,
 };
 
@@ -106,6 +108,26 @@ static uint32_t journal_sequence;
 static unsigned int next_journal_pair;
 static absolute_time_t disk_cache_flush_deadline;
 static uint32_t armed_fault;
+static z80_boot_status_t boot_status;
+
+const z80_boot_status_t *z80_flash_boot_status(void) {
+  return &boot_status;
+}
+
+static bool boot_failed(z80_boot_error_t error) {
+  boot_status.error = error;
+  z80_cpu_fail_closed();
+  return false;
+}
+
+static bool boot_progress(z80_boot_phase_t phase, uint32_t completed,
+                           z80_boot_observer_t observer, void *context) {
+  boot_status.phase = phase;
+  boot_status.completed = completed;
+  if (observer != NULL && !observer(&boot_status, context))
+    return boot_failed(Z80_BOOT_ERROR_CANCELLED);
+  return true;
+}
 
 static uint32_t crc32_bytes(const uint8_t *data, size_t length) {
   uint32_t crc = UINT32_MAX;
@@ -155,6 +177,11 @@ static void write_callback(void *parameter) {
   flash_range_program(params->header_offset,
                       (const uint8_t *)&params->header, FLASH_PAGE_SIZE);
   inject_power_cut(Z80_FLASH_FAULT_AFTER_JOURNAL_HEADER);
+  if (memcmp((const void *)(XIP_BASE + params->data_offset), params->data,
+             FLASH_SECTOR_SIZE) != 0 ||
+      memcmp((const void *)(XIP_BASE + params->header_offset),
+             &params->header, sizeof(params->header)) != 0)
+    return;
   flash_range_erase(params->target_offset, FLASH_SECTOR_SIZE);
   inject_power_cut(Z80_FLASH_FAULT_AFTER_TARGET_ERASE);
   flash_range_program(params->target_offset, params->data,
@@ -242,25 +269,57 @@ static bool recover_journal(void) {
   return true;
 }
 
-static bool load_boot_image(void) {
+static bool load_boot_image(z80_boot_observer_t observer, void *context) {
   const boot_manifest_t *manifest =
       (const boot_manifest_t *)(XIP_BASE + Z80_FLASH_BOOT_OFFSET);
   const uint8_t *source =
       (const uint8_t *)(XIP_BASE + FLASH_BOOT_PAYLOAD_OFFSET);
 
+  if (!boot_progress(Z80_BOOT_MANIFEST, 0, observer, context))
+    return false;
   if (manifest->magic != Z80_BOOT_MAGIC ||
       manifest->version != Z80_BOOT_VERSION ||
       manifest->header_bytes != sizeof(*manifest) ||
-      manifest->image_bytes == 0 || manifest->image_bytes > 65536u ||
+      manifest->image_bytes != Z80_BOOT_IMAGE_BYTES ||
       crc32_bytes((const uint8_t *)manifest,
                   offsetof(boot_manifest_t, header_crc32)) !=
-          manifest->header_crc32 ||
-      crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32 ||
-      !z80_cpu_prepare_loader())
-    return false;
+          manifest->header_crc32)
+    return boot_failed(Z80_BOOT_ERROR_MANIFEST);
+  if (crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32)
+    return boot_failed(Z80_BOOT_ERROR_PAYLOAD_CRC);
+  if (source[0] != 0xC3 || source[1] != 0x00 || source[2] != 0xFD)
+    return boot_failed(Z80_BOOT_ERROR_MANIFEST);
+  if (!z80_cpu_prepare_loader())
+    return boot_failed(Z80_BOOT_ERROR_LOADER);
 
-  return z80_sram_load(0, source, manifest->image_bytes) &&
-         z80_sram_verify(0, source, manifest->image_bytes);
+  for (uint32_t address = 0; address < Z80_BOOT_IMAGE_BYTES; ++address) {
+    if (address % BOOT_PROGRESS_BYTES == 0 &&
+        !boot_progress(Z80_BOOT_LOAD, address, observer, context))
+      return false;
+    boot_status.completed = address;
+    boot_status.address = (uint16_t)address;
+    boot_status.expected = source[address];
+    if (!z80_sram_write_byte((uint16_t)address, source[address]))
+      return boot_failed(Z80_BOOT_ERROR_WRITE);
+  }
+  if (!boot_progress(Z80_BOOT_LOAD, Z80_BOOT_IMAGE_BYTES, observer, context))
+    return false;
+  for (uint32_t address = 0; address < Z80_BOOT_IMAGE_BYTES; ++address) {
+    if (address % BOOT_PROGRESS_BYTES == 0 &&
+        !boot_progress(Z80_BOOT_VERIFY, address, observer, context))
+      return false;
+    boot_status.completed = address;
+    boot_status.address = (uint16_t)address;
+    boot_status.expected = source[address];
+    if (!z80_sram_read_byte((uint16_t)address, &boot_status.actual))
+      return boot_failed(Z80_BOOT_ERROR_READ);
+    if (boot_status.actual != source[address])
+      return boot_failed(Z80_BOOT_ERROR_MISMATCH);
+  }
+  if (!boot_progress(Z80_BOOT_VERIFY, Z80_BOOT_IMAGE_BYTES, observer, context))
+    return false;
+  z80_cpu_fail_closed();
+  return true;
 }
 
 static bool request_core0(uint8_t operation) {
@@ -311,12 +370,12 @@ static bool flush_disk_cache(void) {
   params.header_offset = header_offset;
   params.data_offset = header_offset + FLASH_SECTOR_SIZE;
   params.target_offset = flash_offset;
-    params.data = disk_cache.data;
+  params.data = disk_cache.data;
   memset(&params.header, 0xFF, sizeof(params.header));
   params.header.magic = FLASH_JOURNAL_MAGIC;
-    params.header.sequence = ++journal_sequence;
+  params.header.sequence = ++journal_sequence;
   params.header.target_offset = flash_offset;
-    params.header.data_crc32 =
+  params.header.data_crc32 =
       crc32_bytes(disk_cache.data, sizeof(disk_cache.data));
   params.header.header_crc32 =
       crc32_bytes((const uint8_t *)&params.header,
@@ -410,16 +469,31 @@ bool z80_flash_backend_quiescent(void) {
 }
 
 bool z80_flash_backend_init(void) {
+  return z80_flash_backend_init_observed(NULL, NULL);
+}
+
+bool z80_flash_backend_init_observed(z80_boot_observer_t observer,
+                                     void *context) {
+  z80_cpu_fail_closed();
+  memset(&boot_status, 0, sizeof(boot_status));
+  boot_status.total = Z80_BOOT_IMAGE_BYTES;
   queue_init(&service_request_queue, sizeof(service_request_t), 4);
   queue_init(&service_result_queue, sizeof(bool), 4);
-  if (!recover_journal() || !load_boot_image())
+  if (!boot_progress(Z80_BOOT_RECOVERY, 0, observer, context))
+    return false;
+  if (!recover_journal())
+    return boot_failed(Z80_BOOT_ERROR_JOURNAL);
+  if (!load_boot_image(observer, context))
     return false;
   memset(&disk_cache, 0, sizeof(disk_cache));
   journal_sequence = 0;
   next_journal_pair = 0;
   disk_cache_flush_deadline = nil_time;
   __atomic_store_n(&armed_fault, Z80_FLASH_FAULT_NONE, __ATOMIC_RELEASE);
-  return flash_safe_execute_core_init();
+  if (!flash_safe_execute_core_init())
+    return boot_failed(Z80_BOOT_ERROR_FLASH_INIT);
+  return boot_progress(Z80_BOOT_VERIFIED, Z80_BOOT_IMAGE_BYTES,
+                        observer, context);
 }
 
 void z80_flash_backend_arm_fault(z80_flash_fault_point_t point) {

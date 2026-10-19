@@ -54,6 +54,12 @@ target_link_libraries(z80_flash_disk PUBLIC
 )
 target_compile_options(z80_flash_disk PRIVATE -Wall -Wextra -Werror)
 
+add_library(z80_terminal_queue STATIC common/terminal_queue.c)
+target_include_directories(z80_terminal_queue PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/common/include)
+target_link_libraries(z80_terminal_queue PUBLIC pico_stdlib pico_util)
+target_compile_options(z80_terminal_queue PRIVATE -Wall -Wextra -Werror)
+
 function(add_z80_stage target source)
   add_executable(${target} ${source})
   target_link_libraries(${target} PRIVATE z80_supervisor_common ${ARGN})
@@ -78,7 +84,8 @@ add_subdirectory(stage10_websocket_terminal)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_program(Z80ASM_EXECUTABLE z80asm)
 if(Z80ASM_EXECUTABLE)
-  set(cpm_output_dir ${CMAKE_BINARY_DIR}/cpm)
+  function(add_cpm_images target firmware directory)
+  set(cpm_output_dir ${CMAKE_BINARY_DIR}/${directory})
   add_custom_command(
     OUTPUT ${cpm_output_dir}/manifest.json
     BYPRODUCTS
@@ -94,10 +101,10 @@ if(Z80ASM_EXECUTABLE)
       ${CMAKE_CURRENT_LIST_DIR}/cpm/build_images.py
       --assembler ${Z80ASM_EXECUTABLE}
       --firmware
-        $<TARGET_FILE_DIR:z80_stage10_websocket_terminal>/z80_stage10_websocket_terminal.bin
+        $<TARGET_FILE_DIR:${firmware}>/${firmware}.bin
       --output-dir ${cpm_output_dir}
     DEPENDS
-      z80_stage10_websocket_terminal
+      ${firmware}
       cpm/z80_bios.asm
       cpm/cpm64_z80.asm
       cpm/build_images.py
@@ -109,9 +116,12 @@ if(Z80ASM_EXECUTABLE)
       disks/generated/drive_d_blank.img
     VERBATIM
   )
-  add_custom_target(z80_cpm_images
+  add_custom_target(${target}
     DEPENDS ${cpm_output_dir}/manifest.json
   )
+  endfunction()
+  add_cpm_images(z80_cpm_images z80_stage10_websocket_terminal cpm)
+  add_cpm_images(z80_stage09_cpm_images z80_stage09_flash_storage cpm-stage09)
 else()
   message(STATUS "z80asm not found; z80_cpm_images target is unavailable")
 endif()
