@@ -11,6 +11,10 @@ and terminal integration. The code is included directly from the checkout at
 documentation build time. Build from the repository rather than copying
 displayed files into a separate project.
 
+For one complete fresh-checkout workflow covering native C tests, hardware
+test replacements, Z80 emulation, real SDK cross-builds and their limitations,
+see [Building and Testing Pico C Firmware](firmware-testing.md).
+
 ## Breadboard-first, shared Pico firmware
 
 The staged Pico applications remain focused on the breadboard construction

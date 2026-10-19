@@ -34,6 +34,7 @@ nav:
       - Operational boundaries: en/system/operation.md
       - I/O ports and services: en/system/io-ports.md
       - Firmware build and provisioning: en/system/firmware-build.md
+      - Building and testing Pico C: en/system/firmware-testing.md
   - Breadboard implementation:
       - Plan and prerequisites: en/implementation/index.md
       - Phase 0 - Power distribution: en/implementation/phase-0-power.md

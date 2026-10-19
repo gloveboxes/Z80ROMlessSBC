@@ -358,6 +358,10 @@ them passed or replace the USB baseline.
 
 ## Host validation versus bench evidence
 
+For fresh-checkout prerequisites, native CMake configuration, emulator
+environment setup and real Pico builds in one place, see
+[Building and Testing Pico C Firmware](../system/firmware-testing.md).
+
 The control suite now executes the actual flash backend with modeled flash
 erase/program operations, not just disk-device stubs. It covers exact image
 shape, CRCs, cancellation, first SRAM faults, journal staging verification,
