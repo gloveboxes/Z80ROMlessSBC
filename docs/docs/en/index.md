@@ -31,11 +31,8 @@ files describe the previous circuit and must not be used for this build.
 ## How the computer works
 
 The design pairs a Z80 without a ROM chip with a Raspberry Pi Pico 2 W. The
-Pico supplies the clock and reset, then feeds instructions to the Z80 with
-SRAM reads inhibited. The Z80 writes and verifies its own RAM; it is the only
-address/write master. The lower 64 KiB of a 128 KiB SRAM provides memory.
-AHCT/LVC buffers separate 3.3 V and 5 V domains, and one HCT32 implements
-fixed read-inhibit, WAIT, and data-output gates. No PLD programmer is needed.
+Pico supplies the clock and reset, then bootstraps CP/M into SRAM by feeding
+the Z80 instructions to load and verify it.
 
 The Pico also provides virtual peripherals. During a Z80 input/output request,
 hardware pauses the processor while the Pico identifies the requested port and
