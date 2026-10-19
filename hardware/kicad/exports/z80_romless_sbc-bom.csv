@@ -5,6 +5,7 @@
 "C11","100u","Capacitor_THT:CP_Radial_D10.0mm_P5.00mm","1",""
 "D1","1N5819","Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal","1",""
 "J1","REGULATED 5V INPUT","TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm","1",""
+"J2","PICO GPIO EXPANSION","Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical","1",""
 "R17-R23","10k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","7",""
 "RN1-RN4","8x10k bussed","Resistor_THT:R_Array_SIP9","4",""
 "TP1","M1# TEST","TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded","1",""

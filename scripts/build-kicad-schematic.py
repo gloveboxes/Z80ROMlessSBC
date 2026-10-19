@@ -279,6 +279,17 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
     "SUPPLY": (
         "J", "5V INPUT", [pin(1, "+5V", "power_out", "right"), pin(2, "GND", "power_out", "right")]
     ),
+    "EXPANSION": (
+        "J",
+        "PICO GPIO EXPANSION",
+        [
+            pin(1, "GP8", "passive", "left"),
+            pin(2, "GP22", "passive", "left"),
+            pin(3, "GP26_ADC0", "passive", "left"),
+            pin(4, "3V3_OUT", "passive", "left"),
+            pin(5, "GND", "passive", "left"),
+        ],
+    ),
     "TESTPOINT": (
         "TP", "M1# TEST", [pin(1, "TP", "passive", "left")]
     ),
@@ -604,12 +615,12 @@ add_component("U10", "LVC245", "SN74LVC245AN bus-to-Pico", 914.4, 304.8, down_ne
 pico_nets = {
     1: "PICO_BUSACK_N", 2: "PICO_IORQ_N", 3: "GND", 4: "PICO_CLK",
     5: "@RESET_JUNCTION", 6: "PICO_BUSREQ_N", 7: "BOOT_READ_DISABLE", 8: "GND",
-    9: "PICO_DATA_UP_OE_N", 10: "DATA_DOWN_OE_N", 11: None, 12: "IO_RELEASE", 13: "GND",
+    9: "PICO_DATA_UP_OE_N", 10: "DATA_DOWN_OE_N", 11: "PICO_GP8", 12: "IO_RELEASE", 13: "GND",
     14: "PICO_D0", 15: "PICO_D1", 16: "PICO_D2", 17: "PICO_D3", 18: "GND",
     19: "PICO_D4", 20: "PICO_D5", 21: "PICO_D6", 22: "PICO_D7", 23: "GND",
     24: "PICO_A0", 25: "PICO_A1", 26: "PICO_A2",
-    27: "PICO_A4", 28: "GND", 29: None, 30: None,
-    31: None, 32: "PICO_RD_N", 33: "GND", 34: "PICO_WR_N",
+    27: "PICO_A4", 28: "GND", 29: "PICO_GP22", 30: None,
+    31: "PICO_GP26", 32: "PICO_RD_N", 33: "GND", 34: "PICO_WR_N",
     35: None, 36: "+3V3", 37: None, 38: "GND", 39: "VSYS", 40: None,
 }
 add_component("A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets, footprint="Module:RaspberryPi_Pico_Common_THT")
@@ -618,6 +629,12 @@ add_component(
     "J1", "SUPPLY", "REGULATED 5V INPUT", 50.8, 50.8,
     {1: "+5V", 2: "GND"},
     footprint="TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm",
+)
+add_component(
+    "J2", "EXPANSION", "PICO GPIO EXPANSION", 1016.0, 152.4,
+    {1: "PICO_GP8", 2: "PICO_GP22", 3: "PICO_GP26", 4: "+3V3", 5: "GND"},
+    footprint="Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
+    description="3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting",
 )
 add_component("D1", "DIODE", "1N5819", 127.0, 50.8, {1: "VSYS", 2: "+5V"}, footprint="Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal")
 add_component("#FLG01", "PWR_FLAG", "PWR_FLAG", 203.2, 50.8, {1: "VSYS"})
@@ -805,6 +822,12 @@ schematic.texts.extend([
         effects=effects(1.27),
         uuid=uid("text:pull-note"),
     ),
+    Text(
+        text="J2: 3.3V GPIO expansion only.\\nNo fixed pulls or level shifting.\\nUse software/PIO for I2C or full-duplex SPI.",
+        position=pos(1016.0, 190.5, 0),
+        effects=effects(1.27),
+        uuid=uid("text:expansion-note"),
+    ),
 ])
 
 
@@ -824,6 +847,15 @@ for net, required in required_endpoints.items():
     actual = set(net_endpoints.get(net, []))
     if not required <= actual:
         raise AssertionError(f"{net} missing endpoints: {sorted(required - actual)}")
+
+for net, required in {
+    "PICO_GP8": {"A1.11", "J2.1"},
+    "PICO_GP22": {"A1.29", "J2.2"},
+    "PICO_GP26": {"A1.31", "J2.3"},
+}.items():
+    actual = set(net_endpoints.get(net, []))
+    if actual != required:
+        raise AssertionError(f"{net} expansion endpoints differ: expected {required}, got {actual}")
 
 physical_references = sorted(reference for reference in references if not reference.startswith("#"))
 erc_references = sorted(reference for reference in references if reference.startswith("#"))

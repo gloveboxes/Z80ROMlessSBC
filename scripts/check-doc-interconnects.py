@@ -31,10 +31,13 @@ FIXED_ENDPOINT_NETS = {
     "U9.1": "+5V", "U9.10": "GND", "U9.19": "DATA_UP_OE_N", "U9.20": "+5V",
     "U10.1": "GND", "U10.10": "GND", "U10.19": "DATA_DOWN_OE_N", "U10.20": "+3V3",
     "D1.1": "VSYS", "D1.2": "+5V",
+    "A1.11": "PICO_GP8", "A1.29": "PICO_GP22", "A1.31": "PICO_GP26",
+    "J2.1": "PICO_GP8", "J2.2": "PICO_GP22", "J2.3": "PICO_GP26",
+    "J2.4": "+3V3", "J2.5": "GND",
 }
 DOCUMENTED_NO_CONNECTS = {
     "U1.18", "U1.28", "U2.1", "U3.11", "U4.3", "U4.5",
-    "A1.11", "A1.29", "A1.30", "A1.31", "A1.35", "A1.37", "A1.40",
+    "A1.30", "A1.35", "A1.37", "A1.40",
 }
 DEVICE_REFS = [
     ("SN74AHCT244", "U4"), ("AHCT244", "U4"),

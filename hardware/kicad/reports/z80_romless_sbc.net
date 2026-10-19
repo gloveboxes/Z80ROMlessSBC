@@ -2,8 +2,8 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-10-09T10:36:25")
-		(tool "Eeschema 10.0.6")
+		(date "2026-10-19T20:23:55")
+		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
 			(name "/")
@@ -802,6 +802,61 @@
 				(unit
 					(name "A")
 					(pins
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J2")
+			(value "PICO GPIO EXPANSION")
+			(footprint "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
+			(description "3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting")
+			(fields
+				(field
+					(name "Footprint") "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "EXPANSION")
+				(description "Z80ROMlessSBC project symbol: PICO GPIO EXPANSION")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "cea4c126-796b-57c3-96ab-38ac5e4a401e")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
 						(pin
 							(num "2")
 						)
@@ -2791,6 +2846,52 @@
 		)
 		(libpart
 			(lib "Z80SBC")
+			(part "EXPANSION")
+			(description "Z80ROMlessSBC project symbol: PICO GPIO EXPANSION")
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "PICO GPIO EXPANSION")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: PICO GPIO EXPANSION")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "GP8")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "GP22")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "GP26_ADC0")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "3V3_OUT")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
 			(part "HCT32")
 			(description "Z80ROMlessSBC project symbol: SN74HCT32N")
 			(fields
@@ -3930,6 +4031,12 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "J2")
+				(pin "4")
+				(pinfunction "3V3_OUT_4")
+				(pintype "passive")
+			)
+			(node
 				(ref "R17")
 				(pin "2")
 				(pinfunction "2_2")
@@ -4984,6 +5091,12 @@
 				(pintype "power_out")
 			)
 			(node
+				(ref "J2")
+				(pin "5")
+				(pinfunction "GND_5")
+				(pintype "passive")
+			)
+			(node
 				(ref "R21")
 				(pin "2")
 				(pinfunction "2_2")
@@ -5630,6 +5743,57 @@
 		)
 		(net
 			(code "59")
+			(name "/PICO_GP8")
+			(class "Default")
+			(node
+				(ref "A1")
+				(pin "11")
+				(pinfunction "GP8_11")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "J2")
+				(pin "1")
+				(pinfunction "GP8_1")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "60")
+			(name "/PICO_GP22")
+			(class "Default")
+			(node
+				(ref "A1")
+				(pin "29")
+				(pinfunction "GP22_29")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "J2")
+				(pin "2")
+				(pinfunction "GP22_2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "61")
+			(name "/PICO_GP26")
+			(class "Default")
+			(node
+				(ref "A1")
+				(pin "31")
+				(pinfunction "GP26_31")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "J2")
+				(pin "3")
+				(pinfunction "GP26_ADC0_3")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "62")
 			(name "/PICO_IORQ_N")
 			(class "Default")
 			(node
@@ -5646,7 +5810,7 @@
 			)
 		)
 		(net
-			(code "60")
+			(code "63")
 			(name "/PICO_RD_N")
 			(class "Default")
 			(node
@@ -5663,7 +5827,7 @@
 			)
 		)
 		(net
-			(code "61")
+			(code "64")
 			(name "/PICO_WR_N")
 			(class "Default")
 			(node
@@ -5680,7 +5844,7 @@
 			)
 		)
 		(net
-			(code "62")
+			(code "65")
 			(name "/RD_5V_N")
 			(class "Default")
 			(node
@@ -5697,7 +5861,7 @@
 			)
 		)
 		(net
-			(code "63")
+			(code "66")
 			(name "/RD_N")
 			(class "Default")
 			(node
@@ -5732,7 +5896,7 @@
 			)
 		)
 		(net
-			(code "64")
+			(code "67")
 			(name "/RESET_N")
 			(class "Default")
 			(node
@@ -5761,7 +5925,7 @@
 			)
 		)
 		(net
-			(code "65")
+			(code "68")
 			(name "/SRAM_CE_N")
 			(class "Default")
 			(node
@@ -5778,7 +5942,7 @@
 			)
 		)
 		(net
-			(code "66")
+			(code "69")
 			(name "/SRAM_OE_N")
 			(class "Default")
 			(node
@@ -5795,7 +5959,7 @@
 			)
 		)
 		(net
-			(code "67")
+			(code "70")
 			(name "/SRAM_WE_N")
 			(class "Default")
 			(node
@@ -5812,7 +5976,7 @@
 			)
 		)
 		(net
-			(code "68")
+			(code "71")
 			(name "/VSYS")
 			(class "Default")
 			(node
@@ -5829,7 +5993,7 @@
 			)
 		)
 		(net
-			(code "69")
+			(code "72")
 			(name "/WAIT_N")
 			(class "Default")
 			(node
@@ -5852,7 +6016,7 @@
 			)
 		)
 		(net
-			(code "70")
+			(code "73")
 			(name "/WR_N")
 			(class "Default")
 			(node
@@ -5881,7 +6045,7 @@
 			)
 		)
 		(net
-			(code "71")
+			(code "74")
 			(name "/Z80_CLK")
 			(class "Default")
 			(node
@@ -5904,7 +6068,7 @@
 			)
 		)
 		(net
-			(code "82")
+			(code "85")
 			(name "unconnected-(A1-3V3_EN-Pad37)")
 			(class "Default")
 			(node
@@ -5915,7 +6079,7 @@
 			)
 		)
 		(net
-			(code "83")
+			(code "86")
 			(name "unconnected-(A1-ADC_VREF-Pad35)")
 			(class "Default")
 			(node
@@ -5923,39 +6087,6 @@
 				(pin "35")
 				(pinfunction "ADC_VREF_35")
 				(pintype "power_in+no_connect")
-			)
-		)
-		(net
-			(code "84")
-			(name "unconnected-(A1-GP8-Pad11)")
-			(class "Default")
-			(node
-				(ref "A1")
-				(pin "11")
-				(pinfunction "GP8_11")
-				(pintype "bidirectional+no_connect")
-			)
-		)
-		(net
-			(code "85")
-			(name "unconnected-(A1-GP22-Pad29)")
-			(class "Default")
-			(node
-				(ref "A1")
-				(pin "29")
-				(pinfunction "GP22_29")
-				(pintype "bidirectional+no_connect")
-			)
-		)
-		(net
-			(code "86")
-			(name "unconnected-(A1-GP26-Pad31)")
-			(class "Default")
-			(node
-				(ref "A1")
-				(pin "31")
-				(pinfunction "GP26_31")
-				(pintype "bidirectional+no_connect")
 			)
 		)
 		(net

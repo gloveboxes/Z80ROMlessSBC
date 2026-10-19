@@ -7,6 +7,13 @@ Their migration is deferred. Do not manufacture them for the new schematic
 or use the new firmware on the old board. No PLD programmer is needed for the
 new breadboard build.
 
+The current schematic includes **J2**, a 1x5, 2.54 mm through-hole peripheral
+expansion header: pin 1 GP8, pin 2 GP22, pin 3 GP26/ADC0, pin 4 Pico 3.3 V
+output, pin 5 GND. Its footprint is assigned for future PCB migration, but
+the PCB and fabrication package have not been updated. All expansion signals
+are 3.3 V only, with no fixed pulls or level shifting. See the
+[expansion pin map and interface limits](../../docs/docs/en/hardware/pin-mapping.md#j2-peripheral-expansion).
+
 This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
 The Pico 2 W is horizontal in the bottom-left corner with USB flush to the

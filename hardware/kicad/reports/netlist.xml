@@ -2,8 +2,8 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-10-09T10:36:24</date>
-    <tool>Eeschema 10.0.6</tool>
+    <date>2026-10-19T20:23:53</date>
+    <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>Z80ROMlessSBC - Exact Breadboard Electrical Schematic</title>
@@ -378,6 +378,32 @@
       <units>
         <unit name="A">
           <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>PICO GPIO EXPANSION</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</footprint>
+      <description>3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting</description>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description">3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting</field>
+      </fields>
+      <libsource lib="Z80SBC" part="EXPANSION" description="Z80ROMlessSBC project symbol: PICO GPIO EXPANSION"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cea4c126-796b-57c3-96ab-38ac5e4a401e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
             <pin num="2"/>
             <pin num="1"/>
           </pins>
@@ -1226,6 +1252,23 @@
         <pin num="2" name="A" type="passive"/>
       </pins>
     </libpart>
+    <libpart lib="Z80SBC" part="EXPANSION">
+      <description>Z80ROMlessSBC project symbol: PICO GPIO EXPANSION</description>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">PICO GPIO EXPANSION</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: PICO GPIO EXPANSION</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GP8" type="passive"/>
+        <pin num="2" name="GP22" type="passive"/>
+        <pin num="3" name="GP26_ADC0" type="passive"/>
+        <pin num="4" name="3V3_OUT" type="passive"/>
+        <pin num="5" name="GND" type="passive"/>
+      </pins>
+    </libpart>
     <libpart lib="Z80SBC" part="HCT32">
       <description>Z80ROMlessSBC project symbol: SN74HCT32N</description>
       <fields>
@@ -1537,6 +1580,7 @@
       <node ref="A1" pin="36" pinfunction="3V3_OUT_36" pintype="power_out"/>
       <node ref="C5" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="C7" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="3V3_OUT_4" pintype="passive"/>
       <node ref="R17" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R18" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R19" pin="2" pinfunction="2_2" pintype="passive"/>
@@ -1750,6 +1794,7 @@
       <node ref="C8" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C9" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="J1" pin="2" pinfunction="GND_2" pintype="power_out"/>
+      <node ref="J2" pin="5" pinfunction="GND_5" pintype="passive"/>
       <node ref="R21" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R22" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R23" pin="2" pinfunction="2_2" pintype="passive"/>
@@ -1884,81 +1929,84 @@
       <node ref="R19" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="U3" pin="10" pinfunction="3B_10" pintype="input"/>
     </net>
-    <net code="59" name="/PICO_IORQ_N" class="Default">
+    <net code="59" name="/PICO_GP8" class="Default">
+      <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional"/>
+      <node ref="J2" pin="1" pinfunction="GP8_1" pintype="passive"/>
+    </net>
+    <net code="60" name="/PICO_GP22" class="Default">
+      <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional"/>
+      <node ref="J2" pin="2" pinfunction="GP22_2" pintype="passive"/>
+    </net>
+    <net code="61" name="/PICO_GP26" class="Default">
+      <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional"/>
+      <node ref="J2" pin="3" pinfunction="GP26_ADC0_3" pintype="passive"/>
+    </net>
+    <net code="62" name="/PICO_IORQ_N" class="Default">
       <node ref="A1" pin="2" pinfunction="GP1_2" pintype="bidirectional"/>
       <node ref="U7" pin="16" pinfunction="1Y2_16" pintype="tri_state"/>
     </net>
-    <net code="60" name="/PICO_RD_N" class="Default">
+    <net code="63" name="/PICO_RD_N" class="Default">
       <node ref="A1" pin="32" pinfunction="GP27_32" pintype="bidirectional"/>
       <node ref="U7" pin="14" pinfunction="1Y3_14" pintype="tri_state"/>
     </net>
-    <net code="61" name="/PICO_WR_N" class="Default">
+    <net code="64" name="/PICO_WR_N" class="Default">
       <node ref="A1" pin="34" pinfunction="GP28_34" pintype="bidirectional"/>
       <node ref="U7" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
     </net>
-    <net code="62" name="/RD_5V_N" class="Default">
+    <net code="65" name="/RD_5V_N" class="Default">
       <node ref="U3" pin="1" pinfunction="1A_1" pintype="input"/>
       <node ref="U4" pin="7" pinfunction="2Y2_7" pintype="tri_state"/>
     </net>
-    <net code="63" name="/RD_N" class="Default">
+    <net code="66" name="/RD_N" class="Default">
       <node ref="RN4" pin="6" pinfunction="R5_6" pintype="passive"/>
       <node ref="U1" pin="21" pinfunction="RD#_21" pintype="tri_state"/>
       <node ref="U3" pin="9" pinfunction="3A_9" pintype="input"/>
       <node ref="U4" pin="13" pinfunction="2A2_13" pintype="input"/>
       <node ref="U7" pin="6" pinfunction="1A3_6" pintype="input"/>
     </net>
-    <net code="64" name="/RESET_N" class="Default">
+    <net code="67" name="/RESET_N" class="Default">
       <node ref="A1" pin="5" pinfunction="GP3_5" pintype="bidirectional"/>
       <node ref="R22" pin="1" pinfunction="1_1" pintype="passive"/>
       <node ref="TP3" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="26" pinfunction="RESET#_26" pintype="input"/>
     </net>
-    <net code="65" name="/SRAM_CE_N" class="Default">
+    <net code="68" name="/SRAM_CE_N" class="Default">
       <node ref="U2" pin="22" pinfunction="CE#_22" pintype="input"/>
       <node ref="U4" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
     </net>
-    <net code="66" name="/SRAM_OE_N" class="Default">
+    <net code="69" name="/SRAM_OE_N" class="Default">
       <node ref="U2" pin="24" pinfunction="OE#_24" pintype="input"/>
       <node ref="U3" pin="3" pinfunction="1Y_3" pintype="output"/>
     </net>
-    <net code="67" name="/SRAM_WE_N" class="Default">
+    <net code="70" name="/SRAM_WE_N" class="Default">
       <node ref="U2" pin="29" pinfunction="WE#_29" pintype="input"/>
       <node ref="U4" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
     </net>
-    <net code="68" name="/VSYS" class="Default">
+    <net code="71" name="/VSYS" class="Default">
       <node ref="A1" pin="39" pinfunction="VSYS_39" pintype="power_in"/>
       <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
     </net>
-    <net code="69" name="/WAIT_N" class="Default">
+    <net code="72" name="/WAIT_N" class="Default">
       <node ref="TP4" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="24" pinfunction="WAIT#_24" pintype="input"/>
       <node ref="U3" pin="6" pinfunction="2Y_6" pintype="output"/>
     </net>
-    <net code="70" name="/WR_N" class="Default">
+    <net code="73" name="/WR_N" class="Default">
       <node ref="RN4" pin="7" pinfunction="R6_7" pintype="passive"/>
       <node ref="U1" pin="22" pinfunction="WR#_22" pintype="tri_state"/>
       <node ref="U4" pin="11" pinfunction="2A1_11" pintype="input"/>
       <node ref="U7" pin="8" pinfunction="1A4_8" pintype="input"/>
     </net>
-    <net code="71" name="/Z80_CLK" class="Default">
+    <net code="74" name="/Z80_CLK" class="Default">
       <node ref="TP2" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="6" pinfunction="CLK_6" pintype="input"/>
       <node ref="U4" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
     </net>
-    <net code="82" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
+    <net code="85" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
       <node ref="A1" pin="37" pinfunction="3V3_EN_37" pintype="input+no_connect"/>
     </net>
-    <net code="83" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
+    <net code="86" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
       <node ref="A1" pin="35" pinfunction="ADC_VREF_35" pintype="power_in+no_connect"/>
-    </net>
-    <net code="84" name="unconnected-(A1-GP8-Pad11)" class="Default">
-      <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional+no_connect"/>
-    </net>
-    <net code="85" name="unconnected-(A1-GP22-Pad29)" class="Default">
-      <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional+no_connect"/>
-    </net>
-    <net code="86" name="unconnected-(A1-GP26-Pad31)" class="Default">
-      <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional+no_connect"/>
     </net>
     <net code="87" name="unconnected-(A1-RUN-Pad30)" class="Default">
       <node ref="A1" pin="30" pinfunction="RUN_30" pintype="input+no_connect"/>

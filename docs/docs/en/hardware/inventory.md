@@ -93,6 +93,12 @@ AHCT245 data ports are not power-off-safe. See the [power phase](../implementati
 
 ## PCB Status
 
+The revised schematic also includes J2, an optional 1x5, 2.54 mm expansion
+header for GP8, GP22, GP26, 3.3 V, and GND. Reserve one five-pin header for
+the future PCB; it adds no active packages and is not required for the
+Phase 0-10 breadboard build. No peripheral pull-ups or LED resistors are
+included. See the [expansion pin map](pin-mapping.md#j2-peripheral-expansion).
+
 The existing PCB BOM, routing, and fabrication package are for the previous
 design and **must not be used to manufacture this circuit**. PCB updates are
 deferred. Use the revised native schematic and these breadboard instructions.
