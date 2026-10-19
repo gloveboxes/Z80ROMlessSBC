@@ -49,6 +49,8 @@ For each phase:
 | [4 - Address bus](phase-4-address-bus.md) | Passive address-trunk wiring; CPU remains absent |
 | [5 - Data bus](phase-5-data-bus.md) | Bidirectional translation and contention prevention |
 | [6 - Z80-assisted loading](phase-6-sram.md) | Fit CPU/SRAM, qualify injection, run RAM diagnostics |
+| [20 MHz arithmetic and SRAM soak](20mhz-soak.md) | Optional one-hour resident CPU/stack/SRAM workload after earlier bring-up and frequency screens |
+| [No-I/O 20 MHz scope test](20mhz-scope.md) | Separate continuous CPU/SRAM workload for scope captures; results retrieved from SRAM only after stopping |
 | [7 - Z80 CPU](phase-7-z80.md) | Reset fetch, stepping, execution, and bus grants |
 | [8 - Virtual I/O](phase-8-virtual-io.md) | Synchronous IN/OUT trapping and USB diagnostics |
 | [9 - Flash storage](phase-9-flash-storage.md) | Manifest boot, journal recovery, and CP/M disks |

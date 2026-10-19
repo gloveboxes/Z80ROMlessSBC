@@ -1,0 +1,8 @@
+file(READ "${INPUT}" image HEX)
+string(LENGTH "${image}" hex_length)
+math(EXPR hex_limit "${LIMIT} * 2")
+if(hex_length EQUAL 0 OR hex_length GREATER hex_limit)
+  message(FATAL_ERROR "${SYMBOL} must fit below its ${LIMIT}-byte reserved boundary")
+endif()
+string(REGEX REPLACE "(..)" "0x\\1," image "${image}")
+file(WRITE "${OUTPUT}" "static const uint8_t ${SYMBOL}[] = {${image}};\n")

@@ -97,6 +97,60 @@ to distinguish a switching clock from a line stuck at an invalid mid-level.
     stimulus, and probed signals. Record the displayed sample rate, memory
     depth, probe ratio, bandwidth limit, and measured minima/maxima.
 
+## 20 MHz no-I/O clock measurement
+
+Use the separate [Phase 6 scope diagnostic](../implementation/20mhz-scope.md)
+for an uninterrupted 20 MHz CPU/SRAM workload. The ordinary frequency screens
+and arithmetic soak deliberately pause/step CLK for OUT reports; this target
+does not. Build and later deployment are separate operations.
+
+1. Let any existing soak finish and retain its results. **Before attaching
+   probes, bond the DHO814 chassis to protective earth** as described above.
+   Compensate CH1 at 10X, then power off the SBC: USB disconnected before
+   external 5 V. Stopping acquisition is not a substitute for power-off.
+2. Attach CH1's tip to **Z80 CLK pin 6** and its short ground spring only to
+   nearby common circuit GND. Do not use a signal/supply rail as probe ground.
+   Measuring this receiving pin includes the AHCT244 and breadboard path.
+3. Enable CH1 only: **1 MOhm, DC coupling, 10X probe, Invert OFF, Delay 0,
+   bandwidth limit OFF**. Start at **2 V/div** with ground and both levels
+   visible, **20 ns/div**, Normal acquisition and Auto memory depth.
+   Record the actual sample rate; one channel permits up to 1.25 GSa/s.
+4. Select Edge trigger, CH1 rising, DC coupling, approximately **2.5 V**,
+   Normal sweep. This trigger level is not the Z80's input-HIGH acceptance
+   threshold.
+5. Restore external 5 V before USB. After separately deploying the scope
+   target, start it with `f` + Enter and wait for its RUN banner. Do not
+   measure the slow assisted load/verify/reset interval as the running clock.
+6. Add CH1 **Frequency, Period, +Duty, +Width and -Width** measurements:
+
+    | Quantity | Nominal expectation |
+    | --- | --- |
+    | Frequency | Approximately 20 MHz |
+    | Period | Approximately 50 ns |
+    | +Duty | Approximately 50% |
+    | HIGH width | Approximately 25 ns |
+    | LOW width | Approximately 25 ns |
+
+    Check adjacent rising edges with time cursors: frequency is
+    `1 / period`, so `1 / 50 ns = 20 MHz`. These values are expectations,
+    not measured results or independent timing-margin limits.
+
+7. Save a screenshot and waveform with firmware identity, rail voltage,
+   probe ratio, bandwidth, sample rate, memory depth and measured values.
+   Inspect clock levels/ringing as well; a correct frequency alone does not
+   qualify the receiving-pin waveform.
+
+8. Use `x` to end the measurement interval and retrieve the SRAM mailbox.
+   The resulting slow readback clocks are outside the capture interval.
+   A Z80 mismatch HALTs the program without stopping PWM; switching CLK,
+   HALT fetches and refresh activity are not proof of advancing tests.
+
+For buffer/path comparison, repeat captures at Pico GP2/header pin 4 and
+AHCT244 pin 18, with power off before moving probes. For simultaneous captures
+use the clock-translation row below and record the reduced multichannel
+sample rate. Never leave a second serial console competing with the test's
+serial owner.
+
 ## Four-channel connections and expected results
 
 Connect the channels exactly as listed, using the physical IC pin as the

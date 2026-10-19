@@ -1,1 +1,2 @@
 add_z80_stage(z80_stage02_buffers_clock main.c z80_clock)
+add_z80_stage(z80_reset_meter reset_meter.c)

@@ -105,7 +105,24 @@ void sleep_ms(uint32_t delay) { now_us += delay * 1000u; }
 absolute_time_t make_timeout_time_us(uint32_t delay) { return now_us + delay; }
 bool time_reached(absolute_time_t deadline) { return now_us >= deadline; }
 void tight_loop_contents(void) { now_us += 100000; }
-uint32_t clock_get_hz(uint clock) { assert(clock == clk_sys); return 144000000; }
+uint32_t clock_get_hz(uint clock) {
+  assert(clock == clk_sys);
+#if defined(Z80_EXPERIMENTAL_20MHZ)
+  return 120000000;
+#elif defined(Z80_EXPERIMENTAL_19MHZ)
+  return 114000000;
+#elif defined(Z80_EXPERIMENTAL_17MHZ)
+  return 136000000;
+#elif defined(Z80_EXPERIMENTAL_16MHZ)
+  return 128000000;
+#elif defined(Z80_EXPERIMENTAL_15MHZ)
+  return 150000000;
+#elif defined(Z80_EXPERIMENTAL_14MHZ)
+  return 140000000;
+#else
+  return 144000000;
+#endif
+}
 uint pwm_gpio_to_slice_num(uint pin) { assert(pin == PIN_CLK); return 0; }
 uint pwm_gpio_to_channel(uint pin) { assert(pin == PIN_CLK); return 0; }
 void pwm_set_enabled(uint slice, bool enabled) {
@@ -171,10 +188,14 @@ int main(void) {
   assert(z80_cpu_release_reset_and_run(1000000));
   assert(running && levels[PIN_RESET_N] && falling_edges == 7);
   fixture();
-  assert(!z80_cpu_release_reset_and_run(8000001));
+  assert(!z80_cpu_release_reset_and_run(Z80_CLOCK_MAX_HZ + 1));
   assert(!running && !levels[PIN_RESET_N] && levels[PIN_BOOT_READ_DISABLE]);
   assert(reset_releases == 0);
   assert(!z80_cpu_release_reset_and_run(0) && reset_releases == 0);
+  fixture();
+  assert(z80_cpu_release_reset_and_run(Z80_CLOCK_MAX_HZ));
+  assert(running && levels[PIN_RESET_N] &&
+         z80_clock_get_hz() == Z80_CLOCK_MAX_HZ);
   for (unsigned port = 0; port < 32; ++port) {
     levels[PIN_PORT_A0] = port & 1;
     levels[PIN_PORT_A1] = port & 2;

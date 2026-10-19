@@ -6,6 +6,40 @@ qualification record, not evidence that a breadboard has passed.
 **Prerequisite:** The [Phase 10 pass gate](phase-10-websocket.md#pass-gate) must pass at
 1 MHz before testing any higher rate.
 
+For earlier bring-up without CP/M, disks or networking, use the separate
+[Phase 6 PWM memory screening](phase-6-sram.md#pwm-speed-screening-after-the-slow-test)
+application. It tests both halves of the accessible SRAM at each distinct
+speed for at least 60 seconds of execution-phase time, with bounded progress
+checks and a stop at the first failure. A screening PASS does not satisfy
+this page's integrated-system prerequisites or timing-evidence requirements.
+The existing Stage 8/10 RAM/terminal checker repeatedly checks address 0100;
+it must not be described as a full-range PWM memory test.
+The separately built
+[8-12 MHz experimental screen](phase-6-sram.md#experimental-8-12-mhz-screening)
+continues the same write/read/compare workload beyond the normal 8 MHz
+firmware limit, without changing that limit for normal stages. Its four
+distinct nominal rates are 8, 9, 10.285714 and 12 MHz. These are exploratory
+functional results, not an extension of this qualification procedure.
+The [exact 14 MHz screening variant](phase-6-sram.md#exact-14-mhz-experimental-screening)
+alone sets the Pico system clock to 140 MHz before USB/Z80 execution,
+then tests nominal 11.666667 and 14 MHz PWM. It keeps 50% duty without
+fractional-divider dither or exceeding a 14 MHz request. Record this
+different supervisor clock; do not apply the 144 MHz table below to it.
+The [exact 15 MHz variant](phase-6-sram.md#exact-15-mhz-experimental-screening)
+similarly uses a separate 150 MHz supervisor-clock startup, tests a
+12.5 MHz baseline and nominal 15 MHz, and leaves prior targets unchanged.
+Its results also require the supervisor clock to be recorded and are
+exploratory functional evidence only.
+The [exact 16 MHz variant](phase-6-sram.md#exact-16-mhz-experimental-screening)
+uses a 128 MHz supervisor clock to test nominal 12.8 and 16 MHz with the
+same self-validating workload. Earlier targets remain unchanged; this
+variant likewise does not extend the normal system qualification.
+The [17-20 MHz screening sequence](phase-6-sram.md#exact-17-18-19-and-20-mhz-screening)
+uses four separate single-rate builds, with supervisor clocks of
+136/144/114/120 MHz respectively. Advance only after each point completes
+its full write/read/compare screening without error; stop at the first
+failure. The Z80's 20 MHz component rating is not a system qualification.
+
 **Qualification is measurement, not overclocking until CP/M looks stable.**
 A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
 baseline and change only the clock setting between tests, not the wiring,

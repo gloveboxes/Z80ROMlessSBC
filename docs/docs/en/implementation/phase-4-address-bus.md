@@ -61,7 +61,107 @@ pulled-up address levels.
 intended monitor bit. Remove the temporary pulls afterward with power and USB
 disconnected. Continue to Phase 5 without inserting CPU/SRAM.
 
+## Exception: Reset-Held Multimeter Guide for a Partially Populated Board
+
+If the Z80 and SRAM are **already fitted**, together with Pico 2 W, U3
+SN74HCT32N and U4 SN74AHCT244N, use the separate `z80_reset_meter`
+application for static measurements. U7 SN74LVC244AN, U9 SN74AHCT245N
+and U10 SN74LVC245AN may be absent. This is a troubleshooting exception,
+**not permission to skip the normal population order or a Phase 4/6 pass**.
+Do not use the ordinary Stage 2 output walk or the active address diagnostic
+with this partial population.
+
+The guide never releases reset, drives the data bus, reads missing monitor
+buffers, or starts a free-running clock. It holds each clock HIGH and LOW
+on separate commands so a multimeter can settle. Six complete reset clocks
+are generated only as you explicitly advance through twelve held levels.
+The SRAM output inhibit remains asserted throughout.
+
+### Build and open the console
+
+From the repository root, using the
+[firmware toolchain](../system/firmware-build.md):
+
+```sh
+cmake --build build --target z80_reset_meter
+```
+
+UF2: `build/src/stage02_buffers_clock/z80_reset_meter.uf2`.
+The [maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/reset_meter.c)
+prints the full procedure, pin numbers, expected readings and next command
+in the USB serial console. Select the Pico USB serial port, 115200 baud
+(USB CDC does not use this rate for signal timing). The guide waits for
+the console connection before printing. Reconnecting restores safe levels
+and starts the guide again; a disconnected console does not leave CLK HIGH.
+
+Before powering or flashing, verify orientations, common GND, bypasses,
+startup pulls, and absence of any raw 5 V connection to Pico GPIOs.
+All installed 5 V ICs must be powered. Apply external 5 V **before USB**;
+disconnect USB **before external 5 V**. Do not program this populated board
+with USB alone. If BOOTSEL flashing is needed, hold BOOTSEL while connecting
+USB after external 5 V is present. Do not change wiring or insert/remove
+ICs with either supply connected.
+
+### Meter and keypress procedure
+
+Use **DC volts**, black lead in COM and red lead in V, not the current
+socket. Connect black to common circuit GND. Measure named pins with the
+red probe, using insulated tips to avoid bridging adjacent contacts. Power
+off before moving clips. IC pins are numbered from the package notch/dot,
+not by breadboard row; U4 faces notch-down in the documented layout.
+
+Type **one command letter, then Enter**. Do not paste command sequences or
+hold a key. An empty Enter does nothing; CR/LF/CRLF are supported.
+
+| Command | Action |
+| --- | --- |
+| `n` + Enter | Acknowledge the current measurements and advance one step |
+| `r` + Enter | Repeat current instructions without changing the held level |
+| `h` + Enter | Show help and the current measurement instructions |
+| `x` | Immediately stop without waiting for Enter; restore CLK LOW, RESET# LOW and read inhibit HIGH |
+| `b` + Enter | Restart at preparation, with safe levels restored |
+
+On any unexpected voltage, press `x`, record the actual reading, and
+disconnect USB then external power before investigating. Do not advance.
+After `x`, Enter clears the discarded input line; then `b` + Enter restarts.
+
+| Console step | Measure / expected outcome |
+| --- | --- |
+| 1: preparation | Confirm the hardware and meter safety instructions; CLK and RESET# held LOW |
+| 2: power | U1.11, U2.32/U2.30, U3.14 and U4.20: nominal 5 V, bench target 4.75-5.25 V; Pico header 36: nominal 3.3 V, target 3.2-3.4 V; listed ground/enable/A16 pins near 0 V |
+| 3: safe outputs | RESET# and CLK LOW; BUSREQ# inactive HIGH; inhibit HIGH; both data enables off; SRAM OE# HIGH. Follow every Pico/input/output endpoint printed in the console |
+| 4-15: six reset clocks | Alternate one held HIGH and one held LOW per `n` + Enter; measure GP2/header 4 and U4.2 at approximately 3.3/0 V, and U4.18/Z80.6 at approximately 5/0 V. RESET# stays LOW and SRAM OE# stays HIGH |
+| 16: reset controls | MREQ#/WR#/RD# inactive HIGH; buffered SRAM CE#/WE# and read-control outputs near 5 V |
+| 17: static HCT32 | SRAM OE#, WAIT# and upward-path OE# HIGH at the listed endpoints; inhibit HIGH and IO_RELEASE LOW |
+| 18: address pulls | All sixteen SRAM address pins near 5 V through the existing pulls; A16 LOW. Exact pins are printed |
+| 19: complete | CLK LOW, reset asserted, no additional clocks. Save actual voltage readings; there is no automatic hardware PASS |
+
+Typical LOW target is at most 0.3 V. Pico HIGH is near 3.3 V; buffered
+5 V HIGH should be within 0.5 V of its measured rail under this light load.
+Raw CPU HIGH is TTL and may be below 5 V (expect at least 2.4 V).
+These are conservative troubleshooting indications, **not timing or full
+datasheet qualification**.
+
+The address check sees pull-ups on a floated bus, not CPU address drive.
+The floating 5 V data bus has no useful expected byte. This procedure cannot
+prove instruction execution, SRAM contents, address uniqueness, full OR-gate
+truth tables, clock edge quality or pulse timing. It does not replace
+unpowered continuity checks, the missing buffers, or Phase 6 instrument
+qualification.
+
 ## Optional Active Address Diagnostic
+
+For **all ICs installed** and console control of each loader clock,
+use the [Phase 6 console-stepped miniature loader](phase-6-sram.md#console-stepped-miniature-loader).
+It writes the three specified test bytes, clears the Z80 accumulator before
+each read-back, and prints expected versus monitored bus behavior.
+It is separate from the reset-held partial-population guide above.
+
+The same firmware now accepts **`f` + Enter** for the
+[automatic full 64 KiB test](phase-6-sram.md#automatic-full-64-kib-test):
+fill/read the sequential low-byte pattern, then fill/read the high-byte
+pattern, with one concise address/value/expected/SUCCESS-or-FAIL line per
+verified address. `x` aborts; all ICs and Phase 6 wiring are required.
 
 <input type="checkbox" data-checklist-id="optional-active-firmware" aria-label="Optional active diagnostic loaded only after Phase 6 qualification"> **Only after Phase 6 hardware is fitted and loader timing is qualified**, build
 `z80_stage04_address_bus`; UF2 lives in `build/src/stage04_address_bus/`.
