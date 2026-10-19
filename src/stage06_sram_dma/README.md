@@ -500,6 +500,43 @@ keep a laptop's lid open and its power connected. Closing a read-only log
 viewer does not stop the serial owner, but closing the serial connection
 invalidates the run.
 
+#### Expected 14-hour completion summary
+
+The following table summarizes the **recorded passing run of 19-20 October
+2026**. It is a human-readable example of the expected completion report,
+not a table printed by the Pico firmware: the firmware emits `PASS` and
+`STATS`, while the host logger records start/finish times and serial state.
+Future runs will have different dates, elapsed time and totals. Require
+at least 14 hours, zero failures, a complete four-phase cycle and a final
+PASS rather than an exact match to these counts.
+
+| Metric | Result |
+| --- | ---: |
+| Overall result | **PASS** |
+| Z80 clock | Nominal **20 MHz** |
+| Started | 19 October 2026, **18:40:12 AEDT** |
+| Finished | 20 October 2026, **08:40:14 AEDT** |
+| Recorded execution time | **14 hours, 1.738 seconds** |
+| Total successful checks | **4,332,172,256** |
+| Failures | **0** |
+| SRAM byte comparisons | 3,109,421,056 |
+| Arithmetic assertions | 1,221,558,272 |
+| Completed arithmetic test vectors | 111,050,752 |
+| Stack checks | 271,120 |
+| Loop checks | 921,808 |
+| Complete four-phase cycles | 13,556 |
+| Completed phases | 54,224 |
+| Final RESET# | **LOW - CPU held in reset** |
+| Final PWM clock | **Stopped** |
+| Serial connection | **Closed** |
+
+AEDT is UTC+11. The recorded execution time comes from
+`pwm_ms=50401738`, not subtraction of the rounded wall-clock timestamps.
+As described above, it includes brief I/O-trap pauses. This PASS establishes
+functional endurance for the tested CPU/arithmetic/stack/SRAM workload;
+it does **not** establish electrical timing margins or qualify CP/M and
+disk I/O at 20 MHz.
+
 ### Build the isolated target
 
 Use the project's [firmware toolchain setup](../../docs/docs/en/system/firmware-build.md)
