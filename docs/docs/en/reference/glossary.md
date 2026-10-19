@@ -102,7 +102,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `IORQ#` | Input/output request | Z80 drives it LOW during an I/O transaction; its falling edge starts the Pico clock-stop trap. |
 | `RD#` | Read | Z80 drives it LOW when the selected memory or I/O device must place data onto `D0-D7`. |
 | `WR#` | Write | Z80 drives it LOW when the selected memory or I/O device must accept data from `D0-D7`. |
-| `M1#` | Machine-cycle-one | Z80 drives it LOW during an opcode fetch and interrupt acknowledgement; used here as a [Phase 7](../implementation/phase-7-z80.md) probe point. |
+| `M1#` | Machine-cycle-one | Z80 drives it LOW during an opcode fetch and interrupt acknowledgement; used here as a [Phase 6 reset/fetch](../implementation/phase-6-bus-grants.md) probe point. |
 | `RFSH#` | Dynamic-memory refresh | Z80 output for refreshing DRAM after an opcode fetch; this SRAM design does not use it. |
 | `HALT#` | Halt state | Z80 drives it LOW after executing `HALT`; not connected to the Pico in this design. |
 | `WAIT#` | Wait request | HCT32 pin 6 computes IORQ# OR IO_RELEASE. GP9 remains HIGH until the I/O controls release. No WAIT pull-up is fitted. |

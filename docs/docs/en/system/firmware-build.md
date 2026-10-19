@@ -65,7 +65,7 @@ or build target.
 | 4 | `src/stage04_address_bus/` | `z80_stage04_address_bus` |
 | 5 | `src/stage05_data_bus/` | `z80_stage05_data_bus` |
 | 6 | `src/stage06_sram_dma/` | `z80_stage06_sram_loader` |
-| 7 | `src/stage07_z80_cpu/` | `z80_stage07_z80_cpu` |
+| 6 bus grants | `src/stage06_sram_dma/` | `z80_stage06_bus_grant` |
 | 8 | `src/stage08_virtual_io/` | `z80_stage08_virtual_io` |
 | 9 | `src/stage09_flash_storage/` | `z80_stage09_flash_storage` |
 | 10 | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal` |
@@ -76,7 +76,9 @@ Build the target in the table for your phase. Its UF2 is written to
 
 ## 7.1 Firmware and CP/M Build
 
-The repository implements the ten cumulative firmware stages under `src/`.
+The repository implements the cumulative firmware stages under `src/`.
+The former Phase 7 CPU fixture is now the Phase 6 bus-grant diagnostic;
+Phases 8-10 keep their existing numbers and target names.
 Stage 10 includes the journaled flash disks, CP/M boot loader, and WebSocket
 terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
 assembles the optimized CCP/BDOS from `cpm64_z80.asm`, and emits all

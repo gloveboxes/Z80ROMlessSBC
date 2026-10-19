@@ -1,4 +1,5 @@
 add_z80_stage(z80_stage06_sram_loader main.c z80_cpu)
+add_z80_stage(z80_stage06_bus_grant bus_grant_test.c z80_cpu)
 add_z80_stage(z80_stage06_step_loader step_loader.c z80_cpu)
 target_sources(z80_stage06_step_loader PRIVATE full_memory_test.c)
 set_source_files_properties(full_memory_test.c

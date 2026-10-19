@@ -1,4 +1,4 @@
-# Phase 8 - Integrated Boot and Virtual I/O
+# Phase 8 - Bidirectional I/O and USB Terminal Qualification
 
 <div data-checklist="phase-8" data-checklist-label="Phase 8" markdown="1">
 
@@ -8,13 +8,42 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 <button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
 <p data-checklist-status role="status" aria-live="polite"></p>
 
-<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 8 prerequisite passed"> **Prerequisite:** [Phase 7](phase-7-z80.md#pass-gate).
+<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 8 prerequisite passed"> **Prerequisite:** [Phase 6](phase-6-sram.md#pass-gate), including its [bus-grant and reset/fetch measurements](phase-6-bus-grants.md#pass-gate).
 **Install:** No further chips.
 
 <input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 8 firmware built and loaded"> Build `z80_stage08_virtual_io`; UF2 lives in
 `build/src/stage08_virtual_io/`.
 [Application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c)
 and [trap implementation](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
+
+## What This Phase Adds
+
+Phase 6 owns comprehensive CPU/arithmetic/stack/SRAM tests. Its soak's result
+reports exercise **OUT to port 06h only**; an IN is treated as an error.
+Those results do not qualify the bidirectional I/O or terminal service.
+
+This phase retains the existing `z80_stage08_virtual_io` firmware at nominal
+**1 MHz**, adding:
+
+- **IN replies:** the Pico drives data to the Z80 during a trapped I/O read.
+- **OUT/IN address decoding:** selected raw ports and their masked aliases.
+- **USB terminal round-trip:** host input, status polling, Z80 IN, Z80 OUT
+  and returned USB characters, with receive/transmit queue and drop counters.
+- **Repeated boot/I/O integration:** 100 software reset/load/verify/self-test
+  cycles; these are not 100 physical cold power cycles.
+- **Analogue timing and fault evidence:** WAIT, stepped release, input data
+  setup/hold, both actual data-buffer enables and invalid-control recovery.
+
+The RAM/USB checker uses a single working byte at `0100h` while exchanging
+terminal traffic. Its image is loaded and verified across 64 KiB before
+execution, but its runtime checker is **not a full-memory sweep** or a
+replacement for [Phase 6's SRAM tests](phase-6-sram.md).
+Likewise, its one-hour command is an I/O/USB integration run, not another
+arithmetic/SRAM qualification. A Phase 6 pass at nominal 20 MHz does not
+qualify IN or terminal operation at that frequency.
+
+On boot this firmware starts the RAM/USB checker automatically. Deploy only
+after another running diagnostic has finished and its results are saved.
 
 ## Synchronous I/O Trap Handler (Phase 8)
 
@@ -53,8 +82,24 @@ bounded spinlock critical sections, not lock-free access.
 <input type="checkbox" data-checklist-id="usb-diagnostics" aria-label="Framed USB diagnostics and serial escape configured and tested"> Ordinary console bytes go to the Z80. Ctrl-] followed by one command byte
 selects framed supervisor diagnostics; configure the serial terminal to pass
 this escape through. Use `Ctrl-] s` for clock and fault-counter status, and
-the application's command list for echo, port, RAM, reboot, and rate tests.
+the command list below for terminal, port and repeated-boot tests.
 Do not treat supervisor diagnostics as CP/M input.
+
+| Input | Action in the existing firmware |
+| --- | --- |
+| Ordinary bytes | Queue terminal input; running checker reads with IN and echoes with OUT |
+| `Ctrl-] s` | Print configured clock and boot/verify/RAM/trap/queue counters |
+| `Ctrl-] r` | Reload/verify and restart the 1 MHz RAM/USB checker |
+| `Ctrl-] p` | Run the selected-port OUT/IN self-test |
+| `Ctrl-] b` | Run 100 reset/load/verify/port-test cycles |
+| `Ctrl-] h` | Run the one-hour RAM/USB integration check |
+| `Ctrl-] x` | Disable trapping, assert reset, isolate data paths and stop the clock |
+| `Ctrl-] Ctrl-]` | Queue a literal `1Dh` terminal byte |
+
+The built-in port test selects raw ports `00h/01h/55h/AAh/FFh`; it does not
+exhaust every data byte or port alias. Record which patterns were actually
+tested. The running checker also emits A-Z heartbeat bytes, so distinguish
+those from echoed host input when inspecting the terminal.
 
 ## Test Plan
 

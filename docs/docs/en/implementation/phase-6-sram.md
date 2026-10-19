@@ -777,6 +777,7 @@ voltage and clock thresholds before long tests.
 - <input type="checkbox" data-checklist-id="gate-loader" aria-label="Phase 6 loader phase verified on real hardware"> Loader phase verified on real hardware.
 - <input type="checkbox" data-checklist-id="gate-ram" aria-label="Phase 6 all three RAM tests and boundary addresses passed"> All three RAM tests pass repeatedly, including addresses 0000/FFFF.
 - <input type="checkbox" data-checklist-id="gate-exclusive-drive" aria-label="Phase 6 no overlapping data drive measured"> No overlapping data drive occurs.
+- <input type="checkbox" data-checklist-id="gate-cpu-bus-grants" aria-label="Phase 6 reset fetch and physical bus-grant checks passed"> Complete the [CPU reset, fetch and bus-grant checks](phase-6-bus-grants.md#pass-gate), including receiving-pin captures and safe grant/release fault behavior.
 - <input type="checkbox" data-checklist-id="gate-evidence" aria-label="Phase 6 captures and cold-start results saved"> Save captures and cold-start results.
 
 No normal-run MHz claim follows from slow injected tests alone.

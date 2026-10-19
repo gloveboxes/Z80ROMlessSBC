@@ -48,14 +48,17 @@ For each phase:
 | [3 - Control and port monitor](phase-3-address-generator.md) | Eight buffered inputs and independent WAIT release |
 | [4 - Address bus](phase-4-address-bus.md) | Passive address-trunk wiring; CPU remains absent |
 | [5 - Data bus](phase-5-data-bus.md) | Bidirectional translation and contention prevention |
-| [6 - Z80-assisted loading](phase-6-sram.md) | Fit CPU/SRAM, qualify injection, run RAM diagnostics |
+| [6 - Z80-assisted loading](phase-6-sram.md) | Fit CPU/SRAM, qualify injection, run CPU/RAM diagnostics |
+| [CPU reset, fetch and bus grants](phase-6-bus-grants.md) | Phase 6 receiving-pin measurements and physical BUSREQ/BUSACK qualification |
 | [20 MHz arithmetic and SRAM soak](20mhz-soak.md) | Optional one-hour resident CPU/stack/SRAM workload after earlier bring-up and frequency screens |
 | [No-I/O 20 MHz scope test](20mhz-scope.md) | Separate continuous CPU/SRAM workload for scope captures; results retrieved from SRAM only after stopping |
-| [7 - Z80 CPU](phase-7-z80.md) | Reset fetch, stepping, execution, and bus grants |
-| [8 - Virtual I/O](phase-8-virtual-io.md) | Synchronous IN/OUT trapping and USB diagnostics |
+| [8 - Bidirectional I/O and USB terminal](phase-8-virtual-io.md) | IN replies, port aliases, terminal round-trip and repeated boot/I/O integration |
 | [9 - Flash storage](phase-9-flash-storage.md) | Manifest boot, journal recovery, and CP/M disks |
 | [10 - WebSocket terminal](phase-10-websocket.md) | Final multicore network terminal and disk integration |
 | [Frequency qualification](frequency-qualification.md) | Measured operating limit and complete timing evidence |
+
+The former Phase 7 CPU checks are consolidated into Phase 6. There is no
+separate Phase 7 target; Phases 8-10 retain their numbers and target names.
 
 Build and test one functional block at a time. Do not install the next
 chip until the current phase passes. Use sockets for all DIP devices,

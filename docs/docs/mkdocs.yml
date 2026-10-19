@@ -44,10 +44,10 @@ nav:
       - Phase 5 - Data bus: en/implementation/phase-5-data-bus.md
       - Phase 6 - Z80-assisted SRAM loading:
           - SRAM loading and tests: en/implementation/phase-6-sram.md
+          - CPU reset, fetch and bus grants: en/implementation/phase-6-bus-grants.md
           - 20 MHz arithmetic and SRAM soak: en/implementation/20mhz-soak.md
           - No-I/O 20 MHz scope test: en/implementation/20mhz-scope.md
-      - Phase 7 - Z80 CPU: en/implementation/phase-7-z80.md
-      - Phase 8 - Virtual I/O: en/implementation/phase-8-virtual-io.md
+      - Phase 8 - Bidirectional I/O and USB terminal: en/implementation/phase-8-virtual-io.md
       - Phase 9 - Flash storage: en/implementation/phase-9-flash-storage.md
       - Phase 10 - WebSocket terminal: en/implementation/phase-10-websocket.md
       - Frequency qualification: en/implementation/frequency-qualification.md

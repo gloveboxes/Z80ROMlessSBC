@@ -351,7 +351,7 @@ while waiting for a network or flash operation.
 
 - [Phase 3: control and port monitor](../implementation/phase-3-address-generator.md)
   provides the A0/A1/A2/A4 wiring checklist.
-- [Phase 8: virtual I/O](../implementation/phase-8-virtual-io.md) validates
+- [Phase 8: bidirectional I/O and USB terminal](../implementation/phase-8-virtual-io.md) validates
   current traps and intentional aliases, not the proposed services.
 - [CP/M direct access](../cpm-dcc/direct-access.md) explains `IN`/`OUT` access
   versus the usual BDOS and BIOS interfaces.

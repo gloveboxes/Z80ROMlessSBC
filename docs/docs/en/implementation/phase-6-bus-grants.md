@@ -1,6 +1,6 @@
-# Phase 7 - Z80 Execution and Bus Grants
+# Phase 6 - CPU Reset, Fetch and Bus Grants
 
-<div data-checklist="phase-7" data-checklist-label="Phase 7" markdown="1">
+<div data-checklist="phase-6-bus-grants" data-checklist-label="Phase 6 bus grants" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured
 result. Progress is saved in this browser; ticks are not automatic verification.
@@ -8,11 +8,21 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 <button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
 <p data-checklist-status role="status" aria-live="polite"></p>
 
-<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 7 prerequisite passed"> **Prerequisite:** [Phase 6](phase-6-sram.md#pass-gate).
+<input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 6 loader and RAM prerequisites passed"> **Prerequisite:** Complete the loader and RAM checks in [Phase 6](phase-6-sram.md#full-memory-loader-qualification).
 **Install:** No additional chips; CPU was fitted in Phase 6.
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 7 firmware built and loaded"> Build `z80_stage07_z80_cpu`; UF2 lives in `build/src/stage07_z80_cpu/`.
-[Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage07_z80_cpu/main.c).
+This diagnostic retains the unique bus-grant and receiving-pin measurement
+checks formerly in the separate Phase 7. Phase 6's arithmetic and SRAM tests
+already provide much stronger execution coverage than this small loop, but
+they do not request/release the CPU bus or prove analogue reset/clock margins.
+There is no longer a separate Phase 7 page or firmware target; Phases 8-10
+keep their existing numbers.
+
+Do not flash this diagnostic during another running test. It is a separate,
+manual low-rate fixture, not a new mode in the arithmetic soak.
+
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 6 bus-grant firmware built and loaded"> Build `z80_stage06_bus_grant`; UF2 lives in `build/src/stage06_sram_dma/`.
+[Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/bus_grant_test.c).
 The test image is `NOP; NOP; JP 0000`. It is injected, read back, then reset
 again before execution from SRAM.
 
@@ -20,11 +30,25 @@ again before execution from SRAM.
 | --- | --- | --- |
 | <input type="checkbox" data-checklist-id="load-step-image" aria-label="Stepping image loaded verified and held in reset"> | `l` | Load/verify for stepping; hold RESET afterward |
 | <input type="checkbox" data-checklist-id="manual-step" aria-label="Manual reset release and slow steps measured"> | `s` | Release reset on first step, clock one manual cycle with 50 ms minimum half-pulses |
-| <input type="checkbox" data-checklist-id="run-rates" aria-label="All four Stage 7 run rates checked in order"> | `0/1/2/3` | Reload and run at 10 Hz / 1 kHz / 100 kHz / 1 MHz |
-| <input type="checkbox" data-checklist-id="run-1mhz" aria-label="Stage 7 reload and 1 MHz run checked"> | `r` | Reload/run 1 MHz |
+| <input type="checkbox" data-checklist-id="run-rates" aria-label="All four bus-grant fixture run rates checked in order"> | `0/1/2/3` | Reload and run at 10 Hz / 1 kHz / 100 kHz / 1 MHz |
+| <input type="checkbox" data-checklist-id="run-1mhz" aria-label="Bus-grant fixture reload and 1 MHz run checked"> | `r` | Reload/run 1 MHz |
 | <input type="checkbox" data-checklist-id="bus-grant" aria-label="Bus grant round-trip measured without Pico memory drive"> | `q` | BUSREQ/BUSACK round-trip; no Pico memory drive |
 | <input type="checkbox" data-checklist-id="restart" aria-label="Current run rate reset and restart checked"> | `z` | Reset/restart current run rate |
 | <input type="checkbox" data-checklist-id="isolate-stop" aria-label="Reset data isolation and clock stop checked"> | `x` | Assert reset, disable paths, stop clock |
+
+Commands are single characters; Enter is not required. `q` requires a
+free-running mode, not manual stepping. A request or release timeout fails
+closed and clears the run state: start a fresh run before retrying.
+The diagnostic does not enable an I/O trap; its Z80 loop contains no port I/O.
+On a successful grant, the Pico never takes over the memory address/data bus.
+
+Build from the repository root with the
+[firmware toolchain](../system/firmware-build.md):
+
+```sh
+cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w
+cmake --build build --target z80_stage06_bus_grant
+```
 
 ## Test Plan
 
@@ -46,10 +70,10 @@ timeout must assert RESET and isolate. Power off before fault wiring changes.
 
 ## Pass Gate
 
-- <input type="checkbox" data-checklist-id="gate-sram-fetch" aria-label="Phase 7 reset to SRAM fetch passed"> Verified reset-to-SRAM fetch.
-- <input type="checkbox" data-checklist-id="gate-cold-loads" aria-label="Phase 7 repeated cold loads passed"> Repeated cold loads.
-- <input type="checkbox" data-checklist-id="gate-loop" aria-label="Phase 7 instruction loop passed"> Correct instruction loop.
-- <input type="checkbox" data-checklist-id="gate-timeouts" aria-label="Phase 7 bus grant timeouts fail safely"> Safe bus-grant timeout behavior.
+- <input type="checkbox" data-checklist-id="gate-sram-fetch" aria-label="Phase 6 reset to SRAM fetch passed"> Verified reset-to-SRAM fetch.
+- <input type="checkbox" data-checklist-id="gate-cold-loads" aria-label="Phase 6 repeated cold loads passed"> Repeated cold loads.
+- <input type="checkbox" data-checklist-id="gate-loop" aria-label="Phase 6 instruction loop passed"> Correct instruction loop.
+- <input type="checkbox" data-checklist-id="gate-timeouts" aria-label="Phase 6 bus grant timeouts fail safely"> Safe bus-grant timeout behavior.
 
 Higher rates need the separate
 [qualification plan](frequency-qualification.md).
@@ -61,10 +85,10 @@ Higher rates need the separate
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 7 application - src/stage07_z80_cpu/main.c"
+??? example "Phase 6 bus-grant diagnostic - src/stage06_sram_dma/bus_grant_test.c"
 
     ```c
-    {% include "../../../../src/stage07_z80_cpu/main.c" %}
+    {% include "../../../../src/stage06_sram_dma/bus_grant_test.c" %}
     ```
 
 ??? example "Shared CPU reset and bus grants - src/common/cpu.c"

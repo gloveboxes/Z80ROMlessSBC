@@ -15,8 +15,14 @@ static const uint8_t CPU_TEST_PROGRAM[] = {
 static bool step_image_loaded;
 static uint32_t running_clock_hz;
 
-static bool load_and_start(uint32_t clock_hz) {
+static void stop_test(void) {
+  z80_cpu_fail_closed();
   step_image_loaded = false;
+  running_clock_hz = 0;
+}
+
+static bool load_and_start(uint32_t clock_hz) {
+  stop_test();
   if (!z80_cpu_load_and_verify(CPU_TEST_PROGRAM, sizeof(CPU_TEST_PROGRAM)))
     return false;
   if (!z80_cpu_release_reset_and_run(clock_hz))
@@ -26,6 +32,7 @@ static bool load_and_start(uint32_t clock_hz) {
 }
 
 static bool load_for_single_step(void) {
+  stop_test();
   step_image_loaded = z80_cpu_load_and_verify(
       CPU_TEST_PROGRAM, sizeof(CPU_TEST_PROGRAM));
   running_clock_hz = 0;
@@ -49,15 +56,30 @@ static bool single_step(void) {
 static bool reset_running_cpu(void) {
   if (running_clock_hz == 0)
     return false;
+  uint32_t clock_hz = running_clock_hz;
+  stop_test();
   z80_reset_with_clock_cycles(3, 1);
-  return z80_cpu_release_reset_and_run(running_clock_hz);
+  if (!z80_cpu_release_reset_and_run(clock_hz))
+    return false;
+  running_clock_hz = clock_hz;
+  return true;
+}
+
+static bool bus_round_trip(void) {
+  if (running_clock_hz == 0)
+    return false;
+  if (!z80_cpu_request_bus(500000) || !z80_cpu_release_bus(500000)) {
+    stop_test();
+    return false;
+  }
+  return true;
 }
 
 int main(void) {
   z80_safe_startup();
   stdio_init_all();
-  printf("\nStage 7: Z80 CPU execution and bus ownership\n");
-    printf("l=load for stepping, s=single cycle (50ms minimum half-pulses), "
+  printf("\nStage 6: CPU reset/fetch and bus-grant qualification\n");
+  printf("l=load for stepping, s=single cycle (50ms minimum half-pulses), "
       "0=run 10Hz, 1=run 1kHz, 2=run 100kHz, 3/r=run 1MHz, "
       "q=BUSREQ round-trip, z=reset/restart, x=fail closed\n");
 
@@ -82,18 +104,13 @@ int main(void) {
       printf(load_and_start(1000000) ? "PASS: CPU running at 1MHz\n"
                                      : "FAIL: load/start\n");
     } else if (command == 'q') {
-      bool acquired = running_clock_hz != 0 &&
-                      z80_cpu_request_bus(500000);
-      bool released = acquired && z80_cpu_release_bus(500000);
-      printf(acquired && released ? "PASS: bus round-trip\n"
-                                  : "FAIL: bus round-trip\n");
+      printf(bus_round_trip() ? "PASS: bus round-trip\n"
+                              : "FAIL: start a run mode first or grant failed; inspect state\n");
     } else if (command == 'z') {
       printf(reset_running_cpu() ? "PASS: reset and restart\n"
                                  : "FAIL: start a run mode first\n");
     } else if (command == 'x') {
-      z80_cpu_fail_closed();
-      step_image_loaded = false;
-      running_clock_hz = 0;
+      stop_test();
       printf("CPU held in reset\n");
     }
     tight_loop_contents();
