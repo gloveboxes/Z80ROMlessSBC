@@ -161,7 +161,7 @@ All integer request fields and binary results are little-endian.
 | Timers `0x10` | `[0, id, duration_u32]` starts/replaces; `[1, id]` queries | COMPLETE or one byte, 1 running / 0 expired |
 | Stopwatches `0x11` | `[0, id]` resets; `[1, id]` reads seconds; `[2, id]` reads milliseconds | COMPLETE or unsigned 32-bit elapsed count |
 | Clock `0x20` | `[0]` uptime seconds; `[1]` UTC ISO 8601; `[2]` local ISO 8601; `[3]` long local date; `[4]` DATE-style local date/time | Text |
-| Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version | Two random bytes, text, or COMPLETE |
+| Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version; `[4, state]` set onboard LED; `[5]` read LED state | Two random bytes, text, COMPLETE, or one LED-state byte |
 | Environment `0x30` | Operations below | Text or COMPLETE |
 | Weather `0x40`, Chat `0x50`, Sense HAT `0x60` | Recognized groups without Pico drivers | UNAVAILABLE |
 
@@ -190,6 +190,49 @@ clock before watchdog reboot. New disk commands are gated before the reboot
 job is published, with BUSY+ERROR reported on disk status, so writes cannot
 race the final flush. Failed flushes reopen the gate and report STORAGE_WRITE
 instead.
+
+### Onboard LED device
+
+Stages 9 and 10 expose the Pico 2 W onboard LED through Utility group `0x21`,
+using the existing shared-service ports `0x02`-`0x04`. No wiring changes,
+expansion GPIOs, or additional port IDs are needed; `0x07` remains spare
+for a future interrupt timer.
+
+- Payload `[4, 0]` turns the LED off; `[4, 1]` turns it on. Success is
+  COMPLETE and requires ACK.
+- Payload `[5]` returns a one-byte response: `0` off or `1` on. This is the
+  last successfully commanded state, not an optical measurement.
+- Other state values return INVALID_PARAMETER. Incorrect payload lengths
+  return INVALID_LENGTH.
+- An initial read after firmware boot initializes the LED off; an initial
+  write applies the requested state directly. Its state is not persisted to
+  flash, and transport RESET does not undo it.
+- Both stages initialize the wireless-chip driver lazily if necessary.
+  Stage 9 uses the SDK's LED-only `pico_cyw43_arch_none` backend: no Wi-Fi
+  association or network stack is enabled, and the USB terminal and nominal
+  20 MHz Z80 operation are unchanged. Stage 10 also works with empty Wi-Fi
+  credentials or without a network connection. Driver initialization/write
+  failures return UNAVAILABLE; a failed write does not update the reported state.
+
+The worker accesses the wireless chip on core 1, never inside the core 0
+Z80 I/O trap. LED control is an asynchronous service, not a cycle-timed output.
+
+For example, to turn the LED on, issue these Z80 I/O writes:
+
+```text
+OUT port 0x02, value 0x01   ; RESET shared transport
+OUT port 0x02, value 0x21   ; Utility group
+OUT port 0x03, value 0x02   ; Payload length, low byte
+OUT port 0x03, value 0x00   ; Payload length, high byte
+OUT port 0x03, value 0x04   ; Set LED operation
+OUT port 0x03, value 0x01   ; On (use 0x00 for off)
+```
+
+These are transaction steps, not literal assembly syntax. Poll port `0x02`
+with a bounded limit until COMPLETE (`0x01`) or ERROR (`0xFF`); acknowledge
+COMPLETE by writing `0x00` to port `0x02`. On ERROR, read and acknowledge
+the framed error as described above. RESET is for recovering/starting an
+idle channel, not for cancelling another client's active transaction.
 
 ### Persistent environment API
 

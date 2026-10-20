@@ -163,10 +163,25 @@ static io_service_error_t clock_service(void) {
 
 static io_service_error_t utility_service(void) {
   uint8_t operation = request.data[0];
-  if (operation > 3)
+  if (operation > 5)
     return IO_SERVICE_UNKNOWN_OPERATION;
-  if (request.length != ((operation == 1 || operation == 2) ? 2u : 1u))
+  if (request.length !=
+      ((operation == 1 || operation == 2 || operation == 4) ? 2u : 1u))
     return IO_SERVICE_INVALID_LENGTH;
+  if (operation == 4 || operation == 5) {
+    if (operation == 4 && request.data[1] > 1)
+      return IO_SERVICE_INVALID_PARAMETER;
+    bool state = operation == 4 && request.data[1] != 0;
+    io_service_error_t error = z80_service_led(operation == 4, &state);
+    if (error != IO_SERVICE_OK)
+      return error;
+    if (operation == 5) {
+      result.data[0] = state;
+      result.length = 1;
+      result.has_response = true;
+    }
+    return IO_SERVICE_OK;
+  }
   if (operation == 0) {
     uint16_t random = z80_service_random();
     result.data[0] = (uint8_t)random;

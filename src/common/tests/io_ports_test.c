@@ -15,6 +15,20 @@ static uint8_t reply[IO_SERVICE_MAX_PAYLOAD + 1];
 static unsigned reply_length;
 static bool flush_ok = true;
 static bool disk_write_enabled = true;
+static bool led_available = true;
+static bool led_state;
+static unsigned led_calls;
+
+io_service_error_t z80_service_led(bool write, bool *state) {
+  ++led_calls;
+  if (!led_available)
+    return IO_SERVICE_UNAVAILABLE;
+  if (write)
+    led_state = *state;
+  else
+    *state = led_state;
+  return IO_SERVICE_OK;
+}
 
 uint64_t z80_service_millis(void) { return now; }
 uint16_t z80_service_random(void) { return 0x1234; }
@@ -353,11 +367,47 @@ static void test_power_loss(void) {
   assert(z80_env_snapshot_load(recovered, sizeof(recovered), &length) == -2);
 }
 
+static void test_led(void) {
+  uint8_t get[] = {5};
+  uint8_t set[] = {4, 1};
+  call(IO_SERVICE_UTILITY, get, sizeof(get), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == 0);
+  send(IO_SERVICE_UTILITY, set, sizeof(set));
+  assert(z80_io_port_in(2) == IO_SERVICE_BUSY && !led_state);
+  assert(finish() == IO_SERVICE_COMPLETE && led_state);
+  z80_io_port_out(2, IO_SERVICE_ACK);
+  assert(z80_io_port_in(2) == IO_SERVICE_READY);
+  reset();
+  call(IO_SERVICE_UTILITY, get, sizeof(get), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == 1);
+  set[1] = 0;
+  call(IO_SERVICE_UTILITY, set, sizeof(set), IO_SERVICE_COMPLETE);
+  assert(!led_state);
+  unsigned before = led_calls;
+  set[1] = 2;
+  error(IO_SERVICE_UTILITY, set, sizeof(set), IO_SERVICE_INVALID_PARAMETER);
+  set[1] = 255;
+  error(IO_SERVICE_UTILITY, set, sizeof(set), IO_SERVICE_INVALID_PARAMETER);
+  error(IO_SERVICE_UTILITY, set, 1, IO_SERVICE_INVALID_LENGTH);
+  uint8_t extra[] = {5, 0};
+  error(IO_SERVICE_UTILITY, extra, sizeof(extra), IO_SERVICE_INVALID_LENGTH);
+  extra[0] = 6;
+  error(IO_SERVICE_UTILITY, extra, 1, IO_SERVICE_UNKNOWN_OPERATION);
+  assert(led_calls == before);
+  led_available = false;
+  set[1] = 1;
+  error(IO_SERVICE_UTILITY, set, sizeof(set), IO_SERVICE_UNAVAILABLE);
+  error(IO_SERVICE_UTILITY, get, sizeof(get), IO_SERVICE_UNAVAILABLE);
+  assert(!led_state);
+  led_available = true;
+}
+
 int main(void) {
   memset(test_flash, 0xff, sizeof(test_flash));
   z80_io_ports_init();
   test_transport();
   test_timers();
+  test_led();
   test_environment();
   uint8_t operation[] = {0};
   call(IO_SERVICE_UTILITY, operation, 1, IO_SERVICE_RESPONSE_READY);

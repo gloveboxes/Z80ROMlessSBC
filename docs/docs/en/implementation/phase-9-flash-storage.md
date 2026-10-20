@@ -65,7 +65,11 @@ USB error/status first. Do not bypass verification merely to get a prompt.
 
 Both Stage 9 variants also implement
 [ROMLESS-SVC/1 extended ports](../system/io-ports.md): countdown timers,
-stopwatches, uptime, utilities and persistent ENV. Calendar queries explicitly
+stopwatches, uptime, utilities, onboard LED control and persistent ENV. The
+LED uses Utility payload `[4, 0]` for off, `[4, 1]` for on, and `[5]` to read
+its last successfully commanded state. Its wireless-chip driver is initialized
+on demand without enabling Wi-Fi networking; USB and nominal 20 MHz operation
+are unchanged. Calendar queries explicitly
 report CLOCK_UNSYNCED in this USB-only stage. No additional wiring is required;
 the interrupt timer remains deferred. Check these services with the updated
 Drive C applications after the terminal/disk pass gates. Software regression

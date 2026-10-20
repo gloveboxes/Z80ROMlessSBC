@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include "../onboard_led.c"
 #include "../terminal_network.cpp"
 
 static unsigned lock_depth;
@@ -15,6 +16,12 @@ cyw43_t cyw43_state;
 struct netif *netif_default;
 static unsigned time_client_starts;
 static char service_address[16];
+static int init_result = PICO_OK;
+static unsigned init_calls;
+static unsigned led_writes;
+static bool physical_led;
+static bool deadline_reached;
+static int led_result;
 void sntp_setoperatingmode(unsigned char mode) {
   assert(lock_depth && mode == SNTP_OPMODE_POLL);
 }
@@ -33,7 +40,16 @@ void z80_io_ports_set_network_address(const char *address) {
 
 void cyw43_arch_lwip_begin() { ++lock_depth; }
 void cyw43_arch_lwip_end() { assert(lock_depth); --lock_depth; }
-int cyw43_arch_init() { return PICO_OK; }
+int cyw43_arch_init() { ++init_calls; return init_result; }
+int cyw43_gpio_set(cyw43_t *state, int gpio, bool value) {
+  assert(state == &cyw43_state);
+  assert(wireless_initialized && gpio == CYW43_WL_GPIO_LED_PIN);
+  ++led_writes;
+  if (led_result != 0)
+    return led_result;
+  physical_led = value;
+  return 0;
+}
 void cyw43_arch_deinit() {}
 void cyw43_arch_enable_sta_mode() {}
 int cyw43_arch_wifi_connect_async(const char *, const char *, unsigned) { return PICO_OK; }
@@ -41,7 +57,7 @@ int cyw43_tcpip_link_status(cyw43_t *, int) { return CYW43_LINK_UP; }
 int cyw43_wifi_pm(cyw43_t *, int) { return PICO_OK; }
 int cyw43_wifi_leave(cyw43_t *, int) { return PICO_OK; }
 absolute_time_t make_timeout_time_ms(uint32_t delay) { return delay * 1000u; }
-bool time_reached(absolute_time_t) { return false; }
+bool time_reached(absolute_time_t) { return deadline_reached; }
 
 void z80_terminal_network_connected() { assert(lock_depth); connected = true; }
 void z80_terminal_network_disconnected() {
@@ -98,11 +114,44 @@ static void close_client(uint32_t connection) {
 int main() {
   struct netif interface = {};
   netif_default = &interface;
+  bool led = true;
+  init_result = -1;
+  assert(z80_service_led(true, &led) == IO_SERVICE_UNAVAILABLE);
+  assert(init_calls == 1 && led_writes == 0);
+  init_result = PICO_OK;
+  assert(z80_service_led(true, &led) == IO_SERVICE_UNAVAILABLE);
+  assert(init_calls == 1);
+  deadline_reached = true;
+  assert(z80_service_led(false, &led) == IO_SERVICE_OK && !led);
+  assert(init_calls == 2 && led_writes == 1 && !physical_led);
+  deadline_reached = false;
+  led = true;
+  assert(z80_service_led(true, &led) == IO_SERVICE_OK && physical_led);
+  led = false;
+  assert(z80_service_led(false, &led) == IO_SERVICE_OK && led);
+  led_result = -1;
+  led = false;
+  assert(z80_service_led(true, &led) == IO_SERVICE_UNAVAILABLE);
+  assert(physical_led);
+  assert(z80_service_led(false, &led) == IO_SERVICE_OK && led);
+  led_result = 0;
+  if (Z80_WIFI_SSID[0] == '\0') {
+    assert(!z80_terminal_network_poll());
+    assert(physical_led && init_calls == 2);
+    led = false;
+    assert(z80_service_led(true, &led) == IO_SERVICE_OK && !physical_led);
+    puts("PASS: LED control without Wi-Fi credentials");
+    return 0;
+  }
   assert(!z80_terminal_network_poll()); /* async association was just started */
+  assert(physical_led && init_calls == 2);
   assert(z80_terminal_network_poll());
   assert(time_client_starts == 1);
   assert(std::string(service_address) == "192.0.2.1");
   assert(z80_terminal_network_poll() && time_client_starts == 1);
+  led = false;
+  assert(z80_service_led(true, &led) == IO_SERVICE_OK && !physical_led);
+  assert(z80_service_led(false, &led) == IO_SERVICE_OK && !led);
   assert(ensure_server());
   connect_client(1);
   z80_terminal_network_poll_input();

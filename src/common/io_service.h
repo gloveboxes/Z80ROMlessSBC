@@ -3,6 +3,10 @@
 
 #include "z80sbc/io_ports.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   uint32_t generation;
   io_service_error_t error;
@@ -20,5 +24,13 @@ uint16_t z80_service_random(void);
 size_t z80_service_info(uint8_t selector, char *text, size_t capacity);
 /* Returns false until calendar time is synchronized. */
 bool z80_service_clock(uint8_t operation, char *text, size_t capacity);
+/* Core 1 only. Reads/writes the LED, or reports an unavailable backend. */
+io_service_error_t z80_service_led(bool write, bool *state);
+/* Core 1 only. Shared initialization for LED-only and network builds. */
+bool z80_wireless_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

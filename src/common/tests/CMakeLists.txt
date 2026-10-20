@@ -218,6 +218,17 @@ target_compile_options(network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME terminal_connections COMMAND network_test)
 set_tests_properties(terminal_connections PROPERTIES TIMEOUT 5)
 
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/no-wifi")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/no-wifi/wifi_config.h"
+  "#define Z80_WIFI_SSID \"\"\n#define Z80_WIFI_PASSWORD \"\"\n")
+add_executable(network_no_wifi_test network_test.cpp)
+target_include_directories(network_no_wifi_test PRIVATE fakes ../include
+  "${CMAKE_CURRENT_BINARY_DIR}/no-wifi")
+target_compile_features(network_no_wifi_test PRIVATE cxx_std_17)
+target_compile_options(network_no_wifi_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME terminal_led_without_wifi COMMAND network_no_wifi_test)
+set_tests_properties(terminal_led_without_wifi PROPERTIES TIMEOUT 5)
+
 add_executable(progress_test progress_test.c)
 target_include_directories(progress_test PRIVATE fakes ../include)
 target_compile_features(progress_test PRIVATE c_std_11)

@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <new>
 
-#include "cyw43.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include "pico_ws_server/web_socket_server.h"
@@ -11,6 +10,7 @@
 #include "lwip/netif.h"
 #include "z80sbc/io_ports.h"
 #include "z80sbc/terminal.h"
+#include "io_service.h"
 
 namespace {
 
@@ -22,7 +22,6 @@ constexpr size_t FRAME_BYTES = 256;
 
 enum class WifiState {
   uninitialized,
-  init_backoff,
   associating,
   online,
   association_backoff,
@@ -140,22 +139,12 @@ bool ensure_server() {
 extern "C" bool z80_terminal_network_poll(void) {
   if (Z80_WIFI_SSID[0] == '\0')
     return false;
+  if (!z80_wireless_init())
+    return false;
 
   if (wifi_state == WifiState::uninitialized) {
-    if (cyw43_arch_init() != PICO_OK) {
-      cyw43_arch_deinit();
-      retry_deadline = make_timeout_time_ms(RETRY_DELAY_MS);
-      wifi_state = WifiState::init_backoff;
-      return false;
-    }
     cyw43_arch_enable_sta_mode();
     start_association();
-    return false;
-  }
-
-  if (wifi_state == WifiState::init_backoff) {
-    if (time_reached(retry_deadline))
-      wifi_state = WifiState::uninitialized;
     return false;
   }
 

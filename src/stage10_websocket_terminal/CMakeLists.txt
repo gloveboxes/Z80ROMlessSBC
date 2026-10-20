@@ -61,10 +61,12 @@ target_link_libraries(z80_pico_ws_server PUBLIC
 
 add_library(z80_terminal STATIC
   ${CMAKE_CURRENT_LIST_DIR}/../common/terminal_bridge.c
+  ${CMAKE_CURRENT_LIST_DIR}/../common/onboard_led.c
   ${CMAKE_CURRENT_LIST_DIR}/../common/terminal_network.cpp
 )
 set_source_files_properties(
   ${CMAKE_CURRENT_LIST_DIR}/../common/terminal_bridge.c
+  ${CMAKE_CURRENT_LIST_DIR}/../common/onboard_led.c
   ${CMAKE_CURRENT_LIST_DIR}/../common/terminal_network.cpp
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror"
 )
