@@ -50,6 +50,57 @@ port `0x06` for compared bytes and `5Ah`/`E1h` on port `0x05` for completion/
 failure. These diagnostic meanings are mode-specific and do not change the
 fixed terminal or disk ABI.
 
+### Interpreting CP/M SURVEY results
+
+On the Phase 9 USB CP/M loader, `SURVEY` (System Survey, June 1982) produced
+this active-port listing:
+
+```text
+Active I/O ports:
+01 08 09
+10 11 12 13 14 18 19 1A 1B 1C
+20 21 28 29
+30 31 32 33 34 38 39 3A 3B 3C
+40 41 48 49
+50 51 52 53 54 58 59 5A 5B 5C
+60 61 68 69
+70 71 72 73 74 78 79 7A 7B 7C
+80 81 88 89
+90 91 92 93 94 98 99 9A 9B 9C
+A0 A1 A8 A9
+B0 B1 B2 B3 B4 B8 B9 BA BB BC
+C0 C1 C8 C9
+D0 D1 D2 D3 D4 D8 D9 DA DB DC
+E0 E1 E8 E9
+F0 F1 F2 F3 F4 F8 F9 FA FB FC
+111 Ports active
+```
+
+**These are aliases, not 111 independent peripherals.** The seven implemented
+terminal/disk register addresses are `0x00`, `0x01` and `0x10-0x14`.
+Because A3 and A5-A7 are ignored, each register has 16 equivalent addresses
+within the low-byte range `0x00-0xFF`. For example, `0x01`, `0x09`, `0x21`
+and `0x29` all access terminal status; `0x10`, `0x18`, `0x30` and `0x38`
+all access disk command/status.
+
+The seven registers therefore occupy **7 x 16 = 112 address values**.
+In this captured result, `0x00` is not listed, but its other 15 aliases are:
+**112 - 1 = 111**. Every reported address maps to one of those seven
+registers under `address & 0x17`; there are no unexpected addresses in
+this listing.
+
+An "active" result also does not establish that a register is readable in
+the same way as a status or data register. Reads of the disk drive/LBA
+selectors (`0x11-0x13`) return `0x00` in the current firmware. Conversely,
+the output-only boot-report and diagnostic ports need not appear in an
+input-port scan. The allocation table describes their intended functions;
+SURVEY reports responses to its probes.
+
+This repeated pattern is expected with the current partial address decoding
+and does not affect CP/M's use of the canonical port numbers. The scan is
+not, by itself, qualification of disk writes, timing margins or the proposed
+services.
+
 ## Why A4 is monitored but A3 is not
 
 The Pico decodes I/O ports using `address & 0x17`. The `&` operator is
