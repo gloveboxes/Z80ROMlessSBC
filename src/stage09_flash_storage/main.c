@@ -161,15 +161,16 @@ static const char *boot_error_name(z80_boot_error_t error) {
 
 static bool observe_boot(const z80_boot_status_t *status, void *context) {
   (void)context;
-  if (Z80_STAGE09_AUTOBOOT)
-    return true;
   static const char *const phases[] = {
     "journal recovery", "manifest/CRC validation", "SRAM load",
     "SRAM verify", "verified; RESET held LOW",
   };
-  if (status->completed % 4096u == 0)
+  if (status->completed % 4096u == 0 &&
+      (!Z80_STAGE09_AUTOBOOT || stdio_usb_connected()))
     printf("[boot] %s: %lu/%lu\n", phases[status->phase],
            (unsigned long)status->completed, (unsigned long)status->total);
+  if (Z80_STAGE09_AUTOBOOT)
+    return true;
   for (unsigned int count = 0; count < 32; ++count) {
     int input = getchar_timeout_us(0);
     if (input < 0)

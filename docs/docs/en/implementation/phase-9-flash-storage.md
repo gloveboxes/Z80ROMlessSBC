@@ -112,10 +112,23 @@ picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbm
 
 There are **no load/start commands to type**. The CP/M banner and `A>` prompt
 are retained in the existing terminal output queue until a terminal connects.
-Successful automatic boot does not print diagnostic progress, a help menu or
-status into the CP/M display. Reconnecting preserves the current program and
-does not reboot the Z80 or replay a supervisor menu. ANSI key mapping is the
-same as in the diagnostic firmware.
+While a terminal is connected during automatic boot, the supervisor reports
+SRAM load and independent verification progress every 4,096 bytes, for example:
+
+```text
+[boot] SRAM load: 32768/65536
+[boot] SRAM load: 36864/65536
+...
+[boot] SRAM verify: 32768/65536
+...
+[boot] verified; RESET held LOW: 65536/65536
+```
+
+The last line precedes releasing reset and starting CP/M. Progress is not
+retained or replayed when no terminal is connected, and automatic boot never
+waits for USB. After CP/M starts, reconnecting preserves the current program
+and does not reboot the Z80 or replay progress or a supervisor menu. ANSI key
+mapping is the same as in the diagnostic firmware.
 
 Verification or startup failure keeps the CPU stopped; it never runs an
 unverified image or retries endlessly. A later terminal connection reports
@@ -124,6 +137,9 @@ still shows status, and **Ctrl+] then `h`** prints supervisor help.
 For a safe software restart, use **Ctrl+] then `x`**, wait for
 **Disk quiescent; RESET held LOW, PWM stopped**, then use **Ctrl+] then `r`**.
 The Pico reboots and automatically reloads CP/M.
+This resets USB CDC too, so picocom may exit with **Device not configured**.
+Reconnect using the current USB port name; if loading or verification is still
+underway, progress appears at the next 4,096-byte boundary before the CP/M banner.
 
 !!! warning "Reset is not a substitute for saving and flushing"
     A Pico reset reloads SRAM and discards the running CP/M program. Save work

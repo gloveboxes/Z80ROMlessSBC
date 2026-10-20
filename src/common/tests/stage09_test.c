@@ -483,6 +483,47 @@ static void run_firmware_once(void) {
   exit_main = false;
 }
 
+static void test_autoboot_progress(void) {
+  if (!Z80_STAGE09_AUTOBOOT)
+    return;
+  reset_fixture();
+  input[0] = 'x';
+  input_length = 1;
+  for (unsigned phase = Z80_BOOT_LOAD; phase <= Z80_BOOT_VERIFY; ++phase) {
+    for (uint32_t completed = 0; completed <= 65536; completed += 256) {
+      status = (z80_boot_status_t){
+        .phase = phase, .completed = completed, .total = 65536,
+      };
+      size_t previous_length = output_length;
+      assert(observe_boot(&status, NULL));
+      assert(held && !start_calls && !core_launches && input_index == 0);
+      if (completed % 4096 != 0) {
+        assert(output_length == previous_length);
+        continue;
+      }
+      char expected[128];
+      snprintf(expected, sizeof(expected), "[boot] SRAM %s: %lu/65536\n",
+               phase == Z80_BOOT_LOAD ? "load" : "verify",
+               (unsigned long)completed);
+      assert(strcmp(output + previous_length, expected) == 0);
+    }
+  }
+  connected = false;
+  size_t previous_length = output_length;
+  status.completed = 4096;
+  assert(observe_boot(&status, NULL));
+  assert(output_length == previous_length);
+  connected = true;
+  status.completed = 8192;
+  assert(observe_boot(&status, NULL));
+  assert(strcmp(output + previous_length,
+                "[boot] SRAM verify: 8192/65536\n") == 0);
+  status.phase = Z80_BOOT_VERIFIED;
+  status.completed = 65536;
+  assert(observe_boot(&status, NULL));
+  assert(strstr(output, "[boot] verified; RESET held LOW: 65536/65536\n"));
+}
+
 static void test_startup_without_usb(void) {
   reset_fixture();
   connected = false;
@@ -610,6 +651,7 @@ int main(void) {
     }
   }
   test_startup_without_usb();
+  test_autoboot_progress();
   test_autoboot_failures();
   test_control_and_terminal();
   test_usb_backpressure_and_disconnect();
