@@ -113,6 +113,7 @@ is not proof of that helper's real SDK implementation.
 | --- | --- | --- |
 | `flash_backend_recovery` | Actual `flash_backend.c`: manifest validation, byte loading/readback controller, cache, journal programming and recovery | Flash, SRAM byte access, bus/clock calls and reboot are modeled |
 | `stage09_usb_cpm` | Actual Stage 9 application functions and shared `terminal_queue.c` | Boot/storage and SDK calls are substituted; command/stop interleavings are driven by the harness |
+| `stage09_autoboot_cpm` | The same application compiled with automatic startup, including its actual `main` initialization path | SDK/storage calls are substituted; tests cover boot before USB connection, retained CP/M output, late failure reporting and no automatic retries |
 | `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, queues, BUSY publication and fatal error latch | The flash backend is stubbed; this is not the journal test |
 | `assisted_loader`, `control_faults` | Shared injected-loader and control code | Cycle/pin models do not establish physical setup/hold timing |
 
@@ -127,9 +128,9 @@ For a focused native Phase 9 run:
 
 ```sh
 cmake --build build/host-control \
-  --target flash_backend_test stage09_test disk_test
+  --target flash_backend_test stage09_test stage09_autoboot_test disk_test
 ctest --test-dir build/host-control \
-  -R '^(flash_backend_recovery|stage09_usb_cpm|disk_protocol)$' \
+  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol)$' \
   --output-on-failure --no-tests=error
 ```
 
@@ -185,11 +186,11 @@ For a focused Phase 9 run with emulation enabled:
 
 ```sh
 ctest --test-dir build/host-control \
-  -R '^(flash_backend_recovery|stage09_usb_cpm|disk_protocol|cpm_bios_z80_execution)$' \
+  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol|cpm_bios_z80_execution)$' \
   --output-on-failure --no-tests=error
 ```
 
-Expect four named CTest checks; the CP/M execution check contains multiple
+Expect five named CTest checks; the CP/M execution check contains multiple
 Python test cases. The host environment never opens the board's USB port.
 
 ## 5. Validate CP/M image construction
@@ -240,14 +241,14 @@ cmake -S . -B build/pico -G Ninja \
   -DZ80_WIFI_SSID= \
   -DZ80_WIFI_PASSWORD=
 cmake --build build/pico \
-  --target z80_stage09_cpm_images z80_cpm_images
+  --target z80_stage09_cpm_images z80_stage09_cpm_loader_images z80_cpm_images
 ```
 
 If the Newlib query prints only `libc.a` rather than a library path, check
 the toolchain installation. Initial configuration also needs network access
 to obtain the pinned WebSocket dependency if it is not cached.
 
-This builds both affected stages against the **real SDK**. Empty Wi-Fi
+This builds both Stage 9 variants and Stage 10 against the **real SDK**. Empty Wi-Fi
 credentials keep networking disabled; credentials are not needed for the
 Stage 9 USB baseline. For network testing, configure credentials locally
 without sharing generated headers or CMake caches.
@@ -255,13 +256,16 @@ without sharing generated headers or CMake caches.
 | Output under `build/pico/` | Purpose |
 | --- | --- |
 | `src/stage09_flash_storage/z80_stage09_flash_storage.uf2` | Deployable Phase 9 Pico firmware |
+| `src/stage09_flash_storage/z80_stage09_cpm_loader.uf2` | Automatic Phase 9 loader, independent of USB connection |
 | `src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2` | Deployable Stage 10 Pico firmware |
 | `cpm-stage09/` | Matching Stage 9 boot package, disks, manifest and complete flash image |
+| `cpm-stage09-loader/` | Matching automatic-loader provisioning set |
 | `cpm/` | Matching Stage 10 provisioning set |
 
 The build generates UF2/binary images; it **does not flash or execute them**.
 The stage definitions retain their distinct clock configuration:
-Stage 9 uses nominal 20 MHz after explicit load/verify/start, while Stage 10
+Stage 9 uses nominal 20 MHz after complete load/verification, either on explicit
+commands or automatically on reset with the loader variant, while Stage 10
 retains its separate 1 MHz startup default. Neither is qualified by a build.
 The linker protects storage above firmware offset `0x290000`; the physical
 flash size remains 4 MiB.

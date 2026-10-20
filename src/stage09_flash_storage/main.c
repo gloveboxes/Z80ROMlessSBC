@@ -16,7 +16,12 @@
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
+#include "ansi_input.h"
 #include "disk_diagnostic_image.h"
+
+#ifndef Z80_STAGE09_AUTOBOOT
+#define Z80_STAGE09_AUTOBOOT 0
+#endif
 
 enum {
   RUN_CLOCK_HZ = 20000000,
@@ -39,6 +44,7 @@ static bool bios_announced;
 static bool ccp_announced;
 static bool previous_cr;
 static bool boot_timed_out;
+static const char *boot_failure;
 static uint32_t boot_markers;
 static uint32_t flash_pause_request;
 static uint32_t flash_paused;
@@ -117,6 +123,7 @@ static void core1_main(void) {
 static void hold_cpu(void) {
   z80_io_trap_disable();
   z80_cpu_fail_closed();
+  ansi_input_reset();
   running = false;
   image_verified = false;
   stop_requested = false;
@@ -147,6 +154,8 @@ static const char *boot_error_name(z80_boot_error_t error) {
 
 static bool observe_boot(const z80_boot_status_t *status, void *context) {
   (void)context;
+  if (Z80_STAGE09_AUTOBOOT)
+    return true;
   static const char *const phases[] = {
     "journal recovery", "manifest/CRC validation", "SRAM load",
     "SRAM verify", "verified; RESET held LOW",
@@ -170,9 +179,11 @@ static void load_image(void) {
     return;
   }
   boot_attempted = true;
-  printf("\n[boot] Load/verify only; x cancels at a 256-byte boundary.\n");
+  if (!Z80_STAGE09_AUTOBOOT)
+    printf("\n[boot] Load/verify only; x cancels at a 256-byte boundary.\n");
   if (!z80_flash_storage_init_observed(observe_boot, NULL)) {
     const z80_boot_status_t *status = z80_flash_boot_status();
+    boot_failure = boot_error_name(status->error);
     hold_cpu();
     printf("[boot] FAIL: %s phase=%u completed=%lu address=%04x "
            "expected=%02x actual=%02x; RESET held LOW\n",
@@ -182,8 +193,9 @@ static void load_image(void) {
     return;
   }
   image_verified = true;
-  printf("[boot] PASS: 65536 bytes loaded and independently read back; "
-         "CPU not running. Ctrl-] g starts CP/M at nominal 20 MHz.\n");
+  if (!Z80_STAGE09_AUTOBOOT)
+    printf("[boot] PASS: 65536 bytes loaded and independently read back; "
+           "CPU not running. Ctrl-] g starts CP/M at nominal 20 MHz.\n");
 }
 
 static void start_cpm(void) {
@@ -199,15 +211,17 @@ static void start_cpm(void) {
   core1_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
       !z80_cpu_release_reset_and_run(RUN_CLOCK_HZ)) {
+    boot_failure = "trap/clock start";
     hold_cpu();
     printf("[boot] FAIL: trap/clock start; RESET held LOW\n");
     return;
   }
   running = true;
   boot_deadline = make_timeout_time_ms(10000);
-  printf("\n[boot] CPU released from reset; configured clock=%lu Hz. "
-         "Waiting for BIOS evidence, not yet a CP/M PASS.\n",
-         (unsigned long)z80_clock_get_hz());
+  if (!Z80_STAGE09_AUTOBOOT)
+    printf("\n[boot] CPU released from reset; configured clock=%lu Hz. "
+           "Waiting for BIOS evidence, not yet a CP/M PASS.\n",
+           (unsigned long)z80_clock_get_hz());
 }
 
 static void start_disk_diagnostic(void) {
@@ -243,7 +257,8 @@ static void print_status(void) {
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
-         "trap_timeouts=%lu control_errors=%lu boot_error=%s\n",
+         "trap_timeouts=%lu control_errors=%lu boot_error=%s "
+         "failure=%s\n",
          running, image_verified, (unsigned long)z80_clock_get_hz(),
          bios_announced, ccp_announced,
          (unsigned long)z80_flash_disk_status(),
@@ -252,7 +267,13 @@ static void print_status(void) {
          (unsigned long)z80_terminal_tx_drop_count(),
          (unsigned long)z80_io_trap_timeout_count(),
          (unsigned long)z80_io_trap_control_error_count(),
-         boot_error_name(boot->error));
+         boot_error_name(boot->error),
+         boot_failure != NULL ? boot_failure : "none");
+  if (boot->error != Z80_BOOT_ERROR_NONE)
+    printf("[boot] phase=%u completed=%lu address=%04x "
+           "expected=%02x actual=%02x\n",
+           (unsigned int)boot->phase, (unsigned long)boot->completed,
+           boot->address, boot->expected, boot->actual);
 }
 
 static void print_help(void) {
@@ -262,7 +283,13 @@ static void print_help(void) {
          "x=flush then hold RESET, r=reboot when stopped, h=help,\n"
          "0=disarm, 1-8=arm one-shot flash fault (DISPOSABLE DISKS ONLY).\n"
          "Ctrl-] Ctrl-] sends literal Ctrl-]. Ordinary bytes go to CP/M.\n"
-         "First: Ctrl-] l, then Ctrl-] g; confirm BIOS banner and A>.\n");
+         "ANSI arrows=Ctrl-E/X/D/S, Ins/Del=Ctrl-O/G, PgUp/Dn=Ctrl-R/V,\n"
+         "Backspace=Ctrl-H; standalone Esc waits 30 ms.\n");
+  if (Z80_STAGE09_AUTOBOOT)
+    printf("CP/M loads and starts automatically on Pico reset. "
+           "Ctrl-] x then Ctrl-] r safely reboots into CP/M.\n");
+  else
+    printf("First: Ctrl-] l, then Ctrl-] g; confirm BIOS banner and A>.\n");
 }
 
 static void diagnostic_command(int command) {
@@ -306,21 +333,9 @@ static void diagnostic_command(int command) {
   }
 }
 
-static void receive_usb_byte(uint8_t value) {
-  if (command_pending) {
-    command_pending = false;
-    if (value != USB_COMMAND_ESCAPE) {
-      diagnostic_command(value);
-      return;
-    }
-  } else if (value == USB_COMMAND_ESCAPE) {
-    command_pending = true;
+static void forward_terminal_byte(uint8_t value) {
+  if (value == 0)
     return;
-  }
-  if (!running) {
-    printf("\n[diag] CPU held; use Ctrl-] l then Ctrl-] g.\n");
-    return;
-  }
   if (value == '\n' && previous_cr) {
     previous_cr = false;
     return;
@@ -329,14 +344,48 @@ static void receive_usb_byte(uint8_t value) {
   z80_terminal_network_receive(&value, 1);
 }
 
+static void receive_usb_byte(uint8_t value) {
+  if (command_pending) {
+    command_pending = false;
+    if (value != USB_COMMAND_ESCAPE) {
+      diagnostic_command(value);
+      return;
+    }
+  } else if (value == USB_COMMAND_ESCAPE) {
+    ansi_input_reset();
+    command_pending = true;
+    return;
+  }
+  if (!running) {
+    if (Z80_STAGE09_AUTOBOOT)
+      printf("\n[diag] CPU held; Ctrl-] s for status, "
+             "Ctrl-] r to retry automatic boot.\n");
+    else
+      printf("\n[diag] CPU held; use Ctrl-] l then Ctrl-] g.\n");
+    return;
+  }
+  forward_terminal_byte(
+      ansi_input_process(value, to_ms_since_boot(get_absolute_time())));
+}
+
 static void service_usb(void) {
   bool connected = stdio_usb_connected();
   z80_terminal_set_connected(connected);
+  if (connected != usb_was_connected)
+    ansi_input_reset();
   if (connected && !usb_was_connected) {
     command_pending = false;
     previous_cr = false;
-    print_help();
-    print_status();
+    if (!Z80_STAGE09_AUTOBOOT) {
+      print_help();
+      print_status();
+    } else if (!running) {
+      printf("\n[boot] %s; RESET held LOW. Ctrl-] s for status, "
+             "Ctrl-] r to reboot.\n",
+             boot_failure != NULL ? "FAIL: automatic CP/M boot stopped"
+                                  : "CP/M stopped");
+      print_status();
+    }
   }
   usb_was_connected = connected;
   if (!connected)
@@ -347,6 +396,9 @@ static void service_usb(void) {
       break;
     receive_usb_byte((uint8_t)input);
   }
+  if (running && !command_pending)
+    forward_terminal_byte(
+        ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
   for (unsigned int count = 0;
        count < 32 && tud_cdc_write_available() != 0; ++count) {
     uint8_t value;
@@ -392,15 +444,18 @@ static void service_run(void) {
   uint32_t markers = __atomic_load_n(&boot_markers, __ATOMIC_ACQUIRE);
   if ((markers & 1u) && !bios_announced) {
     bios_announced = true;
-    printf("\n[boot] Observed BIOS cold-entry report from Z80.\n");
+    if (!Z80_STAGE09_AUTOBOOT)
+      printf("\n[boot] Observed BIOS cold-entry report from Z80.\n");
   }
   if ((markers & 2u) && !ccp_announced) {
     ccp_announced = true;
-    printf("\n[boot] Observed BIOS handoff to CCP; "
-           "confirm A>, DIR and transient/warm-boot tests manually.\n");
+    if (!Z80_STAGE09_AUTOBOOT)
+      printf("\n[boot] Observed BIOS handoff to CCP; "
+             "confirm A>, DIR and transient/warm-boot tests manually.\n");
   }
   if (!boot_timed_out && (!bios_announced || !ccp_announced) &&
       time_reached(boot_deadline)) {
+    boot_failure = "BIOS/CCP evidence timeout";
     printf("\n[boot] FAIL: BIOS/CCP evidence timeout; stopping safely. "
            "Rebuild/provision the matching boot package if markers are absent.\n");
     stop_requested = true;
@@ -408,6 +463,7 @@ static void service_run(void) {
     __atomic_store_n(&flash_pause_request, 1, __ATOMIC_RELEASE);
   }
   if (z80_flash_disk_has_fatal_error()) {
+    boot_failure = "fatal storage error";
     hold_cpu();
     printf("\n[diag] FAIL: fatal storage error; RESET held LOW. "
            "Reboot to recover; preserve USB log.\n");
@@ -455,6 +511,11 @@ int main(void) {
       printf("FAIL: expected 120 MHz supervisor clock; CPU held reset\n");
       sleep_ms(1000);
     }
+  }
+  if (Z80_STAGE09_AUTOBOOT) {
+    load_image();
+    if (image_verified)
+      start_cpm();
   }
   while (true) {
     if (core1_started)

@@ -11,11 +11,19 @@ target_link_libraries(z80_flash_disk_20mhz PUBLIC
   z80_pwm_20mhz pico_flash pico_multicore pico_util hardware_flash
   hardware_watchdog)
 
-add_z80_stage(z80_stage09_flash_storage main.c
-  z80_flash_disk_20mhz z80_terminal_queue pico_multicore)
+set_source_files_properties(ansi_input.c PROPERTIES
+  COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 include(disk_diagnostic_build.cmake)
-target_sources(z80_stage09_flash_storage PRIVATE "${diagnostic_header}")
-target_include_directories(z80_stage09_flash_storage PRIVATE
-  "${CMAKE_CURRENT_BINARY_DIR}")
-target_compile_definitions(z80_stage09_flash_storage PRIVATE
-  PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000)
+foreach(stage09_target IN ITEMS
+    z80_stage09_flash_storage z80_stage09_cpm_loader)
+  add_z80_stage(${stage09_target} main.c
+    z80_flash_disk_20mhz z80_terminal_queue pico_multicore)
+  target_sources(${stage09_target} PRIVATE ansi_input.c "${diagnostic_header}")
+  target_include_directories(${stage09_target} PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}")
+  target_compile_definitions(${stage09_target} PRIVATE
+    PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000)
+endforeach()
+target_compile_definitions(z80_stage09_cpm_loader PRIVATE
+  Z80_STAGE09_AUTOBOOT=1
+  PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=0)

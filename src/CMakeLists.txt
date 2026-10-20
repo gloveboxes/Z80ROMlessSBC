@@ -122,6 +122,8 @@ if(Z80ASM_EXECUTABLE)
   endfunction()
   add_cpm_images(z80_cpm_images z80_stage10_websocket_terminal cpm)
   add_cpm_images(z80_stage09_cpm_images z80_stage09_flash_storage cpm-stage09)
+  add_cpm_images(z80_stage09_cpm_loader_images z80_stage09_cpm_loader
+    cpm-stage09-loader)
 else()
   message(STATUS "z80asm not found; z80_cpm_images target is unavailable")
 endif()

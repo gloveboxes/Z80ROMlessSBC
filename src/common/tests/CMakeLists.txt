@@ -178,15 +178,21 @@ add_test(NAME flash_backend_recovery COMMAND flash_backend_test)
 set_tests_properties(flash_backend_recovery PROPERTIES TIMEOUT 15)
 
 include(../../stage09_flash_storage/disk_diagnostic_build.cmake)
-add_executable(stage09_test stage09_test.c ../terminal_queue.c
-  "${diagnostic_header}")
-target_include_directories(stage09_test PRIVATE fakes ../include
-  "${CMAKE_CURRENT_BINARY_DIR}")
-target_compile_definitions(stage09_test PRIVATE Z80_EXPERIMENTAL_20MHZ=1)
-target_compile_features(stage09_test PRIVATE c_std_11)
-target_compile_options(stage09_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+foreach(stage09_test_target IN ITEMS stage09_test stage09_autoboot_test)
+  add_executable(${stage09_test_target} stage09_test.c ../terminal_queue.c
+    ../../stage09_flash_storage/ansi_input.c "${diagnostic_header}")
+  target_include_directories(${stage09_test_target} PRIVATE fakes ../include
+    "${CMAKE_CURRENT_BINARY_DIR}")
+  target_compile_definitions(${stage09_test_target} PRIVATE
+    Z80_EXPERIMENTAL_20MHZ=1)
+  target_compile_features(${stage09_test_target} PRIVATE c_std_11)
+  target_compile_options(${stage09_test_target} PRIVATE
+    -Wall -Wextra -Werror -UNDEBUG)
+endforeach()
+target_compile_definitions(stage09_autoboot_test PRIVATE Z80_STAGE09_AUTOBOOT=1)
 add_test(NAME stage09_usb_cpm COMMAND stage09_test)
-set_tests_properties(stage09_usb_cpm PROPERTIES TIMEOUT 5)
+add_test(NAME stage09_autoboot_cpm COMMAND stage09_autoboot_test)
+set_tests_properties(stage09_usb_cpm stage09_autoboot_cpm PROPERTIES TIMEOUT 5)
 
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/wifi_config.h"
 	"#define Z80_WIFI_SSID \"test\"\n#define Z80_WIFI_PASSWORD \"\"\n")

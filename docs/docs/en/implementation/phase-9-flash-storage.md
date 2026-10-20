@@ -52,15 +52,82 @@ USB error/status first. Do not bypass verification merely to get a prompt.
 
 !!! important "USB terminal first; nominal 20 MHz after loading"
     Stage 9 implements the same `0x00`/`0x01` terminal contract as Stage 8
-    and Stage 10, using USB CDC rather than Wi-Fi. It does not automatically
-    load or run CP/M. Slow, Z80-assisted loading and complete readback happen
-    first; a separate command starts execution at **nominal 20,000,000 Hz,
+    and Stage 10, using USB CDC rather than Wi-Fi. The diagnostic firmware
+    requires separate load/start commands; the automatic loader below performs
+    both on Pico reset. In either case, slow, Z80-assisted loading and complete
+    readback happen before execution at **nominal 20,000,000 Hz,
     50% duty** (`120 MHz / 6`). This is the requested operating assumption,
     not a claim that CP/M, disk I/O or timing margin has passed bench
     qualification at that frequency. I/O traps and flash writes still pause
     execution. Stage 10 retains its separate 1 MHz default.
 
+## Automatic CP/M loader
+
+For normal use after bring-up, build the separate auto-start firmware:
+
+```sh
+cmake --build build --target z80_stage09_cpm_loader -j
+```
+
+On an already provisioned, matching Stage 9 installation, safely stop/flush
+CP/M, close the serial terminal and enter BOOTSEL using the
+[power and provisioning procedure](../system/firmware-build.md#72-flash-provisioning).
+Then update **only the firmware**:
+
+```sh
+picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
+picotool reboot
+```
+
+No boot-package or disk update is needed when switching between these Stage 9
+variants without BIOS changes. The original `z80_stage09_flash_storage`
+diagnostic target remains available and still requires manual `l`/`g`.
+
+Every Pico reset now:
+
+1. Establishes safe GPIO levels, holds the Z80 in reset and stops its clock.
+2. Recovers the flash journal and validates the boot manifest and payload CRC.
+3. Uses Z80-assisted loading to write the complete 65,536-byte SRAM image,
+   then independently reads back and compares every byte.
+4. Resets the Z80 again, enables I/O trapping and starts CP/M at nominal 20 MHz.
+5. Continues terminal and disk service without waiting for a USB terminal.
+
+Connect picocom whenever convenient, using the actual USB CDC port name:
+
+```sh
+picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbmodemXXXX
+```
+
+There are **no load/start commands to type**. The CP/M banner and `A>` prompt
+are retained in the existing terminal output queue until a terminal connects.
+Successful automatic boot does not print diagnostic progress, a help menu or
+status into the CP/M display. Reconnecting preserves the current program and
+does not reboot the Z80 or replay a supervisor menu. ANSI key mapping is the
+same as in the diagnostic firmware.
+
+Verification or startup failure keeps the CPU stopped; it never runs an
+unverified image or retries endlessly. A later terminal connection reports
+the stopped state and retained failure details. Optional **Ctrl+] then `s`**
+still shows status, and **Ctrl+] then `h`** prints supervisor help.
+For a safe software restart, use **Ctrl+] then `x`**, wait for
+**Disk quiescent; RESET held LOW, PWM stopped**, then use **Ctrl+] then `r`**.
+The Pico reboots and automatically reloads CP/M.
+
+!!! warning "Reset is not a substitute for saving and flushing"
+    A Pico reset reloads SRAM and discards the running CP/M program. Save work
+    and stop/flush first. Journal recovery protects committed flash updates,
+    not unsaved application data or disk changes still held only in RAM.
+    Keep external +5 V applied throughout in-board USB programming.
+
+For new/disposable storage, `z80_stage09_cpm_loader_images` builds the complete
+matching package in `build/cpm-stage09-loader/`. Its full-flash image contains
+the automatic loader and replaces all disk contents when programmed; do not
+use it for a firmware-only update.
+
 ## Controlled USB workflow
+
+This section uses the original manual diagnostic firmware, not the automatic
+loader above.
 
 Do not deploy this firmware while another physical test or soak is running.
 No probing, wiring changes or firmware replacement is required to build it.
@@ -78,6 +145,10 @@ For an already provisioned board, selectively update the Stage 9 UF2,
 addresses. Updating Drive A overwrites its existing files, so back it up first.
 For disposable/new storage, the complete `build/cpm-stage09/z80romless-flash.bin`
 contains everything. Building either target never flashes the board.
+
+For a terminal-mapping-only firmware update on an already matching Stage 9
+installation, flash only `z80_stage09_flash_storage.uf2`. The boot package,
+CP/M disks and journal do not need to be rewritten.
 
 Open the Pico's USB CDC port with a terminal, using your actual port name:
 
@@ -102,6 +173,39 @@ are terminal input, not diagnostic commands.
 | Ctrl+] then `1`-`8` | Arm a one-shot journal/flash-safe watchdog fault while running; disposable disks only |
 | Ctrl+] then `h` | Print help |
 | Ctrl+] then Ctrl+] | Send a literal Ctrl+] to CP/M |
+
+### ANSI keyboard mapping
+
+Stage 9 ports the ESP32 Altair `ansi_input` mapper into the USB receive path.
+Picocom forwards the host terminal's ANSI input sequences; the firmware
+converts these to the CP/M application's WordStar-style control keys:
+
+| Host key | ANSI input | CP/M byte |
+| --- | --- | --- |
+| Up | `ESC [ A` | Ctrl+E (`05h`) |
+| Down | `ESC [ B` | Ctrl+X (`18h`) |
+| Right | `ESC [ C` | Ctrl+D (`04h`) |
+| Left | `ESC [ D` | Ctrl+S (`13h`) |
+| Insert | `ESC [ 2 ~` | Ctrl+O (`0Fh`) |
+| Delete | `ESC [ 3 ~` | Ctrl+G (`07h`) |
+| Page Up | `ESC [ 5 ~` | Ctrl+R (`12h`) |
+| Page Down | `ESC [ 6 ~` | Ctrl+V (`16h`) |
+| Backspace (`7Fh` or `08h`) | Single byte | Ctrl+H (`08h`) |
+
+A standalone Escape is delivered once after a 30 ms grace period, even when
+no further serial bytes arrive. Sequences may span USB reads. Ordinary text
+and other nonzero control bytes pass through; CRLF still becomes one carriage
+return. As in the Altair mapper, NUL means no input, unsupported `ESC [` keys
+are consumed, and Escape followed by a non-`[` byte forwards that byte.
+This is not a general ANSI keyboard decoder: Home/End, function keys,
+modified arrows and application-cursor (`ESC O`) sequences are not mapped.
+Use normal cursor-key mode in the host terminal.
+
+Ctrl+] supervisor commands are intercepted before mapping. Starting a
+supervisor command, stopping the CPU or changing the USB connection resets
+partial ANSI state. Terminal output and Stage 10's WebSocket keyboard
+handling are unchanged. Test the keys in an application configured for these
+control bindings; individual CP/M programs can assign different meanings.
 
 ### 1. Prove loading without executing CP/M
 
@@ -189,6 +293,8 @@ therefore leaves the old target intact and latches a storage error. Target
 readback and header-clear checks remain required after programming.
 
 **Application source:** [src/stage09_flash_storage/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c),
+the [ANSI input mapper](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/ansi_input.c)
+and its [interface](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/ansi_input.h),
 with the shared [disk device](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c),
 [terminal queues](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_queue.c),
 [flash backend](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c), and
@@ -221,6 +327,12 @@ time, not copied into this page.
 
     ```c
     {% include "../../../../src/stage09_flash_storage/main.c" %}
+    ```
+
+??? example "ANSI keyboard mapper - src/stage09_flash_storage/ansi_input.c"
+
+    ```c
+    {% include "../../../../src/stage09_flash_storage/ansi_input.c" %}
     ```
 
 ??? example "Flash geometry and boot manifest - src/common/include/z80sbc/flash_layout.h"
@@ -368,16 +480,19 @@ shape, CRCs, cancellation, first SRAM faults, journal staging verification,
 all eight watchdog fault points, recovery, cache behavior, rotation and bounds.
 The Phase 9 controller tests use the real terminal queues and check framed
 commands, a 20 MHz start request, backpressure, overflow, startup reports
-and safe stop/flush interleavings.
+and safe stop/flush interleavings. The automatic-loader build runs the same
+terminal regressions plus the real `main` initialization path with USB absent,
+deferred CP/M output, failed loading/startup, late failure reporting and no
+automatic retry.
 
 With the existing independent-core environment configured, the suite also
 executes the real packaged BIOS/CP/M through cold boot, all-drive directory
 reads and transient/warm boot, plus the complete read-only disk diagnostic:
 
 ```sh
-cmake --build build/host-control --target flash_backend_test stage09_test disk_test
+cmake --build build/host-control --target flash_backend_test stage09_test stage09_autoboot_test disk_test
 ctest --test-dir build/host-control \
-  -R '^(flash_backend_recovery|stage09_usb_cpm|disk_protocol|cpm_bios_z80_execution)$' \
+  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol|cpm_bios_z80_execution)$' \
   --output-on-failure
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 ```

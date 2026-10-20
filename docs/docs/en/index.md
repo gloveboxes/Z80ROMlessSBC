@@ -13,6 +13,8 @@ verification, and terminal and disk I/O, with scope for true random number
 generation, timers, and internet access.
 Four persistent CP/M drives live in the Pico's onboard flash. Phase 9 uses a
 USB terminal; Phase 10 adds a browser-based WebSocket terminal.
+After bring-up, the [Phase 9 automatic loader](implementation/phase-9-flash-storage.md#automatic-cpm-loader)
+starts CP/M on Pico reset, ready for a later picocom connection.
 
 This guide covers the hardware, firmware, and staged tests needed to reproduce
 the build. Validate your own wiring and operation as you go; clock-rate

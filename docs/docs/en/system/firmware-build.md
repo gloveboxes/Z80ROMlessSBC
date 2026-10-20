@@ -39,7 +39,9 @@ operation. See the [frequency qualification plan](../implementation/frequency-qu
 
 Stage 9 is an explicit exception: after safe startup and before initializing
 USB it selects a 120 MHz supervisor clock, then uses nominal 20 MHz PWM only
-after manual SRAM loading/verification. Its clock/CPU/trap chain is compiled
+after complete SRAM loading/verification. The diagnostic variant starts on
+command; the automatic loader starts on Pico reset without waiting for USB.
+Its clock/CPU/trap chain is compiled
 separately with the existing 20 MHz opt-in; other stages retain their own
 limits/defaults. This is an operating assumption, not new bench qualification.
 
@@ -78,6 +80,7 @@ or build target.
 | 6 bus grants | `src/stage06_sram_dma/` | `z80_stage06_bus_grant` |
 | 8 | `src/stage08_virtual_io/` | `z80_stage08_virtual_io` |
 | 9 | `src/stage09_flash_storage/` | `z80_stage09_flash_storage` |
+| 9 automatic loader | `src/stage09_flash_storage/` | `z80_stage09_cpm_loader` |
 | 10 | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal` |
 
 Build the target in the table for your phase. Its UF2 is written to
@@ -179,6 +182,24 @@ LOW until Ctrl+] `l` loads/verifies SRAM and Ctrl+] `g` starts at nominal
 and fresh load before CP/M execution. See the
 [Phase 9 USB workflow](../implementation/phase-9-flash-storage.md#controlled-usb-workflow).
 
+For normal operation without diagnostic load/start commands, build the
+separate automatic loader:
+
+```sh
+cmake --build build --target z80_stage09_cpm_loader -j
+```
+
+Its firmware is
+`build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2`. Every Pico reset
+recovers/validates storage, loads and verifies all SRAM, resets the Z80 and
+starts CP/M without requiring a connected terminal. Successful boot retains
+the CP/M banner/prompt for picocom and suppresses the diagnostic menu.
+The [automatic-loader workflow](../implementation/phase-9-flash-storage.md#automatic-cpm-loader)
+documents startup, failure reporting and safe restart.
+
+The optional `z80_stage09_cpm_loader_images` target emits the corresponding
+complete provisioning set in `build/cpm-stage09-loader/`.
+
 Run the host regression checks with:
 
 ```sh
@@ -258,6 +279,21 @@ or opening another terminal on the same port.
     Building does not deploy. Do not replace firmware, open a second serial
     owner, or reset the Pico during an active soak. Back up disk contents
     before any full-image or individual drive update.
+
+To switch an already matching Stage 9 installation to automatic boot, first
+save CP/M work, stop/flush with Ctrl+] `x`, close the terminal and enter BOOTSEL
+with external +5 V maintained. Update only the automatic-loader firmware:
+
+```sh
+picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
+picotool reboot
+```
+
+This leaves the boot package, journal and all four disks unchanged. Do not
+overwrite Drive A or use a complete flash image merely to change startup mode.
+On new/disposable storage, build `z80_stage09_cpm_loader_images` and use its
+`build/cpm-stage09-loader/z80romless-flash.bin` instead of the manual image in
+the full-provisioning example below.
 
 For **Stage 9**, build `z80_stage09_cpm_images`, enter BOOTSEL with the
 documented external-5-V-before-USB sequence, then provision new/disposable

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,11 @@ static bool quiescent;
 static bool fatal;
 static bool interrupts_disabled;
 static bool load_ok;
+static bool trap_ok;
+static bool run_ok;
+static bool exit_main;
+static jmp_buf main_exit;
+static z80_boot_error_t load_error;
 static uint64_t now;
 static unsigned usb_room;
 static char output[16384];
@@ -95,13 +101,15 @@ void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
 }
 void multicore_launch_core1(void (*entry)(void)) {
   assert(entry == core1_main);
+  assert(boot_attempted && image_verified && held);
   ++core_launches;
 }
 bool z80_cpu_release_reset_and_run(uint32_t hz) {
   requested_clock = hz;
-  held = false;
   ++start_calls;
-  return true;
+  if (run_ok)
+    held = false;
+  return run_ok;
 }
 bool z80_cpu_load_and_verify(const uint8_t *image, uint32_t length) {
   assert(image == z80_disk_diagnostic && length < 256);
@@ -116,7 +124,7 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         z80_io_write_handler_t write_handler, void *context) {
   assert(read_handler == virtual_read && write_handler == virtual_write);
   assert(context == NULL);
-  return true;
+  return trap_ok;
 }
 void z80_io_trap_disable(void) {}
 uint32_t z80_io_trap_timeout_count(void) { return 0; }
@@ -133,13 +141,18 @@ void restore_interrupts(uint32_t state) {
 absolute_time_t make_timeout_time_ms(uint32_t delay) {
   return now + (uint64_t)delay * 1000;
 }
+absolute_time_t get_absolute_time(void) { return now; }
 bool time_reached(absolute_time_t deadline) { return now >= deadline; }
 void sleep_ms(uint32_t delay) { now += delay * 1000u; }
-void tight_loop_contents(void) {}
+void tight_loop_contents(void) {
+  if (exit_main)
+    longjmp(main_exit, 1);
+}
 const z80_boot_status_t *z80_flash_boot_status(void) { return &status; }
 bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
                                      void *context) {
   assert(observer == observe_boot && context == NULL);
+  assert(held && !start_calls && !core_launches);
   ++load_calls;
   held = true;
   status = (z80_boot_status_t){
@@ -150,7 +163,7 @@ bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
     return false;
   }
   if (!load_ok)
-    status.error = Z80_BOOT_ERROR_MISMATCH;
+    status.error = load_error;
   return load_ok;
 }
 void z80_flash_core0_service(void) {}
@@ -177,19 +190,22 @@ static void reset_fixture(void) {
   command_pending = usb_was_connected = stop_requested = false;
   flush_submitted = flash_resuming = bios_announced = ccp_announced = false;
   boot_timed_out = previous_cr = false;
+  boot_failure = NULL;
   diagnostic_active = false;
   boot_markers = flash_pause_request = flash_paused = 0;
   reported_rx_drops = reported_tx_drops = 0;
   load_calls = start_calls = core_launches = disk_writes = flushes = reboots = 0;
   requested_clock = 0;
-  connected = held = quiescent = load_ok = true;
-  fatal = interrupts_disabled = false;
+  connected = held = quiescent = load_ok = trap_ok = run_ok = true;
+  fatal = interrupts_disabled = exit_main = false;
+  load_error = Z80_BOOT_ERROR_MISMATCH;
   now = 0;
   usb_room = 1024;
   fake_disk_status = DISK_READY;
   output_length = input_index = input_length = 0;
   output[0] = '\0';
   memset(&status, 0, sizeof(status));
+  ansi_input_reset();
   z80_terminal_queue_init();
 }
 
@@ -232,8 +248,10 @@ static void test_control_and_terminal(void) {
   virtual_write(Z80_BOOT_REPORT_PORT, Z80_BOOT_REPORT_CCP, NULL);
   service_run();
   assert(bios_announced && ccp_announced);
-  assert(strstr(output, "not yet a CP/M PASS"));
-  assert(strstr(output, "Observed BIOS handoff"));
+  if (!Z80_STAGE09_AUTOBOOT) {
+    assert(strstr(output, "not yet a CP/M PASS"));
+    assert(strstr(output, "Observed BIOS handoff"));
+  }
   command('r');
   assert(!reboots && running);
 }
@@ -261,6 +279,101 @@ static void test_usb_backpressure_and_disconnect(void) {
   service_usb();
   assert(z80_terminal_rx_drop_count() == 1);
   assert(strstr(output, "FAIL: terminal overflow"));
+}
+
+static void usb_input(const char *bytes) {
+  input_length = strlen(bytes);
+  assert(input_length <= sizeof(input));
+  memcpy(input, bytes, input_length);
+  input_index = 0;
+  service_usb();
+  assert(input_index == input_length);
+}
+
+static void test_ansi_terminal_input(void) {
+  static const struct {
+    const char *sequence;
+    uint8_t expected;
+  } mappings[] = {
+    {"\x1b[A", 0x05}, {"\x1b[B", 0x18},
+    {"\x1b[C", 0x04}, {"\x1b[D", 0x13},
+    {"\x1b[2~", 0x0f}, {"\x1b[3~", 0x07},
+    {"\x1b[5~", 0x12}, {"\x1b[6~", 0x16},
+    {"\x7f", 0x08}, {"\x08", 0x08},
+  };
+  reset_fixture();
+  command('l');
+  command('g');
+  service_usb();
+  for (size_t index = 0; index < sizeof(mappings) / sizeof(mappings[0]);
+       ++index) {
+    usb_input(mappings[index].sequence);
+    assert(virtual_read(1, NULL) & 1u);
+    assert(virtual_read(0, NULL) == mappings[index].expected);
+    assert(!(virtual_read(1, NULL) & 1u));
+  }
+
+  usb_input("\x1b");
+  now = (ANSI_INPUT_ESC_GRACE_MS - 1u) * 1000;
+  usb_input("");
+  assert(!(virtual_read(1, NULL) & 1u));
+  now += 1000;
+  usb_input("");
+  assert(virtual_read(0, NULL) == 0x1b);
+  usb_input("");
+  assert(!(virtual_read(1, NULL) & 1u));
+
+  usb_input("\x1b");
+  now += 1000;
+  usb_input("[");
+  now += 1000;
+  usb_input("3");
+  assert(!(virtual_read(1, NULL) & 1u));
+  usb_input("~");
+  assert(virtual_read(0, NULL) == 0x07);
+  memset(input, 'a', 31);
+  memcpy(input + 31, "\x1b[A", 3);
+  input_index = 0;
+  input_length = 34;
+  service_usb();
+  assert(input_index == 32);
+  for (unsigned index = 0; index < 31; ++index)
+    assert(virtual_read(0, NULL) == 'a');
+  assert(!(virtual_read(1, NULL) & 1u));
+  service_usb();
+  assert(input_index == input_length);
+  assert(virtual_read(0, NULL) == 0x05);
+  assert(!(virtual_read(1, NULL) & 1u));
+  usb_input("\x1b[Z\x1b[2!Q");
+  assert(virtual_read(0, NULL) == 'Q');
+  assert(!(virtual_read(1, NULL) & 1u));
+
+  usb_input("DIR\r\n\x03\x13\x11\x1a");
+  static const uint8_t expected[] = {'D', 'I', 'R', '\r', 3, 19, 17, 26};
+  for (size_t index = 0; index < sizeof(expected); ++index)
+    assert(virtual_read(0, NULL) == expected[index]);
+  assert(!(virtual_read(1, NULL) & 1u));
+
+  usb_input("\x1b[");
+  command('s');
+  usb_input("A");
+  assert(virtual_read(0, NULL) == 'A');
+  assert(!(virtual_read(1, NULL) & 1u));
+
+  usb_input("\x1b[");
+  connected = false;
+  service_usb();
+  connected = true;
+  usb_input("B");
+  assert(virtual_read(0, NULL) == 'B');
+  assert(!(virtual_read(1, NULL) & 1u));
+
+  now = (uint64_t)(UINT32_MAX - 10u) * 1000;
+  usb_input("\x1b");
+  now += ANSI_INPUT_ESC_GRACE_MS * 1000;
+  usb_input("");
+  assert(virtual_read(0, NULL) == 0x1b);
+  assert(!(virtual_read(1, NULL) & 1u));
 }
 
 static void test_stop_and_failure(void) {
@@ -297,8 +410,13 @@ static void test_stop_and_failure(void) {
   input[0] = 'x';
   input_length = 1;
   command('l');
-  assert(held && !image_verified && !core_launches);
-  assert(strstr(output, "cancelled"));
+  assert(held && !core_launches);
+  if (Z80_STAGE09_AUTOBOOT) {
+    assert(image_verified && input_index == 0);
+  } else {
+    assert(!image_verified);
+    assert(strstr(output, "cancelled"));
+  }
 
   reset_fixture();
   command('l');
@@ -338,12 +456,137 @@ static void test_disk_diagnostic(void) {
   assert(held && !running && strstr(output, "PASS: disk bytes"));
 }
 
+static void run_firmware_once(void) {
+  exit_main = true;
+  if (setjmp(main_exit) == 0)
+    stage09_firmware_main();
+  exit_main = false;
+}
+
+static void test_startup_without_usb(void) {
+  reset_fixture();
+  connected = false;
+  input[0] = 'x';
+  input_length = 1;
+  run_firmware_once();
+  assert(input_index == 0);
+  if (!Z80_STAGE09_AUTOBOOT) {
+    assert(!load_calls && !start_calls && held && !core_launches);
+    return;
+  }
+  assert(load_calls == 1 && start_calls == 1 && core_launches == 1);
+  assert(running && image_verified && !held && requested_clock == 20000000);
+  assert(output_length == 0);
+  input_length = 0;
+  static const char banner[] = "64K CP/M 2.2\r\nA>";
+  for (size_t index = 0; index < sizeof(banner) - 1; ++index)
+    virtual_write(0, (uint8_t)banner[index], NULL);
+  virtual_write(Z80_BOOT_REPORT_PORT, Z80_BOOT_REPORT_BIOS, NULL);
+  virtual_write(Z80_BOOT_REPORT_PORT, Z80_BOOT_REPORT_CCP, NULL);
+  now = 60000000;
+  service_usb();
+  service_run();
+  assert(bios_announced && ccp_announced && !boot_timed_out && running);
+  assert(output_length == 0 && !(virtual_read(1, NULL) & 0x80u));
+  connected = true;
+  service_usb();
+  assert(strcmp(output, banner) == 0);
+  assert(virtual_read(1, NULL) & 0x80u);
+  connected = false;
+  service_usb();
+  connected = true;
+  service_usb();
+  assert(strcmp(output, banner) == 0);
+  assert(load_calls == 1 && start_calls == 1);
+}
+
+static void test_autoboot_failures(void) {
+  if (!Z80_STAGE09_AUTOBOOT)
+    return;
+  static const z80_boot_error_t errors[] = {
+    Z80_BOOT_ERROR_JOURNAL, Z80_BOOT_ERROR_MANIFEST,
+    Z80_BOOT_ERROR_PAYLOAD_CRC, Z80_BOOT_ERROR_LOADER,
+    Z80_BOOT_ERROR_WRITE, Z80_BOOT_ERROR_READ,
+    Z80_BOOT_ERROR_MISMATCH, Z80_BOOT_ERROR_FLASH_INIT,
+  };
+  for (size_t index = 0; index < sizeof(errors) / sizeof(errors[0]); ++index) {
+    reset_fixture();
+    connected = load_ok = false;
+    load_error = errors[index];
+    run_firmware_once();
+    assert(held && !running && !image_verified);
+    assert(load_calls == 1 && !start_calls && !core_launches);
+    assert(status.error == errors[index]);
+    assert(boot_failure != NULL && strstr(output, "FAIL"));
+    output[0] = '\0';
+    output_length = 0;
+    connected = true;
+    service_usb();
+    assert(strstr(output, "FAIL: automatic CP/M boot stopped"));
+    assert(strstr(output, boot_error_name(errors[index])));
+    assert(strstr(output, "phase=2 completed=4096"));
+    service_run();
+    service_usb();
+    assert(load_calls == 1 && !start_calls);
+  }
+  for (unsigned failure = 0; failure < 2; ++failure) {
+    reset_fixture();
+    connected = false;
+    trap_ok = failure != 0;
+    run_ok = failure == 0;
+    run_firmware_once();
+    assert(held && !running && !image_verified);
+    assert(load_calls == 1 && core_launches == 1);
+    assert(start_calls == failure);
+    output[0] = '\0';
+    output_length = 0;
+    connected = true;
+    service_usb();
+    assert(strstr(output, "FAIL: automatic CP/M boot stopped"));
+    assert(strstr(output, "failure=trap/clock start"));
+  }
+
+  reset_fixture();
+  connected = false;
+  run_firmware_once();
+  now = 10000000;
+  service_run();
+  assert(boot_timed_out && stop_requested && running && flash_pause_request);
+  flash_paused = 1;
+  service_run();
+  assert(held && !running);
+  output[0] = '\0';
+  output_length = 0;
+  connected = true;
+  service_usb();
+  assert(strstr(output, "FAIL: automatic CP/M boot stopped"));
+  assert(strstr(output, "failure=BIOS/CCP evidence timeout"));
+  assert(load_calls == 1 && start_calls == 1);
+
+  reset_fixture();
+  connected = false;
+  run_firmware_once();
+  fatal = true;
+  service_run();
+  assert(held && !running);
+  output[0] = '\0';
+  output_length = 0;
+  connected = true;
+  service_usb();
+  assert(strstr(output, "FAIL: automatic CP/M boot stopped"));
+  assert(strstr(output, "failure=fatal storage error"));
+}
+
 int main(void) {
+  test_startup_without_usb();
+  test_autoboot_failures();
   test_control_and_terminal();
   test_usb_backpressure_and_disconnect();
+  test_ansi_terminal_input();
   test_stop_and_failure();
   test_disk_diagnostic();
-  puts("PASS: Phase 9 staged load, nominal 20 MHz start, real terminal queues, "
-       "USB framing/backpressure, boot evidence, cancellation and safe stop");
+  puts("PASS: Phase 9 startup policy, nominal 20 MHz start, real terminal queues, "
+       "USB framing/backpressure, ANSI key mapping/Escape timing, "
+       "boot evidence, cancellation and safe stop");
   return 0;
 }
