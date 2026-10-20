@@ -462,12 +462,27 @@ class BuildImagesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SHA-256"):
             disassemble_cpm64.audit(image, instructions)
 
+    def test_boot_package_cannot_overlap_environment(self) -> None:
+        package = b"\xff" * (
+            build_images.FLASH_ENV_OFFSET - build_images.FLASH_BOOT_OFFSET + 1
+        )
+        with self.assertRaisesRegex(ValueError, "environment"):
+            build_images.build_flash_image(
+                b"firmware", package,
+                [self.native_drive] * build_images.DRIVE_COUNT,
+            )
+
     def test_complete_flash_layout(self) -> None:
         firmware = b"stage10"
         disks = [self.native_drive] * build_images.DRIVE_COUNT
         flash = build_images.build_flash_image(firmware, self.package, disks)
         self.assertEqual(len(flash), build_images.FLASH_BYTES)
         self.assertEqual(flash[: len(firmware)], firmware)
+        self.assertEqual(
+            flash[build_images.FLASH_ENV_OFFSET:
+                  build_images.FLASH_ENV_OFFSET + build_images.FLASH_ENV_BYTES],
+            b"\xff" * build_images.FLASH_ENV_BYTES,
+        )
         self.assertEqual(
             flash[
                 build_images.FLASH_JOURNAL_OFFSET : build_images.FLASH_BOOT_OFFSET

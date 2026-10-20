@@ -1,47 +1,48 @@
 # I/O Ports and Services
 
 The Pico provides virtual peripherals through Z80 `IN` and `OUT` instructions.
-This page owns the overall port allocation. See
-[operational boundaries](operation.md) for the implemented terminal, disk
-and clock-stop trap contracts.
+This page owns the port allocation and the **ROMLESS-SVC/1** extended-service
+protocol, compatible with the ESP32 Altair `io_ports.h` and dcc `DXSVC.H`
+client. Extended services are implemented in both Stage 9 variants and Stage 10.
+Stage 8 retains its original bring-up diagnostics.
 
-!!! important "Implemented ports versus proposed services"
-    Terminal and disk ports are fixed by the current firmware and CP/M
-    interface. Keep their assigned numbers unchanged. Shared services and
-    file transfer below are proposals: they are not implemented by the
-    current firmware and are not bring-up pass-gate requirements.
+Maintained sources:
+[transport and timers](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_ports.c),
+[service worker](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_service.c),
+[clock and utilities](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_service_platform.c),
+[persistent environment store](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/environment_store.c)
+and [public constants](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/io_ports.h).
+See [operational boundaries](operation.md) for the terminal, disk and
+clock-stop trap contracts.
 
 ## Port allocation
 
 The four monitored address bits, A0/A1/A2/A4, provide **16 distinct ports**:
 `0x00-0x07` and `0x10-0x17`, using `address & 0x17`.
 Other addresses are aliases, not additional ports. For example, `0x08`
-aliases `0x00` and `0x18` aliases `0x10`.
-The proposed allocation fits the existing wiring; no extra address buffer
-or Pico GPIO is required.
+aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 
 | Port (hex) | Decimal | Function | Allocation |
 | --- | ---: | --- | --- |
 | `0x00` | 0 | Terminal data, IN/OUT | Fixed |
 | `0x01` | 1 | Terminal status | Fixed |
-| `0x02` | 2 | Shared service command (OUT) / status (IN) | Suggested |
-| `0x03` | 3 | Shared service request bytes (OUT) | Suggested |
-| `0x04` | 4 | Shared service response bytes (IN) | Suggested |
+| `0x02` | 2 | Shared service command (OUT) / status (IN) | Implemented |
+| `0x03` | 3 | Shared service length-prefixed request bytes (OUT) | Implemented |
+| `0x04` | 4 | Shared service length-prefixed response bytes (IN) | Implemented |
 | `0x05` | 5 | BIOS cold-entry/CCP-handoff reports; Stage 9 disk-test and Stage 10 qualification results | Reserved for diagnostics |
 | `0x06` | 6 | Stage 9 disk-test bytes and Stage 10 qualification data; Stage 8 test results | Reserved for diagnostics |
-| `0x07` | 7 | Spare | Unallocated |
+| `0x07` | 7 | Spare; ESP32 interrupt timer is deferred on this hardware | Unallocated |
 | `0x10` | 16 | Disk command (OUT) / status (IN) | Fixed |
 | `0x11` | 17 | Disk drive selection | Fixed |
 | `0x12` | 18 | Disk sector address, low byte | Fixed |
 | `0x13` | 19 | Disk sector address, high byte | Fixed |
 | `0x14` | 20 | Disk data, IN/OUT | Fixed |
-| `0x15` | 21 | File-transfer command (OUT) / status (IN) | Suggested |
-| `0x16` | 22 | File-transfer filename/data bytes | Suggested |
-| `0x17` | 23 | Spare | Unallocated |
+| `0x15` | 21 | File-transfer command (OUT) / status (IN) | Reserved, not implemented |
+| `0x16` | 22 | File-transfer filename/data bytes | Reserved, not implemented |
+| `0x17` | 23 | Independent countdown timers and stopwatches, IN/OUT | Implemented |
 
-This reserves **14 ports and leaves two spare**, while preserving terminal,
-disk and diagnostic assignments. A port supports both IN and OUT, so a
-command and its status can share one number.
+This assigns or reserves **15 ports and leaves one spare**. A port supports
+both IN and OUT, so a command and its status can share one number.
 
 The BIOS emits `B0h` on port `0x05` at cold entry and `C0h` immediately before
 handoff to CCP (including warm boot). Stage 9 observes these as execution
@@ -52,54 +53,20 @@ fixed terminal or disk ABI.
 
 ### Interpreting CP/M SURVEY results
 
-On the Phase 9 USB CP/M loader, `SURVEY` (System Survey, June 1982) produced
-this active-port listing:
+On the earlier Phase 9 USB CP/M loader, before extended services, `SURVEY`
+(System Survey, June 1982) reported 111 active ports. This was the alias set
+of the seven terminal/disk registers, not 111 independent peripherals.
 
-```text
-Active I/O ports:
-01 08 09
-10 11 12 13 14 18 19 1A 1B 1C
-20 21 28 29
-30 31 32 33 34 38 39 3A 3B 3C
-40 41 48 49
-50 51 52 53 54 58 59 5A 5B 5C
-60 61 68 69
-70 71 72 73 74 78 79 7A 7B 7C
-80 81 88 89
-90 91 92 93 94 98 99 9A 9B 9C
-A0 A1 A8 A9
-B0 B1 B2 B3 B4 B8 B9 BA BB BC
-C0 C1 C8 C9
-D0 D1 D2 D3 D4 D8 D9 DA DB DC
-E0 E1 E8 E9
-F0 F1 F2 F3 F4 F8 F9 FA FB FC
-111 Ports active
-```
-
-**These are aliases, not 111 independent peripherals.** The seven implemented
-terminal/disk register addresses are `0x00`, `0x01` and `0x10-0x14`.
 Because A3 and A5-A7 are ignored, each register has 16 equivalent addresses
 within the low-byte range `0x00-0xFF`. For example, `0x01`, `0x09`, `0x21`
 and `0x29` all access terminal status; `0x10`, `0x18`, `0x30` and `0x38`
-all access disk command/status.
+all access disk command/status. Seven registers occupy 112 low-byte addresses;
+the captured scan omitted `0x00`, leaving 111.
 
-The seven registers therefore occupy **7 x 16 = 112 address values**.
-In this captured result, `0x00` is not listed, but its other 15 aliases are:
-**112 - 1 = 111**. Every reported address maps to one of those seven
-registers under `address & 0x17`; there are no unexpected addresses in
-this listing.
-
-An "active" result also does not establish that a register is readable in
-the same way as a status or data register. Reads of the disk drive/LBA
-selectors (`0x11-0x13`) return `0x00` in the current firmware. Conversely,
-the output-only boot-report and diagnostic ports need not appear in an
-input-port scan. The allocation table describes their intended functions;
-SURVEY reports responses to its probes.
-
-This repeated pattern is expected with the current partial address decoding
-and does not affect CP/M's use of the canonical port numbers. The scan is
-not, by itself, qualification of disk writes, timing margins or the proposed
-services.
+Extended services add readable registers, so a new scan need not reproduce
+that historical count. An active result does not prove correct peripheral
+operation. Scanning the response port can also cause an explicit UNDERFLOW
+error; RESET the shared channel before using it afterward.
 
 ## Why A4 is monitored but A3 is not
 
@@ -115,8 +82,6 @@ Mask 0x17:     0  0  0  1  0  1  1  1
 This keeps **A4, A2, A1 and A0**, matching the four address connections to U7.
 A3, A5-A7 and the high address byte are deliberately ignored for I/O decoding.
 
-For example, `0x08` differs from `0x00` only in A3. Masking removes that bit:
-
 ```text
 Address 0x08:  0000 1000
 Mask    0x17:  0001 0111
@@ -124,31 +89,11 @@ Mask    0x17:  0001 0111
 AND result:    0000 0000 = 0x00
 ```
 
-Thus `0x08` **aliases** `0x00`: the Pico treats both as the same port.
-Similarly, `0x09 & 0x17` gives `0x01`.
-
-**A4 represents 16 (`0x10`)**, so keeping it distinguishes console ports
-`0x00/01` from disk ports `0x10-14`:
-
-| Port | Binary address | After AND with `0001 0111` | Decoded port |
-| --- | --- | --- | --- |
-| Console `0x00` | `0000 0000` | `0000 0000` | `0x00` |
-| Console `0x01` | `0000 0001` | `0000 0001` | `0x01` |
-| Disk `0x10` | `0001 0000` | `0001 0000` | `0x10` |
-| Disk `0x11` | `0001 0001` | `0001 0001` | `0x11` |
-| Disk `0x12` | `0001 0010` | `0001 0010` | `0x12` |
-| Disk `0x13` | `0001 0011` | `0001 0011` | `0x13` |
-| Disk `0x14` | `0001 0100` | `0001 0100` | `0x14` |
-
-If only A0-A2 were monitored, the mask would be `0x07` and disk port `0x10`
-would become indistinguishable from console port `0x00`:
-
-```text
-Disk address:  0001 0000 = 0x10
-Mask:          0000 0111 = 0x07
-               ---------
-AND result:    0000 0000 = 0x00
-```
+Thus `0x08` aliases `0x00`, `0x09` aliases `0x01`, and `0xFF` aliases the
+timer port `0x17`. A4 distinguishes console `0x00/01` from disk `0x10-14`.
+With a mask of `0x07`, disk command `0x10` would incorrectly alias console data.
+Service **group** `0x30` is a byte written to command port `0x02`, not an
+OUT to physical port `0x30` (which aliases disk command `0x10`).
 
 This omission applies only to **I/O monitoring**, not memory addressing.
 A3 still connects **Z80 pin 33 to SRAM pin 9** in
@@ -157,259 +102,219 @@ do not connect it to U7.
 
 ## Shared service interface
 
-Three ports can serve many functions by using command and parameter bytes
-to select an operation, rather than allocating one port per function:
+### Framing and recovery
 
-| Service | Proposed operations |
-| --- | --- |
-| Two expiry timers | Select timer 0/1, set duration, start, cancel, query running/expired |
-| Two stopwatches | Select stopwatch 0/1, start/reset, read elapsed time |
-| Date/time and uptime | Select uptime, UTC/local date/time, or a formatted date |
-| Random numbers | Request a result and read its bytes |
-| Environment variables | Get, set or delete a named value |
-| Reboot | Request reboot with explicit confirmation |
+There is one outstanding shared transaction at a time:
 
-| Port | Role | Example |
+1. Write RESET (`0x01`) to port `0x02` to recover an unknown parser state.
+2. Write the service group to `0x02`.
+3. Write a **16-bit little-endian payload length** to `0x03`, then that many
+   payload bytes. Length includes the operation byte and must be 1-2048.
+4. Poll status on `0x02` with a bounded client-side polling limit.
+5. For RESPONSE_READY, read the **16-bit little-endian response length** from
+   `0x04`, then exactly that many bytes. The last byte returns the channel to
+   READY. An empty response still has its two length bytes.
+6. For COMPLETE, write ACK (`0x00`) to `0x02`.
+7. For ERROR, read the length prefix and one-byte error code from `0x04`,
+   then ACK. If an overlapping transaction poisoned the parser, RESET is
+   required instead.
+
+| Status | Value | Meaning |
 | --- | --- | --- |
-| `0x02` | OUT selects a command; IN reports transaction status | Start expiry timer 0; report awaiting parameters, busy, complete or error |
-| `0x03` | OUT supplies request parameters | Send a duration, a variable name, or a name/value pair |
-| `0x04` | IN retrieves response bytes | Read elapsed time, a date/time string, random bytes or an environment value |
+| READY | `0x00` | Can accept a new command |
+| COMPLETE | `0x01` | Successful operation with no response; ACK required |
+| RESPONSE_READY | `0x02` | Length-prefixed response can be read |
+| COLLECTING | `0x03` | Awaiting the length prefix or remaining payload |
+| BUSY | `0x04` | Worker executing the request |
+| ERROR | `0xFF` | Length-prefixed error can be read |
 
-Multi-byte durations and results use repeated byte transfers; they do not
-need a separate port for each byte. Timers continue running independently
-after their start transaction completes.
+Special commands on `0x02` are ACK (`0x00`), RESET (`0x01`) and IDENTIFY
+(`0x02`). IDENTIFY needs no request and returns the text `ROMLESS-SVC/1`
+with the usual response length prefix. Text replies have **no trailing NUL**;
+binary replies are not strings.
 
-### How many services can three ports support?
+RESET invalidates pending replies through a generation identifier, but
+**does not undo side effects** or cancel a worker already writing flash.
+A new worker request can return BUSY_ERROR until that job finishes. RESET
+does not reset running timers or stopwatches. There is no automatic server
+timeout for an incomplete request: the client must use bounded polling,
+report failure and RESET. Reading status never acknowledges COMPLETE.
 
-The three port addresses are transport channels, not a limit of three
-functions. With a one-byte command written to `0x02`:
+Error codes match the ESP32 client:
 
-```text
-8 command bits -> 2^8 = 256 possible command codes
-```
-
-Parameters sent through `0x03` can select a service instance or operation.
-For example, one timer command could accept a timer number and an action
-such as start, cancel or query. Results are read through `0x04`.
-
-| Proposed command format | Addressable choices |
+| Code | Error |
 | --- | --- |
-| One command byte | Up to 256 command codes |
-| One command byte plus a service-selector byte | Up to 256 services with 256 operations each |
-| Two-byte command identifier | Up to 65,536 command codes |
+| `0x01` / `0x02` | UNKNOWN_GROUP / UNKNOWN_OPERATION |
+| `0x03` / `0x04` | INVALID_LENGTH / INVALID_PARAMETER |
+| `0x05` / `0x06` | UNAVAILABLE / BUSY_ERROR |
+| `0x07` / `0x08` / `0x09` | TIMEOUT (reserved) / INVALID_STATE / UNDERFLOW |
+| `0x10` / `0x11` / `0x12` | STORAGE_OPEN / STORAGE_READ / STORAGE_WRITE |
+| `0x13` / `0x14` | CAPACITY / NOT_FOUND |
+| `0x15` / `0x16` | CLOCK_UNSYNCED / REBOOT_CONFIRMATION |
 
-The extended formats are possible protocol designs, not implemented
-features. They require explicit framing and interpretation of the extra
-byte, but no additional physical I/O ports. Reserve some command codes for
-protocol identification, cancellation and recovery.
+### Groups and operations
 
-**Logical services are not extra Z80 port numbers.** The current hardware
-still decodes 16 distinct port addresses, and this interface uses only three.
-A one-byte command scheme is ample for the proposed timers, stopwatches,
-time, random numbers, environment variables and reboot. Memory, buffer
-capacity and implementation complexity remain practical limits; the code
-space does not guarantee that all possible services can be implemented.
+All integer request fields and binary results are little-endian.
 
-### Worked examples
+| Group | Operations and payloads | Result |
+| --- | --- | --- |
+| Timers `0x10` | `[0, id, duration_u32]` starts/replaces; `[1, id]` queries | COMPLETE or one byte, 1 running / 0 expired |
+| Stopwatches `0x11` | `[0, id]` resets; `[1, id]` reads seconds; `[2, id]` reads milliseconds | COMPLETE or unsigned 32-bit elapsed count |
+| Clock `0x20` | `[0]` uptime seconds; `[1]` UTC ISO 8601; `[2]` local ISO 8601; `[3]` long local date; `[4]` DATE-style local date/time | Text |
+| Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version | Two random bytes, text, or COMPLETE |
+| Environment `0x30` | Operations below | Text or COMPLETE |
+| Weather `0x40`, Chat `0x50`, Sense HAT `0x60` | Recognized groups without Pico drivers | UNAVAILABLE |
 
-!!! note "Illustrative dcc C, not implemented firmware"
-    The examples below use dcc's `inp()` and `outp()` functions, declared in
-    `<stdlib.h>`. They illustrate a command-first protocol with automatic
-    execution after all required parameters arrive. Command/status byte codes
-    below are example values only, not a finalized interface. The protocol still
-    needs specification and implementation before these examples can run.
-    Binary values use four-byte unsigned integers, least significant byte first.
+There are **four countdown timers**: IDs 0-2 take 0-65535 milliseconds;
+ID 3 takes 0-255 whole seconds. The shared duration field is four bytes for
+client compatibility, but out-of-range values are rejected. Timer 3 uses
+the ESP32 whole-second boundary rule: `(current_ms / 1000 + duration) * 1000`.
+A zero duration expires immediately.
 
-dcc has 16-bit `int` and 32-bit `unsigned long`. Use `unsigned long` for
-durations and cast received bytes to that type **before** shifting by 16 or
-24 bits. See [direct CP/M and port access](../cpm-dcc/direct-access.md).
+There are **three stopwatches**, IDs 0-2. Reads do not reset them. A latched
+32-bit millisecond count wraps after about 49.7 days; seconds wrap after
+about 136 years. Internal deadlines and uptime use a 64-bit monotonic clock.
 
-#### Common definitions and bounded status polling
+Stage 10 starts SNTP against `pool.ntp.org` after Wi-Fi association. Calendar
+operations return CLOCK_UNSYNCED until the first valid synchronization.
+Stage 9 has no network time source and returns CLOCK_UNSYNCED for calendar
+queries. Uptime remains available in both. Local formatting uses persistent
+`TZ` in POSIX timezone syntax (for example, `AEST-10`); an absent `TZ` means UTC.
 
-Use these definitions with each example below. A new command is sent only
-when the interface is ready. Error and polling-limit failures are reported,
-not mistaken for a valid result.
+System-info selectors are 0 = hostname `z80romless-sbc`, 1 = current Wi-Fi
+IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
+UNAVAILABLE without a connection, including Stage 9. Reboot requires the
+exact confirmation byte `0xA5`; it flushes queued/cached disk writes, then
+core 0 disables traps, holds reset, isolates the data paths and stops the
+clock before watchdog reboot. New disk commands are gated before the reboot
+job is published, with BUSY+ERROR reported on disk status, so writes cannot
+race the final flush. Failed flushes reopen the gate and report STORAGE_WRITE
+instead.
 
-```c
-#include <stdio.h>
-#include <stdlib.h>
+### Persistent environment API
 
-#define SERVICE_COMMAND  0x02
-#define SERVICE_REQUEST  0x03
-#define SERVICE_RESPONSE 0x04
+Keys are case-insensitive, stored uppercase, and contain 1-16 non-NUL bytes.
+Values contain 0-255 non-NUL bytes. Empty and absent values are distinct:
+GET of an empty value returns a zero-length response; an absent key returns
+NOT_FOUND.
 
-enum {
-    READY = 0,
-    COMPLETE = 1,
-    RESPONSE_READY = 2,
-    ERROR = 255,
-    START_TIMER_0 = 16,
-    GET_UPTIME_MS = 32,
-    ENV_GET = 48
-};
+| Operation | Payload | Result |
+| --- | --- | --- |
+| 0 reset / 1 initialize | `[operation]` | COMPLETE |
+| 2 get | `[2, key_length_u8, key_bytes]` | Value text |
+| 3 set | `[3, key_length_u8, key_bytes, value_length_u16, value_bytes]` | COMPLETE, durable before success |
+| 4 delete | `[4, key_length_u8, key_bytes]` | COMPLETE or NOT_FOUND |
+| 5 list | `[5]` | `KEY=VALUE` lines with CRLF |
+| 6 count | `[6]` | Decimal count text |
+| 7 clear | `[7]` | COMPLETE, durable before success |
+| 8 exists | `[8, key_length_u8, key_bytes]` | COMPLETE or NOT_FOUND |
+| 9 execute ENV command | `[9, command_text]`, at most 511 command bytes | Text |
 
-static int service_ready(void)
-{
-    if (inp(SERVICE_COMMAND) != READY) {
-        puts("Service not ready; finish or cancel the previous request.");
-        return 0;
-    }
-    return 1;
-}
+The ENV command parser is shared with the maintained host driver. It supports
+listing, `NAME`, `NAME=VALUE`, copying another variable, numeric addition/
+subtraction, `NAME+N`, `NAME-N`, `-I NAME=VALUE`, `-D NAME`, `-N`, `NOW`
+(uptime seconds), and `-H`/`HELP`/`?`. Numeric overflow is an explicit error.
+No additional physical ports expose the host's private legacy selectors.
 
-static int wait_status(unsigned wanted)
-{
-    unsigned polls;
-    int status;
+The store supports at most 128 entries, subject to a **3,840-byte serialized
+snapshot limit**. Each entry consumes `key length + value length + 2` bytes.
+There is room for at least 14 maximum-length key/value pairs. Requests that
+exceed storage or the 2,048-byte reply capacity fail explicitly; LIST never
+silently truncates. After a failed write, the in-memory state is reloaded
+from the newest valid durable snapshot; an error does not undo a commit
+that already reached flash.
 
-    for (polls = 0; polls < 10000u; ++polls) {
-        status = inp(SERVICE_COMMAND);
-        if (status == ERROR) {
-            puts("Service reported an error.");
-            return 0;
-        }
-        if (status == wanted)
-            return 1;
-    }
-    puts("Service polling limit reached; recovery is required.");
-    return 0;
-}
-```
+Two 4 KiB sectors at **`0x2BE000` and `0x2BF000`** occupy unused space in the
+boot partition, beyond the boot payload ending at `0x2B1000`. Firmware, the
+disk journal, boot package and all four disk offsets remain unchanged.
+Each snapshot has a version, sequence number, payload CRC32 and header CRC32.
+Updates erase/program the inactive sector, verify the payload, and commit the
+header last. The previous committed snapshot remains recoverable after an
+interrupted replacement. A durable empty baseline is established before the
+first mutation. Repeated unchanged writes do not erase flash.
 
-The 10,000-read limit prevents an infinite loop; it is **not a calibrated
-wall-clock timeout**. A final client needs a defined timeout/recovery policy.
-The draft assumes COMPLETE is acknowledged by the next status read, leaving
-READY, and that consuming the final response byte also returns the interface
-to READY. No further commands should be issued after a failed transaction
-until recovery is complete.
+Flash erase/program uses the disk backend's BUSREQ/BUSACK and flash-safe
+multicore handshake. A non-success flash-safe result fails closed through
+watchdog reboot. Both sectors erased means a new empty store; neither erased
+nor CRC-valid means STORAGE_READ, not a fabricated empty environment.
+Flash has finite endurance: use countdown timers and stopwatches, not
+repeated persistent writes, for high-frequency counters.
 
-#### Start expiry timer 0 for five seconds
+!!! warning "Preserving environment variables during updates"
+    Firmware-only and exact boot-package-only updates preserve variables.
+    Complete 4 MiB provisioning, mass erase and `flash_nuke.uf2` destroy them.
+    Do not write a padded 128 KiB boot-partition image: it would overwrite ENV.
+    Full generated images deliberately contain erased environment sectors.
 
-Five seconds is 5,000 milliseconds: `0x00001388`. Its four request bytes,
-least significant first, are `88 13 00 00`.
+### Worked request bytes
 
-```c
-int start_timer_0(void)
-{
-    unsigned long duration_ms = 5000UL;
-    unsigned byte;
-
-    if (!service_ready())
-        return 0;
-    outp(SERVICE_COMMAND, START_TIMER_0);
-    for (byte = 0; byte < 4; ++byte) {
-        outp(SERVICE_REQUEST, (unsigned)(duration_ms & 0xffUL));
-        duration_ms >>= 8;
-    }
-    return wait_status(COMPLETE);
-}
-```
-
-Transaction completion means the timer was started, **not that it expired**.
-A later `QUERY_TIMER_0` command would return a running/expired result through
-`0x04`. Timer 1 uses the same three ports with a different command.
-
-#### Read uptime in milliseconds
-
-This request needs no parameter bytes, so it does not write to `0x03`.
-For an illustrative uptime of 5,000 milliseconds:
-
-```c
-int show_uptime(void)
-{
-    unsigned long uptime_ms = 0UL;
-    unsigned byte;
-
-    if (!service_ready())
-        return 0;
-    outp(SERVICE_COMMAND, GET_UPTIME_MS);
-    if (!wait_status(RESPONSE_READY))
-        return 0;
-    for (byte = 0; byte < 4; ++byte) {
-        uptime_ms |= (unsigned long)inp(SERVICE_RESPONSE) << (byte * 8);
-    }
-    printf("Uptime: %lu ms\n", uptime_ms);
-    return 1;
-}
-```
-
-Reassemble the bytes as:
+These examples show the actual wire framing; prefer the existing dcc
+`svc_operation_send()`, `svc_get_text()` and timer helpers in `DXSVC.H`.
+Use bounded client polling, drain error frames, and RESET after failure.
 
 ```text
-value = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24)
-      = 0x88  | (0x13  << 8) | (0x00  << 16) | (0x00  << 24)
-      = 0x00001388 = 5000 milliseconds
+Read uptime:
+  OUT 02,20
+  OUT 03,01  OUT 03,00       ; payload length = 1
+  OUT 03,00                 ; operation = uptime seconds
+  IN 02 until 02 or FF       ; RESPONSE_READY or ERROR
+  IN 04 twice, then length bytes
+
+Set TZ=UTC0:
+  OUT 02,30
+  OUT 03,0A  OUT 03,00       ; payload length = 10
+  OUT 03,03  OUT 03,02       ; SET, key length
+  OUT 03,54  OUT 03,5A       ; "TZ"
+  OUT 03,04  OUT 03,00       ; value length = 4
+  OUT 03,55  OUT 03,54  OUT 03,43  OUT 03,30  ; "UTC0"
+  IN 02 until 01 or FF       ; COMPLETE or ERROR
+  OUT 02,00                 ; ACK only after success
 ```
 
-The same pattern serves a stopwatch or random-number result. A four-byte
-millisecond count wraps after about 49.7 days; the final protocol must
-document wrap behaviour or choose a wider uptime representation.
+## Independent timer port
 
-#### Get an environment variable
+Port `0x17` uses no shared-service framing and remains usable while the
+service worker is BUSY. Its timers/stopwatches are the same instances as
+groups `0x10/0x11`.
 
-For an illustrative request to read `TZ`:
+| OUT command | Subsequent transfers |
+| --- | --- |
+| `0x00` | Reset only this parser; running timers remain unchanged |
+| `0x10`-`0x12` | Two OUT bytes, low then high: start millisecond timer 0-2 |
+| `0x13` | One OUT byte: start whole-second timer 3 |
+| `0x20`-`0x23` | IN returns selected timer's running flag |
+| `0x30` | IN returns running bitmask, bits 0-3 |
+| `0x40`-`0x42` | Reset stopwatch 0-2 |
+| `0x50`-`0x52` | Four IN bytes: latched stopwatch seconds, little-endian |
+| `0x60`-`0x62` | Four IN bytes: latched stopwatch milliseconds, little-endian |
 
-```c
-int show_timezone(void)
-{
-    char value[256];
-    unsigned length;
-    unsigned byte;
+The parser initially selects the timer bitmask. An invalid command, an IN
+during parameter collection, or stopwatch over-read returns `0xFF` and
+requires recovery. To recover an unknown state, perform **IN `0x17`,
+then OUT `0x17`, `0x00`**. Multi-byte port-23 operations must not be
+interleaved with other users of that port.
 
-    if (!service_ready())
-        return 0;
-    outp(SERVICE_COMMAND, ENV_GET);
-    outp(SERVICE_REQUEST, 2);
-    outp(SERVICE_REQUEST, 'T');
-    outp(SERVICE_REQUEST, 'Z');
-    if (!wait_status(RESPONSE_READY))
-        return 0;
-    length = (unsigned)inp(SERVICE_RESPONSE);
-    for (byte = 0; byte < length; ++byte)
-        value[byte] = (char)inp(SERVICE_RESPONSE);
-    value[length] = '\0';
-    printf("TZ=%s\n", value);
-    return 1;
-}
-```
+## Deferred services and validation
 
-This example assumes a one-byte length prefix, limiting a value to 255
-bytes. An absent variable must produce an explicit error, not be confused
-with an empty value. Final framing may use wider lengths.
-Date/time strings can use the same length-prefixed response pattern.
+File transfer remains reserved on `0x15/0x16`; it is not implemented.
+Weather, chat and Sense HAT requests return explicit UNAVAILABLE errors.
+The ESP32 interrupt timer on `0x07` is deferred: current hardware has
+no Pico-to-`INT#` driver, and the `RD#`-gated data path cannot provide an
+interrupt vector. No interrupt, GPIO or PCB wiring changes accompany this work.
 
-## Protocol and implementation requirements
+Core 0 owns traps and timer state. Core 1 executes slow services after disk
+service and before network work. A generation-tagged mailbox prevents stale
+worker replies from becoming new responses. Pause/drain logic accounts for
+pending service work before flash is declared quiescent. Flash and network
+work never run inside the I/O trap.
 
-Before implementing the services, define:
+Host tests cover framing, aliases, recovery, timer boundaries and latching,
+ENV commands/capacity, unchanged-write suppression, snapshot recovery,
+calendar formatting, stage routing and flash-safe ownership. These are
+software checks, not bench timing or physical power-cut qualification.
 
-- Command codes, parameter lengths, result lengths, byte order and units.
-- Status codes for ready, collecting parameters, busy, complete,
-  response available and error, including how completion/errors are acknowledged.
-- One outstanding transaction at a time, with an explicit reject or cancel
-  policy for new commands while a request or unread response exists.
-- Bounded polling, recovery from incomplete requests and response underflow.
-- Explicit errors for unavailable services, missing variables and a wall
-  clock that has not synchronized; do not return uptime as valid calendar time.
-- A flash allocation and safe update mechanism for persistent environment
-  variables, without overwriting firmware, boot images, journal or CP/M disks.
-- Deliberate reboot confirmation, followed by safe Z80 stop/reset and
-  data-path isolation before restarting the supervisor.
-
-Keep proposed file transfer on its own two ports so it does not share the
-service response stream. Define its filename, chunk, completion and error
-protocol separately; allocating ports alone does not implement uploads or
-downloads.
-
-The [I/O trap](operation.md#61-hardware-wait-assisted-clock-stop-trap-protocol)
-must remain bounded. Network transfers and slow service work must run outside
-the trap; status polling reports progress instead of holding the Z80 paused
-while waiting for a network or flash operation.
-
-## Related wiring and validation
-
-- [Phase 3: control and port monitor](../implementation/phase-3-address-generator.md)
-  provides the A0/A1/A2/A4 wiring checklist.
-- [Phase 8: bidirectional I/O and USB terminal](../implementation/phase-8-virtual-io.md) validates
-  current traps and intentional aliases, not the proposed services.
-- [CP/M direct access](../cpm-dcc/direct-access.md) explains `IN`/`OUT` access
-  versus the usual BDOS and BIOS interfaces.
+- [Phase 3](../implementation/phase-3-address-generator.md) owns address wiring.
+- [Phase 8](../implementation/phase-8-virtual-io.md) owns initial trap checks.
+- [Phase 9](../implementation/phase-9-flash-storage.md) owns flash bring-up.
+- [CP/M direct access](../cpm-dcc/direct-access.md) explains `IN`/`OUT`
+  versus BDOS/BIOS interfaces.

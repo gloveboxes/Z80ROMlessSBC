@@ -38,6 +38,7 @@ typedef struct {
 static queue_t disk_write_queue;
 static uint32_t disk_status = DISK_STATUS_READY;
 static uint32_t disk_fatal_error;
+static uint32_t disk_write_enabled = 1;
 static uint8_t disk_drive;
 static uint16_t disk_lba;
 static uint8_t disk_write_drive;
@@ -106,6 +107,9 @@ static void disk_start_command(uint8_t command) {
 }
 
 uint8_t z80_flash_disk_io_read(uint8_t port) {
+  if (port == DISK_COMMAND_STATUS_PORT &&
+      !__atomic_load_n(&disk_write_enabled, __ATOMIC_ACQUIRE))
+    return DISK_STATUS_BUSY | DISK_STATUS_ERROR;
   if (port == DISK_COMMAND_STATUS_PORT)
     return (uint8_t)disk_status_load();
   if (port != DISK_DATA_PORT ||
@@ -119,6 +123,8 @@ uint8_t z80_flash_disk_io_read(uint8_t port) {
 }
 
 void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
+  if (!__atomic_load_n(&disk_write_enabled, __ATOMIC_ACQUIRE))
+    return;
   uint32_t status = disk_status_load();
   if (port == DISK_COMMAND_STATUS_PORT) {
     disk_start_command(value);
@@ -184,6 +190,7 @@ bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
   queue_init(&disk_write_queue, sizeof(disk_request_t),
              DISK_WRITE_QUEUE_DEPTH);
   __atomic_store_n(&disk_fatal_error, 0, __ATOMIC_RELEASE);
+  __atomic_store_n(&disk_write_enabled, 1, __ATOMIC_RELEASE);
   disk_status_store(DISK_STATUS_READY);
   return z80_flash_backend_init_observed(observer, context);
 }
@@ -204,6 +211,10 @@ bool z80_flash_disk_quiescent(void) {
   return queue_is_empty(&disk_write_queue) &&
          disk_status_load() == DISK_STATUS_READY &&
          z80_flash_backend_quiescent();
+}
+
+void z80_flash_disk_set_write_enabled(bool enabled) {
+  __atomic_store_n(&disk_write_enabled, enabled, __ATOMIC_RELEASE);
 }
 
 void z80_flash_disk_arm_fault(z80_flash_fault_point_t point) {

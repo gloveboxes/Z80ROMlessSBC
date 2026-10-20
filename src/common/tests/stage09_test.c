@@ -37,12 +37,32 @@ static bool exit_main;
 static jmp_buf main_exit;
 static z80_boot_error_t load_error;
 static uint64_t now;
+static unsigned service_reads;
+static unsigned service_writes;
 static unsigned usb_room;
 static char output[16384];
 static size_t output_length;
 static uint8_t input[64];
 static size_t input_index;
 static size_t input_length;
+
+void z80_io_ports_init(void) {}
+bool z80_io_ports_handles(uint8_t port) {
+  port &= 0x17;
+  return (port >= 2 && port <= 4) || port == 0x17;
+}
+uint8_t z80_io_port_in(uint8_t port) {
+  (void)port;
+  ++service_reads;
+  return 0x42;
+}
+void z80_io_port_out(uint8_t port, uint8_t value) {
+  (void)port; (void)value;
+  ++service_writes;
+}
+void z80_io_ports_core1_service(void) {}
+bool z80_io_ports_quiescent(void) { return true; }
+bool z80_io_ports_reboot_requested(void) { return false; }
 
 static int firmware_printf(const char *format, ...) {
   va_list arguments;
@@ -578,6 +598,17 @@ static void test_autoboot_failures(void) {
 }
 
 int main(void) {
+  for (unsigned address = 0; address < 256; ++address) {
+    uint8_t port = (uint8_t)(address & 0x17);
+    if (z80_io_ports_handles(port)) {
+      unsigned old_writes = service_writes;
+      unsigned old_reads = service_reads;
+      virtual_write(port, 0xa5, NULL);
+      assert(service_writes == old_writes + 1);
+      assert(virtual_read(port, NULL) == 0x42);
+      assert(service_reads == old_reads + 1);
+    }
+  }
   test_startup_without_usb();
   test_autoboot_failures();
   test_control_and_terminal();

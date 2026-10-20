@@ -13,6 +13,7 @@
 #include "z80sbc/flash_disk.h"
 #include "z80sbc/flash_layout.h"
 #include "z80sbc/io_trap.h"
+#include "z80sbc/io_ports.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
@@ -62,6 +63,8 @@ static uint8_t diagnostic_actual;
 
 static uint8_t virtual_read(uint8_t port, void *context) {
   (void)context;
+  if (z80_io_ports_handles(port))
+    return z80_io_port_in(port);
   return port >= 0x10 && port <= 0x14
              ? z80_flash_disk_io_read(port)
              : z80_terminal_io_read(port);
@@ -99,6 +102,8 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
       __atomic_fetch_or(&boot_markers, 2u, __ATOMIC_RELEASE);
   } else if (port >= 0x10 && port <= 0x14) {
     z80_flash_disk_io_write(port, value);
+  } else if (z80_io_ports_handles(port)) {
+    z80_io_port_out(port, value);
   } else {
     z80_terminal_io_write(port, value);
   }
@@ -109,12 +114,14 @@ static void core1_main(void) {
     if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE)) {
       if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
         z80_flash_core1_service();
-        if (z80_flash_disk_quiescent())
+        z80_io_ports_core1_service();
+        if (z80_flash_disk_quiescent() && z80_io_ports_quiescent())
           __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
       }
     } else {
       __atomic_store_n(&flash_paused, 0, __ATOMIC_RELEASE);
       z80_flash_core1_service();
+      z80_io_ports_core1_service();
     }
     tight_loop_contents();
   }
@@ -207,6 +214,7 @@ static void start_cpm(void) {
   __atomic_store_n(&boot_markers, 0, __ATOMIC_RELEASE);
   bios_announced = ccp_announced = false;
   boot_timed_out = false;
+  z80_io_ports_init();
   multicore_launch_core1(core1_main);
   core1_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
@@ -520,6 +528,12 @@ int main(void) {
   while (true) {
     if (core1_started)
       z80_flash_core0_service();
+    if (core1_started && z80_io_ports_reboot_requested()) {
+      hold_cpu();
+      watchdog_reboot(0, 0, 0);
+      while (true)
+        tight_loop_contents();
+    }
     service_usb();
     service_run();
     tight_loop_contents();

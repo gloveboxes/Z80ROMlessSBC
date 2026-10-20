@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdio>
 #include <vector>
+#include <string>
 #include "../terminal_network.cpp"
 
 static unsigned lock_depth;
@@ -11,6 +12,24 @@ static unsigned disconnects;
 static int32_t message_connection = -1;
 static int32_t sent_connection = -1;
 cyw43_t cyw43_state;
+struct netif *netif_default;
+static unsigned time_client_starts;
+static char service_address[16];
+void sntp_setoperatingmode(unsigned char mode) {
+  assert(lock_depth && mode == SNTP_OPMODE_POLL);
+}
+void sntp_setservername(unsigned char index, const char *name) {
+  assert(lock_depth && index == 0 && std::string(name) == "pool.ntp.org");
+}
+void sntp_init() { assert(lock_depth); ++time_client_starts; }
+char *ip4addr_ntoa_r(const struct ip4_addr *, char *buffer, int capacity) {
+  assert(lock_depth && capacity >= 10);
+  snprintf(buffer, (size_t)capacity, "192.0.2.1");
+  return buffer;
+}
+void z80_io_ports_set_network_address(const char *address) {
+  snprintf(service_address, sizeof(service_address), "%s", address);
+}
 
 void cyw43_arch_lwip_begin() { ++lock_depth; }
 void cyw43_arch_lwip_end() { assert(lock_depth); --lock_depth; }
@@ -77,6 +96,13 @@ static void close_client(uint32_t connection) {
 }
 
 int main() {
+  struct netif interface = {};
+  netif_default = &interface;
+  assert(!z80_terminal_network_poll()); /* async association was just started */
+  assert(z80_terminal_network_poll());
+  assert(time_client_starts == 1);
+  assert(std::string(service_address) == "192.0.2.1");
+  assert(z80_terminal_network_poll() && time_client_starts == 1);
   assert(ensure_server());
   connect_client(1);
   z80_terminal_network_poll_input();

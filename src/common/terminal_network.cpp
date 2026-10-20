@@ -7,6 +7,9 @@
 #include "pico/stdlib.h"
 #include "pico_ws_server/web_socket_server.h"
 #include "wifi_config.h"
+#include "lwip/apps/sntp.h"
+#include "lwip/netif.h"
+#include "z80sbc/io_ports.h"
 #include "z80sbc/terminal.h"
 
 namespace {
@@ -32,6 +35,7 @@ absolute_time_t server_retry_deadline = nil_time;
 WebSocketServer *server = nullptr;
 bool server_started = false;
 bool server_retry_pending = false;
+bool time_client_started = false;
 std::atomic<int32_t> active_connection{-1};
 std::atomic<int32_t> pending_reject{-1};
 std::atomic<bool> pending_connected{false};
@@ -165,6 +169,19 @@ extern "C" bool z80_terminal_network_poll(void) {
   if (wifi_state == WifiState::associating) {
     if (status == CYW43_LINK_UP) {
       cyw43_wifi_pm(&cyw43_state, CYW43_NO_POWERSAVE_MODE);
+      cyw43_arch_lwip_begin();
+      char address[16];
+      if (netif_default != nullptr &&
+          ip4addr_ntoa_r(netif_ip4_addr(netif_default), address,
+                         sizeof(address)) != nullptr)
+        z80_io_ports_set_network_address(address);
+      if (!time_client_started) {
+        sntp_setoperatingmode(SNTP_OPMODE_POLL);
+        sntp_setservername(0, "pool.ntp.org");
+        sntp_init();
+        time_client_started = true;
+      }
+      cyw43_arch_lwip_end();
       wifi_state = WifiState::online;
     } else if (status < CYW43_LINK_DOWN ||
                time_reached(association_deadline)) {
@@ -178,6 +195,7 @@ extern "C" bool z80_terminal_network_poll(void) {
   }
 
   if (wifi_state == WifiState::online && status != CYW43_LINK_UP) {
+    z80_io_ports_set_network_address("");
     disconnect_client();
     cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
     retry_deadline = make_timeout_time_ms(RETRY_DELAY_MS);

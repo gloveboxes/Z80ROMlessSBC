@@ -61,6 +61,8 @@ FLASH_JOURNAL_OFFSET = 0x290000
 FLASH_JOURNAL_BYTES = 0x10000
 FLASH_BOOT_OFFSET = 0x2A0000
 FLASH_BOOT_BYTES = 0x20000
+FLASH_ENV_OFFSET = 0x2BE000
+FLASH_ENV_BYTES = 0x2000
 FLASH_DISK_OFFSETS = (0x2C0000, 0x310000, 0x360000, 0x3B0000)
 
 SOURCE_DISK_NAMES = (
@@ -77,6 +79,8 @@ OUTPUT_DISK_NAMES = (
 assert FLASH_LINK_LIMIT == FLASH_JOURNAL_OFFSET
 assert FLASH_JOURNAL_OFFSET + FLASH_JOURNAL_BYTES == FLASH_BOOT_OFFSET
 assert FLASH_BOOT_OFFSET + FLASH_BOOT_BYTES == FLASH_DISK_OFFSETS[0]
+assert FLASH_BOOT_OFFSET + BOOT_PAYLOAD_OFFSET + Z80_IMAGE_BYTES <= FLASH_ENV_OFFSET
+assert FLASH_ENV_OFFSET + FLASH_ENV_BYTES == FLASH_DISK_OFFSETS[0]
 assert all(
     left + DISK_IMAGE_BYTES == right
     for left, right in zip(FLASH_DISK_OFFSETS, FLASH_DISK_OFFSETS[1:])
@@ -209,8 +213,8 @@ def build_native_drive(source: bytes, cpm_system: bytes, bios: bytes) -> bytes:
 def build_flash_image(firmware: bytes, package: bytes, disks: list[bytes]) -> bytes:
     if not firmware or len(firmware) > FLASH_LINK_LIMIT:
         raise ValueError("firmware binary is empty or crosses the flash link limit")
-    if len(package) > FLASH_BOOT_BYTES:
-        raise ValueError("boot package exceeds its flash region")
+    if len(package) > FLASH_ENV_OFFSET - FLASH_BOOT_OFFSET:
+        raise ValueError("boot package overlaps persistent environment storage")
 
     image = bytearray([0xFF]) * FLASH_BYTES
     image[: len(firmware)] = firmware
@@ -279,6 +283,11 @@ def main() -> None:
         (args.output_dir / name).write_bytes(data)
 
     manifest = {
+        "environment": {
+            "offset": FLASH_ENV_OFFSET,
+            "bytes": FLASH_ENV_BYTES,
+            "full_provisioning": "erases variables; selective firmware/boot updates preserve them",
+        },
         "geometry": {
             "tracks": TRACKS,
             "sectors_per_track": SECTORS_PER_TRACK,

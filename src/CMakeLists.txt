@@ -41,6 +41,7 @@ target_compile_options(z80_io_trap PRIVATE -Wall -Wextra -Werror)
 add_library(z80_flash_disk STATIC
   common/disk_device.c
   common/flash_backend.c
+  common/environment_store.c
 )
 target_include_directories(z80_flash_disk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
 target_compile_definitions(z80_flash_disk PUBLIC PICO_FLASH_ASSUME_CORE1_SAFE=1)
@@ -53,6 +54,19 @@ target_link_libraries(z80_flash_disk PUBLIC
   hardware_watchdog
 )
 target_compile_options(z80_flash_disk PRIVATE -Wall -Wextra -Werror)
+
+add_library(z80_io_services STATIC
+  common/io_ports.c
+  common/io_service.c
+  common/io_service_platform.c
+  cpm/dcc_io_adapter/host/PortDrivers/environment_io.c
+)
+target_include_directories(z80_io_services PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/common/include
+  PRIVATE ${CMAKE_CURRENT_LIST_DIR}/common)
+target_compile_definitions(z80_io_services PRIVATE Z80_ENV_FLASH=1)
+target_compile_options(z80_io_services PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(z80_io_services PUBLIC pico_stdlib pico_rand pico_unique_id)
 
 add_library(z80_terminal_queue STATIC common/terminal_queue.c)
 target_include_directories(z80_terminal_queue PUBLIC

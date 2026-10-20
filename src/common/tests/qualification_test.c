@@ -29,6 +29,32 @@ static unsigned terminal_writes;
 static uint8_t last_port;
 static char message[160];
 
+#ifndef TEST_STAGE08
+static unsigned service_reads;
+static unsigned service_writes;
+void z80_io_ports_init(void) {}
+bool z80_io_ports_handles(uint8_t port) {
+  port &= 0x17;
+  return (port >= 2 && port <= 4) || port == 0x17;
+}
+uint8_t z80_io_port_in(uint8_t port) {
+  (void)port;
+  ++service_reads;
+  return 0x42;
+}
+void z80_io_port_out(uint8_t port, uint8_t value) {
+  (void)port; (void)value;
+  ++service_writes;
+}
+void z80_io_ports_core1_service(void) {}
+bool z80_io_ports_quiescent(void) { return true; }
+bool z80_io_ports_reboot_requested(void) { return false; }
+void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
+  (void)pc; (void)sp; (void)delay;
+  assert(false);
+}
+#endif
+
 static int firmware_printf(const char *format, ...) {
   va_list arguments;
   va_start(arguments, format);
@@ -253,10 +279,17 @@ int main(void) {
     assert(port == (address & 0x17));
     unsigned old_disk = disk_writes;
     unsigned old_terminal = terminal_writes;
+    unsigned old_services = service_writes;
     virtual_write(port, 0xA5, NULL);
     if (port >= 0x10 && port <= 0x14) {
       assert(disk_writes == old_disk + 1 && terminal_writes == old_terminal);
       assert(virtual_read(port, NULL) == 0xA5 && last_port == port);
+    } else if (z80_io_ports_handles(port)) {
+      assert(service_writes == old_services + 1);
+      assert(terminal_writes == old_terminal && disk_writes == old_disk);
+      unsigned old_reads = service_reads;
+      assert(virtual_read(port, NULL) == 0x42);
+      assert(service_reads == old_reads + 1);
     } else if (port != QUALIFICATION_DATA_PORT) {
       assert(terminal_writes == old_terminal + 1 && disk_writes == old_disk);
       assert(virtual_read(port, NULL) == 0x5A && last_port == port);

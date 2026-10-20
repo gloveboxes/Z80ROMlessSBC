@@ -289,7 +289,7 @@ picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
 picotool reboot
 ```
 
-This leaves the boot package, journal and all four disks unchanged. Do not
+This leaves the boot package, journal, persistent environment and all four disks unchanged. Do not
 overwrite Drive A or use a complete flash image merely to change startup mode.
 On new/disposable storage, build `z80_stage09_cpm_loader_images` and use its
 `build/cpm-stage09-loader/z80romless-flash.bin` instead of the manual image in
@@ -325,7 +325,8 @@ do not let a pending replay overwrite part of a newly provisioned disk image.
 
 The remaining examples provision the final **Stage 10** network image.
 For a new or disposable flash, put the Pico in BOOTSEL mode and write the
-complete image. This erases existing CP/M disk contents and the journal:
+complete image. This erases existing CP/M disk contents, the journal and
+[persistent environment variables](io-ports.md#persistent-environment-api):
 
 ```sh
 picotool load -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000

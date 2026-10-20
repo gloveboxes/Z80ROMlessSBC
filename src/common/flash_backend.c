@@ -39,8 +39,11 @@ _Static_assert(Z80_FLASH_DISK_SLOT_BYTES ==
                    Z80_FLASH_RECORD_BYTES * Z80_FLASH_RECORD_COUNT,
                "disk geometry does not fill its slot");
 _Static_assert(FLASH_BOOT_PAYLOAD_OFFSET + 65536u <=
-                   Z80_FLASH_BOOT_OFFSET + Z80_FLASH_BOOT_BYTES,
+                   Z80_FLASH_ENV_OFFSET,
                "boot payload exceeds its region");
+_Static_assert(Z80_FLASH_ENV_OFFSET + Z80_FLASH_ENV_BYTES ==
+                   Z80_FLASH_DISK_OFFSET,
+               "environment must end before disk slots");
 _Static_assert(Z80_FLASH_DISK_OFFSET +
                        Z80_FLASH_DISK_SLOT_COUNT * Z80_FLASH_DISK_SLOT_BYTES ==
                    PICO_FLASH_SIZE_BYTES,
@@ -390,6 +393,44 @@ static bool flush_disk_cache(void) {
     reboot_after_flash_failure();
   if (params.committed)
     disk_cache.dirty = false;
+  bool released = request_core0(FLASH_SERVICE_RELEASE_BUS);
+  return released && params.committed;
+}
+
+typedef struct {
+  uint32_t offset;
+  const uint8_t *sector;
+  bool committed;
+} env_write_params_t;
+
+static void env_write_callback(void *parameter) {
+  env_write_params_t *params = parameter;
+  flash_range_erase(params->offset, FLASH_SECTOR_SIZE);
+  flash_range_program(params->offset + FLASH_PAGE_SIZE,
+                      params->sector + FLASH_PAGE_SIZE,
+                      FLASH_SECTOR_SIZE - FLASH_PAGE_SIZE);
+  if (memcmp((const void *)(XIP_BASE + params->offset + FLASH_PAGE_SIZE),
+             params->sector + FLASH_PAGE_SIZE,
+             FLASH_SECTOR_SIZE - FLASH_PAGE_SIZE) != 0)
+    return;
+  /* Publish the CRC-protected header only after the payload is verified. */
+  flash_range_program(params->offset, params->sector, FLASH_PAGE_SIZE);
+  params->committed =
+      memcmp((const void *)(XIP_BASE + params->offset), params->sector,
+             FLASH_SECTOR_SIZE) == 0;
+}
+
+bool z80_flash_backend_env_write(unsigned slot, const uint8_t *sector) {
+  if (slot >= 2 || sector == NULL)
+    return false;
+  if (!request_core0(FLASH_SERVICE_ACQUIRE_BUS))
+    return false;
+  env_write_params_t params = {
+    .offset = Z80_FLASH_ENV_OFFSET + slot * FLASH_SECTOR_SIZE,
+    .sector = sector,
+  };
+  if (flash_safe_execute(env_write_callback, &params, 1000) != PICO_OK)
+    reboot_after_flash_failure();
   bool released = request_core0(FLASH_SERVICE_RELEASE_BUS);
   return released && params.committed;
 }

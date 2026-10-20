@@ -20,5 +20,7 @@ bool z80_flash_backend_flush(void);
 bool z80_flash_backend_flush_due(void);
 bool z80_flash_backend_quiescent(void);
 void z80_flash_backend_arm_fault(z80_flash_fault_point_t point);
+/* Core 1 only: uses the same BUSACK/flash-safe handshake as disk writes. */
+bool z80_flash_backend_env_write(unsigned slot, const uint8_t *sector);
 
 #endif

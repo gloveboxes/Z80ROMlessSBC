@@ -67,6 +67,8 @@ void z80_flash_disk_io_write(uint8_t port, uint8_t value);
 uint32_t z80_flash_disk_status(void);
 bool z80_flash_disk_has_fatal_error(void);
 bool z80_flash_disk_quiescent(void);
+/* Core 0 closes this gate before publishing a confirmed reboot request. */
+void z80_flash_disk_set_write_enabled(bool enabled);
 void z80_flash_disk_arm_fault(z80_flash_fault_point_t point);
 
 #endif

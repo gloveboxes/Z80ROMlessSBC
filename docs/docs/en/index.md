@@ -51,7 +51,8 @@ the implementation and hardware checks.
 - [System operation](system/operation.md) -
   virtual I/O, flash storage, and runtime coordination.
 - [I/O ports and services](system/io-ports.md) -
-  the terminal and disk interface, plus proposed services.
+  the terminal and disk interface, plus ROMLESS-SVC/1 timers, clock, utilities
+  and persistent environment variables.
 - [CP/M documentation](cpm-dcc/index.md) -
   boot-image construction, disk media, and software compatibility.
 - [Firmware testing](system/firmware-testing.md) -

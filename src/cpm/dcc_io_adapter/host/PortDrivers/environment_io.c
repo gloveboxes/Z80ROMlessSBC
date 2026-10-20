@@ -1,6 +1,6 @@
 /**
  * @file environment_io.c
- * @brief Text-file-backed environment variable I/O port driver (host build).
+ * @brief Shared environment parser, with host-file and Pico-flash backends.
  *
  * Storage format: one KEY=VALUE entry per line in a UTF-8 text file. Blank
  * lines and lines starting with '#' are ignored on load. Keys are stored
@@ -10,6 +10,7 @@
 #include "environment_io.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -19,6 +20,15 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef Z80_ENV_FLASH
+#include "z80sbc/environment.h"
+#include "io_service.h"
+/* The Pico service worker is the only caller; core 0 never enters this parser. */
+typedef int env_mutex_t;
+#define ENV_MUTEX_INIT 0
+static void env_mutex_lock(env_mutex_t *m) { (void)m; }
+static void env_mutex_unlock(env_mutex_t *m) { (void)m; }
+#else
 /*
  * The entry store (s_entries/s_count) is read by the weather background
  * thread via environment_io_get() while the CPU thread mutates it through
@@ -40,6 +50,7 @@ static void env_mutex_lock(env_mutex_t *m) { pthread_mutex_lock(m); }
 static void env_mutex_unlock(env_mutex_t *m) { pthread_mutex_unlock(m); }
 #endif
 
+#endif
 static env_mutex_t s_lock = ENV_MUTEX_INIT;
 
 #define ENV_MAX_ENTRIES 128
@@ -78,9 +89,14 @@ static size_t s_count = 0;
 static char s_request[ENV_REQUEST_SIZE];
 static size_t s_request_len = 0;
 static int8_t s_status = ENV_STATUS_OK;
+#ifndef Z80_ENV_FLASH
 static char s_file_path[ENV_PATH_SIZE] = "altair_env.txt";
+#endif
 static bool s_initialized = false;
+#ifndef Z80_ENV_FLASH
 static time_t s_start_time = 0;
+#endif
+static bool s_response_overflow;
 
 /* Workspace scratch buffers (avoid large stack frames). */
 static char s_key[ENV_KEY_SIZE];
@@ -102,6 +118,7 @@ static void env_normalize_key(const char *key, char *out, size_t out_length);
 static bool env_key_valid(const char *key);
 static int env_load_file(void);
 static int env_save_file(void);
+static int env_commit(void);
 static int env_find_index(const char *key);
 static int env_get_value(const char *key, char *value, size_t value_length);
 static int env_set_value(const char *key, const char *value);
@@ -126,6 +143,18 @@ static int env_eval_value(const char *expr, char *result, size_t result_length, 
 static int env_value_to_i64(const char *expr, int64_t *value, char *error, size_t error_length);
 static size_t env_help_text(char *buffer, size_t buffer_length);
 static size_t env_execute_cli(char *buffer, size_t buffer_length);
+static bool env_calculate(int64_t left, int64_t right, bool subtract,
+                          int64_t *result)
+{
+    if (subtract ?
+        ((right > 0 && left < INT64_MIN + right) ||
+         (right < 0 && left > INT64_MAX + right)) :
+        ((right > 0 && left > INT64_MAX - right) ||
+         (right < 0 && left < INT64_MIN - right)))
+        return false;
+    *result = subtract ? left - right : left + right;
+    return true;
+}
 
 void environment_io_init(const char *file_path)
 {
@@ -134,6 +163,12 @@ void environment_io_init(const char *file_path)
         return;
     }
 
+#ifdef Z80_ENV_FLASH
+    (void)file_path;
+    env_reset_request();
+    s_status = (int8_t)env_load_file();
+    s_initialized = true;
+#else
     if (file_path && file_path[0] != '\0')
     {
         strncpy(s_file_path, file_path, ENV_PATH_SIZE - 1);
@@ -153,6 +188,7 @@ void environment_io_init(const char *file_path)
     {
         printf("[ENV] driver initialized: %s (new/empty)\n", s_file_path);
     }
+#endif
 }
 
 void environment_io_close(void)
@@ -246,6 +282,7 @@ static void env_append_byte(uint8_t data)
 
 static size_t env_execute_command(uint8_t command, char *buffer, size_t buffer_length)
 {
+    s_response_overflow = false;
     const char *second;
     size_t len = 0;
     int rc = ENV_STATUS_OK;
@@ -258,7 +295,11 @@ static size_t env_execute_command(uint8_t command, char *buffer, size_t buffer_l
     switch (command)
     {
     case ENV_COMMAND_INIT:
+#ifdef Z80_ENV_FLASH
+        rc = env_load_file();
+#else
         rc = ENV_STATUS_OK;
+#endif
         break;
 
     case ENV_COMMAND_GET:
@@ -310,7 +351,7 @@ static size_t env_execute_command(uint8_t command, char *buffer, size_t buffer_l
         break;
     }
 
-    s_status = (int8_t)rc;
+    s_status = (int8_t)(s_response_overflow ? ENV_STATUS_FULL : rc);
     if (command != ENV_COMMAND_EXECUTE)
     {
         env_reset_request();
@@ -359,6 +400,37 @@ static int env_find_index(const char *key)
 
 static int env_load_file(void)
 {
+#ifdef Z80_ENV_FLASH
+    static uint8_t snapshot[Z80_ENV_SNAPSHOT_BYTES];
+    size_t length;
+    int status = z80_env_snapshot_load(snapshot, sizeof(snapshot), &length);
+    s_count = 0;
+    if (status != ENV_STATUS_OK)
+        return status;
+    size_t position = 0;
+    while (position < length)
+    {
+        if (s_count == ENV_MAX_ENTRIES)
+            return ENV_STATUS_READ;
+        const uint8_t *key = snapshot + position;
+        const uint8_t *end = memchr(key, 0, length - position);
+        if (!end || end == key || (size_t)(end - key) >= ENV_KEY_SIZE)
+            return ENV_STATUS_READ;
+        size_t key_length = (size_t)(end - key);
+        position += key_length + 1;
+        const uint8_t *value = snapshot + position;
+        end = memchr(value, 0, length - position);
+        if (!end || (size_t)(end - value) >= ENV_VALUE_SIZE)
+            return ENV_STATUS_READ;
+        if (env_find_index((const char *)key) >= 0)
+            return ENV_STATUS_READ;
+        memcpy(s_entries[s_count].key, key, key_length + 1);
+        size_t value_length = (size_t)(end - value);
+        memcpy(s_entries[s_count++].value, value, value_length + 1);
+        position += value_length + 1;
+    }
+    return ENV_STATUS_OK;
+#else
     FILE *fp;
     char line[ENV_REQUEST_SIZE];
     char *eq;
@@ -414,10 +486,27 @@ static int env_load_file(void)
 
     fclose(fp);
     return ENV_STATUS_OK;
+#endif
 }
 
 static int env_save_file(void)
 {
+#ifdef Z80_ENV_FLASH
+    static uint8_t snapshot[Z80_ENV_SNAPSHOT_BYTES];
+    size_t position = 0;
+    for (size_t i = 0; i < s_count; ++i)
+    {
+        size_t key_bytes = strlen(s_entries[i].key) + 1;
+        size_t value_bytes = strlen(s_entries[i].value) + 1;
+        if (key_bytes + value_bytes > sizeof(snapshot) - position)
+            return ENV_STATUS_FULL;
+        memcpy(snapshot + position, s_entries[i].key, key_bytes);
+        position += key_bytes;
+        memcpy(snapshot + position, s_entries[i].value, value_bytes);
+        position += value_bytes;
+    }
+    return z80_env_snapshot_save(snapshot, position);
+#else
     FILE *fp;
     size_t i;
 
@@ -443,6 +532,17 @@ static int env_save_file(void)
     }
     fclose(fp);
     return ENV_STATUS_OK;
+#endif
+}
+
+static int env_commit(void)
+{
+    int status = env_save_file();
+#ifdef Z80_ENV_FLASH
+    if (status != ENV_STATUS_OK && env_load_file() != ENV_STATUS_OK)
+        return ENV_STATUS_READ;
+#endif
+    return status;
 }
 
 static int env_get_value(const char *key, char *value, size_t value_length)
@@ -491,14 +591,13 @@ static int env_set_value(const char *key, const char *value)
         {
             return ENV_STATUS_FULL;
         }
-        strncpy(s_entries[s_count].key, key, ENV_KEY_SIZE - 1);
-        s_entries[s_count].key[ENV_KEY_SIZE - 1] = '\0';
+        memcpy(s_entries[s_count].key, key, strlen(key) + 1);
         idx = (int)s_count;
         s_count++;
     }
     strncpy(s_entries[idx].value, src, ENV_VALUE_SIZE - 1);
     s_entries[idx].value[ENV_VALUE_SIZE - 1] = '\0';
-    return env_save_file();
+    return env_commit();
 }
 
 static int env_delete_value(const char *key)
@@ -522,13 +621,13 @@ static int env_delete_value(const char *key)
         s_entries[i] = s_entries[i + 1];
     }
     s_count--;
-    return env_save_file();
+    return env_commit();
 }
 
 static int env_clear_values(void)
 {
     s_count = 0;
-    return env_save_file();
+    return env_commit();
 }
 
 static size_t env_list_values(char *buffer, size_t buffer_length)
@@ -564,6 +663,8 @@ static size_t env_append_text(char *buffer, size_t buffer_length, size_t pos, co
 {
     if (!buffer || buffer_length == 0 || pos >= buffer_length - 1 || !text)
     {
+        if (text && *text)
+            s_response_overflow = true;
         return pos;
     }
 
@@ -572,6 +673,8 @@ static size_t env_append_text(char *buffer, size_t buffer_length, size_t pos, co
         buffer[pos++] = *text++;
     }
     buffer[pos] = '\0';
+    if (*text)
+        s_response_overflow = true;
     return pos;
 }
 
@@ -591,11 +694,13 @@ static size_t env_format_response(char *buffer, size_t buffer_length, const char
 
     if (written < 0)
     {
+        s_response_overflow = true;
         buffer[0] = '\0';
         return 0;
     }
     if ((size_t)written >= buffer_length)
     {
+        s_response_overflow = true;
         return buffer_length - 1;
     }
     return (size_t)written;
@@ -889,6 +994,10 @@ static bool env_is_help(const char *text)
 
 static void env_now(char *buffer, size_t buffer_length)
 {
+#ifdef Z80_ENV_FLASH
+    snprintf(buffer, buffer_length, "%llu",
+             (unsigned long long)(z80_service_millis() / 1000));
+#else
     time_t now = time(NULL);
     long long seconds = (long long)(now - s_start_time);
     if (seconds < 0)
@@ -896,6 +1005,7 @@ static void env_now(char *buffer, size_t buffer_length)
         seconds = 0;
     }
     snprintf(buffer, buffer_length, "%lld", seconds);
+#endif
 }
 
 static int env_eval_value(const char *expr, char *result, size_t result_length, char *error, size_t error_length)
@@ -964,7 +1074,11 @@ static int env_eval_value(const char *expr, char *result, size_t result_length, 
         return -1;
     }
 
-    calc_value = (op == '+') ? (left_value + right_value) : (left_value - right_value);
+    if (!env_calculate(left_value, right_value, op == '-', &calc_value))
+    {
+        env_write_text(error, error_length, "Error: numeric overflow\r\n");
+        return -1;
+    }
     snprintf(result, result_length, "%lld", (long long)calc_value);
     return 1;
 }
@@ -975,8 +1089,14 @@ static int env_value_to_i64(const char *expr, int64_t *value, char *error, size_
 
     if (env_is_number(expr))
     {
+        errno = 0;
         *value = strtoll(expr, &endptr, 10);
-        return (*endptr == '\0') ? ENV_STATUS_OK : ENV_STATUS_READ;
+        if (errno == ERANGE || *endptr != '\0')
+        {
+            env_write_text(error, error_length, "Error: numeric overflow\r\n");
+            return ENV_STATUS_READ;
+        }
+        return ENV_STATUS_OK;
     }
 
     if (env_is_now(expr))
@@ -999,8 +1119,14 @@ static int env_value_to_i64(const char *expr, int64_t *value, char *error, size_
         return ENV_STATUS_READ;
     }
 
+    errno = 0;
     *value = strtoll(s_eval_value, &endptr, 10);
-    return (*endptr == '\0') ? ENV_STATUS_OK : ENV_STATUS_READ;
+    if (errno == ERANGE || *endptr != '\0')
+    {
+        env_write_text(error, error_length, "Error: numeric overflow\r\n");
+        return ENV_STATUS_READ;
+    }
+    return ENV_STATUS_OK;
 }
 
 static size_t env_help_text(char *buffer, size_t buffer_length)
@@ -1008,7 +1134,11 @@ static size_t env_help_text(char *buffer, size_t buffer_length)
     return env_write_text(buffer, buffer_length,
         "ENV - Environment Variable Manager\r\n"
         "==================================\r\n"
+#ifdef Z80_ENV_FLASH
+        "Stored in Pico flash; available from CP/M through DXENV.\r\n"
+#else
         "Stored on host in a text file; available from CP/M through DXENV.\r\n"
+#endif
         "\r\n"
         "Commands:\r\n"
         "  ENV                 List all variables\r\n"
@@ -1027,8 +1157,12 @@ static size_t env_help_text(char *buffer, size_t buffer_length)
         "  ENV -H | HELP | ?   Show this help\r\n"
         "\r\n"
         "Spaces around =, +, and - are optional.\r\n"
-        "Limits: names 16 chars, values 127 chars. Names stored uppercase.\r\n"
+        "Limits: names 16 chars, values 255 chars. Names stored uppercase.\r\n"
+#ifdef Z80_ENV_FLASH
+        "Service group 48; ports: command/status 2, request 3, response 4.\r\n");
+#else
         "Ports: command/status 71, data 72, response 200.\r\n");
+#endif
 }
 
 static size_t env_execute_cli(char *buffer, size_t buffer_length)
@@ -1161,7 +1295,15 @@ static size_t env_execute_cli(char *buffer, size_t buffer_length)
     if (env_parse_delta(s_arg1, rest, s_key, ENV_KEY_SIZE, s_arg2, ENV_VALUE_SIZE))
     {
         current = 0;
+        errno = 0;
         delta = strtoll(s_arg2, NULL, 10);
+        if (errno == ERANGE)
+        {
+            s_status = ENV_STATUS_READ;
+            pos = env_write_text(buffer, buffer_length, "Error: numeric overflow\r\n");
+            env_reset_request();
+            return pos;
+        }
 
         if (env_get_value(s_key, s_value, ENV_VALUE_SIZE) == ENV_STATUS_OK)
         {
@@ -1172,10 +1314,26 @@ static size_t env_execute_cli(char *buffer, size_t buffer_length)
                 env_reset_request();
                 return pos;
             }
+            errno = 0;
             current = strtoll(s_value, NULL, 10);
+            if (errno == ERANGE)
+            {
+                s_status = ENV_STATUS_READ;
+                pos = env_write_text(buffer, buffer_length, "Error: numeric overflow\r\n");
+                env_reset_request();
+                return pos;
+            }
         }
 
-        snprintf(s_value, ENV_VALUE_SIZE, "%lld", (long long)(current + delta));
+        int64_t updated;
+        if (!env_calculate(current, delta, false, &updated))
+        {
+            s_status = ENV_STATUS_READ;
+            pos = env_write_text(buffer, buffer_length, "Error: numeric overflow\r\n");
+            env_reset_request();
+            return pos;
+        }
+        snprintf(s_value, ENV_VALUE_SIZE, "%lld", (long long)updated);
         rc = env_set_value(s_key, s_value);
         s_status = (int8_t)rc;
         pos = rc == ENV_STATUS_OK ?

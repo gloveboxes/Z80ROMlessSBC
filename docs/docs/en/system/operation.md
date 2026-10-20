@@ -107,7 +107,8 @@ reserves the remainder as follows:
 | Region | Flash offset | Size | Contents |
 |----|----:|----:|----|
 | Journal | `0x290000` | 64 KiB | Eight rotating metadata/data sector pairs |
-| Boot | `0x2A0000` | 128 KiB | Header and Z80 memory image |
+| Boot partition | `0x2A0000` | 128 KiB | Header/image through `0x2B0FFF`; ENV in final 8 KiB |
+| Environment (inside boot partition) | `0x2BE000` | 8 KiB | Two alternating CRC-checked 4 KiB snapshots |
 | Drive A | `0x2C0000` | 320 KiB | CP/M system disk |
 | Drive B | `0x310000` | 320 KiB | CP/M data disk |
 | Drive C | `0x360000` | 320 KiB | CP/M data disk |
@@ -134,7 +135,13 @@ picotool reboot
 Use separate artifacts only for selective updates. The
 [firmware build and provisioning page](firmware-build.md) gives their commands
 and addresses. Full provisioning, `flash_nuke.uf2`, and mass erase destroy
-existing disk contents, so keep backups.
+existing disk contents and environment variables, so keep backups.
+
+Stage 9 and Stage 10 implement the
+[ROMLESS-SVC/1 extended I/O protocol](io-ports.md), including persistent
+environment variables. ENV uses the unused boot-partition tail, not the disk
+journal. Exact firmware-only and boot-package-only updates preserve it;
+never provision a padded whole-boot-partition image over the ENV sectors.
 
 **Runtime behavior.** On boot-image initialization, the Pico recovers any interrupted disk
 update, validates `z80boot.pkg`, copies its image to Z80 SRAM, and verifies the

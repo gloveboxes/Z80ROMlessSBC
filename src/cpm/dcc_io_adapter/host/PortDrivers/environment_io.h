@@ -1,11 +1,11 @@
 /**
  * @file environment_io.h
- * @brief Text-file-backed environment variable I/O port driver (host build).
+ * @brief Shared environment command parser and backend entry points.
  *
- * Mirrors the ESP32 NVS-backed driver in port_drivers/environment_io.c so
- * DXENV.C and the ENV CP/M program work identically on the host runner.
+ * The host uses a text file and mutex. Z80_ENV_FLASH builds use the Pico's
+ * durable snapshots and are called only by the core-1 service worker.
  *
- * Port map:
+ * Private legacy selectors (not physical Pico ports):
  *   OUT 71, 0      reset request buffer
  *   OUT 71, cmd    execute ENV command/API request
  *   OUT 72, byte   append request byte

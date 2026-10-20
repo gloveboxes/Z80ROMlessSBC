@@ -104,7 +104,8 @@ those from echoed host input when inspecting the terminal.
 ## Test Plan
 
 Use [I/O ports and services](../system/io-ports.md) as the allocation
-reference. Its proposed services are not implemented or required by these tests.
+reference. Its extended services are implemented in Stage 9/10, not in this
+Stage 8 application, and are not required by these tests.
 
 <input type="checkbox" data-checklist-id="trap-release-captures" aria-label="WAIT clock handover stepped release and isolation captured"> Capture IORQ, WAIT, CLK, RD/WR and both OEs. Confirm WAIT asserts before the
 CPU could complete the I/O cycle, and the stepped release isolates before

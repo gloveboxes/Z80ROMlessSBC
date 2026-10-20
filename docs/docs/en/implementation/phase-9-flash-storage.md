@@ -63,6 +63,14 @@ USB error/status first. Do not bypass verification merely to get a prompt.
 
 ## Automatic CP/M loader
 
+Both Stage 9 variants also implement
+[ROMLESS-SVC/1 extended ports](../system/io-ports.md): countdown timers,
+stopwatches, uptime, utilities and persistent ENV. Calendar queries explicitly
+report CLOCK_UNSYNCED in this USB-only stage. No additional wiring is required;
+the interrupt timer remains deferred. Check these services with the updated
+Drive C applications after the terminal/disk pass gates. Software regression
+tests do not replace physical timing and persistence checks.
+
 For normal use after bring-up, build the separate auto-start firmware:
 
 ```sh

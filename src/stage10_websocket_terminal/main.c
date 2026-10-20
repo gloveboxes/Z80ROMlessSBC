@@ -2,11 +2,13 @@
 
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
+#include "hardware/watchdog.h"
 #include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_disk.h"
 #include "z80sbc/io_trap.h"
+#include "z80sbc/io_ports.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
@@ -97,6 +99,8 @@ static void build_address_test_image(void) {
 
 static uint8_t virtual_read(uint8_t port, void *context) {
   (void)context;
+  if (z80_io_ports_handles(port))
+    return z80_io_port_in(port);
   if (port >= 0x10 && port <= 0x14)
     return z80_flash_disk_io_read(port);
   return z80_terminal_io_read(port);
@@ -130,6 +134,8 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
   }
   if (port >= 0x10 && port <= 0x14)
     z80_flash_disk_io_write(port, value);
+  else if (z80_io_ports_handles(port))
+    z80_io_port_out(port, value);
   else {
     if (mode == QUALIFICATION_RAM && port == 0x00)
       __atomic_fetch_add(&ram_heartbeats, 1, __ATOMIC_RELAXED);
@@ -142,12 +148,14 @@ static void core1_main(void) {
     if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE)) {
       if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
         z80_flash_core1_service();
-        if (z80_flash_disk_quiescent())
+        z80_io_ports_core1_service();
+        if (z80_flash_disk_quiescent() && z80_io_ports_quiescent())
           __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
       }
     } else {
       __atomic_store_n(&flash_paused, 0, __ATOMIC_RELEASE);
       z80_flash_core1_service();
+      z80_io_ports_core1_service();
     }
     z80_terminal_core1_service();
     tight_loop_contents();
@@ -297,6 +305,7 @@ int main(void) {
   if (!z80_terminal_init())
     fail_closed("terminal timers");
   build_address_test_image();
+  z80_io_ports_init();
   multicore_launch_core1(core1_main);
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL))
     fail_closed("I/O trap initialization");
@@ -310,6 +319,13 @@ int main(void) {
 
   while (true) {
     z80_flash_core0_service();
+    if (z80_io_ports_reboot_requested()) {
+      z80_io_trap_disable();
+      z80_cpu_fail_closed();
+      watchdog_reboot(0, 0, 0);
+      while (true)
+        tight_loop_contents();
+    }
     service_qualification();
     int command = getchar_timeout_us(0);
     if (command == '+') {

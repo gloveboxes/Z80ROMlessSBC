@@ -24,6 +24,7 @@ static int failed_read;
 static int failed_write;
 static unsigned target_erases;
 static unsigned corrupt_program;
+static bool safe_execute_error;
 static uint64_t now;
 static int cancel_phase;
 static uint32_t last_completed;
@@ -114,6 +115,8 @@ bool flash_safe_execute_core_init(void) { return core_init_ok; }
 int flash_safe_execute(void (*callback)(void *), void *parameter,
                         uint32_t timeout) {
   assert(timeout == 1000);
+  if (safe_execute_error)
+    return PICO_ERROR_TIMEOUT;
   callback(parameter);
   return PICO_OK;
 }
@@ -121,6 +124,8 @@ void flash_range_erase(uint32_t offset, size_t length) {
   assert(offset % FLASH_SECTOR_SIZE == 0);
   assert(length % FLASH_SECTOR_SIZE == 0);
   assert(offset <= sizeof(test_flash) - length);
+  if (offset >= Z80_FLASH_ENV_OFFSET && offset < Z80_FLASH_DISK_OFFSET)
+    assert(bus_owned && !trap_enabled && length == FLASH_SECTOR_SIZE);
   if (offset >= Z80_FLASH_DISK_OFFSET) {
     assert(bus_owned || cpu_held);
     ++target_erases;
@@ -130,6 +135,14 @@ void flash_range_erase(uint32_t offset, size_t length) {
 void flash_range_program(uint32_t offset, const uint8_t *data, size_t length) {
   assert(offset % FLASH_PAGE_SIZE == 0 && length % FLASH_PAGE_SIZE == 0);
   assert(offset <= sizeof(test_flash) - length);
+  if (offset >= Z80_FLASH_ENV_OFFSET && offset < Z80_FLASH_DISK_OFFSET) {
+    assert(bus_owned && !trap_enabled);
+    uint32_t base = offset & ~(uint32_t)(FLASH_SECTOR_SIZE - 1);
+    if (offset != base)
+      assert(test_flash[base] == 0xff);
+    else
+      assert(test_flash[base + FLASH_PAGE_SIZE] == 0x5a);
+  }
   for (size_t index = 0; index < length; ++index) {
     assert((test_flash[offset + index] & data[index]) == data[index]);
     test_flash[offset + index] &= data[index];
@@ -137,6 +150,12 @@ void flash_range_program(uint32_t offset, const uint8_t *data, size_t length) {
   if ((corrupt_program == 1 && offset == Z80_FLASH_JOURNAL_OFFSET +
                                             FLASH_SECTOR_SIZE) ||
       (corrupt_program == 2 && offset == Z80_FLASH_JOURNAL_OFFSET)) {
+    test_flash[offset] ^= 1;
+    corrupt_program = 0;
+  }
+  if ((corrupt_program == 3 && offset == Z80_FLASH_ENV_OFFSET +
+                                             FLASH_PAGE_SIZE) ||
+      (corrupt_program == 4 && offset == Z80_FLASH_ENV_OFFSET)) {
     test_flash[offset] ^= 1;
     corrupt_program = 0;
   }
@@ -340,11 +359,45 @@ static void test_cache_and_bounds(void) {
   assert(!trap_enabled);
 }
 
+static void test_environment_flash_safety(void) {
+  static uint8_t sector[FLASH_SECTOR_SIZE];
+  memset(sector, 0x5a, sizeof(sector));
+  reset_fixture();
+  assert(z80_flash_backend_init());
+  assert(z80_flash_backend_env_write(0, sector));
+  assert(!bus_owned && trap_enabled);
+  assert(memcmp(test_flash + Z80_FLASH_ENV_OFFSET, sector, sizeof(sector)) == 0);
+  assert(memcmp(test_flash + Z80_FLASH_DISK_OFFSET, old_block,
+                sizeof(old_block)) == 0);
+  assert(target_erases == 0);
+  assert(z80_flash_backend_env_write(1, sector));
+  assert(memcmp(test_flash + Z80_FLASH_ENV_OFFSET + FLASH_SECTOR_SIZE,
+                sector, sizeof(sector)) == 0);
+  assert(!z80_flash_backend_env_write(2, sector));
+  assert(!z80_flash_backend_env_write(0, NULL));
+  for (unsigned corruption = 3; corruption <= 4; ++corruption) {
+    corrupt_program = corruption;
+    assert(!z80_flash_backend_env_write(0, sector));
+    assert(!bus_owned && trap_enabled);
+    if (corruption == 3)
+      assert(test_flash[Z80_FLASH_ENV_OFFSET] == 0xff);
+  }
+  safe_execute_error = true;
+  expect_reboot = true;
+  if (setjmp(reboot_target) == 0) {
+    (void)z80_flash_backend_env_write(0, sector);
+    assert(false);
+  }
+  safe_execute_error = expect_reboot = false;
+  assert(cpu_held && clock_stopped);
+}
+
 int main(void) {
   test_boot();
   test_power_cuts();
   test_bad_program_and_recovery();
   test_cache_and_bounds();
+  test_environment_flash_safety();
   free(service_request_queue.data);
   free(service_result_queue.data);
   puts("PASS: real backend boot, bounds, cancellation, first fault, cache, "

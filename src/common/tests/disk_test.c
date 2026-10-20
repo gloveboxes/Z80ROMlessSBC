@@ -132,6 +132,17 @@ static void test_fatal_latch(void) {
 }
 
 int main(void) {
+  reset_fixture();
+  submit(2);
+  z80_flash_disk_set_write_enabled(false);
+  assert(z80_flash_disk_io_read(STATUS_PORT) == (BUSY | ERROR));
+  unsigned pending = requests->count;
+  submit(5);
+  assert(requests->count == pending);
+  z80_flash_core1_service();
+  assert(queue_is_empty(requests) && write_calls == 1);
+  z80_flash_disk_set_write_enabled(true);
+  assert(z80_flash_disk_io_read(STATUS_PORT) == READY);
   test_publication();
   test_fatal_latch();
   free(requests->data);

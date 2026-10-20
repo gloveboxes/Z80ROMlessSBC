@@ -32,6 +32,7 @@ if(NOT TARGET lwipopts_provider)
   add_library(lwipopts_provider INTERFACE)
   target_include_directories(lwipopts_provider INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/../common/include
   )
 endif()
 
@@ -76,10 +77,12 @@ target_link_libraries(z80_terminal PUBLIC
   z80_flash_disk
   z80_pico_ws_server
   pico_cyw43_arch_lwip_threadsafe_background
+  pico_lwip_sntp
   pico_util
 )
 
 add_z80_stage(z80_stage10_websocket_terminal main.c
+  z80_io_services
   z80_terminal
   pico_multicore
 )

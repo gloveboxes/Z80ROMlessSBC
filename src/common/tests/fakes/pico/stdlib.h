@@ -26,6 +26,7 @@ void gpio_set_irq_enabled_with_callback(uint pin, uint32_t events, bool enabled,
 void busy_wait_us_32(uint32_t delay);
 void sleep_ms(uint32_t delay);
 absolute_time_t get_absolute_time(void);
+uint64_t time_us_64(void);
 static inline uint32_t to_ms_since_boot(absolute_time_t time) {
   return (uint32_t)(time / 1000);
 }

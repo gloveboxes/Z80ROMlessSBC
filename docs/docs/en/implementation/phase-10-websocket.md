@@ -65,6 +65,14 @@ separate request/result queue while core 0 performs the bounded
 BUSREQ#/BUSACK# ownership transfer; that rendezvous never runs in the Z80
 trap.
 
+Core 1 also executes [ROMLESS-SVC/1 services](../system/io-ports.md) after
+disk work and before terminal networking. These add the shared service
+ports, independent timer port and flash-backed environment API without new
+wiring. SNTP starts against `pool.ntp.org` after association; calendar
+requests return CLOCK_UNSYNCED until synchronization, and local time uses
+persistent POSIX `TZ` (UTC when absent). Port `0x07` interrupt delivery and
+file/weather/chat/Sense HAT drivers remain deferred.
+
 **Application source:** [src/stage10_websocket_terminal/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/main.c),
 with the shared [terminal bridge](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_bridge.c),
 [network service](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_network.cpp), and

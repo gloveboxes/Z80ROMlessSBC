@@ -43,7 +43,7 @@ Never connect the 5 V Z80 signals directly to the Pico; route them through U7.
 The four monitored bits provide 16 distinct I/O ports. See
 [I/O ports and services](../system/io-ports.md) for
 [why A4 is monitored but A3 is not](../system/io-ports.md#why-a4-is-monitored-but-a3-is-not),
-fixed terminal/disk assignments and the proposed shared service allocation.
+fixed terminal/disk assignments and the Stage 9/10 shared service allocation.
 
 ## Firmware and Tests
 

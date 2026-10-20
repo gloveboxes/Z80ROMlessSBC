@@ -11,17 +11,17 @@
     },
     "drive_b_bdsc.img": {
       "output_bytes": 327680,
-      "output_sha256": "38e6b8450545bebb65b76d82f7ca5dba97ad48c1f1283d363d37f95775663ffa",
+      "output_sha256": "16603d9dfe9733872eadbe19632f1c1e513b7d88f570d961031c1eb4d8a3fd1f",
       "source": "bdsc-v1.60.dsk",
       "source_bytes": 337568,
-      "source_sha256": "e5c2e11b9cd6d2de1e4bf094a22067297a5b05110f1b81d976b1a3c22ab01095"
+      "source_sha256": "b14c1782c3bfe7aabcd0e2d0203bd75e86e6e8e550e1a0ee85aba10ab50ab21c"
     },
     "drive_c_escape.img": {
       "output_bytes": 327680,
-      "output_sha256": "80636f4ecf9a883a55064688c32e0f31e1d5403c0dca3a1af6feaef6b589b76a",
+      "output_sha256": "ae130a9144dfb199f6b2efe1f100f61a6e4edddb4c2a60a6e3b93b3341fb3383",
       "source": "escape-posix.dsk",
       "source_bytes": 337568,
-      "source_sha256": "7144f54f2b18e8f81d07b8d329b26cdc6597c490dd81fad4eb76708462f18676"
+      "source_sha256": "95f148b17a3f57aa71f9a2cdbd7f18714c26f9fdbeb60260ef748c66917c9697"
     },
     "drive_d_blank.img": {
       "output_bytes": 327680,
