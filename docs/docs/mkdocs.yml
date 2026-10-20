@@ -63,6 +63,8 @@ nav:
       - Validation requirements: en/cpm-dcc/validation.md
       - End-to-end test: en/cpm-dcc/end-to-end.md
       - Interactive test: en/cpm-dcc/interactive.md
+  - Tools:
+      - Pico flashing and USB supervisor: en/tools/pico-tools.md
   - Reference:
       - Terms and abbreviations: en/reference/glossary.md
       - Datasheets: en/reference/datasheets.md

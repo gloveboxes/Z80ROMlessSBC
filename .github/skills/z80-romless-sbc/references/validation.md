@@ -25,6 +25,35 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 
 If invoking `test_build_images` directly instead of discovery, change into `src/cpm` first because it imports `build_images` as a top-level module.
 
+## Flashing Tools
+
+Use the existing `.venv-flash` environment, or create it and install
+`scripts/requirements-flash.txt` if missing. Run the focused host tests:
+
+```sh
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python -m unittest discover -s scripts -p 'test_pico*.py' -v &&
+python -m unittest discover -s src/disks -p 'test_*.py' -v
+```
+
+Repeat activation/preflight in each fresh shell; an earlier tool call's
+activation does not persist. For a launch-only check use
+`python scripts/pico_flash.py --help` after that same preflight. Do not flash
+or run unit tests merely to work around a failed dependency import.
+
+These tests cover serial-number discovery and changed port names, targeted
+picocom disconnection, exclusive serial settings, status/boot ordering,
+stop/flush timeouts, exact UF2 firmware boundaries, journal headers, no-backup
+selected-slot disk writes, real Altair conversion, installed Drive A warm-boot
+compatibility and picotool failure handling. macOS `lsof` can include file-descriptor records
+and return exit 1 with valid owners when only one device alias matches;
+picotool force options must follow serial selection. Both cases have
+regression coverage. The tests do not stop, reset or flash real hardware.
+Do not run a physical flash merely to validate a tooling change. For an
+authorized live check, `pico_supervisor.py status` and `help` are read-only
+supervisor queries and refuse an occupied port.
+
 ## Hardware and KiCad
 
 Regenerate the native schematic, exports, strict ERC report, and netlist comparison:

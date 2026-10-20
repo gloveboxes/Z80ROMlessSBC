@@ -277,19 +277,35 @@ or opening another terminal on the same port.
 
 !!! warning "Finish any running hardware test before provisioning"
     Building does not deploy. Do not replace firmware, open a second serial
-    owner, or reset the Pico during an active soak. Back up disk contents
-    before any full-image or individual drive update.
+    owner, or reset the Pico during an active soak. Disk/full-image replacement
+    is destructive. This non-production development workflow creates no backups.
 
-To switch an already matching Stage 9 installation to automatic boot, first
-save CP/M work, stop/flush with Ctrl+] `x`, close the terminal and enter BOOTSEL
-with external +5 V maintained. Update only the automatic-loader firmware:
+### Reusable Python flashing tools
 
-```sh
-picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
-picotool reboot
-```
+Routine updates use `scripts/pico_flash.py`; standalone serial discovery and
+Stage 9 commands use `scripts/pico_supervisor.py`. Their complete setup,
+same-shell `.venv-flash` activation/preflight, examples, command options and
+troubleshooting now live under
+[Tools: Pico flashing and USB supervisor](../tools/pico-tools.md).
 
-This leaves the boot package, journal, persistent environment and all four disks unchanged. Do not
+For an already matching installation, follow the
+[firmware-only update procedure](../tools/pico-tools.md#firmware-updates).
+It confirms stop/flush, gracefully closes verified picocom owners, and verifies
+the programmed bytes without post-flash boot checks. Automatic stop speaks the
+currently running Stage 9 protocol; other running phases require their own safe
+stop before using `--stopped`.
+
+#### Selective disk updates without backups
+
+Use the [selective disk procedure](../tools/pico-tools.md#selective-disk-updates-without-backups)
+to replace only selected A-D slots without a firmware rebuild, backups or backup
+prompts. It includes native/Altair validation, Drive A compatibility checks,
+journal checks and read-back verification. Firmware, boot data, the journal,
+environment and unselected drives are not written.
+
+### Full provisioning and coordinated system updates
+
+Firmware-only updates leave the boot package, journal, persistent environment and all four disks unchanged. Do not
 overwrite Drive A or use a complete flash image merely to change startup mode.
 On new/disposable storage, build `z80_stage09_cpm_loader_images` and use its
 `build/cpm-stage09-loader/z80romless-flash.bin` instead of the manual image in
@@ -314,7 +330,7 @@ picotool load -v build/cpm-stage09/drive_a_cpm63k-z80.img -t bin -o 0x102C0000
 picotool reboot
 ```
 
-Updating Drive A replaces its files: retain a backup. Updating only the boot
+Updating Drive A replaces its files; no backup is created by this workflow. Updating only the boot
 package leaves stale BIOS bytes in Drive A's reserved tracks and is not a
 complete matching-system update. Open USB CDC and follow the Phase 9
 load/start procedure; no Wi-Fi credentials or browser are needed.
@@ -348,5 +364,5 @@ picotool reboot
 
 After association, browse to `http://<pico-dhcp-address>:8088/`. The USB serial
 console reports Stage 10 startup and accepts `s` to print terminal queue/drop
-counts and disk/fatal status. CP/M disk writes are persistent, so retain host
-backups before full reprovisioning.
+counts and disk/fatal status. CP/M disk writes are persistent; full reprovisioning
+replaces their contents without backups in this development workflow.

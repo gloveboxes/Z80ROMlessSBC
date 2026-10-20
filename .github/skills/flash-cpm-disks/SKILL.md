@@ -1,7 +1,7 @@
 ---
 name: flash-cpm-disks
-description: 'Flash, write, update, provision, or replace CP/M disk images on the Z80ROMlessSBC Pico 2 W using picotool. Use for .dsk/.img uploads, BDS C and Escape disks, Altair image conversion, selective drive updates, journal safety checks, backup preferences, BOOTSEL, and read-back verification without rebuilding firmware.'
-argument-hint: 'Disk image paths, target drives, and whether backups are required'
+description: 'Flash, write, update, provision, or replace one or more CP/M disks on the Z80ROMlessSBC Pico 2 W using the maintained Python tools. Use for .dsk/.img uploads, BDS C and Escape disks, Altair conversion, no-backup selective drive updates, journal checks, BOOTSEL, and read-back verification without rebuilding firmware.'
+argument-hint: 'Disk image paths and target drives A-D'
 user-invocable: true
 ---
 
@@ -12,8 +12,34 @@ lookup or firmware build is needed for the established layout below. If source
 constants or tools contradict this skill, stop and investigate the discrepancy.
 Firmware, BIOS, geometry, or hardware changes are outside this workflow.
 
-Run commands from the repository root. Store converted deployment images in
-the current session's artifact directory, not a hard-coded user's home.
+Run commands from the repository root. The disk command snapshots selected
+inputs and converts them in a temporary directory, then cleans up automatically.
+It never modifies the source files.
+
+Use `scripts/pico_flash.py disks` for the complete deployment. Do not write
+fresh inline serial clients, conversion snippets, journal readers or manual
+picotool write sequences for routine disk flashing.
+If the flashing environment is absent, set it up once:
+
+```sh
+python3 -m venv .venv-flash &&
+. .venv-flash/bin/activate &&
+python -m pip install -r scripts/requirements-flash.txt
+```
+
+### Required virtual environment preflight
+
+Every tool call starts a fresh shell: activation in an earlier call does not
+carry over. For **every** flash, preparation, journal or supervisor invocation,
+activate `.venv-flash`, check `serial` imports and run the tool in the **same
+shell command**, joined with `&&`, as shown below. Do not rely on the terminal
+prompt, a previously activated environment, or another Python interpreter.
+The printed interpreter must be inside the repository's `.venv-flash`.
+
+If the preflight fails, do not touch hardware. Diagnose the interpreter and
+dependency paths; restore `scripts/requirements-flash.txt` inside this environment
+only if dependencies are missing. Do not run unit tests as a workaround to make
+imports work, and do not bypass the check with system Python.
 
 ## Fixed Layout
 
@@ -42,147 +68,95 @@ Drive A requires the board-native system tracks; the plain converter output
 an already matching board-native image or switch to the CP/M image-build
 workflow rather than inventing BIOS/build steps here.
 
-## 1. Identify Inputs and Backup Policy
+## 1. Identify Inputs; No Backups by Default
 
 1. Resolve the exact files the user supplied. Fresh images may be directly in
    `src/disks/`, while older copies exist in `src/disks/source-altair/`.
    Do not silently substitute the older copies.
 2. Map the selected images to drives using the table. Ask only if ambiguous.
-3. Honor an explicit "no backups, just write" request: do not save existing
-   disk contents. This permission applies to the current request, not all
-   future deployments.
-4. Otherwise ask whether to back up the selected slots before overwriting.
-   Do not expand a selected-drive backup into a full-flash backup.
-5. Check `git status --short`. Preserve unrelated changes and source images;
+3. This is a development/non-production board. The standing project preference
+   is **no backups**: do not ask about backups or save existing disks for
+   routine replacements. Only perform a backup when explicitly requested
+   separately; the disk command itself has no backup step.
+4. Check `git status --short`. Preserve unrelated changes and source images;
    deployment alone does not require modifying canonical sources, generated
    images, manifests, or documentation.
 
 ## 2. Prepare and Validate Native Images
 
-Reuse `src/disks/convert_altair_disks.py`; do not duplicate its sector mapping.
-Framed Altair inputs are 337,568 or 337,664 bytes (77 x 32 x 137,
-optionally followed by a 96-byte marker).
+The tool detects native versus framed Altair format by exact length, not
+extension. Framed inputs are 337,568 or 337,664 bytes (77 x 32 x 137,
+optionally followed by a 96-byte marker). B-D Altair inputs are automatically
+validated and converted using the maintained `validate_source()` and `convert()`
+helpers in `src/disks/convert_altair_disks.py`, including sector checksum,
+framing and high-track sector-ID checks. Do not duplicate their sector mapping.
 
 Run the existing converter tests:
 
 ```sh
-python3 -m unittest discover -s src/disks -p 'test_*.py' -v
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python -m unittest discover -s src/disks -p 'test_*.py' -v
 ```
 
-Convert each supplied Altair input explicitly. Set `SOURCE` and `OUTPUT` to
-the selected source and session output paths:
-
-```sh
-python3 - "$SOURCE" "$OUTPUT" <<'PY'
-from pathlib import Path
-import hashlib
-import sys
-
-sys.path.insert(0, str(Path("src/disks").resolve()))
-from convert_altair_disks import SOURCE_GRID_BYTES, convert
-
-source_path, output_path = map(Path, sys.argv[1:])
-source = source_path.read_bytes()
-if len(source) not in (SOURCE_GRID_BYTES, SOURCE_GRID_BYTES + 96):
-    raise SystemExit(f"Unexpected framed image size: {len(source)}")
-for track in range(77):
-    sector_ids = []
-    for slot in range(32):
-        offset = (track * 32 + slot) * 137
-        sector = source[offset:offset + 137]
-        if track < 6:
-            valid = sector[131] == 255 and sector[132] == sum(sector[3:131]) & 255
-        else:
-            valid = (
-                sector[0] & 127 == track
-                and sector[135:137] == b"\xff\x00"
-                and sector[4] == (
-                    sum(sector[7:135]) + sector[2] + sector[3]
-                    + sector[5] + sector[6]
-                ) & 255
-            )
-            sector_ids.append(sector[1])
-        if not valid:
-            raise SystemExit(f"Invalid sector framing/checksum: {track=}, {slot=}")
-    if track >= 6 and sorted(sector_ids) != list(range(32)):
-        raise SystemExit(f"Invalid sector IDs: {track=}")
-image = convert(source)
-if len(image) != 327680:
-    raise SystemExit(f"Unexpected native image size: {len(image)}")
-output_path.parent.mkdir(parents=True, exist_ok=True)
-output_path.write_bytes(image)
-print(f"{output_path}: {len(image)} bytes; SHA256 {hashlib.sha256(image).hexdigest()}")
-PY
-```
-
-For an already native `.img`, check exact size and SHA-256 without applying
-Altair conversion. Extension alone is not proof of format. Existing converter
-tests cover repository fixtures; the checks above validate the actual supplied
-Altair inputs. Stop on failures rather than flashing a plausible-looking image.
+Native inputs must be exactly 327,680 bytes; no conversion is applied. The tool
+checks every selected input before disconnecting/stopping hardware and logs each
+resulting image's SHA-256. Duplicate or invalid drive assignments are rejected.
+Drive A requires a board-native image: framed Altair A is rejected, and its
+sequential warm-boot records must match the installed boot package. That
+read-only compatibility check validates the package manifest/payload CRCs and
+does not replace firmware or boot data.
 
 ## 3. Stop Safely and Enter BOOTSEL
 
 - Maintain the populated board's external +5 V throughout programming.
   External +5 V must precede USB; disconnect USB before removing external
   power. Do not switch a populated board to USB-only power.
-- Discover the actual port with `ls /dev/cu.usbmodem*`; a common port is
-  `/dev/cu.usbmodem1101`, but it is not guaranteed.
-- Check `lsof` on that port. Never open a second serial owner or kill a user's
-  terminal. A disconnected picocom client does not prove the CPU is stopped.
-- On the Stage 9 CP/M loader, send **Ctrl+] then `s`** for status, then
-  **Ctrl+] then `x`** to stop/flush. Wait for
-  `Disk quiescent; RESET held LOW, PWM stopped` and check for storage errors.
-  If already stopped, confirm status and still inspect the journal below.
-- Use an available serial client/library; assert DTR and use raw 115200 8N1,
-  no flow control or local echo. Close the client before `picotool`.
-  Do not send plain `x` to CP/M or assume all firmware has the same commands.
+- Discover devices with `pico_supervisor.py ports`. Never assume a fixed port
+  or board serial. A unique connected Pico is selected automatically; with
+  multiple devices pass `--serial DEVICE_SERIAL`.
+- For an authorized deployment, the project default is to gracefully close
+  picocom, obtain exclusive serial access, and stop/flush the Stage 9 CPU.
+  The tool verifies the picocom PID and uses SIGTERM, never name-based killing,
+  SIGKILL, or disconnecting unknown owners. `--no-disconnect` opts out.
+- The maintained tool asserts DTR and uses raw 115200 8N1 without flow control.
+  It sends **Ctrl+] then `s`**, then **Ctrl+] then `x`** if running, and waits
+  for `Disk quiescent; RESET held LOW, PWM stopped` before forcing BOOTSEL.
+  An already-stopped status must report ready storage without a fatal error.
+  A disconnected terminal alone is not evidence of a clean stop.
 - If serial gives no output, do not repeat blind probes. Report that clean
   stop was not confirmed. For an explicitly authorized destructive replacement,
   enter BOOTSEL and inspect the journal before writing; otherwise ask before
   forcing a reset that could lose unflushed work.
 
 ```sh
-picotool reboot -u -f
-picotool info
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python scripts/pico_supervisor.py ports
 ```
 
-If already in BOOTSEL, skip the forced reboot. If multiple devices are present,
-select the intended Pico and apply the same device-selection arguments to every
-subsequent command. If software reboot is unavailable, request physical BOOTSEL
-entry without violating the power sequence.
+The `disks` command below handles disconnection, clean stop, BOOTSEL and journal
+checking automatically. With multiple Picos add `--serial DEVICE_SERIAL`.
+If already in BOOTSEL, add `--bootsel --stopped --serial DEVICE_SERIAL`, only
+after a prior clean stop was confirmed. If software reboot is unavailable,
+request physical BOOTSEL entry without violating the power sequence; do not
+bypass an unconfirmed flush. For diagnosis only, `prepare --power-confirmed`
+performs preparation/journal checks without writing any disk.
 
 ## 4. Check for Pending Journal Replay
 
-Always check before selective writes, including when backups were waived.
+The disk command always checks before selective writes.
 Reading temporary journal headers is a safety check, not a disk backup.
 There are eight 8 KiB pairs starting at `0x10290000`; each pair has a 256-byte
 header at its start. Successfully completed writes erase the header sector.
 
-The following conservative check requires all eight headers to be erased.
-For multiple devices, add the established selection arguments to the
-`picotool` invocation inside this snippet too.
+`disks` and `prepare` check all eight headers. To repeat just this read-only check on the
+selected device already in BOOTSEL:
 
 ```sh
-python3 - <<'PY'
-from pathlib import Path
-import subprocess
-import tempfile
-
-with tempfile.TemporaryDirectory(prefix="z80-journal-") as directory:
-    for pair in range(8):
-        address = 0x10290000 + pair * 8192
-        path = Path(directory) / f"header-{pair}.bin"
-        subprocess.run([
-            "picotool", "save", "-r", hex(address), hex(address + 256),
-            str(path), "-t", "bin",
-        ], check=True)
-        header = path.read_bytes()
-        if header != b"\xff" * 256:
-            raise SystemExit(
-                f"Journal pair {pair} is not erased; recover/investigate before flashing"
-            )
-print("PASS: all journal headers erased; no pending replay")
-PY
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python scripts/pico_flash.py journal --serial "$DEVICE_SERIAL"
 ```
 
 If a header is not erased, stop. Let the existing firmware recover the journal
@@ -190,36 +164,48 @@ and obtain a clean stop before retrying, or investigate the exact header with
 the maintained journal implementation. Do not erase the journal as a shortcut:
 it can contain recoverable writes for unselected drives.
 
-If backups were requested, save only the selected drive ranges now, before
-loading anything. For example, Drive B:
-
-```sh
-picotool save -r 0x10310000 0x10360000 "$BACKUP_B" -t bin
-```
-
 ## 5. Program Only Selected Slots and Verify
 
-For B and C, using the prepared native image paths:
+For B and C, using the exact supplied source paths (Altair or native):
 
 ```sh
-picotool load -v "$IMAGE_B" -t bin -o 0x10310000 &&
-picotool load -v "$IMAGE_C" -t bin -o 0x10360000 &&
-picotool reboot
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python scripts/pico_flash.py disks \
+  --drive B=src/disks/bdsc-v1.60.dsk \
+  --drive C=src/disks/escape-posix.dsk \
+  --power-confirmed
 ```
 
-Omit unselected drives. Use the table for A or D. `-v` performs read-back
-verification; require successful exit status and completed verification for
-each selected slot. Do not use `-f` on each load: it would restart the application
-between writes. Keep the Pico in BOOTSEL until all selected images are verified.
+Repeat `--drive DRIVE=IMAGE` for each selected drive. Supply one to four unique
+assignments; omitted drives are never written. Drive A must use a matching
+board-native image such as `build/cpm-stage09-loader/drive_a_cpm63k-z80.img`.
+The command writes verified native-sized images only at the fixed slot
+addresses, stays in BOOTSEL between writes, then reboots once after all selected
+slots pass read-back verification. `--no-reboot` leaves it in BOOTSEL instead.
+No backups are created, and no boot/health checks run after programming.
 
 On failure, preserve output and report the device's actual state; do not claim
 success or reboot into a partially updated installation without resolving it.
 If output is offloaded, inspect only completion/error lines rather than dumping
 carriage-return progress logs.
 
-After reboot, wait for USB serial to reappear and leave it free for picocom.
-Report selected source-to-drive mappings, verified writes, backup policy, and
+After the requested reboot, leave serial free for picocom. Routine deployment
+ends with verified writes and the requested reboot; do not add firmware boot
+or supervisor-health checks unless the user separately requests them.
+Report selected source-to-drive mappings, verified writes, that no backups were taken, and
 that unselected flash regions were not written. Serial-port reappearance proves
 USB availability, not a successful CP/M boot; claim boot success only when
 observed. No firmware rebuild or full CP/M test suite is needed for disk-only
 deployment using the established format.
+
+For separately requested serial discovery/status after reboot, reuse `pico_supervisor.py ports` and
+`pico_supervisor.py status --serial "$DEVICE_SERIAL"`; do not generate an
+inline Node.js or Python serial probe. Run the tool tests with
+the following when modifying the helpers:
+
+```sh
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python -m unittest discover -s scripts -p 'test_pico*.py' -v
+```

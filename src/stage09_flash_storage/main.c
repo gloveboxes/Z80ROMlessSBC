@@ -291,10 +291,12 @@ static void print_help(void) {
          "t=read-only all-drive disk test after load (reboot afterward),\n"
          "x=flush then hold RESET, r=reboot when stopped, h=help,\n"
          "0=disarm, 1-8=arm one-shot flash fault (DISPOSABLE DISKS ONLY).\n"
-         "Ctrl-] Ctrl-] sends literal Ctrl-]. Ordinary bytes go to CP/M.\n"
-         "ANSI arrows=Ctrl-E/X/D/S, Ins/Del=Ctrl-O/G, PgUp/Dn=Ctrl-R/V,\n"
-         "Backspace=Ctrl-H; standalone Esc waits 30 ms.\n");
-  if (Z80_STAGE09_AUTOBOOT)
+         "Ctrl-] Ctrl-] sends literal Ctrl-]. Ordinary bytes go to CP/M.\n");
+  if (!running && boot_attempted && !image_verified)
+    printf("Stopped: Ctrl-] r=reboot, s=status, h=help.\n"
+           "Loading/running/testing (l/g/t) requires a Pico reboot first; "
+           "fault commands (0-8) require a running CPU.\n");
+  else if (Z80_STAGE09_AUTOBOOT)
     printf("CP/M loads and starts automatically on Pico reset. "
            "Ctrl-] x then Ctrl-] r safely reboots into CP/M.\n");
   else
@@ -316,6 +318,7 @@ static void diagnostic_command(int command) {
     if (!running || diagnostic_active) {
       hold_cpu();
       printf("\n[diag] RESET held LOW; reboot required before a new run.\n");
+      print_help();
     } else {
       stop_requested = true;
       flush_submitted = false;
@@ -498,6 +501,7 @@ static void service_run(void) {
     if (quiescent) {
       printf("\n[diag] Disk quiescent; RESET held LOW, PWM stopped. "
              "Ctrl-] r reboots/reloads the supervisor.\n");
+      print_help();
     } else {
       flash_resuming = true;
       __atomic_store_n(&flash_pause_request, 0, __ATOMIC_RELEASE);

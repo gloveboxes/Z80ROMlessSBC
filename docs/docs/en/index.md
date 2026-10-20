@@ -57,5 +57,8 @@ the implementation and hardware checks.
   boot-image construction, disk media, and software compatibility.
 - [Firmware testing](system/firmware-testing.md) -
   host tests, Z80 emulation, and hardware validation boundaries.
+- [Pico flashing and USB supervisor tools](tools/pico-tools.md) -
+  environment setup, verified firmware and selective disk updates, serial
+  discovery, clean stop, and journal diagnostics.
 - [Source index](reference/source-index.md) -
   maintained firmware, tools, and implementation guides.

@@ -117,6 +117,7 @@ class ConvertAltairDisksTest(unittest.TestCase):
     def test_source_sector_framing_and_checksums(self) -> None:
         for output_name, source_name in convert_altair_disks.DISKS.items():
             source = (DISK_DIR / "source-altair" / source_name).read_bytes()
+            convert_altair_disks.validate_source(source)
             for track in range(convert_altair_disks.SOURCE_TRACKS):
                 sector_ids: list[int] = []
                 for slot in range(geometry.SECTORS_PER_TRACK):
@@ -149,6 +150,23 @@ class ConvertAltairDisksTest(unittest.TestCase):
                         list(range(geometry.SECTORS_PER_TRACK)),
                         f"{output_name}: track {track}",
                     )
+
+    def test_source_validator_rejects_corrupt_sectors_and_ids(self) -> None:
+        source = (DISK_DIR / "source-altair/bdsc-v1.60.dsk").read_bytes()
+        high_track = 6 * geometry.SECTORS_PER_TRACK * convert_altair_disks.PHYSICAL_SECTOR_BYTES
+        for offset in (131, 132, high_track, high_track + 4, high_track + 7, high_track + 135):
+            corrupted = bytearray(source)
+            corrupted[offset] ^= 1
+            with self.subTest(offset=offset), self.assertRaisesRegex(ValueError, "framing/checksum"):
+                convert_altair_disks.validate_source(bytes(corrupted))
+        duplicate = bytearray(source)
+        duplicate[high_track + 1] = duplicate[
+            high_track + convert_altair_disks.PHYSICAL_SECTOR_BYTES + 1
+        ]
+        with self.assertRaisesRegex(ValueError, "sector IDs"):
+            convert_altair_disks.validate_source(bytes(duplicate))
+        with self.assertRaisesRegex(ValueError, "size"):
+            convert_altair_disks.validate_source(source[:-1])
 
 
 if __name__ == "__main__":

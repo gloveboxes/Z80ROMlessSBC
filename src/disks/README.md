@@ -61,6 +61,35 @@ python3 src/cpm/build_images.py \
   --output-dir build/cpm
 ```
 
+## Selective flashing without backups
+
+From the repository root, use the maintained tool rather than manual conversion
+and write commands:
+
+```sh
+. .venv-flash/bin/activate &&
+python -c 'import sys, serial; print("Using", sys.executable)' &&
+python scripts/pico_flash.py disks \
+  --drive B=src/disks/bdsc-v1.60.dsk \
+  --drive C=src/disks/escape-posix.dsk \
+  --power-confirmed
+```
+
+Repeat `--drive DRIVE=IMAGE` for one or more unique A-D slots. The development
+workflow makes no backups: it disconnects picocom, confirms stop/flush, checks
+the journal, converts validated Altair B-D sources when necessary, and writes
+only selected native-sized slots with read-back verification. It reboots once
+after all selected writes, without testing the booted firmware; `--no-reboot`
+leaves BOOTSEL instead.
+
+Native images must be exactly 327,680 bytes. Altair sources are checked with
+`validate_source()` before conversion. Drive A must be a matching board-native
+image; its warm-boot CCP/BDOS records are checked against the installed,
+CRC-validated boot package before any selected disk is written. Sources and
+unselected flash regions are unchanged.
+
+See the [flashing-tool setup and safety workflow](../../docs/docs/en/system/firmware-build.md#72-flash-provisioning).
+
 ## BIOS compatibility
 
 `source-altair/altair_88dskrom.h` and `altair_disk_loader.h` are retained as

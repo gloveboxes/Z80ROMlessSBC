@@ -137,6 +137,10 @@ still shows status, and **Ctrl+] then `h`** prints supervisor help.
 For a safe software restart, use **Ctrl+] then `x`**, wait for
 **Disk quiescent; RESET held LOW, PWM stopped**, then use **Ctrl+] then `r`**.
 The Pico reboots and automatically reloads CP/M.
+The stop confirmation also prints the full **Ctrl+]** command menu and marks
+`r` (reboot), `s` (status), and `h` (help) as available while stopped.
+Loading/running/testing (`l`/`g`/`t`) requires a Pico reboot before another run;
+fault commands (`0`-`8`) require a running CPU.
 This resets USB CDC too, so picocom may exit with **Device not configured**.
 Reconnect using the current USB port name; if loading or verification is still
 underway, progress appears at the next 4,096-byte boundary before the CP/M banner.
@@ -170,7 +174,8 @@ cmake --build build --target z80_stage09_cpm_images -j
 
 For an already provisioned board, selectively update the Stage 9 UF2,
 `z80boot.pkg`, and matching `drive_a_cpm63k-z80.img` using Section 7's
-addresses. Updating Drive A overwrites its existing files, so back it up first.
+addresses. Updating Drive A overwrites its existing files; the development
+workflow does not create backups.
 For disposable/new storage, the complete `build/cpm-stage09/z80romless-flash.bin`
 contains everything. Building either target never flashes the board.
 

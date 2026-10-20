@@ -76,6 +76,35 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def validate_source(source: bytes) -> None:
+    if len(source) not in {SOURCE_GRID_BYTES, SOURCE_GRID_BYTES + 96}:
+        raise ValueError(f"unexpected framed Altair image size: {len(source)}")
+    for track in range(SOURCE_TRACKS):
+        sector_ids: list[int] = []
+        for slot in range(SECTORS_PER_TRACK):
+            offset = (track * SECTORS_PER_TRACK + slot) * PHYSICAL_SECTOR_BYTES
+            sector = source[offset:offset + PHYSICAL_SECTOR_BYTES]
+            if track < TRACK_FORMAT_BOUNDARY:
+                valid = (
+                    sector[131] == 0xFF
+                    and sector[132] == sum(sector[3:131]) & 0xFF
+                )
+            else:
+                valid = (
+                    sector[0] & 0x7F == track
+                    and sector[135:137] == b"\xff\x00"
+                    and sector[4] == (
+                        sum(sector[7:135]) + sector[2] + sector[3]
+                        + sector[5] + sector[6]
+                    ) & 0xFF
+                )
+                sector_ids.append(sector[1])
+            if not valid:
+                raise ValueError(f"invalid Altair framing/checksum: track {track}, slot {slot}")
+        if track >= TRACK_FORMAT_BOUNDARY and sorted(sector_ids) != list(range(SECTORS_PER_TRACK)):
+            raise ValueError(f"invalid Altair sector IDs: track {track}")
+
+
 def convert(source: bytes) -> bytes:
     if len(source) not in {SOURCE_GRID_BYTES, SOURCE_GRID_BYTES + 96}:
         raise ValueError(
