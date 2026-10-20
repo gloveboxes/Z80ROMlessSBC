@@ -9,6 +9,12 @@ user-invocable: true
 
 Use this workflow to preserve the project's electrical safety, firmware ownership rules, build reproducibility, and documentation consistency.
 
+For disk-only deployment to the existing flash layout, invoke the project-local
+`flash-cpm-disks` skill instead of the engineering workflow below. It contains
+the self-contained conversion, backup-policy, journal, programming, and
+verification procedure. Use this broader skill when changing firmware, BIOS,
+geometry, or flash layout.
+
 ## Start With Current Sources
 
 1. Treat `docs/docs/en/` as the engineering and bring-up specification;

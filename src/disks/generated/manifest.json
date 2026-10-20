@@ -18,10 +18,10 @@
     },
     "drive_c_escape.img": {
       "output_bytes": 327680,
-      "output_sha256": "ae130a9144dfb199f6b2efe1f100f61a6e4edddb4c2a60a6e3b93b3341fb3383",
+      "output_sha256": "2fdb04108b2ea9ca4af0788e5b9c97efdedcae262efb77a05faa2340e8256f12",
       "source": "escape-posix.dsk",
       "source_bytes": 337568,
-      "source_sha256": "95f148b17a3f57aa71f9a2cdbd7f18714c26f9fdbeb60260ef748c66917c9697"
+      "source_sha256": "56ae9a5214f76d9ec1ceee03f463c1e619185ed1bf1b5b48f6bd4221d21a3c32"
     },
     "drive_d_blank.img": {
       "output_bytes": 327680,
