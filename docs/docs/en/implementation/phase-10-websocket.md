@@ -95,6 +95,12 @@ maintained network service supplies the HTTP/WebSocket implementation;
 builders do not need to choose or integrate another server library. Only the
 queue functions are visible to the Z80 trap.
 
+As in Stage 9 USB, connected clients use the 512-byte output queue to decouple
+Z80 output from transport service. With no WebSocket client connected, output
+is discarded and transmit-ready remains asserted. Disconnecting clears pending
+output, so a later client receives only new output, not an old banner or prompt.
+Intentional discards while disconnected do not increment overflow counters.
+
 ### Maintained Source
 
 These complete files are included from the repository at documentation build

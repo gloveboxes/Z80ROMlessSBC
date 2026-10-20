@@ -1,5 +1,6 @@
 #include "z80sbc/terminal.h"
 
+#include "pico/critical_section.h"
 #include "pico/stdlib.h"
 #include "pico/util/queue.h"
 
@@ -15,10 +16,13 @@ enum {
 
 static queue_t rx_queue;
 static queue_t tx_queue;
+static critical_section_t tx_state_lock;
 static uint32_t client_connected;
 static uint32_t rx_drops;
 static uint32_t tx_drops;
 void z80_terminal_queue_init(void) {
+  if (!critical_section_is_initialized(&tx_state_lock))
+    critical_section_init(&tx_state_lock);
   queue_init(&rx_queue, sizeof(uint8_t), TERM_RX_DEPTH);
   queue_init(&tx_queue, sizeof(uint8_t), TERM_TX_DEPTH);
   __atomic_store_n(&client_connected, 0, __ATOMIC_RELEASE);
@@ -38,18 +42,23 @@ uint8_t z80_terminal_io_read(uint8_t port) {
   uint8_t status = 0;
   if (queue_get_level(&rx_queue) != 0)
     status |= TERM_STATUS_RX_READY;
-  if (queue_get_level(&tx_queue) < TERM_TX_DEPTH)
+  critical_section_enter_blocking(&tx_state_lock);
+  bool connected = z80_terminal_client_connected();
+  if (!connected || queue_get_level(&tx_queue) < TERM_TX_DEPTH)
     status |= TERM_STATUS_TX_ROOM;
-  if (__atomic_load_n(&client_connected, __ATOMIC_ACQUIRE))
+  if (connected)
     status |= TERM_STATUS_CLIENT;
+  critical_section_exit(&tx_state_lock);
   return status;
 }
 
 void z80_terminal_io_write(uint8_t port, uint8_t value) {
   if (port != TERM_DATA_PORT)
     return;
-  if (!queue_try_add(&tx_queue, &value))
+  critical_section_enter_blocking(&tx_state_lock);
+  if (z80_terminal_client_connected() && !queue_try_add(&tx_queue, &value))
     __atomic_fetch_add(&tx_drops, 1, __ATOMIC_RELAXED);
+  critical_section_exit(&tx_state_lock);
 }
 
 void z80_terminal_network_receive(const uint8_t *data, size_t length) {
@@ -81,14 +90,20 @@ void z80_terminal_network_connected(void) {
 }
 
 void z80_terminal_set_connected(bool connected) {
+  // Serialize disconnect cleanup with the Z80 producer on the other core.
+  critical_section_enter_blocking(&tx_state_lock);
   __atomic_store_n(&client_connected, connected, __ATOMIC_RELEASE);
+  if (!connected) {
+    uint8_t discard;
+    while (queue_try_remove(&tx_queue, &discard)) {}
+  }
+  critical_section_exit(&tx_state_lock);
 }
 
 void z80_terminal_network_disconnected(void) {
   z80_terminal_set_connected(false);
   uint8_t discard;
   while (queue_try_remove(&rx_queue, &discard)) {}
-  while (queue_try_remove(&tx_queue, &discard)) {}
 }
 
 void z80_terminal_network_tx_dropped(size_t count) {

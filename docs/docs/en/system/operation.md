@@ -79,11 +79,14 @@ between the CPU-facing side and the network-facing side. The trap hook
 must never call lwIP, print, sleep, wait for a browser, or block on a
 queue. It may only enqueue Z80 output bytes, dequeue already-buffered
 browser input bytes, and report terminal status. Core 1 may drop, drain,
-or back-pressure network data; it must not take application-level locks or
-touch any Z80 bus GPIO. Pico SDK `queue_try_add()`/`queue_try_remove()` do
+or back-pressure network data; it must not hold terminal critical sections
+across network or flash work or touch any Z80 bus GPIO.
+Pico SDK `queue_try_add()`/`queue_try_remove()` do
 not wait for space or data, but they do use brief internal spinlock critical
 sections for multicore safety. Include that bounded contention in measured
 trap-latency qualification rather than describing these queues as lock-free.
+A short SDK critical section also serializes transmit status, enqueueing and
+disconnect cleanup so output cannot race with a disconnect on the other core.
 
 The initial terminal decode is intentionally small:
 
@@ -91,7 +94,13 @@ The initial terminal decode is intentionally small:
 |----:|----|----|
 | `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to host terminal |
 | `0x00` | Z80 `IN` | Terminal receive byte from host to Z80; returns `0x00` if empty |
-| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit queue has room, bit 7 = transport connected (USB in Stage 9, WebSocket in Stage 10) |
+| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit-ready (queue has room or transport disconnected), bit 7 = transport connected (USB in Stage 9, WebSocket in Stage 10) |
+
+Connected terminals retain the 512-byte output buffer. Without a connected
+terminal, output writes are discarded immediately and transmit-ready remains
+set, preventing CP/M console output from waiting for a client. Disconnecting
+clears queued output; reconnecting does not replay it. These intentional
+discards do not increment the terminal overflow counter.
 
 This is enough for ROM monitors, BASIC, CP/M console glue, and small
 diagnostics. If later software needs modem-control style signals, add

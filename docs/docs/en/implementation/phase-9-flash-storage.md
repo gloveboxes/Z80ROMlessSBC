@@ -110,8 +110,10 @@ Connect picocom whenever convenient, using the actual USB CDC port name:
 picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbmodemXXXX
 ```
 
-There are **no load/start commands to type**. The CP/M banner and `A>` prompt
-are retained in the existing terminal output queue until a terminal connects.
+There are **no load/start commands to type**. Output produced without a connected
+terminal is discarded, including the CP/M banner and `A>` prompt. If CP/M is
+idle at its command prompt, press Return after connecting to obtain a fresh
+prompt; reconnecting does not restart a running application.
 While a terminal is connected during automatic boot, the supervisor reports
 SRAM load and independent verification progress every 4,096 bytes, for example:
 
@@ -296,12 +298,16 @@ the prompt. Only then test copies/writes on disposable contents. The file
 named `drive_d_blank.img` currently contains the documented `DOCTOR.COM`
 sentinel; its historical filename is not evidence that it is empty.
 
-The shared terminal queues hold 128 input and 512 output bytes. The BIOS
-waits for transmit room; USB output is pumped only when the CDC transport
-has space. Disconnecting preserves queued output and reconnecting resumes it,
-although bytes already in flight at disconnect are not guaranteed. CRLF
-input becomes one CP/M carriage return. Overflow is counted and printed as
-FAIL; reduce paste rate and repeat any affected acceptance test.
+The shared terminal queues hold 128 input and 512 output bytes. While a terminal
+is connected, output remains buffered for Z80 throughput: the BIOS waits only
+when the output queue is full, and USB output is pumped only when the CDC
+transport has space. With no terminal connected, writes are discarded
+immediately and transmit-ready stays asserted, so console output cannot stall
+the application. Disconnecting clears pending output; reconnecting does not
+replay it. Bytes already handed to USB at disconnect are in flight and are not
+guaranteed. Intentional disconnected-output discards are not overflow errors.
+CRLF input becomes one CP/M carriage return. Actual queue overflow is counted
+and printed as FAIL; reduce paste rate and repeat any affected acceptance test.
 
 To stop, use **Ctrl+] then `x`** and wait for **Disk quiescent; RESET held
 LOW, PWM stopped**. Do not remove power or request reboot before that

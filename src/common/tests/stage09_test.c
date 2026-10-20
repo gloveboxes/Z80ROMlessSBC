@@ -227,6 +227,7 @@ static void reset_fixture(void) {
   memset(&status, 0, sizeof(status));
   ansi_input_reset();
   z80_terminal_queue_init();
+  z80_terminal_set_connected(connected);
 }
 
 static void command(uint8_t value) {
@@ -280,7 +281,9 @@ static void test_usb_backpressure_and_disconnect(void) {
   reset_fixture();
   command('l');
   command('g');
-  virtual_write(0, 'A', NULL);
+  for (unsigned index = 0; index < 512; ++index)
+    virtual_write(0, 'A', NULL);
+  assert(!(virtual_read(1, NULL) & 2u));
   usb_room = 0;
   usb_was_connected = true;
   size_t previous_length = output_length;
@@ -289,11 +292,34 @@ static void test_usb_backpressure_and_disconnect(void) {
   connected = false;
   service_usb();
   assert(!(virtual_read(1, NULL) & 0x80u));
+  assert(virtual_read(1, NULL) & 2u);
+  for (unsigned index = 0; index < 4096; ++index) {
+    assert(virtual_read(1, NULL) & 2u);
+    virtual_write(0, 'B', NULL);
+  }
+  uint8_t value;
+  assert(z80_terminal_network_supply(&value, 1) == 0);
+  assert(z80_terminal_tx_drop_count() == 0);
+  assert(running && !held);
   connected = true;
   usb_room = 1;
   service_usb();
-  assert(output[output_length - 1] == 'A');
   assert(virtual_read(1, NULL) & 0x80u);
+  assert(usb_room == 1);
+  assert(z80_terminal_network_supply(&value, 1) == 0);
+  virtual_write(0, 'C', NULL);
+  service_usb();
+  assert(output[output_length - 1] == 'C' && usb_room == 0);
+  for (unsigned index = 0; index < 513; ++index)
+    virtual_write(0, 'D', NULL);
+  assert(!(virtual_read(1, NULL) & 2u));
+  assert(z80_terminal_tx_drop_count() == 1);
+  connected = false;
+  service_usb();
+  assert(virtual_read(1, NULL) & 2u);
+  assert(z80_terminal_network_supply(&value, 1) == 0);
+  connected = true;
+  service_usb();
   for (unsigned index = 0; index < 129; ++index)
     receive_usb_byte('X');
   service_usb();
@@ -308,6 +334,43 @@ static void usb_input(const char *bytes) {
   input_index = 0;
   service_usb();
   assert(input_index == input_length);
+}
+
+static void test_websocket_disconnect_queues(void) {
+  reset_fixture();
+  z80_terminal_network_receive((const uint8_t *)"X", 1);
+  virtual_write(0, 'A', NULL);
+  z80_terminal_network_disconnected();
+  assert(virtual_read(1, NULL) == 2u);
+  for (unsigned index = 0; index < 4096; ++index) {
+    virtual_write(0, 'B', NULL);
+    assert(virtual_read(1, NULL) == 2u);
+  }
+  z80_terminal_network_connected();
+  uint8_t value;
+  assert(z80_terminal_network_supply(&value, 1) == 0);
+  virtual_write(0, 'C', NULL);
+  assert(z80_terminal_network_supply(&value, 1) == 1 && value == 'C');
+  assert(z80_terminal_tx_drop_count() == 0);
+}
+
+static void test_connected_output_buffer(void) {
+  reset_fixture();
+  uint8_t expected[512];
+  for (unsigned index = 0; index < sizeof(expected); ++index) {
+    expected[index] = (uint8_t)index;
+    assert(virtual_read(1, NULL) & 2u);
+    virtual_write(0, expected[index], NULL);
+  }
+  assert(!(virtual_read(1, NULL) & 2u));
+  uint8_t actual[512];
+  assert(z80_terminal_network_supply(actual, 32) == 32);
+  assert(virtual_read(1, NULL) & 2u);
+  assert(z80_terminal_network_supply(actual + 32, sizeof(actual) - 32) ==
+         sizeof(actual) - 32);
+  assert(memcmp(actual, expected, sizeof(expected)) == 0);
+  assert(z80_terminal_network_supply(actual, sizeof(actual)) == 0);
+  assert(z80_terminal_tx_drop_count() == 0);
 }
 
 static void test_ansi_terminal_input(void) {
@@ -564,15 +627,18 @@ static void test_startup_without_usb(void) {
   service_run();
   assert(bios_announced && ccp_announced && !boot_timed_out && running);
   assert(output_length == 0 && !(virtual_read(1, NULL) & 0x80u));
+  assert(virtual_read(1, NULL) & 2u);
+  uint8_t value;
+  assert(z80_terminal_network_supply(&value, 1) == 0);
   connected = true;
   service_usb();
-  assert(strcmp(output, banner) == 0);
+  assert(output_length == 0);
   assert(virtual_read(1, NULL) & 0x80u);
   connected = false;
   service_usb();
   connected = true;
   service_usb();
-  assert(strcmp(output, banner) == 0);
+  assert(output_length == 0);
   assert(load_calls == 1 && start_calls == 1);
 }
 
@@ -670,6 +736,8 @@ int main(void) {
   test_autoboot_failures();
   test_control_and_terminal();
   test_usb_backpressure_and_disconnect();
+  test_websocket_disconnect_queues();
+  test_connected_output_buffer();
   test_ansi_terminal_input();
   test_stop_and_failure();
   test_disk_diagnostic();
