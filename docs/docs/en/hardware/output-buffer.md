@@ -91,7 +91,8 @@ phase-2-output-buffer-wiring-end</template>
 
 Use **SN74HCT32N**, PDIP-14, powered from +5 V at pin 14 and GND at pin 7.
 Do not substitute HC32: TTL and 3.3 V HIGH recognition is required.
-The TI SCLS064G datasheet specifies 2.0 V minimum VIH over 4.5-5.5 V VCC.
+The [TI SN74HCT32 datasheet](https://www.ti.com/lit/ds/symlink/sn74hct32.pdf)
+specifies a minimum HIGH input voltage (VIH) of 2.0 V with a 4.5-5.5 V supply.
 
 | Gate | Input A | Input B | Output | Function |
 | --- | --- | --- | --- | --- |
