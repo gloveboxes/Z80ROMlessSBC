@@ -1,13 +1,12 @@
 {
   "generated_by": "scripts/build-kicad-schematic.py",
   "schematic": "hardware/kicad/z80_romless_sbc.kicad_sch",
-  "component_count": 41,
+  "component_count": 40,
   "components": [
     "A1",
     "C1",
     "C10",
     "C11",
-    "C12",
     "C2",
     "C3",
     "C4",
@@ -69,12 +68,6 @@
       "value": "100u",
       "footprint": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
       "description": "Supply-entry bulk"
-    },
-    "C12": {
-      "symbol": "CAPACITOR",
-      "value": "100u 10V",
-      "footprint": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
-      "description": "Pico VSYS hold-up; positive to D1 cathode / A1 pin 39, negative to A1 pin 38; fit close to Pico"
     },
     "C2": {
       "symbol": "CAPACITOR",
@@ -506,7 +499,6 @@
       "C1.2",
       "C10.2",
       "C11.2",
-      "C12.2",
       "C2.2",
       "C3.2",
       "C4.2",
@@ -707,7 +699,6 @@
     "VSYS": [
       "#FLG01.1",
       "A1.39",
-      "C12.1",
       "D1.1"
     ],
     "WAIT_N": [

@@ -684,7 +684,6 @@ CAPACITORS = [
     ("22u", "Core cluster bulk", "+5V"),
     ("22u", "Peripheral cluster bulk", "+5V"),
     ("100u", "Supply-entry bulk", "+5V"),
-    ("100u 10V", "Pico VSYS hold-up; positive to D1 cathode / A1 pin 39, negative to A1 pin 38; fit close to Pico", "VSYS"),
 ]
 if sum(value == "100n" for value, _, _ in CAPACITORS) != 7:
     raise AssertionError("decoupling count must remain 7")
@@ -697,8 +696,7 @@ for index, (value, role, rail) in enumerate(CAPACITORS, start=1):
         footprint = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
     add_component(
         f"C{index}", "CAPACITOR", value,
-        279.4 if rail == "VSYS" else 50.8 + (index - 1) * 76.2,
-        50.8 if rail == "VSYS" else 787.4,
+        50.8 + (index - 1) * 76.2, 787.4,
         {1: rail, 2: "GND"},
         footprint=footprint,
         description=role,
@@ -834,8 +832,8 @@ schematic.texts.extend([
 
 
 required_endpoints = {
-    "VSYS": {"D1.1", "A1.39", "C12.1"},
-    "GND": {"A1.38", "C12.2"},
+    "VSYS": {"D1.1", "A1.39"},
+    "GND": {"A1.38"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},
     "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},

@@ -76,11 +76,7 @@ The Phase 4 active address diagnostic is deferred until Phase 6.
 The Phase 0-10 implementation plan is for the three-BB830 breadboard
 prototype. PCB documentation is historical and explicitly marked deferred.
 The current breadboard uses four bussed 8x10k networks and seven discrete
-10k startup pulls (39 branches), seven bypass capacitors, three22uF, one100uF,
-and C12, 100uF/10V, from Pico VSYS (positive, header39, after D1) to GND
-(negative, header38), with short leads near the Pico. C11/C12 use the same
-capacitor type. C12 improves USB-disconnect behaviour, but occasional resets
-remain; larger capacitance did not establish a reliable cure.
+10k startup pulls (39 branches), seven bypass capacitors, three22uF and one100uF.
 
 With BB830 row 1 at top and row 63 at bottom:
 

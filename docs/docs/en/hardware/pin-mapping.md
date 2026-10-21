@@ -34,9 +34,7 @@ are not 5 V-tolerant pads. Do not rely on GP0-GP25 FT tolerance during power-off
 
 Connect GND header pins 3,8,13,18,23,28,38 and AGND pin 33 to common GND.
 Header pin 36 supplies the two LVC devices and 3.3 V pull-ups. Connect external
-+5 V through a 1N5819 to VSYS pin 39; the band faces VSYS. Fit C12,
-100 uF / 10 V, close to the Pico: positive to VSYS pin 39 on the diode's
-banded side, negative to GND pin 38. Leave VBUS pin 40,
++5 V through a 1N5819 to VSYS pin 39; the band faces VSYS. Leave VBUS pin 40,
 RUN pin 30, 3V3_EN pin 37, and ADC_VREF pin 35 open.
 GP23/24/25/29 are reserved by Pico 2 W wireless hardware.
 

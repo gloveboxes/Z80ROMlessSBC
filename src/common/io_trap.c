@@ -8,14 +8,40 @@
 #include "z80sbc/pins.h"
 
 enum { TRAP_RELEASE_TIMEOUT_US = 500000 };
+static const uint32_t RESET_FAULT_MAGIC = 0x5A384954;
 
 static z80_io_read_handler_t application_read;
 static z80_io_write_handler_t application_write;
 static void *application_context;
 static uint32_t trap_timeouts;
 static uint32_t control_errors;
+static uint32_t inactive_irqs;
 
-static _Noreturn void trap_fail_closed(void) {
+z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
+  uint32_t magic = watchdog_hw->scratch[0];
+  uint32_t reason = watchdog_hw->scratch[1];
+  uint32_t gpio = watchdog_hw->scratch[2];
+  uint32_t check = watchdog_hw->scratch[3];
+  watchdog_hw->scratch[0] = 0;
+  if (!watchdog_caused_reboot() || magic != RESET_FAULT_MAGIC ||
+      check != (magic ^ reason ^ gpio) ||
+      reason < Z80_IO_TRAP_RESET_RELEASE_TIMEOUT ||
+      reason > Z80_IO_TRAP_RESET_INVALID_CONTROLS)
+    return (z80_io_trap_reset_fault_t){0};
+  return (z80_io_trap_reset_fault_t){
+    .reason = (z80_io_trap_reset_reason_t)reason,
+    .gpio = gpio,
+  };
+}
+
+static _Noreturn void trap_fail_closed(z80_io_trap_reset_reason_t reason,
+                                       uint32_t controls) {
+  // Scratch 0-3 survive watchdog reset; the SDK reserves 4-7 for reboot.
+  watchdog_hw->scratch[0] = 0;
+  watchdog_hw->scratch[1] = reason;
+  watchdog_hw->scratch[2] = controls;
+  watchdog_hw->scratch[3] = RESET_FAULT_MAGIC ^ reason ^ controls;
+  watchdog_hw->scratch[0] = RESET_FAULT_MAGIC;
   z80_cpu_fail_closed();
   z80_reset_with_clock_cycles(3, 1);
   watchdog_reboot(0, 0, 0);
@@ -29,7 +55,7 @@ static void resume_and_wait_for_release(uint control_pin) {
   while (!gpio_get(PIN_IORQ_N) || !gpio_get(control_pin)) {
     if (time_reached(deadline)) {
       __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
-      trap_fail_closed();
+      trap_fail_closed(Z80_IO_TRAP_RESET_RELEASE_TIMEOUT, gpio_get_all());
     }
     z80_clock_one_cycle(1);
   }
@@ -50,15 +76,21 @@ static void io_trap_handler(uint gpio, uint32_t events) {
 
   z80_clock_stop();
   busy_wait_us_32(1);
-  uint8_t port = z80_port_bus_sample();
-
   uint32_t controls = gpio_get_all();
+  if (controls & (1u << PIN_IORQ_N)) {
+    // A latched edge is not an active I/O cycle once IORQ# has released.
+    __atomic_fetch_add(&inactive_irqs, 1, __ATOMIC_RELAXED);
+    __atomic_fetch_add(&control_errors, 1, __ATOMIC_RELAXED);
+    z80_clock_resume();
+    return;
+  }
   bool is_read = (controls & (1u << PIN_RD_N)) == 0;
   bool is_write = (controls & (1u << PIN_WR_N)) == 0;
   if (is_read == is_write) {
     __atomic_fetch_add(&control_errors, 1, __ATOMIC_RELAXED);
-    trap_fail_closed();
+    trap_fail_closed(Z80_IO_TRAP_RESET_INVALID_CONTROLS, controls);
   }
+  uint8_t port = z80_port_bus_sample();
 
   if (is_write) {
     z80_data_bus_prepare_input();
@@ -106,4 +138,8 @@ uint32_t z80_io_trap_timeout_count(void) {
 
 uint32_t z80_io_trap_control_error_count(void) {
   return __atomic_load_n(&control_errors, __ATOMIC_RELAXED);
+}
+
+uint32_t z80_io_trap_inactive_irq_count(void) {
+  return __atomic_load_n(&inactive_irqs, __ATOMIC_RELAXED);
 }

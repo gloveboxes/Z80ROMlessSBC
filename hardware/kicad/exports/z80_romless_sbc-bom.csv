@@ -3,7 +3,6 @@
 "C1-C7","100n","Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm","7",""
 "C8-C10","22u","Capacitor_THT:CP_Radial_D8.0mm_P3.50mm","3",""
 "C11","100u","Capacitor_THT:CP_Radial_D10.0mm_P5.00mm","1",""
-"C12","100u 10V","Capacitor_THT:CP_Radial_D10.0mm_P5.00mm","1",""
 "D1","1N5819","Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal","1",""
 "J1","REGULATED 5V INPUT","TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm","1",""
 "J2","PICO GPIO EXPANSION","Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical","1",""

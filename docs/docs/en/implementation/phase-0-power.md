@@ -22,7 +22,7 @@ External +5 V goes to the 1N5819 anode; its banded cathode goes to VSYS header
 
 **Keep external power and USB disconnected throughout installation. All IC
 sockets and the Pico socket strips remain empty.** Fit 39 individual 10 kOhm
-resistors and 12 capacitors using the steps below.
+resistors and 11 capacitors using the steps below.
 
 Tick the **Done** box beside each component as you fit it. With JavaScript
 enabled, progress is saved in this browser on this device and restored when
@@ -74,13 +74,12 @@ capacitor across the whole package to reach a distant GND pin. Use nearby GND
 with a short return path. The Pico module already has onboard decoupling;
 it is not an eighth DIP capacitor in this list.
 
-### Step 2 - Fit five bulk capacitors
+### Step 2 - Fit four bulk capacitors
 
 Bulk capacitors support the supply rails. These are **polarized**: connect
-the positive lead to the supply named in the table and the negative lead
-to GND. Identify polarity from the case markings, not just lead length.
-Use capacitors rated at least 10 V. C11 and C12 can use the same
-100 uF / 10 V electrolytic part.
+the positive lead to +5 V and the negative lead to GND. Identify polarity
+from the case markings, not just lead length. Use capacitors rated at least
+10 V.
 
 | Done | Capacitor | Where to place it | Positive lead | Negative lead |
 | --- | --- | --- | --- | --- |
@@ -88,40 +87,11 @@ Use capacitors rated at least 10 V. C11 and C12 can use the same
 | <input type="checkbox" data-checklist-id="c9" aria-label="C9 installed"> | C9, 22 uF | Core board, beside its +5 V supply feed | Core +5 V rail | Core GND rail |
 | <input type="checkbox" data-checklist-id="c10" aria-label="C10 installed"> | C10, 22 uF | Peripheral board, beside its +5 V supply feed | Peripheral **+5 V** rail, not +3.3 V | Peripheral GND rail |
 | <input type="checkbox" data-checklist-id="c11" aria-label="C11 installed"> | C11, 100 uF | Common supply entry, before the feed fans out to the three boards | External +5 V entry | Common GND entry |
-| <input type="checkbox" data-checklist-id="c12" aria-label="C12 100 uF 10 V installed across Pico VSYS and GND with correct polarity"> | C12, 100 uF, 10 V | Peripheral board, close to Pico power pins, **after D1** | VSYS header pin 39, also D1 banded cathode | GND header pin 38 |
 
-All five go **across** their supply and GND, not in series with the supply
+All four go **across** their supply and GND, not in series with the supply
 wire. They supplement the seven local ceramic capacitors, not replace them.
 The current parts list specifies no separate 3.3 V bulk capacitor; retain
 the local 100 nF capacitors at both LVC sockets.
-
-#### Pico VSYS hold-up wiring
-
-```text
-External +5 V ---- D1 1N5819 ----+---- Pico VSYS, header pin 39
-                   band faces  |
-                   VSYS        + C12, 100 uF / 10 V
-                               -
-Common GND --------------------+---- Pico GND, header pin 38
-```
-
-Keep C12's connections short and its positive lead on the **Pico side of
-D1**, not the external +5 V side. Do not connect it across the diode or to
-VBUS pin 40. The [wiring diagram](../hardware/construction.md#board-roles-and-placement)
-also shows this power connection.
-
-The builder reports that C12 substantially improves USB-disconnect behaviour
-with external 5 V maintained, but occasional Pico reboots and SRAM reloads
-remain. In these informal tests, 100 uF was about as reliable as 1000 uF.
-Use 100 uF / 10 V as the current practical default, reusing the supply-entry
-capacitor type already in the inventory; larger capacitance is not a
-demonstrated fix for the remaining resets.
-
-This is a bench observation, not a measured transient or hold-up-time
-qualification, and USB removal is not guaranteed to be reset-free. Save
-CP/M work before unplugging USB. C12 does not replace the required power
-sequence or protect against sustained external-supply loss. Further
-diagnosis requires checking VSYS, 3.3 V and reset behaviour during USB removal.
 
 ### Step 3 - Fit sixteen SRAM address pull-ups on Memory
 
@@ -302,7 +272,7 @@ These wire connections do not change the resistor or capacitor totals.
 
 | IC / component group | Permanent resistors | External capacitors | GND pins | +5 V pins | +3.3 V pins |
 | --- | ---: | --- | ---: | ---: | ---: |
-| Pico 2 W | 15: eleven pull-downs plus four pull-ups | C12, 100 uF / 10 V, VSYS to GND | 8 | 0 | 1 |
+| Pico 2 W | 15: eleven pull-downs plus four pull-ups | None | 8 | 0 | 1 |
 | U1 Z80 | Eight CPU control pull-ups | C1, 100 nF | 1 | 1 | 0 |
 | U2 SRAM | 16 address pull-ups | C2, 100 nF | 2 | 2 | 0 |
 | U3 HCT32 | None | C3, 100 nF | 3 | 1 | 0 |
@@ -312,7 +282,7 @@ These wire connections do not change the resistor or capacitor totals.
 | U10 LVC245 | None | C7, 100 nF | 2 | 0 | 1 |
 | Board bulk capacitors | None | C8-C10, three 22 uF | 0 | 0 | 0 |
 | Common supply entry | None | C11, 100 uF | 0 | 0 | 0 |
-| **Total** | **39 individual 10 kOhm resistors** | **12 capacitors** | **25** | **7** | **3** |
+| **Total** | **39 individual 10 kOhm resistors** | **11 capacitors** | **25** | **7** | **3** |
 
 The pin columns count the direct socket/header connections in Steps 7 and 8,
 including grounded or fixed-HIGH control pins. They do not count resistor
@@ -323,7 +293,7 @@ it is not a direct +5 V connection and is not included in the +5 V column.
 Resistors are counted once at their installation point: Pico pulls at the
 Pico, CPU control pulls at U1, and address pulls at U2, even though the
 signal nets also connect to other ICs. The Pico's onboard capacitors are
-not included in the 12 external capacitors.
+not included in the 11 external capacitors.
 
 Leave all permanent resistors and capacitors installed for subsequent phases.
 Temporary diagnostic pulls are added only when a later phase requests them.

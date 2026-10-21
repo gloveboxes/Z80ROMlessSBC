@@ -17,8 +17,12 @@ even during a bus grant. The detailed rules below protect that boundary.
 
 IORQ# LOW reaches HCT32 pin 4 and makes WAIT# pin 6 LOW while Pico GP9
 IO_RELEASE is LOW. The buffered falling edge interrupts core 0, which stops
-PWM. The fully static CMOS Z80 tolerates the stopped clock. Firmware samples
-A0/A1/A2/A4 and requires exactly one of RD#/WR# active before servicing data.
+PWM. The fully static CMOS Z80 tolerates the stopped clock. After settling,
+firmware first checks that IORQ# remains LOW, then requires exactly one of
+RD#/WR# active and samples A0/A1/A2/A4 before servicing data. If IORQ# is
+already HIGH, it counts an inactive interrupt and resumes PWM without
+touching the data paths or IO_RELEASE. These events remain included in
+`control_errors` so they cannot silently pass timing qualification.
 
 For OUT, U10 receives the CPU byte; for IN, U9 supplies a preloaded reply.
 Only after the path is configured does GP9 rise. Firmware completes the I/O

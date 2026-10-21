@@ -40,6 +40,10 @@ static uint64_t now;
 static unsigned service_reads;
 static unsigned service_writes;
 static unsigned usb_room;
+static unsigned disconnect_after_usb_writes;
+static bool watchdog_reset;
+static z80_io_trap_reset_fault_t retained_reset_fault;
+static uint32_t fake_inactive_irqs;
 static char output[16384];
 static size_t output_length;
 static uint8_t input[64];
@@ -109,11 +113,19 @@ int getchar_timeout_us(uint32_t timeout) {
   return input_index < input_length ? input[input_index++] : -1;
 }
 int putchar_raw(int value) {
-  assert(usb_room && output_length + 1 < sizeof(output));
+  assert(connected && usb_room && output_length + 1 < sizeof(output));
   output[output_length++] = (char)value;
   output[output_length] = '\0';
   --usb_room;
+  if (disconnect_after_usb_writes && --disconnect_after_usb_writes == 0)
+    connected = false;
   return value;
+}
+bool watchdog_caused_reboot(void) { return watchdog_reset; }
+z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
+  z80_io_trap_reset_fault_t fault = retained_reset_fault;
+  retained_reset_fault = (z80_io_trap_reset_fault_t){0};
+  return fault;
 }
 void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
   assert(pc == 0 && sp == 0 && delay == 0 && !running);
@@ -148,7 +160,8 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
 }
 void z80_io_trap_disable(void) {}
 uint32_t z80_io_trap_timeout_count(void) { return 0; }
-uint32_t z80_io_trap_control_error_count(void) { return 0; }
+uint32_t z80_io_trap_control_error_count(void) { return fake_inactive_irqs; }
+uint32_t z80_io_trap_inactive_irq_count(void) { return fake_inactive_irqs; }
 uint32_t save_and_disable_interrupts(void) {
   assert(!interrupts_disabled);
   interrupts_disabled = true;
@@ -210,6 +223,10 @@ static void reset_fixture(void) {
   command_pending = usb_was_connected = stop_requested = false;
   flush_submitted = flash_resuming = bios_announced = ccp_announced = false;
   boot_timed_out = previous_cr = false;
+  reset_was_watchdog = reset_report_pending = watchdog_reset = false;
+  reset_fault = retained_reset_fault = (z80_io_trap_reset_fault_t){0};
+  disconnect_after_usb_writes = 0;
+  fake_inactive_irqs = 0;
   boot_failure = NULL;
   diagnostic_active = false;
   boot_markers = flash_pause_request = flash_paused = 0;
@@ -257,7 +274,9 @@ static void test_control_and_terminal(void) {
   assert(virtual_read(0, NULL) == '\r');
   assert(virtual_read(0, NULL) == USB_COMMAND_ESCAPE);
   assert(!(virtual_read(1, NULL) & 1u));
+  fake_inactive_irqs = 3;
   command('s');
+  assert(strstr(output, "control_errors=3 inactive_irqs=3"));
   assert(!(virtual_read(1, NULL) & 1u));
   for (uint8_t port = 0x10; port <= 0x14; ++port) {
     assert(virtual_read(port, NULL) == 0x5A && disk_last_port == port);
@@ -325,6 +344,36 @@ static void test_usb_backpressure_and_disconnect(void) {
   service_usb();
   assert(z80_terminal_rx_drop_count() == 1);
   assert(strstr(output, "FAIL: terminal overflow"));
+}
+
+static void test_disconnect_during_output(void) {
+  reset_fixture();
+  command('l');
+  command('g');
+  usb_was_connected = true;
+  for (unsigned cycle = 0; cycle < 32; ++cycle) {
+    output_length = 0;
+    output[0] = '\0';
+    connected = true;
+    usb_room = 1024;
+    service_usb();
+    for (unsigned index = 0; index < 512; ++index)
+      virtual_write(0, 'A', NULL);
+    assert(!(virtual_read(1, NULL) & 2u));
+    size_t previous_length = output_length;
+    disconnect_after_usb_writes = cycle % 32 + 1;
+    service_usb();
+    assert(!connected);
+    assert(output_length - previous_length == cycle % 32 + 1);
+    service_usb();
+    assert(virtual_read(1, NULL) == 2u);
+    for (unsigned index = 0; index < 4096; ++index)
+      virtual_write(0, 'B', NULL);
+    assert(z80_terminal_tx_drop_count() == 0);
+    assert(running && !held && !reboots);
+    uint8_t value;
+    assert(z80_terminal_network_supply(&value, 1) == 0);
+  }
 }
 
 static void usb_input(const char *bytes) {
@@ -561,6 +610,38 @@ static void run_firmware_once(void) {
   exit_main = false;
 }
 
+static void test_reset_reporting(void) {
+  static const char *const reasons[] = {
+    "none", "release-timeout", "invalid-controls",
+  };
+  for (unsigned reason = 0; reason < 3; ++reason) {
+    reset_fixture();
+    connected = false;
+    watchdog_reset = true;
+    retained_reset_fault = (z80_io_trap_reset_fault_t){
+      .reason = (z80_io_trap_reset_reason_t)reason,
+      .gpio = reason ? 0x12345678 : 0,
+    };
+    run_firmware_once();
+    assert(retained_reset_fault.reason == Z80_IO_TRAP_RESET_NONE);
+    output_length = 0;
+    output[0] = '\0';
+    connected = true;
+    service_usb();
+    char expected[96];
+    snprintf(expected, sizeof(expected),
+             "[reset] watchdog=1 io_fault=%s gpio=%08lx\n",
+             reasons[reason], (unsigned long)(reason ? 0x12345678 : 0));
+    assert(strstr(output, expected));
+    size_t previous_length = output_length;
+    service_usb();
+    assert(output_length == previous_length);
+    command('s');
+    assert(strstr(output + previous_length, expected));
+    assert(!reboots && !reset_report_pending);
+  }
+}
+
 static void test_autoboot_progress(void) {
   if (!Z80_STAGE09_AUTOBOOT)
     return;
@@ -736,13 +817,16 @@ int main(void) {
   test_autoboot_failures();
   test_control_and_terminal();
   test_usb_backpressure_and_disconnect();
+  test_disconnect_during_output();
+  test_reset_reporting();
   test_websocket_disconnect_queues();
   test_connected_output_buffer();
   test_ansi_terminal_input();
   test_stop_and_failure();
   test_disk_diagnostic();
   puts("PASS: Phase 9 startup policy, nominal 20 MHz start, real terminal queues, "
-       "USB framing/backpressure, ANSI key mapping/Escape timing, "
+       "USB framing/backpressure/mid-output disconnect, retained reset reports, "
+       "ANSI key mapping/Escape timing, "
        "boot evidence, cancellation and safe stop");
   return 0;
 }

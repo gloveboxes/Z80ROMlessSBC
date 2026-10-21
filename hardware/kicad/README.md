@@ -14,19 +14,6 @@ the PCB and fabrication package have not been updated. All expansion signals
 are 3.3 V only, with no fixed pulls or level shifting. See the
 [expansion pin map and interface limits](../../docs/docs/en/hardware/pin-mapping.md#j2-peripheral-expansion).
 
-The current schematic also includes **C12, 100 uF / 10 V**, across Pico
-VSYS and GND after D1: positive pin 1 to D1's banded cathode / Pico header
-39, negative pin 2 to GND / Pico header 38. Fit it close to the Pico with
-short leads, using the same capacitor type as the supply-entry bulk.
-The builder reports a substantial improvement on USB removal with external
-5 V maintained, but occasional reboots remain; 1000 uF was not more reliable
-in informal testing. This is a practical default, not a qualified reset-free
-solution; transient margins are not measured. See the
-[power wiring and limitations](../../docs/docs/en/implementation/phase-0-power.md#pico-vsys-hold-up-wiring).
-The radial footprint is nominal; verify the actual capacitor's diameter
-and lead pitch before any future PCB migration. The deferred PCB and its
-historical C12 assignment remain unchanged.
-
 This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
 The Pico 2 W is horizontal in the bottom-left corner with USB flush to the

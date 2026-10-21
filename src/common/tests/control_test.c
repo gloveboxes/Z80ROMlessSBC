@@ -4,6 +4,7 @@
 #include <string.h>
 #include "hardware/clocks.h"
 #include "hardware/pwm.h"
+#include "hardware/watchdog.h"
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
@@ -31,6 +32,9 @@ static unsigned expected_io_clocks;
 static unsigned falling_edges;
 static uint clock_function;
 static unsigned reset_releases;
+static watchdog_hw_t test_watchdog;
+watchdog_hw_t *watchdog_hw = &test_watchdog;
+static bool watchdog_reset;
 void gpio_init(uint pin) { preloaded[pin] = false; }
 void gpio_put(uint pin, bool value) {
   bool previous = levels[pin];
@@ -142,8 +146,12 @@ void pwm_set_counter(uint slice, uint16_t counter) {
   assert(slice == 0 && counter == 0 && !running);
 }
 void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
-  (void)pc; (void)sp; (void)delay; ++watchdogs; longjmp(reboot_target, 1);
+  (void)pc; (void)sp; (void)delay;
+  watchdog_reset = true;
+  ++watchdogs;
+  longjmp(reboot_target, 1);
 }
+bool watchdog_caused_reboot(void) { return watchdog_reset; }
 static void fixture(void) {
   memset(levels, 1, sizeof(levels));
   memset(outputs, 0, sizeof(outputs));
@@ -154,6 +162,8 @@ static void fixture(void) {
   expected_io_clocks = 1;
   clock_function = GPIO_FUNC_SIO;
   reset_releases = 0;
+  watchdog_reset = false;
+  memset(&test_watchdog, 0, sizeof(test_watchdog));
   z80_safe_startup();
 }
 static void assert_isolated(void) {
@@ -165,7 +175,86 @@ static uint8_t read_port(uint8_t port, void *context) {
 static void write_port(uint8_t port, uint8_t value, void *context) {
   (void)value; (void)context; observed_port = port;
 }
+
+static void test_retained_reset_faults(void) {
+  for (unsigned invalid = 0; invalid < 3; ++invalid) {
+    fixture();
+    levels[PIN_IORQ_N] = false;
+    levels[PIN_RD_N] = invalid == 1;
+    levels[PIN_WR_N] = invalid != 2;
+    z80_io_trap_enable(NULL, NULL, NULL);
+    if (setjmp(reboot_target) == 0) {
+      irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+      assert(false);
+    }
+    assert(watchdogs == 1 && !levels[PIN_RESET_N] && !running);
+    assert_isolated();
+    z80_io_trap_reset_fault_t fault = z80_io_trap_take_reset_fault();
+    assert(fault.reason == (invalid == 0 ? Z80_IO_TRAP_RESET_RELEASE_TIMEOUT
+                                        : Z80_IO_TRAP_RESET_INVALID_CONTROLS));
+    assert(!(fault.gpio & (1u << PIN_IORQ_N)));
+    assert(((fault.gpio >> PIN_RD_N) & 1u) == (invalid == 1));
+    assert(((fault.gpio >> PIN_WR_N) & 1u) == (invalid != 2));
+    assert(z80_io_trap_take_reset_fault().reason == Z80_IO_TRAP_RESET_NONE);
+  }
+  for (unsigned corrupt = 0; corrupt < 2; ++corrupt) {
+    fixture();
+    levels[PIN_IORQ_N] = false;
+    z80_io_trap_enable(NULL, NULL, NULL);
+    if (setjmp(reboot_target) == 0) {
+      irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+      assert(false);
+    }
+    if (corrupt)
+      watchdog_hw->scratch[2] ^= 1u;
+    else
+      watchdog_reset = false;
+    assert(z80_io_trap_take_reset_fault().reason == Z80_IO_TRAP_RESET_NONE);
+    assert(watchdog_hw->scratch[0] == 0);
+  }
+}
+
+static void test_inactive_iorq_interrupts(void) {
+  const uint32_t snapshots[] = {
+    0x180400db,
+    0x180400db & ~(1u << PIN_RD_N),
+    0x180400db & ~(1u << PIN_WR_N),
+  };
+  for (unsigned index = 0; index < sizeof(snapshots) / sizeof(snapshots[0]);
+       ++index) {
+    fixture();
+    assert(z80_cpu_release_reset_and_run(1000000));
+    for (unsigned pin = 0; pin < 32; ++pin)
+      levels[pin] = (snapshots[index] & (1u << pin)) != 0;
+    observed_port = 0xff;
+    uint32_t previous_errors = z80_io_trap_control_error_count();
+    uint32_t previous_inactive = z80_io_trap_inactive_irq_count();
+    uint32_t previous_timeouts = z80_io_trap_timeout_count();
+    z80_io_trap_enable(read_port, write_port, NULL);
+    for (unsigned repeat = 0; repeat < 32; ++repeat) {
+      if (setjmp(reboot_target) == 0)
+        irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+      assert(!watchdogs && running && levels[PIN_RESET_N]);
+      assert(observed_port == 0xff && io_clocks == 0);
+      assert(!levels[PIN_IO_RELEASE]);
+      assert_isolated();
+    }
+    assert(z80_io_trap_control_error_count() == previous_errors + 32);
+    assert(z80_io_trap_inactive_irq_count() == previous_inactive + 32);
+    assert(z80_io_trap_timeout_count() == previous_timeouts);
+    assert(z80_io_trap_take_reset_fault().reason == Z80_IO_TRAP_RESET_NONE);
+    levels[PIN_IORQ_N] = levels[PIN_RD_N] = false;
+    levels[PIN_WR_N] = release_controls = true;
+    expected_io_clocks = 2;
+    irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+    assert(!watchdogs && running && observed_port == 1 && io_clocks == 2);
+    assert(!levels[PIN_IO_RELEASE]);
+    assert_isolated();
+  }
+}
+
 int main(void) {
+  test_inactive_iorq_interrupts();
   fixture();
   assert_isolated();
   assert(!levels[PIN_RESET_N] && levels[PIN_BOOT_READ_DISABLE]);
@@ -227,5 +316,7 @@ int main(void) {
   }
   assert(watchdogs == 1 && !levels[PIN_RESET_N] && !running);
   assert_isolated();
-  puts("PASS: turnaround, reset setup, delayed I/O release, port aliases and faults");
+  test_retained_reset_faults();
+  puts("PASS: turnaround, reset setup, delayed I/O release, port aliases, faults "
+       "inactive IORQ filtering and retained watchdog diagnostics");
 }

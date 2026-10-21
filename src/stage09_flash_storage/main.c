@@ -45,6 +45,9 @@ static bool bios_announced;
 static bool ccp_announced;
 static bool previous_cr;
 static bool boot_timed_out;
+static bool reset_was_watchdog;
+static bool reset_report_pending;
+static z80_io_trap_reset_fault_t reset_fault;
 static const char *boot_failure;
 static uint32_t boot_markers;
 static uint32_t flash_pause_request;
@@ -262,11 +265,22 @@ static void start_disk_diagnostic(void) {
          "CP/M SRAM image replaced; reboot afterward.\n");
 }
 
+static void print_reset_status(void) {
+  const char *reason = "none";
+  if (reset_fault.reason == Z80_IO_TRAP_RESET_RELEASE_TIMEOUT)
+    reason = "release-timeout";
+  else if (reset_fault.reason == Z80_IO_TRAP_RESET_INVALID_CONTROLS)
+    reason = "invalid-controls";
+  printf("[reset] watchdog=%u io_fault=%s gpio=%08lx\n",
+         reset_was_watchdog, reason, (unsigned long)reset_fault.gpio);
+}
+
 static void print_status(void) {
+  print_reset_status();
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
-         "trap_timeouts=%lu control_errors=%lu boot_error=%s "
+         "trap_timeouts=%lu control_errors=%lu inactive_irqs=%lu boot_error=%s "
          "failure=%s\n",
          running, image_verified, (unsigned long)z80_clock_get_hz(),
          bios_announced, ccp_announced,
@@ -276,6 +290,7 @@ static void print_status(void) {
          (unsigned long)z80_terminal_tx_drop_count(),
          (unsigned long)z80_io_trap_timeout_count(),
          (unsigned long)z80_io_trap_control_error_count(),
+         (unsigned long)z80_io_trap_inactive_irq_count(),
          boot_error_name(boot->error),
          boot_failure != NULL ? boot_failure : "none");
   if (boot->error != Z80_BOOT_ERROR_NONE)
@@ -388,6 +403,10 @@ static void service_usb(void) {
   if (connected && !usb_was_connected) {
     command_pending = false;
     previous_cr = false;
+    if (reset_report_pending) {
+      print_reset_status();
+      reset_report_pending = false;
+    }
     if (!Z80_STAGE09_AUTOBOOT) {
       print_help();
       print_status();
@@ -412,7 +431,8 @@ static void service_usb(void) {
     forward_terminal_byte(
         ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
   for (unsigned int count = 0;
-       count < 32 && tud_cdc_write_available() != 0; ++count) {
+       count < 32 && stdio_usb_connected() &&
+       tud_cdc_write_available() != 0; ++count) {
     uint8_t value;
     if (z80_terminal_network_supply(&value, 1) == 0)
       break;
@@ -515,6 +535,9 @@ static void service_run(void) {
 
 int main(void) {
   z80_safe_startup();
+  reset_was_watchdog = watchdog_caused_reboot();
+  reset_fault = z80_io_trap_take_reset_fault();
+  reset_report_pending = reset_was_watchdog;
   set_sys_clock_pll(1200000000, 5, 2);
   stdio_init_all();
   z80_terminal_queue_init();
