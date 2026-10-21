@@ -38,7 +38,7 @@ reference gaps retain continuity with existing project labels.
 | --- | ---: | --- | --- |
 | <input type="checkbox" data-checklist-id="ceramic-100nf" aria-label="Seven 100 nF ceramic capacitors available"> | 7 | 100 nF ceramic, at least 10 V | One per DIP IC |
 | <input type="checkbox" data-checklist-id="bulk-22uf" aria-label="Three 22 uF bulk capacitors available"> | 3 | 22 uF, at least 10 V | One +5 V bulk capacitor per board |
-| <input type="checkbox" data-checklist-id="bulk-100uf" aria-label="One 100 uF supply-entry capacitor available"> | 1 | 100 uF, at least 10 V | Supply-entry bulk |
+| <input type="checkbox" data-checklist-id="bulk-100uf" aria-label="Two 100 uF capacitors rated at least 10 V available"> | 2 | 100 uF electrolytic, at least 10 V | C11 supply-entry bulk; C12 Pico VSYS hold-up after D1, positive to header 39, negative to GND header 38 |
 | <input type="checkbox" data-checklist-id="resistors-10k" aria-label="All 39 permanent 10 kOhm resistors available"> | 39 | Individual 10 kOhm resistors | 16 address pull-ups, eight Pico data pull-downs, eight CPU control pull-ups, seven startup pulls |
 | <input type="checkbox" data-checklist-id="test-resistors-1k" aria-label="Temporary 1 kOhm test resistors available"> | Test only | 1 kOhm discrete | Manual input and first-drive current limiting |
 

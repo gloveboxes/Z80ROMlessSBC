@@ -97,7 +97,9 @@ terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
 assembles the optimized CCP/BDOS from `cpm64_z80.asm`, and emits all
 provisionable images.
 
-Install CMake, Ninja, Python 3.11 or newer, `picotool`, and `z80asm`. The firmware needs a
+Install CMake, Ninja, Python 3.11 or newer, `picotool`, `z80asm`, and
+`cpmtools` (`cpmcp` and `cpmrm` install the native AUTORUN utility into drive A).
+The firmware needs a
 complete Arm GNU bare-metal toolchain with Newlib; the Homebrew compiler alone
 does not provide the required runtime. Install the
 [Pico SDK](https://github.com/raspberrypi/pico-sdk) with its Git submodules
@@ -106,7 +108,7 @@ and toolchain paths with your local installations; the checked-in default SDK
 path is specific to the author's machine. A known working macOS setup is:
 
 ```sh
-brew install cmake ninja picotool z80asm
+brew install cmake ninja picotool z80asm cpmtools
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
 cmake -S . -B build -G Ninja \
   -DPICO_BOARD=pico2_w \
@@ -164,10 +166,16 @@ The
 | Artifact | Purpose |
 | --- | --- |
 | `z80boot.pkg` | Manifest, CRCs, and the reset-ready 64 KiB Z80 image |
-| `drive_a_cpm63k-z80.img` | Native CP/M system disk with the Z80 SBC BIOS |
+| `drive_a_cpm63k-z80.img` | Native CP/M system disk with the Z80 SBC BIOS and native AUTORUN |
+| `AUTORUN.COM` | Native auto-run configuration utility, also installed on drive A |
 | `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 320 KiB disks |
 | `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
 | `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
+
+The native utility supports cold-only, warm-only, both, and disabled boot modes.
+Its settings use drive A's final reserved system record, not a CP/M file or
+boot-code location. Freshly generated drive A images initialize auto-run
+disabled. See [native auto-run and recovery](../implementation/phase-9-flash-storage.md#native-cpm-auto-run).
 
 For the USB-only Phase 9 baseline, build this instead:
 

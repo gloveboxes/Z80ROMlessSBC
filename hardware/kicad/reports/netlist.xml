@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-10-19T20:23:53</date>
+    <date>2026-10-21T13:16:05</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -329,6 +329,29 @@
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>dadc8238-6ff4-5ec4-849a-c1f30b9887c5</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C12">
+      <value>100u 10V</value>
+      <footprint>Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</footprint>
+      <description>Pico VSYS hold-up; positive to D1 cathode / A1 pin 39, negative to A1 pin 38; fit close to Pico</description>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Pico VSYS hold-up; positive to D1 cathode / A1 pin 39, negative to A1 pin 38; fit close to Pico</field>
+      </fields>
+      <libsource lib="Z80SBC" part="CAPACITOR" description="Z80ROMlessSBC project symbol: C"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4c8b7a16-a1da-5b5c-838d-9cb0f0285799</tstamps>
       <units>
         <unit name="A">
           <pins>
@@ -1785,6 +1808,7 @@
       <node ref="C1" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C10" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C11" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="C12" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C2" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C3" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C4" pin="2" pinfunction="-_2" pintype="passive"/>
@@ -1984,6 +2008,7 @@
     </net>
     <net code="71" name="/VSYS" class="Default">
       <node ref="A1" pin="39" pinfunction="VSYS_39" pintype="power_in"/>
+      <node ref="C12" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
     </net>
     <net code="72" name="/WAIT_N" class="Default">

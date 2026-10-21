@@ -8,7 +8,7 @@ The memory map is:
 | --- | ---: | ---: |
 | CCP | `0xE700` | 2,048 bytes |
 | BDOS | `0xEF00` | 3,584 bytes |
-| BIOS | `0xFD00` | 718 bytes currently |
+| BIOS | `0xFD00` | 767 bytes currently |
 
 The checked-in `cpm64_system.bin` was captured from RAM after the matching
 Burcon `MOVCPM 64` and `SYSGEN` utilities produced and booted a 64K system. It
@@ -71,8 +71,7 @@ from `C` into `A` and stashed in memory before the `EXX`, since it is a real
 input parameter (not just a value to preserve) and `A` does not survive the
 following `prepare_disk_io` call. This trades 4 extra BIOS bytes (`write_record`
 now stashes its command byte through memory) for roughly half the T-states of
-the previous `PUSH`/`POP` sequence on every disk operation; the BIOS has ample
-headroom below Burcon's `0x0700` reservation.
+the previous `PUSH`/`POP` sequence on every disk operation.
 The BIOS uses an identity `SECTRAN` because disk conversion has already removed
 the Altair skew. It forwards CP/M's standard write type to the Pico so normal
 writes can be coalesced in a 4 KiB cache, while directory writes and warm boot
@@ -99,9 +98,63 @@ The boot packer rejects incomplete images and a reset vector other than
 `build/cpm-stage09/`; `z80_cpm_images` retains Stage 10 in `build/cpm/`.
 Use a matching boot package and Drive A system image after BIOS changes.
 
+## Native auto-run
+
+The builder requires Python 3.10+, `z80asm`, and `cpmtools` (`cpmcp` and
+`cpmrm`). It produces `AUTORUN.COM` and replaces the old Altair utility in
+user 0 on the generated native drive A. Other files and drives are preserved.
+Provision a **matching boot package and native drive A** to install this
+feature; copying the utility alone does not upgrade the BIOS. No changes to
+the Pico disk protocol or flash layout are required.
+
+Run `AUTORUN` at the CP/M prompt. Choose cold boot only, warm boot only,
+both, or disabled. RETURN keeps the current mode or command; `Q` at the
+mode prompt quits without writing. Commands are printable ASCII, at most
+80 characters, and saved in uppercase. For example, select `1`, then enter
+`C:DATE`. A cold-only command does not repeat when a transient invokes warm
+boot. Warm-only and both modes intentionally run on every actual BIOS warm
+boot, not merely every return to the CCP prompt.
+
+When an enabled command applies to a boot, **a pending console key bypasses
+that invocation**; the BIOS consumes the key. This also lets an operator
+escape a repeating warm-boot command and run `AUTORUN` to disable it.
+Disabled or inapplicable auto-run does not consume console input.
+
+Configuration is stored only on drive A, at zero-based track 1, sector 31
+(LBA 63, image offset `0x1F80`), the final 128-byte record of the two reserved
+system tracks. It is outside the CCP/BDOS/BIOS image and the filesystem:
+
+| Byte offset | Meaning |
+| --- | --- |
+| 0-3 | ASCII `ZAR1` (format version 1) |
+| 4 | Mode: 0 disabled, 1 cold, 2 warm, 3 both |
+| 5 | Command length, 0-80; enabled commands must be nonempty |
+| 6-85 | Command bytes; the length determines which bytes are used |
+| 86-126 | Reserved |
+| 127 | Additive checksum: the sum of all 128 bytes modulo 256 is zero |
+
+Freshly built drive A images initialize auto-run to disabled. Replacing the
+whole drive A image therefore resets its configuration. The utility writes
+with BIOS `C=1` to force a journaled flush, then reads back and compares the
+entire record before reporting success. It refuses a BIOS without the
+native signature at `FD33h`. Read, write, and verification failures are
+reported explicitly. The BIOS reports `AUTORUN config error` and continues
+to the prompt on a read failure or invalid header, checksum, mode, or length;
+an erased record beginning with `E5h` is treated as unconfigured.
+
+The BIOS clears the CCP command length on every boot, copies only an
+applicable command, appends NUL, and enters the CCP cold vector to retain
+that prepared line. Its 128-byte directory buffer occupies the optimized
+BDOS padding at `FC80h-FCFFh`, leaving the TPA unchanged. Generation and image
+packing guard this workspace against overlap; unoptimized reference images
+remain available for byte-identical assembly tests, not native BIOS boot.
+
+## Execution tests
+
 The independent core used by the SRAM soak can also execute the actual BIOS,
-all-drive directory reads, transient exit/warm boot and the read-only Z80
-disk diagnostic:
+all-drive directory reads, transient exit/warm boot, native AUTORUN menu and
+writes, all four auto-run modes, keyboard bypass, error paths, and the
+read-only Z80 disk diagnostic:
 
 ```sh
 build/math-soak-emulator/bin/python src/common/tests/cpm_boot_z80_test.py

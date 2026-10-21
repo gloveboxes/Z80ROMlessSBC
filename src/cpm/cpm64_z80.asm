@@ -3566,4 +3566,7 @@ A_F8EC:
         db 0x00
         db 0x00
 
+; The final 128 bytes are reserved for the native BIOS directory buffer.
+        defs 0xfc80-$,0
+
         defs 0xfd00-$,0

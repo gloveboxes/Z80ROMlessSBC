@@ -87,19 +87,98 @@ class BuildImagesTest(unittest.TestCase):
                     build_images.build_boot_package(bytes(size))
         with self.assertRaisesRegex(ValueError, "reset vector"):
             build_images.build_boot_package(bytes(65536))
+        system = bytearray(self.z80_system)
+        system[-1] = 1
+        with self.assertRaisesRegex(ValueError, "reserved BDOS padding"):
+            build_images.build_z80_image(bytes(system), self.bios)
 
     def test_native_drive_only_replaces_system_tracks(self) -> None:
         system = self.z80_system + self.bios
         self.assertEqual(self.native_drive[: len(system)], system)
         self.assertEqual(
-            self.native_drive[len(system) : build_images.SYSTEM_BYTES],
-            bytes([0xE5]) * (build_images.SYSTEM_BYTES - len(system)),
+            self.native_drive[len(system) : build_images.AUTORUN_OFFSET],
+            bytes([0xE5]) * (build_images.AUTORUN_OFFSET - len(system)),
+        )
+        self.assertEqual(
+            self.native_drive[build_images.AUTORUN_OFFSET : build_images.SYSTEM_BYTES],
+            build_images.autorun_record(),
         )
         self.assertEqual(
             self.native_drive[build_images.SYSTEM_BYTES :],
             self.generated_drive[build_images.SYSTEM_BYTES :],
         )
         self.assertEqual(len(self.native_drive), build_images.DISK_IMAGE_BYTES)
+
+    def test_autorun_record_abi(self) -> None:
+        self.assertEqual(build_images.AUTORUN_RECORD, 63)
+        self.assertEqual(build_images.AUTORUN_OFFSET, 0x1F80)
+        for mode in range(4):
+            record = build_images.autorun_record(mode, "c:date")
+            self.assertEqual(len(record), 128)
+            self.assertEqual(record[:12], b"ZAR1" + bytes((mode, 6)) + b"C:DATE")
+            self.assertEqual(sum(record) & 0xFF, 0)
+        self.assertEqual(build_images.autorun_record(1, "x" * 80)[5], 80)
+        for mode, command in ((-1, ""), (4, ""), (1, ""), (1, "x" * 81), (1, "\r")):
+            with self.subTest(mode=mode, command=command):
+                with self.assertRaises(ValueError):
+                    build_images.autorun_record(mode, command)
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            build_images.build_native_drive(
+                self.generated_drive, self.z80_system, bytes(2561)
+            )
+
+    def test_autorun_installation_preserves_other_files(self) -> None:
+        cpmcp = shutil.which("cpmcp")
+        assembler = shutil.which("z80asm")
+        if cpmcp is None or assembler is None:
+            self.skipTest("cpmtools and z80asm are required")
+        utility = build_images.build_autorun(assembler)
+        installed = build_images.install_autorun(self.native_drive, utility, cpmcp)
+        self.assertEqual(installed[:build_images.SYSTEM_BYTES],
+                         self.native_drive[:build_images.SYSTEM_BYTES])
+        self.assertEqual(len(installed), build_images.DISK_IMAGE_BYTES)
+        directory = installed[
+            build_images.SYSTEM_BYTES:build_images.SYSTEM_BYTES + 2048
+        ]
+        entries = [directory[offset:offset + 32] for offset in range(0, 2048, 32)]
+        program_entries = [
+            entry for entry in entries
+            if entry[0] == 0 and entry[1:12] == b"AUTORUN COM"
+        ]
+        self.assertEqual(len(program_entries), 1)
+        entry = program_entries[0]
+        self.assertEqual(entry[12], 0)
+        self.assertEqual(entry[14], 0)
+        self.assertEqual(entry[15], (len(utility) + 127) // 128)
+        program = b"".join(
+            installed[build_images.SYSTEM_BYTES + block * 2048:
+                      build_images.SYSTEM_BYTES + (block + 1) * 2048]
+            for block in entry[16:24] if block
+        )
+        self.assertEqual(program[:len(utility)], utility)
+
+        def files(disk: bytes) -> dict[tuple[int, bytes, int, int], bytes]:
+            result = {}
+            for offset in range(build_images.SYSTEM_BYTES,
+                                build_images.SYSTEM_BYTES + 2048, 32):
+                entry = disk[offset:offset + 32]
+                if entry[0] == 0xE5:
+                    continue
+                name = bytes(value & 0x7F for value in entry[1:12])
+                if entry[0] == 0 and name == b"AUTORUN COM":
+                    continue
+                data = b"".join(
+                    disk[build_images.SYSTEM_BYTES + block * 2048:
+                         build_images.SYSTEM_BYTES + (block + 1) * 2048]
+                    for block in entry[16:24] if block
+                )
+                result[(entry[0], name, entry[12], entry[14])] = entry + data
+            return result
+
+        self.assertEqual(files(installed), files(self.native_drive))
+        self.assertEqual(
+            build_images.install_autorun(installed, utility, cpmcp), installed
+        )
 
     def test_cpm_and_disk_geometry(self) -> None:
         self.assertEqual(
@@ -139,6 +218,11 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(
             self.bios[0 : jump_table_entries * 3 : 3],
             bytes([0xC3]) * jump_table_entries,
+        )
+        self.assertEqual(self.bios[51:55], b"ZAR1")
+        self.assertEqual(
+            self.z80_system[build_images.BIOS_DIRECTORY_BUFFER - build_images.CCP_BASE:],
+            bytes(128),
         )
 
         def jump_target(entry: int) -> int:

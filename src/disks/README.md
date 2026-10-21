@@ -42,10 +42,13 @@ every 128-byte record, and pads the three additional tracks with `0xE5`. It
 also writes `generated/manifest.json` with source and output SHA-256 values.
 The plain generated Drive A is an intermediate image: its system tracks still
 contain Altair-specific content, while its directory and file records from
-track 2 onward are final.
+track 2 onward retain the original files, including the Altair-only AUTORUN.
 
 Run the CP/M image builder to replace those two system tracks with sequential
-CCP/BDOS records and the board-native BIOS:
+CCP/BDOS records, the board-native BIOS, and a disabled native auto-run
+configuration record. The builder also replaces user 0's `AUTORUN.COM`
+with the native utility; it requires Python 3.10+, `z80asm`, and `cpmtools`
+(`cpmcp` and `cpmrm`):
 
 ```sh
 python3 src/cpm/build_images.py --output-dir build/cpm
@@ -60,6 +63,14 @@ python3 src/cpm/build_images.py \
   --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin \
   --output-dir build/cpm
 ```
+
+Native auto-run settings occupy only drive A's final reserved system record
+(LBA 63, image offset `0x1F80`), outside the filesystem and boot code.
+Replacing the whole drive A image resets these settings to disabled.
+Install its matching boot package as well when upgrading the BIOS; the old
+Altair utility is not compatible with the native disk layout. See
+[native auto-run](../cpm/README.md#native-auto-run) for the menu, record
+format, and boot-time recovery bypass.
 
 ## Selective flashing without backups
 

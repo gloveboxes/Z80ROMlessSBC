@@ -46,6 +46,7 @@ reader_input_entry:
                 jp write_record
                 jp list_status
                 jp translate_sector
+                db "ZAR1"
 
 cold_boot:
                 ld a,0b0h
@@ -57,11 +58,14 @@ cold_boot:
 cold_boot_message:
                 ld a,(hl)
                 or a
-                jr z,enter_cpm
+                jr z,cold_boot_ready
                 ld c,a
                 call console_output
                 inc hl
                 jr cold_boot_message
+cold_boot_ready:
+                ld a,1
+                jr enter_cpm
 
 warm_boot:
                 ld sp,0080h
@@ -97,8 +101,10 @@ warm_boot_loop:
 warm_boot_next:
                 ld (disk_sector),hl
                 djnz warm_boot_loop
+                ld a,2
 
 enter_cpm:
+                push af
                 ld a,0c3h
                 ld (0000h),a
                 ld (0005h),a
@@ -106,13 +112,93 @@ enter_cpm:
                 ld (0001h),hl
                 ld hl,BDOS_ENTRY
                 ld (0006h),hl
+                pop af
+                call load_autorun
                 ld hl,0080h
                 ld (dma_address),hl
                 ld a,(0004h)
                 ld c,a
                 ld a,0c0h
                 out (BOOT_REPORT),a
-                jp CCP_BASE+3
+                jp CCP_BASE
+
+load_autorun:
+                ld e,a
+                xor a
+                ld (CCP_BASE+7),a
+                ld (disk_drive),a
+autorun_read:
+                ld hl,AUTORUN_TRACK
+                ld (disk_track),hl
+                ld hl,AUTORUN_SECTOR
+                ld (disk_sector),hl
+                ld hl,directory_buffer
+                ld (dma_address),hl
+                call read_record
+                or a
+                jr nz,autorun_error
+                ld a,(directory_buffer)
+                cp 0e5h
+                ret z
+                ld hl,directory_buffer
+                ld b,128
+                xor a
+autorun_checksum:
+                add a,(hl)
+                inc hl
+                djnz autorun_checksum
+                or a
+                jr nz,autorun_error
+                ld hl,(directory_buffer)
+                ld bc,AUTORUN_MAGIC_LOW
+                or a
+                sbc hl,bc
+                jr nz,autorun_error
+                ld hl,(directory_buffer+2)
+                ld bc,AUTORUN_MAGIC_HIGH
+                or a
+                sbc hl,bc
+                jr nz,autorun_error
+                ld a,(directory_buffer+4)
+                cp 4
+                jr nc,autorun_error
+                ld c,a
+                ld a,(directory_buffer+5)
+                cp AUTORUN_MAX_COMMAND+1
+                jr nc,autorun_error
+                ld a,c
+                and e
+                ret z
+                call console_status
+                or a
+                jr z,autorun_command
+                call console_input
+                ret
+autorun_command:
+                ld a,(directory_buffer+5)
+                or a
+                jr z,autorun_error
+                ld (CCP_BASE+7),a
+                ld c,a
+                ld b,0
+                ld hl,directory_buffer+6
+                ld de,CCP_BASE+8
+                ldir
+                ld a,b
+                ld (de),a
+                ret
+autorun_error:
+                ld hl,autorun_message
+autorun_error_loop:
+                ld a,(hl)
+                or a
+                ret z
+                ld c,a
+                call console_output
+                inc hl
+                jr autorun_error_loop
+autorun_message:
+                db 13,10,"AUTORUN config error",13,10,0
 
 console_status:
                 in a,(TERM_STATUS)
@@ -308,8 +394,7 @@ dma_address:
 write_command:
                 db 0
 
-directory_buffer:
-                defs 128
+directory_buffer: equ BIOS_DIRECTORY_BUFFER
 allocation_0:
                 defs 20
 allocation_1:

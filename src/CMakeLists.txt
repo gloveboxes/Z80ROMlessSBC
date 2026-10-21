@@ -104,6 +104,7 @@ if(Z80ASM_EXECUTABLE)
     OUTPUT ${cpm_output_dir}/manifest.json
     BYPRODUCTS
       ${cpm_output_dir}/bios.bin
+      ${cpm_output_dir}/AUTORUN.COM
       ${cpm_output_dir}/z80boot.img
       ${cpm_output_dir}/z80boot.pkg
       ${cpm_output_dir}/drive_a_cpm63k-z80.img
@@ -120,6 +121,7 @@ if(Z80ASM_EXECUTABLE)
     DEPENDS
       ${firmware}
       cpm/z80_bios.asm
+      cpm/autorun.asm
       cpm/cpm64_z80.asm
       cpm/build_images.py
       cpm/cpm64_system.bin

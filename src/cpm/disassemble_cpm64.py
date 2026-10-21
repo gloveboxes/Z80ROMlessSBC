@@ -563,6 +563,12 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
                 text = text.replace("jp ", "jr ", 1)
         lines.append(f"        {text}")
         address += instruction.size
+    if optimize and relocate and deep_optimize:
+        lines.extend((
+            "",
+            "; The final 128 bytes are reserved for the native BIOS directory buffer.",
+            f"        defs 0x{output_bios_base - 128:04x}-$,0",
+        ))
     lines.extend(("", f"        defs 0x{output_bios_base:04x}-$,0"))
     return "\n".join(lines) + "\n"
 

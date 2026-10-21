@@ -421,6 +421,47 @@ holding BUSACK# from before the flash operation until dirty state is cleared.
 No erase, program, blocking queue, or flash-safe call runs inside
 `io_trap_handler()`.
 
+### Native CP/M auto-run
+
+The native image builder assembles
+[`autorun.asm`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/autorun.asm)
+and replaces the Altair-only `AUTORUN.COM` in user 0 of generated drive A.
+Building images requires Python 3.10+, `z80asm`, and `cpmtools` (`cpmcp` and
+`cpmrm`). Install a matching boot package and native drive A image for this
+feature; a utility-only copy does not update the BIOS.
+
+Run `AUTORUN`, choose `1` for cold-only, `2` for warm-only, `3` for both, or
+`4` to disable, and enter a printable command of up to 80 characters, such
+as `C:DATE`. RETURN keeps the current value; `Q` at the option prompt quits
+without saving. The configuration always belongs to drive A, even if the
+utility is invoked from another drive.
+
+Settings occupy only drive A's last reserved system record: zero-based
+track 1, sector 31, LBA 63, image offset `0x1F80`. The 128-byte `ZAR1` record
+contains a boot-mode byte, command length/text, and additive checksum. It
+does not overlap boot code or CP/M files. Freshly generated drive A images
+initialize it disabled, so whole-image replacement resets the setting.
+The utility requests a directory-type BIOS write (`C=1`) for journaled
+durability and verifies all 128 bytes by reading them back before reporting
+success. The BIOS validates the record on cold and warm boot, reports
+configuration errors rather than executing invalid data, and copies an
+applicable command into the CCP input buffer. Cold-only commands do not
+repeat after a transient warm-boots. Warm modes intentionally execute on
+every actual BIOS warm boot.
+
+**Recovery:** a pending console key bypasses an applicable auto-run command
+for that boot. The key is consumed; after reaching the prompt, run
+`AUTORUN` and select `4` to disable a repeating command. Disabled and
+inapplicable modes leave pending console input alone.
+
+The directory buffer uses the optimized BDOS padding at `FC80h-FCFFh`;
+the builder guards against overlap, and the TPA remains unchanged. The
+independent host-core tests execute the real utility and BIOS, exercise all
+four modes and the recovery bypass, inject read/write/verification errors,
+and compare all disk bytes to prove that configuration changes touch only
+the reserved record. These are emulator checks, not physical flash or
+20 MHz timing qualification.
+
 **Test plan:**
 
 1. <input type="checkbox" data-checklist-id="phase8-regression" aria-label="Phase 8 IN and OUT regression tests passed unchanged"> With the Z80 socket populated and the

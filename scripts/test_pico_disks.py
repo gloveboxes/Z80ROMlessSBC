@@ -41,6 +41,10 @@ class DiskFlashTests(unittest.TestCase):
 
     def boot_package(self) -> tuple[bytes, bytes]:
         system = bytes(index & 255 for index in range(flash.cpm_images.CPM_SYSTEM_BYTES))
+        system = (
+            system[:flash.cpm_images.BIOS_DIRECTORY_BUFFER - flash.cpm_images.CCP_BASE]
+            + bytes(128)
+        )
         bios = b"\xc3\x00\xfd"
         memory = flash.cpm_images.build_z80_image(system, bios)
         package = flash.cpm_images.build_boot_package(memory)

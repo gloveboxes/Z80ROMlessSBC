@@ -204,9 +204,9 @@ function legendLine(x, y, kind, label) {
 }
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${VIEW_WIDTH}" height="1110" viewBox="0 0 ${VIEW_WIDTH} 1110" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="${VIEW_WIDTH}" height="1420" viewBox="0 0 ${VIEW_WIDTH} 1420" role="img" aria-labelledby="title description">
   <title id="title">Three side-by-side BB830 breadboards with chip placement and grouped connections</title>
-  <desc id="description">Memory, Core, and Peripheral breadboards share aligned row numbers. Colored lines show grouped package-level signal relationships; power and ground are omitted.</desc>
+  <desc id="description">Memory, Core, and Peripheral breadboards share aligned row numbers. Colored lines show grouped package-level signal relationships. The power inset shows C12, 100 uF 10 V, positive to Pico VSYS header 39 after diode D1, negative to GND header 38.</desc>
   <style>
     text { font-family: Avenir Next, Helvetica Neue, sans-serif; fill: #111827; }
     .title { font-size: 25px; font-weight: 700; text-anchor: middle; }
@@ -233,9 +233,12 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     .legend-text { font-size: 13px; }
     .note { font-size: 12px; text-anchor: middle; fill: #4b5563; }
     .direct-label { font-size: 12px; font-weight: 650; text-anchor: middle; fill: #b45309; }
+    .power-wire { fill: none; stroke: #b91c1c; stroke-width: 3; }
+    .ground-wire { fill: none; stroke: #111827; stroke-width: 3; }
+    .power-label { font-size: 14px; font-weight: 650; }
   </style>
 
-  <rect width="${VIEW_WIDTH}" height="1110" fill="#fafafa"/>
+  <rect width="${VIEW_WIDTH}" height="1420" fill="#fafafa"/>
   <text x="${VIEW_WIDTH / 2}" y="38" class="title">BB830 physical placement and grouped chip connections</text>
   <text x="${VIEW_WIDTH / 2}" y="64" class="subtitle">Boards are side by side with long edges parallel; equal terminal-row numbers align laterally</text>
   <text x="${VIEW_WIDTH / 2}" y="91" class="direct-label">Z80 alone drives SRAM addresses and writes; HCT32 gates boot reads, WAIT and Pico data output</text>
@@ -250,8 +253,32 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     ${legendLine(790, 1012, "clock", "Path containing CLK")}
   </g>
   <text x="${VIEW_WIDTH / 2}" y="1048" class="note">One line represents a signal group. Blue paths are shared trunks; intermediate chips are taps, not series logic.</text>
-  <text x="${VIEW_WIDTH / 2}" y="1071" class="note">Power, ground, pull resistors, and decoupling are intentionally omitted.</text>
+  <text x="${VIEW_WIDTH / 2}" y="1071" class="note">Placement omits power and passives; the inset below shows the Pico VSYS hold-up wiring.</text>
   <text x="${VIEW_WIDTH / 2}" y="1094" class="note">Yellow dot = pin 1. Curved edge = DIP notch. Pico USB and all notch directions must match the mounting table.</text>
+
+  <g id="pico-vsys-power">
+    <rect x="50" y="1120" width="960" height="280" rx="8" fill="white" stroke="#9ca3af"/>
+    <text x="${VIEW_WIDTH / 2}" y="1148" class="board-title">Pico power inset - fit C12 close to the Pico</text>
+    <rect x="780" y="1170" width="210" height="180" rx="5" fill="#91cf35" class="chip"/>
+    <text x="885" y="1238" class="board-title">Pico 2 W</text>
+    <text x="90" y="1185" class="power-label">External +5 V</text>
+    <path d="M 90 1205 H 300 M 325 1205 H 780 M 560 1205 V 1240" class="power-wire"/>
+    <path d="M 300 1193 L 320 1205 L 300 1217 Z M 325 1193 V 1217" class="power-wire"/>
+    <text x="265" y="1180" class="power-label">D1 1N5819</text>
+    <text x="365" y="1190" class="power-label">Banded cathode / VSYS</text>
+    <circle cx="560" cy="1205" r="4" fill="#b91c1c"/>
+    <path d="M 540 1240 H 580 M 540 1250 H 580" class="ground-wire"/>
+    <text x="535" y="1233" class="power-label">+</text>
+    <text x="535" y="1270" class="power-label">-</text>
+    <text x="600" y="1245" class="power-label">C12</text>
+    <text x="600" y="1266" class="power-label">100 uF / 10 V</text>
+    <path d="M 560 1250 V 1320 M 90 1320 H 780" class="ground-wire"/>
+    <circle cx="560" cy="1320" r="4" fill="#111827"/>
+    <text x="90" y="1300" class="power-label">Common GND</text>
+    <text x="795" y="1209" class="power-label">VSYS - pin 39</text>
+    <text x="795" y="1324" class="power-label">GND - pin 38</text>
+    <text x="${VIEW_WIDTH / 2}" y="1378" class="note">C12 is after D1, not across it. Leave VBUS pin 40 open. Keep external +5 V applied when removing USB.</text>
+  </g>
 </svg>
 `;
 
