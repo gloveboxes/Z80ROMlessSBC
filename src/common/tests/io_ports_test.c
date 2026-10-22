@@ -4,6 +4,7 @@
 
 #include "../io_service.h"
 #include "../weather.h"
+#include "../chat.h"
 #include "hardware/flash.h"
 #include "z80sbc/environment.h"
 #include "z80sbc/flash_layout.h"
@@ -465,6 +466,116 @@ static void test_led(void) {
   led_available = true;
 }
 
+static unsigned chat_starts, chat_cancels;
+static bool start_chat(const z80_chat_endpoint_t *endpoint, const char *json,
+                        size_t length) {
+  assert(!endpoint->https && endpoint->port == 11434);
+  assert(strcmp(endpoint->host, "192.168.1.26") == 0);
+  assert(strcmp(endpoint->path, "/v1/chat/completions") == 0);
+  assert(!endpoint->key[0]);
+  assert(length == 2 && memcmp(json, "{}", 2) == 0);
+  ++chat_starts;
+  return true;
+}
+static void cancel_chat(void) { ++chat_cancels; }
+
+static void test_chat_port_abi(void) {
+  cli("CHAT_PROVIDER=compatible", IO_SERVICE_RESPONSE_READY);
+  cli("CHAT_ENDPOINT=http://192.168.1.26:11434/v1/chat/completions",
+      IO_SERVICE_RESPONSE_READY);
+  cli("-I CHAT_OPENAI_KEY=dummy-never-forwarded", IO_SERVICE_RESPONSE_READY);
+  z80_chat_init(start_chat, cancel_chat);
+  z80_chat_network_poll(true, 1);
+  uint8_t operation[] = {0, 0, 1};
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  operation[0] = 2;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  assert(chat_cancels == 2);
+  uint8_t append[] = {1, '{', '}'};
+  call(IO_SERVICE_CHAT, append, sizeof(append), IO_SERVICE_COMPLETE);
+  operation[0] = 3;
+  send(IO_SERVICE_CHAT, operation, 1);
+  assert(chat_starts == 0 && z80_io_port_in(2) == IO_SERVICE_BUSY);
+  assert(finish() == IO_SERVICE_COMPLETE && chat_starts == 1);
+  operation[0] = 4;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == Z80_CHAT_WAITING);
+  operation[0] = 3;
+  error(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_BUSY_ERROR);
+  error(IO_SERVICE_CHAT, append, sizeof(append), IO_SERVICE_BUSY_ERROR);
+  z80_io_port_out(IO_TIMER_PORT, 0x10);
+  z80_io_port_out(IO_TIMER_PORT, 50);
+  z80_io_port_out(IO_TIMER_PORT, 0);
+  z80_io_port_out(IO_TIMER_PORT, 0x20);
+  assert(z80_io_port_in(IO_TIMER_PORT) == 1);
+  static const char wire[] =
+      "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\r\n"
+      "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\\nworld\"}}]}\n\n"
+      "data: [DONE]\n\n";
+  size_t consumed = z80_chat_receive((const uint8_t *)wire, sizeof(wire) - 1);
+  assert(consumed < sizeof(wire) && !z80_chat_active());
+  operation[0] = 4;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply[0] == Z80_CHAT_DATA_READY);
+  operation[0] = 5;
+  call(IO_SERVICE_CHAT, operation, 3, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 14 && reply[0] == Z80_CHAT_EOF &&
+         reply[1] == 11 && reply[2] == 0 && memcmp(reply + 3, "Hello\nworld", 11) == 0);
+  operation[1] = 0xfd;
+  operation[2] = 7;
+  call(IO_SERVICE_CHAT, operation, 3, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 3 && reply[0] == Z80_CHAT_EOF && reply[1] == 0);
+  operation[1] = 0xfe;
+  error(IO_SERVICE_CHAT, operation, 3, IO_SERVICE_INVALID_PARAMETER);
+  operation[1] = operation[2] = 0;
+  error(IO_SERVICE_CHAT, operation, 3, IO_SERVICE_INVALID_PARAMETER);
+  operation[1] = operation[2] = 255;
+  error(IO_SERVICE_CHAT, operation, 3, IO_SERVICE_INVALID_PARAMETER);
+  error(IO_SERVICE_CHAT, operation, 2, IO_SERVICE_INVALID_LENGTH);
+  operation[0] = 6;
+  error(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_UNKNOWN_OPERATION);
+  operation[0] = 2;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  operation[0] = 0;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  operation[0] = 3;
+  error(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_INVALID_STATE);
+  append[1] = 0;
+  error(IO_SERVICE_CHAT, append, sizeof(append), IO_SERVICE_INVALID_PARAMETER);
+  uint8_t block[2048];
+  memset(block, 'a', sizeof(block));
+  block[0] = 1;
+  for (unsigned i = 0; i < 4; ++i)
+    call(IO_SERVICE_CHAT, block, sizeof(block), IO_SERVICE_COMPLETE);
+  call(IO_SERVICE_CHAT, block, 4, IO_SERVICE_COMPLETE);
+  error(IO_SERVICE_CHAT, block, 2, IO_SERVICE_CAPACITY);
+  operation[0] = 0;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+
+  /* RESET invalidates a mailbox reply, not the service's side effects. */
+  send(IO_SERVICE_CHAT, (const uint8_t[]){1, '{', '}'}, 3);
+  reset();
+  assert(finish() == IO_SERVICE_READY);
+  operation[0] = 3;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  assert(chat_starts == 2);
+  operation[0] = 0;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  assert(!z80_chat_active());
+  operation[0] = 2;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  assert(!z80_chat_active());
+  operation[0] = 4;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply[0] == Z80_CHAT_EOF);
+  call(IO_SERVICE_CHAT, (const uint8_t[]){1, '{', '}'}, 3, IO_SERVICE_COMPLETE);
+  operation[0] = 3;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+  assert(chat_starts == 3 && z80_chat_active());
+  operation[0] = 2;
+  call(IO_SERVICE_CHAT, operation, 1, IO_SERVICE_COMPLETE);
+}
+
 int main(void) {
   memset(test_flash, 0xff, sizeof(test_flash));
   z80_io_ports_init();
@@ -495,5 +606,6 @@ int main(void) {
   assert(!z80_io_ports_reboot_requested());
   test_power_loss();
   test_weather_port_abi();
+  test_chat_port_abi();
   puts("ROMLESS-SVC/1 transport, timers, ENV and power-loss tests passed");
 }

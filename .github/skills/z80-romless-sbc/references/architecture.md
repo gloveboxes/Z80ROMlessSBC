@@ -114,3 +114,106 @@ construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
 - Phase 10 weather uses asynchronous verified HTTPS on core1, with an explicit
   8 KiB main-RAM core1 stack. Do not enlarge the default scratch-RAM stack
   beyond its region or move TLS, ENV access, or weather parsing into the Z80 trap.
+
+## Core and Module Responsibilities
+
+These are the current ownership contracts, not an invitation to move work
+between cores. A change of owner or network architecture requires an explicit
+design decision and validation of every affected caller.
+
+| Owner | Responsibilities | Boundary |
+| --- | --- | --- |
+| Core 0 | Z80 bus GPIO, PWM/stepped clocks, assisted SRAM loading, trap/IRQ completion, USB terminal/supervisor handling, flash-quiescence participation | No Wi-Fi, sockets, TLS/JSON, or runtime flash programming in the trap |
+| Core 1 | CYW43/lwIP, Wi-Fi lifecycle, HTTP/WebSocket, asynchronous weather/time services, ENV, runtime disk/service flash writes | No direct takeover of Z80 bus pins; request quiescence through the existing handshake |
+| Shared console router | Bounded RX/TX storage and exclusive USB/browser console ownership | Transport-neutral API; no Wi-Fi lifecycle or socket ownership |
+| Service orchestration | Service ordering, connectivity-generation propagation, and bounded scheduling | Disk first, then network progress; do not merge independent service state machines |
+
+Follow maintained sources rather than creating parallel transport abstractions:
+
+- `src/stage10_websocket_terminal/network_runtime.cpp` owns connectivity,
+  retry/SNTP state and address/generation publication. It must not depend on
+  terminal session state or consume console bytes.
+- `src/stage10_websocket_terminal/web_terminal.cpp` owns HTTP/WebSocket,
+  protocol sequencing, heartbeat, consumption ACKs and session teardown.
+  It consumes published network state, not Wi-Fi configuration internals.
+- `src/stage10_websocket_terminal/network_services.c` orchestrates independent
+  services. Weather/TLS must not become terminal or trap dependencies.
+- `src/common/terminal_queue.c` owns console rings and atomic ownership handover.
+  USB ingestion and supervisor commands remain in the shared Stage 9 application.
+  Never mix ordinary USB keystrokes into the browser-owned CP/M stream, leak stale
+  queued bytes across handover, or replay unconfirmed input after reconnect.
+- Keep Z80 port/trap handlers as bounded adapters to buffers and worker requests.
+  Do not perform slow service transactions synchronously in those handlers.
+
+### Shared State and Callback Lifetime
+
+- Use the existing SDK critical sections, queues or appropriately ordered atomics.
+  `volatile` is not a cross-core publication mechanism, and disabling interrupts
+  on one core does not exclude the other.
+- Keep shared-lock operations short and bounded; avoid nested queue locks and
+  per-byte lock churn. Do not hold console/storage locks across network calls,
+  flash operations, blocking USB output or waits for another core. Define lock
+  ordering before adding any second lock.
+- Keep trap/IRQ handling allocation-free and deterministic. Defer diagnostics,
+  formatting and retries to normal service context; do not remove the required
+  busy-wait settling guards as a latency optimisation.
+- All CYW43/lwIP operations must follow the selected SDK architecture's context,
+  affinity and locking requirements. In this project they run on core 1 with
+  `pico_cyw43_arch_lwip_poll`; do not add a second poll owner or move them into
+  core-0 IRQs. CYW43-managed resources must also use the driver-safe context.
+- Raw lwIP callbacks must not block or destroy an object still being parsed or
+  dispatched. Defer abort/removal to a safe boundary, detach callbacks before
+  releasing resources, and follow lwIP's `ERR_ABRT` contract when aborting from
+  a raw callback. An error callback may run after the PCB is already freed.
+- Invalidate stale DNS, reconnect, timer and browser-consumption callbacks with
+  existing generation/session tokens. Teardown must reclaim connection slots
+  once, without allowing an old callback to reset a new session.
+
+## Performance and Pico SDK Practices
+
+- Prefer bounded work and explicit ownership over speculative concurrency.
+  Use nonblocking state machines, work budgets and wrap-safe monotonic deadlines;
+  do not busy-spin for network, queue space or another core. Hardware timing
+  guards are deliberate exceptions, not general-purpose retry loops.
+- Bound message sizes, queue bytes/counts, fragmentation, pending control replies,
+  dispatch and retries. Specify behavior at each bound: retry/backpressure,
+  explicit disconnect/error, or a documented discard policy for noncritical data.
+  CP/M input/output must not be silently evicted or reported successful on loss.
+- Keep each frame's TCP enqueue atomic. With `TCP_WRITE_FLAG_COPY`, temporary
+  frame buffers can be released after acceptance; zero-copy requires a separately
+  proven ACK/abort lifetime. TCP acceptance, output and browser consumption are
+  different states. Retry `tcp_output` without re-enqueueing accepted frames;
+  application consumption retransmits remain governed by protocol ACKs.
+- Batch terminal output within the bounded window and flush once per burst.
+  Preserve immediate interactive/control sends and configured TCP_NODELAY.
+  A successful flush does not prove the browser rendered or consumed anything.
+- Avoid repeated pbuf-chain traversal, header decoding, payload copies and
+  per-frame heap/list allocations. Prefer span processing, moved buffers and
+  fixed rings where they preserve masking, fragmentation, control interleaving,
+  ordering and the text callback's NUL-termination contract.
+- Budget total memory, not just payload bytes: include partial frames, vector
+  capacity, queue/container overhead, lwIP pools, TLS peaks and both core stacks.
+  Inspect linker/size output and stack placement when changing memory use.
+  Do not enlarge scratch-RAM stacks or network pools to hide a leak/stall.
+- Use SDK GPIO mask/snapshot operations only when they preserve pin ownership,
+  preload-before-output, OE isolation and timing. Consider PIO/DMA or clock
+  changes only after measuring a real bottleneck and designing ownership,
+  interrupt, buffer-lifetime and error handling; do not introduce them by default.
+- Preserve Pico 2 W/RP2350 board, clock and USB assumptions in CMake and actual
+  SDK builds. Use supported flash-safe/multicore APIs; never bypass lockout or
+  assume arbitrary interrupt code remains executable during an XIP flash write.
+  RAM placement alone is insufficient without checking callees and data access.
+- Rate-limit diagnostics and keep formatting/blocking logging out of hot paths
+  and shared locks. Observability must not create the stall being measured.
+- Fast disk reads and cached writes are not evidence that commits interfere
+  with networking, or that they cannot. Measure flash commits and network-poll
+  gaps separately before changing storage scheduling, journaling or geometry.
+
+### Maintained WebSocket Fork
+
+The submodule uses `https://github.com/gloveboxes/pico-ws-server.git`;
+`origin` is the maintained fork and `upstream` is the original cadouthat
+repository. Implement transport fixes in the fork, not generated source patches.
+Preserve dirty submodule changes, test the actual sources, then commit/publish
+the fork before advancing the parent's gitlink. Verify the published SHA and
+submodule URL; a parent commit cannot capture uncommitted nested source changes.

@@ -60,6 +60,8 @@ add_library(z80_io_services STATIC
   common/io_service.c
   common/io_service_platform.c
   common/weather.c
+  common/chat.c
+  common/chat_stream.c
   cpm/dcc_io_adapter/port_drivers/json_scan.c
   cpm/dcc_io_adapter/host/PortDrivers/environment_io.c
 )

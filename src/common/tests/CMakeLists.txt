@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(z80_control_tests C CXX)
 enable_testing()
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
+  ../chat.c ../chat_stream.c
   ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
   ../environment_store.c
   ../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.c)
@@ -18,6 +19,7 @@ target_compile_options(io_service_platform_test PRIVATE -Wall -Wextra -Werror -U
 add_test(NAME service_clock_and_info COMMAND io_service_platform_test)
 set_tests_properties(service_clock_and_info PROPERTIES TIMEOUT 5)
 add_executable(clock_service_test clock_service_test.c ../io_ports.c
+  ../chat.c ../chat_stream.c
   ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
   ../io_service.c ../io_service_platform.c ../environment_store.c
   ../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.c)
@@ -40,6 +42,18 @@ target_compile_features(weather_network_test PRIVATE cxx_std_17)
 target_compile_options(weather_network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME weather_async_https COMMAND weather_network_test)
 set_tests_properties(weather_async_https PROPERTIES TIMEOUT 5)
+add_executable(chat_stream_test chat_stream_test.c ../chat_stream.c)
+target_include_directories(chat_stream_test PRIVATE ../include ..)
+target_compile_features(chat_stream_test PRIVATE c_std_11)
+target_compile_options(chat_stream_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME chat_http_sse COMMAND chat_stream_test)
+set_tests_properties(chat_http_sse PROPERTIES TIMEOUT 5)
+add_executable(chat_network_test chat_network_test.cpp ../chat.c ../chat_stream.c)
+target_include_directories(chat_network_test PRIVATE fakes ../include ..)
+target_compile_features(chat_network_test PRIVATE cxx_std_17 c_std_11)
+target_compile_options(chat_network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME chat_async_transport COMMAND chat_network_test)
+set_tests_properties(chat_async_transport PROPERTIES TIMEOUT 5)
 set(PICO_SDK_PATH "$ENV{PICO_SDK_PATH}" CACHE PATH
   "Pico SDK used for the real weather TLS regression")
 if(EXISTS "${PICO_SDK_PATH}/lib/mbedtls/library/CMakeLists.txt")
@@ -56,6 +70,9 @@ if(EXISTS "${PICO_SDK_PATH}/lib/mbedtls/library/CMakeLists.txt")
   file(READ ../../stage10_websocket_terminal/weather_ca.pem weather_ca)
   configure_file(../../stage10_websocket_terminal/weather_ca.h.in
     weather_tls/weather_ca.h @ONLY)
+  file(READ ../../stage10_websocket_terminal/chat_ca.pem chat_ca)
+  configure_file(../../stage10_websocket_terminal/chat_ca.h.in
+    weather_tls/chat_ca.h @ONLY)
   add_executable(weather_tls_test weather_tls_test.cpp)
   target_include_directories(weather_tls_test PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}/weather_tls")

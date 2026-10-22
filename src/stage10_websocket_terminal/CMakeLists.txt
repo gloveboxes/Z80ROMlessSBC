@@ -4,6 +4,8 @@ set(stage10_generated_dir ${CMAKE_CURRENT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${stage10_generated_dir})
 file(READ ${CMAKE_CURRENT_LIST_DIR}/weather_ca.pem weather_ca)
 configure_file(weather_ca.h.in ${stage10_generated_dir}/weather_ca.h @ONLY)
+file(READ ${CMAKE_CURRENT_LIST_DIR}/chat_ca.pem chat_ca)
+configure_file(chat_ca.h.in ${stage10_generated_dir}/chat_ca.h @ONLY)
 target_compile_definitions(pico_mbedtls_headers INTERFACE
   MBEDTLS_USER_CONFIG_FILE="weather_tls_config.h")
 add_custom_command(
@@ -46,6 +48,7 @@ add_library(z80_terminal STATIC
   web_terminal.cpp
   ../common/weather_http.c
   weather_network.cpp
+  chat_network.cpp
   network_setup.c)
 target_include_directories(z80_terminal PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}
@@ -54,7 +57,7 @@ target_include_directories(z80_terminal PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
 set_source_files_properties(
   network_services.c network_runtime.cpp web_terminal.cpp
-  ../common/weather_http.c weather_network.cpp network_setup.c
+  ../common/weather_http.c weather_network.cpp chat_network.cpp network_setup.c
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 target_link_libraries(z80_terminal PUBLIC
   z80_terminal_queue z80_io_services z80_pico_ws_server pico_lwip_sntp

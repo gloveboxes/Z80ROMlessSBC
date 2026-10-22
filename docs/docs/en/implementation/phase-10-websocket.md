@@ -123,8 +123,17 @@ stop/flush protocol remain unchanged.
 - `web_terminal.cpp` owns HTTP/WebSocket sessions, protocol negotiation,
   heartbeat and terminal flow control. It receives online state and a network
   generation from the application; it does not configure or poll Wi-Fi.
-- `network_services.c` schedules these independent network services and weather.
+- `network_services.c` schedules these independent network services, weather
+  and chat.
   The application still services disk work before network work.
+- `chat.c` owns the CHATC11 framed ABI, bounded request/response storage and
+  per-request ENV settings on core 1. The existing atomic service mailbox
+  remains its only core-0 boundary. `chat_stream.c` decodes bounded HTTP/SSE
+  records; `chat_network.cpp` independently owns asynchronous DNS/TCP/TLS,
+  backpressure and generation-safe cancellation. Neither touches terminal
+  queues, USB input or Z80 GPIO. See
+  [CHAT configuration and limits](../system/io-ports.md#chat-application-openai-and-ollama)
+  for OpenAI and local Ollama setup. Stage 9 still reports chat UNAVAILABLE.
 - `terminal_queue.c` owns transport-neutral console storage and USB/browser
   ownership. USB input, ANSI mapping and framed supervisor commands remain
   on core 0 in the shared Stage 9 application.

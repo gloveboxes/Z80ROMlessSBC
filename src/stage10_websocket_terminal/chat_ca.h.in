@@ -1,0 +1,4 @@
+#ifndef Z80SBC_CHAT_CA_H
+#define Z80SBC_CHAT_CA_H
+static constexpr char CHAT_CA[] = R"PEM(@chat_ca@)PEM";
+#endif

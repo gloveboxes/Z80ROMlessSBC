@@ -1,5 +1,6 @@
 #include "io_service.h"
 #include "weather.h"
+#include "chat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -233,6 +234,9 @@ void z80_io_ports_core1_service(void) {
     break;
   case IO_SERVICE_WEATHER:
     result.error = z80_weather_service(request.data, request.length, &result);
+    break;
+  case IO_SERVICE_CHAT:
+    result.error = z80_chat_service(request.data, request.length, &result);
     break;
   default:
     result.error = IO_SERVICE_UNAVAILABLE;

@@ -1,13 +1,14 @@
 ---
 name: z80-romless-sbc
-description: 'Engineer, review, debug, build, test, flash, or document the Z80ROMlessSBC project. Use for Pico 2 W supervisor firmware and UF2 flashing, USB serial supervisor commands, Z80-assisted SRAM loading, HCT32 logic, voltage translation, breadboard placement, CP/M images, onboard-flash storage, staged bring-up, KiCad schematic checks, MkDocs maintenance, DSLogic Plus/DHO814 captures, timing qualification, or BOM and pin-map changes.'
+description: 'Engineer, review, debug, build, test, flash, or document the Z80ROMlessSBC project. Use for Pico 2 W/RP2350 firmware, core 0/core 1 responsibilities, multicore synchronization, decoupling Wi-Fi/WebSocket/USB serial, terminal throughput and latency, bounded queues, lwIP backpressure, interrupt hot paths, Pico SDK best practices, UF2 flashing, Z80-assisted SRAM loading, HCT32 logic, voltage translation, breadboard placement, CP/M images, onboard-flash storage, staged bring-up, KiCad schematic checks, MkDocs maintenance, DSLogic Plus/DHO814 captures, timing qualification, or BOM and pin-map changes.'
 argument-hint: 'Describe the hardware, firmware, documentation, or validation task'
 user-invocable: true
 ---
 
 # Z80 ROMless SBC Engineering
 
-Use this workflow to preserve the project's electrical safety, firmware ownership rules, build reproducibility, and documentation consistency.
+Use this workflow to preserve electrical safety, explicit core/module ownership,
+bounded low-latency firmware, build reproducibility, and documentation consistency.
 
 For disk-only deployment to the existing flash layout, invoke the project-local
 `flash-cpm-disks` skill instead of the engineering workflow below. It contains
@@ -22,7 +23,9 @@ geometry, or flash layout.
 2. Treat maintained files under `src/` and `hardware/kicad/` as authoritative
    implementation sources. MkDocs C excerpts explain invariants but are not
    canonical code.
-3. Load [architecture invariants](./references/architecture.md) before changing pins, parts, buses, power, flash, multicore ownership, or timing.
+3. Load [architecture invariants](./references/architecture.md) before changing
+   firmware, concurrency, transport boundaries, performance, pins, parts, buses,
+   power, flash, or timing.
 4. Load [validation workflows](./references/validation.md) before building, testing, regenerating artifacts, or declaring a change complete.
 5. Load [documentation lessons](./references/documentation.md) before
    reorganizing MkDocs pages/navigation, editing diagrams, changing
@@ -32,18 +35,55 @@ geometry, or flash layout.
 
 ## Procedure
 
-1. Identify the owning surface: electrical design, firmware module, CP/M tooling, staged application, KiCad source, or documentation generator.
+1. Identify the owning surface and, for firmware, the owning core, IRQ/callback
+   context, shared state, and module boundary before proposing changes.
 2. Read the nearest implementation and its corresponding page under
    `docs/docs/en/implementation/` before editing.
-3. State one local hypothesis and the cheapest check that can falsify it.
+3. State one local hypothesis and the cheapest check that can falsify it. For
+   performance changes, identify the metric, baseline, work/memory budget, and
+   correctness invariants; do not assume disk, Wi-Fi, or GPIO is the bottleneck.
 4. Make the smallest change that preserves the invariants in the references.
 5. Run a focused validation immediately after the first substantive edit.
 6. Expand validation according to blast radius:
    - Pin, logic, power, or package changes require schematic, BOM, placement, phase-plan, and documentation consistency checks.
    - Shared firmware changes require affected stage builds and later cumulative stages.
+   - Transport or concurrency changes require actual implementation tests for
+     backpressure, bounded work, handover, failure, and callback/resource lifetime.
    - Flash or CP/M changes require host image tests, exact geometry checks, and final artifact generation.
    - Documentation changes require a strict MkDocs build from `docs/docs`.
 7. Report measured or tested behavior separately from theoretical limits. Never promote the 20 MHz CPU rating to a system claim.
+
+## Firmware Design Gate
+
+Apply these checks to every firmware change; the architecture reference defines
+the detailed contracts.
+
+- **Core 0:** Z80 bus GPIO, clock, assisted loading, trapping/stepped I/O, USB
+  terminal/supervisor handling, and the core-0 side of flash quiescence.
+- **Core 1:** CYW43/lwIP polling, Wi-Fi lifecycle, HTTP/WebSocket sessions,
+  asynchronous network services, ENV access, and runtime flash/storage work.
+  Service pending disk work before network work; preserve regular network polls.
+- **Separate responsibilities:** Wi-Fi publishes connectivity/address/generation,
+  WebSocket owns sessions/protocol/backpressure, the console router owns
+  transport-neutral queues and USB/browser ownership, and orchestration schedules
+  services. Network modules must not consume USB input or manipulate Z80 bus pins.
+- **Bound the hot path:** no network, TLS/JSON, heap allocation, blocking stdio,
+  flash writes, or waiting on another core inside trap/IRQ handling. Keep hardware
+  settling guards and flash-safe ownership handshakes intact.
+- **Bound shared work:** short non-nested critical sections, explicit queue and
+  dispatch limits, defined overflow/retry/timeout behavior, and callback-safe
+  teardown. `volatile` or local IRQ masking alone does not synchronize two cores.
+- **Preserve transport semantics:** distinguish rejected writes, TCP-accepted
+  frames, pending flushes, and browser-consumed output. Batch output without
+  delaying single interactive/control messages; never resend accepted frames
+  merely because flushing failed.
+- **Use Pico SDK contracts:** retain the selected poll architecture and CYW43
+  affinity, supported synchronization/flash-safe APIs, wrap-safe deadlines, and
+  verified stack/RAM/flash budgets. Do not substitute overclocking, larger pools,
+  zero-copy buffers, or a new concurrency architecture for measured diagnosis.
+- **Prove the result:** test real code at the changed boundary, build affected
+  stages with the actual SDK, and use the validation reference's hardware metrics
+  before claiming a throughput, latency, or timing improvement.
 
 ## Project-Specific Guardrails
 

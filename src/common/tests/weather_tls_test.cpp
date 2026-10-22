@@ -7,6 +7,7 @@
 #include "mbedtls/ssl.h"
 #include "mbedtls/x509_crt.h"
 #include "weather_ca.h"
+#include "chat_ca.h"
 
 extern "C" time_t z80_network_time(time_t *result) {
   time_t now = time(nullptr);
@@ -43,5 +44,12 @@ int main() {
   mbedtls_ssl_conf_ca_chain(&config, &ca, nullptr);
   mbedtls_ssl_config_free(&config);
   mbedtls_x509_crt_free(&ca);
-  puts("PASS: real firmware Mbed TLS configuration parses and verifies the weather CA");
+  mbedtls_x509_crt_init(&ca);
+  assert(mbedtls_x509_crt_parse(&ca,
+      reinterpret_cast<const unsigned char *>(CHAT_CA), sizeof(CHAT_CA)) == 0);
+  flags = 0;
+  assert(mbedtls_x509_crt_verify(&ca, &ca, nullptr, nullptr, &flags,
+                                 nullptr, nullptr) == 0 && flags == 0);
+  mbedtls_x509_crt_free(&ca);
+  puts("PASS: real firmware Mbed TLS configuration parses and verifies weather and chat CAs");
 }

@@ -38,6 +38,88 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 
 If invoking `test_build_images` directly instead of discovery, change into `src/cpm` first because it imports `build_images` as a top-level module.
 
+## Firmware Boundaries, Concurrency, and Performance
+
+For changes to transport, queues, scheduling or callbacks, validate the owning
+implementation rather than only its mocks. Preserve the existing core ownership
+and disk-first service order. Host tests establish logic and work counts; they
+do not establish real IRQ latency, GPIO timing or wireless throughput.
+
+### Focused Native and SDK Checks
+
+Use an actual SDK path when configuring native tests so the real Mbed TLS and
+complete WebSocket transport regressions are enabled:
+
+```sh
+cmake -S src/common/tests -B build/host-control -G Ninja \
+  -DPICO_SDK_PATH=/path/to/pico-sdk
+cmake --build build/host-control \
+  --target network_test network_no_wifi_test terminal_queue_test websocket_transport_test -j
+ctest --test-dir build/host-control --output-on-failure \
+  -R '^(terminal_connections|terminal_led_without_wifi|terminal_concurrent_rings|websocket_.*)$'
+```
+
+The path is a placeholder: use the configured local SDK, not an assumed directory.
+Check test discovery/configuration output; a green run with optional transport
+tests omitted is not equivalent to exercising the complete server.
+
+- Queue changes: test full/empty bounds, order, concurrent producer/consumer
+  progress, non-nested locking, and O(1) ownership handover without stale bytes.
+- Protocol changes: test cumulative/wrapping ACKs, ACKs for never-enqueued data,
+  pending-input admission on the next service pass, duplicate handling, reconnect,
+  stale callbacks, heartbeat timeout, and USB fallback.
+- Transport changes: count accepted `tcp_write` calls separately from output
+  attempts. Verify a four-frame terminal burst uses four 265-byte frame writes
+  and one flush, while single interactive/control messages flush promptly.
+  Rejected writes must preserve ordering; failed flushes must not duplicate
+  accepted writes. These sizes describe the current protocol, not universal
+  WebSocket limits; update assertions if framing is intentionally changed.
+- Receive/lifetime changes: test split/chained pbufs, empty frames, masking,
+  fragmented/control interleaving, malformed input, message/queue bounds, fair
+  dispatch budgets, PONG backpressure, callback reentrancy, close deadline wrap,
+  slot reuse, disconnect/error races, destructor cleanup and HTTP final ACKs.
+- Run the changed WebSocket lifetime/parser tests under AddressSanitizer and
+  UndefinedBehaviorSanitizer in a separate native build when supported by the
+  host compiler. Sanitizer success is not a substitute for actual SDK builds.
+- Expand to the complete native suite for shared ownership or protocol changes,
+  then build affected firmware stages and later cumulative stages. Verify the
+  actual SDK/lwIP/CYW43 configuration, linker memory limits and stack allocation;
+  hand-written fakes cannot prove hardware API or memory-region correctness.
+
+### Measurement and Acceptance
+
+Before optimisation, record a reproducible workload, clock/build/network setup,
+the baseline, and an explicit acceptance target. Do not invent a latency target
+or claim a measured speedup from fewer function calls alone.
+
+Measure the relevant subset before and after under the same conditions:
+
+| Surface | Evidence |
+| --- | --- |
+| Web terminal | Sustained bytes/second, key-to-echo latency distribution/tail, browser consumption-ACK delay, queue high-water marks and retries/timeouts |
+| Core 1 scheduling | Maximum network-poll gap and per-service duration during idle, bulk terminal traffic, disk reads, cached writes, flash commits and weather/TLS work |
+| Core 0/trap | Worst-case trap/IRQ duration, USB/supervisor responsiveness, no new control errors, drops or trap timeouts, and preserved hardware timing guards |
+| Memory/lifetime | Firmware size, static RAM, stack headroom, peak heap/transport use, and stable resource/connection-slot usage across repeated reconnects |
+
+Exercise bidirectional terminal traffic, full queues, a slow/non-consuming
+browser, transient backpressure, Wi-Fi loss/rejoin, USB/browser handover and
+repeated connect/disconnect. Verify disk/service progress during network load
+and network progress during storage activity; neither may be silently starved.
+Do not infer that flash commits are a bottleneck solely because they are
+synchronous, or dismiss their effect solely because ordinary disk I/O is fast.
+
+Use a real browser/xterm check when changing browser consumption or input
+semantics; mocks alone cannot prove rendered output order or consumption ACK
+timing. For bus/timing changes use the documented scope/logic-analyzer workflows.
+Hardware measurements require an explicitly safe setup; firmware deployment
+still requires the normal authorization and saved-work/power confirmation.
+Do not flash or reset merely to obtain a benchmark without that authorization.
+
+Report baseline/result/acceptance outcome, correctness regressions, and any
+missing hardware evidence separately. Preserve electrical/flash invariants even
+when a change appears faster; an unqualified clock or timing change is not an
+acceptable performance result.
+
 ## Flashing Tools
 
 Use the existing `.venv-flash` environment, or create it and install

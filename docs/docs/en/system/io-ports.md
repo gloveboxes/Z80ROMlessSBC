@@ -164,7 +164,8 @@ All integer request fields and binary results are little-endian.
 | Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version; `[4, state]` set onboard LED; `[5]` read LED state | Two random bytes, text, COMPLETE, or one LED-state byte |
 | Environment `0x30` | Operations below | Text or COMPLETE |
 | Weather `0x40` | `[0, field_id]` reads text; `[1]` reads status | Phase 10 cached weather; Stage 9 UNAVAILABLE |
-| Chat `0x50`, Sense HAT `0x60` | Recognized groups without Pico drivers | UNAVAILABLE |
+| Chat `0x50` | Reset/append/submit/status/chunk operations below | Phase 10 streaming OpenAI/Ollama; Stage 9 UNAVAILABLE |
+| Sense HAT `0x60` | Recognized group without a Pico driver | UNAVAILABLE |
 
 There are **four countdown timers**: IDs 0-2 take 0-65535 milliseconds;
 ID 3 takes 0-255 whole seconds. The shared duration field is four bytes for
@@ -225,6 +226,155 @@ callback hook, and persistent ENV backend. It covers unsynchronized errors,
 UTC/local/date/uptime shapes, timezone updates and DST, 50 ms timer operation
 during a BUSY request, and the 32-bit millisecond rollover. It does not execute
 the CLOCK binary or qualify physical network/hardware operation.
+
+### CHAT application: OpenAI and Ollama
+
+Phase 10 implements the framed ABI used by the ESP32 Altair dcc
+`Apps/CHAT/CHATC11.C` application. Use the existing CP/M application and its
+`CHAT.SYS` system-prompt file; no BIOS, pin or disk-layout change is needed.
+CHAT 1.7-c11 adds application-side thinking control as described below; earlier
+versions still work but leave thinking at the server default. Firmware builds
+do not install the application on a disk.
+Do not use the legacy physical chat ports 120-124: they alias unrelated
+peripherals with this board's address decoding.
+
+All requests use group `0x50` through shared ports 2/3/4:
+
+| Payload | Result |
+| --- | --- |
+| `[0]` | Cancel any previous request and clear request assembly; COMPLETE |
+| `[1, json_bytes...]` | Append 1-2047 bytes; COMPLETE, or explicit CAPACITY/BUSY/invalid-input error |
+| `[2]` | Cancel the connection and clear queued response/error text; COMPLETE; assembled request is retained |
+| `[3]` | Submit the assembled request asynchronously; COMPLETE, or BUSY/empty-request error |
+| `[4]` | One status byte: `0` EOF, `1` WAITING, `2` DATA_READY |
+| `[5, maximum_u16]` | `[status, count_u16, text_bytes...]`, with status **after** removing the returned bytes |
+
+`maximum` is 1-2045, bounded by the 2048-byte service payload. CHATC11 requests
+256 bytes at a time and appends JSON in 2047-byte pieces. The assembled request
+limit is **8191 bytes**, excluding its local NUL terminator. Overflow never
+silently truncates a request. Appending or resubmitting while active returns
+BUSY. Operation 0 cancels before reusing the request buffer, so a new turn
+recovers safely after CHATC11 fills its local response buffer or times out.
+Operation 2 also cancels immediately. Shared transport RESET only invalidates
+the mailbox reply; as with ENV, it does not undo service side effects.
+
+#### Provider configuration
+
+For a local Ollama server with its OpenAI-compatible API:
+
+```text
+ENV CHAT_PROVIDER=compatible
+ENV CHAT_ENDPOINT=http://192.168.1.26:11434/v1/chat/completions
+ENV -I CHAT_MODEL=phi4-mini:3.8b
+ENV CHAT_MAX_TOKENS=1024
+ENV CHAT_TEMPERATURE=0.7
+```
+
+With **CHAT 1.7-c11**, `CHAT_THINK` defaults to `false` for
+`CHAT_PROVIDER=compatible` or `ollama`. The application sends
+`"reasoning_effort":"none"` to request a direct answer. Set
+`ENV CHAT_THINK=true` to send `"reasoning_effort":"medium"` (thinking on for
+boolean-control models, medium effort where supported), or
+`ENV CHAT_THINK=default` to omit the field and use the server/model default.
+Only models that support disabling thinking can honor `none`.
+
+The app re-reads provider/thinking settings before each turn and never adds
+the parameter to OpenAI requests. Invalid values or ENV errors stop submission
+explicitly. An absent/empty thinking value is seeded as `false` on first use;
+the standard service helper can print NOT_FOUND while seeding a missing key.
+Other compatible servers that do not support `reasoning_effort` should use
+`CHAT_THINK=default` to retain their old request format. Installing the updated
+`CHAT.COM` is required for this behavior; the existing Pico firmware needs no
+change and continues to forward the application's bounded JSON unchanged.
+
+`CHAT_PROVIDER=ollama` is an alias for `compatible`. Discover installed model
+names from a host with `curl http://192.168.1.26:11434/api/tags`; the model must
+match a deployed name exactly. CHATC11's built-in `gemma3:1b` default is not
+guaranteed to be installed. The example server address is configuration, not
+a compiled-in endpoint.
+
+For OpenAI:
+
+```text
+ENV CHAT_PROVIDER=openai
+ENV -I CHAT_OPENAI_KEY=<your-api-key>
+ENV -I CHAT_MODEL=gpt-4o-mini
+ENV CHAT_MAX_TOKENS=1024
+ENV CHAT_TEMPERATURE=0.7
+```
+
+The ENV CLI evaluates `+`/`-` inside ordinary assignments as arithmetic.
+Use literal `-I` for API keys and model names; it only inserts absent keys.
+To replace an existing key, first use `ENV -D CHAT_MODEL` (or
+`ENV -D CHAT_OPENAI_KEY`), then its literal insert command. Do not paste real
+keys into logs or source control. ENV is plaintext onboard flash, not
+encrypted secret storage.
+
+An absent provider defaults to `openai`. OpenAI always uses
+`https://api.openai.com/v1/chat/completions`, ignoring `CHAT_ENDPOINT`.
+Only OpenAI requests carry `CHAT_OPENAI_KEY`; a saved OpenAI key is **never**
+forwarded to an Ollama/compatible endpoint. Authenticated third-party compatible
+providers are not supported. URLs require an explicit path and accept HTTP or
+HTTPS, a DNS name/IPv4 address, and an optional port 1-65535. User-info,
+fragments, whitespace and control characters are rejected. Limits are 95
+host bytes, 103 authority bytes, 159 path bytes, and 255 key bytes.
+
+Core 1 reloads provider/endpoint/key from durable ENV on each submission.
+CHATC11 owns the JSON model, history, system prompt, token count, temperature
+and thinking parameter; restart CHAT after changing model/token/temperature
+settings. Thinking/provider changes are read at the next turn by CHAT 1.7-c11.
+HTTPS requires synchronized
+SNTP time and verifies certificate dates, chain and hostname using the bundled
+[GTS Root R4](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/chat_ca.pem).
+There is no insecure TLS fallback. Compatible HTTPS endpoints need a chain
+trusted by that root; arbitrary private/self-signed CAs are not supported.
+Plain HTTP Ollama works without SNTP but must remain on a trusted LAN.
+
+#### Ownership, bounds and failure behavior
+
+The trap transfers framed bytes through the existing release/acquire atomic
+single-request mailbox. It does not access ENV, JSON, sockets or TLS, and never
+waits for an answer from the provider. Core 1 owns request assembly, the
+4096-byte response ring, configuration, and the independent async HTTP client.
+Wi-Fi, terminal sessions and chat do not consume one another's queues or
+configure one another. Disk work still runs first on every application loop.
+
+HTTP writes and received wire processing are limited to 512 bytes per service
+pass. A received pbuf chain is retained without extra copying, bounded to one
+chain of at most 16 KiB; further chains receive lwIP `ERR_MEM` backpressure.
+TCP credit advances only for bytes consumed by the parser. A full CP/M response
+ring pauses parsing rather than dropping text or blocking the other services.
+Accepted TCP writes are never replayed after a failed flush. Callback teardown
+is deferred to the service loop, callbacks are detached before abort, and
+generation tokens reject stale DNS/connection callbacks after cancellation.
+
+The decoder accepts HTTP/1.0 or 1.1, content-length, connection-close or chunked
+bodies, and OpenAI-style single-line SSE JSON records. It requires HTTP 200,
+`text/event-stream`, uncompressed content, and a final `[DONE]` marker.
+Headers are limited to 4096 bytes, each HTTP/SSE line to 4095 bytes, decoded
+text per event to 4095 bytes, and JSON nesting to 16 levels. Only
+`choices[0].delta.content` is displayed; role, usage, tools and reasoning fields
+are ignored. JSON escapes and UTF-8 are validated and converted to CP/M-safe
+7-bit text, preserving newline/tab and mapping common smart punctuation;
+other non-ASCII code points become `?`.
+
+The request has a **120-second total deadline**, including backpressure.
+Wi-Fi loss/reconfiguration, premature EOF, allocation/write errors, oversized
+input, malformed HTTP/JSON and HTTP/provider errors terminate the connection
+and publish explicit `Chat: ...` text after already queued content, then EOF.
+Configuration failures are reported the same way. Diagnostics do not print
+credentials, prompts, provider error bodies or generated answers. CHATC11 itself
+has an approximately **30-second no-content timeout** and an 8191-byte local
+answer limit; a long-thinking model can hit that client limit before the
+firmware deadline. No artificial answer bytes or automatic duplicate POSTs
+are generated to hide these limits.
+
+Native `extended_io_services`, `chat_http_sse`, `chat_async_transport` and
+`weather_real_tls_config` tests exercise the real mailbox/worker/parser/client
+and both trust roots. They cover chunk framing, split input, full queues,
+no-duplicate writes, cancellation/restart, failure cleanup, stale callbacks,
+and missing or invalid configuration. They do not execute the CP/M binary or
+prove live inference, heap/stack headroom, or combined hardware timing.
 
 ### OpenWeatherMap weather
 
