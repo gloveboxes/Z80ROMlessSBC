@@ -26,12 +26,16 @@ static uint64_t release_deadline;
 static uint64_t isolation_time;
 static uint64_t reset_release_time;
 static bool release_pending;
+static unsigned early_release;
 static bool outputs[32];
 static unsigned io_clocks;
 static unsigned expected_io_clocks;
 static unsigned falling_edges;
 static uint clock_function;
 static unsigned reset_releases;
+static unsigned clock_setup_reads;
+static unsigned pwm_stops;
+static unsigned individual_control_reads;
 static watchdog_hw_t test_watchdog;
 watchdog_hw_t *watchdog_hw = &test_watchdog;
 static bool watchdog_reset;
@@ -54,14 +58,20 @@ void gpio_put(uint pin, bool value) {
     if (levels[PIN_RESET_N] && levels[PIN_IO_RELEASE]) {
       assert(!release_pending);
       ++io_clocks;
-      if (release_controls && io_clocks == expected_io_clocks) {
+      if (release_controls &&
+          (io_clocks == expected_io_clocks ||
+           (early_release && io_clocks + 1 == expected_io_clocks))) {
         release_pending = true;
         release_deadline = now_us + 1;
       }
     }
   }
 }
-bool gpio_get(uint pin) { return levels[pin]; }
+bool gpio_get(uint pin) {
+  if (pin == PIN_IORQ_N || pin == PIN_RD_N || pin == PIN_WR_N)
+    ++individual_control_reads;
+  return levels[pin];
+}
 uint32_t gpio_get_all(void) {
   uint32_t value = 0;
   for (uint pin = 0; pin < 32; ++pin)
@@ -88,7 +98,11 @@ void gpio_set_function(uint pin, uint function) {
   }
   clock_function = function;
 }
-uint gpio_get_function(uint pin) { assert(pin == PIN_CLK); return clock_function; }
+uint gpio_get_function(uint pin) {
+  assert(pin == PIN_CLK);
+  ++clock_setup_reads;
+  return clock_function;
+}
 void gpio_disable_pulls(uint pin) { (void)pin; }
 void gpio_set_irq_enabled(uint pin, uint32_t events, bool enabled) {
   (void)pin; (void)events; (void)enabled;
@@ -101,7 +115,13 @@ void gpio_set_irq_enabled_with_callback(uint pin, uint32_t events, bool enabled,
 void busy_wait_us_32(uint32_t delay) {
   now_us += delay;
   if (release_pending && now_us >= release_deadline) {
-    levels[PIN_IORQ_N] = levels[PIN_RD_N] = levels[PIN_WR_N] = true;
+    if (io_clocks == expected_io_clocks) {
+      levels[PIN_IORQ_N] = levels[PIN_RD_N] = levels[PIN_WR_N] = true;
+    } else if (early_release == 1) {
+      levels[PIN_IORQ_N] = true;
+    } else {
+      levels[PIN_RD_N] = levels[PIN_WR_N] = true;
+    }
     release_pending = false;
   }
 }
@@ -131,6 +151,8 @@ uint pwm_gpio_to_slice_num(uint pin) { assert(pin == PIN_CLK); return 0; }
 uint pwm_gpio_to_channel(uint pin) { assert(pin == PIN_CLK); return 0; }
 void pwm_set_enabled(uint slice, bool enabled) {
   assert(slice == 0);
+  if (!enabled)
+    ++pwm_stops;
   if (enabled)
     assert(levels[PIN_RESET_N] && now_us - reset_release_time >= 1);
   running = enabled;
@@ -160,6 +182,7 @@ static void fixture(void) {
   release_pending = release_controls = running = false;
   isolation_time = reset_release_time = 0;
   expected_io_clocks = 1;
+  early_release = 0;
   clock_function = GPIO_FUNC_SIO;
   reset_releases = 0;
   watchdog_reset = false;
@@ -300,18 +323,24 @@ int main(void) {
   }
   for (unsigned steps = 1; steps <= 3; ++steps) {
     for (unsigned read = 0; read < 2; ++read) {
-      fixture();
-      levels[PIN_RESET_N] = true;
-      expected_io_clocks = steps;
-      levels[PIN_IORQ_N] = false;
-      levels[PIN_RD_N] = !read;
-      levels[PIN_WR_N] = read;
-      release_controls = true;
-      z80_io_trap_enable(read_port, write_port, NULL);
-      irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
-      assert(running && observed_port == 0x17 && !levels[PIN_IO_RELEASE]);
-      assert_isolated();
-      assert(io_clocks == steps && !release_pending);
+      for (unsigned release_order = 0; release_order < 3; ++release_order) {
+        fixture();
+        early_release = release_order;
+        levels[PIN_RESET_N] = true;
+        expected_io_clocks = steps;
+        levels[PIN_IORQ_N] = false;
+        levels[PIN_RD_N] = !read;
+        levels[PIN_WR_N] = read;
+        release_controls = true;
+        z80_io_trap_enable(read_port, write_port, NULL);
+        clock_setup_reads = pwm_stops = individual_control_reads = 0;
+        irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+        assert(running && observed_port == 0x17 && !levels[PIN_IO_RELEASE]);
+        assert_isolated();
+        assert(io_clocks == steps && !release_pending);
+        assert(clock_setup_reads == 1 && pwm_stops == 2);
+        assert(individual_control_reads == 0);
+      }
     }
   }
   fixture();

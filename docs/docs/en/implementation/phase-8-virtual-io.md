@@ -68,6 +68,38 @@ SIO writes for data preload and direction changes. Data GPIO pads are
 initialized at safe startup rather than on every OUT. All isolation,
 preload-before-drive and settling guards above remain in force.
 
+### Register access and SRAM-resident hardware path
+
+The trap prepares stopped-SIO clock mode once, then uses a pulse-only helper
+for each release clock. Each pulse retains its requested LOW and HIGH waits
+and the final 1 us LOW settling interval. General loader/reset callers still
+use the self-preparing single-cycle API; the prepared-step API is restricted
+to the core-0 bus owner, with no intervening clock ownership or mode change.
+
+Each release check samples IORQ and the active RD/WR strobe together in one
+GPIO snapshot. Both must be HIGH before completion, even when they release
+on different clocks. Both data-buffer disable bits are set together using
+the SDK masked GPIO operation, without touching unrelated outputs. The SDK
+can use the RP2350 GPIO coprocessor; raw SIO-register replacements are not
+required.
+
+The trap handler/release loop, clock stop/resume/preparation/prepared pulse,
+and shared data/port bus helpers use the SDK SRAM code-placement attribute.
+This removes instruction fetches from flash for those selected routines,
+not for the complete call chain: SDK timing/mux helpers, application callbacks
+and failure handling can still execute from flash. **This is not permission
+to execute during flash programming**; the existing BUSACK, IRQ and multicore
+flash-lockout contracts remain mandatory.
+
+Native tests verify constant preparation work for one to three release
+clocks, independently releasing controls, both frozen PWM phases, unchanged
+settling intervals, data patterns and fail-closed faults. SDK symbol and
+disassembly checks verify SRAM addresses, the pulse-only body and one masked
+buffer-isolation operation. These establish work counts, placement and
+correctness, not measured throughput or proof that XIP-cache contention caused
+a slowdown. Hardware qualification still requires before/after trap-duration
+and I/O-throughput measurements, including concurrent network traffic.
+
 Decode is `address & 0x17`: `00/01` terminal and `10-14` disk ports retain
 their contracts. A3/A5-A7 and high-byte aliases are intentional. A trap while
 BUSACK LOW is ignored and IRQ disabled until the grant-release path rearms it.

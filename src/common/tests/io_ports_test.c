@@ -193,6 +193,33 @@ static void test_transport(void) {
   error(IO_SERVICE_CLOCK, maximum, sizeof(maximum), IO_SERVICE_INVALID_LENGTH);
 }
 
+static void test_worker_response_lifetime(void) {
+  const uint8_t version[] = {3};
+  const char expected[] = "Pico 2 W Z80ROMlessSBC ROMLESS-SVC/1\n";
+  send(IO_SERVICE_UTILITY, version, sizeof(version));
+  z80_io_ports_core1_service();
+  assert(z80_io_port_in(2) == IO_SERVICE_RESPONSE_READY);
+  assert(z80_io_port_in(4) == sizeof(expected) - 1);
+  assert(z80_io_port_in(4) == 0);
+  for (size_t i = 0; i < sizeof(expected) - 1; ++i) {
+    z80_io_ports_core1_service();
+    z80_io_port_out(IO_TIMER_PORT, 0x30);
+    assert(z80_io_port_in(IO_TIMER_PORT) == 0);
+    assert(z80_io_port_in(2) == IO_SERVICE_RESPONSE_READY);
+    assert(z80_io_port_in(4) == (uint8_t)expected[i]);
+  }
+  assert(z80_io_port_in(2) == IO_SERVICE_READY);
+
+  send(IO_SERVICE_UTILITY, version, sizeof(version));
+  z80_io_ports_core1_service();
+  assert(z80_io_port_in(2) == IO_SERVICE_RESPONSE_READY);
+  assert(z80_io_port_in(4) == sizeof(expected) - 1);
+  reset();
+  const uint8_t random[] = {0};
+  call(IO_SERVICE_UTILITY, random, sizeof(random), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 2 && reply[0] == 0x34 && reply[1] == 0x12);
+}
+
 static void test_timers(void) {
   now = 1000;
   z80_io_port_out(0x17, 0x10);
@@ -580,6 +607,7 @@ int main(void) {
   memset(test_flash, 0xff, sizeof(test_flash));
   z80_io_ports_init();
   test_transport();
+  test_worker_response_lifetime();
   test_timers();
   test_led();
   test_environment();

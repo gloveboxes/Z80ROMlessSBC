@@ -44,7 +44,7 @@ io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
 const io_service_result_t *z80_io_service_poll(void) {
   if (__atomic_load_n(&work_state, __ATOMIC_ACQUIRE) != WORK_DONE)
     return NULL;
-  /* Only core 0 submits the next job, after it has copied this result. */
+  /* Only core 0 submits the next job, after consuming/discarding this result. */
   __atomic_store_n(&work_state, WORK_IDLE, __ATOMIC_RELEASE);
   return &result;
 }

@@ -15,7 +15,8 @@ static struct {
   uint32_t generation;
   bool reset_required;
   uint8_t request[IO_SERVICE_MAX_PAYLOAD];
-  uint8_t response[IO_SERVICE_MAX_PAYLOAD];
+  uint8_t local_response[16];
+  const uint8_t *response;
 } transport;
 
 static struct {
@@ -36,12 +37,14 @@ static void reset_transport(void) {
   transport.request_position = 0;
   transport.response_length = 0;
   transport.response_position = 0;
+  transport.response = transport.local_response;
   transport.reset_required = false;
 }
 
 static void fail(io_service_error_t error, bool reset_required) {
   ++transport.generation;
-  transport.response[0] = (uint8_t)error;
+  transport.local_response[0] = (uint8_t)error;
+  transport.response = transport.local_response;
   transport.response_length = 1;
   transport.response_position = 0;
   transport.reset_required |= reset_required;
@@ -145,6 +148,7 @@ static void timer_service(void) {
   }
   transport.response_length = 0;
   transport.response_position = 0;
+  transport.response = transport.local_response;
   if (countdown && operation == 0) {
     if (request[4] || request[5] || (id == 3 && request[3])) {
       fail(IO_SERVICE_INVALID_PARAMETER, false);
@@ -152,14 +156,14 @@ static void timer_service(void) {
     }
     start_timer(id, (uint16_t)request[2] | ((uint16_t)request[3] << 8));
   } else if (countdown) {
-    transport.response[0] = timer_running(id, z80_service_millis());
+    transport.local_response[0] = timer_running(id, z80_service_millis());
     transport.response_length = 1;
   } else if (operation == 0) {
     timers.stopwatches[id] = z80_service_millis();
   } else {
     uint32_t value = stopwatch_value(id, operation == 2);
     for (unsigned i = 0; i < 4; ++i)
-      transport.response[i] = (uint8_t)(value >> (8 * i));
+      transport.local_response[i] = (uint8_t)(value >> (8 * i));
     transport.response_length = 4;
   }
   transport.status = transport.response_length ? IO_SERVICE_RESPONSE_READY
@@ -175,11 +179,12 @@ static void poll_service(void) {
     fail(result->error, false);
     return;
   }
-  if (result->length > sizeof(transport.response)) {
+  if (result->length > IO_SERVICE_MAX_PAYLOAD) {
     fail(IO_SERVICE_CAPACITY, false);
     return;
   }
-  memcpy(transport.response, result->data, result->length);
+  /* The worker cannot reuse its result until core 0 submits the next job. */
+  transport.response = result->data;
   transport.response_length = result->length;
   transport.response_position = 0;
   transport.status = result->has_response ? IO_SERVICE_RESPONSE_READY
@@ -219,7 +224,8 @@ static void command_out(uint8_t command) {
   }
   if (command == IO_SERVICE_IDENTIFY) {
     static const char identity[] = "ROMLESS-SVC/1";
-    memcpy(transport.response, identity, sizeof(identity) - 1);
+    memcpy(transport.local_response, identity, sizeof(identity) - 1);
+    transport.response = transport.local_response;
     transport.response_length = sizeof(identity) - 1;
     transport.response_position = 0;
     transport.status = IO_SERVICE_RESPONSE_READY;

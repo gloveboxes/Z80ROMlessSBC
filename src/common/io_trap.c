@@ -49,15 +49,21 @@ static _Noreturn void trap_fail_closed(z80_io_trap_reset_reason_t reason,
     tight_loop_contents();
 }
 
-static void resume_and_wait_for_release(uint control_pin) {
+static void __not_in_flash_func(resume_and_wait_for_release)(uint control_pin) {
   absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
+  uint32_t released_mask = (1u << PIN_IORQ_N) | (1u << control_pin);
   gpio_put(PIN_IO_RELEASE, 1);
-  while (!gpio_get(PIN_IORQ_N) || !gpio_get(control_pin)) {
-    if (time_reached(deadline)) {
-      __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
-      trap_fail_closed(Z80_IO_TRAP_RESET_RELEASE_TIMEOUT, gpio_get_all());
-    }
-    z80_clock_one_cycle(1);
+  uint32_t controls = gpio_get_all();
+  if ((controls & released_mask) != released_mask) {
+    z80_clock_prepare_stepping();
+    do {
+      if (time_reached(deadline)) {
+        __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
+        trap_fail_closed(Z80_IO_TRAP_RESET_RELEASE_TIMEOUT, gpio_get_all());
+      }
+      z80_clock_step_prepared(1);
+      controls = gpio_get_all();
+    } while ((controls & released_mask) != released_mask);
   }
   z80_data_bus_isolate();
   busy_wait_us_32(1);
@@ -65,7 +71,7 @@ static void resume_and_wait_for_release(uint control_pin) {
   z80_clock_resume();
 }
 
-static void io_trap_handler(uint gpio, uint32_t events) {
+static void __not_in_flash_func(io_trap_handler)(uint gpio, uint32_t events) {
   (void)events;
   if (gpio != PIN_IORQ_N)
     return;

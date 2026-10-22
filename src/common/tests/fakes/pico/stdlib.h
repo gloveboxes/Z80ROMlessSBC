@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "pico/types.h"
+#define __not_in_flash_func(name) name
 typedef uint64_t absolute_time_t;
 static const absolute_time_t nil_time = 0;
 enum { PICO_OK = 0 };
@@ -20,6 +21,9 @@ static inline void gpio_put_masked(uint32_t mask, uint32_t value) {
   for (uint pin = 0; pin < 32; ++pin)
     if (mask & (1u << pin))
       gpio_put(pin, (value & (1u << pin)) != 0);
+}
+static inline void gpio_set_mask(uint32_t mask) {
+  gpio_put_masked(mask, mask);
 }
 static inline void gpio_set_dir_masked(uint32_t mask, uint32_t value) {
   for (uint pin = 0; pin < 32; ++pin)

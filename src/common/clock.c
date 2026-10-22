@@ -7,7 +7,7 @@
 
 static uint32_t actual_clock_hz;
 
-static void select_stopped_sio(void) {
+void __not_in_flash_func(z80_clock_prepare_stepping)(void) {
   z80_clock_stop();
   gpio_put(PIN_CLK, 0);
   gpio_set_dir(PIN_CLK, GPIO_OUT);
@@ -47,7 +47,7 @@ bool z80_clock_set_hz(uint32_t hz) {
   if (best_divider == 0)
     return false;
 
-  select_stopped_sio();
+  z80_clock_prepare_stepping();
   busy_wait_us_32(1);
   pwm_set_clkdiv_int_frac4(slice_num, (uint8_t)best_divider, 0);
   pwm_set_wrap(slice_num, (uint16_t)(best_count - 1u));
@@ -64,18 +64,22 @@ uint32_t z80_clock_get_hz(void) {
   return actual_clock_hz;
 }
 
-void z80_clock_stop(void) {
+void __not_in_flash_func(z80_clock_stop)(void) {
   pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), false);
 }
 
-void z80_clock_resume(void) {
+void __not_in_flash_func(z80_clock_resume)(void) {
   pwm_set_counter(pwm_gpio_to_slice_num(PIN_CLK), 0);
   gpio_set_function(PIN_CLK, GPIO_FUNC_PWM);
   pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), true);
 }
 
 void z80_clock_one_cycle(uint32_t half_period_us) {
-  select_stopped_sio();
+  z80_clock_prepare_stepping();
+  z80_clock_step_prepared(half_period_us);
+}
+
+void __not_in_flash_func(z80_clock_step_prepared)(uint32_t half_period_us) {
   busy_wait_us_32(half_period_us);
   gpio_put(PIN_CLK, 1);
   busy_wait_us_32(half_period_us);

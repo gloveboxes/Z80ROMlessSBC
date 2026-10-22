@@ -104,15 +104,32 @@ static void publish_cpu_state(void) {
 
 static uint8_t virtual_read(uint8_t port, void *context) {
   (void)context;
-  if (z80_io_ports_handles(port))
+  switch (port) {
+  case 0x00:
+  case 0x01:
+    return z80_terminal_io_read(port);
+  case 0x10:
+  case 0x11:
+  case 0x12:
+  case 0x13:
+  case 0x14:
+    return z80_flash_disk_io_read(port);
+  case IO_SERVICE_COMMAND_PORT:
+  case IO_SERVICE_REQUEST_PORT:
+  case IO_SERVICE_RESPONSE_PORT:
+  case IO_TIMER_PORT:
     return z80_io_port_in(port);
-  return port >= 0x10 && port <= 0x14
-             ? z80_flash_disk_io_read(port)
-             : z80_terminal_io_read(port);
+  default:
+    return 0xFF;
+  }
 }
 
 static void virtual_write(uint8_t port, uint8_t value, void *context) {
   (void)context;
+  if (port == 0x00) {
+    z80_terminal_io_write(port, value);
+    return;
+  }
   if (diagnostic_active && port == 0x06) {
     uint32_t offset = diagnostic_count;
     if (offset < DIAGNOSTIC_BYTES) {
@@ -136,17 +153,28 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
                           diagnostic_count == DIAGNOSTIC_BYTES ? 0x5A : 0xE1;
     return;
   }
-  if (port == Z80_BOOT_REPORT_PORT) {
+  switch (port) {
+  case Z80_BOOT_REPORT_PORT:
     if (value == Z80_BOOT_REPORT_BIOS)
       __atomic_fetch_or(&boot_markers, 1u, __ATOMIC_RELEASE);
     else if (value == Z80_BOOT_REPORT_CCP)
       __atomic_fetch_or(&boot_markers, 2u, __ATOMIC_RELEASE);
-  } else if (port >= 0x10 && port <= 0x14) {
+    break;
+  case 0x10:
+  case 0x11:
+  case 0x12:
+  case 0x13:
+  case 0x14:
     z80_flash_disk_io_write(port, value);
-  } else if (z80_io_ports_handles(port)) {
+    break;
+  case IO_SERVICE_COMMAND_PORT:
+  case IO_SERVICE_REQUEST_PORT:
+  case IO_SERVICE_RESPONSE_PORT:
+  case IO_TIMER_PORT:
     z80_io_port_out(port, value);
-  } else {
-    z80_terminal_io_write(port, value);
+    break;
+  default:
+    break;
   }
 }
 

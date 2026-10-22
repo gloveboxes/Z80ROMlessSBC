@@ -140,6 +140,29 @@ does not reset running timers or stopwatches. There is no automatic server
 timeout for an incomplete request: the client must use bounded polling,
 report failure and RESET. Reading status never acknowledges COMPLETE.
 
+### Bounded trap work
+
+Stage 9/10 dispatch the already-masked port directly to the terminal, disk or
+extended-service handler. Terminal and disk requests do not probe the list of
+extended-service ports. Adding service groups behind `0x02-0x04` therefore
+does not add dispatch checks to those existing hot paths.
+
+Core 0 reads a completed worker response in place instead of copying its
+payload during the status trap. The worker's result stays unchanged until
+core 0 submits another job; the parser must consume or discard the response
+before that submission. Errors, IDENTIFY and local timer replies use a
+separate small buffer. RESET still invalidates stale worker generations.
+This removes up to 2048 copied bytes from a completion trap and the separate
+2048-byte response array; it does not remove the bounded request copy at
+submission or change the one-outstanding-transaction protocol.
+
+Native regressions check zero response-payload copying for lengths 0, 1, 16
+and 2048, response lifetime, framing, RESET, errors, and terminal/disk dispatch
+without service probes. These are work-count and correctness checks, not
+measurements of Z80 throughput or worst-case trap latency. Clock handover,
+data-path settling, disk-first worker scheduling and regular network polling
+are unchanged; hardware before/after measurements remain necessary.
+
 Error codes match the ESP32 client:
 
 | Code | Error |

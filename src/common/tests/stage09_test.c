@@ -74,6 +74,7 @@ static z80_boot_error_t load_error;
 static uint64_t now;
 static unsigned service_reads;
 static unsigned service_writes;
+static unsigned service_probes;
 static unsigned usb_room;
 static unsigned disconnect_after_usb_writes;
 static bool watchdog_reset;
@@ -113,6 +114,7 @@ void z80_network_core1_service(void) {
 
 void z80_io_ports_init(void) {}
 bool z80_io_ports_handles(uint8_t port) {
+  ++service_probes;
   port &= 0x17;
   return (port >= 2 && port <= 4) || port == 0x17;
 }
@@ -406,6 +408,38 @@ static void test_control_and_terminal(void) {
   }
   command('r');
   assert(!reboots && running);
+}
+
+static void test_direct_port_dispatch(void) {
+  reset_fixture();
+  unsigned probes = service_probes;
+  for (unsigned repeat = 0; repeat < 4096; ++repeat) {
+    unsigned reads = service_reads, writes = service_writes;
+    const uint8_t input_byte = 'I';
+    z80_terminal_receive(&input_byte, 1);
+    assert(virtual_read(1, NULL) & 1u);
+    assert(virtual_read(0, NULL) == 'I');
+    virtual_write(0, 'O', NULL);
+    uint8_t output_byte;
+    assert(z80_terminal_supply(&output_byte, 1) == 1 && output_byte == 'O');
+    for (uint8_t port = 0x10; port <= 0x14; ++port) {
+      assert(virtual_read(port, NULL) == 0x5A && disk_last_port == port);
+      virtual_write(port, 0xA5, NULL);
+      assert(disk_last_port == port);
+    }
+    assert(service_reads == reads && service_writes == writes);
+  }
+  assert(service_probes == probes);
+  const uint8_t spare_ports[] = {5, 6, 7, 0x15, 0x16};
+  unsigned reads = service_reads, writes = service_writes;
+  unsigned disk_count = disk_writes;
+  for (size_t i = 0; i < sizeof(spare_ports); ++i) {
+    assert(virtual_read(spare_ports[i], NULL) == 0xFF);
+    virtual_write(spare_ports[i], 0, NULL);
+  }
+  virtual_write(1, 0, NULL);
+  assert(service_reads == reads && service_writes == writes);
+  assert(disk_writes == disk_count);
 }
 
 static void test_usb_backpressure_and_disconnect(void) {
@@ -1092,6 +1126,7 @@ static void test_supervisor_queue_ownership(void) {
 }
 
 int main(void) {
+  test_direct_port_dispatch();
   for (unsigned address = 0; address < 256; ++address) {
     uint8_t port = (uint8_t)(address & 0x17);
     if (z80_io_ports_handles(port)) {

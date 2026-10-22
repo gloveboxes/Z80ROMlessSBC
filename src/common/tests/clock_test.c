@@ -23,6 +23,9 @@ static unsigned rises;
 static unsigned falls;
 static unsigned configuration_calls;
 static unsigned sio_selections;
+static unsigned pwm_disable_calls;
+static unsigned direction_writes;
+static unsigned function_reads;
 
 static void pin_level(bool high) {
   if (high == pin_high)
@@ -44,6 +47,8 @@ uint pwm_gpio_to_slice_num(uint pin) { assert(pin == PIN_CLK); return 0; }
 uint pwm_gpio_to_channel(uint pin) { assert(pin == PIN_CLK); return 0; }
 void pwm_set_enabled(uint slice, bool on) {
   assert(slice == 0);
+  if (!on)
+    ++pwm_disable_calls;
   enabled = on;
   if (on) {
     pwm_high = true;
@@ -75,7 +80,11 @@ void gpio_put(uint pin, bool high) {
       pin_level(high);
   }
 }
-void gpio_set_dir(uint pin, bool out) { assert(pin == PIN_CLK); output = out; }
+void gpio_set_dir(uint pin, bool out) {
+  assert(pin == PIN_CLK);
+  ++direction_writes;
+  output = out;
+}
 void gpio_set_function(uint pin, uint fn) {
   assert(pin == PIN_CLK);
   if (fn == GPIO_FUNC_SIO)
@@ -87,7 +96,11 @@ void gpio_set_function(uint pin, uint fn) {
     ++sio_selections;
   pin_level(fn == GPIO_FUNC_PWM ? pwm_high : sio_high);
 }
-uint gpio_get_function(uint pin) { assert(pin == PIN_CLK); return function; }
+uint gpio_get_function(uint pin) {
+  assert(pin == PIN_CLK);
+  ++function_reads;
+  return function;
+}
 void busy_wait_us_32(uint32_t delay) { assert(delay >= 1); now_us += delay; }
 
 static void stopped_pwm(bool high) {
@@ -135,9 +148,36 @@ static void test_rate(uint32_t requested) {
   }
 }
 
+static void test_prepared_steps(bool high) {
+  stopped_pwm(high);
+  pwm_disable_calls = direction_writes = function_reads = 0;
+  uint64_t start = now_us;
+  z80_clock_prepare_stepping();
+  assert(now_us - start == 1);
+  assert(!enabled && !pin_high && function == GPIO_FUNC_SIO);
+  assert(pwm_disable_calls == 1 && direction_writes == 1 && function_reads == 1);
+  unsigned selections = sio_selections;
+  const uint32_t half_periods[] = {1, 2, 50000};
+  for (size_t i = 0; i < sizeof(half_periods) / sizeof(half_periods[0]); ++i) {
+    start = now_us;
+    unsigned old_rises = rises, old_falls = falls;
+    z80_clock_step_prepared(half_periods[i]);
+    assert(now_us - start == 2 * half_periods[i] + 1);
+    assert(rises == old_rises + 1 && falls == old_falls + 1);
+    assert(last_fall - last_rise == half_periods[i]);
+    assert(now_us - last_fall == 1 && !pin_high && !enabled);
+    assert(pwm_disable_calls == 1 && direction_writes == 1 && function_reads == 1);
+    assert(sio_selections == selections);
+  }
+  z80_clock_resume();
+  assert(enabled && function == GPIO_FUNC_PWM);
+}
+
 int main(void) {
   test_step(true);
   test_step(false);
+  test_prepared_steps(true);
+  test_prepared_steps(false);
   z80_clock_stop();
   assert(!enabled && pin_high);
   const uint32_t clocks[] = {125000000, 144000000, 150000000, 160000000};

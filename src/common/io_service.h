@@ -18,6 +18,8 @@ typedef struct {
 void z80_io_service_init(void);
 io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
                                         size_t length, uint32_t generation);
+/* Core 0 only. A returned result remains valid until the next successful
+ * submit; core 0 must finish reading or discard it before submitting again. */
 const io_service_result_t *z80_io_service_poll(void);
 uint64_t z80_service_millis(void);
 uint16_t z80_service_random(void);
