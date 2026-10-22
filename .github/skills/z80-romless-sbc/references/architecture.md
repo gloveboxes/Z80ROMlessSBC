@@ -107,7 +107,7 @@ construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
 - Never pass the `0x290000` linker limit as a compiler definition for physical `PICO_FLASH_SIZE_BYTES`; the C macro must remain 4 MiB.
 - CP/M geometry is exactly 327,680 bytes = 2,560 x 128-byte records, 80 tracks x 32 records. It is not IBM 3740 geometry.
 - Cold boot recovers journals, validates CRCs, injects instructions to load/verify SRAM, resets again and starts only on success. BUSACK is used for flash quiescence, never cold loading.
-- Core0 owns GPIO, clock, injection and trapping; core1 owns networking/runtime flash writes. Flash offsets, journal, geometry and multicore lockout contracts are unchanged.
+- Core0 owns GPIO, clock, injection and trapping; core1 owns USB, networking and runtime flash writes. Stages 9/10 launch core1 before journal recovery; both cores participate in SDK flash lockout. Never enable `PICO_FLASH_ASSUME_CORE1_SAFE` with the USB core running. Flash offsets, journal and geometry are unchanged.
 - Stage 10 uses `pico_cyw43_arch_lwip_poll` on core1, not core0 network timers or a background architecture. USB provisioning passes requests/results through queues; core1 alone accesses ENV. A browser owns CP/M exclusively while connected, with USB fallback on disconnect. `FS_SERVER` is stored only; remote-FS I/O is deferred.
 - Runtime writes keep trapping armed until BUSACK# LOW and re-arm it before BUSACK# HIGH. Non-`PICO_OK` flash-safe results fail closed through watchdog reboot.
 - Wi-Fi polling is bounded and nonblocking. Core 1 services disk writes before network work on every loop.
@@ -123,8 +123,8 @@ design decision and validation of every affected caller.
 
 | Owner | Responsibilities | Boundary |
 | --- | --- | --- |
-| Core 0 | Z80 bus GPIO, PWM/stepped clocks, assisted SRAM loading, trap/IRQ completion, USB terminal/supervisor handling, flash-quiescence participation | No Wi-Fi, sockets, TLS/JSON, or runtime flash programming in the trap |
-| Core 1 | CYW43/lwIP, Wi-Fi lifecycle, HTTP/WebSocket, asynchronous weather/time services, ENV, runtime disk/service flash writes | No direct takeover of Z80 bus pins; request quiescence through the existing handshake |
+| Core 0 | Z80 bus GPIO, PWM/stepped clocks, assisted SRAM loading, trap/IRQ completion, queued Z80 supervisor requests, flash-quiescence participation | No USB endpoint calls; no Wi-Fi, sockets, TLS/JSON, or runtime flash programming in the trap |
+| Core 1 | USB initialization, IRQ/background tasks, terminal and supervisor framing, CYW43/lwIP, HTTP/WebSocket, asynchronous services, ENV, runtime disk/service writes | No direct takeover of Z80 bus pins; request Z80 actions and quiescence through queues |
 | Shared console router | Bounded RX/TX storage and exclusive USB/browser console ownership | Transport-neutral API; no Wi-Fi lifecycle or socket ownership |
 | Service orchestration | Service ordering, connectivity-generation propagation, and bounded scheduling | Disk first, then network progress; do not merge independent service state machines |
 
@@ -139,9 +139,19 @@ Follow maintained sources rather than creating parallel transport abstractions:
 - `src/stage10_websocket_terminal/network_services.c` orchestrates independent
   services. Weather/TLS must not become terminal or trap dependencies.
 - `src/common/terminal_queue.c` owns console rings and atomic ownership handover.
-  USB ingestion and supervisor commands remain in the shared Stage 9 application.
+  USB ingestion and supervisor framing run on core 1 in the shared Stage 9
+  application; only queued Z80 control requests execute on core 0.
   Never mix ordinary USB keystrokes into the browser-owned CP/M stream, leak stale
   queued bytes across handover, or replay unconfirmed input after reconnect.
+- `src/stage09_flash_storage/usb_console.c` registers bounded diagnostic stdout,
+  initializes USB and the SDK default alarm pool on core 1, and drains logs
+  there. The target skips runtime default-alarm initialization and disables the
+  SDK stdout mutex; no other core may call USB endpoints. The four-entry
+  command queue and 4 KiB log ring report overflow explicitly. Core 1 starts
+  before loading but runtime storage/service/network workers remain gated
+  until verified CP/M startup. USB is serviced while loading or paused/stopped.
+- These multicore USB contracts apply to Stages 9/10; earlier bring-up targets
+  retain their single-core diagnostic USB behavior.
 - Keep Z80 port/trap handlers as bounded adapters to buffers and worker requests.
   Do not perform slow service transactions synchronously in those handlers.
 

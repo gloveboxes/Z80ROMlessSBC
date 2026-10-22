@@ -47,5 +47,7 @@ absolute_time_t make_timeout_time_ms(uint32_t delay);
 bool time_reached(absolute_time_t deadline);
 void tight_loop_contents(void);
 void stdio_init_all(void);
+uint get_core_num(void);
+void alarm_pool_init_default(void);
 int getchar_timeout_us(uint32_t timeout_us);
 #endif

@@ -114,6 +114,7 @@ is not proof of that helper's real SDK implementation.
 | --- | --- | --- |
 | `flash_backend_recovery` | Actual `flash_backend.c`: manifest validation, byte loading/readback controller, cache, journal programming and recovery | Flash, SRAM byte access, bus/clock calls and reboot are modeled |
 | `stage09_usb_cpm` | Actual Stage 9 application functions and shared `terminal_queue.c` | Boot/storage and SDK calls are substituted; command/stop interleavings are driven by the harness |
+| `usb_core1_console` | Actual `usb_console.c` routing and bounded diagnostic ring | Modeled SDK endpoints assert core-1 affinity; checks concurrent producer/drain, CRLF vs raw console bytes, backpressure, wrap, overflow, disconnect and init failure, not physical IRQ delivery |
 | `stage09_autoboot_cpm` | The same application compiled with automatic startup, including its actual `main` initialization path | SDK/storage calls are substituted; tests cover boot before USB connection, retained CP/M output, late failure reporting and no automatic retries |
 | `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, queues, BUSY publication and fatal error latch | The flash backend is stubbed; this is not the journal test |
 | `assisted_loader`, `control_faults` | Shared injected-loader and control code | Cycle/pin models do not establish physical setup/hold timing |
@@ -124,6 +125,11 @@ programming and all eight supported watchdog fault points. The terminal
 test checks framing, ordinary CP/M input, queue/backpressure behavior,
 startup reports, safe stop and a **20 MHz start request**. That last check
 does not generate or measure a 20 MHz signal.
+The application harness also checks deferred supervisor commands, queue-full
+rejection, early core-1 startup, disk-first ordering, USB service while workers
+are disabled or paused, and fail-closed initialization. USB endpoint fakes
+reject any call from core 0; CPU-control fakes reject calls from core 1.
+The SDK alarm/USB IRQ affinity still needs verification on the board.
 
 For a focused native Phase 9 run:
 

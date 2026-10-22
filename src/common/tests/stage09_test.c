@@ -8,11 +8,43 @@
 #include "hardware/flash.h"
 
 static int firmware_printf(const char *format, ...);
+static unsigned fake_core;
+static bool connected;
+#define service_usb firmware_service_usb
+#define receive_usb_byte firmware_receive_usb_byte
 #define printf firmware_printf
 #define main stage09_firmware_main
 #include "../../stage09_flash_storage/main.c"
 #undef main
 #undef printf
+#undef receive_usb_byte
+#undef service_usb
+
+static void drain_control(void) {
+  while (queue_get_level(&control_commands))
+    service_control();
+}
+
+static void service_usb(void) {
+  publish_cpu_state();
+  fake_core = 1;
+  firmware_service_usb();
+  fake_core = 0;
+  drain_control();
+}
+
+static void receive_usb_byte(uint8_t value) {
+  publish_cpu_state();
+  usb_state = connected ? USB_CONNECTED : 0;
+#ifdef Z80_STAGE10_NETWORK
+  if (z80_terminal_browser_connected())
+    usb_state |= USB_BROWSER;
+#endif
+  fake_core = 1;
+  firmware_receive_usb_byte(value);
+  fake_core = 0;
+  drain_control();
+}
 
 static z80_boot_status_t status;
 uint8_t test_flash[PICO_FLASH_SIZE_BYTES];
@@ -26,7 +58,6 @@ static uint8_t disk_last_port;
 static uint32_t fake_disk_status;
 static uint32_t requested_clock;
 static bool held;
-static bool connected;
 static bool quiescent;
 static bool fatal;
 static bool interrupts_disabled;
@@ -34,6 +65,10 @@ static bool load_ok;
 static bool trap_ok;
 static bool run_ok;
 static bool exit_main;
+static bool usb_init_ok = true;
+static bool flash_init_ok = true;
+static uint32_t launch_ready_state = 1;
+static unsigned usb_services, disk_services, io_services, network_services;
 static jmp_buf main_exit;
 static z80_boot_error_t load_error;
 static uint64_t now;
@@ -58,15 +93,22 @@ size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
 }
 void z80_network_setup_init(void) {}
-void z80_network_setup_request(void) { ++setup_requests; }
+void z80_network_setup_request(void) {
+  assert(fake_core == 1);
+  ++setup_requests;
+}
 void z80_network_setup_usb_service(bool usb, bool active) {
+  assert(fake_core == 1);
   (void)usb; (void)active;
 }
 bool z80_network_setup_input(uint8_t value) { (void)value; return false; }
 bool z80_network_setup_active(void) { return false; }
 bool z80_network_setup_quiescent(void) { return true; }
 void z80_network_setup_core1_service(void) {}
-void z80_network_core1_service(void) {}
+void z80_network_core1_service(void) {
+  assert(fake_core == 1 && disk_services && io_services);
+  ++network_services;
+}
 #endif
 
 void z80_io_ports_init(void) {}
@@ -83,7 +125,10 @@ void z80_io_port_out(uint8_t port, uint8_t value) {
   (void)port; (void)value;
   ++service_writes;
 }
-void z80_io_ports_core1_service(void) {}
+void z80_io_ports_core1_service(void) {
+  assert(fake_core == 1 && disk_services);
+  ++io_services;
+}
 bool z80_io_ports_quiescent(void) { return true; }
 bool z80_io_ports_reboot_requested(void) { return false; }
 
@@ -122,16 +167,32 @@ bool queue_try_remove(queue_t *queue, void *item) {
   return true;
 }
 unsigned queue_get_level(queue_t *queue) { return queue->count; }
-void z80_safe_startup(void) { held = true; }
-void z80_cpu_fail_closed(void) { held = true; }
+void z80_safe_startup(void) { assert(fake_core == 0); held = true; }
+void z80_cpu_fail_closed(void) { assert(fake_core == 0); held = true; }
 void stdio_init_all(void) {}
-bool stdio_usb_connected(void) { return connected; }
-uint32_t tud_cdc_write_available(void) { return usb_room; }
+uint get_core_num(void) { return fake_core; }
+void z80_usb_console_prepare(void) { assert(fake_core == 0); }
+bool z80_usb_console_init(void) { assert(fake_core == 1); return usb_init_ok; }
+void z80_usb_console_service(void) {
+  assert(fake_core == 1);
+  ++usb_services;
+}
+uint32_t z80_usb_console_log_drops(void) { return 0; }
+bool flash_safe_execute_core_init(void) {
+  assert(fake_core == 1);
+  return flash_init_ok;
+}
+bool stdio_usb_connected(void) { assert(fake_core == 1); return connected; }
+uint32_t tud_cdc_write_available(void) {
+  assert(fake_core == 1);
+  return usb_room;
+}
 int getchar_timeout_us(uint32_t timeout) {
-  assert(timeout == 0);
+  assert(fake_core == 1 && timeout == 0);
   return input_index < input_length ? input[input_index++] : -1;
 }
 int putchar_raw(int value) {
+  assert(fake_core == 1);
   assert(connected && usb_room && output_length + 1 < sizeof(output));
   output[output_length++] = (char)value;
   output[output_length] = '\0';
@@ -140,6 +201,7 @@ int putchar_raw(int value) {
     connected = false;
   return value;
 }
+void z80_usb_console_put(uint8_t value) { putchar_raw(value); }
 bool watchdog_caused_reboot(void) { return watchdog_reset; }
 z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
   z80_io_trap_reset_fault_t fault = retained_reset_fault;
@@ -147,13 +209,14 @@ z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
   return fault;
 }
 void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
-  assert(pc == 0 && sp == 0 && delay == 0 && !running);
+  assert(fake_core == 0 && pc == 0 && sp == 0 && delay == 0 && !running);
   ++reboots;
 }
 void multicore_launch_core1(void (*entry)(void)) {
   assert(entry == core1_main);
-  assert(boot_attempted && image_verified && held);
+  assert(fake_core == 0 && !boot_attempted && held);
   ++core_launches;
+  core1_ready = launch_ready_state;
 }
 void multicore_launch_core1_with_stack(void (*entry)(void), uint32_t *stack,
                                       size_t stack_size) {
@@ -161,6 +224,7 @@ void multicore_launch_core1_with_stack(void (*entry)(void), uint32_t *stack,
   multicore_launch_core1(entry);
 }
 bool z80_cpu_release_reset_and_run(uint32_t hz) {
+  assert(fake_core == 0);
   requested_clock = hz;
   ++start_calls;
   if (run_ok)
@@ -168,6 +232,7 @@ bool z80_cpu_release_reset_and_run(uint32_t hz) {
   return run_ok;
 }
 bool z80_cpu_load_and_verify(const uint8_t *image, uint32_t length) {
+  assert(fake_core == 0);
   assert(image == z80_disk_diagnostic && length < 256);
   return load_ok;
 }
@@ -178,7 +243,8 @@ void set_sys_clock_pll(uint32_t vco, uint d1, uint d2) {
 }
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         z80_io_write_handler_t write_handler, void *context) {
-  assert(read_handler == virtual_read && write_handler == virtual_write);
+  assert(fake_core == 0 && read_handler == virtual_read &&
+         write_handler == virtual_write);
   assert(context == NULL);
   return trap_ok;
 }
@@ -201,6 +267,7 @@ absolute_time_t make_timeout_time_ms(uint32_t delay) {
 absolute_time_t get_absolute_time(void) { return now; }
 bool time_reached(absolute_time_t deadline) { return now >= deadline; }
 void sleep_ms(uint32_t delay) { now += delay * 1000u; }
+void busy_wait_us_32(uint32_t delay) { now += delay; }
 void tight_loop_contents(void) {
   if (exit_main)
     longjmp(main_exit, 1);
@@ -209,12 +276,15 @@ const z80_boot_status_t *z80_flash_boot_status(void) { return &status; }
 bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
                                      void *context) {
   assert(observer == observe_boot && context == NULL);
-  assert(held && !start_calls && !core_launches);
+  assert(fake_core == 0 && held && !start_calls);
   ++load_calls;
   held = true;
   status = (z80_boot_status_t){
     .phase = Z80_BOOT_LOAD, .completed = 4096, .total = 65536,
   };
+  fake_core = 1;
+  firmware_service_usb();
+  fake_core = 0;
   if (!observer(&status, context)) {
     status.error = Z80_BOOT_ERROR_CANCELLED;
     return false;
@@ -224,7 +294,10 @@ bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
   return load_ok;
 }
 void z80_flash_core0_service(void) {}
-void z80_flash_core1_service(void) {}
+void z80_flash_core1_service(void) {
+  assert(fake_core == 1);
+  ++disk_services;
+}
 uint8_t z80_flash_disk_io_read(uint8_t port) {
   disk_last_port = port;
   return 0x5A;
@@ -243,6 +316,15 @@ void z80_flash_disk_arm_fault(z80_flash_fault_point_t point) {
 }
 
 static void reset_fixture(void) {
+  fake_core = 0;
+  runtime_started = loading = startup_failed = false;
+  cpu_state = load_cancelled = core1_ready = workers_ready = 0;
+  usb_state = USB_CONNECTED;
+  previous_cpu_state = 0;
+  usb_init_ok = flash_init_ok = true;
+  launch_ready_state = 1;
+  usb_services = disk_services = io_services = network_services = 0;
+  queue_init(&control_commands, sizeof(uint16_t), 4);
   boot_attempted = image_verified = running = core1_started = false;
   command_pending = usb_was_connected = stop_requested = false;
   flush_submitted = flash_resuming = bios_announced = ccp_announced = false;
@@ -289,7 +371,7 @@ static void test_control_and_terminal(void) {
   command('l');
   assert(load_calls == 1 && image_verified && held && !core_launches);
   command('g');
-  assert(running && !held && start_calls == 1 && core_launches == 1);
+  assert(running && !held && start_calls == 1 && workers_ready);
   assert(requested_clock == 20000000);
   command('l');
   assert(load_calls == 1 && running);
@@ -686,7 +768,7 @@ static void test_stop_and_failure(void) {
   command('l');
   assert(held && !core_launches);
   if (Z80_STAGE09_AUTOBOOT) {
-    assert(image_verified && input_index == 0);
+    assert(image_verified && input_index == 1);
   } else {
     assert(!image_verified);
     assert(strstr(output, "cancelled"));
@@ -795,11 +877,13 @@ static void test_autoboot_progress(void) {
     }
   }
   connected = false;
+  usb_state = 0;
   size_t previous_length = output_length;
   status.completed = 4096;
   assert(observe_boot(&status, NULL));
   assert(output_length == previous_length);
   connected = true;
+  usb_state = USB_CONNECTED;
   status.completed = 8192;
   assert(observe_boot(&status, NULL));
   assert(strcmp(output + previous_length,
@@ -818,7 +902,7 @@ static void test_startup_without_usb(void) {
   run_firmware_once();
   assert(input_index == 0);
   if (!Z80_STAGE09_AUTOBOOT) {
-    assert(!load_calls && !start_calls && held && !core_launches);
+    assert(!load_calls && !start_calls && held && core_launches == 1);
     return;
   }
   assert(load_calls == 1 && start_calls == 1 && core_launches == 1);
@@ -865,7 +949,7 @@ static void test_autoboot_failures(void) {
     load_error = errors[index];
     run_firmware_once();
     assert(held && !running && !image_verified);
-    assert(load_calls == 1 && !start_calls && !core_launches);
+    assert(load_calls == 1 && !start_calls && core_launches == 1);
     assert(status.error == errors[index]);
     assert(boot_failure != NULL && strstr(output, "FAIL"));
     output[0] = '\0';
@@ -927,6 +1011,86 @@ static void test_autoboot_failures(void) {
   assert(strstr(output, "failure=fatal storage error"));
 }
 
+static void test_core1_lifecycle_and_pause(void) {
+  for (unsigned failure = 0; failure < 3; ++failure) {
+    reset_fixture();
+    usb_init_ok = failure != 1;
+    flash_init_ok = failure != 2;
+    fake_core = 1;
+    exit_main = true;
+    if (setjmp(main_exit) == 0)
+      core1_main();
+    fake_core = 0;
+    exit_main = false;
+    assert(core1_ready == (failure ? 2u : 1u));
+    assert(usb_services == (failure == 1 ? 0u : 1u));
+    assert(!disk_services && !io_services && !network_services);
+    assert(held && !load_calls && !start_calls);
+  }
+  reset_fixture();
+  workers_ready = 1;
+  fake_core = 1;
+  core1_service();
+  assert(disk_services == 1 && io_services == 1 && usb_services == 1);
+#ifdef Z80_STAGE10_NETWORK
+  assert(network_services == 1);
+#endif
+  flash_pause_request = 1;
+  core1_service();
+  assert(flash_paused && disk_services == 2 && io_services == 2);
+  assert(usb_services == 2);
+  core1_service();
+  assert(disk_services == 2 && io_services == 2 && usb_services == 3);
+  flash_pause_request = 0;
+  core1_service();
+  assert(!flash_paused && disk_services == 3 && io_services == 3);
+  assert(usb_services == 4);
+#ifdef Z80_STAGE10_NETWORK
+  assert(network_services == 2);
+#endif
+  fake_core = 0;
+}
+
+static void test_supervisor_queue_ownership(void) {
+  reset_fixture();
+  fake_core = 1;
+  static const uint8_t commands[] = {'l', 'g', 'x', 's', 'r'};
+  for (size_t i = 0; i < sizeof(commands); ++i) {
+    firmware_receive_usb_byte(USB_COMMAND_ESCAPE);
+    firmware_receive_usb_byte(commands[i]);
+  }
+  assert(queue_get_level(&control_commands) == 4);
+  assert(!load_calls && !start_calls && !reboots && held);
+  assert(strstr(output, "supervisor command queue full; retry command"));
+  fake_core = 0;
+  drain_control();
+  assert(load_calls == 1 && start_calls == 1 && running && stop_requested);
+  assert(!reboots);
+
+  reset_fixture();
+  loading = true;
+  publish_cpu_state();
+  fake_core = 1;
+  firmware_receive_usb_byte('x');
+  assert(load_cancelled == !Z80_STAGE09_AUTOBOOT);
+  assert(!queue_get_level(&control_commands) && held);
+  fake_core = 0;
+
+  reset_fixture();
+  startup_failed = true;
+  command('l');
+  command('g');
+  assert(held && !load_calls && !start_calls && !workers_ready);
+  assert(strstr(output, "initialization failed; CPU held reset"));
+
+  reset_fixture();
+  launch_ready_state = 2;
+  run_firmware_once();
+  assert(startup_failed && held && core_launches == 1);
+  assert(!load_calls && !start_calls && !workers_ready);
+  assert(strstr(output, "core 1 USB/flash-safe initialization; CPU held reset"));
+}
+
 int main(void) {
   for (unsigned address = 0; address < 256; ++address) {
     uint8_t port = (uint8_t)(address & 0x17);
@@ -955,6 +1119,8 @@ int main(void) {
   test_ansi_terminal_input();
   test_stop_and_failure();
   test_disk_diagnostic();
+  test_core1_lifecycle_and_pause();
+  test_supervisor_queue_ownership();
   puts("PASS: Phase 9 startup policy, nominal 20 MHz start, real terminal queues, "
        "USB framing/backpressure/mid-output disconnect, retained reset reports, "
        "ANSI key mapping/Escape timing, "

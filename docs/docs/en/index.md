@@ -44,6 +44,22 @@ See the [loader sequence](hardware/address-interface.md#loader-sequence) for
 the protocol and timing, and [Phase 6](implementation/phase-6-sram.md) for
 the implementation and hardware checks.
 
+## System architecture
+
+The Pico 2 W is a multicore I/O controller: core 0 generates the nominal
+20 MHz Z80 clock and owns assisted SRAM loading and Z80 I/O; core 1
+owns USB, runtime storage, Wi-Fi and network clients. Bounded console rings
+and request/result mailboxes separate the two cores. The Z80 itself writes
+SRAM during loading and executes CP/M directly from SRAM after verification
+and reset. USB supervisor commands request Z80 actions through a bounded queue;
+USB interrupts and endpoint operations remain on core 1.
+
+[![Hardware, multicore firmware and ROMless boot architecture](images/system-architecture.svg)](images/system-architecture.svg)
+
+[Open or download the full-size SVG](images/system-architecture.svg).
+The diagram follows the maintained Stage 10 implementation, which compiles
+the Stage 9 automatic-loader application with networking enabled.
+
 ## Explore further
 
 - [USB CP/M terminal and flash storage](implementation/phase-9-flash-storage.md) -

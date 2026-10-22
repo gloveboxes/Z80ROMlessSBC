@@ -14,7 +14,7 @@ typedef struct {
   char fs_server[16];
 } z80_network_config_t;
 
-/* Initialize before launching core 1. USB functions are core 0 only. */
+/* Initialize before launching core 1. All other functions are core 1 only. */
 void z80_network_setup_init(void);
 void z80_network_setup_request(void);
 void z80_network_setup_usb_service(bool connected, bool running);

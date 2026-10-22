@@ -15,7 +15,8 @@ The bring-up checkpoint is not the final storage pass gate.
 **Install:** No hardware rework. Keep the board's physical
 `PICO_FLASH_SIZE_BYTES` value at 4 MiB; the root `CMakeLists.txt` writes a
 `pico_flash_region.ld` include that limits linked firmware to `0x290000`.
-Define `PICO_FLASH_ASSUME_CORE1_SAFE=1` and link the libraries listed in
+Leave `PICO_FLASH_ASSUME_CORE1_SAFE` disabled: USB runs on core 1 even during
+journal recovery, so both cores participate in SDK flash lockout. Link the libraries listed in
 the [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage).
 Provision the manifest-backed boot package and all four 320 KiB disk slots
 with the verified `picotool` commands there.
@@ -100,11 +101,36 @@ diagnostic target remains available and still requires manual `l`/`g`.
 Every Pico reset now:
 
 1. Establishes safe GPIO levels, holds the Z80 in reset and stops its clock.
+   Launches core 1, which initializes its flash-lockout participation, the
+   default alarm pool and USB before acknowledging readiness.
 2. Recovers the flash journal and validates the boot manifest and payload CRC.
 3. Uses Z80-assisted loading to write the complete 65,536-byte SRAM image,
    then independently reads back and compares every byte.
 4. Resets the Z80 again, enables I/O trapping and starts CP/M at nominal 20 MHz.
 5. Continues terminal and disk service without waiting for a USB terminal.
+
+Core 0 owns Z80 GPIO, loading, clock generation and I/O traps. Core 1 owns
+all USB endpoint access, USB interrupts/background tasks, ANSI input mapping
+and terminal pumping, plus runtime storage and service workers. Core 1 starts
+before loading, but disk/service workers are enabled only after successful
+load/verify and CP/M startup. The earlier single-core bring-up stages are
+unchanged.
+
+USB supervisor commands cross a four-entry queue to core 0; they never
+manipulate Z80 GPIO from core 1. A full queue explicitly rejects the command
+and asks the user to retry. Core 0 publishes running/loading/stopping flags;
+manual-loader cancellation and USB connection state are published back from
+core 1. The cancellation check remains at a 256-byte loader checkpoint.
+
+Diagnostics from either core use a separate 4 KiB bounded log ring. Core 1
+drains at most 128 bytes per pass, subject to CDC room, without holding the
+ring lock over USB calls. Connected overflow is reported as `log_drops`;
+disconnected logs are discarded and not replayed. CP/M output retains its
+separate 512-byte terminal ring. The SDK stdout mutex is disabled for these
+targets, so core 0 never waits on USB output serialization.
+USB remains serviced while stopped or draining for a stop. Flash programming
+can temporarily suspend it through SDK lockout. Real enumeration, concurrent
+network traffic and timing still require bench acceptance.
 
 Connect picocom whenever convenient, using the actual USB CDC port name:
 
@@ -256,7 +282,8 @@ phase, address, expected/actual bytes and error category.
 Success says **65,536 bytes loaded and independently read back; CPU not
 running**. Check RESET LOW before proceeding. One load attempt is allowed
 per Pico boot; reboot after cancellation/failure or a stopped run instead
-of reinitializing live queues or replaying flash recovery alongside core 1.
+of reinitializing live storage queues. Initial journal recovery uses SDK
+lockout with the already-running USB core.
 
 ### 2. Optional read-only Z80 disk qualification
 

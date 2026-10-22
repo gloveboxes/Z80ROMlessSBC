@@ -44,7 +44,6 @@ add_library(z80_flash_disk STATIC
   common/environment_store.c
 )
 target_include_directories(z80_flash_disk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_compile_definitions(z80_flash_disk PUBLIC PICO_FLASH_ASSUME_CORE1_SAFE=1)
 target_link_libraries(z80_flash_disk PUBLIC
   z80_io_trap
   pico_flash

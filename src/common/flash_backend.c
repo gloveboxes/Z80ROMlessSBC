@@ -50,8 +50,8 @@ _Static_assert(Z80_FLASH_DISK_OFFSET +
                "disk slots must end at physical flash boundary");
 _Static_assert(FLASH_JOURNAL_PAIR_COUNT == 8,
                "journal layout changed unexpectedly");
-_Static_assert(PICO_FLASH_ASSUME_CORE1_SAFE,
-               "pre-launch recovery requires core 1 safe assumption");
+_Static_assert(!PICO_FLASH_ASSUME_CORE1_SAFE,
+               "USB core must participate in flash lockout during recovery");
 
 typedef struct {
   uint32_t magic;

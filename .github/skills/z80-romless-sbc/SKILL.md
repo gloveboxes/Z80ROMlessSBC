@@ -58,11 +58,17 @@ geometry, or flash layout.
 Apply these checks to every firmware change; the architecture reference defines
 the detailed contracts.
 
-- **Core 0:** Z80 bus GPIO, clock, assisted loading, trapping/stepped I/O, USB
-  terminal/supervisor handling, and the core-0 side of flash quiescence.
-- **Core 1:** CYW43/lwIP polling, Wi-Fi lifecycle, HTTP/WebSocket sessions,
+- **Core 0:** Z80 bus GPIO, clock, assisted loading, trapping/stepped I/O,
+  queued Z80 supervisor requests, and the core-0 side of flash quiescence.
+- **Core 1:** USB initialization, IRQ/background work, console and supervisor
+  framing, CYW43/lwIP polling, Wi-Fi lifecycle, HTTP/WebSocket sessions,
   asynchronous network services, ENV access, and runtime flash/storage work.
   Service pending disk work before network work; preserve regular network polls.
+- **USB isolation (Stages 9/10):** initialize the default alarm pool on core 1,
+  launch it before loading, and use real multicore lockout during recovery.
+  Keep USB endpoint calls off core 0; use bounded command/diagnostic queues
+  and atomic CPU-state/cancellation publication. Earlier single-core
+  bring-up stages retain their diagnostic USB setup.
 - **Separate responsibilities:** Wi-Fi publishes connectivity/address/generation,
   WebSocket owns sessions/protocol/backpressure, the console router owns
   transport-neutral queues and USB/browser ownership, and orchestration schedules

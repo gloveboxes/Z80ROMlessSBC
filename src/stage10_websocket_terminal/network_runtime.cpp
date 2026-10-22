@@ -107,8 +107,14 @@ extern "C" bool z80_network_poll(void) {
   if (wifi_state == WifiState::associating) {
     if (status == CYW43_LINK_UP) {
       int result = cyw43_wifi_pm(&cyw43_state, CYW43_NO_POWERSAVE_MODE);
-      if (result != PICO_OK)
-        printf("[network] FAIL: disabling Wi-Fi power saving=%d.\n", result);
+      if (result != PICO_OK) {
+        cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+        retry_deadline = make_timeout_time_ms(RETRY_DELAY_MS);
+        wifi_state = WifiState::association_backoff;
+        printf("[network] FAIL: disabling Wi-Fi power saving=%d; retry in 5 seconds.\n",
+               result);
+        return false;
+      }
       cyw43_arch_lwip_begin();
       if (!time_client_started) {
         sntp_setoperatingmode(SNTP_OPMODE_POLL);

@@ -68,11 +68,14 @@ include(../stage09_flash_storage/disk_diagnostic_build.cmake)
 add_z80_stage(z80_stage10_websocket_terminal ../stage09_flash_storage/main.c
   z80_io_services z80_flash_disk_20mhz z80_terminal pico_multicore)
 target_sources(z80_stage10_websocket_terminal PRIVATE
-  ../stage09_flash_storage/ansi_input.c ../common/onboard_led.c
+  ../stage09_flash_storage/ansi_input.c ../stage09_flash_storage/usb_console.c
+  ../common/onboard_led.c
   "${diagnostic_header}")
 target_include_directories(z80_stage10_websocket_terminal PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(z80_stage10_websocket_terminal PRIVATE
   Z80_STAGE09_AUTOBOOT=1 Z80_STAGE10_NETWORK=1
+  PICO_RUNTIME_SKIP_INIT_DEFAULT_ALARM_POOL=1
+  PICO_STDOUT_MUTEX=0
   PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=0
   PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000)

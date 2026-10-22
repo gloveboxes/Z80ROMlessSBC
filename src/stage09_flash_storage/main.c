@@ -4,9 +4,11 @@
 #include "hardware/flash.h"
 #include "hardware/watchdog.h"
 #include "hardware/sync.h"
+#include "pico/flash.h"
 #include "pico/multicore.h"
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
+#include "pico/util/queue.h"
 #include "tusb.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
@@ -18,6 +20,7 @@
 #include "z80sbc/supervisor.h"
 #include "z80sbc/terminal.h"
 #include "ansi_input.h"
+#include "usb_console.h"
 #include "disk_diagnostic_image.h"
 
 #ifdef Z80_STAGE10_NETWORK
@@ -33,17 +36,34 @@ enum {
   RUN_CLOCK_HZ = 20000000,
   SYSTEM_CLOCK_HZ = 120000000,
   USB_COMMAND_ESCAPE = 0x1D,
+  USB_REPORT_CONNECTION = 0x100,
   DISK_READY = 1,
   DISK_BUSY = 8,
   DIAGNOSTIC_BYTES = Z80_FLASH_DISK_SLOT_COUNT * Z80_FLASH_DISK_SLOT_BYTES,
+  CPU_RUNNING = 1u << 0,
+  CPU_STOPPING = 1u << 1,
+  CPU_LOADING = 1u << 2,
+  USB_CONNECTED = 1u << 0,
+  USB_BROWSER = 1u << 1,
+  USB_SETUP = 1u << 2,
 };
 
 static bool boot_attempted;
 static bool image_verified;
 static bool running;
 static bool core1_started;
+static bool runtime_started;
+static bool startup_failed;
+static bool loading;
+static uint32_t cpu_state;
+static uint32_t usb_state;
+static uint32_t load_cancelled;
+static uint32_t core1_ready;
+static uint32_t workers_ready;
+static queue_t control_commands;
 static bool command_pending;
 static bool usb_was_connected;
+static uint32_t previous_cpu_state;
 #ifdef Z80_STAGE10_NETWORK
 static bool browser_was_connected;
 _Alignas(8) static uint32_t core1_network_stack[8192 / sizeof(uint32_t)];
@@ -72,6 +92,15 @@ static uint32_t diagnostic_next_progress;
 static uint32_t diagnostic_fault_offset;
 static uint8_t diagnostic_expected;
 static uint8_t diagnostic_actual;
+
+static void service_usb(void);
+
+static void publish_cpu_state(void) {
+  __atomic_store_n(&cpu_state,
+                   (running ? CPU_RUNNING : 0) |
+                   (stop_requested ? CPU_STOPPING : 0) |
+                   (loading ? CPU_LOADING : 0), __ATOMIC_RELEASE);
+}
 
 static uint8_t virtual_read(uint8_t port, void *context) {
   (void)context;
@@ -121,8 +150,9 @@ static void virtual_write(uint8_t port, uint8_t value, void *context) {
   }
 }
 
-static void core1_main(void) {
-  while (true) {
+static void core1_service(void) {
+  bool active = __atomic_load_n(&workers_ready, __ATOMIC_ACQUIRE);
+  if (active) {
     if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE)) {
       if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
         z80_flash_core1_service();
@@ -143,9 +173,27 @@ static void core1_main(void) {
       z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
       z80_network_setup_core1_service();
-      z80_network_core1_service();
 #endif
     }
+  }
+  z80_usb_console_service();
+  service_usb();
+#ifdef Z80_STAGE10_NETWORK
+  if (active && !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE))
+    z80_network_core1_service();
+#endif
+}
+
+static void core1_main(void) {
+  bool flash_ready = flash_safe_execute_core_init();
+  bool usb_ready = z80_usb_console_init();
+  if (!flash_ready || !usb_ready)
+    printf("\n[diag] FAIL: core 1 USB/flash-safe initialization.\n");
+  __atomic_store_n(&core1_ready, flash_ready && usb_ready ? 1u : 2u,
+                    __ATOMIC_RELEASE);
+  while (true) {
+    if (usb_ready)
+      core1_service();
     tight_loop_contents();
   }
 }
@@ -153,7 +201,6 @@ static void core1_main(void) {
 static void hold_cpu(void) {
   z80_io_trap_disable();
   z80_cpu_fail_closed();
-  ansi_input_reset();
   running = false;
   image_verified = false;
   stop_requested = false;
@@ -189,30 +236,31 @@ static bool observe_boot(const z80_boot_status_t *status, void *context) {
     "SRAM verify", "verified; RESET held LOW",
   };
   if (status->completed % 4096u == 0 &&
-      (!Z80_STAGE09_AUTOBOOT || stdio_usb_connected()))
+      (!Z80_STAGE09_AUTOBOOT ||
+       (__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_CONNECTED)))
     printf("[boot] %s: %lu/%lu\n", phases[status->phase],
            (unsigned long)status->completed, (unsigned long)status->total);
   if (Z80_STAGE09_AUTOBOOT)
     return true;
-  for (unsigned int count = 0; count < 32; ++count) {
-    int input = getchar_timeout_us(0);
-    if (input < 0)
-      break;
-    if (input == 'x')
-      return false;
-  }
-  return stdio_usb_connected();
+  return !__atomic_load_n(&load_cancelled, __ATOMIC_ACQUIRE) &&
+         (__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_CONNECTED);
 }
 
 static void load_image(void) {
-  if (boot_attempted || running || core1_started) {
+  if (boot_attempted || running || runtime_started) {
     printf("\n[diag] Load already attempted; stop and reboot Pico to reload.\n");
     return;
   }
   boot_attempted = true;
+  loading = true;
+  __atomic_store_n(&load_cancelled, 0, __ATOMIC_RELEASE);
+  publish_cpu_state();
   if (!Z80_STAGE09_AUTOBOOT)
     printf("\n[boot] Load/verify only; x cancels at a 256-byte boundary.\n");
-  if (!z80_flash_storage_init_observed(observe_boot, NULL)) {
+  bool loaded = z80_flash_storage_init_observed(observe_boot, NULL);
+  loading = false;
+  publish_cpu_state();
+  if (!loaded) {
     const z80_boot_status_t *status = z80_flash_boot_status();
     boot_failure = boot_error_name(status->error);
     hold_cpu();
@@ -230,7 +278,7 @@ static void load_image(void) {
 }
 
 static void start_cpm(void) {
-  if (!image_verified || running || core1_started) {
+  if (!image_verified || running || runtime_started) {
     printf("\n[diag] Start rejected: first load/verify with Ctrl-] l; "
            "a stopped run requires Pico reboot.\n");
     return;
@@ -239,13 +287,7 @@ static void start_cpm(void) {
   bios_announced = ccp_announced = false;
   boot_timed_out = false;
   z80_io_ports_init();
-#ifdef Z80_STAGE10_NETWORK
-  multicore_launch_core1_with_stack(core1_main, core1_network_stack,
-                                   sizeof(core1_network_stack));
-#else
-  multicore_launch_core1(core1_main);
-#endif
-  core1_started = true;
+  runtime_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
       !z80_cpu_release_reset_and_run(RUN_CLOCK_HZ)) {
     boot_failure = "trap/clock start";
@@ -254,6 +296,7 @@ static void start_cpm(void) {
     return;
   }
   running = true;
+  __atomic_store_n(&workers_ready, 1, __ATOMIC_RELEASE);
   boot_deadline = make_timeout_time_ms(10000);
   if (!Z80_STAGE09_AUTOBOOT)
     printf("\n[boot] CPU released from reset; configured clock=%lu Hz. "
@@ -262,7 +305,7 @@ static void start_cpm(void) {
 }
 
 static void start_disk_diagnostic(void) {
-  if (!image_verified || core1_started || running) {
+  if (!image_verified || runtime_started || running) {
     printf("\n[diag] Disk test requires Ctrl-] l and no prior run.\n");
     return;
   }
@@ -306,14 +349,15 @@ static void print_status(void) {
   char address[16];
   bool has_address = z80_io_ports_get_network_address(address, sizeof(address)) != 0;
   printf("[network] browser=%u setup=%u ip=%s\n",
-         z80_terminal_browser_connected(), z80_network_setup_active(),
+         !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_BROWSER),
+         !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_SETUP),
          has_address ? address : "unavailable");
 #endif
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
          "trap_timeouts=%lu control_errors=%lu inactive_irqs=%lu boot_error=%s "
-         "failure=%s\n",
+         "failure=%s log_drops=%lu\n",
          running, image_verified, (unsigned long)z80_clock_get_hz(),
          bios_announced, ccp_announced,
          (unsigned long)z80_flash_disk_status(),
@@ -324,7 +368,8 @@ static void print_status(void) {
          (unsigned long)z80_io_trap_control_error_count(),
          (unsigned long)z80_io_trap_inactive_irq_count(),
          boot_error_name(boot->error),
-         boot_failure != NULL ? boot_failure : "none");
+         boot_failure != NULL ? boot_failure : "none",
+         (unsigned long)z80_usb_console_log_drops());
   if (boot->error != Z80_BOOT_ERROR_NONE)
     printf("[boot] phase=%u completed=%lu address=%04x "
            "expected=%02x actual=%02x\n",
@@ -367,13 +412,6 @@ static void diagnostic_command(int command) {
     print_status();
   } else if (command == 'h') {
     print_help();
-#ifdef Z80_STAGE10_NETWORK
-  } else if (command == 'n') {
-    if (running && !stop_requested)
-      z80_network_setup_request();
-    else
-      printf("\n[network setup] Rejected: CP/M must be running, not stopping.\n");
-#endif
   } else if (command == 'x') {
     if (!running || diagnostic_active) {
       hold_cpu();
@@ -421,10 +459,26 @@ static void forward_terminal_byte(uint8_t value) {
 }
 
 static void receive_usb_byte(uint8_t value) {
+  uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
   if (command_pending) {
     command_pending = false;
     if (value != USB_COMMAND_ESCAPE) {
-      diagnostic_command(value);
+#ifdef Z80_STAGE10_NETWORK
+      if (value == 'n') {
+        if ((state & (CPU_RUNNING | CPU_STOPPING)) == CPU_RUNNING)
+          z80_network_setup_request();
+        else
+          printf("\n[network setup] Rejected: CP/M must be running, not stopping.\n");
+        return;
+      }
+#endif
+      if (value == 'x' && (state & CPU_LOADING) && !Z80_STAGE09_AUTOBOOT)
+        __atomic_store_n(&load_cancelled, 1, __ATOMIC_RELEASE);
+      else {
+        uint16_t command = value;
+        if (!queue_try_add(&control_commands, &command))
+          printf("\n[diag] FAIL: supervisor command queue full; retry command.\n");
+      }
       return;
     }
   } else if (value == USB_COMMAND_ESCAPE) {
@@ -432,13 +486,19 @@ static void receive_usb_byte(uint8_t value) {
     command_pending = true;
     return;
   }
+  if (state & CPU_LOADING) {
+    if (value == 'x' && !Z80_STAGE09_AUTOBOOT)
+      __atomic_store_n(&load_cancelled, 1, __ATOMIC_RELEASE);
+    return;
+  }
 #ifdef Z80_STAGE10_NETWORK
-  if (running && !stop_requested && z80_network_setup_input(value))
+  if ((state & (CPU_RUNNING | CPU_STOPPING)) == CPU_RUNNING &&
+      z80_network_setup_input(value))
     return;
   if (z80_terminal_browser_connected())
     return;
 #endif
-  if (!running) {
+  if (!(state & CPU_RUNNING)) {
     if (Z80_STAGE09_AUTOBOOT)
       printf("\n[diag] CPU held; Ctrl-] s for status, "
              "Ctrl-] r to retry automatic boot.\n");
@@ -452,6 +512,12 @@ static void receive_usb_byte(uint8_t value) {
 
 static void service_usb(void) {
   bool connected = stdio_usb_connected();
+  uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
+  if (state != previous_cpu_state) {
+    ansi_input_reset();
+    previous_cr = false;
+    previous_cpu_state = state;
+  }
 #ifdef Z80_STAGE10_NETWORK
   z80_terminal_usb_connected(connected);
   bool browser_connected = z80_terminal_browser_connected();
@@ -460,29 +526,25 @@ static void service_usb(void) {
     previous_cr = false;
     browser_was_connected = browser_connected;
   }
-  z80_network_setup_usb_service(connected, running && !stop_requested);
+  z80_network_setup_usb_service(
+      connected, (state & (CPU_RUNNING | CPU_STOPPING)) == CPU_RUNNING);
 #else
   z80_terminal_set_connected(connected);
 #endif
+  __atomic_store_n(&usb_state, (connected ? USB_CONNECTED : 0)
+#ifdef Z80_STAGE10_NETWORK
+                   | (browser_connected ? USB_BROWSER : 0)
+                   | (z80_network_setup_active() ? USB_SETUP : 0)
+#endif
+                   , __ATOMIC_RELEASE);
   if (connected != usb_was_connected)
     ansi_input_reset();
   if (connected && !usb_was_connected) {
     command_pending = false;
     previous_cr = false;
-    if (reset_report_pending) {
-      print_reset_status();
-      reset_report_pending = false;
-    }
-    if (!Z80_STAGE09_AUTOBOOT) {
-      print_help();
-      print_status();
-    } else if (!running) {
-      printf("\n[boot] %s; RESET held LOW. Ctrl-] s for status, "
-             "Ctrl-] r to reboot.\n",
-             boot_failure != NULL ? "FAIL: automatic CP/M boot stopped"
-                                  : "CP/M stopped");
-      print_status();
-    }
+    uint16_t command = USB_REPORT_CONNECTION;
+    if (!queue_try_add(&control_commands, &command))
+      printf("\n[diag] FAIL: connection report queue full; Ctrl-] s for status.\n");
   }
   usb_was_connected = connected;
   if (!connected)
@@ -493,7 +555,7 @@ static void service_usb(void) {
       break;
     receive_usb_byte((uint8_t)input);
   }
-  if (running && !command_pending
+  if ((state & CPU_RUNNING) && !command_pending
 #ifdef Z80_STAGE10_NETWORK
       && !z80_network_setup_active() && !z80_terminal_browser_connected()
 #endif
@@ -511,7 +573,7 @@ static void service_usb(void) {
     if (z80_terminal_supply(&value, 1) == 0)
 #endif
       break;
-    putchar_raw(value);
+    z80_usb_console_put(value);
   }
   uint32_t rx = z80_terminal_rx_drop_count();
   uint32_t tx = z80_terminal_tx_drop_count();
@@ -522,6 +584,34 @@ static void service_usb(void) {
     reported_rx_drops = rx;
     reported_tx_drops = tx;
   }
+}
+
+static void service_control(void) {
+  uint16_t command;
+  if (queue_try_remove(&control_commands, &command)) {
+    if (command == USB_REPORT_CONNECTION) {
+      if (reset_report_pending) {
+        print_reset_status();
+        reset_report_pending = false;
+      }
+      if (!Z80_STAGE09_AUTOBOOT) {
+        print_help();
+        print_status();
+      } else if (!running && !loading && boot_attempted) {
+        printf("\n[boot] %s; RESET held LOW. Ctrl-] s for status, "
+               "Ctrl-] r to reboot.\n",
+               boot_failure != NULL ? "FAIL: automatic CP/M boot stopped"
+                                    : "CP/M stopped");
+        print_status();
+      }
+    } else if (startup_failed && command != 'r' && command != 's' &&
+               command != 'h') {
+      printf("\n[diag] Rejected: core 1 initialization failed; CPU held reset.\n");
+    } else {
+      diagnostic_command(command);
+    }
+  }
+  publish_cpu_state();
 }
 
 static void service_run(void) {
@@ -614,16 +704,35 @@ int main(void) {
   reset_fault = z80_io_trap_take_reset_fault();
   reset_report_pending = reset_was_watchdog;
   set_sys_clock_pll(1200000000, 5, 2);
-  stdio_init_all();
   z80_terminal_queue_init();
+  queue_init(&control_commands, sizeof(uint16_t), 4);
+  z80_usb_console_prepare();
 #ifdef Z80_STAGE10_NETWORK
   z80_network_setup_init();
 #endif
-  if (clock_get_hz(clk_sys) != SYSTEM_CLOCK_HZ) {
+  bool clock_ready = clock_get_hz(clk_sys) == SYSTEM_CLOCK_HZ;
+#ifdef Z80_STAGE10_NETWORK
+  multicore_launch_core1_with_stack(core1_main, core1_network_stack,
+                                   sizeof(core1_network_stack));
+#else
+  multicore_launch_core1(core1_main);
+#endif
+  core1_started = true;
+  absolute_time_t ready_deadline = make_timeout_time_ms(1000);
+  while (!__atomic_load_n(&core1_ready, __ATOMIC_ACQUIRE) &&
+         !time_reached(ready_deadline))
+    tight_loop_contents();
+  if (!clock_ready ||
+      __atomic_load_n(&core1_ready, __ATOMIC_ACQUIRE) != 1) {
     z80_cpu_fail_closed();
+    startup_failed = true;
+    boot_failure = !clock_ready ? "expected 120 MHz supervisor clock"
+                               : "core 1 USB/flash-safe initialization";
     while (true) {
-      printf("FAIL: expected 120 MHz supervisor clock; CPU held reset\n");
-      sleep_ms(1000);
+      printf("FAIL: %s; CPU held reset\n", boot_failure);
+      service_control();
+      busy_wait_us_32(1000000);
+      tight_loop_contents();
     }
   }
   if (Z80_STAGE09_AUTOBOOT) {
@@ -631,8 +740,9 @@ int main(void) {
     if (image_verified)
       start_cpm();
   }
+  publish_cpu_state();
   while (true) {
-    if (core1_started)
+    if (__atomic_load_n(&workers_ready, __ATOMIC_ACQUIRE))
       z80_flash_core0_service();
     if (core1_started && z80_io_ports_reboot_requested()) {
       hold_cpu();
@@ -640,8 +750,9 @@ int main(void) {
       while (true)
         tight_loop_contents();
     }
-    service_usb();
+    service_control();
     service_run();
+    publish_cpu_state();
     tight_loop_contents();
   }
 }

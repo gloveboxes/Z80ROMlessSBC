@@ -72,14 +72,21 @@ uses Ctrl-] n and the existing persistent ENV store.
 The WebSocket server must run on the Pico's other core so Wi-Fi, lwIP,
 HTTP serving, and WebSocket polling cannot interfere with the timing of
 the Z80-facing supervisor path. Core 0 owns GPIO, clock stop/resume, assisted
-loading, and the I/O trap. Core 1 owns Wi-Fi association, the
+loading, and the I/O trap. Core 1 owns USB initialization and interrupts,
+USB console/supervisor parsing, Wi-Fi association, the
 embedded terminal page, WebSocket accept/send/receive, and network
 polling. The cores share terminal byte queues, one immutable disk-write
 queue, a small request/result pair for Z80 bus ownership, and atomic
 terminal/disk status words; they share no raw bus GPIO ownership.
 Phase 10 uses the CYW43 polling architecture so network callbacks execute
-only on core 1. Provisioning requests/results also cross queues; only core 1
-reads or writes the ENV backend.
+only on core 1. USB commands use a bounded queue to request Z80 actions on
+core 0; USB never directly changes bus pins. Core 0 publishes CPU state and
+receives published cancellation/connectivity flags instead of reading USB.
+All stdout uses a bounded diagnostic ring drained only by core 1. Its default
+alarm pool is explicitly initialized there, keeping USB background work off
+core 0. Core 1 starts before journal recovery and participates in flash lockout;
+runtime workers start only after SRAM verification. Only core 1 reads or
+writes the runtime ENV backend.
 
 Use the `pico-altair-8800` WebSocket console as the software pattern:
 one embedded HTML terminal page, one WebSocket server, and byte queues
@@ -190,8 +197,8 @@ Ctrl+] `g` starts at nominal 20 MHz using a 120 MHz supervisor clock.
 The manifest must describe a complete 65,536-byte image beginning with
 `JP FD00h`. BIOS reports on reserved port `0x05` distinguish cold entry
 (`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
-and filesystem tests remain necessary. Stage 10 continues automatic startup
-at its separate 1 MHz default.
+and filesystem tests remain necessary. The separate Stage 9 automatic-loader
+target and Stage 10 use automatic verified startup at nominal 20 MHz.
 
 A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
 At startup, firmware replays complete, CRC-valid committed entries and rejects

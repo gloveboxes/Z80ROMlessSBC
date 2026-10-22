@@ -25,6 +25,9 @@ static uint64_t now;
 static int led_result;
 static unsigned polls;
 static int fake_link = CYW43_LINK_UP;
+static int power_mode_result = PICO_OK;
+static int power_mode_setting = -1;
+static unsigned power_mode_calls;
 static bool send_ok = true;
 static bool close_ok = true;
 static unsigned sends;
@@ -80,7 +83,11 @@ int cyw43_arch_wifi_connect_async(const char *ssid, const char *password, unsign
   return PICO_OK;
 }
 int cyw43_tcpip_link_status(cyw43_t *, int) { return fake_link; }
-int cyw43_wifi_pm(cyw43_t *, int) { return PICO_OK; }
+int cyw43_wifi_pm(cyw43_t *, int mode) {
+  power_mode_setting = mode;
+  ++power_mode_calls;
+  return power_mode_result;
+}
 int cyw43_wifi_leave(cyw43_t *, int) { return PICO_OK; }
 absolute_time_t make_timeout_time_ms(uint32_t delay) { return now + delay * 1000ull; }
 bool time_reached(absolute_time_t deadline) { return now >= deadline; }
@@ -217,7 +224,17 @@ int main() {
   outgoing = {'U'};
   assert(!poll_network());
   assert(outgoing == std::vector<uint8_t>{'U'} && disconnects == 0);
+  power_mode_result = -1;
+  assert(!poll_network());
+  assert(power_mode_calls == 1 &&
+         power_mode_setting == CYW43_NO_POWERSAVE_MODE &&
+         wifi_state == WifiState::association_backoff);
+  power_mode_result = PICO_OK;
+  advance(RETRY_DELAY_MS);
+  assert(!poll_network());
   assert(poll_network());
+  assert(power_mode_calls == 2 &&
+         power_mode_setting == CYW43_NO_POWERSAVE_MODE);
   assert(time_client_starts == 1 && std::string(service_address) == "192.0.2.1");
   assigned_address = "198.51.100.42";
   unsigned unchanged_polls = polls;

@@ -83,12 +83,22 @@ compiled by [Phase 10 CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSB
 with `Z80_STAGE09_AUTOBOOT=1` and `Z80_STAGE10_NETWORK=1`.
 
 - **Core 0:** safe GPIO startup, journal recovery, boot CRC validation,
-  assisted SRAM loading/read-back, Z80 clock and I/O trap, USB terminal and
-  framed supervisor commands. All initialization queues precede core-1 launch.
-- **Core 1:** runtime flash/disk writes, existing ROMLESS-SVC/1 services,
+  assisted SRAM loading/read-back, Z80 clock and I/O trap. It executes queued
+  Z80 supervisor requests and participates in flash quiescence; it never
+  accesses USB endpoints.
+- **Core 1:** all USB initialization, IRQ/background work, terminal input/output,
+  ANSI mapping and supervisor framing, runtime flash/disk writes, ROMLESS-SVC/1 services,
   ENV provisioning, Wi-Fi, HTTP and WebSocket. It services disk work first.
   The `pico_cyw43_arch_lwip_poll` architecture runs network callbacks only
   when core 1 polls, not through core-0 alarm/interrupt callbacks.
+- **Startup and USB isolation:** core 1 starts before loading, initializes the
+  SDK default alarm pool and USB there, and registers for flash lockout before
+  core 0 can recover the journal. Runtime workers remain gated until verified
+  CP/M startup. A four-entry supervisor queue and atomic state/cancellation
+  publication separate USB handling from Z80 operations. A 4 KiB diagnostic
+  ring routes all stdout to core 1, with a 128-byte per-pass drain budget,
+  explicit overflow reporting and no USB calls under its lock. USB remains
+  available during loading and stop/flush pauses.
 - **Shared terminal queues:** 128-byte RX and 512-byte TX fixed-size rings
   shared with Phase 9. One short spinlock critical section protects each
   operation; there are no nested per-byte SDK queue locks. Transport handover
@@ -119,7 +129,9 @@ stop/flush protocol remain unchanged.
 
 - `network_runtime.cpp` owns CYW43 polling, Wi-Fi association/retry, IPv4
   address publication and SNTP. It does not call terminal queues or WebSocket
-  code. Address publication is refreshed once per second, not on every loop.
+  code. It disables CYW43 power saving after association; if the driver rejects
+  that setting, it drops the link and retries instead of treating the connection
+  as online. Address publication is refreshed once per second, not on every loop.
 - `web_terminal.cpp` owns HTTP/WebSocket sessions, protocol negotiation,
   heartbeat and terminal flow control. It receives online state and a network
   generation from the application; it does not configure or poll Wi-Fi.
@@ -135,8 +147,10 @@ stop/flush protocol remain unchanged.
   [CHAT configuration and limits](../system/io-ports.md#chat-application-openai-and-ollama)
   for OpenAI and local Ollama setup. Stage 9 still reports chat UNAVAILABLE.
 - `terminal_queue.c` owns transport-neutral console storage and USB/browser
-  ownership. USB input, ANSI mapping and framed supervisor commands remain
-  on core 0 in the shared Stage 9 application.
+  ownership. USB input, ANSI mapping and supervisor framing run on core 1
+  in the shared Stage 9 application; only queued Z80 control requests execute
+  on core 0. `usb_console.c` owns USB/alarm initialization and bounded diagnostic
+  routing so even lower-level stdout cannot invoke USB on core 0.
 
 The WebSocket submodule contains the transport fixes directly; there is no
 generated handler patch. Enqueue success is separate from TCP flushing, with
@@ -254,9 +268,11 @@ future submodule commits to the fork before updating the parent gitlink.
 
 ## Required Integration Order
 
-Preserve Phase 9 startup: safe GPIOs, queue initialization, slow load and
-independent read-back with RESET held, then core-1 launch, trap enable and
-the configured 20 MHz run clock. A boot failure leaves RESET asserted.
+Preserve Phase 9 startup: safe GPIOs and console/control queue initialization,
+then early core-1 USB/flash-lockout readiness. Core 0 performs journal recovery,
+slow load and independent read-back with RESET held, initializes storage/service
+queues before enabling their workers, then enables the trap and configured
+20 MHz run clock. A boot or core-1 initialization failure leaves RESET asserted.
 Core 0 continuously services flash ownership requests. Stop drains pending
 disk/service/provisioning work before holding RESET. Reboot reloads CP/M;
 the former Phase 10 variable-clock and RAM qualification controls are not

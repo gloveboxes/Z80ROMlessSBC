@@ -44,6 +44,13 @@ bring-up.
 
 ### Shared Firmware Modules
 
+Stage 9 and Stage 10 also share
+[`usb_console.c`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/usb_console.c)
+and its [header](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/usb_console.h):
+core-1 USB/alarm initialization, endpoint ownership and bounded multicore
+diagnostic routing. Supervisor parsing runs on core 1 in the shared application;
+queued Z80 control requests execute only on core 0.
+
 | Module | Public interface | Implementation | Responsibility |
 | --- | --- | --- | --- |
 | Pin map | [pins.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/pins.h) | Header-only | Authoritative Pico GPIO assignments |
