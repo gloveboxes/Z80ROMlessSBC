@@ -347,6 +347,78 @@ static void test_small_frame_boundary() {
   assert(after.full_frames == before.full_frames);
 }
 
+static void test_input_ack_recovery() {
+  connect_client(20);
+  message(20, READY, PROTOCOL_VERSION);
+  send_ok = false;
+  message(20, INPUT, 1, 1, 'K');
+  assert(received == std::vector<uint8_t>{'K'} && input_sequence == 2);
+  uint64_t recovery_time = now;
+  for (unsigned i = 0; i < 3; ++i) {
+    unsigned before = sends;
+    poll_terminal();
+    assert(sends == before + 1 && sent[0] == INPUT_ACK);
+    assert(read_sequence(sent.data() + 1) == 1);
+    assert(received == std::vector<uint8_t>{'K'} && input_sequence == 2);
+  }
+  send_ok = true;
+  unsigned before = sends;
+  poll_terminal();
+  assert(now == recovery_time && sends == before + 1);
+  assert(sent[0] == INPUT_ACK && read_sequence(sent.data() + 1) == 1);
+  poll_terminal();
+  assert(sends == before + 1);
+
+  // A rejected ACK for duplicate input needs the same service-pass retry.
+  send_ok = false;
+  message(20, INPUT, 1, 1, 'K');
+  send_ok = true;
+  before = sends;
+  poll_terminal();
+  assert(sends == before + 1 && received == std::vector<uint8_t>{'K'});
+  assert(sent[0] == INPUT_ACK && read_sequence(sent.data() + 1) == 1);
+  poll_terminal();
+  assert(sends == before + 1);
+
+  received.clear();
+  input_sequence = UINT32_MAX;
+  for (uint32_t sequence : {UINT32_MAX, uint32_t{0}}) {
+    send_ok = false;
+    message(20, INPUT, sequence, 1, 'W');
+    send_ok = true;
+    before = sends;
+    poll_terminal();
+    assert(sends == before + 1 && input_sequence == sequence + 1);
+    assert(sent[0] == INPUT_ACK && read_sequence(sent.data() + 1) == sequence);
+    poll_terminal();
+    assert(sends == before + 1);
+  }
+  assert(received == std::vector<uint8_t>({'W', 'W'}));
+
+  // Neither connection replacement nor network loss may replay an old ACK.
+  send_ok = false;
+  message(20, INPUT, 1, 1, 'X');
+  close_client(20);
+  poll_terminal();
+  send_ok = true;
+  connect_client(21);
+  message(21, READY, PROTOCOL_VERSION);
+  before = sends;
+  poll_terminal();
+  assert(sends == before && received.empty() && input_sequence == 1);
+  send_ok = false;
+  message(21, INPUT, 1, 1, 'Y');
+  z80_web_terminal_poll(false, z80_network_generation());
+  send_ok = true;
+  connect_client(22);
+  message(22, READY, PROTOCOL_VERSION);
+  before = sends;
+  poll_terminal();
+  assert(sends == before && received.empty() && input_sequence == 1);
+  close_client(22);
+  poll_terminal();
+}
+
 int main() {
   struct netif interface = {};
   netif_default = &interface;
@@ -442,6 +514,14 @@ int main() {
   assert(received.size() == 64 && input_sequence == 4);
   assert(pending_input_length == 0);
   send_ok = true;
+  old_sends = sends;
+  uint64_t recovery_time = now;
+  poll_terminal();
+  assert(now == recovery_time && sends == old_sends + 1);
+  assert(received.size() == 64 && sent[0] == INPUT_ACK);
+  assert(read_sequence(sent.data() + 1) == 3);
+  poll_terminal();
+  assert(sends == old_sends + 1);
   message(1, INPUT, 3, 64, 'C');
   assert(received.size() == 64 && sent[0] == INPUT_ACK);
 
@@ -624,7 +704,9 @@ int main() {
   now += (uint64_t)UINT32_MAX + 1;
   assert(!poll_network());
   assert(z80_network_max_poll_gap_us() == UINT32_MAX);
+  test_input_ack_recovery();
   delete server;
   puts("PASS: four-frame window, cumulative/wrapping ACKs, ordered send failure, "
-       "batched flush/backpressure, immediate pending input, network lifecycle, heartbeat and USB preservation");
+       "batched flush/backpressure, immediate pending input and ACK recovery, "
+       "network lifecycle, heartbeat and USB preservation");
 }

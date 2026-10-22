@@ -246,6 +246,10 @@ when the queue is full and retries admission on every service pass, without
 waiting for the browser's 250 ms loss-recovery timer. There remains at most
 one unacknowledged input frame. Duplicate accepted input is acknowledged but
 never enqueued twice; pending duplicates do not use extra storage.
+If TCP rejects an input ACK, the Pico retains it and retries on every service
+pass, including ACKs for duplicate input, without waiting for browser
+retransmission. Once TCP accepts the ACK, any failed flush is retried by the
+transport without re-enqueueing it. Session teardown clears pending ACKs.
 No browser-input bytes are evicted to make room. The page queues at most
 64 KiB of unconfirmed input, rejects a new
 paste in its entirety if that bound would be exceeded, and displays an error.

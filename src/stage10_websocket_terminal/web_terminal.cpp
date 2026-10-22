@@ -50,6 +50,7 @@ uint8_t pending_input[INPUT_BYTES];
 size_t pending_input_length;
 uint32_t output_sequence;
 uint32_t input_sequence;
+bool input_ack_pending;
 bool protocol_ready;
 WebSocketServer *server;
 bool server_started;
@@ -113,6 +114,7 @@ void reset_session() {
   protocol_ready = false;
   input_sequence = output_sequence = 1;
   output_head = output_count = pending_input_length = 0;
+  input_ack_pending = false;
   observe_window_wait();
   staged_output_length = 0;
   retained_output_bytes = 0;
@@ -145,12 +147,19 @@ bool send_control(uint8_t type, uint32_t sequence) {
                              sizeof(frame));
 }
 
+void retry_input_ack() {
+  if (input_ack_pending && send_control(INPUT_ACK, input_sequence - 1))
+    input_ack_pending = false;
+}
+
 void accept_pending_input() {
   if (!pending_input_length ||
       !z80_terminal_browser_try_receive(pending_input, pending_input_length))
     return;
   pending_input_length = 0;
-  send_control(INPUT_ACK, input_sequence++);
+  ++input_sequence;
+  input_ack_pending = true;
+  retry_input_ack();
 }
 
 void on_connect(WebSocketServer &websocket, uint32_t connection) {
@@ -217,7 +226,8 @@ void on_message(WebSocketServer &, uint32_t connection,
       pending_input_length = bytes;
       accept_pending_input();
     } else if (sequence == input_sequence - 1) {
-      send_control(INPUT_ACK, sequence);
+      input_ack_pending = true;
+      retry_input_ack();
     } else {
       printf("[network] FAIL: out-of-order terminal input; disconnecting.\n");
       disconnect_client();
@@ -433,6 +443,7 @@ extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
     server->popMessages();
     process_events();
     accept_pending_input();
+    retry_input_ack();
     poll_output();
   } else if (server != nullptr) {
     server->popMessages();
