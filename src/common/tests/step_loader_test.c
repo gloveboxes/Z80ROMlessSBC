@@ -236,6 +236,15 @@ bool gpio_get(uint pin) {
     return levels[pin];
   }
 }
+uint32_t gpio_get_all(void) {
+  uint32_t value = 0;
+  for (uint pin = 0; pin < 32; ++pin) {
+    if (pin >= PIN_DATA_0 && pin <= PIN_DATA_7 && rd_n && wr_n)
+      continue;
+    value |= (uint32_t)gpio_get(pin) << pin;
+  }
+  return value;
+}
 void gpio_set_dir(uint pin, bool output) {
   assert(!output || preloaded[pin]);
   if (output && pin >= PIN_DATA_0 && pin <= PIN_DATA_7) {

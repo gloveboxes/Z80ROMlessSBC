@@ -16,6 +16,16 @@ void gpio_put(uint pin, bool value);
 bool gpio_get(uint pin);
 uint32_t gpio_get_all(void);
 void gpio_set_dir(uint pin, bool output);
+static inline void gpio_put_masked(uint32_t mask, uint32_t value) {
+  for (uint pin = 0; pin < 32; ++pin)
+    if (mask & (1u << pin))
+      gpio_put(pin, (value & (1u << pin)) != 0);
+}
+static inline void gpio_set_dir_masked(uint32_t mask, uint32_t value) {
+  for (uint pin = 0; pin < 32; ++pin)
+    if (mask & (1u << pin))
+      gpio_set_dir(pin, (value & (1u << pin)) != 0);
+}
 void gpio_set_function(uint pin, uint function);
 uint gpio_get_function(uint pin);
 void gpio_disable_pulls(uint pin);

@@ -21,6 +21,7 @@
 #include "disk_diagnostic_image.h"
 
 #ifdef Z80_STAGE10_NETWORK
+#include "network_runtime.h"
 #include "network_setup.h"
 #endif
 
@@ -142,7 +143,7 @@ static void core1_main(void) {
       z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
       z80_network_setup_core1_service();
-      z80_terminal_core1_service();
+      z80_network_core1_service();
 #endif
     }
     tight_loop_contents();
@@ -415,7 +416,7 @@ static void forward_terminal_byte(uint8_t value) {
 #ifdef Z80_STAGE10_NETWORK
   z80_terminal_usb_receive(value);
 #else
-  z80_terminal_network_receive(&value, 1);
+  z80_terminal_receive(&value, 1);
 #endif
 }
 
@@ -507,7 +508,7 @@ static void service_usb(void) {
     if (z80_network_setup_active() ||
         z80_terminal_usb_supply(&value, 1) == 0)
 #else
-    if (z80_terminal_network_supply(&value, 1) == 0)
+    if (z80_terminal_supply(&value, 1) == 0)
 #endif
       break;
     putchar_raw(value);

@@ -63,6 +63,11 @@ capture both stopped phases to rule out short pulses. A stuck
 strobe times out after 500 ms and causes fail-closed reset/watchdog recovery.
 U3 also gates upward OE with RD; no SPI or address-driver operation occurs.
 
+Shared bus access uses one GPIO snapshot for port/data sampling and masked
+SIO writes for data preload and direction changes. Data GPIO pads are
+initialized at safe startup rather than on every OUT. All isolation,
+preload-before-drive and settling guards above remain in force.
+
 Decode is `address & 0x17`: `00/01` terminal and `10-14` disk ports retain
 their contracts. A3/A5-A7 and high-byte aliases are intentional. A trap while
 BUSACK LOW is ignored and IRQ disabled until the grant-release path rearms it.

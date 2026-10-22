@@ -323,8 +323,6 @@
         online: navigator.onLine,
         term: null,
         reconnectAttempts: 0,
-        maxReconnectAttempts: 5,
-        reconnectDelay: 2000,
         pasteHandler: null,
         keyHandler: null,
         cleanupInterval: null,
@@ -336,7 +334,9 @@
         inputSequence: 1,
         inputFrame: null,
         outputSequence: 1,
-        outputWriting: false,
+        outputReceivedSequence: 1,
+        outputPending: 0,
+        protocolGeneration: 0,
         protocolReady: false,
         encoder: new TextEncoder()
       };
@@ -352,11 +352,14 @@
         INPUT_FRAME_BYTES: 64,
         MAX_PENDING_INPUT: 65536,
         INPUT_RETRY_MS: 250,
+        PROTOCOL_VERSION: 2,
+        OUTPUT_WINDOW: 4,
         STORAGE_THEME_KEY: 'altair_theme',
         DEFAULT_THEME: 'dark',
         MAX_SCROLLBACK_LINES: 1000,
         BUFFER_CLEANUP_INTERVAL: 300000, // 5 minutes
         RECONNECT_DELAY: 2000,
+        MAX_RECONNECT_ATTEMPTS: 5,
         CONNECTION_TIMEOUT: 5000  // 5 second connection timeout
       };
 
@@ -412,7 +415,9 @@
         state.inputFrame = null;
         state.inputSequence = 1;
         state.outputSequence = 1;
-        state.outputWriting = false;
+        state.outputReceivedSequence = 1;
+        state.outputPending = 0;
+        state.protocolGeneration++;
         state.protocolReady = false;
       }
 
@@ -451,9 +456,9 @@
         const frame = new Uint8Array(data);
         if (frame.length < 5) throw new Error("Invalid terminal protocol; reload this page.");
         const sequence = new DataView(frame.buffer, frame.byteOffset, frame.byteLength).getUint32(1, true);
-        if (frame[0] === PROTOCOL.HELLO && frame.length === 5 && sequence === 1) {
+        if (frame[0] === PROTOCOL.HELLO && frame.length === 5 && sequence === CONFIG.PROTOCOL_VERSION) {
           state.protocolReady = true;
-          sendToServer(protocolFrame(PROTOCOL.READY, 1));
+          sendToServer(protocolFrame(PROTOCOL.READY, CONFIG.PROTOCOL_VERSION));
           if (!state.inputFrame) pumpInput();
         } else if (frame[0] === PROTOCOL.INPUT_ACK && frame.length === 5) {
           if (state.inputFrame && sequence === state.inputSequence) {
@@ -466,20 +471,28 @@
           }
         } else if (frame[0] === PROTOCOL.OUTPUT && state.protocolReady &&
                    frame.length > 5 && frame.length <= 261) {
-          if (sequence === ((state.outputSequence - 1) >>> 0)) {
-            sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, sequence));
-          } else if (sequence === state.outputSequence) {
-            if (state.outputWriting) return;
-            state.outputWriting = true;
-            // ACK only after xterm consumes the bytes, bounding its own backlog.
+          if (sequence === state.outputReceivedSequence) {
+            if (state.outputPending >= CONFIG.OUTPUT_WINDOW) {
+              throw new Error("Terminal output window exceeded; reconnect.");
+            }
+            state.outputReceivedSequence = (sequence + 1) >>> 0;
+            state.outputPending++;
+            const generation = state.protocolGeneration;
+            // Keep at most four writes queued, and ACK only consumed bytes.
             state.term.write(frame.slice(5), () => {
-              if (socket !== state.ws) return;
-              state.outputWriting = false;
+              if (socket !== state.ws || generation !== state.protocolGeneration) return;
+              state.outputPending--;
               state.outputSequence = (state.outputSequence + 1) >>> 0;
               sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, sequence));
             });
           } else {
-            throw new Error("Out-of-order terminal output; reconnect.");
+            const consumed = (state.outputSequence - sequence) >>> 0;
+            const pending = (state.outputReceivedSequence - sequence) >>> 0;
+            if (consumed > 0 && consumed < 0x80000000) {
+              sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, (state.outputSequence - 1) >>> 0));
+            } else if (pending === 0 || pending > CONFIG.OUTPUT_WINDOW) {
+              throw new Error("Out-of-order terminal output; reconnect.");
+            }
           }
         } else {
           throw new Error("Unsupported terminal protocol; reload this page.");

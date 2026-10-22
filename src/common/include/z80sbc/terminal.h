@@ -11,16 +11,14 @@ extern "C" {
 
 void z80_terminal_queue_init(void);
 void z80_terminal_set_connected(bool connected);
-void z80_terminal_core1_service(void);
 uint8_t z80_terminal_io_read(uint8_t port);
 void z80_terminal_io_write(uint8_t port, uint8_t value);
 
-void z80_terminal_network_receive(const uint8_t *data, size_t length);
-bool z80_terminal_network_try_receive(const uint8_t *data, size_t length);
-size_t z80_terminal_network_supply(uint8_t *data, size_t capacity);
-void z80_terminal_network_connected(void);
-void z80_terminal_network_disconnected(void);
-void z80_terminal_network_tx_dropped(size_t count);
+void z80_terminal_receive(const uint8_t *data, size_t length);
+size_t z80_terminal_supply(uint8_t *data, size_t capacity);
+bool z80_terminal_browser_try_receive(const uint8_t *data, size_t length);
+void z80_terminal_browser_connect(void);
+void z80_terminal_browser_disconnect(void);
 
 uint32_t z80_terminal_rx_drop_count(void);
 uint32_t z80_terminal_tx_drop_count(void);

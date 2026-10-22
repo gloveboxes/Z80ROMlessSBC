@@ -10,14 +10,17 @@ This also works when the HTML is opened locally or served on another port.
 The emulator-only CPU Monitor button is now Enter; Ctrl-M sends carriage
 return, and Page Up/Down match Phase 9's CP/M mappings.
 
-The page speaks the version-1 acknowledged binary terminal protocol described
+The page speaks the version-2 acknowledged binary terminal protocol described
 in the [Phase 10 guide](../../../docs/docs/en/implementation/phase-10-websocket.md).
 It is not a raw-byte WebSocket client. Output is acknowledged after xterm
-consumes it; input is sent in 64-byte frames only as the Pico acknowledges
-queue acceptance. Retries use the same sequence number to prevent duplicate
+consumes it, using cumulative ACKs and at most four queued output frames
+(1,024 bytes). Input is sent in 64-byte frames only as the Pico acknowledges
+queue acceptance; a full Pico RX queue retains one pending frame and admits
+it as soon as space is available. Retries use the same sequence number to prevent duplicate
 input/output. Up to 64 KiB of unconfirmed input is buffered; excess new input
 is rejected with a visible error. Unconfirmed bytes are cleared, never replayed,
-on disconnect. Reload the page after updating the firmware.
+on disconnect. Reload the page after updating the firmware; version-1 pages
+are not compatible. Browser reconnect attempts are capped at five.
 
 The page loads xterm.js and the fit addon from public CDNs; xterm CSS is inline.
 The browser therefore needs Internet access on first use; the Pico serves the

@@ -21,6 +21,10 @@ set(ws_source ${CMAKE_CURRENT_LIST_DIR}/lib/pico-ws-server)
 if(NOT EXISTS ${ws_source}/include/pico_ws_server/web_socket_server.h)
   message(FATAL_ERROR "Initialize submodules: git submodule update --init --recursive")
 endif()
+include(websocket_close.cmake)
+z80_configure_websocket_handler(
+  "${ws_source}/src/web_socket_handler.cpp"
+  "${stage10_generated_dir}/web_socket_handler.cpp")
 add_library(lwipopts_provider INTERFACE)
 target_include_directories(lwipopts_provider INTERFACE
   ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../common/include)
@@ -29,7 +33,7 @@ add_library(z80_pico_ws_server STATIC
   ${ws_source}/src/client_connection.cpp
   ${ws_source}/src/http_handler.cpp
   ${ws_source}/src/web_socket_frame_builder.cpp
-  ${ws_source}/src/web_socket_handler.cpp
+  ${stage10_generated_dir}/web_socket_handler.cpp
   ${ws_source}/src/web_socket_message_builder.cpp
   ${ws_source}/src/web_socket_server.cpp
   ${ws_source}/src/web_socket_server_internal.cpp)
@@ -42,8 +46,8 @@ target_link_libraries(z80_pico_ws_server PUBLIC
   pico_stdlib pico_cyw43_arch_lwip_poll pico_mbedtls lwipopts_provider)
 
 add_library(z80_terminal STATIC
-  ../common/terminal_bridge.c
-  ../common/terminal_network.cpp
+  network_services.c network_runtime.cpp
+  web_terminal.cpp
   ../common/weather_http.c
   weather_network.cpp
   network_setup.c)
@@ -53,7 +57,7 @@ target_include_directories(z80_terminal PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/../common
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
 set_source_files_properties(
-  ../common/terminal_bridge.c ../common/terminal_network.cpp
+  network_services.c network_runtime.cpp web_terminal.cpp
   ../common/weather_http.c weather_network.cpp network_setup.c
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 target_link_libraries(z80_terminal PUBLIC

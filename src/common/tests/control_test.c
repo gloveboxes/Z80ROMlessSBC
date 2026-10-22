@@ -265,6 +265,12 @@ int main(void) {
   assert(levels[PIN_DATA_UP_OE_N] && !levels[PIN_DATA_DOWN_OE_N]);
   z80_data_bus_drive(0x5A);
   assert(!levels[PIN_DATA_UP_OE_N] && levels[PIN_DATA_DOWN_OE_N]);
+  for (unsigned value = 0; value < 256; ++value) {
+    z80_data_bus_drive((uint8_t)value);
+    assert(z80_data_bus_sample() == value);
+    z80_data_bus_prepare_input();
+    assert(z80_data_bus_sample() == value);
+  }
   fixture();
   assert(!z80_cpu_request_bus(10) && levels[PIN_BUSREQ_N]);
   levels[PIN_BUSACK_N] = false;

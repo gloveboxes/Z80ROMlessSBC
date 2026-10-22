@@ -1,20 +1,18 @@
 #include "z80sbc/bus.h"
 
-#include <stddef.h>
-
 #include "pico/stdlib.h"
 #include "z80sbc/pins.h"
 
-static const uint DATA_PINS[] = {
-  PIN_DATA_0, PIN_DATA_1, PIN_DATA_2, PIN_DATA_3,
-  PIN_DATA_4, PIN_DATA_5, PIN_DATA_6, PIN_DATA_7,
-};
+enum { DATA_MASK = 0xFFu << PIN_DATA_0 };
+_Static_assert(PIN_DATA_7 == PIN_DATA_0 + 7, "data GPIOs must be contiguous");
+_Static_assert(PIN_PORT_A1 == PIN_PORT_A0 + 1 &&
+                   PIN_PORT_A2 == PIN_PORT_A0 + 2 &&
+                   PIN_PORT_A4 == PIN_PORT_A0 + 3,
+               "port GPIO snapshot mapping changed");
 
 uint8_t z80_port_bus_sample(void) {
-  return (uint8_t)(gpio_get(PIN_PORT_A0) |
-                   (gpio_get(PIN_PORT_A1) << 1) |
-                   (gpio_get(PIN_PORT_A2) << 2) |
-                   (gpio_get(PIN_PORT_A4) << 4));
+  uint32_t pins = gpio_get_all() >> PIN_PORT_A0;
+  return (uint8_t)((pins & 7u) | ((pins & 8u) << 1));
 }
 
 void z80_data_bus_isolate(void) {
@@ -25,28 +23,19 @@ void z80_data_bus_isolate(void) {
 void z80_data_bus_drive(uint8_t value) {
   z80_data_bus_isolate();
   busy_wait_us_32(1);
-  for (size_t index = 0; index < 8; ++index) {
-    gpio_put(DATA_PINS[index], (value >> index) & 1u);
-    gpio_set_dir(DATA_PINS[index], GPIO_OUT);
-  }
+  gpio_put_masked(DATA_MASK, (uint32_t)value << PIN_DATA_0);
+  gpio_set_dir_masked(DATA_MASK, DATA_MASK);
   busy_wait_us_32(1);
   gpio_put(PIN_DATA_UP_OE_N, 0);
 }
 
 void z80_data_bus_prepare_input(void) {
   z80_data_bus_isolate();
-  for (size_t index = 0; index < 8; ++index) {
-    gpio_init(DATA_PINS[index]);
-    gpio_set_dir(DATA_PINS[index], GPIO_IN);
-    gpio_disable_pulls(DATA_PINS[index]);
-  }
+  gpio_set_dir_masked(DATA_MASK, 0);
   busy_wait_us_32(1);
   gpio_put(PIN_DATA_DOWN_OE_N, 0);
 }
 
 uint8_t z80_data_bus_sample(void) {
-  uint8_t value = 0;
-  for (size_t index = 0; index < 8; ++index)
-    value |= (uint8_t)(gpio_get(DATA_PINS[index]) << index);
-  return value;
+  return (uint8_t)(gpio_get_all() >> PIN_DATA_0);
 }

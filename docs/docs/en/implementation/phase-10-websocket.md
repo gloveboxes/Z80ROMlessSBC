@@ -89,9 +89,11 @@ with `Z80_STAGE09_AUTOBOOT=1` and `Z80_STAGE10_NETWORK=1`.
   ENV provisioning, Wi-Fi, HTTP and WebSocket. It services disk work first.
   The `pico_cyw43_arch_lwip_poll` architecture runs network callbacks only
   when core 1 polls, not through core-0 alarm/interrupt callbacks.
-- **Shared terminal queues:** the same 128-byte RX and 512-byte TX Pico SDK
-  queues used by Phase 9. The Z80 trap never calls network code or waits for
-  queue space. Short spinlock critical sections protect transport handover.
+- **Shared terminal queues:** 128-byte RX and 512-byte TX fixed-size rings
+  shared with Phase 9. One short spinlock critical section protects each
+  operation; there are no nested per-byte SDK queue locks. Transport handover
+  resets ring indices in constant time. The Z80 trap never calls network code
+  or waits for queue space, although cross-core critical sections can delay it.
 - **USB fallback:** USB owns CP/M until a browser WebSocket connects. While
   connected, that browser exclusively owns CP/M input/output; ordinary USB
   input is ignored, but Ctrl-] supervisor commands and setup still work.
@@ -113,12 +115,33 @@ bit 1 TX-room (or disconnected), and bit 7 any active terminal transport.
 Disk ports, service ports, SNTP/calendar support, and the Phase 9 safe
 stop/flush protocol remain unchanged.
 
-### Acknowledged terminal protocol, version 1
+### Module boundaries
+
+- `network_runtime.cpp` owns CYW43 polling, Wi-Fi association/retry, IPv4
+  address publication and SNTP. It does not call terminal queues or WebSocket
+  code. Address publication is refreshed once per second, not on every loop.
+- `web_terminal.cpp` owns HTTP/WebSocket sessions, protocol negotiation,
+  heartbeat and terminal flow control. It receives online state and a network
+  generation from the application; it does not configure or poll Wi-Fi.
+- `network_services.c` schedules these independent network services and weather.
+  The application still services disk work before network work.
+- `terminal_queue.c` owns transport-neutral console storage and USB/browser
+  ownership. USB input, ANSI mapping and framed supervisor commands remain
+  on core 0 in the shared Stage 9 application.
+
+The upstream WebSocket submodule remains unchanged. CMake generates a local
+copy of its handler with a narrowly checked close fix: even when writing or
+flushing a close frame fails, the connection enters closing state and the
+library's existing periodic cleanup reclaims it (normally within about five
+seconds). A changed upstream implementation fails configuration rather than
+silently omitting this fix.
+
+### Acknowledged terminal protocol, version 2
 
 The page and firmware use a small application protocol inside **binary**
 WebSocket messages. Generic raw-byte WebSocket terminal clients are no longer
-compatible; reload the served page after updating firmware. The upstream
-WebSocket submodule is unchanged.
+compatible; reload the served page after updating firmware. Version-1 pages
+are incompatible with this version-2 firmware.
 
 Every message starts with a one-byte type followed by a four-byte,
 little-endian unsigned sequence number. Sequence counters wrap modulo
@@ -126,31 +149,40 @@ little-endian unsigned sequence number. Sequence counters wrap modulo
 
 | Type | Direction | Sequence and payload |
 | ---: | --- | --- |
-| 5 HELLO | Pico to browser | Version 1, no payload |
-| 6 READY | Browser to Pico | Version 1, no payload |
+| 5 HELLO | Pico to browser | Version 2, no payload |
+| 6 READY | Browser to Pico | Version 2, no payload |
 | 1 OUTPUT | Pico to browser | Output sequence; 1-256 terminal bytes |
 | 3 OUTPUT_ACK | Browser to Pico | Last consumed output sequence, no payload |
 | 2 INPUT | Browser to Pico | Input sequence; 1-64 terminal bytes |
 | 4 INPUT_ACK | Pico to browser | Accepted input sequence, no payload |
 
-HELLO/READY negotiation precedes terminal traffic. Each direction has at most
-one unacknowledged data frame. The Pico retains one output frame and retries
-after 250 ms until the browser acknowledges it **after xterm consumes the
-bytes**. Duplicate output is acknowledged without rendering twice. This is
-safe even when `tcp_write` accepted a frame but a subsequent flush reported
-failure. A 15-second output-ACK timeout also releases a browser whose JavaScript
-stopped consuming data, even if its network stack still answers pings.
+HELLO/READY negotiation precedes terminal traffic. The Pico retains at most
+**four output frames (1,024 terminal bytes)**, allowing successive frames to
+reach xterm without waiting one network round trip per frame. OUTPUT_ACK is
+cumulative and is sent **after xterm consumes the bytes**, not on arrival.
+The browser queues at most four xterm writes. Duplicate output is not rendered
+twice; consumed duplicates receive the last cumulative ACK.
+
+Unacknowledged output is retried after 250 ms. If a send fails, later frame
+sequences cannot overtake it; this is safe even when `tcp_write` accepted a
+frame but a subsequent flush reported failure. A 15-second timeout on the
+oldest retained output frame releases a browser whose JavaScript stopped
+consuming data, even if its network stack still answers pings.
 
 Input is acknowledged only when the complete frame fits in the existing
-128-byte RX queue; otherwise it is retried after 250 ms. Duplicate input is
-acknowledged but never enqueued twice. No browser-input bytes are evicted to
-make room. The page queues at most 64 KiB of unconfirmed input, rejects a new
+128-byte RX queue. The Pico retains one pending input frame (up to 64 bytes)
+when the queue is full and retries admission on every service pass, without
+waiting for the browser's 250 ms loss-recovery timer. There remains at most
+one unacknowledged input frame. Duplicate accepted input is acknowledged but
+never enqueued twice; pending duplicates do not use extra storage.
+No browser-input bytes are evicted to make room. The page queues at most
+64 KiB of unconfirmed input, rejects a new
 paste in its entirety if that bound would be exceeded, and displays an error.
 Disconnect clears pending input with a visible warning; it is never replayed
 to a new session. ACK means accepted into the console queue, not that CP/M
 has executed a command; handover still deliberately discards stale queued data.
 
-The Z80 trap remains nonblocking and reports TX-room from the bounded queue,
+The Z80 trap reports TX-room from the bounded queue without waiting for space,
 so a stalled browser eventually applies ordinary console backpressure.
 After a timeout, pending browser output is intentionally discarded as part
 of transport handover, with a USB timeout notification.
@@ -172,7 +204,13 @@ of transport handover, with a USB timeout notification.
 ??? example "Core-1 network lifecycle"
 
     ```cpp
-    {% include "../../../../src/common/terminal_network.cpp" %}
+    {% include "../../../../src/stage10_websocket_terminal/network_runtime.cpp" %}
+    ```
+
+??? example "Web terminal session and flow control"
+
+    ```cpp
+    {% include "../../../../src/stage10_websocket_terminal/web_terminal.cpp" %}
     ```
 
 The browser UI follows the updated ESP32 `terminal` page (version 3.2.3):
@@ -273,6 +311,17 @@ service worker, cache/retry/configuration behavior, malformed HTTP/JSON,
 TLS/time gating, stale DNS callbacks, cancellation, timeouts and bounded
 response handling. These are not a substitute for the live weather and
 combined-load hardware checks above.
+
+Terminal regressions verify the four-frame output bound, cumulative ACKs and
+sequence wrap, ordered recovery from ambiguous send failures, and pending
+input admission at 10 ms without a 250 ms retransmission. A threaded host test
+transfers 256 KiB in each direction through the real console rings and checks
+full-queue handover. Another test compiles the actual generated WebSocket
+handler and verifies closing state after both write and flush failure.
+These tests establish protocol behavior, not physical network throughput.
+For performance acceptance, record sustained output bytes/second, key-to-echo
+latency and maximum network-poll gaps separately during reads, cached writes
+and flash commits; do not infer a disk bottleneck from flash operations alone.
 
 With `PICO_SDK_PATH` supplied to the native test configuration,
 `weather_real_tls_config` also builds the SDK's actual Mbed TLS library with

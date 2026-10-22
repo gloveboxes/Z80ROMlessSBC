@@ -34,6 +34,12 @@ static int firmware_printf(const char *format, ...) {
 void gpio_init(uint pin) { (void)pin; }
 void gpio_put(uint pin, bool value) { levels[pin] = value; }
 bool gpio_get(uint pin) { return levels[pin]; }
+uint32_t gpio_get_all(void) {
+  uint32_t value = 0;
+  for (uint pin = 0; pin < 32; ++pin)
+    value |= (uint32_t)gpio_get(pin) << pin;
+  return value;
+}
 void gpio_set_dir(uint pin, bool output) { (void)pin; (void)output; }
 void gpio_disable_pulls(uint pin) { (void)pin; }
 void busy_wait_us_32(uint32_t delay) { now_us += delay; }
@@ -83,7 +89,6 @@ void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
 }
 uint32_t z80_flash_disk_status(void) { return 0; }
 bool z80_flash_disk_has_fatal_error(void) { return false; }
-void z80_terminal_core1_service(void) {}
 uint8_t z80_terminal_io_read(uint8_t port) { last_port = port; return 0x5A; }
 void z80_terminal_io_write(uint8_t port, uint8_t value) {
   (void)value; last_port = port; ++terminal_writes;
