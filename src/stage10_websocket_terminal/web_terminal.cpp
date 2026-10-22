@@ -12,7 +12,7 @@
 #include "z80sbc/terminal.h"
 
 namespace {
-constexpr uint16_t SERVER_PORT = 8088;
+constexpr uint16_t SERVER_PORT = Z80_WEB_TERMINAL_PORT;
 constexpr uint32_t SERVER_CONNECTIONS = 4;
 constexpr uint32_t SERVER_RETRY_MS = 5000;
 constexpr size_t FRAME_BYTES = Z80_WEB_TERMINAL_FRAME_BYTES;
@@ -66,8 +66,6 @@ uint8_t ping_payload[4];
 bool awaiting_pong;
 uint32_t session_network_generation;
 bool network_online;
-char announced_address[16];
-absolute_time_t announce_deadline = nil_time;
 
 void increment_stat(uint32_t &counter, uint32_t amount = 1) {
   __atomic_fetch_add(&counter, amount, __ATOMIC_RELAXED);
@@ -424,21 +422,9 @@ extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
   if (!online || generation != session_network_generation) {
     disconnect_client();
     session_network_generation = generation;
-    announced_address[0] = '\0';
-    announce_deadline = nil_time;
   }
   network_online = online;
   if (online && ensure_server()) {
-    if (time_reached(announce_deadline)) {
-      announce_deadline = make_timeout_time_ms(1000);
-      char address[16];
-      z80_io_ports_get_network_address(address, sizeof(address));
-      if (strcmp(address, announced_address) != 0) {
-        strcpy(announced_address, address);
-        if (address[0])
-          printf("[network] Terminal: http://%s:%u/\n", address, SERVER_PORT);
-      }
-    }
     process_events();
     server->popMessages();
     process_events();

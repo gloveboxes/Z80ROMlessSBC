@@ -2,6 +2,108 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Flash Pico - Stage 10",
+			"detail": "Build and verified firmware-only flash; preserves CP/M disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoFlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w && cmake --build build --target z80_stage10_websocket_terminal -j && python scripts/pico_flash.py firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2 --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": ["$gcc"]
+		},
+		{
+			"label": "Flash Pico - All disks (A-D)",
+			"detail": "Replace all four disks from build/cpm-stage09-loader; no backups. Firmware, boot and ENV are preserved.",
+			"type": "shell",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive A=build/cpm-stage09-loader/drive_a_cpm63k-z80.img --drive B=build/cpm-stage09-loader/drive_b_bdsc.img --drive C=build/cpm-stage09-loader/drive_c_escape.img --drive D=build/cpm-stage09-loader/drive_d_blank.img --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Flash Pico - Drive A",
+			"detail": "Replace A with the board-native CP/M system disk; installed boot compatibility is checked. No backups.",
+			"type": "shell",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive A=build/cpm-stage09-loader/drive_a_cpm63k-z80.img --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Flash Pico - Drive B",
+			"detail": "Replace only B with drive_b_bdsc.img (BDS C); no backups.",
+			"type": "shell",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive B=build/cpm-stage09-loader/drive_b_bdsc.img --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Flash Pico - Drive C",
+			"detail": "Replace only C with drive_c_escape.img (Escape); no backups.",
+			"type": "shell",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=build/cpm-stage09-loader/drive_c_escape.img --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Flash Pico - Drive D",
+			"detail": "Replace only D with drive_d_blank.img (blank disk); no backups.",
+			"type": "shell",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=build/cpm-stage09-loader/drive_d_blank.img --power-confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "Prepare interactive CP/M emulator",
 			"type": "shell",
 			"command": "cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF && cmake --build build/cpm/z80_debug_host && cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter -DBUILD_TESTING=OFF && cmake --build build/cpm/dcc_io_adapter && python3 src/cpm/build_images.py --assembler z80asm --output-dir build/cpm",
@@ -17,6 +119,22 @@
 			},
 			"problemMatcher": [],
 			"group": "test"
+		}
+	],
+	"inputs": [
+		{
+			"id": "picoDiskFlashSafety",
+			"type": "pickString",
+			"description": "Selected disks will be overwritten with no backups. Confirm external +5 V is applied before USB and CP/M work is saved.",
+			"options": ["Cancel", "Replace selected disks"],
+			"default": "Cancel"
+		},
+		{
+			"id": "picoFlashSafety",
+			"type": "pickString",
+			"description": "Confirm external +5 V is applied before USB and CP/M work is saved before flashing Stage 10.",
+			"options": ["Cancel", "Proceed"],
+			"default": "Cancel"
 		}
 	]
 }

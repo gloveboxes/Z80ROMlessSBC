@@ -21,12 +21,14 @@
 #include "z80sbc/terminal.h"
 #include "ansi_input.h"
 #include "usb_console.h"
+#include "../common/io_service.h"
 #include "disk_diagnostic_image.h"
 
 #ifdef Z80_STAGE10_NETWORK
 #include "network_runtime.h"
 #include "network_setup.h"
 #include "web_terminal.h"
+#include "matrix_display.h"
 #endif
 
 #ifndef Z80_STAGE09_AUTOBOOT
@@ -76,7 +78,6 @@ static bool ccp_announced;
 static bool previous_cr;
 static bool boot_timed_out;
 static bool reset_was_watchdog;
-static bool reset_report_pending;
 static z80_io_trap_reset_fault_t reset_fault;
 static const char *boot_failure;
 static uint32_t boot_markers;
@@ -372,15 +373,26 @@ static void print_reset_status(void) {
          reset_was_watchdog, reason, (unsigned long)reset_fault.gpio);
 }
 
-static void print_status(void) {
-  print_reset_status();
+static void print_status(bool requested) {
+  if (requested)
+    print_reset_status();
+  uint64_t uptime_seconds = z80_service_millis() / 1000;
+  printf("[system] uptime=%02llu:%02llu:%02llu\n",
+         (unsigned long long)(uptime_seconds / 3600),
+         (unsigned long long)((uptime_seconds / 60) % 60),
+         (unsigned long long)(uptime_seconds % 60));
 #ifdef Z80_STAGE10_NETWORK
-  char address[16];
-  bool has_address = z80_io_ports_get_network_address(address, sizeof(address)) != 0;
-  printf("[network] browser=%u setup=%u ip=%s\n",
-         !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_BROWSER),
-         !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_SETUP),
-         has_address ? address : "unavailable");
+  if (requested) {
+    char address[16];
+    bool has_address = z80_io_ports_get_network_address(address, sizeof(address)) != 0;
+    printf("[network] browser=%u setup=%u ip=%s\n",
+           !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_BROWSER),
+           !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_SETUP),
+           has_address ? address : "unavailable");
+    if (has_address)
+      printf("[network] Terminal: http://%s:%u/\n", address, Z80_WEB_TERMINAL_PORT);
+    z80_matrix_print_status();
+  }
   z80_web_terminal_stats_t web = z80_web_terminal_get_stats();
   printf("[web] frames=%lu bytes=%lu retransmits=%lu write_blocks=%lu "
          "flush_failures=%lu timeouts=%lu\n",
@@ -464,7 +476,7 @@ static void diagnostic_command(int command) {
   } else if (command == 't') {
     start_disk_diagnostic();
   } else if (command == 's') {
-    print_status();
+    print_status(true);
   } else if (command == 'h') {
     print_help();
   } else if (command == 'x') {
@@ -645,19 +657,15 @@ static void service_control(void) {
   uint16_t command;
   if (queue_try_remove(&control_commands, &command)) {
     if (command == USB_REPORT_CONNECTION) {
-      if (reset_report_pending) {
-        print_reset_status();
-        reset_report_pending = false;
-      }
       if (!Z80_STAGE09_AUTOBOOT) {
         print_help();
-        print_status();
+        print_status(false);
       } else if (!running && !loading && boot_attempted) {
         printf("\n[boot] %s; RESET held LOW. Ctrl-] s for status, "
                "Ctrl-] r to reboot.\n",
                boot_failure != NULL ? "FAIL: automatic CP/M boot stopped"
                                     : "CP/M stopped");
-        print_status();
+        print_status(false);
       }
     } else if (startup_failed && command != 'r' && command != 's' &&
                command != 'h') {
@@ -757,7 +765,6 @@ int main(void) {
   z80_safe_startup();
   reset_was_watchdog = watchdog_caused_reboot();
   reset_fault = z80_io_trap_take_reset_fault();
-  reset_report_pending = reset_was_watchdog;
   set_sys_clock_pll(1200000000, 5, 2);
   z80_terminal_queue_init();
   queue_init(&control_commands, sizeof(uint16_t), 4);

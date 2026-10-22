@@ -1,6 +1,29 @@
 cmake_minimum_required(VERSION 3.20)
 project(z80_control_tests C CXX)
 enable_testing()
+find_program(MATRIX_PIOASM pioasm HINTS
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../../build/pioasm-install/pioasm")
+if(MATRIX_PIOASM)
+  set(matrix_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/matrix")
+  file(MAKE_DIRECTORY "${matrix_generated_dir}")
+  add_custom_command(
+    OUTPUT "${matrix_generated_dir}/matrix_i2c.pio.h"
+    COMMAND "${MATRIX_PIOASM}" -o c-sdk -v 1
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/matrix_i2c.pio"
+      "${matrix_generated_dir}/matrix_i2c.pio.h"
+    DEPENDS ../../stage10_websocket_terminal/matrix_i2c.pio
+    VERBATIM)
+  add_executable(matrix_display_test matrix_display_test.cpp
+    "${matrix_generated_dir}/matrix_i2c.pio.h")
+  target_include_directories(matrix_display_test PRIVATE
+    matrix_fakes "${matrix_generated_dir}" fakes ../include)
+  target_compile_features(matrix_display_test PRIVATE cxx_std_17)
+  target_compile_options(matrix_display_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  add_test(NAME matrix_pio_HT16K33 COMMAND matrix_display_test)
+  set_tests_properties(matrix_pio_HT16K33 PROPERTIES TIMEOUT 5)
+else()
+  message(STATUS "Set MATRIX_PIOASM to enable the assembled matrix PIO regression")
+endif()
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
   ../chat.c ../chat_stream.c
   ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c

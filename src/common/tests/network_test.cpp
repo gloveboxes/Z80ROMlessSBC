@@ -1,11 +1,25 @@
 #include <cassert>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
 #include "../onboard_led.c"
 #include "../../stage10_websocket_terminal/network_runtime.cpp"
+static std::string terminal_diagnostics;
+static int terminal_printf(const char *format, ...) {
+  char buffer[256];
+  va_list args;
+  va_start(args, format);
+  int length = vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  assert(length >= 0 && static_cast<size_t>(length) < sizeof(buffer));
+  terminal_diagnostics += buffer;
+  return length;
+}
+#define printf terminal_printf
 #include "../../stage10_websocket_terminal/web_terminal.cpp"
+#undef printf
 
 static unsigned lock_depth;
 static bool connected;
@@ -705,6 +719,8 @@ int main() {
   assert(!poll_network());
   assert(z80_network_max_poll_gap_us() == UINT32_MAX);
   test_input_ack_recovery();
+  assert(terminal_diagnostics.find("[network] Terminal: http://") ==
+         std::string::npos);
   delete server;
   puts("PASS: four-frame window, cumulative/wrapping ACKs, ordered send failure, "
        "batched flush/backpressure, immediate pending input and ACK recovery, "

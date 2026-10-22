@@ -171,6 +171,36 @@ aborts without further writes or reboot; recover/investigate before retrying.
 Writes to multiple drives are not atomic: earlier selected drives may already
 have been replaced when a later write fails.
 
+### VS Code disk flashing tasks
+
+Open **Tasks: Run Task** from the Command Palette and select one of:
+
+| Task | Replaced drives | Prepared images in `build/cpm-stage09-loader/` |
+| --- | --- | --- |
+| **Flash Pico - All disks (A-D)** | A, B, C, D | All four images below |
+| **Flash Pico - Drive A** | A only | `drive_a_cpm63k-z80.img` |
+| **Flash Pico - Drive B** | B only | `drive_b_bdsc.img` (BDS C) |
+| **Flash Pico - Drive C** | C only | `drive_c_escape.img` (Escape) |
+| **Flash Pico - Drive D** | D only | `drive_d_blank.img` (blank) |
+
+These tasks use existing prepared native images; they do not rebuild firmware
+or regenerate disks. The images must already exist and contain the files you
+intend to deploy. A fresh checkout needs the
+[CP/M image-build workflow](../system/firmware-build.md#building-the-full-image-set)
+first. Drive A must match the installed boot package; the flash tool checks this
+before writing any selected disk.
+
+The confirmation defaults to **Cancel**. Select **Replace selected disks** only
+after saving CP/M work and applying external +5 V before USB. Each task activates
+`.venv-flash`, checks its interpreter/serial dependency, then runs the maintained
+`pico_flash.py disks` workflow described above. No backups are taken.
+
+The all-disks task supplies four assignments to **one** invocation, so it stops,
+checks the journal and reboots only once. Individual tasks write only their named
+drive. Firmware, boot data, journal, ENV and unselected drives are preserved.
+The tasks perform no postboot probes and do not bypass a failed clean stop,
+pending journal replay or verification failure.
+
 ## Preparation and journal diagnostics
 
 For diagnosis, prepare the target without programming any flash:

@@ -72,6 +72,7 @@ static unsigned usb_services, disk_services, io_services, network_services;
 static jmp_buf main_exit;
 static z80_boot_error_t load_error;
 static uint64_t now;
+uint64_t z80_service_millis(void) { return now / 1000; }
 static unsigned service_reads;
 static unsigned service_writes;
 static unsigned service_probes;
@@ -88,6 +89,7 @@ static size_t input_length;
 
 #ifdef Z80_STAGE10_NETWORK
 static unsigned setup_requests;
+static unsigned matrix_status_requests;
 static const char *network_address = "";
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   int length = snprintf(address, capacity, "%s", network_address);
@@ -111,6 +113,11 @@ void z80_network_core1_service(void) {
   ++network_services;
 }
 uint32_t z80_network_max_poll_gap_us(void) { return 1234; }
+void z80_matrix_print_status(void) {
+  assert(fake_core == 0);
+  ++matrix_status_requests;
+  firmware_printf("[matrix] test status\n");
+}
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
   return (z80_web_terminal_stats_t){
       .output_frames = 4, .output_bytes = 256, .retransmits = 1,
@@ -342,7 +349,7 @@ static void reset_fixture(void) {
   command_pending = usb_was_connected = stop_requested = false;
   flush_submitted = flash_resuming = bios_announced = ccp_announced = false;
   boot_timed_out = previous_cr = false;
-  reset_was_watchdog = reset_report_pending = watchdog_reset = false;
+  reset_was_watchdog = watchdog_reset = false;
   reset_fault = retained_reset_fault = (z80_io_trap_reset_fault_t){0};
   disconnect_after_usb_writes = 0;
   fake_inactive_irqs = 0;
@@ -368,6 +375,7 @@ static void reset_fixture(void) {
   z80_terminal_usb_connected(connected);
   browser_was_connected = false;
   setup_requests = 0;
+  matrix_status_requests = 0;
   network_address = "";
 #endif
 }
@@ -419,6 +427,34 @@ static void test_control_and_terminal(void) {
   }
   command('r');
   assert(!reboots && running);
+}
+
+static void test_status_uptime(void) {
+  static const struct {
+    uint64_t seconds;
+    const char *expected;
+  } cases[] = {
+      {0, "00:00:00"},
+      {1, "00:00:01"},
+      {59, "00:00:59"},
+      {60, "00:01:00"},
+      {3599, "00:59:59"},
+      {3600, "01:00:00"},
+      {86399, "23:59:59"},
+      {86400, "24:00:00"},
+      {360000, "100:00:00"},
+      {4320000, "1200:00:00"},
+  };
+  reset_fixture();
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+    now = cases[i].seconds * 1000000 + 999999;
+    output_length = 0;
+    output[0] = '\0';
+    command('s');
+    char expected[64];
+    snprintf(expected, sizeof(expected), "[system] uptime=%s\n", cases[i].expected);
+    assert(strstr(output, expected));
+  }
 }
 
 static void test_direct_port_dispatch(void) {
@@ -591,12 +627,17 @@ static void test_browser_usb_routing(void) {
   service_usb();
   assert(output_length == old_length);
   assert(z80_terminal_supply(&value, 1) == 1 && value == 'B');
+  assert(matrix_status_requests == 0);
   command('s');
+  assert(matrix_status_requests == 1);
+  assert(strstr(output, "[matrix] test status"));
   assert(strstr(output, "browser=1"));
   assert(strstr(output, "ip=unavailable"));
+  assert(strstr(output, "[network] Terminal:") == NULL);
   network_address = "192.0.2.42";
   command('s');
   assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
+  assert(strstr(output, "[network] Terminal: http://192.0.2.42:8088/"));
   assert(strstr(output, "[web] frames=4 bytes=256 retransmits=1 write_blocks=2 "
                         "flush_failures=3 timeouts=8"));
   assert(strstr(output, "[web] window_full_polls=5 window_wait_max_us=6000 "
@@ -612,6 +653,7 @@ static void test_browser_usb_routing(void) {
   command('s');
   assert(strstr(output, "ip=unavailable"));
   assert(strstr(output, "192.0.2.42") == NULL);
+  assert(strstr(output, "[network] Terminal:") == NULL);
   command('n');
   assert(setup_requests == 1);
   z80_terminal_receive((const uint8_t *)"stale", 5);
@@ -895,13 +937,22 @@ static void test_reset_reporting(void) {
     snprintf(expected, sizeof(expected),
              "[reset] watchdog=1 io_fault=%s gpio=%08lx\n",
              reasons[reason], (unsigned long)(reason ? 0x12345678 : 0));
-    assert(strstr(output, expected));
+    assert(strstr(output, "[reset]") == NULL);
     size_t previous_length = output_length;
     service_usb();
     assert(output_length == previous_length);
     command('s');
     assert(strstr(output + previous_length, expected));
-    assert(!reboots && !reset_report_pending);
+    assert(!reboots);
+    connected = false;
+    service_usb();
+    connected = true;
+    output_length = 0;
+    output[0] = '\0';
+    service_usb();
+    assert(strstr(output, "[reset]") == NULL);
+    command('s');
+    assert(strstr(output, expected));
   }
 }
 
@@ -1162,6 +1213,7 @@ int main(void) {
   test_autoboot_progress();
   test_autoboot_failures();
   test_control_and_terminal();
+  test_status_uptime();
   test_usb_backpressure_and_disconnect();
   test_disconnect_during_output();
   test_reset_reporting();

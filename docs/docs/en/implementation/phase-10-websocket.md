@@ -33,6 +33,15 @@ disk-geometry or BIOS changes. The existing PCB remains deferred.
    Use the maintained [firmware flashing workflow](../system/firmware-build.md)
    for a firmware-only update that preserves disks and ENV. The build does not
    deploy firmware.
+
+   In VS Code, run **Tasks: Run Task** from the Command Palette and select
+   **Flash Pico - Stage 10**. The task uses the existing `.venv-flash`
+   environment, builds this target, then runs the maintained firmware-only
+   flash tool. Its confirmation defaults to **Cancel**: select **Proceed**
+   only after applying external +5 V before USB and saving CP/M work. The tool
+   discovers the Pico, disconnects a verified picocom session, confirms a clean
+   stop/flush, writes and read-back verifies firmware, then requests reboot.
+   Disks and ENV are preserved; no forced-recovery or postboot checks are added.
 2. Open the USB terminal. CP/M loads, verifies and starts without waiting for
    USB, Wi-Fi or a browser. Missing/invalid settings trigger a USB setup
    prompt once CP/M is running. **Ctrl-] n** starts setup again at any time
@@ -49,14 +58,24 @@ disk-geometry or BIOS changes. The existing PCB remains deferred.
    retry all settings with Ctrl-] n. ENV is plaintext onboard flash, not
    encrypted secret storage.
 5. <input type="checkbox" data-checklist-id="conditional-network-diagnosis" aria-label="Network address verified">
-   Wait for `[network] Terminal: http://<pico-ip>:8088/` on USB and open that
-   URL. HTTP and WebSocket share port 8088 and the root path `/`. Association
+   Press **Ctrl-] s** on USB to show
+   `[network] Terminal: http://<pico-ip>:8088/` and open that URL.
+   IP/terminal URL updates are not printed automatically into CP/M output.
+   HTTP and WebSocket share port 8088 and the root path `/`. Association
    is asynchronous, times out after 30 seconds, and retries after 5 seconds.
    The page targets WebSocket port 8088 even when opened locally or served
    elsewhere; `?altair=<pico-ip>` overrides the host, not the port.
 6. <input type="checkbox" data-checklist-id="conditional-boot-diagnosis" aria-label="Boot and network failures distinguished">
    If the page works but CP/M does not respond, use **Ctrl-] s** on USB to
    inspect boot evidence, disk errors, browser ownership and queue drops.
+   The `[system] uptime=HH:MM:SS` line uses the same monotonic source as the
+   CLOCK I/O service's uptime operation (group `0x20`, operation `0`).
+   It measures time since Pico startup, needs no Wi-Fi or SNTP, and keeps
+   counting hours beyond 24 or 99. It is calculated only when status is shown,
+   without another timer or periodic terminal update.
+   Watchdog/reset-cause details (`[reset] watchdog=... io_fault=... gpio=...`)
+   are retained for **Ctrl-] s** only; they are not announced at startup or
+   when the USB terminal reconnects.
    The network line also reports the Pico's current IPv4 address, for example
    `[network] browser=0 setup=0 ip=192.168.1.123`; open
    `http://192.168.1.123:8088/`. It reports `ip=unavailable` before an address
@@ -135,8 +154,8 @@ stop/flush protocol remain unchanged.
 - `web_terminal.cpp` owns HTTP/WebSocket sessions, protocol negotiation,
   heartbeat and terminal flow control. It receives online state and a network
   generation from the application; it does not configure or poll Wi-Fi.
-- `network_services.c` schedules these independent network services, weather
-  and chat.
+- `network_services.c` schedules these independent network services, weather,
+  chat and the core-1 matrix display.
   The application still services disk work before network work.
 - `chat.c` owns the CHATC11 framed ABI, bounded request/response storage and
   per-request ENV settings on core 1. The existing atomic service mailbox
@@ -375,6 +394,69 @@ Core 0 continuously services flash ownership requests. Stop drains pending
 disk/service/provisioning work before holding RESET. Reboot reloads CP/M;
 the former Phase 10 variable-clock and RAM qualification controls are not
 part of this replacement application. Use the dedicated qualification builds.
+
+## HT16K33 8x8 matrix
+
+Stage 10 includes a bench-tested Adafruit HT16K33 8x8 LED matrix, using
+custom PIO I2C on core 1. This is a moving-row diagnostic, not an IP address
+or uptime display. The earlier OLED and software-I2C experiments are not
+part of the maintained firmware.
+
+| Backpack connection | Pico connection |
+| --- | --- |
+| `+` / VCC | 3V3, physical header pin 36 |
+| `-` / GND | Common GND |
+| `C` / SCL | GP26, physical header pin 31 |
+| `D` / SDA | GP22, physical header pin 29 |
+| Vi2c / IO, if fitted | 3V3 |
+
+Both I2C pull-ups must go to **3.3 V**, never 5 V; GP26 is not 5 V tolerant.
+Use the backpack's pull-ups if fitted. Follow the board power sequence
+and disconnect power safely before rewiring. The backpack shares the Pico's
+3.3 V current budget with Wi-Fi and the LVC devices. The
+[Adafruit wiring guide](https://learn.adafruit.com/led-backpack-displays-on-raspberry-pi-and-beaglebone-black/wiring)
+allows 3.3 V operation, with reduced LED brightness.
+
+The driver scans only addresses `0x70` through `0x77`, selecting the first
+ACK; the tested backpack responds at `0x72`. Keep other devices off this
+diagnostic bus. Initialization enables the oscillator, disables the display,
+clears all 16 RAM bytes, selects minimum brightness, then enables the display
+without blinking. A horizontal row advances every 500 ms and wraps after
+eight rows.
+
+[matrix_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_display.cpp)
+is called after the network services, once the existing runtime-worker gate
+opens after CP/M startup. Each call probes one address or writes one bounded
+transaction; RAM updates use two eight-byte chunks on separate service calls.
+The 500 ms wait uses a deadline rather than a sleep. FIFO timeouts and transfer
+NACKs disable the display service, retain a failure reason for status, and
+release its pins and PIO resources. All display GPIO and service work runs on
+core 1; core 0 reads only a compact atomic status snapshot. No display code
+touches Z80 bus GPIO.
+
+[matrix_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_i2c.pio)
+uses independently configured SDA and SCL pins, nominal 100 kHz timing, and
+open-drain direction changes. It does not support clock stretching. No
+controller or transport build option is needed: Stage 10 uses HT16K33 over PIO.
+Matrix messages are shown only on **Ctrl-] s**, never automatically during
+startup or animation. The status line reports the controller, PIO transport,
+pins, initialization state, detected address, brightness and row interval.
+Failures appear in that same status report with the retained reason:
+
+```text
+[matrix] driver=HT16K33 transport=PIO_I2C SCL=GP26 SDA=GP22 state=ready address=0x72 brightness=0 pattern=moving_row interval_ms=500
+```
+
+Bench testing confirmed the visible moving-row pattern with CP/M and the
+network terminal running. The native regression interprets the assembled PIO
+instructions and checks initialization, RAM contents, row timing, scan limits,
+ACK/NACK and bounded failure handling. This does not qualify physical waveform
+margins or core-0 latency:
+
+```sh
+cmake --build build/host-control --target matrix_display_test -j
+ctest --test-dir build/host-control --output-on-failure -R '^matrix_pio_HT16K33$'
+```
 
 ## Network time and CLOCK services
 

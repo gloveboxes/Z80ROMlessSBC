@@ -27,8 +27,8 @@ are not 5 V-tolerant pads. Do not rely on GP0-GP25 FT tolerance during power-off
 | GP19 | 25 | A1 input | U7 pin 7 | Input |
 | GP20 | 26 | A2 input | U7 pin 5 | Input |
 | GP21 | 27 | A4 input | U7 pin 3 | Input |
-| GP22 | 29 | Expansion GPIO | J2 pin 2 | Unconfigured by supervisor |
-| GP26 | 31 | Expansion GPIO / ADC0 | J2 pin 3 | Unconfigured by supervisor |
+| GP22 | 29 | Expansion GPIO / Stage 10 matrix SDA | J2 pin 2 | Unconfigured until matrix service |
+| GP26 | 31 | Expansion GPIO / ADC0 / Stage 10 matrix SCL | J2 pin 3 | Unconfigured until matrix service |
 | GP27 | 32 | RD# input | U7 pin 14 | Input |
 | GP28 | 34 | WR# input | U7 pin 12 | Input |
 
@@ -40,7 +40,7 @@ GP23/24/25/29 are reserved by Pico 2 W wireless hardware.
 
 ### J2 Peripheral Expansion
 
-The schematic exposes the **three free GPIOs**, plus Pico 3.3 V and common
+The schematic exposes the **three expansion GPIOs**, plus Pico 3.3 V and common
 GND, on a **1x5, 2.54 mm through-hole header**. Its assigned KiCad footprint is
 `Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical`, ready for the
 future PCB migration. The existing PCB does not yet include this header.
@@ -61,8 +61,10 @@ current-limiting resistor for each LED. External I2C pull-ups must go to
 remaining current budget with Wi-Fi, the LVC devices, and existing pulls;
 do not back-feed pin 4 or assume a dedicated peripheral power allowance.
 
-The supervisor leaves these GPIOs unconfigured; the connector does not add
-peripheral firmware. GP3 is RESET#, not a fourth spare pin. As defined in the
+Earlier stages leave these GPIOs unconfigured. Stage 10 uses GP22 as SDA and
+GP26 as SCL for the [HT16K33 matrix](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix);
+GP8 remains available. This bench wiring does not change the schematic or PCB.
+GP3 is RESET#, not a fourth spare pin. As defined in the
 [RP2350 GPIO function table](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf),
 GP8, GP22, and GP26 offer SDA functions but no hardware I2C SCL, and do not
 form a full-duplex hardware SPI pin set. Use software or PIO implementations
