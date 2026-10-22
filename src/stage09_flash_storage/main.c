@@ -26,6 +26,7 @@
 #ifdef Z80_STAGE10_NETWORK
 #include "network_runtime.h"
 #include "network_setup.h"
+#include "web_terminal.h"
 #endif
 
 #ifndef Z80_STAGE09_AUTOBOOT
@@ -380,6 +381,32 @@ static void print_status(void) {
          !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_BROWSER),
          !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_SETUP),
          has_address ? address : "unavailable");
+  z80_web_terminal_stats_t web = z80_web_terminal_get_stats();
+  printf("[web] frames=%lu bytes=%lu retransmits=%lu write_blocks=%lu "
+         "flush_failures=%lu timeouts=%lu\n",
+         (unsigned long)web.output_frames, (unsigned long)web.output_bytes,
+         (unsigned long)web.retransmits, (unsigned long)web.write_blocks,
+         (unsigned long)web.flush_failures, (unsigned long)web.timeouts);
+  printf("[web] window_full_polls=%lu window_wait_max_us=%lu ack_max_us=%lu "
+         "net_poll_gap_max_us=%lu\n",
+         (unsigned long)web.window_full_polls,
+         (unsigned long)web.window_wait_max_us, (unsigned long)web.ack_max_us,
+         (unsigned long)z80_network_max_poll_gap_us());
+  printf("[webbuf] frames=%lu/%u peak=%lu retained=%lu/%u peak=%lu staged=%lu/%u\n",
+         (unsigned long)web.window_frames, Z80_WEB_TERMINAL_OUTPUT_WINDOW,
+         (unsigned long)web.window_frames_peak, (unsigned long)web.retained_bytes,
+         Z80_WEB_TERMINAL_FRAME_BYTES * Z80_WEB_TERMINAL_OUTPUT_WINDOW,
+         (unsigned long)web.retained_bytes_peak, (unsigned long)web.staged_bytes,
+         Z80_WEB_TERMINAL_FRAME_BYTES);
+  printf("[webbatch] avg_bytes=%lu max_bytes=%lu small_le16=%lu full=%lu\n",
+         (unsigned long)(web.output_frames ? web.output_bytes / web.output_frames : 0),
+         (unsigned long)web.frame_bytes_max, (unsigned long)web.small_frames,
+         (unsigned long)web.full_frames);
+  z80_terminal_buffer_stats_t buffers = z80_terminal_get_buffer_stats();
+  printf("[consolebuf] rx=%lu/%lu peak=%lu tx=%lu/%lu peak=%lu\n",
+         (unsigned long)buffers.rx_used, (unsigned long)buffers.rx_capacity,
+         (unsigned long)buffers.rx_peak, (unsigned long)buffers.tx_used,
+         (unsigned long)buffers.tx_capacity, (unsigned long)buffers.tx_peak);
 #endif
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "

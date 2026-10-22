@@ -19,12 +19,13 @@ typedef struct {
   size_t capacity;
   size_t head;
   size_t count;
+  size_t peak;
 } terminal_ring_t;
 
 static uint8_t rx_data[TERM_RX_DEPTH];
 static uint8_t tx_data[TERM_TX_DEPTH];
-static terminal_ring_t rx_queue = {rx_data, TERM_RX_DEPTH, 0, 0};
-static terminal_ring_t tx_queue = {tx_data, TERM_TX_DEPTH, 0, 0};
+static terminal_ring_t rx_queue = {rx_data, TERM_RX_DEPTH, 0, 0, 0};
+static terminal_ring_t tx_queue = {tx_data, TERM_TX_DEPTH, 0, 0, 0};
 static critical_section_t terminal_lock;
 static uint32_t client_connected;
 static uint32_t browser_connected;
@@ -39,6 +40,8 @@ static void clear_queues(void) {
 
 static void ring_add(terminal_ring_t *ring, uint8_t value) {
   ring->data[(ring->head + ring->count++) & (ring->capacity - 1)] = value;
+  if (ring->count > ring->peak)
+    ring->peak = ring->count;
 }
 
 static size_t ring_remove(terminal_ring_t *ring, uint8_t *data,
@@ -58,6 +61,7 @@ void z80_terminal_queue_init(void) {
   if (!critical_section_is_initialized(&terminal_lock))
     critical_section_init(&terminal_lock);
   clear_queues();
+  rx_queue.peak = tx_queue.peak = 0;
   __atomic_store_n(&client_connected, 0, __ATOMIC_RELEASE);
   __atomic_store_n(&browser_connected, 0, __ATOMIC_RELEASE);
   usb_connected = false;
@@ -209,6 +213,16 @@ uint32_t z80_terminal_rx_drop_count(void) {
 
 uint32_t z80_terminal_tx_drop_count(void) {
   return __atomic_load_n(&tx_drops, __ATOMIC_RELAXED);
+}
+
+z80_terminal_buffer_stats_t z80_terminal_get_buffer_stats(void) {
+  critical_section_enter_blocking(&terminal_lock);
+  z80_terminal_buffer_stats_t stats = {
+      (uint32_t)rx_queue.count, TERM_RX_DEPTH, (uint32_t)rx_queue.peak,
+      (uint32_t)tx_queue.count, TERM_TX_DEPTH, (uint32_t)tx_queue.peak,
+  };
+  critical_section_exit(&terminal_lock);
+  return stats;
 }
 
 bool z80_terminal_client_connected(void) {

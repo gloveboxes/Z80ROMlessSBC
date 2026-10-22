@@ -110,6 +110,17 @@ void z80_network_core1_service(void) {
   assert(fake_core == 1 && disk_services && io_services);
   ++network_services;
 }
+uint32_t z80_network_max_poll_gap_us(void) { return 1234; }
+z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
+  return (z80_web_terminal_stats_t){
+      .output_frames = 4, .output_bytes = 256, .retransmits = 1,
+      .write_blocks = 2, .flush_failures = 3, .window_full_polls = 5,
+      .window_wait_max_us = 6000, .ack_max_us = 7000, .timeouts = 8,
+      .window_frames = 2, .window_frames_peak = 4,
+      .retained_bytes = 1039, .retained_bytes_peak = 2048, .staged_bytes = 15,
+      .frame_bytes_max = 512, .small_frames = 1, .full_frames = 2,
+  };
+}
 #endif
 
 void z80_io_ports_init(void) {}
@@ -586,6 +597,15 @@ static void test_browser_usb_routing(void) {
   network_address = "192.0.2.42";
   command('s');
   assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
+  assert(strstr(output, "[web] frames=4 bytes=256 retransmits=1 write_blocks=2 "
+                        "flush_failures=3 timeouts=8"));
+  assert(strstr(output, "[web] window_full_polls=5 window_wait_max_us=6000 "
+                        "ack_max_us=7000 net_poll_gap_max_us=1234"));
+  assert(strstr(output, "[webbuf] frames=2/4 peak=4 retained=1039/2048 "
+                        "peak=2048 staged=15/512"));
+  assert(strstr(output, "[webbatch] avg_bytes=64 max_bytes=512 small_le16=1 full=2"));
+  assert(strstr(output, "[consolebuf] rx="));
+  assert(strstr(output, "/128 peak=") && strstr(output, "/512 peak="));
   network_address = "";
   output_length = 0;
   output[0] = '\0';

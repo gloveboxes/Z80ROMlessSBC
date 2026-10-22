@@ -15,11 +15,12 @@ namespace {
 constexpr uint16_t SERVER_PORT = 8088;
 constexpr uint32_t SERVER_CONNECTIONS = 4;
 constexpr uint32_t SERVER_RETRY_MS = 5000;
-constexpr size_t FRAME_BYTES = 256;
+constexpr size_t FRAME_BYTES = Z80_WEB_TERMINAL_FRAME_BYTES;
 constexpr size_t INPUT_BYTES = 64;
 constexpr size_t HEADER_BYTES = 5;
-constexpr size_t OUTPUT_WINDOW = 4;
-constexpr uint32_t PROTOCOL_VERSION = 2;
+constexpr size_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
+constexpr uint32_t OUTPUT_COALESCE_US = 1000;
+constexpr uint32_t PROTOCOL_VERSION = 3;
 constexpr uint32_t FRAME_RETRY_MS = 250;
 constexpr uint32_t HEARTBEAT_MS = 5000;
 constexpr uint32_t CLIENT_TIMEOUT_MS = 15000;
@@ -33,11 +34,18 @@ struct OutputFrame {
   size_t length;
   absolute_time_t retry;
   absolute_time_t deadline;
+  uint64_t enqueued_us;
   bool sent;
 };
 OutputFrame output_frames[OUTPUT_WINDOW];
 size_t output_head;
 size_t output_count;
+size_t retained_output_bytes;
+size_t staged_output_length;
+absolute_time_t output_batch_deadline = nil_time;
+z80_web_terminal_stats_t terminal_stats;
+bool window_full_active;
+uint64_t window_full_since_us;
 uint8_t pending_input[INPUT_BYTES];
 size_t pending_input_length;
 uint32_t output_sequence;
@@ -60,6 +68,37 @@ bool network_online;
 char announced_address[16];
 absolute_time_t announce_deadline = nil_time;
 
+void increment_stat(uint32_t &counter, uint32_t amount = 1) {
+  __atomic_fetch_add(&counter, amount, __ATOMIC_RELAXED);
+}
+
+void record_maximum(uint32_t &counter, uint64_t elapsed) {
+  uint32_t value = elapsed > UINT32_MAX ? UINT32_MAX : (uint32_t)elapsed;
+  if (value > __atomic_load_n(&counter, __ATOMIC_RELAXED))
+    __atomic_store_n(&counter, value, __ATOMIC_RELAXED);
+}
+
+void publish_buffer_usage() {
+  uint32_t frames = (uint32_t)output_count;
+  uint32_t bytes = (uint32_t)(retained_output_bytes + staged_output_length);
+  __atomic_store_n(&terminal_stats.window_frames, frames, __ATOMIC_RELAXED);
+  __atomic_store_n(&terminal_stats.retained_bytes, bytes, __ATOMIC_RELAXED);
+  __atomic_store_n(&terminal_stats.staged_bytes, (uint32_t)staged_output_length,
+                   __ATOMIC_RELAXED);
+  record_maximum(terminal_stats.window_frames_peak, frames);
+  record_maximum(terminal_stats.retained_bytes_peak, bytes);
+}
+
+void observe_window_wait() {
+  if (window_full_active)
+    record_maximum(terminal_stats.window_wait_max_us,
+                   time_us_64() - window_full_since_us);
+  bool full = output_count == OUTPUT_WINDOW;
+  if (full && !window_full_active)
+    window_full_since_us = time_us_64();
+  window_full_active = full;
+}
+
 uint32_t read_sequence(const uint8_t *data) {
   return (uint32_t)data[0] | (uint32_t)data[1] << 8 |
          (uint32_t)data[2] << 16 | (uint32_t)data[3] << 24;
@@ -74,6 +113,11 @@ void reset_session() {
   protocol_ready = false;
   input_sequence = output_sequence = 1;
   output_head = output_count = pending_input_length = 0;
+  observe_window_wait();
+  staged_output_length = 0;
+  retained_output_bytes = 0;
+  publish_buffer_usage();
+  output_batch_deadline = nil_time;
   hello_retry = ping_retry = nil_time;
   client_deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
   awaiting_pong = false;
@@ -146,8 +190,15 @@ void on_message(WebSocketServer &, uint32_t connection,
     for (size_t i = 0; i < output_count; ++i) {
       const OutputFrame &candidate = output_frames[(output_head + i) % OUTPUT_WINDOW];
       if (candidate.sent && read_sequence(candidate.data + 1) == sequence) {
+        record_maximum(terminal_stats.ack_max_us,
+                       time_us_64() - output_frames[output_head].enqueued_us);
+        for (size_t j = 0; j <= i; ++j)
+          retained_output_bytes -=
+              output_frames[(output_head + j) % OUTPUT_WINDOW].length - HEADER_BYTES;
         output_head = (output_head + i + 1) % OUTPUT_WINDOW;
         output_count -= i + 1;
+        publish_buffer_usage();
+        observe_window_wait();
         break;
       }
     }
@@ -239,6 +290,7 @@ void poll_output() {
     return;
   if (time_reached(client_deadline) ||
       (output_count && time_reached(output_frames[output_head].deadline))) {
+    increment_stat(terminal_stats.timeouts);
     printf("[network] Terminal client timed out; restoring USB.\n");
     disconnect_client();
     return;
@@ -258,26 +310,45 @@ void poll_output() {
     }
     return;
   }
+  bool output_changed = false;
   while (output_count < OUTPUT_WINDOW) {
     OutputFrame &frame = output_frames[(output_head + output_count) % OUTPUT_WINDOW];
-    size_t length = z80_terminal_supply(frame.data + HEADER_BYTES, FRAME_BYTES);
-    if (!length)
+    // ACKs advance head and reduce count together, preserving this staging slot.
+    size_t supplied = z80_terminal_supply(
+        frame.data + HEADER_BYTES + staged_output_length,
+        FRAME_BYTES - staged_output_length);
+    staged_output_length += supplied;
+    output_changed |= supplied != 0;
+    if (!staged_output_length)
+      break;
+    if (staged_output_length < FRAME_BYTES && !time_reached(output_batch_deadline))
       break;
     frame.data[0] = OUTPUT;
     write_sequence(frame.data + 1, output_sequence++);
-    frame.length = HEADER_BYTES + length;
+    frame.length = HEADER_BYTES + staged_output_length;
     frame.retry = nil_time;
     frame.deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
     frame.sent = false;
+    retained_output_bytes += staged_output_length;
     ++output_count;
+    output_changed = true;
+    staged_output_length = 0;
+    output_batch_deadline = make_timeout_time_us(OUTPUT_COALESCE_US);
   }
+  if (output_changed)
+    publish_buffer_usage();
+  if (output_count == OUTPUT_WINDOW)
+    increment_stat(terminal_stats.window_full_polls);
+  observe_window_wait();
   bool queued = false;
   for (size_t i = 0; i < output_count; ++i) {
     OutputFrame &frame = output_frames[(output_head + i) % OUTPUT_WINDOW];
     if (time_reached(frame.retry)) {
       auto result = server->enqueueMessage((uint32_t)connection, frame.data, frame.length);
-      if (result == WebSocketServer::SendResult::would_block)
+      if (result == WebSocketServer::SendResult::would_block) {
+        increment_stat(terminal_stats.write_blocks);
         break;
+      }
       if (result != WebSocketServer::SendResult::queued) {
         printf("[network] FAIL: terminal output enqueue (%u); restoring USB.\n",
                (unsigned)result);
@@ -285,16 +356,52 @@ void poll_output() {
         return;
       }
       queued = true;
+      if (frame.sent) {
+        increment_stat(terminal_stats.retransmits);
+      } else {
+        frame.enqueued_us = time_us_64();
+        increment_stat(terminal_stats.output_frames);
+        increment_stat(terminal_stats.output_bytes,
+                       (uint32_t)(frame.length - HEADER_BYTES));
+        size_t bytes = frame.length - HEADER_BYTES;
+        record_maximum(terminal_stats.frame_bytes_max, bytes);
+        if (bytes <= 16)
+          increment_stat(terminal_stats.small_frames);
+        if (bytes == FRAME_BYTES)
+          increment_stat(terminal_stats.full_frames);
+      }
       frame.sent = true;
       frame.retry = make_timeout_time_ms(FRAME_RETRY_MS);
     }
     if (!frame.sent)
       break;
   }
-  if (queued)
-    server->flush((uint32_t)connection);
+  if (queued && !server->flush((uint32_t)connection))
+    increment_stat(terminal_stats.flush_failures);
 }
 }  // namespace
+
+extern "C" z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
+  return {
+      __atomic_load_n(&terminal_stats.output_frames, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.output_bytes, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.retransmits, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.write_blocks, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.flush_failures, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.window_full_polls, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.window_wait_max_us, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.ack_max_us, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.timeouts, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.window_frames, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.window_frames_peak, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.retained_bytes, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.retained_bytes_peak, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.staged_bytes, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.frame_bytes_max, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.small_frames, __ATOMIC_RELAXED),
+      __atomic_load_n(&terminal_stats.full_frames, __ATOMIC_RELAXED),
+  };
+}
 
 extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
   if (!online && !network_online && generation == session_network_generation)

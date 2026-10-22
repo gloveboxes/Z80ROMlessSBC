@@ -9,7 +9,7 @@ using err_t = int;
 using u16_t = uint16_t;
 constexpr err_t ERR_OK = 0, ERR_MEM = -1, ERR_BUF = -2, ERR_RTE = -4,
                 ERR_ABRT = -13, ERR_ARG = -16;
-constexpr unsigned TCP_SND_BUF = 4096;
+constexpr unsigned TCP_SND_BUF = 4 * 1460;
 constexpr unsigned TCP_WRITE_FLAG_COPY = 1;
 constexpr int IPADDR_TYPE_ANY = 0;
 constexpr const void* IP_ADDR_ANY = nullptr;

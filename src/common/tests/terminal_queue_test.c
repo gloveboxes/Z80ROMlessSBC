@@ -16,6 +16,9 @@ static void *cpu_worker(void *context) {
   (void)context;
   size_t sent = 0, received = 0;
   while (sent < TRANSFER_BYTES || received < TRANSFER_BYTES) {
+    z80_terminal_buffer_stats_t stats = z80_terminal_get_buffer_stats();
+    assert(stats.rx_used <= stats.rx_peak && stats.rx_peak <= stats.rx_capacity);
+    assert(stats.tx_used <= stats.tx_peak && stats.tx_peak <= stats.tx_capacity);
     uint8_t status = z80_terminal_io_read(1);
     if (sent < TRANSFER_BYTES && (status & TERM_STATUS_TX_ROOM))
       z80_terminal_io_write(0, pattern(sent++));
@@ -56,6 +59,10 @@ int main(void) {
   assert(pthread_create(&browser, NULL, browser_worker, NULL) == 0);
   assert(pthread_join(cpu, NULL) == 0);
   assert(pthread_join(browser, NULL) == 0);
+  z80_terminal_buffer_stats_t stats = z80_terminal_get_buffer_stats();
+  assert(stats.rx_capacity == 128 && stats.tx_capacity == 512);
+  assert(stats.rx_used == 0 && stats.tx_used == 0);
+  assert(stats.rx_peak > 0 && stats.tx_peak > 0);
   assert(rx_queue.count == 0 && tx_queue.count == 0);
   assert(z80_terminal_rx_drop_count() == 0 && z80_terminal_tx_drop_count() == 0);
 
@@ -64,8 +71,14 @@ int main(void) {
   assert(z80_terminal_browser_try_receive(data, 128));
   for (size_t i = 0; i < sizeof(data); ++i)
     z80_terminal_io_write(0, data[i]);
+  stats = z80_terminal_get_buffer_stats();
+  assert(stats.rx_used == 128 && stats.rx_peak == 128);
+  assert(stats.tx_used == 512 && stats.tx_peak == 512);
   z80_terminal_usb_receive('U');
   z80_terminal_browser_disconnect();
+  stats = z80_terminal_get_buffer_stats();
+  assert(stats.rx_used == 0 && stats.tx_used == 0);
+  assert(stats.rx_peak == 128 && stats.tx_peak == 512);
   assert(rx_queue.count == 0 && tx_queue.count == 0);
   assert(z80_terminal_client_connected() && !z80_terminal_browser_connected());
   z80_terminal_usb_receive('N');
@@ -73,5 +86,9 @@ int main(void) {
   z80_terminal_io_write(0, 'R');
   assert(z80_terminal_usb_supply(data, sizeof(data)) == 1 && data[0] == 'R');
   assert(z80_terminal_rx_drop_count() == 0 && z80_terminal_tx_drop_count() == 0);
+  z80_terminal_queue_init();
+  stats = z80_terminal_get_buffer_stats();
+  assert(stats.rx_used == 0 && stats.rx_peak == 0);
+  assert(stats.tx_used == 0 && stats.tx_peak == 0);
   puts("PASS: concurrent 256 KiB duplex, ring wrapping, full-queue handover and USB isolation");
 }

@@ -352,7 +352,8 @@
         INPUT_FRAME_BYTES: 64,
         MAX_PENDING_INPUT: 65536,
         INPUT_RETRY_MS: 250,
-        PROTOCOL_VERSION: 2,
+        PROTOCOL_VERSION: 3,
+        OUTPUT_FRAME_BYTES: 512,
         OUTPUT_WINDOW: 4,
         STORAGE_THEME_KEY: 'altair_theme',
         DEFAULT_THEME: 'dark',
@@ -470,7 +471,7 @@
             pumpInput();
           }
         } else if (frame[0] === PROTOCOL.OUTPUT && state.protocolReady &&
-                   frame.length > 5 && frame.length <= 261) {
+                   frame.length > 5 && frame.length <= 5 + CONFIG.OUTPUT_FRAME_BYTES) {
           if (sequence === state.outputReceivedSequence) {
             if (state.outputPending >= CONFIG.OUTPUT_WINDOW) {
               throw new Error("Terminal output window exceeded; reconnect.");

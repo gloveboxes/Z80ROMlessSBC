@@ -158,6 +158,40 @@ pending flushes retried from sent/poll callbacks and normal service passes.
 Terminal output queues a burst before one flush; interactive/control traffic
 still flushes immediately. TCP_NODELAY remains enabled.
 
+Continuing output is coalesced across service passes for up to **1 ms**, without
+sleeping or delaying network polls. The first output after an idle interval is
+sent immediately; subsequent partial frames wait only until the fixed batching
+deadline, while full 512-byte frames bypass that wait. New bytes do not extend
+the deadline. A partial frame uses the next free slot in the existing four-frame
+array and receives its sequence number only when finalized. Cumulative ACKs
+preserve that staging slot; disconnect/handover clears it. There is no extra
+output queue or larger Wi-Fi/lwIP pool.
+The deadline makes a partial frame eligible on the next service pass; it cannot
+guarantee scheduling during flash pauses or other delayed core-1 work.
+
+The four slots now hold **512 bytes each (2 KiB retained payload)**, rather than
+256 bytes each. A typical 1,039-byte CLOCK redraw fits in three frames without
+waiting for a consumption ACK, instead of at least five. A regression supplies
+the redraw in realistic 512 + 512 + 15 byte console arrivals: both full frames
+send immediately and the remaining 15 bytes send at the 1 ms deadline.
+The console TX ring remains 512 bytes; producer backpressure is unchanged.
+
+The earlier 1 KiB-slot experiment recorded a maximum frame of 512 bytes and
+544 retained bytes across CLOCK and games, but all four frame slots were used.
+Halving each slot saves **2,048 static RAM bytes** while keeping the four-slot
+window. These observations support memory right-sizing, not a claim that
+network/browser stalls are resolved.
+
+The existing WebSocket
+builder uses a bounded temporary heap buffer for these larger messages:
+at most 521 bytes for one 512-byte terminal payload plus the five-byte
+application and four-byte WebSocket headers, freed after TCP copy/admission.
+Allocation failure follows the transport's explicit fatal-disconnect path.
+Four maximum frames need 2,084 TCP bytes, within the unchanged 5,840-byte
+send buffer. These are payload/scratch budgets, not total heap usage.
+The dedicated core-1 stack remains 8 KiB. Linker success does not measure runtime stack/heap
+headroom or establish a hardware latency improvement.
+
 Receive parsing walks pbuf spans once, decodes headers once and unmasks while
 copying. A final, unfragmented message moves its payload into the dispatch queue
 without a second payload copy. Fragmented messages preserve interleaved controls.
@@ -171,12 +205,12 @@ one-second grace deadline bounds cleanup. Invalid/timed-out sessions and Wi-Fi
 handover use explicit callback-safe abort, serviced even on the offline path.
 TCP polling provides a roughly 500 ms fallback, not a five-second slot leak.
 
-### Acknowledged terminal protocol, version 2
+### Acknowledged terminal protocol, version 3
 
 The page and firmware use a small application protocol inside **binary**
 WebSocket messages. Generic raw-byte WebSocket terminal clients are no longer
-compatible; reload the served page after updating firmware. Version-1 pages
-are incompatible with this version-2 firmware.
+compatible; reload the served page after updating firmware. Version-1 and
+version-2 pages are rejected during negotiation, before larger output arrives.
 
 Every message starts with a one-byte type followed by a four-byte,
 little-endian unsigned sequence number. Sequence counters wrap modulo
@@ -184,18 +218,18 @@ little-endian unsigned sequence number. Sequence counters wrap modulo
 
 | Type | Direction | Sequence and payload |
 | ---: | --- | --- |
-| 5 HELLO | Pico to browser | Version 2, no payload |
-| 6 READY | Browser to Pico | Version 2, no payload |
-| 1 OUTPUT | Pico to browser | Output sequence; 1-256 terminal bytes |
+| 5 HELLO | Pico to browser | Version 3, no payload |
+| 6 READY | Browser to Pico | Version 3, no payload |
+| 1 OUTPUT | Pico to browser | Output sequence; 1-512 terminal bytes |
 | 3 OUTPUT_ACK | Browser to Pico | Last consumed output sequence, no payload |
 | 2 INPUT | Browser to Pico | Input sequence; 1-64 terminal bytes |
 | 4 INPUT_ACK | Pico to browser | Accepted input sequence, no payload |
 
 HELLO/READY negotiation precedes terminal traffic. The Pico retains at most
-**four output frames (1,024 terminal bytes)**, allowing successive frames to
+**four output frames (2,048 terminal bytes)**, allowing successive frames to
 reach xterm without waiting one network round trip per frame. OUTPUT_ACK is
 cumulative and is sent **after xterm consumes the bytes**, not on arrival.
-The browser queues at most four xterm writes. Duplicate output is not rendered
+The browser queues at most four xterm writes (2 KiB payload). Duplicate output is not rendered
 twice; consumed duplicates receive the last cumulative ACK.
 
 Unacknowledged output is retried after 250 ms. TCP write backpressure cannot
@@ -223,6 +257,66 @@ The Z80 trap reports TX-room from the bounded queue without waiting for space,
 so a stalled browser eventually applies ordinary console backpressure.
 After a timeout, pending browser output is intentionally discarded as part
 of transport handover, with a USB timeout notification.
+
+### Terminal performance diagnostics
+
+**Ctrl-] s** on USB includes two `[web]` lines plus `[webbuf]`, `[webbatch]`
+and `[consolebuf]`, even while the browser owns CP/M.
+Core 1 updates the counters, and the supervisor reads each field atomically;
+the status is a per-field snapshot rather than one transactional sample.
+Console RX/TX occupancy and peaks are copied together under the existing short
+queue lock. Peak updates add only a comparison/store to the existing insertion
+critical section, not another lock. No per-frame USB logging or transport work
+runs on core 0.
+
+| Field | Meaning |
+| --- | --- |
+| `frames`, `bytes` | Original output frames and terminal payload bytes accepted by TCP; excludes retransmissions and protocol headers |
+| `retransmits` | Application output retries accepted by TCP, not TCP's own packet retransmissions |
+| `write_blocks` | Terminal enqueue attempts rejected with temporary TCP backpressure |
+| `flush_failures` | Failed explicit terminal burst flushes; excludes automatic library flush attempts |
+| `timeouts` | Browser heartbeat/output timeouts that restore USB ownership |
+| `window_full_polls` | Output service passes with all four frame slots occupied, whether or not more output is waiting |
+| `window_wait_max_us` | Longest continuous interval with all four frame slots occupied |
+| `ack_max_us` | Longest first TCP enqueue-to-consumption-ACK interval; cumulative ACKs include the oldest released frame, and retries do not restart it |
+| `net_poll_gap_max_us` | Longest interval between core-1 CYW43 poll calls, including time spent in USB, storage, other services or intentional pauses |
+| `[webbuf] frames`, `peak` | Current/maximum finalized output frames, including frames blocked before TCP acceptance; capacity four |
+| `[webbuf] retained`, `peak` | Current/maximum payload bytes in finalized frames plus staging; capacity 2,048, excluding headers/allocator overhead |
+| `[webbuf] staged` | Partial payload awaiting the batching deadline, in the next free slot; capacity 512 |
+| `[webbatch] avg_bytes`, `max_bytes` | Integer lifetime `bytes / frames` and largest original TCP-accepted payload; retries excluded |
+| `[webbatch] small_le16`, `full` | Original accepted payloads of at most 16 bytes or exactly 512 bytes; retries excluded |
+| `[consolebuf] rx`, `tx`, `peak` | Current/capacity and high-water marks for the 128-byte Z80 input and 512-byte Z80 output rings |
+
+Current occupancies clear on handover; peaks survive handover. Web counters
+and peaks accumulate across browser sessions until reboot; console peaks reset
+when the queues are initialized. Event/byte
+counters wrap modulo 2^32 and microsecond maxima saturate at `UINT32_MAX`.
+Compare counter deltas over the same workload. `bytes / frames` measures batching
+efficiency, not network throughput; the lifetime average is meaningful only
+before counter wrap, so use deltas across wrap.
+Small frames alone are not a fault: isolated interactive output sends immediately.
+Frequent full windows plus large ACK ages suggest consumer/transport pressure;
+small frames with low occupancy suggest little data was available for batching.
+A high TX peak shows producer pressure, not necessarily sustained congestion.
+ACK age includes transport, browser scheduling
+and xterm consumption; it is not an isolated browser-render measurement.
+
+Before this coalescing change, a focused-browser CLOCK run on 22 October 2026
+measured 19 complete redraws in a 20-second session: median redraw delivery
+97.5 ms, maximum 926.2 ms, and an 863.5 ms gap within the slowest redraw. The
+median WebSocket payload was seven bytes. Browser consumption was 0.3 ms at
+the 95th percentile, and the browser heartbeat gap during the slowest redraw
+was at most 21.1 ms. These are **pre-change hardware observations**, not a
+post-change speedup claim or proof of a particular TCP/Wi-Fi failure.
+
+Host regressions check the exact 999/1,000 microsecond batching boundary,
+immediate isolated/full-frame sends, staging across cumulative ACKs, byte order,
+handover cleanup and counter semantics. A synthetic 256-byte stream produced
+one byte per 10 microseconds fits into four frames without any ACK, rather than
+exhausting the window after four one-byte frames. Repeat CLOCK and active-play
+BREAKOUT tests after authorized deployment, excluding launch/game-over/CP/M idle
+periods, and compare redraw tails, key-to-paddle response and these counters
+before claiming improved hardware latency.
 
 ### Maintained source
 
@@ -361,11 +455,15 @@ input admission at 10 ms without a 250 ms retransmission. A threaded host test
 transfers 256 KiB in each direction through the real console rings and checks
 full-queue handover. With `PICO_SDK_PATH` configured, eight WebSocket regression
 groups compile the complete actual server with fake lwIP and real Mbed TLS.
-They verify four 265-byte frames with one TCP flush, accepted-write/failed-flush
+They verify four 521-byte frames with one TCP flush, the larger-message heap
+packing path and insufficient TCP room, accepted-write/failed-flush
 recovery without re-enqueue, single-frame buffer ownership/NUL termination,
 split/chained input, fragmentation/control interleaving, malformed frames,
 queue byte/count limits, fair bounded dispatch, callback-safe abort, close
 deadlines across clock wrap, slot reuse and HTTP backpressure/final ACK lifetime.
+Terminal tests also verify the 1,039-byte/three-frame redraw without an ACK,
+the 2 KiB window bound, staging/ACK/reset utilization accounting, retry-excluded
+frame statistics and console peaks under concurrent transfers and handover.
 These tests establish protocol behavior, not physical network throughput.
 For performance acceptance, record sustained output bytes/second, key-to-echo
 latency and maximum network-poll gaps separately during reads, cached writes

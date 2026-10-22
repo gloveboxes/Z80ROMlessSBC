@@ -69,7 +69,7 @@ tests omitted is not equivalent to exercising the complete server.
   pending-input admission on the next service pass, duplicate handling, reconnect,
   stale callbacks, heartbeat timeout, and USB fallback.
 - Transport changes: count accepted `tcp_write` calls separately from output
-  attempts. Verify a four-frame terminal burst uses four 265-byte frame writes
+  attempts. Verify a four-frame terminal burst uses four 521-byte frame writes
   and one flush, while single interactive/control messages flush promptly.
   Rejected writes must preserve ordering; failed flushes must not duplicate
   accepted writes. These sizes describe the current protocol, not universal

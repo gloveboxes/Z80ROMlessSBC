@@ -9,6 +9,15 @@
 extern "C" {
 #endif
 
+typedef struct {
+  uint32_t rx_used;
+  uint32_t rx_capacity;
+  uint32_t rx_peak;
+  uint32_t tx_used;
+  uint32_t tx_capacity;
+  uint32_t tx_peak;
+} z80_terminal_buffer_stats_t;
+
 void z80_terminal_queue_init(void);
 void z80_terminal_set_connected(bool connected);
 uint8_t z80_terminal_io_read(uint8_t port);
@@ -22,6 +31,7 @@ void z80_terminal_browser_disconnect(void);
 
 uint32_t z80_terminal_rx_drop_count(void);
 uint32_t z80_terminal_tx_drop_count(void);
+z80_terminal_buffer_stats_t z80_terminal_get_buffer_stats(void);
 bool z80_terminal_client_connected(void);
 bool z80_terminal_browser_connected(void);
 void z80_terminal_usb_connected(bool connected);

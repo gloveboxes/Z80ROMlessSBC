@@ -59,7 +59,7 @@ function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }
   // Use the actual error display, capturing its console notification.
   context.console = { ...console, error(...args) { errors.push(args.join(' ')); } };
   const receive = bytes => api.handleProtocolFrame(bytes.buffer, api.state.ws);
-  receive(frame(5, 2));
+  receive(frame(5, 3));
   sent.length = 0;
   return {
     api, sent, written, errors, timers, receive, type: data => onData(data),
@@ -193,7 +193,7 @@ test('input limit rejects the whole new paste and reconnect never replays pendin
   assert.equal(input.timers.size, 0);
   input.type('not ready');
   assert.equal(input.api.state.inputBuffer.length, 0);
-  input.receive(frame(5, 2));
+  input.receive(frame(5, 3));
   input.type('N');
   assert.deepEqual(input.sent.at(-1), [2, 1, 0, 0, 0, 78]);
 });
@@ -204,7 +204,7 @@ test('an old xterm callback cannot acknowledge bytes on a replacement connection
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
   input.api.state.ws = { readyState: 1, send(data) { input.sent.push([...data]); } };
-  input.receive(frame(5, 2));
+  input.receive(frame(5, 3));
   const count = input.sent.length;
   input.finishOutput();
   assert.equal(input.sent.length, count);
@@ -217,8 +217,8 @@ test('protocol readiness is required and sequence counters wrap at uint32', () =
   input.type('A');
   assert.equal(input.sent.length, 0);
   assert.match(input.api.elements.error.textContent, /handshake/);
-  input.receive(frame(5, 2));
-  assert.deepEqual(input.sent.shift(), [6, 2, 0, 0, 0]);
+  input.receive(frame(5, 3));
+  assert.deepEqual(input.sent.shift(), [6, 3, 0, 0, 0]);
 
   input.api.state.inputSequence = 0xffffffff;
   input.type('AB'.repeat(64));
@@ -242,8 +242,10 @@ test('four output frames enter xterm before any consumption ACK; duplicates do n
   const input = terminal();
   input.deferOutput();
   for (let sequence = 1; sequence <= 4; ++sequence) {
-    input.receive(frame(1, sequence, [64 + sequence]));
-    input.receive(frame(1, sequence, [64 + sequence]));
+    const payload = Array(512).fill(64 + sequence);
+    input.receive(frame(1, sequence, payload));
+    input.receive(frame(1, sequence, payload));
+    assert.deepEqual(input.written[sequence - 1], payload);
   }
   assert.equal(input.written.length, 4);
   assert.equal(input.sent.length, 0);
@@ -259,12 +261,26 @@ test('four output frames enter xterm before any consumption ACK; duplicates do n
   assert.equal(input.api.state.outputPending, 0);
 });
 
+test('512-byte output limit agrees with firmware and rejects oversized or empty payloads', () => {
+  const header = readFileSync(new URL('./web_terminal.h', import.meta.url), 'utf8');
+  assert.match(header, /Z80_WEB_TERMINAL_FRAME_BYTES\s*=\s*512,/);
+  assert.match(header, /Z80_WEB_TERMINAL_OUTPUT_WINDOW\s*=\s*4,/);
+  assert.match(html, /OUTPUT_FRAME_BYTES:\s*512,/);
+  assert.match(html, /OUTPUT_WINDOW:\s*4,/);
+  const input = terminal();
+  input.receive(frame(1, 1, Array(512).fill(65)));
+  assert.equal(input.written[0].length, 512);
+  assert.throws(() => input.receive(frame(1, 2, Array(513).fill(66))), /Unsupported/);
+  assert.throws(() => input.receive(frame(1, 2)), /Unsupported/);
+  assert.equal(input.written.length, 1);
+});
+
 test('protocol reset invalidates callbacks even if the socket object is unchanged', () => {
   const input = terminal();
   input.deferOutput();
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
-  input.receive(frame(5, 2));
+  input.receive(frame(5, 3));
   const count = input.sent.length;
   input.finishOutput();
   assert.equal(input.sent.length, count);
@@ -272,9 +288,10 @@ test('protocol reset invalidates callbacks even if the socket object is unchange
   assert.equal(input.api.state.outputSequence, 1);
 });
 
-test('version 1 handshake is rejected and reconnect attempts really stop at five', () => {
+test('version 1/2 handshakes are rejected and reconnect attempts really stop at five', () => {
   const input = terminal();
   assert.throws(() => input.receive(frame(5, 1)), /Unsupported/);
+  assert.throws(() => input.receive(frame(5, 2)), /Unsupported/);
   input.api.state.connected = false;
   for (let attempt = 0; attempt < 7; ++attempt) {
     input.api.state.reconnectTimer = null;

@@ -141,15 +141,22 @@ static void test_send() {
   f.start();
   f.upgrade(f.first);
   uint32_t id = f.ids.back();
-  std::vector<uint8_t> payload(261, 'X');
+  std::vector<uint8_t> payload(517, 'X');
+  for (size_t i = 0; i < payload.size(); ++i)
+    payload[i] = (uint8_t)i;
   for (unsigned i = 0; i < 4; ++i)
     assert(f.server.enqueueMessage(id, payload.data(), payload.size()) == Result::queued);
   assert(f.first.writes.size() == 4 && f.first.outputs == 0);
   for (auto& bytes : f.first.writes)
-    assert(bytes.size() == 265 && bytes[0] == 0x82 && bytes[1] == 126 &&
-           bytes[2] == 1 && bytes[3] == 5 && bytes[4] == 'X');
+    assert(bytes.size() == 521 && bytes[0] == 0x82 && bytes[1] == 126 &&
+           bytes[2] == 2 && bytes[3] == 5 &&
+           std::vector<uint8_t>(bytes.begin() + 4, bytes.end()) == payload);
   assert(f.server.flush(id) && f.first.outputs == 1);
   assert(f.server.flush(id) && f.first.outputs == 1);
+  f.first.available = 520;
+  assert(f.server.enqueueMessage(id, payload.data(), payload.size()) == Result::would_block);
+  assert(f.first.writes.size() == 4);
+  assert(Fixture::sent(f.first) == ERR_OK);
   f.first.write_result = ERR_MEM;
   assert(f.server.enqueueMessage(id, "a", 1) == Result::would_block);
   assert(f.first.writes.size() == 4);
@@ -178,7 +185,8 @@ static void test_flush() {
     f.upgrade(f.first);
     uint32_t id = f.ids.back();
     f.first.output_result = failure;
-    assert(f.server.sendMessage(id, "accepted", 8));
+    std::vector<uint8_t> payload(517, 'A');
+    assert(f.server.sendMessage(id, payload.data(), payload.size()));
     assert(f.first.writes.size() == 1 && f.first.outputs == 1);
     assert(Fixture::sent(f.first) == ERR_OK);
     assert(f.first.writes.size() == 1 && f.first.outputs == 2);

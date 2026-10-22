@@ -90,6 +90,8 @@ int cyw43_wifi_pm(cyw43_t *, int mode) {
 }
 int cyw43_wifi_leave(cyw43_t *, int) { return PICO_OK; }
 absolute_time_t make_timeout_time_ms(uint32_t delay) { return now + delay * 1000ull; }
+absolute_time_t make_timeout_time_us(uint32_t delay) { return now + delay; }
+uint64_t time_us_64() { return now; }
 bool time_reached(absolute_time_t deadline) { return now >= deadline; }
 static void advance(uint32_t ms) { now += ms * 1000ull; }
 
@@ -158,6 +160,20 @@ bool WebSocketServer::sendPing(uint32_t connection, const void *data, size_t len
                    static_cast<const uint8_t *>(data) + length);
   return send_ok;
 }
+static void assert_buffer_usage() {
+  z80_web_terminal_stats_t stats = z80_web_terminal_get_stats();
+  size_t bytes = staged_output_length;
+  for (size_t i = 0; i < output_count; ++i)
+    bytes += output_frames[(output_head + i) % OUTPUT_WINDOW].length - HEADER_BYTES;
+  assert(stats.window_frames == output_count && stats.retained_bytes == bytes);
+  assert(stats.staged_bytes == staged_output_length);
+  assert(stats.window_frames <= stats.window_frames_peak &&
+         stats.window_frames_peak <= OUTPUT_WINDOW);
+  assert(stats.retained_bytes <= stats.retained_bytes_peak &&
+         stats.retained_bytes_peak <= OUTPUT_WINDOW * FRAME_BYTES);
+  assert(stats.staged_bytes < FRAME_BYTES && stats.frame_bytes_max <= FRAME_BYTES);
+}
+
 static void connect_client(uint32_t id) {
   cyw43_arch_lwip_begin();
   on_connect(*server, id);
@@ -177,6 +193,7 @@ static void message(uint32_t id, uint8_t type, uint32_t sequence,
   cyw43_arch_lwip_begin();
   on_message(*server, id, frame.data(), frame.size());
   cyw43_arch_lwip_end();
+  assert_buffer_usage();
 }
 static void pong(uint32_t id) {
   cyw43_arch_lwip_begin();
@@ -187,11 +204,147 @@ static void pong(uint32_t id) {
 static bool poll_network() {
   bool online = z80_network_poll();
   z80_web_terminal_poll(online, z80_network_generation());
+  assert_buffer_usage();
   return online;
 }
 
 static void poll_terminal() {
   z80_web_terminal_poll(true, z80_network_generation());
+  assert_buffer_usage();
+}
+
+static void test_output_coalescing() {
+  static_assert(FRAME_BYTES == 512 && OUTPUT_WINDOW == 4 && PROTOCOL_VERSION == 3);
+  advance(1);
+  outgoing = {'A'};
+  unsigned before = sends;
+  z80_web_terminal_stats_t initial_stats = z80_web_terminal_get_stats();
+  poll_terminal();
+  assert(sends == before + 1 && output_count == 1);
+  assert(sent == std::vector<uint8_t>({OUTPUT, 1, 0, 0, 0, 'A'}));
+  assert(z80_web_terminal_get_stats().small_frames == initial_stats.small_frames + 1);
+
+  for (unsigned i = 1; i <= 63; ++i) {
+    now += 10;
+    outgoing.push_back((uint8_t)i);
+    poll_terminal();
+    assert(sends == before + 1 && output_count == 1);
+  }
+  now += 369;
+  poll_terminal();
+  assert(staged_output_length == 63 && sends == before + 1);
+  assert(z80_web_terminal_get_stats().retained_bytes == 64);
+  assert(z80_web_terminal_get_stats().staged_bytes == 63);
+  ++now;
+  poll_terminal();
+  assert(staged_output_length == 0 && sends == before + 2);
+  assert(sent.size() == HEADER_BYTES + 63 && read_sequence(sent.data() + 1) == 2);
+  for (unsigned i = 1; i <= 63; ++i)
+    assert(sent[HEADER_BYTES + i - 1] == i);
+
+  outgoing.assign(FRAME_BYTES, 'F');
+  poll_terminal();
+  assert(sends == before + 3 && output_count == 3);
+  assert(z80_web_terminal_get_stats().full_frames == initial_stats.full_frames + 1);
+  assert(z80_web_terminal_get_stats().frame_bytes_max == FRAME_BYTES);
+  outgoing = {'E'};
+  poll_terminal();
+  assert(staged_output_length == 1 && output_count == 3);
+  message(1, OUTPUT_ACK, 4);
+  assert(staged_output_length == 1 && output_count == 3 && output_sequence == 4);
+  message(1, OUTPUT_ACK, 2);
+  assert(output_count == 1 && staged_output_length == 1);
+  assert(z80_web_terminal_get_stats().retained_bytes == FRAME_BYTES + 1);
+  advance(1);
+  poll_terminal();
+  assert(sent == std::vector<uint8_t>({OUTPUT, 4, 0, 0, 0, 'E'}));
+  message(1, OUTPUT_ACK, 4);
+  assert(output_count == 0);
+  assert(z80_web_terminal_get_stats().small_frames == initial_stats.small_frames + 2);
+
+  advance(1);
+  z80_web_terminal_stats_t stats = z80_web_terminal_get_stats();
+  sent_frames.clear();
+  before = flushes;
+  for (unsigned i = 0; i < 256; ++i) {
+    outgoing.push_back((uint8_t)i);
+    poll_terminal();
+    now += 10;
+  }
+  advance(1);
+  poll_terminal();
+  assert(output_count == 4 && sent_frames.size() == 4 && flushes == before + 4);
+  std::vector<uint8_t> delivered;
+  for (const auto &frame : sent_frames)
+    delivered.insert(delivered.end(), frame.begin() + HEADER_BYTES, frame.end());
+  assert(delivered.size() == 256 && outgoing.empty() && !staged_output_length);
+  for (unsigned i = 0; i < 256; ++i)
+    assert(delivered[i] == i);
+  advance(10);
+  message(1, OUTPUT_ACK, output_sequence - 1);
+  assert(output_count == 0);
+  z80_web_terminal_stats_t after = z80_web_terminal_get_stats();
+  assert(after.output_frames - stats.output_frames == 4);
+  assert(after.output_bytes - stats.output_bytes == 256);
+  assert(after.retransmits == stats.retransmits);
+  assert(after.window_full_polls > stats.window_full_polls);
+  assert(after.window_wait_max_us == 10000);
+  assert(after.ack_max_us >= 10000);
+}
+
+static void test_complete_redraw() {
+  advance(1);
+  sent_frames.clear();
+  uint32_t first_sequence = output_sequence;
+  unsigned before = sends;
+  z80_web_terminal_stats_t initial_stats = z80_web_terminal_get_stats();
+  std::vector<uint8_t> expected(1039);
+  for (size_t i = 0; i < expected.size(); ++i)
+    expected[i] = (uint8_t)i;
+  outgoing.assign(expected.begin(), expected.begin() + 512);
+  poll_terminal();
+  assert(output_count == 1 && sends == before + 1);
+  outgoing.assign(expected.begin() + 512, expected.begin() + 1024);
+  poll_terminal();
+  assert(output_count == 2 && sends == before + 2 && !staged_output_length);
+  outgoing.assign(expected.begin() + 1024, expected.end());
+  poll_terminal();
+  assert(output_count == 2 && staged_output_length == 15 && outgoing.empty());
+  assert(sends == before + 2);
+  assert(z80_web_terminal_get_stats().retained_bytes == 1039);
+  advance(1);
+  poll_terminal();
+  assert(output_count == 3 && sends == before + 3 && !staged_output_length);
+  assert(sent_frames.size() == 3 && sent_frames[0].size() == HEADER_BYTES + 512 &&
+         sent_frames[1].size() == HEADER_BYTES + 512 &&
+         sent_frames[2].size() == HEADER_BYTES + 15);
+  std::vector<uint8_t> actual;
+  for (const auto &frame : sent_frames)
+    actual.insert(actual.end(), frame.begin() + HEADER_BYTES, frame.end());
+  assert(actual == expected && output_sequence == first_sequence + 3);
+  z80_web_terminal_stats_t stats = z80_web_terminal_get_stats();
+  assert(stats.retained_bytes == 1039 && stats.staged_bytes == 0);
+  assert(stats.output_frames == initial_stats.output_frames + 3);
+  assert(stats.output_bytes == initial_stats.output_bytes + 1039);
+  assert(stats.small_frames == initial_stats.small_frames + 1 &&
+         stats.full_frames == initial_stats.full_frames + 2);
+  message(1, OUTPUT_ACK, output_sequence - 1);
+  assert(output_count == 0);
+}
+
+static void test_small_frame_boundary() {
+  z80_web_terminal_stats_t before = z80_web_terminal_get_stats();
+  for (size_t bytes : {16, 17}) {
+    advance(1);
+    outgoing.assign(bytes, 'S');
+    poll_terminal();
+    message(1, OUTPUT_ACK, output_sequence - 1);
+  }
+  z80_web_terminal_stats_t after = z80_web_terminal_get_stats();
+  assert(after.output_frames == before.output_frames + 2);
+  assert(after.output_bytes == before.output_bytes + 33);
+  assert(after.small_frames == before.small_frames + 1);
+  assert(after.full_frames == before.full_frames);
 }
 
 int main() {
@@ -293,8 +446,9 @@ int main() {
   assert(received.size() == 64 && sent[0] == INPUT_ACK);
 
   // A failed send must not allow a later sequence to overtake it.
-  outgoing.assign(512, 'O');
+  outgoing.assign(2 * FRAME_BYTES, 'O');
   send_ok = false;
+  z80_web_terminal_stats_t old_stats = z80_web_terminal_get_stats();
   poll_terminal();
   assert(output_count == 2 && outgoing.empty() && sent[0] == OUTPUT);
   assert(read_sequence(sent.data() + 1) == 1);
@@ -307,6 +461,10 @@ int main() {
   advance(FRAME_RETRY_MS);
   poll_terminal();
   assert(sent == first && output_sequence == 3);
+  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames);
+  assert(z80_web_terminal_get_stats().retained_bytes == 2 * FRAME_BYTES);
+  assert(z80_web_terminal_get_stats().full_frames == old_stats.full_frames);
+  assert(z80_web_terminal_get_stats().write_blocks > old_stats.write_blocks);
   message(1, OUTPUT_ACK, 77);
   assert(output_count == 2);
   message(1, OUTPUT_ACK, 1);
@@ -316,6 +474,8 @@ int main() {
   flush_ok = false;
   poll_terminal();
   assert(flushes == old_flushes + 1);
+  assert(z80_web_terminal_get_stats().flush_failures == old_stats.flush_failures + 1);
+  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames + 2);
   assert(output_count == 2 && output_frames[output_head].sent);
   assert(outgoing.empty() && read_sequence(sent.data() + 1) == 2);
   old_sends = sends;
@@ -328,15 +488,18 @@ int main() {
   assert(output_count == 0 && output_sequence == 3);
 
   // Four frames can be in flight without any ACK; the fifth remains queued.
-  outgoing.assign(512, 'P');
+  outgoing.assign(2 * FRAME_BYTES, 'P');
   poll_terminal();
-  outgoing.assign(512, 'Q');
+  outgoing.assign(2 * FRAME_BYTES, 'Q');
   poll_terminal();
   assert(output_count == OUTPUT_WINDOW && output_sequence == 7);
-  outgoing.assign(256, 'R');
+  assert(z80_web_terminal_get_stats().retained_bytes == 2048);
+  assert(z80_web_terminal_get_stats().retained_bytes_peak == 2048);
+  assert(z80_web_terminal_get_stats().window_frames_peak == 4);
+  outgoing.assign(FRAME_BYTES, 'R');
   old_sends = sends;
   poll_terminal();
-  assert(sends == old_sends && outgoing.size() == 256);
+  assert(sends == old_sends && outgoing.size() == FRAME_BYTES);
   message(1, OUTPUT_ACK, 4);
   assert(output_count == 2);
   poll_terminal();
@@ -346,17 +509,32 @@ int main() {
 
   // Cumulative ACKs and frame ordering also work across uint32 wrap.
   output_sequence = UINT32_MAX;
-  outgoing.assign(512, 'W');
+  outgoing.assign(2 * FRAME_BYTES, 'W');
   poll_terminal();
   assert(output_count == 2 && read_sequence(sent.data() + 1) == 0);
   message(1, OUTPUT_ACK, 0);
   assert(output_count == 0 && output_sequence == 1);
+  test_output_coalescing();
+  test_complete_redraw();
+  test_small_frame_boundary();
+  old_stats = z80_web_terminal_get_stats();
+  outgoing.assign(FRAME_BYTES, 'T');
+  poll_terminal();
+  advance(FRAME_RETRY_MS);
+  poll_terminal();
+  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames + 1);
+  assert(z80_web_terminal_get_stats().retransmits == old_stats.retransmits + 1);
+  assert(z80_web_terminal_get_stats().output_bytes == old_stats.output_bytes + FRAME_BYTES);
+  assert(z80_web_terminal_get_stats().full_frames == old_stats.full_frames + 1);
+  message(1, OUTPUT_ACK, output_sequence - 1);
+  assert(z80_web_terminal_get_stats().ack_max_us == FRAME_RETRY_MS * 1000);
 
   // Idle vanished browsers time out even when the Pico Wi-Fi link remains up.
   pong(100);
   advance(CLIENT_TIMEOUT_MS);
   poll_terminal();
   assert(!connected && active_connection.load() == -1 && fake_link == CYW43_LINK_UP);
+  assert(z80_web_terminal_get_stats().timeouts >= 1);
   connect_client(2);
   message(2, READY, PROTOCOL_VERSION);
   assert(input_sequence == 1 && output_sequence == 1 && output_count == 0);
@@ -383,11 +561,19 @@ int main() {
   received.assign(128, 'S');
   message(10, INPUT, 1, 64, 'T');
   assert(pending_input_length == 64);
+  outgoing = {'A'};
+  poll_terminal();
+  outgoing = {'B'};
+  poll_terminal();
+  assert(staged_output_length == 1);
   close_client(10);
   poll_terminal();
-  assert(pending_input_length == 0 && !connected);
+  assert(pending_input_length == 0 && staged_output_length == 0 && !connected);
+  assert(z80_web_terminal_get_stats().retained_bytes == 0);
+  assert(z80_web_terminal_get_stats().window_frames == 0);
+  assert(z80_web_terminal_get_stats().retained_bytes_peak == 2048);
   connect_client(11);
-  message(11, READY, 1);
+  message(11, READY, 2);
   assert(!connected && active_connection.load() == -1);
 
   // Close/reconnect events cannot clear a new client's first input.
@@ -431,6 +617,13 @@ int main() {
   unsigned offline_sends = sends;
   assert(!poll_network());
   assert(sends == offline_sends && !lock_depth);
+  uint32_t old_poll_gap = z80_network_max_poll_gap_us();
+  now += (uint64_t)old_poll_gap + 123000;
+  assert(!poll_network());
+  assert(z80_network_max_poll_gap_us() == old_poll_gap + 123000);
+  now += (uint64_t)UINT32_MAX + 1;
+  assert(!poll_network());
+  assert(z80_network_max_poll_gap_us() == UINT32_MAX);
   delete server;
   puts("PASS: four-frame window, cumulative/wrapping ACKs, ordered send failure, "
        "batched flush/backpressure, immediate pending input, network lifecycle, heartbeat and USB preservation");
