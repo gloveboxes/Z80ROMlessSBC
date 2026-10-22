@@ -39,15 +39,27 @@ int main(void) {
   assert(z80_service_info(0, text, sizeof(text)) == 14);
   assert(strcmp(text, "z80romless-sbc") == 0);
   assert(z80_service_info(1, text, sizeof(text)) == 0);
+  assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);
+  assert(text[0] == '\0');
   z80_io_ports_set_network_address("192.0.2.42");
   assert(z80_service_info(1, text, sizeof(text)) == 10);
   assert(strcmp(text, "192.0.2.42") == 0);
+  assert(z80_io_ports_get_network_address(text, sizeof(text)) == 10);
+  assert(strcmp(text, "192.0.2.42") == 0);
+  assert(z80_io_ports_get_network_address(text, 4) == 0);
+  assert(strcmp(text, "192") == 0);
+  z80_io_ports_set_network_address("198.51.100.123");
+  assert(z80_io_ports_get_network_address(text, sizeof(text)) == 14);
+  assert(strcmp(text, "198.51.100.123") == 0);
   assert(z80_service_info(2, text, sizeof(text)) == 16);
   assert(strcmp(text, "0123456789ABCDEF") == 0);
   assert(!z80_service_clock(1, text, sizeof(text)));
+  time_t timestamp = -1;
+  assert(z80_network_time(&timestamp) == 0 && timestamp == 0);
   now = 0x100000000ull * 1000; /* beyond the 32-bit millisecond rollover */
   z80_io_ports_set_unix_time(1704067200);
   now += 2000000;
+  assert(z80_network_time(&timestamp) == 1704067202 && timestamp == 1704067202);
   assert(z80_service_clock(1, text, sizeof(text)));
   assert(strcmp(text, "2024-01-01T00:00:02Z") == 0);
   configured_timezone = "AEST-10";
@@ -59,6 +71,8 @@ int main(void) {
   assert(strcmp(text, "Mon 01/01/2024 10:00:02") == 0);
   z80_io_ports_set_network_address("");
   assert(z80_service_info(1, text, sizeof(text)) == 0);
+  assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);
+  assert(text[0] == '\0');
   assert(!locked);
   puts("Clock synchronization, timezone, uptime and device info passed");
 }

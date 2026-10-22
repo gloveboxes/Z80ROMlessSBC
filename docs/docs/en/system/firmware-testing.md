@@ -31,6 +31,7 @@ For a new checkout:
 ```sh
 git clone https://github.com/gloveboxes/Z80ROMlessSBC.git
 cd Z80ROMlessSBC
+git submodule update --init --recursive
 ```
 
 If already working in this repository, keep the existing checkout and changes.
@@ -237,9 +238,7 @@ arm-none-eabi-gcc -print-file-name=libc.a
 cmake -S . -B build/pico -G Ninja \
   -DPICO_BOARD=pico2_w \
   -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
-  -DPython3_EXECUTABLE="$(command -v "$PYTHON")" \
-  -DZ80_WIFI_SSID= \
-  -DZ80_WIFI_PASSWORD=
+  -DPython3_EXECUTABLE="$(command -v "$PYTHON")"
 cmake --build build/pico \
   --target z80_stage09_cpm_images z80_stage09_cpm_loader_images z80_cpm_images
 ```

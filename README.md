@@ -31,11 +31,15 @@ root:
 
 ```sh
 cmake -S . -B build -G Ninja \
-  -DPICO_BOARD=pico2_w \
-  -DZ80_WIFI_SSID='your-network' \
-  -DZ80_WIFI_PASSWORD='your-password'
+  -DPICO_BOARD=pico2_w
 cmake --build build --target z80_cpm_images -j
 ```
+
+Initialize the WebSocket library with `git submodule update --init --recursive`
+before configuring. Phase 10 builds on the Phase 9 automatic loader.
+Wi-Fi credentials and the remote-FS server address are provisioned over USB
+with Ctrl-] n and stored in ENV, not compiled into firmware. The browser
+terminal takes over CP/M while connected and returns it to USB on disconnect.
 
 See [Firmware and CP/M build](docs/docs/en/system/firmware-build.md) for
 prerequisites and provisioning, and [Building the documentation](docs/docs/en/development/building-docs.md)

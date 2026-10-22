@@ -8,14 +8,27 @@ Prerequisites include CMake, Ninja, Python 3, `picotool`, `z80asm`, and a comple
 
 ```sh
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
+git submodule update --init --recursive
 cmake -S . -B build -G Ninja \
-  -DPICO_BOARD=pico2_w \
-  -DZ80_WIFI_SSID='your-network' \
-  -DZ80_WIFI_PASSWORD='your-password'
+  -DPICO_BOARD=pico2_w
 cmake --build build --target z80_cpm_images -j
 ```
 
-Use empty Wi-Fi credentials when network access is unnecessary. Never expose real credentials in logs or commits.
+Phase 10 provisions `WIFI_SSID`, `WIFI_PASSWORD` and `FS_SERVER` over USB
+with Ctrl-] n and saves them in ENV; do not pass credentials to CMake.
+Without settings, CP/M continues over USB. Never expose real credentials
+in logs or commits. `FS_SERVER` is stored only, with no remote-FS controller.
+
+Phase 10 weather reads `OWM_KEY`, `OWM_LOCATION` and optional `OWM_UNITS`
+from ENV. Do not compile keys into firmware. Native `weather_*` and
+`extended_io_services` tests cover its cache, bounded HTTP decoding, async
+TLS lifecycle and real service transactions without credentials or hardware.
+Live weather needs Wi-Fi, SNTP and valid OWM settings; distinguish that
+acceptance check from successful firmware builds and fake-transport tests.
+Configure native tests with `-DPICO_SDK_PATH=/path/to/pico-sdk` to include
+`weather_real_tls_config`. It uses the actual firmware crypto configuration
+and CA, not fake TLS APIs. Keep SHA-384 enabled for the USERTrust RSA root;
+Mbed TLS 3's SHA-512 option does not imply SHA-384 support.
 
 Run host image tests from the repository root with discovery:
 

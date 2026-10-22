@@ -64,9 +64,10 @@ without lwIP timing in the loop. Keep diagnostics framed or on a separate
 CDC interface so debug text cannot become CP/M input. Those applications
 uses ordinary bytes as terminal input and reserves Ctrl-] followed by one
 command byte for framed diagnostics. [Phase 10](../implementation/phase-10-websocket.md)
-replaces the USB transport
-endpoint with Wi-Fi/WebSocket; it does not remove USB diagnostics or make
-USB the final user interface.
+selects Wi-Fi/WebSocket exclusively while a browser is connected. USB remains
+the CP/M fallback before connection and after disconnect; framed Ctrl-]
+diagnostics remain available even while the browser owns CP/M. Network setup
+uses Ctrl-] n and the existing persistent ENV store.
 
 The WebSocket server must run on the Pico's other core so Wi-Fi, lwIP,
 HTTP serving, and WebSocket polling cannot interfere with the timing of
@@ -76,6 +77,9 @@ embedded terminal page, WebSocket accept/send/receive, and network
 polling. The cores share terminal byte queues, one immutable disk-write
 queue, a small request/result pair for Z80 bus ownership, and atomic
 terminal/disk status words; they share no raw bus GPIO ownership.
+Phase 10 uses the CYW43 polling architecture so network callbacks execute
+only on core 1. Provisioning requests/results also cross queues; only core 1
+reads or writes the ENV backend.
 
 Use the `pico-altair-8800` WebSocket console as the software pattern:
 one embedded HTML terminal page, one WebSocket server, and byte queues
@@ -98,13 +102,25 @@ The initial terminal decode is intentionally small:
 |----:|----|----|
 | `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to host terminal |
 | `0x00` | Z80 `IN` | Terminal receive byte from host to Z80; returns `0x00` if empty |
-| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit-ready (queue has room or transport disconnected), bit 7 = transport connected (USB in Stage 9, WebSocket in Stage 10) |
+| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit-ready (queue has room or transport disconnected), bit 7 = transport connected (USB in Stage 9; browser or fallback USB in Stage 10) |
 
-Connected terminals retain the 512-byte output buffer. Without a connected
+Connected terminals retain the 512-byte output buffer. If it is full, a new
+Z80 output write is discarded and the TX-drop counter increments; older
+queued characters remain unchanged and in order. The trap never waits for
+space. Transmit-ready remains clear until space is available, so software
+that polls it can still wait voluntarily before writing. This policy applies
+to USB and browser output alike. Without a connected
 terminal, output writes are discarded immediately and transmit-ready remains
 set, preventing CP/M console output from waiting for a client. Disconnecting
 clears queued output; reconnecting does not replay it. These intentional
 discards do not increment the terminal overflow counter.
+Stage 10 also clears queued input/output on browser/USB handover and rejects
+additional browser sessions without changing the active owner.
+Wi-Fi-only events leave USB-owned queues intact. The Phase 10 browser and
+firmware use a [sequenced, acknowledged binary protocol](../implementation/phase-10-websocket.md#acknowledged-terminal-protocol-version-1):
+output survives temporary send failures without duplication, and browser
+input waits for RX-queue space rather than evicting older bytes. A 15-second
+ping/pong or output-ACK timeout releases a vanished/stalled browser to USB.
 
 This is enough for ROM monitors, BASIC, CP/M console glue, and small
 diagnostics. If later software needs modem-control style signals, add

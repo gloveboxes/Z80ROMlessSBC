@@ -1,5 +1,7 @@
 #include "io_service.h"
 
+#include <stdio.h>
+
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 
@@ -14,7 +16,10 @@ bool z80_wireless_init(void) {
     return true;
   if (wireless_retry_pending && !time_reached(wireless_retry_deadline))
     return false;
-  if (cyw43_arch_init() != PICO_OK) {
+  int result = cyw43_arch_init();
+  if (result != PICO_OK) {
+    printf("[wireless] FAIL: CYW43 initialization=%d; retry in 5 seconds.\n",
+           result);
     cyw43_arch_deinit();
     wireless_retry_deadline = make_timeout_time_ms(5000);
     wireless_retry_pending = true;

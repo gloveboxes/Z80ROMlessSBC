@@ -12,13 +12,8 @@ void stdio_init_all(void);
 int getchar_timeout_us(uint32_t timeout_us);
 static int firmware_printf(const char *format, ...);
 #define printf firmware_printf
-#ifdef TEST_STAGE08
 #define main stage08_firmware_main
 #include "../../stage08_virtual_io/main.c"
-#else
-#define main stage10_firmware_main
-#include "../../stage10_websocket_terminal/main.c"
-#endif
 #undef main
 #undef printf
 
@@ -28,32 +23,6 @@ static unsigned disk_writes;
 static unsigned terminal_writes;
 static uint8_t last_port;
 static char message[160];
-
-#ifndef TEST_STAGE08
-static unsigned service_reads;
-static unsigned service_writes;
-void z80_io_ports_init(void) {}
-bool z80_io_ports_handles(uint8_t port) {
-  port &= 0x17;
-  return (port >= 2 && port <= 4) || port == 0x17;
-}
-uint8_t z80_io_port_in(uint8_t port) {
-  (void)port;
-  ++service_reads;
-  return 0x42;
-}
-void z80_io_port_out(uint8_t port, uint8_t value) {
-  (void)port; (void)value;
-  ++service_writes;
-}
-void z80_io_ports_core1_service(void) {}
-bool z80_io_ports_quiescent(void) { return true; }
-bool z80_io_ports_reboot_requested(void) { return false; }
-void watchdog_reboot(uint32_t pc, uint32_t sp, uint32_t delay) {
-  (void)pc; (void)sp; (void)delay;
-  assert(false);
-}
-#endif
 
 static int firmware_printf(const char *format, ...) {
   va_list arguments;
@@ -114,7 +83,6 @@ void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
 }
 uint32_t z80_flash_disk_status(void) { return 0; }
 bool z80_flash_disk_has_fatal_error(void) { return false; }
-bool z80_terminal_init(void) { return true; }
 void z80_terminal_core1_service(void) {}
 uint8_t z80_terminal_io_read(uint8_t port) { last_port = port; return 0x5A; }
 void z80_terminal_io_write(uint8_t port, uint8_t value) {
@@ -132,7 +100,6 @@ static uint8_t masked_port(uint8_t address) {
   return z80_port_bus_sample();
 }
 
-#ifdef TEST_STAGE08
 absolute_time_t get_absolute_time(void) { return now_us; }
 int64_t absolute_time_diff_us(absolute_time_t from, absolute_time_t to) {
   return (int64_t)to - (int64_t)from;
@@ -211,94 +178,3 @@ int main(void) {
   assert(ram_heartbeats == old_heartbeats + 1);
   puts("PASS: real Stage 8 self-test aliases, IN expectations and RAM failures");
 }
-#else
-static void address_run(bool corrupt) {
-  qualification_mode = QUALIFICATION_ADDRESS;
-  qualification_index = qualification_errors = qualification_complete = 0;
-  for (size_t i = 0; i < sizeof(address_expected); ++i)
-    address_expected[i] = (uint8_t)(i * 7u);
-  size_t offset = 0;
-  for (size_t i = 0; i < sizeof(address_expected); ++i) {
-    assert(address_test_image[offset++] == 0x3A);
-    uint16_t address = address_test_image[offset++];
-    address |= (uint16_t)address_test_image[offset++] << 8;
-    assert(address == QUALIFICATION_ADDRESSES[i]);
-    assert(address_test_image[offset++] == 0xD3);
-    uint8_t port = masked_port(address_test_image[offset++]);
-    virtual_write(port, address_expected[i] ^ (corrupt && i == 0), NULL);
-  }
-  assert(address_test_image[offset++] == 0x3E);
-  uint8_t result = address_test_image[offset++];
-  assert(result == 0x5A && address_test_image[offset++] == 0xD3);
-  virtual_write(masked_port(address_test_image[offset++]), result, NULL);
-  assert(address_test_image[offset++] == 0x76);
-  assert(offset == address_test_image_length && qualification_complete);
-  if (corrupt)
-    assert(qualification_errors > 0);
-  else
-    assert(qualification_index == sizeof(address_expected) &&
-           qualification_errors == 0);
-  service_qualification();
-  assert(strstr(message, corrupt ? "FAIL:" : "PASS:") != NULL);
-}
-
-static void hour_result(bool corrupt) {
-  qualification_mode = QUALIFICATION_RAM;
-  qualification_errors = 0;
-  hour_test_active = true;
-  hour_test_deadline = now_us;
-  hour_progress.observed = true;
-  hour_progress.last_count = ram_heartbeats;
-  hour_progress.deadline = UINT64_MAX;
-  hour_trap_timeout_baseline = hour_control_error_baseline = 0;
-  if (corrupt) {
-    size_t end = sizeof(RAM_CHECK_PROGRAM);
-    assert(RAM_CHECK_PROGRAM[end - 3] == 0xD3);
-    assert(RAM_CHECK_PROGRAM[end - 5] == 0x3E);
-    virtual_write(masked_port(RAM_CHECK_PROGRAM[end - 2]),
-                  RAM_CHECK_PROGRAM[end - 4], NULL);
-    assert(qualification_errors == 1);
-  }
-  service_qualification();
-  assert(!hour_test_active);
-  assert(strstr(message, corrupt ? "FAIL: one-hour" : "PASS: one-hour") != NULL);
-}
-
-int main(void) {
-  assert(masked_port(QUALIFICATION_DATA_PORT) == QUALIFICATION_DATA_PORT);
-  assert(masked_port(QUALIFICATION_RESULT_PORT) == QUALIFICATION_RESULT_PORT);
-  assert(QUALIFICATION_DATA_PORT != QUALIFICATION_RESULT_PORT);
-  build_address_test_image();
-  address_run(false);
-  address_run(true);
-  hour_result(false);
-  hour_result(true);
-  qualification_mode = QUALIFICATION_NONE;
-  for (unsigned address = 0; address < 256; ++address) {
-    uint8_t port = masked_port((uint8_t)address);
-    assert(port == (address & 0x17));
-    unsigned old_disk = disk_writes;
-    unsigned old_terminal = terminal_writes;
-    unsigned old_services = service_writes;
-    virtual_write(port, 0xA5, NULL);
-    if (port >= 0x10 && port <= 0x14) {
-      assert(disk_writes == old_disk + 1 && terminal_writes == old_terminal);
-      assert(virtual_read(port, NULL) == 0xA5 && last_port == port);
-    } else if (z80_io_ports_handles(port)) {
-      assert(service_writes == old_services + 1);
-      assert(terminal_writes == old_terminal && disk_writes == old_disk);
-      unsigned old_reads = service_reads;
-      assert(virtual_read(port, NULL) == 0x42);
-      assert(service_reads == old_reads + 1);
-    } else if (port != QUALIFICATION_DATA_PORT) {
-      assert(terminal_writes == old_terminal + 1 && disk_writes == old_disk);
-      assert(virtual_read(port, NULL) == 0x5A && last_port == port);
-    }
-  }
-  qualification_mode = QUALIFICATION_RAM;
-  unsigned old_heartbeats = ram_heartbeats;
-  virtual_write(masked_port(0xE8), 0x41, NULL);
-  assert(ram_heartbeats == old_heartbeats + 1);
-  puts("PASS: real Stage 10 images/handlers, RAM failure reporting and port aliases");
-}
-#endif

@@ -20,6 +20,10 @@
 #include "ansi_input.h"
 #include "disk_diagnostic_image.h"
 
+#ifdef Z80_STAGE10_NETWORK
+#include "network_setup.h"
+#endif
+
 #ifndef Z80_STAGE09_AUTOBOOT
 #define Z80_STAGE09_AUTOBOOT 0
 #endif
@@ -39,6 +43,10 @@ static bool running;
 static bool core1_started;
 static bool command_pending;
 static bool usb_was_connected;
+#ifdef Z80_STAGE10_NETWORK
+static bool browser_was_connected;
+_Alignas(8) static uint32_t core1_network_stack[8192 / sizeof(uint32_t)];
+#endif
 static bool stop_requested;
 static bool flush_submitted;
 static bool bios_announced;
@@ -118,13 +126,24 @@ static void core1_main(void) {
       if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
         z80_flash_core1_service();
         z80_io_ports_core1_service();
-        if (z80_flash_disk_quiescent() && z80_io_ports_quiescent())
+#ifdef Z80_STAGE10_NETWORK
+        z80_network_setup_core1_service();
+#endif
+        if (z80_flash_disk_quiescent() && z80_io_ports_quiescent()
+#ifdef Z80_STAGE10_NETWORK
+            && z80_network_setup_quiescent()
+#endif
+        )
           __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
       }
     } else {
       __atomic_store_n(&flash_paused, 0, __ATOMIC_RELEASE);
       z80_flash_core1_service();
       z80_io_ports_core1_service();
+#ifdef Z80_STAGE10_NETWORK
+      z80_network_setup_core1_service();
+      z80_terminal_core1_service();
+#endif
     }
     tight_loop_contents();
   }
@@ -219,7 +238,12 @@ static void start_cpm(void) {
   bios_announced = ccp_announced = false;
   boot_timed_out = false;
   z80_io_ports_init();
+#ifdef Z80_STAGE10_NETWORK
+  multicore_launch_core1_with_stack(core1_main, core1_network_stack,
+                                   sizeof(core1_network_stack));
+#else
   multicore_launch_core1(core1_main);
+#endif
   core1_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
       !z80_cpu_release_reset_and_run(RUN_CLOCK_HZ)) {
@@ -277,6 +301,13 @@ static void print_reset_status(void) {
 
 static void print_status(void) {
   print_reset_status();
+#ifdef Z80_STAGE10_NETWORK
+  char address[16];
+  bool has_address = z80_io_ports_get_network_address(address, sizeof(address)) != 0;
+  printf("[network] browser=%u setup=%u ip=%s\n",
+         z80_terminal_browser_connected(), z80_network_setup_active(),
+         has_address ? address : "unavailable");
+#endif
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
@@ -301,8 +332,14 @@ static void print_status(void) {
 }
 
 static void print_help(void) {
-  printf("\nStage 9: USB CP/M terminal; nominal 20 MHz after slow loading.\n"
-         "Ctrl-] then: l=load/verify only, g=run verified CP/M, s=status,\n"
+#ifdef Z80_STAGE10_NETWORK
+  printf("\nStage 10: Phase 9 automatic CP/M loader plus Wi-Fi terminal.\n"
+         "Ctrl-] n=network setup; browser owns CP/M while connected, "
+         "USB resumes on disconnect.\n");
+#else
+  printf("\nStage 9: USB CP/M terminal; nominal 20 MHz after slow loading.\n");
+#endif
+  printf("Ctrl-] then: l=load/verify only, g=run verified CP/M, s=status,\n"
          "t=read-only all-drive disk test after load (reboot afterward),\n"
          "x=flush then hold RESET, r=reboot when stopped, h=help,\n"
          "0=disarm, 1-8=arm one-shot flash fault (DISPOSABLE DISKS ONLY).\n"
@@ -329,6 +366,13 @@ static void diagnostic_command(int command) {
     print_status();
   } else if (command == 'h') {
     print_help();
+#ifdef Z80_STAGE10_NETWORK
+  } else if (command == 'n') {
+    if (running && !stop_requested)
+      z80_network_setup_request();
+    else
+      printf("\n[network setup] Rejected: CP/M must be running, not stopping.\n");
+#endif
   } else if (command == 'x') {
     if (!running || diagnostic_active) {
       hold_cpu();
@@ -368,7 +412,11 @@ static void forward_terminal_byte(uint8_t value) {
     return;
   }
   previous_cr = value == '\r';
+#ifdef Z80_STAGE10_NETWORK
+  z80_terminal_usb_receive(value);
+#else
   z80_terminal_network_receive(&value, 1);
+#endif
 }
 
 static void receive_usb_byte(uint8_t value) {
@@ -383,6 +431,12 @@ static void receive_usb_byte(uint8_t value) {
     command_pending = true;
     return;
   }
+#ifdef Z80_STAGE10_NETWORK
+  if (running && !stop_requested && z80_network_setup_input(value))
+    return;
+  if (z80_terminal_browser_connected())
+    return;
+#endif
   if (!running) {
     if (Z80_STAGE09_AUTOBOOT)
       printf("\n[diag] CPU held; Ctrl-] s for status, "
@@ -397,7 +451,18 @@ static void receive_usb_byte(uint8_t value) {
 
 static void service_usb(void) {
   bool connected = stdio_usb_connected();
+#ifdef Z80_STAGE10_NETWORK
+  z80_terminal_usb_connected(connected);
+  bool browser_connected = z80_terminal_browser_connected();
+  if (browser_connected != browser_was_connected) {
+    ansi_input_reset();
+    previous_cr = false;
+    browser_was_connected = browser_connected;
+  }
+  z80_network_setup_usb_service(connected, running && !stop_requested);
+#else
   z80_terminal_set_connected(connected);
+#endif
   if (connected != usb_was_connected)
     ansi_input_reset();
   if (connected && !usb_was_connected) {
@@ -427,14 +492,23 @@ static void service_usb(void) {
       break;
     receive_usb_byte((uint8_t)input);
   }
-  if (running && !command_pending)
+  if (running && !command_pending
+#ifdef Z80_STAGE10_NETWORK
+      && !z80_network_setup_active() && !z80_terminal_browser_connected()
+#endif
+  )
     forward_terminal_byte(
         ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
   for (unsigned int count = 0;
        count < 32 && stdio_usb_connected() &&
        tud_cdc_write_available() != 0; ++count) {
     uint8_t value;
+#ifdef Z80_STAGE10_NETWORK
+    if (z80_network_setup_active() ||
+        z80_terminal_usb_supply(&value, 1) == 0)
+#else
     if (z80_terminal_network_supply(&value, 1) == 0)
+#endif
       break;
     putchar_raw(value);
   }
@@ -541,6 +615,9 @@ int main(void) {
   set_sys_clock_pll(1200000000, 5, 2);
   stdio_init_all();
   z80_terminal_queue_init();
+#ifdef Z80_STAGE10_NETWORK
+  z80_network_setup_init();
+#endif
   if (clock_get_hz(clk_sys) != SYSTEM_CLOCK_HZ) {
     z80_cpu_fail_closed();
     while (true) {

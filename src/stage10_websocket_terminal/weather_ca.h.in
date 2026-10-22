@@ -1,0 +1,4 @@
+#ifndef Z80SBC_WEATHER_CA_H
+#define Z80SBC_WEATHER_CA_H
+static constexpr char WEATHER_CA[] = R"PEM(@weather_ca@)PEM";
+#endif

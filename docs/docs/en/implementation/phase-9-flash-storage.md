@@ -59,7 +59,9 @@ USB error/status first. Do not bypass verification merely to get a prompt.
     50% duty** (`120 MHz / 6`). This is the requested operating assumption,
     not a claim that CP/M, disk I/O or timing margin has passed bench
     qualification at that frequency. I/O traps and flash writes still pause
-    execution. Stage 10 retains its separate 1 MHz default.
+    execution. The replacement Stage 10 inherits this tested automatic-loader
+    application and its clock settings; combined network operation still
+    requires acceptance testing.
 
 ## Automatic CP/M loader
 

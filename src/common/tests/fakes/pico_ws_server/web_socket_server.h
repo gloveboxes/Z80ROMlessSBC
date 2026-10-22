@@ -7,14 +7,17 @@ public:
   using ConnectCallback = void (*)(WebSocketServer &, uint32_t);
   using CloseCallback = ConnectCallback;
   using MessageCallback = void (*)(WebSocketServer &, uint32_t, const void *, size_t);
+  using PongCallback = MessageCallback;
   explicit WebSocketServer(uint32_t) {}
   void setConnectCallback(ConnectCallback) {}
   void setCloseCallback(CloseCallback) {}
   void setMessageCallback(MessageCallback) {}
+  void setPongCallback(PongCallback) {}
   void setTcpNoDelay(bool) {}
   bool startListening(uint16_t) { return true; }
   void popMessages();
   bool close(uint32_t);
   bool sendMessage(uint32_t, const void *, size_t);
+  bool sendPing(uint32_t, const void *, size_t);
 };
 #endif

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
 
 const char *json_scan_skip_ws(const char *start, const char *end)
 {
@@ -144,8 +147,14 @@ bool json_scan_get_number(json_scan_range_t range, const char *key, char *dst, s
     }
 
     char *num_end = NULL;
+    errno = 0;
     double value = strtod(cursor, &num_end);
-    if (num_end == cursor || num_end > range.end)
+    if (errno == ERANGE || num_end == cursor || num_end > range.end ||
+        !isfinite(value) || value <= (double)INT_MIN - 0.5 ||
+        value >= (double)INT_MAX + 0.5 ||
+        (num_end < range.end && *num_end != ',' && *num_end != '}' &&
+         *num_end != ']' && *num_end != ' ' && *num_end != '\r' &&
+         *num_end != '\n' && *num_end != '\t'))
     {
         return false;
     }
@@ -170,13 +179,21 @@ bool json_scan_get_int(json_scan_range_t range, const char *key, int *value)
         {
             return false;
         }
-        *value = atoi(tmp);
+        char *end;
+        errno = 0;
+        long parsed = strtol(tmp, &end, 10);
+        if (errno == ERANGE || end == tmp || *end ||
+            parsed < INT_MIN || parsed > INT_MAX)
+            return false;
+        *value = (int)parsed;
         return true;
     }
 
     char *num_end = NULL;
+    errno = 0;
     long parsed = strtol(cursor, &num_end, 10);
-    if (num_end == cursor || num_end > range.end)
+    if (errno == ERANGE || num_end == cursor || num_end > range.end ||
+        parsed < INT_MIN || parsed > INT_MAX)
     {
         return false;
     }

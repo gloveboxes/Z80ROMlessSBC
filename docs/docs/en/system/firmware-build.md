@@ -22,12 +22,11 @@ and bring-up plan. The existing PCB is for the superseded circuit and is not
 compatible with this firmware. Its migration is deferred; do not manufacture
 it or use the new firmware on that layout without separately updating wiring.
 
-Keep the shared defaults conservative. Stage 10 starts the Z80 at 1 MHz;
-the PCB's higher qualification target must not silently raise that default
-or bypass startup, bus-ownership, or timing safeguards. Any future
-hardware-specific configuration must be explicit and preserve the breadboard
-defaults. Operating-frequency qualification remains specific to each
-physical build.
+Keep the shared defaults conservative. Phase 10 explicitly inherits the
+tested Phase 9 automatic loader's 20 MHz operating setting, not the previous
+Phase 10 1 MHz default. This does not qualify combined Wi-Fi/storage operation
+or the deferred PCB. Operating-frequency qualification remains specific to
+each physical build.
 
 All stages configure `clk_sys` to 144 MHz at SDK startup. The 12 MHz crystal
 feeds PLL_SYS with reference divider 1, a 1440 MHz VCO, and post-dividers 5 and 2.
@@ -37,11 +36,11 @@ its separate 48 MHz PLL; peripheral/PIO timing uses the configured system clock.
 This does not change the 1 MHz Z80 startup default or qualify 8 MHz hardware
 operation. See the [frequency qualification plan](../implementation/frequency-qualification.md).
 
-Stage 9 is an explicit exception: after safe startup and before initializing
+Stages 9 and 10 are explicit exceptions: after safe startup and before initializing
 USB it selects a 120 MHz supervisor clock, then uses nominal 20 MHz PWM only
 after complete SRAM loading/verification. The diagnostic variant starts on
 command; the automatic loader starts on Pico reset without waiting for USB.
-Its clock/CPU/trap chain is compiled
+Their clock/CPU/trap chain is compiled
 separately with the existing 20 MHz opt-in; other stages retain their own
 limits/defaults. This is an operating assumption, not new bench qualification.
 
@@ -109,18 +108,21 @@ path is specific to the author's machine. A known working macOS setup is:
 
 ```sh
 brew install cmake ninja picotool z80asm cpmtools
+git submodule update --init --recursive
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
 cmake -S . -B build -G Ninja \
   -DPICO_BOARD=pico2_w \
-  -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
-  -DZ80_WIFI_SSID='your-network' \
-  -DZ80_WIFI_PASSWORD='your-password'
+  -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk"
 cmake --build build --target z80_stage01_supervisor -j
 ```
 
-Wi-Fi credentials are written only to the generated build tree. An empty SSID
-leaves networking disabled while flash-disk service continues to operate.
-Do not share the generated credentials or CMake cache in diagnostic logs.
+Phase 10 prompts over USB for missing network settings; Ctrl-] n changes
+them later. SSID, password and the remote-FS IPv4 address are saved in the
+existing ENV store (`WIFI_SSID`, `WIFI_PASSWORD`, `FS_SERVER`). No credentials
+belong in CMake arguments or generated firmware headers. Until configured,
+CP/M and disk services continue over USB. See the
+[Phase 10 setup procedure](../implementation/phase-10-websocket.md).
+Remote-FS I/O remains deferred.
 
 ### Building from the Stage 1 directory
 
@@ -136,9 +138,7 @@ To keep a local build tree while working in `src/stage01_supervisor`, run:
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
 cmake -S ../.. -B build -G Ninja \
   -DPICO_BOARD=pico2_w \
-  -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
-  -DZ80_WIFI_SSID= \
-  -DZ80_WIFI_PASSWORD=
+  -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk"
 cmake --build build --target z80_stage01_supervisor -j
 ```
 

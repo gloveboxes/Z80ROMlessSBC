@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(z80_control_tests C CXX)
 enable_testing()
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
+  ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
   ../environment_store.c
   ../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.c)
 target_include_directories(io_ports_test PRIVATE fakes ../include ..)
@@ -16,6 +17,56 @@ target_compile_features(io_service_platform_test PRIVATE c_std_11)
 target_compile_options(io_service_platform_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME service_clock_and_info COMMAND io_service_platform_test)
 set_tests_properties(service_clock_and_info PROPERTIES TIMEOUT 5)
+add_executable(clock_service_test clock_service_test.c ../io_ports.c
+  ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
+  ../io_service.c ../io_service_platform.c ../environment_store.c
+  ../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.c)
+target_include_directories(clock_service_test PRIVATE fakes ../include ..)
+target_compile_definitions(clock_service_test PRIVATE Z80_ENV_FLASH=1)
+target_compile_features(clock_service_test PRIVATE c_std_11)
+target_compile_options(clock_service_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME clock_app_time_services COMMAND clock_service_test)
+set_tests_properties(clock_app_time_services PROPERTIES TIMEOUT 5)
+add_executable(weather_test weather_test.c ../weather.c ../weather_http.c
+  ../../cpm/dcc_io_adapter/port_drivers/json_scan.c)
+target_include_directories(weather_test PRIVATE ../include ..)
+target_compile_features(weather_test PRIVATE c_std_11)
+target_compile_options(weather_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME weather_cache_and_http COMMAND weather_test)
+set_tests_properties(weather_cache_and_http PROPERTIES TIMEOUT 5)
+add_executable(weather_network_test weather_network_test.cpp ../weather_http.c)
+target_include_directories(weather_network_test PRIVATE fakes ../include ..)
+target_compile_features(weather_network_test PRIVATE cxx_std_17)
+target_compile_options(weather_network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME weather_async_https COMMAND weather_network_test)
+set_tests_properties(weather_async_https PROPERTIES TIMEOUT 5)
+set(PICO_SDK_PATH "$ENV{PICO_SDK_PATH}" CACHE PATH
+  "Pico SDK used for the real weather TLS regression")
+if(EXISTS "${PICO_SDK_PATH}/lib/mbedtls/library/CMakeLists.txt")
+  set(MBEDTLS_DIR "${PICO_SDK_PATH}/lib/mbedtls")
+  set(MBEDTLS_TARGET_PREFIX weather_)
+  set(MBEDTLS_CONFIG_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/lib/pico-ws-server/include/mbedtls_config.h")
+  set(MBEDTLS_USER_CONFIG_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/weather_tls_config.h")
+  add_subdirectory("${MBEDTLS_DIR}/library" weather_mbedtls EXCLUDE_FROM_ALL)
+  foreach(target weather_mbedcrypto weather_mbedx509 weather_mbedtls)
+    target_include_directories(${target} PUBLIC ../include)
+  endforeach()
+  file(READ ../../stage10_websocket_terminal/weather_ca.pem weather_ca)
+  configure_file(../../stage10_websocket_terminal/weather_ca.h.in
+    weather_tls/weather_ca.h @ONLY)
+  add_executable(weather_tls_test weather_tls_test.cpp)
+  target_include_directories(weather_tls_test PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/weather_tls")
+  target_link_libraries(weather_tls_test PRIVATE weather_mbedtls)
+  target_compile_features(weather_tls_test PRIVATE cxx_std_17)
+  target_compile_options(weather_tls_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  add_test(NAME weather_real_tls_config COMMAND weather_tls_test)
+  set_tests_properties(weather_real_tls_config PROPERTIES TIMEOUT 5)
+else()
+  message(STATUS "Set PICO_SDK_PATH to enable the real weather TLS regression")
+endif()
 add_executable(bus_grant_test bus_grant_test.c)
 target_include_directories(bus_grant_test PRIVATE fakes ../include)
 target_compile_features(bus_grant_test PRIVATE c_std_11)
@@ -193,10 +244,11 @@ add_test(NAME flash_backend_recovery COMMAND flash_backend_test)
 set_tests_properties(flash_backend_recovery PROPERTIES TIMEOUT 15)
 
 include(../../stage09_flash_storage/disk_diagnostic_build.cmake)
-foreach(stage09_test_target IN ITEMS stage09_test stage09_autoboot_test)
+foreach(stage09_test_target IN ITEMS stage09_test stage09_autoboot_test stage10_test)
   add_executable(${stage09_test_target} stage09_test.c ../terminal_queue.c
     ../../stage09_flash_storage/ansi_input.c "${diagnostic_header}")
   target_include_directories(${stage09_test_target} PRIVATE fakes ../include
+    ../../stage10_websocket_terminal
     "${CMAKE_CURRENT_BINARY_DIR}")
   target_compile_definitions(${stage09_test_target} PRIVATE
     Z80_EXPERIMENTAL_20MHZ=1)
@@ -205,29 +257,37 @@ foreach(stage09_test_target IN ITEMS stage09_test stage09_autoboot_test)
     -Wall -Wextra -Werror -UNDEBUG)
 endforeach()
 target_compile_definitions(stage09_autoboot_test PRIVATE Z80_STAGE09_AUTOBOOT=1)
+target_compile_definitions(stage10_test PRIVATE
+  Z80_STAGE09_AUTOBOOT=1 Z80_STAGE10_NETWORK=1)
+add_test(NAME stage10_autoboot_and_routing COMMAND stage10_test)
 add_test(NAME stage09_usb_cpm COMMAND stage09_test)
 add_test(NAME stage09_autoboot_cpm COMMAND stage09_autoboot_test)
 set_tests_properties(stage09_usb_cpm stage09_autoboot_cpm PROPERTIES TIMEOUT 5)
 
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/wifi_config.h"
-	"#define Z80_WIFI_SSID \"test\"\n#define Z80_WIFI_PASSWORD \"\"\n")
 add_executable(network_test network_test.cpp)
-target_include_directories(network_test PRIVATE fakes ../include ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(network_test PRIVATE fakes ../include
+  ../../stage10_websocket_terminal)
 target_compile_features(network_test PRIVATE cxx_std_17)
 target_compile_options(network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME terminal_connections COMMAND network_test)
 set_tests_properties(terminal_connections PROPERTIES TIMEOUT 5)
 
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/no-wifi")
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/no-wifi/wifi_config.h"
-  "#define Z80_WIFI_SSID \"\"\n#define Z80_WIFI_PASSWORD \"\"\n")
 add_executable(network_no_wifi_test network_test.cpp)
 target_include_directories(network_no_wifi_test PRIVATE fakes ../include
-  "${CMAKE_CURRENT_BINARY_DIR}/no-wifi")
+  ../../stage10_websocket_terminal)
+target_compile_definitions(network_no_wifi_test PRIVATE TEST_NO_WIFI=1)
 target_compile_features(network_no_wifi_test PRIVATE cxx_std_17)
 target_compile_options(network_no_wifi_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME terminal_led_without_wifi COMMAND network_no_wifi_test)
 set_tests_properties(terminal_led_without_wifi PROPERTIES TIMEOUT 5)
+
+add_executable(network_setup_test network_setup_test.c
+  ../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.c)
+target_include_directories(network_setup_test PRIVATE fakes ../include ..)
+target_compile_definitions(network_setup_test PRIVATE Z80_ENV_FLASH=1)
+target_compile_features(network_setup_test PRIVATE c_std_11)
+target_compile_options(network_setup_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME network_env_provisioning COMMAND network_setup_test)
 
 add_executable(progress_test progress_test.c)
 target_include_directories(progress_test PRIVATE fakes ../include)
@@ -236,15 +296,7 @@ target_compile_options(progress_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME qualification_progress COMMAND progress_test)
 set_tests_properties(qualification_progress PROPERTIES TIMEOUT 5)
 
-add_executable(qualification_test qualification_test.c ../bus.c)
-target_include_directories(qualification_test PRIVATE fakes ../include)
-target_compile_features(qualification_test PRIVATE c_std_11)
-target_compile_options(qualification_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
-add_test(NAME qualification_ports COMMAND qualification_test)
-set_tests_properties(qualification_ports PROPERTIES TIMEOUT 5)
-
 add_executable(stage08_test qualification_test.c ../bus.c)
-target_compile_definitions(stage08_test PRIVATE TEST_STAGE08=1)
 target_include_directories(stage08_test PRIVATE fakes ../include)
 target_compile_features(stage08_test PRIVATE c_std_11)
 target_compile_options(stage08_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)

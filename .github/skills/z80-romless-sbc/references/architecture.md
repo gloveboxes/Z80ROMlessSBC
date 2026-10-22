@@ -58,14 +58,16 @@ circuit and must not be manufactured or used with this firmware.
 - Slow clocks return only after a fixed 1 us LOW settling interval. Hold a frozen PWM HIGH for at least 1 us before selecting preloaded LOW SIO; do not repeat this handover guard on already-SIO steps. Wait at least 1 us after isolation before driving Pico data pins or resuming trapped execution.
 - Release RESET while CLK is stopped LOW, wait at least 1 us, then start PWM. Integer/even PWM selection must never exceed the requested frequency. Configure clk_sys to 144 MHz at SDK startup (1440 MHz PLL_SYS VCO, reference divider 1, post-dividers 5 and 2); an 8 MHz request produces nominally exact 8 MHz. USB retains its independent 48 MHz PLL.
 - Decode only A0/A1/A2/A4 (mask0x17): console00/01 and disk10-14 remain distinct; A3/A5-A7 and high byte alias.
-- Stage 8 diagnostics use masked result port 06; Stage 10 uses data port 06 and result port 05. Generated test programs and expected alias replies must use the same decode as the trap.
+- Stage 8 diagnostics use masked result port 06. The replacement Stage 10 compiles the Stage 9 automatic-loader application: its read-only disk diagnostic uses data port 06 and the shared boot-report result port. Generated test programs and expected alias replies must match the trap.
 - Loader resets six clocks, releases RESET, supplies two exit clocks, then injects. Re-reset to PC zero after verification before SRAM execution. Host cycle models do not prove physical reset-exit timing.
 - Address and data buses are short shared trunks with taps, not stars or implied series paths.
 - Z80 BUSACK# floats address, data, MREQ#, IORQ#, RD#, and WR#; fitted 5 V pull-ups define monitored controls during the grant.
 
 ## Firmware Scope
 
-Pico source remains breadboard-first; Stage 10 starts at 1 MHz. The existing
+Pico source remains breadboard-first. The replacement Stage 10 inherits the
+tested Stage 9 automatic loader's 120 MHz supervisor and nominal 20 MHz Z80
+settings; this does not qualify combined network operation. The existing
 PCB is not electrically equivalent and migration is deferred. Do not modify
 PCB/project/routing/fabrication files or claim its compatibility. Preserve
 specified populations: CPU/SRAM absent through Phase 5, both fitted in Phase 6.
@@ -106,5 +108,9 @@ construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
 - CP/M geometry is exactly 327,680 bytes = 2,560 x 128-byte records, 80 tracks x 32 records. It is not IBM 3740 geometry.
 - Cold boot recovers journals, validates CRCs, injects instructions to load/verify SRAM, resets again and starts only on success. BUSACK is used for flash quiescence, never cold loading.
 - Core0 owns GPIO, clock, injection and trapping; core1 owns networking/runtime flash writes. Flash offsets, journal, geometry and multicore lockout contracts are unchanged.
+- Stage 10 uses `pico_cyw43_arch_lwip_poll` on core1, not core0 network timers or a background architecture. USB provisioning passes requests/results through queues; core1 alone accesses ENV. A browser owns CP/M exclusively while connected, with USB fallback on disconnect. `FS_SERVER` is stored only; remote-FS I/O is deferred.
 - Runtime writes keep trapping armed until BUSACK# LOW and re-arm it before BUSACK# HIGH. Non-`PICO_OK` flash-safe results fail closed through watchdog reboot.
 - Wi-Fi polling is bounded and nonblocking. Core 1 services disk writes before network work on every loop.
+- Phase 10 weather uses asynchronous verified HTTPS on core1, with an explicit
+  8 KiB main-RAM core1 stack. Do not enlarge the default scratch-RAM stack
+  beyond its region or move TLS, ENV access, or weather parsing into the Z80 trap.

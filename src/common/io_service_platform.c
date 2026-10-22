@@ -1,4 +1,5 @@
 #include "io_service.h"
+#include "z80sbc/network_time.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -9,11 +10,13 @@
 #include "pico/rand.h"
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
+#include "pico/mutex.h"
 #include "../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 
 static uint32_t unix_seconds;
 static uint64_t sync_millis;
 static char network_address[16];
+auto_init_mutex(network_address_mutex);
 
 void z80_io_ports_set_unix_time(uint32_t seconds) {
   if (seconds < 1704067200u)
@@ -25,7 +28,16 @@ void z80_io_ports_set_unix_time(uint32_t seconds) {
 }
 
 void z80_io_ports_set_network_address(const char *address) {
+  mutex_enter_blocking(&network_address_mutex);
   snprintf(network_address, sizeof(network_address), "%s", address);
+  mutex_exit(&network_address_mutex);
+}
+
+size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
+  mutex_enter_blocking(&network_address_mutex);
+  int length = snprintf(address, capacity, "%s", network_address);
+  mutex_exit(&network_address_mutex);
+  return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
 }
 
 uint64_t z80_service_millis(void) {
@@ -38,8 +50,7 @@ uint16_t z80_service_random(void) {
 
 size_t z80_service_info(uint8_t selector, char *text, size_t capacity) {
   if (selector == 1) {
-    int length = snprintf(text, capacity, "%s", network_address);
-    return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
+    return z80_io_ports_get_network_address(text, capacity);
   }
   if (selector == 2) {
     if (capacity < 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1)
@@ -51,15 +62,22 @@ size_t z80_service_info(uint8_t selector, char *text, size_t capacity) {
   return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
 }
 
-bool z80_service_clock(uint8_t operation, char *text, size_t capacity) {
+time_t z80_network_time(time_t *result) {
   uint32_t saved = save_and_disable_interrupts();
   uint32_t seconds = unix_seconds;
   uint64_t base = sync_millis;
   restore_interrupts(saved);
-  if (seconds == 0)
+  time_t now = seconds == 0 ? 0 : (time_t)((uint64_t)seconds +
+                                          (z80_service_millis() - base) / 1000);
+  if (result != NULL)
+    *result = now;
+  return now;
+}
+
+bool z80_service_clock(uint8_t operation, char *text, size_t capacity) {
+  time_t now = z80_network_time(NULL);
+  if (now == 0)
     return false;
-  time_t now = (time_t)((uint64_t)seconds +
-                        (z80_service_millis() - base) / 1000);
   char timezone[256];
   if (!environment_io_get("TZ", timezone, sizeof(timezone)))
     memcpy(timezone, "UTC0", 5);

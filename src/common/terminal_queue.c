@@ -18,6 +18,8 @@ static queue_t rx_queue;
 static queue_t tx_queue;
 static critical_section_t tx_state_lock;
 static uint32_t client_connected;
+static uint32_t browser_connected;
+static bool usb_connected;
 static uint32_t rx_drops;
 static uint32_t tx_drops;
 void z80_terminal_queue_init(void) {
@@ -26,6 +28,8 @@ void z80_terminal_queue_init(void) {
   queue_init(&rx_queue, sizeof(uint8_t), TERM_RX_DEPTH);
   queue_init(&tx_queue, sizeof(uint8_t), TERM_TX_DEPTH);
   __atomic_store_n(&client_connected, 0, __ATOMIC_RELEASE);
+  __atomic_store_n(&browser_connected, 0, __ATOMIC_RELEASE);
+  usb_connected = false;
   __atomic_store_n(&rx_drops, 0, __ATOMIC_RELAXED);
   __atomic_store_n(&tx_drops, 0, __ATOMIC_RELAXED);
 }
@@ -85,8 +89,31 @@ size_t z80_terminal_network_supply(uint8_t *data, size_t capacity) {
   return count;
 }
 
+bool z80_terminal_network_try_receive(const uint8_t *data, size_t length) {
+  if (data == NULL || length == 0 || length > TERM_RX_DEPTH)
+    return false;
+  critical_section_enter_blocking(&tx_state_lock);
+  bool accepted = z80_terminal_browser_connected() &&
+                  TERM_RX_DEPTH - queue_get_level(&rx_queue) >= length;
+  if (accepted) {
+    // USB is excluded by this lock; core 0 can only free RX space.
+    for (size_t i = 0; i < length; ++i) {
+      uint8_t value = data[i] == '\n' ? '\r' : data[i];
+      queue_try_add(&rx_queue, &value);
+    }
+  }
+  critical_section_exit(&tx_state_lock);
+  return accepted;
+}
+
 void z80_terminal_network_connected(void) {
-  z80_terminal_set_connected(true);
+  critical_section_enter_blocking(&tx_state_lock);
+  uint8_t discard;
+  while (queue_try_remove(&rx_queue, &discard)) {}
+  while (queue_try_remove(&tx_queue, &discard)) {}
+  __atomic_store_n(&browser_connected, 1, __ATOMIC_RELEASE);
+  __atomic_store_n(&client_connected, 1, __ATOMIC_RELEASE);
+  critical_section_exit(&tx_state_lock);
 }
 
 void z80_terminal_set_connected(bool connected) {
@@ -101,9 +128,50 @@ void z80_terminal_set_connected(bool connected) {
 }
 
 void z80_terminal_network_disconnected(void) {
-  z80_terminal_set_connected(false);
+  critical_section_enter_blocking(&tx_state_lock);
+  if (!z80_terminal_browser_connected()) {
+    critical_section_exit(&tx_state_lock);
+    return;
+  }
+  __atomic_store_n(&browser_connected, 0, __ATOMIC_RELEASE);
+  __atomic_store_n(&client_connected, usb_connected, __ATOMIC_RELEASE);
   uint8_t discard;
   while (queue_try_remove(&rx_queue, &discard)) {}
+  while (queue_try_remove(&tx_queue, &discard)) {}
+  critical_section_exit(&tx_state_lock);
+}
+
+bool z80_terminal_browser_connected(void) {
+  return __atomic_load_n(&browser_connected, __ATOMIC_ACQUIRE) != 0;
+}
+
+void z80_terminal_usb_connected(bool connected) {
+  critical_section_enter_blocking(&tx_state_lock);
+  if (!z80_terminal_browser_connected()) {
+    __atomic_store_n(&client_connected, connected, __ATOMIC_RELEASE);
+    if (usb_connected != connected) {
+      uint8_t discard;
+      while (queue_try_remove(&rx_queue, &discard)) {}
+      while (queue_try_remove(&tx_queue, &discard)) {}
+    }
+  }
+  usb_connected = connected;
+  critical_section_exit(&tx_state_lock);
+}
+
+void z80_terminal_usb_receive(uint8_t value) {
+  critical_section_enter_blocking(&tx_state_lock);
+  if (usb_connected && !z80_terminal_browser_connected())
+    z80_terminal_network_receive(&value, 1);
+  critical_section_exit(&tx_state_lock);
+}
+
+size_t z80_terminal_usb_supply(uint8_t *data, size_t capacity) {
+  critical_section_enter_blocking(&tx_state_lock);
+  size_t count = usb_connected && !z80_terminal_browser_connected()
+                     ? z80_terminal_network_supply(data, capacity) : 0;
+  critical_section_exit(&tx_state_lock);
+  return count;
 }
 
 void z80_terminal_network_tx_dropped(size_t count) {

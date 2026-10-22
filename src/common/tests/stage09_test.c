@@ -50,6 +50,25 @@ static uint8_t input[64];
 static size_t input_index;
 static size_t input_length;
 
+#ifdef Z80_STAGE10_NETWORK
+static unsigned setup_requests;
+static const char *network_address = "";
+size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
+  int length = snprintf(address, capacity, "%s", network_address);
+  return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
+}
+void z80_network_setup_init(void) {}
+void z80_network_setup_request(void) { ++setup_requests; }
+void z80_network_setup_usb_service(bool usb, bool active) {
+  (void)usb; (void)active;
+}
+bool z80_network_setup_input(uint8_t value) { (void)value; return false; }
+bool z80_network_setup_active(void) { return false; }
+bool z80_network_setup_quiescent(void) { return true; }
+void z80_network_setup_core1_service(void) {}
+void z80_terminal_core1_service(void) {}
+#endif
+
 void z80_io_ports_init(void) {}
 bool z80_io_ports_handles(uint8_t port) {
   port &= 0x17;
@@ -135,6 +154,11 @@ void multicore_launch_core1(void (*entry)(void)) {
   assert(entry == core1_main);
   assert(boot_attempted && image_verified && held);
   ++core_launches;
+}
+void multicore_launch_core1_with_stack(void (*entry)(void), uint32_t *stack,
+                                      size_t stack_size) {
+  assert(((uintptr_t)stack & 7u) == 0 && stack_size == 8192);
+  multicore_launch_core1(entry);
 }
 bool z80_cpu_release_reset_and_run(uint32_t hz) {
   requested_clock = hz;
@@ -245,6 +269,12 @@ static void reset_fixture(void) {
   ansi_input_reset();
   z80_terminal_queue_init();
   z80_terminal_set_connected(connected);
+#ifdef Z80_STAGE10_NETWORK
+  z80_terminal_usb_connected(connected);
+  browser_was_connected = false;
+  setup_requests = 0;
+  network_address = "";
+#endif
 }
 
 static void command(uint8_t value) {
@@ -387,6 +417,10 @@ static void usb_input(const char *bytes) {
 
 static void test_websocket_disconnect_queues(void) {
   reset_fixture();
+#ifdef Z80_STAGE10_NETWORK
+  z80_terminal_usb_connected(false);
+#endif
+  z80_terminal_network_connected();
   z80_terminal_network_receive((const uint8_t *)"X", 1);
   virtual_write(0, 'A', NULL);
   z80_terminal_network_disconnected();
@@ -403,23 +437,116 @@ static void test_websocket_disconnect_queues(void) {
   assert(z80_terminal_tx_drop_count() == 0);
 }
 
-static void test_connected_output_buffer(void) {
+#ifdef Z80_STAGE10_NETWORK
+static void test_browser_usb_routing(void) {
   reset_fixture();
-  uint8_t expected[512];
-  for (unsigned index = 0; index < sizeof(expected); ++index) {
-    expected[index] = (uint8_t)index;
+  command('l');
+  command('g');
+  usb_input("U");
+  assert(virtual_read(0, NULL) == 'U');
+  usb_input("K");
+  virtual_write(0, 'S', NULL);
+  // A network-only event must not clear the USB owner's queues.
+  z80_terminal_network_disconnected();
+  assert(virtual_read(0, NULL) == 'K');
+  uint8_t value;
+  assert(z80_terminal_usb_supply(&value, 1) == 1 && value == 'S');
+  virtual_write(0, 'S', NULL);
+  z80_terminal_network_connected();
+  assert(z80_terminal_browser_connected());
+  assert(z80_terminal_network_supply(&value, 1) == 0);
+  usb_input("\x1b[");
+  z80_terminal_network_receive((const uint8_t *)"W", 1);
+  assert(virtual_read(0, NULL) == 'W');
+  assert(!(virtual_read(1, NULL) & 1u));
+  size_t old_length = output_length;
+  virtual_write(0, 'B', NULL);
+  service_usb();
+  assert(output_length == old_length);
+  assert(z80_terminal_network_supply(&value, 1) == 1 && value == 'B');
+  command('s');
+  assert(strstr(output, "browser=1"));
+  assert(strstr(output, "ip=unavailable"));
+  network_address = "192.0.2.42";
+  command('s');
+  assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
+  network_address = "";
+  output_length = 0;
+  output[0] = '\0';
+  command('s');
+  assert(strstr(output, "ip=unavailable"));
+  assert(strstr(output, "192.0.2.42") == NULL);
+  command('n');
+  assert(setup_requests == 1);
+  z80_terminal_network_receive((const uint8_t *)"stale", 5);
+  virtual_write(0, 'X', NULL);
+  z80_terminal_network_disconnected();
+  assert(!z80_terminal_browser_connected());
+  assert(virtual_read(1, NULL) == (0x80u | 2u));
+  usb_input("R");
+  assert(virtual_read(0, NULL) == 'R');
+  virtual_write(0, 'T', NULL);
+  service_usb();
+  assert(output[output_length - 1] == 'T');
+  z80_terminal_network_connected();
+  connected = false;
+  service_usb();
+  assert(z80_terminal_client_connected());
+  z80_terminal_network_disconnected();
+  assert(!z80_terminal_client_connected());
+}
+
+static void test_browser_input_backpressure(void) {
+  reset_fixture();
+  z80_terminal_network_connected();
+  uint8_t first[64];
+  uint8_t second[64];
+  memset(first, 'A', sizeof(first));
+  memset(second, 'B', sizeof(second));
+  assert(z80_terminal_network_try_receive(first, sizeof(first)));
+  assert(z80_terminal_network_try_receive(second, sizeof(second)));
+  assert(!z80_terminal_network_try_receive((const uint8_t *)"C", 1));
+  assert(z80_terminal_rx_drop_count() == 0);
+  for (unsigned i = 0; i < sizeof(first); ++i)
+    assert(virtual_read(0, NULL) == 'A');
+  assert(z80_terminal_network_try_receive(first, sizeof(first)));
+  for (unsigned i = 0; i < sizeof(second); ++i)
+    assert(virtual_read(0, NULL) == 'B');
+  for (unsigned i = 0; i < sizeof(first); ++i)
+    assert(virtual_read(0, NULL) == 'A');
+  z80_terminal_network_disconnected();
+  assert(!z80_terminal_network_try_receive(first, sizeof(first)));
+}
+#endif
+
+static void test_connected_output_buffer(void) {
+  for (unsigned browser = 0; browser < 2; ++browser) {
+    reset_fixture();
+    if (browser)
+      z80_terminal_network_connected();
+    uint8_t expected[512];
+    for (unsigned index = 0; index < sizeof(expected); ++index) {
+      expected[index] = (uint8_t)index;
+      assert(virtual_read(1, NULL) & 2u);
+      virtual_write(0, expected[index], NULL);
+    }
+    assert(!(virtual_read(1, NULL) & 2u));
+    for (unsigned index = 0; index < 3; ++index)
+      virtual_write(0, 'X', NULL);
+    assert(z80_terminal_tx_drop_count() == 3);
+    assert(!(virtual_read(1, NULL) & 2u));
+    uint8_t actual[512];
+    assert(z80_terminal_network_supply(actual, 32) == 32);
     assert(virtual_read(1, NULL) & 2u);
-    virtual_write(0, expected[index], NULL);
+    virtual_write(0, 'R', NULL);
+    assert(z80_terminal_network_supply(actual + 32, sizeof(actual) - 32) ==
+           sizeof(actual) - 32);
+    assert(memcmp(actual, expected, sizeof(expected)) == 0);
+    uint8_t value;
+    assert(z80_terminal_network_supply(&value, 1) == 1 && value == 'R');
+    assert(z80_terminal_network_supply(actual, sizeof(actual)) == 0);
+    assert(z80_terminal_tx_drop_count() == 3);
   }
-  assert(!(virtual_read(1, NULL) & 2u));
-  uint8_t actual[512];
-  assert(z80_terminal_network_supply(actual, 32) == 32);
-  assert(virtual_read(1, NULL) & 2u);
-  assert(z80_terminal_network_supply(actual + 32, sizeof(actual) - 32) ==
-         sizeof(actual) - 32);
-  assert(memcmp(actual, expected, sizeof(expected)) == 0);
-  assert(z80_terminal_network_supply(actual, sizeof(actual)) == 0);
-  assert(z80_terminal_tx_drop_count() == 0);
 }
 
 static void test_ansi_terminal_input(void) {
@@ -820,6 +947,10 @@ int main(void) {
   test_disconnect_during_output();
   test_reset_reporting();
   test_websocket_disconnect_queues();
+#ifdef Z80_STAGE10_NETWORK
+  test_browser_usb_routing();
+  test_browser_input_backpressure();
+#endif
   test_connected_output_buffer();
   test_ansi_terminal_input();
   test_stop_and_failure();

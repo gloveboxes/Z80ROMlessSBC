@@ -70,6 +70,8 @@ bool z80_io_ports_reboot_requested(void);
 /* Core 1 network hooks. The SNTP callback may run in a core 1 interrupt. */
 void z80_io_ports_set_unix_time(uint32_t seconds);
 void z80_io_ports_set_network_address(const char *address);
+/* Thread-safe snapshot for supervisor diagnostics; no network-stack access. */
+size_t z80_io_ports_get_network_address(char *address, size_t capacity);
 
 #ifdef __cplusplus
 }

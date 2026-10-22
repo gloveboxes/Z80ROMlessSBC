@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "../io_service.h"
+#include "../weather.h"
 #include "hardware/flash.h"
 #include "z80sbc/environment.h"
 #include "z80sbc/flash_layout.h"
@@ -97,7 +98,12 @@ static uint8_t finish(void) {
 static void call(uint8_t group, const uint8_t *data, unsigned length,
                  uint8_t status) {
   send(group, data, length);
-  assert(finish() == status);
+  uint8_t actual = finish();
+  if (actual != status)
+    fprintf(stderr, "group=%02x operation=%u expected=%u actual=%u error=%u\n",
+            group, length ? data[0] : 0, status, actual,
+            reply_length ? reply[0] : 0);
+  assert(actual == status);
 }
 
 static void error(uint8_t group, const uint8_t *data, unsigned length,
@@ -351,6 +357,7 @@ static void test_power_loss(void) {
     if (cut < FLASH_SECTOR_SIZE - FLASH_PAGE_SIZE)
       assert(memcmp(old, recovered, 6) == 0);
   }
+
   cut_after = -1;
   assert(z80_env_snapshot_save((uint8_t *)"A\0new\0", 6) == 0);
   assert(z80_env_snapshot_load(recovered, sizeof(recovered), &length) == 0);
@@ -365,6 +372,62 @@ static void test_power_loss(void) {
   assert(length == 6 && memcmp(old, recovered, 6) == 0);
   memset(test_flash + Z80_FLASH_ENV_OFFSET, 0, Z80_FLASH_ENV_BYTES);
   assert(z80_env_snapshot_load(recovered, sizeof(recovered), &length) == -2);
+}
+
+static unsigned weather_starts;
+static bool start_weather(const char *path) {
+  assert(strstr(path, "&appid=testkey&units=metric"));
+  ++weather_starts;
+  return true;
+}
+static void cancel_weather(void) {}
+
+static void test_weather_port_abi(void) {
+  memset(test_flash + Z80_FLASH_ENV_OFFSET, 0xff, Z80_FLASH_ENV_BYTES);
+  cli("OWM_KEY=testkey", IO_SERVICE_RESPONSE_READY);
+  cli("OWM_LOCATION=Sydney,AU", IO_SERVICE_RESPONSE_READY);
+  z80_weather_init(start_weather, cancel_weather);
+  now = 0;
+  z80_weather_poll(true);
+  uint8_t status_request[] = {1};
+  call(IO_SERVICE_WEATHER, status_request, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == Z80_WEATHER_NONE);
+  uint8_t field[] = {0, 3};
+  error(IO_SERVICE_WEATHER, field, 2, IO_SERVICE_UNAVAILABLE);
+  now = 5000;
+  z80_weather_poll(true);
+  call(IO_SERVICE_WEATHER, status_request, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == Z80_WEATHER_FETCHING);
+  static const char current[] =
+      "{\"cod\":200,\"name\":\"Sydney\",\"main\":{\"temp\":20.1,"
+      "\"feels_like\":19.8,\"humidity\":60},\"wind\":{\"speed\":1.2},"
+      "\"weather\":[{\"main\":\"Clear\",\"description\":\"clear sky\"}]}";
+  static const char forecast[] =
+      "{\"cod\":\"200\",\"list\":[{\"main\":{\"temp\":21,\"feels_like\":20},"
+      "\"weather\":[{\"main\":\"Clouds\",\"description\":\"few clouds\"}],"
+      "\"dt_txt\":\"2026-10-22 03:00:00\"}]}";
+  z80_weather_result(200, current, sizeof(current) - 1, NULL);
+  z80_weather_poll(true);
+  assert(weather_starts == 2);
+  z80_weather_result(200, forecast, sizeof(forecast) - 1, NULL);
+  call(IO_SERVICE_WEATHER, status_request, 1, IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == Z80_WEATHER_READY);
+  static const char *expected[] = {
+      "Sydney", "Clear",  "Clear sky",  "20", "60",
+      "1",      "Clouds", "Few clouds", "21", "2026-10-22 03:00:00",
+      "0",      "C",      "",           "20", "20",
+  };
+  for (unsigned i = 0; i < 15; ++i) {
+    field[1] = (uint8_t)i;
+    call(IO_SERVICE_WEATHER, field, 2, IO_SERVICE_RESPONSE_READY);
+    assert(reply_length == strlen(expected[i]));
+    assert(strcmp((const char *)reply, expected[i]) == 0);
+  }
+  field[1] = 15;
+  error(IO_SERVICE_WEATHER, field, 2, IO_SERVICE_INVALID_PARAMETER);
+  error(IO_SERVICE_WEATHER, field, 1, IO_SERVICE_INVALID_LENGTH);
+  field[0] = 2;
+  error(IO_SERVICE_WEATHER, field, 2, IO_SERVICE_UNKNOWN_OPERATION);
 }
 
 static void test_led(void) {
@@ -431,5 +494,6 @@ int main(void) {
   assert(z80_io_ports_reboot_requested());
   assert(!z80_io_ports_reboot_requested());
   test_power_loss();
+  test_weather_port_abi();
   puts("ROMLESS-SVC/1 transport, timers, ENV and power-loss tests passed");
 }

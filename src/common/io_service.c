@@ -1,4 +1,5 @@
 #include "io_service.h"
+#include "weather.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -229,6 +230,9 @@ void z80_io_ports_core1_service(void) {
     break;
   case IO_SERVICE_ENVIRONMENT:
     result.error = environment_service();
+    break;
+  case IO_SERVICE_WEATHER:
+    result.error = z80_weather_service(request.data, request.length, &result);
     break;
   default:
     result.error = IO_SERVICE_UNAVAILABLE;

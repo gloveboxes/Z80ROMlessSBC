@@ -59,6 +59,8 @@ add_library(z80_io_services STATIC
   common/io_ports.c
   common/io_service.c
   common/io_service_platform.c
+  common/weather.c
+  cpm/dcc_io_adapter/port_drivers/json_scan.c
   cpm/dcc_io_adapter/host/PortDrivers/environment_io.c
 )
 target_include_directories(z80_io_services PUBLIC

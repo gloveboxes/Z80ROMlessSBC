@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-bool z80_terminal_init(void);
 void z80_terminal_queue_init(void);
 void z80_terminal_set_connected(bool connected);
 void z80_terminal_core1_service(void);
@@ -17,6 +16,7 @@ uint8_t z80_terminal_io_read(uint8_t port);
 void z80_terminal_io_write(uint8_t port, uint8_t value);
 
 void z80_terminal_network_receive(const uint8_t *data, size_t length);
+bool z80_terminal_network_try_receive(const uint8_t *data, size_t length);
 size_t z80_terminal_network_supply(uint8_t *data, size_t capacity);
 void z80_terminal_network_connected(void);
 void z80_terminal_network_disconnected(void);
@@ -25,6 +25,10 @@ void z80_terminal_network_tx_dropped(size_t count);
 uint32_t z80_terminal_rx_drop_count(void);
 uint32_t z80_terminal_tx_drop_count(void);
 bool z80_terminal_client_connected(void);
+bool z80_terminal_browser_connected(void);
+void z80_terminal_usb_connected(bool connected);
+void z80_terminal_usb_receive(uint8_t value);
+size_t z80_terminal_usb_supply(uint8_t *data, size_t capacity);
 
 #ifdef __cplusplus
 }

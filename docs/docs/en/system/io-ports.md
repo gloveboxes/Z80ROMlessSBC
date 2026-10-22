@@ -163,7 +163,8 @@ All integer request fields and binary results are little-endian.
 | Clock `0x20` | `[0]` uptime seconds; `[1]` UTC ISO 8601; `[2]` local ISO 8601; `[3]` long local date; `[4]` DATE-style local date/time | Text |
 | Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version; `[4, state]` set onboard LED; `[5]` read LED state | Two random bytes, text, COMPLETE, or one LED-state byte |
 | Environment `0x30` | Operations below | Text or COMPLETE |
-| Weather `0x40`, Chat `0x50`, Sense HAT `0x60` | Recognized groups without Pico drivers | UNAVAILABLE |
+| Weather `0x40` | `[0, field_id]` reads text; `[1]` reads status | Phase 10 cached weather; Stage 9 UNAVAILABLE |
+| Chat `0x50`, Sense HAT `0x60` | Recognized groups without Pico drivers | UNAVAILABLE |
 
 There are **four countdown timers**: IDs 0-2 take 0-65535 milliseconds;
 ID 3 takes 0-255 whole seconds. The shared duration field is four bytes for
@@ -180,6 +181,136 @@ operations return CLOCK_UNSYNCED until the first valid synchronization.
 Stage 9 has no network time source and returns CLOCK_UNSYNCED for calendar
 queries. Uptime remains available in both. Local formatting uses persistent
 `TZ` in POSIX timezone syntax (for example, `AEST-10`); an absent `TZ` means UTC.
+
+### CLOCK application time compatibility
+
+The ESP32 Altair dcc `Apps/CLOCK` time interface is already provided by these
+services; no extra physical ports or separate time driver are needed:
+
+| CLOCK request | Pico interface | Result |
+| --- | --- | --- |
+| Local time | Clock group `0x20`, payload `[2]` on shared ports 2/3/4 | `YYYY-MM-DDTHH:MM:SS` (19 bytes) |
+| Local date | Clock group `0x20`, payload `[3]` | `Monday, 01 January 2024` |
+| Uptime | Clock group `0x20`, payload `[0]` | Decimal seconds since Pico startup |
+| Start refresh timer | OUT 23: `0x12`, `50`, `0` | Timer 2, 50 ms, low duration byte first |
+| Query refresh timer | OUT 23: `0x22`, then IN 23 | `1` while running, `0` when expired |
+
+The timer port remains usable while a shared clock request is BUSY. Calendar
+formatting, ENV access, and network time synchronization run on core 1; the
+Z80 trap only transfers the framed request/reply or handles the independent
+monotonic timer. Calendar replies contain exactly their length-prefixed text,
+without a trailing NUL.
+
+For Phase 10, connect Wi-Fi and allow DNS/UDP access to `pool.ntp.org`.
+Calendar requests return explicit `CLOCK_UNSYNCED` (`0x15`) errors until SNTP
+has supplied a valid time. Once synchronized, time continues advancing from
+the monotonic clock through Wi-Fi outages and is corrected by later SNTP
+updates. Uptime and the refresh timer do not depend on Wi-Fi or SNTP.
+
+Configure the timezone through the existing ENV service, for example
+`ENV TZ=AEST-10` for UTC+10 or `ENV TZ=ACST-9:30` for UTC+09:30. POSIX signs
+are opposite to conventional UTC offsets. A full POSIX `TZ` rule can include
+daylight-saving transitions. Changes take effect on the next clock request
+without rebooting. The Pico remains **TZ-only**: the ESP32 CLOCK help text's
+`UTC_OFFSET` setting is not used here.
+
+The unchanged CLOCK source also polls the weather group on every refresh.
+Phase 10 now supplies its cached status and field requests through the
+[weather service](#openweathermap-weather). Phase 9 remains USB-only and
+returns UNAVAILABLE for weather.
+
+The `clock_app_time_services` host integration test drives CLOCK's port
+transactions through the real parser, worker, calendar formatter, SNTP
+callback hook, and persistent ENV backend. It covers unsynchronized errors,
+UTC/local/date/uptime shapes, timezone updates and DST, 50 ms timer operation
+during a BUSY request, and the 32-bit millisecond rollover. It does not execute
+the CLOCK binary or qualify physical network/hardware operation.
+
+### OpenWeatherMap weather
+
+Phase 10 supports the ESP32 Altair weather ABI through shared service group
+`0x40` on ports 2/3/4. Do not use the old physical ports 46/47/200: these
+alias other peripherals on this board.
+
+- Payload `[1]` returns one status byte: `0` NONE, `1` FETCHING, `2` READY,
+  or `3` ERROR. Status reads never wait for an HTTP request.
+- Payload `[0, field_id]` returns length-prefixed text, without a trailing
+  NUL. Units and error text are available before the first successful fetch;
+  other fields return UNAVAILABLE until data exists.
+- Unknown operations, incorrect lengths and unknown fields return the usual
+  explicit service errors. An HTTP failure is exposed by status ERROR and
+  field 12, not by inventing weather data or failing every status query.
+
+| Field | Text |
+| ---: | --- |
+| 0 | City |
+| 1 / 2 | Current condition / description |
+| 3 / 13 | Current temperature / feels-like temperature |
+| 4 / 5 | Humidity percent / wind speed |
+| 6 / 7 | Forecast condition / description |
+| 8 / 14 | Forecast temperature / feels-like temperature |
+| 9 | First forecast block time, as supplied by OWM in UTC |
+| 10 | Seconds since the last successful current-data refresh |
+| 11 | Temperature units: `C`, `F`, or `K` |
+| 12 | Last error or forecast warning; empty after a fully successful refresh |
+
+Temperatures and wind speed are rounded to integer strings as in the
+reference driver; wind is m/s for metric/standard and mph for imperial.
+Only the first forecast block is requested (`cnt=1`).
+
+Configure the existing durable ENV store:
+
+```text
+ENV OWM_KEY=<your-api-key>
+ENV OWM_LOCATION=Sydney,AU
+ENV OWM_UNITS=metric
+```
+
+`OWM_KEY` is limited to 40 bytes, location to 64 bytes. Location accepts a
+city/country query or a validated `lat=-33.8&lon=151.2` coordinate pair.
+The ENV CLI treats `+` and `-` inside assignments as arithmetic; use its
+literal insert mode for coordinates or names containing these characters:
+`ENV -D OWM_LOCATION`, then
+`ENV -I OWM_LOCATION=lat=-33.8&lon=151.2`.
+Units are `metric` (default), `imperial`, or `standard`. Missing keys or invalid
+settings produce an explanatory error; no request is sent. Settings are
+reloaded at most once per second. Changing them cancels an in-flight request,
+clears data belonging to the old configuration, and starts a new fetch without
+rebooting. ENV remains plaintext onboard flash; do not publish its contents.
+Firmware diagnostics never print the key, request URL or provider response body.
+
+Core 1 waits for Wi-Fi and a synchronized SNTP clock, then allows 5 seconds
+for the network to settle before fetching current conditions and forecast.
+Successful refreshes repeat every 20 minutes. Initial failures retry every
+2 minutes for five retries, then every 20 minutes; failures after a successful
+fetch use the 20-minute interval. Reconnection schedules a fresh fetch.
+The last successful cache remains readable after failures, with its increasing
+age and explicit error status. A failed forecast still publishes valid current
+conditions as READY, leaves forecast fields empty, and reports a forecast
+warning in field 12 and on USB.
+
+HTTPS uses port 443, required certificate-chain and hostname verification,
+and certificate date checks against the SNTP-derived UTC clock. There is no
+HTTP or insecure-TLS fallback. The bundled USERTrust RSA public root is
+maintained in
+[weather_ca.pem](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/weather_ca.pem)
+(SHA-256 `E793C9B02FD8AA13E21C31228ACCB08119643B749C898964B1746D46C3D4CBD2`,
+valid through 18 January 2038). Update the trust anchor if the provider changes
+its chain. Its RSA/SHA-384 signature requires `MBEDTLS_SHA384_C`; enabling
+SHA-512 alone does not enable SHA-384 in Mbed TLS 3. Without it, TLS
+configuration fails while parsing the CA, before DNS or HTTP starts.
+DNS, connection and response work share a 15-second request deadline;
+responses are bounded to 16 KiB on the wire and 8 KiB decoded, with at most
+2 KiB of HTTP headers. Content-length, connection-close and chunked responses
+are supported; malformed, oversized or compressed bodies fail explicitly.
+
+The weather worker uses no Z80 trap callbacks, extra core, or blocking socket.
+Network callbacks only collect bounded data; parsing, ENV access and cache
+publication happen on core 1 between its normal disk/service/network polls.
+Phase 10 uses an explicit 8 KiB core-1 stack in main RAM for TLS; Phase 9
+retains its original launch path and reports weather UNAVAILABLE.
+
+### System information and reboot
 
 System-info selectors are 0 = hostname `z80romless-sbc`, 1 = current Wi-Fi
 IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
@@ -340,7 +471,8 @@ interleaved with other users of that port.
 ## Deferred services and validation
 
 File transfer remains reserved on `0x15/0x16`; it is not implemented.
-Weather, chat and Sense HAT requests return explicit UNAVAILABLE errors.
+Chat and Sense HAT requests return explicit UNAVAILABLE errors. Weather is
+implemented only in Phase 10; Phase 9 reports UNAVAILABLE.
 The ESP32 interrupt timer on `0x07` is deferred: current hardware has
 no Pico-to-`INT#` driver, and the `RD#`-gated data path cannot provide an
 interrupt vector. No interrupt, GPIO or PCB wiring changes accompany this work.
