@@ -129,12 +129,24 @@ stop/flush protocol remain unchanged.
   ownership. USB input, ANSI mapping and framed supervisor commands remain
   on core 0 in the shared Stage 9 application.
 
-The upstream WebSocket submodule remains unchanged. CMake generates a local
-copy of its handler with a narrowly checked close fix: even when writing or
-flushing a close frame fails, the connection enters closing state and the
-library's existing periodic cleanup reclaims it (normally within about five
-seconds). A changed upstream implementation fails configuration rather than
-silently omitting this fix.
+The WebSocket submodule contains the transport fixes directly; there is no
+generated handler patch. Enqueue success is separate from TCP flushing, with
+pending flushes retried from sent/poll callbacks and normal service passes.
+Terminal output queues a burst before one flush; interactive/control traffic
+still flushes immediately. TCP_NODELAY remains enabled.
+
+Receive parsing walks pbuf spans once, decodes headers once and unmasks while
+copying. A final, unfragmented message moves its payload into the dispatch queue
+without a second payload copy. Fragmented messages preserve interleaved controls.
+The terminal limits incoming application messages to 69 bytes and queued payload
+to 1,024 bytes/16 messages; each service pass dispatches at most eight messages
+per connection. Oversize/overflow disconnects rather than silently dropping bytes.
+These payload bounds exclude allocator, container and TCP overhead.
+
+Close always enters closing state even if its frame cannot be queued; a
+one-second grace deadline bounds cleanup. Invalid/timed-out sessions and Wi-Fi
+handover use explicit callback-safe abort, serviced even on the offline path.
+TCP polling provides a roughly 500 ms fallback, not a five-second slot leak.
 
 ### Acknowledged terminal protocol, version 2
 
@@ -163,9 +175,11 @@ cumulative and is sent **after xterm consumes the bytes**, not on arrival.
 The browser queues at most four xterm writes. Duplicate output is not rendered
 twice; consumed duplicates receive the last cumulative ACK.
 
-Unacknowledged output is retried after 250 ms. If a send fails, later frame
-sequences cannot overtake it; this is safe even when `tcp_write` accepted a
-frame but a subsequent flush reported failure. A 15-second timeout on the
+Unacknowledged output is retried after 250 ms. TCP write backpressure cannot
+allow a later sequence to overtake an unqueued frame, and admission is retried
+on the next service pass. A failed flush never changes an accepted frame back
+to unqueued: the library retries output without duplicate writes. Only accepted
+sequences can be acknowledged. A 15-second timeout on the
 oldest retained output frame releases a browser whose JavaScript stopped
 consuming data, even if its network stack still answers pings.
 
@@ -221,9 +235,13 @@ the raw-byte ESP32 transport and emulator-only CPU Monitor control are not used.
 
 The browser page and its adapted update tool live in
 [Terminal](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/stage10_websocket_terminal/Terminal).
-CMake automatically compresses the page when it changes. The server is the
-`cadouthat/pico-ws-server` Git submodule, pinned to the latest upstream HEAD
-verified when this phase was rebuilt: `58f780d4b68c6c592f4d9eb3421cf17c25d3910b`.
+CMake automatically compresses the page when it changes. The server uses the
+[gloveboxes/pico-ws-server fork](https://github.com/gloveboxes/pico-ws-server),
+pinned to `33bc3c428451094d65b8a0f4d03283840a03e6d9`, which contains the transport
+changes described above. It is based on `cadouthat/pico-ws-server` revision
+`58f780d4b68c6c592f4d9eb3421cf17c25d3910b`. In the submodule, `origin` points to
+the gloveboxes fork and `upstream` retains the original repository. Publish
+future submodule commits to the fork before updating the parent gitlink.
 
 ## Required Integration Order
 
@@ -313,11 +331,16 @@ response handling. These are not a substitute for the live weather and
 combined-load hardware checks above.
 
 Terminal regressions verify the four-frame output bound, cumulative ACKs and
-sequence wrap, ordered recovery from ambiguous send failures, and pending
+sequence wrap, ordered recovery from TCP backpressure, burst flushing, and pending
 input admission at 10 ms without a 250 ms retransmission. A threaded host test
 transfers 256 KiB in each direction through the real console rings and checks
-full-queue handover. Another test compiles the actual generated WebSocket
-handler and verifies closing state after both write and flush failure.
+full-queue handover. With `PICO_SDK_PATH` configured, eight WebSocket regression
+groups compile the complete actual server with fake lwIP and real Mbed TLS.
+They verify four 265-byte frames with one TCP flush, accepted-write/failed-flush
+recovery without re-enqueue, single-frame buffer ownership/NUL termination,
+split/chained input, fragmentation/control interleaving, malformed frames,
+queue byte/count limits, fair bounded dispatch, callback-safe abort, close
+deadlines across clock wrap, slot reuse and HTTP backpressure/final ACK lifetime.
 These tests establish protocol behavior, not physical network throughput.
 For performance acceptance, record sustained output bytes/second, key-to-echo
 latency and maximum network-poll gaps separately during reads, cached writes

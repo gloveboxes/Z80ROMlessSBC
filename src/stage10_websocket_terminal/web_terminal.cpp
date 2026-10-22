@@ -34,7 +34,6 @@ struct OutputFrame {
   absolute_time_t retry;
   absolute_time_t deadline;
   bool sent;
-  bool attempted;
 };
 OutputFrame output_frames[OUTPUT_WINDOW];
 size_t output_head;
@@ -87,8 +86,8 @@ void close_connection(WebSocketServer &websocket, uint32_t connection) {
 
 void disconnect_client() {
   int32_t connection = active_connection.exchange(-1, std::memory_order_acq_rel);
-  if (connection >= 0 && server != nullptr)
-    close_connection(*server, (uint32_t)connection);
+  if (connection >= 0 && server != nullptr && !server->abort((uint32_t)connection))
+    printf("[network] Terminal connection already removed during teardown.\n");
   pending_connected.store(false, std::memory_order_release);
   pending_disconnected.store(false, std::memory_order_release);
   z80_terminal_browser_disconnect();
@@ -146,7 +145,7 @@ void on_message(WebSocketServer &, uint32_t connection,
              length == HEADER_BYTES) {
     for (size_t i = 0; i < output_count; ++i) {
       const OutputFrame &candidate = output_frames[(output_head + i) % OUTPUT_WINDOW];
-      if (candidate.attempted && read_sequence(candidate.data + 1) == sequence) {
+      if (candidate.sent && read_sequence(candidate.data + 1) == sequence) {
         output_head = (output_head + i + 1) % OUTPUT_WINDOW;
         output_count -= i + 1;
         break;
@@ -218,6 +217,13 @@ bool ensure_server() {
     server->setMessageCallback(on_message);
     server->setPongCallback(on_pong);
     server->setTcpNoDelay(true);
+    if (!server->setReceiveLimits({HEADER_BYTES + INPUT_BYTES, 1024, 16, 8})) {
+      printf("[network] FAIL: terminal receive limits; retry in 5 seconds.\n");
+      delete server;
+      server = nullptr;
+      server_retry_deadline = make_timeout_time_ms(SERVER_RETRY_MS);
+      return false;
+    }
   }
   server_started = server->startListening(SERVER_PORT);
   if (!server_started) {
@@ -263,21 +269,30 @@ void poll_output() {
     frame.retry = nil_time;
     frame.deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
     frame.sent = false;
-    frame.attempted = false;
     ++output_count;
   }
+  bool queued = false;
   for (size_t i = 0; i < output_count; ++i) {
     OutputFrame &frame = output_frames[(output_head + i) % OUTPUT_WINDOW];
     if (time_reached(frame.retry)) {
-      frame.attempted = true;
-      frame.sent = server->sendMessage((uint32_t)connection, frame.data, frame.length);
+      auto result = server->enqueueMessage((uint32_t)connection, frame.data, frame.length);
+      if (result == WebSocketServer::SendResult::would_block)
+        break;
+      if (result != WebSocketServer::SendResult::queued) {
+        printf("[network] FAIL: terminal output enqueue (%u); restoring USB.\n",
+               (unsigned)result);
+        disconnect_client();
+        return;
+      }
+      queued = true;
+      frame.sent = true;
       frame.retry = make_timeout_time_ms(FRAME_RETRY_MS);
     }
-    // A failed write may not have queued anything. Never send a later sequence
-    // until this frame was sent successfully or acknowledged by the browser.
     if (!frame.sent)
       break;
   }
+  if (queued)
+    server->flush((uint32_t)connection);
 }
 }  // namespace
 
@@ -309,8 +324,12 @@ extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
     }
     process_events();
     server->popMessages();
+    process_events();
     accept_pending_input();
     poll_output();
+  } else if (server != nullptr) {
+    server->popMessages();
+    process_events();
   }
   cyw43_arch_lwip_end();
 }

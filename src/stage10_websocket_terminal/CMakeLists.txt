@@ -21,10 +21,6 @@ set(ws_source ${CMAKE_CURRENT_LIST_DIR}/lib/pico-ws-server)
 if(NOT EXISTS ${ws_source}/include/pico_ws_server/web_socket_server.h)
   message(FATAL_ERROR "Initialize submodules: git submodule update --init --recursive")
 endif()
-include(websocket_close.cmake)
-z80_configure_websocket_handler(
-  "${ws_source}/src/web_socket_handler.cpp"
-  "${stage10_generated_dir}/web_socket_handler.cpp")
 add_library(lwipopts_provider INTERFACE)
 target_include_directories(lwipopts_provider INTERFACE
   ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../common/include)
@@ -33,7 +29,7 @@ add_library(z80_pico_ws_server STATIC
   ${ws_source}/src/client_connection.cpp
   ${ws_source}/src/http_handler.cpp
   ${ws_source}/src/web_socket_frame_builder.cpp
-  ${stage10_generated_dir}/web_socket_handler.cpp
+  ${ws_source}/src/web_socket_handler.cpp
   ${ws_source}/src/web_socket_message_builder.cpp
   ${ws_source}/src/web_socket_server.cpp
   ${ws_source}/src/web_socket_server_internal.cpp)

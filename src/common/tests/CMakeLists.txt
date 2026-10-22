@@ -282,21 +282,29 @@ add_test(NAME terminal_led_without_wifi COMMAND network_no_wifi_test)
 set_tests_properties(terminal_led_without_wifi PROPERTIES TIMEOUT 5)
 
 set(ws_source "${CMAKE_CURRENT_LIST_DIR}/../../stage10_websocket_terminal/lib/pico-ws-server")
-include(../../stage10_websocket_terminal/websocket_close.cmake)
-z80_configure_websocket_handler("${ws_source}/src/web_socket_handler.cpp"
-  "${CMAKE_CURRENT_BINARY_DIR}/websocket/web_socket_handler.cpp")
-add_executable(websocket_close_test websocket_close_test.cpp
-  "${CMAKE_CURRENT_BINARY_DIR}/websocket/web_socket_handler.cpp"
-  "${ws_source}/src/web_socket_message_builder.cpp"
-  "${ws_source}/src/web_socket_frame_builder.cpp")
-target_include_directories(websocket_close_test PRIVATE
-  fakes/websocket "${ws_source}/src")
-target_compile_features(websocket_close_test PRIVATE cxx_std_17)
-target_compile_definitions(websocket_close_test PRIVATE DEBUG_PRINT=0)
-target_compile_options(websocket_close_test PRIVATE
-  -Wall -Wextra -Werror -Wno-reorder -UNDEBUG)
-add_test(NAME websocket_close_cleanup COMMAND websocket_close_test)
-set_tests_properties(websocket_close_cleanup PROPERTIES TIMEOUT 5)
+if(TARGET weather_mbedcrypto)
+  add_executable(websocket_transport_test websocket_transport_test.cpp
+    "${ws_source}/src/web_socket_server.cpp"
+    "${ws_source}/src/web_socket_server_internal.cpp"
+    "${ws_source}/src/client_connection.cpp"
+    "${ws_source}/src/http_handler.cpp"
+    "${ws_source}/src/web_socket_handler.cpp"
+    "${ws_source}/src/web_socket_message_builder.cpp"
+    "${ws_source}/src/web_socket_frame_builder.cpp")
+  target_include_directories(websocket_transport_test PRIVATE
+    fakes/websocket "${ws_source}/src" "${ws_source}/include")
+  target_link_libraries(websocket_transport_test PRIVATE weather_mbedcrypto)
+  target_compile_features(websocket_transport_test PRIVATE cxx_std_17)
+  target_compile_definitions(websocket_transport_test PRIVATE DEBUG_PRINT=0)
+  target_compile_options(websocket_transport_test PRIVATE
+    -Wall -Wextra -Werror -UNDEBUG)
+  foreach(case send flush receive limits invalid lifecycle http disconnects)
+    add_test(NAME websocket_${case} COMMAND websocket_transport_test ${case})
+    set_tests_properties(websocket_${case} PROPERTIES TIMEOUT 5)
+  endforeach()
+else()
+  message(STATUS "Set PICO_SDK_PATH to enable real WebSocket transport regressions")
+endif()
 
 find_package(Threads REQUIRED)
 add_executable(terminal_queue_test terminal_queue_test.c)

@@ -28,6 +28,8 @@ static int fake_link = CYW43_LINK_UP;
 static bool send_ok = true;
 static bool close_ok = true;
 static unsigned sends;
+static unsigned flushes;
+static bool flush_ok = true;
 static std::vector<uint8_t> sent;
 static std::vector<std::vector<uint8_t>> sent_frames;
 static std::vector<uint32_t> closed;
@@ -121,13 +123,26 @@ bool WebSocketServer::close(uint32_t connection) {
   // The real library begins closing, but does not synchronously call on_close.
   return close_ok;
 }
+bool WebSocketServer::abort(uint32_t connection) {
+  assert(lock_depth);
+  closed.push_back(connection);
+  return true;
+}
+WebSocketServer::SendResult WebSocketServer::enqueueMessage(uint32_t connection,
+                                                           const void *data, size_t length) {
+  return sendMessage(connection, data, length) ? SendResult::queued : SendResult::would_block;
+}
+bool WebSocketServer::flush(uint32_t) {
+  assert(lock_depth);
+  ++flushes;
+  return flush_ok;
+}
 bool WebSocketServer::sendMessage(uint32_t connection, const void *data, size_t length) {
   assert(lock_depth && (int32_t)connection == active_connection.load());
   ++sends;
   sent.assign(static_cast<const uint8_t *>(data),
               static_cast<const uint8_t *>(data) + length);
   sent_frames.push_back(sent);
-  // A false result may still mean tcp_write accepted these bytes.
   return send_ok;
 }
 bool WebSocketServer::sendPing(uint32_t connection, const void *data, size_t length) {
@@ -271,17 +286,25 @@ int main() {
   std::vector<uint8_t> first = sent;
   old_sends = sends;
   poll_terminal();
-  assert(sends == old_sends);
+  assert(sends == old_sends + 1);
   advance(FRAME_RETRY_MS);
   poll_terminal();
   assert(sent == first && output_sequence == 3);
   message(1, OUTPUT_ACK, 77);
   assert(output_count == 2);
   message(1, OUTPUT_ACK, 1);
-  assert(output_count == 1);
+  assert(output_count == 2);
   send_ok = true;
+  unsigned old_flushes = flushes;
+  flush_ok = false;
   poll_terminal();
+  assert(flushes == old_flushes + 1);
+  assert(output_count == 2 && output_frames[output_head].sent);
   assert(outgoing.empty() && read_sequence(sent.data() + 1) == 2);
+  old_sends = sends;
+  poll_terminal();
+  assert(sends == old_sends);
+  flush_ok = true;
   message(1, OUTPUT_ACK, 1);
   assert(output_count == 1);
   message(1, OUTPUT_ACK, 2);
@@ -393,5 +416,5 @@ int main() {
   assert(sends == offline_sends && !lock_depth);
   delete server;
   puts("PASS: four-frame window, cumulative/wrapping ACKs, ordered send failure, "
-       "immediate pending input, network lifecycle, heartbeat and USB preservation");
+       "batched flush/backpressure, immediate pending input, network lifecycle, heartbeat and USB preservation");
 }
