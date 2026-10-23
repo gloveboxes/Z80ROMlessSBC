@@ -37,12 +37,13 @@ This does not change the 1 MHz Z80 startup default or qualify 8 MHz hardware
 operation. See the [frequency qualification plan](../implementation/frequency-qualification.md).
 
 Phases 9 and 10 are explicit exceptions: after safe startup and before initializing
-USB it selects a 120 MHz supervisor clock, then uses nominal 20 MHz PWM only
+USB it selects a 120 MHz supervisor clock, then uses 20 MHz PWM only
 after complete SRAM loading/verification. The diagnostic variant starts on
 command; the automatic loader starts on Pico reset without waiting for USB.
 Their clock/CPU/trap chain is compiled
 separately with the existing 20 MHz opt-in; other phases retain their own
-limits/defaults. This is an operating assumption, not new bench qualification.
+limits/defaults. The 20 MHz frequency is scope-measured on the project
+prototype; this does not qualify integrated CP/M, disk I/O or signal margins.
 
 Shared firmware does not make every early-phase diagnostic safe on a fully
 populated PCB. Respect each phase's required device population and test

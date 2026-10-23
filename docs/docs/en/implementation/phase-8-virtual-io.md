@@ -39,7 +39,7 @@ terminal traffic. Its image is loaded and verified across 64 KiB before
 execution, but its runtime checker is **not a full-memory sweep** or a
 replacement for [Phase 6's SRAM tests](phase-6-sram.md).
 Likewise, its one-hour command is an I/O/USB integration run, not another
-arithmetic/SRAM qualification. A Phase 6 pass at nominal 20 MHz does not
+arithmetic/SRAM qualification. A Phase 6 pass at the scope-measured 20 MHz does not
 qualify IN or terminal operation at that frequency.
 
 On boot this firmware starts the RAM/USB checker automatically. Deploy only

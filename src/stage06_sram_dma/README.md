@@ -1,8 +1,8 @@
 # One-Hour 20 MHz Z80 Arithmetic and SRAM Soak Test
 
 This diagnostic makes the **physical Z80 execute and check its own workload
-from SRAM**, while the Pico supplies a nominal 20 MHz clock, receives result
-reports and supervises a one-hour run. It is not a Pico simulation of the Z80,
+from SRAM**, while the Pico supplies a scope-measured 20 MHz clock, receives
+result reports and supervises a one-hour run. It is not a Pico simulation of the Z80,
 an empty clock loop, or a test of only one SRAM address.
 
 The workload combines 16-bit arithmetic and flags, signed and unsigned
@@ -19,7 +19,7 @@ target.
 | --- | --- |
 | Firmware target | `z80_stage06_math_soak_20mhz` |
 | Z80 program | Resident assembly starting at `0000h` |
-| Z80 clock | Nominal 20,000,000 Hz, 50% duty |
+| Z80 clock | 20,000,000 Hz scope-measured on the project prototype; 50% duty configured |
 | Pico system clock | 120 MHz |
 | Minimum run | 3600 seconds of execution-phase elapsed time |
 | Completion boundary | A complete four-pattern cycle |
@@ -513,7 +513,7 @@ PASS rather than an exact match to these counts.
 | Metric | Result |
 | --- | ---: |
 | Overall result | **PASS** |
-| Z80 clock | Nominal **20 MHz** |
+| Z80 clock | **20 MHz**, scope-measured on the project prototype |
 | Started | 19 October 2026, **18:40:12 AEDT** |
 | Finished | 20 October 2026, **08:40:14 AEDT** |
 | Recorded execution time | **14 hours, 1.738 seconds** |
@@ -597,6 +597,10 @@ Check the banner:
 20MHz math/SRAM soak ready; f + Enter starts one hour; x aborts immediately.
 Pico clk_sys=120000000Hz; nominal PWM=20000000Hz, not measured.
 ```
+
+That banner reports the firmware's PWM target and does not include a physical
+measurement. The project prototype's Z80 clock has independently been
+measured at 20 MHz with an oscilloscope.
 
 | Command | Action |
 | --- | --- |

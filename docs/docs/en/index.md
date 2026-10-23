@@ -5,8 +5,8 @@
 ## Overview
 
 This Z80 single-board computer design has been built and validated as a working
-breadboard prototype, with the Z80 clocked at nominal 20 MHz. It pairs a Z80
-processor with a Raspberry Pi Pico 2 W to run CP/M without a ROM chip.
+breadboard prototype. An oscilloscope measured its Z80 clock at 20 MHz. It pairs
+a Z80 processor with a Raspberry Pi Pico 2 W to run CP/M without a ROM chip.
 
 The Z80 runs from 64 KiB of SRAM. The Pico handles clocking, boot loading and
 verification, and terminal and disk I/O, with scope for true random number

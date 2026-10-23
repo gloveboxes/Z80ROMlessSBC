@@ -126,19 +126,28 @@ does not. You can build it and deploy it separately, or use the VS Code task
 5. Restore external 5 V before USB. After separately deploying the scope
    target, start it with `f` + Enter and wait for its RUN banner. Do not
    measure the slow assisted load/verify/reset interval as the running clock.
-6. Add CH1 **Frequency, Period, +Duty, +Width and -Width** measurements:
+6. Add CH1 **Frequency, Period, +Duty, +Width and -Width** measurements.
+   The project capture below records a 20.0000 MHz cursor reading and a
+   50.000 ns period. The counter statistics show a 19.929 MHz average and a
+   9.9502 MHz minimum across 482 readings; review the saved waveform for the
+   low reading before using this capture to qualify missing-edge behavior or
+   jitter.
 
-    | Quantity | Nominal expectation |
-    | --- | --- |
-    | Frequency | Approximately 20 MHz |
-    | Period | Approximately 50 ns |
-    | +Duty | Approximately 50% |
-    | HIGH width | Approximately 25 ns |
-    | LOW width | Approximately 25 ns |
+   | Quantity | Capture reading |
+   | --- | ---: |
+   | Frequency cursor | 20.0000 MHz |
+   | Frequency average | 19.929 MHz |
+   | Frequency minimum / maximum | 9.9502 / 20.202 MHz |
+   | Period | 50.000 ns |
+   | +Duty | 49.0% |
+   | HIGH / LOW width | 24.500 / 25.500 ns |
 
-    Check adjacent rising edges with time cursors: frequency is
-    `1 / period`, so `1 / 50 ns = 20 MHz`. These values are expectations,
-    not measured results or independent timing-margin limits.
+   ![DHO814 capture of the project Z80 clock, showing a 20.0000 MHz cursor reading, 50.000 ns period and pulse measurements](../images/clock-20mhz-scope-test.jpeg)
+
+   The capture confirms a measured 20 MHz clock on the project prototype.
+   Check adjacent rising edges with time cursors as well: frequency is
+   `1 / period`, so a 50 ns period corresponds to 20 MHz. Record the actual
+   values, probe point and probe ratio with each saved capture.
 
 7. Save a screenshot and waveform with firmware identity, rail voltage,
    **probe point** (Pico GP2, U4 pin 18, or Z80 CLK pin 6), probe ratio,

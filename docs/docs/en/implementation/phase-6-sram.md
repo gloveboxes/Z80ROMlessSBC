@@ -316,9 +316,11 @@ same four-pattern write/read/compare test across all 64 KiB for at least
 60 seconds of execution-phase time, ending on a complete cycle. Memory
 accesses have no added wait states; only I/O progress/error reports use
 the existing WAIT trap and stepped completion. All failures, timeouts,
-disconnects and the immediate `x` command stop safely. The displayed
-clock is nominal, not scope-measured; this remains functional screening,
-not timing qualification or a long-term reliability rating.
+disconnects and the immediate `x` command stop safely. The displayed values
+are PWM targets. The project prototype's 20 MHz clock has been independently
+scope-measured; other rates in this screening remain unmeasured. This remains
+functional screening, not full timing qualification or a long-term reliability
+rating.
 
 #### Exact 16 MHz Experimental Screening
 

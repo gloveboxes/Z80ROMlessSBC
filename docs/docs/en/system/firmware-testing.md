@@ -269,7 +269,7 @@ without sharing generated headers or CMake caches.
 
 The build generates UF2/binary images; it **does not flash or execute them**.
 The firmware variants retain their distinct clock configuration:
-Phase 9 uses nominal 20 MHz after complete load/verification, either on explicit
+Phase 9 uses 20 MHz after complete load/verification, either on explicit
 commands or automatically on reset with the loader variant, while Phase 10
 retains its separate 1 MHz startup default. Neither is qualified by a build.
 The linker protects storage above firmware offset `0x290000`; the physical
@@ -306,5 +306,6 @@ After software validation, follow the
 and its bench checklist. Observe the CP/M prompt and filesystem behavior,
 verify safe stop/recovery, and collect the required
 [frequency/timing evidence](../implementation/frequency-qualification.md).
-Nominal 20 MHz remains an operating assumption until the relevant physical
-CP/M, disk-I/O and timing checks pass.
+The Z80 clock has been scope-measured at 20 MHz on the project breadboard.
+Integrated CP/M, disk-I/O and receiving-pin timing checks remain separate
+qualification evidence.

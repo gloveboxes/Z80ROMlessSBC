@@ -25,7 +25,7 @@ BUSREQ transactions or automatic one-hour stops.
 | --- | --- |
 | Target | `z80_stage06_scope_20mhz` |
 | Supervisor clock | 120 MHz, selected before USB and Z80 execution |
-| Z80 clock | Nominal 20 MHz, PWM divider 1, period count 6, three HIGH/three LOW |
+| Z80 clock | 20 MHz, scope-measured; PWM divider 1, period count 6, three HIGH/three LOW |
 | Runtime | Continuous until explicit stop, disconnect, or power loss |
 | SRAM work area | `2000h-FFFFh`, 56 KiB |
 | Live CPU result reports | None |
@@ -175,9 +175,12 @@ Results survive reset, not loss of SRAM power, and a fresh `f` replaces them.
 Use the [DHO814 20 MHz setup](../hardware/oscilloscope.md#20-mhz-no-io-clock-measurement)
 to measure at **Z80 CLK pin 6**, not just Pico GP2.
 
-Expected nominal values are **20 MHz, 50 ns period, about 25 ns HIGH and
-25 ns LOW**. Capture only after RUN and before `x`/disconnect. There should
-be no deliberate reporting-related clock gaps during that interval.
+The project prototype capture in the [oscilloscope guide](../hardware/oscilloscope.md#20-mhz-no-io-clock-measurement)
+shows a 20.0000 MHz cursor reading and 50.000 ns period. Its statistics also
+include a 9.9502 MHz minimum; inspect the waveform for that low reading before
+using the capture to qualify missed edges or jitter. Capture only after RUN
+and before `x`/disconnect. There should be no deliberate reporting-related
+clock gaps during that interval.
 
 For SRAM work, use the existing
 [read/write capture groups](../hardware/oscilloscope.md#four-channel-connections-and-expected-results).

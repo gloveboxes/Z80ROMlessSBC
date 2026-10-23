@@ -194,12 +194,13 @@ inactivity.
 
 Phase 9 waits for USB commands rather than automatically executing CP/M:
 Ctrl+] `l` loads/verifies with slow injected clocks and holds reset afterward;
-Ctrl+] `g` starts at nominal 20 MHz using a 120 MHz supervisor clock.
+Ctrl+] `g` starts at the scope-measured 20 MHz Z80 clock using a 120 MHz
+supervisor clock.
 The manifest must describe a complete 65,536-byte image beginning with
 `JP FD00h`. BIOS reports on reserved port `0x05` distinguish cold entry
 (`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
 and filesystem tests remain necessary. The separate Phase 9 automatic-loader
-target and Phase 10 use automatic verified startup at nominal 20 MHz.
+target and Phase 10 use automatic verified startup at 20 MHz.
 
 A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
 At startup, firmware replays complete, CRC-valid committed entries and rejects

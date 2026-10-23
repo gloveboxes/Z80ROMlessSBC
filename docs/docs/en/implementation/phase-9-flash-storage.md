@@ -51,16 +51,16 @@ for Pico firmware.
 reboots into recovery instead of executing an unverified image. Capture the
 USB error/status first. Do not bypass verification merely to get a prompt.
 
-!!! important "USB terminal first; nominal 20 MHz after loading"
+!!! important "USB terminal first; 20 MHz after loading"
     Phase 9 implements the same `0x00`/`0x01` terminal contract as in Phases 8
     and 10, using USB CDC rather than Wi-Fi. The diagnostic firmware
     requires separate load/start commands; the automatic loader below performs
     both on Pico reset. In either case, slow, Z80-assisted loading and complete
-    readback happen before execution at **nominal 20,000,000 Hz,
-    50% duty** (`120 MHz / 6`). This is the requested operating assumption,
-    not a claim that CP/M, disk I/O or timing margin has passed bench
-    qualification at that frequency. I/O traps and flash writes still pause
-    execution. The replacement Phase 10 inherits this tested automatic-loader
+    readback happen before execution at **20,000,000 Hz,
+    50% configured duty** (`120 MHz / 6`). The Z80 clock frequency has been
+    scope-measured at 20 MHz on the project prototype. This does not establish
+    CP/M, disk-I/O or receiving-pin timing margins. I/O traps and flash writes
+    still pause execution. The replacement Phase 10 inherits this tested automatic-loader
     application and its clock settings; combined network operation still
     requires acceptance testing.
 
@@ -71,7 +71,7 @@ Both Phase 9 variants also implement
 stopwatches, uptime, utilities, onboard LED control and persistent ENV. The
 LED uses Utility payload `[4, 0]` for off, `[4, 1]` for on, and `[5]` to read
 its last successfully commanded state. Its wireless-chip driver is initialized
-on demand without enabling Wi-Fi networking; USB and nominal 20 MHz operation
+on demand without enabling Wi-Fi networking; USB and 20 MHz operation
 are unchanged. Calendar queries explicitly
 report CLOCK_UNSYNCED in this USB-only phase. No additional wiring is required;
 the interrupt timer remains deferred. Check these services with the updated
@@ -106,7 +106,7 @@ Every Pico reset now:
 2. Recovers the flash journal and validates the boot manifest and payload CRC.
 3. Uses Z80-assisted loading to write the complete 65,536-byte SRAM image,
    then independently reads back and compares every byte.
-4. Resets the Z80 again, enables I/O trapping and starts CP/M at nominal 20 MHz.
+4. Resets the Z80 again, enables I/O trapping and starts CP/M at 20 MHz.
 5. Continues terminal and disk service without waiting for a USB terminal.
 
 Core 0 owns Z80 GPIO, loading, clock generation and I/O traps. Core 1 owns
@@ -316,7 +316,7 @@ are terminal input, not diagnostic commands.
 | Sequence | Supervisor action |
 | --- | --- |
 | Ctrl+] then `l` | Recover journal; validate manifest/CRCs, exact 65,536-byte payload and `JP FD00h`; load and independently read back every SRAM byte; leave RESET LOW |
-| Ctrl+] then `g` | Start the verified image from a fresh reset at nominal 20 MHz |
+| Ctrl+] then `g` | Start the verified image from a fresh reset at 20 MHz |
 | Ctrl+] then `t` | After loading, replace the SRAM entry code with a read-only Z80 disk diagnostic; compare every byte of all four drives; reboot afterward |
 | Ctrl+] then `s` | Print run state, configured clock, BIOS evidence, disk/fatal state, queue drops and trap error counts |
 | Ctrl+] then `x` | While running CP/M, complete/flush disk work, pause the flash worker, then hold RESET LOW and stop PWM; during the read-only diagnostic, stop directly |

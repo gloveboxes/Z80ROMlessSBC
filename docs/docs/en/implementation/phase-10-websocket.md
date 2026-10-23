@@ -8,7 +8,7 @@
 <p data-checklist-status role="status" aria-live="polite"></p>
 
 - <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 9 passed"> **Start here:** complete the [Phase 9 automatic CP/M loader](phase-9-flash-storage.md).
-- **Unchanged:** 120 MHz Pico clock, nominal 20 MHz Z80 clock, BIOS and disk layout.
+- **Unchanged:** 120 MHz Pico clock, 20 MHz scope-measured Z80 clock, BIOS and disk layout.
 - **Hardware:** onboard Wi-Fi plus the [3.3 V matrix display](#ht16k33-8x8-matrix). PCB changes remain deferred.
 
 ## First connection and USB provisioning
