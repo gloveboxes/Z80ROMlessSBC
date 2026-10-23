@@ -3,9 +3,9 @@
 	"tasks": [
 		{
 			"label": "Flash Pico - Phase 6 20 MHz scope diagnostic",
-			"detail": "Build the isolated no-I/O CPU/SRAM scope diagnostic and flash/verify firmware only; CP/M disks and ENV are preserved.",
+			"detail": "Build and force flash the isolated no-I/O CPU/SRAM scope diagnostic without waiting for a firmware stop handshake; CP/M disks and ENV are preserved.",
 			"type": "shell",
-			"command": "if [ \"${input:picoPhase6FlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build/scope20 -G Ninja -DPICO_BOARD=pico2_w && cmake --build build/scope20 --target z80_stage06_scope_20mhz -j && python scripts/pico_flash.py firmware build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2 --power-confirmed",
+			"command": "if [ \"${input:picoPhase6FlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build/scope20 -G Ninja -DPICO_BOARD=pico2_w && cmake --build build/scope20 --target z80_stage06_scope_20mhz -j && python scripts/pico_flash.py firmware build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2 --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -20,9 +20,9 @@
 		},
 		{
 			"label": "Flash Pico - Phase 10 WebSocket terminal",
-			"detail": "Build and verified firmware-only flash; preserves CP/M disks and ENV.",
+			"detail": "Build and force flash firmware without waiting for a stop handshake; preserves CP/M disks and ENV.",
 			"type": "shell",
-			"command": "if [ \"${input:picoFlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w && cmake --build build --target z80_stage10_websocket_terminal -j && python scripts/pico_flash.py firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2 --power-confirmed",
+			"command": "if [ \"${input:picoFlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w && cmake --build build --target z80_stage10_websocket_terminal -j && python scripts/pico_flash.py firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2 --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -142,7 +142,7 @@
 		{
 			"id": "picoPhase6FlashSafety",
 			"type": "pickString",
-			"description": "Confirm the current test is finished, all fitted ICs have external +5 V before USB, and you intend to replace firmware with the Phase 6 scope diagnostic.",
+			"description": "Confirm it is safe to interrupt the current firmware, all fitted ICs have external +5 V before USB, and you intend to force replace firmware with the Phase 6 scope diagnostic.",
 			"options": ["Cancel", "Proceed"],
 			"default": "Cancel"
 		},
@@ -156,7 +156,7 @@
 		{
 			"id": "picoFlashSafety",
 			"type": "pickString",
-			"description": "Confirm external +5 V is applied before USB and CP/M work is saved before flashing Phase 10.",
+			"description": "Confirm external +5 V is applied before USB, CP/M work is saved, and it is safe to force-replace the current firmware with Phase 10.",
 			"options": ["Cancel", "Proceed"],
 			"default": "Cancel"
 		}

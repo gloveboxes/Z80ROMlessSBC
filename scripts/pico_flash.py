@@ -129,7 +129,7 @@ def prepare_target(args: argparse.Namespace) -> str:
     if not args.no_disconnect:
         disconnect_picocom(port)
     require_free_port(port)
-    if not args.stopped:
+    if not args.stopped and not getattr(args, "force", False):
         with open_supervisor(port) as connection:
             time.sleep(0.25)
             stop(connection, args.timeout)
@@ -264,6 +264,10 @@ def main() -> int:
     )
     firmware.add_argument("image", type=Path)
     firmware.add_argument("--no-reboot", action="store_true")
+    firmware.add_argument(
+        "--force", action="store_true",
+        help="skip the Phase 9 stop/flush handshake and force picotool into BOOTSEL",
+    )
     disks = commands.add_parser(
         "disks", help="flash one or more selected disk slots without backups",
         description="Validate/convert disk images, stop/flush, check journal and verify selected writes.",

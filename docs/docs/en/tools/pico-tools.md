@@ -250,6 +250,7 @@ and `prepare`:
 | `--timeout SECONDS` | Phase 9 response timeout; finite positive number, default 60 seconds |
 | `--no-disconnect` | Refuse occupied ports rather than gracefully closing picocom |
 | `--stopped` | Skip serial stop/flush only after the operator confirmed a safe clean stop |
+| `--force` (`firmware` only) | Skip the Phase 9 stop/flush handshake and force picotool into BOOTSEL before flashing firmware |
 | `--bootsel` | Target already in ROM BOOTSEL; requires `--stopped --serial DEVICE_SERIAL` and bypasses serial commands |
 
 `firmware` takes one UF2 path. `disks` requires one to four unique

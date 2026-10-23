@@ -117,6 +117,11 @@ This separate build directory leaves the earlier soak/screen UF2s intact.
 Normal firmware retains its existing clock limit. The scope target uses
 the isolated 20 MHz clock/CPU chain and does not install an I/O trap.
 
+The VS Code **Flash Pico - Phase 6 20 MHz scope diagnostic** task force-flashes
+the UF2 without a Phase 9 stop/flush handshake. Use it only when interrupting
+the current firmware is safe and the populated board has external +5 V applied
+before USB.
+
 ## Later deployment and console operation
 
 **The following is a later manual procedure, not part of building.**
