@@ -22,7 +22,7 @@ The builder assembles the optimized CCP/BDOS and BIOS, constructs the
 reset-ready 64 KiB `z80boot.img`, wraps it as `z80boot.pkg` with a manifest and
 CRC, and replaces only Drive A's reserved system tracks in
 `drive_a_cpm63k-z80.img`. Drives B-D remain the converted native 320 KiB
-images. With a Stage 10 firmware binary, the same builder can compose
+images. With a Phase 10 firmware binary, the same builder can compose
 `z80romless-flash.bin`, a complete 4 MiB image:
 
 ```sh

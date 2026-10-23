@@ -4,7 +4,7 @@
 
 Tick setup items when complete and tests only after recording the measured
 result. Progress is saved in this browser; ticks are not automatic verification.
-Leave Stage 10 network-dependent tests unticked until completed there.
+Leave Phase 10 network-dependent tests unticked until completed there.
 The bring-up checkpoint is not the final storage pass gate.
 
 <button type="button" class="md-button" data-checklist-clear hidden>Clear checklist</button>
@@ -31,13 +31,13 @@ working memory; Pico flash holds the boot package and the four persistent
 virtual disks. A **cold boot** starts the Pico and reloads SRAM; a CP/M
 **warm boot** restarts its command environment without removing power.
 
-<input type="checkbox" data-checklist-id="storage-provisioning" aria-label="Storage provisioned with host backups and Stage 9 firmware loaded"> The maintained build already sets the linker boundary and flash definitions
+<input type="checkbox" data-checklist-id="storage-provisioning" aria-label="Storage provisioned with host backups and Phase 9 firmware loaded"> The maintained build already sets the linker boundary and flash definitions
 above; you do not need to edit CMake for normal construction. Use the
 [provisioning procedure](../system/firmware-build.md#72-flash-provisioning)
 and retain host backups. Build `z80_stage09_cpm_images` for a complete
-Stage 9 image in `build/cpm-stage09/`; this starts with the CPU held reset
-and does not temporarily boot Stage 10. The existing `z80_cpm_images` target
-still packages Stage 10 in `build/cpm/`. Do not mistake disk image files
+Phase 9 image in `build/cpm-stage09/`; this starts with the CPU held reset
+and does not temporarily boot Phase 10. The existing `z80_cpm_images` target
+still packages Phase 10 in `build/cpm/`. Do not mistake disk image files
 for Pico firmware.
 
 !!! warning "Use disposable disk contents for fault tests"
@@ -52,28 +52,28 @@ reboots into recovery instead of executing an unverified image. Capture the
 USB error/status first. Do not bypass verification merely to get a prompt.
 
 !!! important "USB terminal first; nominal 20 MHz after loading"
-    Stage 9 implements the same `0x00`/`0x01` terminal contract as Stage 8
-    and Stage 10, using USB CDC rather than Wi-Fi. The diagnostic firmware
+    Phase 9 implements the same `0x00`/`0x01` terminal contract as in Phases 8
+    and 10, using USB CDC rather than Wi-Fi. The diagnostic firmware
     requires separate load/start commands; the automatic loader below performs
     both on Pico reset. In either case, slow, Z80-assisted loading and complete
     readback happen before execution at **nominal 20,000,000 Hz,
     50% duty** (`120 MHz / 6`). This is the requested operating assumption,
     not a claim that CP/M, disk I/O or timing margin has passed bench
     qualification at that frequency. I/O traps and flash writes still pause
-    execution. The replacement Stage 10 inherits this tested automatic-loader
+    execution. The replacement Phase 10 inherits this tested automatic-loader
     application and its clock settings; combined network operation still
     requires acceptance testing.
 
 ## Automatic CP/M loader
 
-Both Stage 9 variants also implement
+Both Phase 9 variants also implement
 [ROMLESS-SVC/1 extended ports](../system/io-ports.md): countdown timers,
 stopwatches, uptime, utilities, onboard LED control and persistent ENV. The
 LED uses Utility payload `[4, 0]` for off, `[4, 1]` for on, and `[5]` to read
 its last successfully commanded state. Its wireless-chip driver is initialized
 on demand without enabling Wi-Fi networking; USB and nominal 20 MHz operation
 are unchanged. Calendar queries explicitly
-report CLOCK_UNSYNCED in this USB-only stage. No additional wiring is required;
+report CLOCK_UNSYNCED in this USB-only phase. No additional wiring is required;
 the interrupt timer remains deferred. Check these services with the updated
 Drive C applications after the terminal/disk pass gates. Software regression
 tests do not replace physical timing and persistence checks.
@@ -84,7 +84,7 @@ For normal use after bring-up, build the separate auto-start firmware:
 cmake --build build --target z80_stage09_cpm_loader -j
 ```
 
-On an already provisioned, matching Stage 9 installation, safely stop/flush
+On an already provisioned, matching Phase 9 installation, safely stop/flush
 CP/M, close the serial terminal and enter BOOTSEL using the
 [power and provisioning procedure](../system/firmware-build.md#72-flash-provisioning).
 Then update **only the firmware**:
@@ -94,7 +94,7 @@ picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
 picotool reboot
 ```
 
-No boot-package or disk update is needed when switching between these Stage 9
+No boot-package or disk update is needed when switching between these Phase 9
 variants without BIOS changes. The original `z80_stage09_flash_storage`
 diagnostic target remains available and still requires manual `l`/`g`.
 
@@ -113,7 +113,7 @@ Core 0 owns Z80 GPIO, loading, clock generation and I/O traps. Core 1 owns
 all USB endpoint access, USB interrupts/background tasks, ANSI input mapping
 and terminal pumping, plus runtime storage and service workers. Core 1 starts
 before loading, but disk/service workers are enabled only after successful
-load/verify and CP/M startup. The earlier single-core bring-up stages are
+load/verify and CP/M startup. The earlier single-core bring-up phases are
 unchanged.
 
 USB supervisor commands cross a four-entry queue to core 0; they never
@@ -144,7 +144,7 @@ flash-cache-dependent latency in the core-0 I/O trap. It is not a claim that
 flash instruction fetches are the dominant cost. The SDK
 `__not_in_flash_func` attribute places the following routines in SRAM:
 
-- The shared Stage 9/10 application's `virtual_read` and `virtual_write`.
+- The shared Phase 9/10 application's `virtual_read` and `virtual_write`.
 - `z80_terminal_io_read`, `z80_terminal_io_write`, and their ring-add and
   connection-state helpers.
 - `z80_flash_disk_io_read`, `z80_flash_disk_io_write`, their command/status/address
@@ -165,19 +165,19 @@ trapping during flash programming or relax BUSACK/IRQ/multicore lockout.
 
 The 2026-10-23 comparison used the same local SDK, toolchain, build configuration,
 and working-tree sources before and after adding placement attributes. Each
-Stage 9/10 linker map and ELF places the seven top-level routines above in
+The Phase 9/10 linker map and ELF place the seven top-level routines above in
 `.data` at SRAM addresses beginning `0x2000...`; disassembly also places callback
 switch tables there. Terminal ring/connection helpers and disk command/status/
 address helpers are inlined into their handlers in this build.
 
 | Target | Initialized SRAM `.data`, before | After | Additional SRAM |
 | --- | ---: | ---: | ---: |
-| Stage 9 diagnostic | 9,256 bytes | 10,472 bytes | 1,216 bytes |
-| Stage 9 automatic loader | 9,256 bytes | 10,472 bytes | 1,216 bytes |
-| Stage 10 WebSocket terminal | 13,936 bytes | 15,152 bytes | 1,216 bytes |
+| Phase 9 diagnostic | 9,256 bytes | 10,472 bytes | 1,216 bytes |
+| Phase 9 automatic loader | 9,256 bytes | 10,472 bytes | 1,216 bytes |
+| Phase 10 WebSocket terminal | 13,936 bytes | 15,152 bytes | 1,216 bytes |
 
 BSS and stack reservations are unchanged. Total loadable ELF content grows
-by 32 bytes for each Stage 9 variant and 40 bytes for Stage 10, including
+by 32 bytes for each Phase 9 variant and 40 bytes for Phase 10, including
 linker alignment and veneers. SRAM code is included in `.data`; the plain
 `size` summary's `data` column alone does not measure its RAM cost. Inspect
 ELF sections and the linker map:
@@ -191,7 +191,7 @@ arm-none-eabi-objdump -d --disassemble=virtual_read "$elf"
 arm-none-eabi-objdump -d --disassemble=z80_flash_disk_io_write "$elf"
 ```
 
-Repeat for both Stage 9 ELFs. Check that the selected functions have SRAM
+Repeat for both Phase 9 ELFs. Check that the selected functions have SRAM
 execution addresses, not merely flash load addresses. Inspect each handler's
 disassembly for outlined helpers and veneers: a veneer in SRAM can still jump
 to flash. In this build terminal register handlers need no out-of-line calls;
@@ -291,14 +291,14 @@ from the same new build: the BIOS now emits startup evidence.
 cmake --build build --target z80_stage09_cpm_images -j
 ```
 
-For an already provisioned board, selectively update the Stage 9 UF2,
+For an already provisioned board, selectively update the Phase 9 UF2,
 `z80boot.pkg`, and matching `drive_a_cpm63k-z80.img` using Section 7's
 addresses. Updating Drive A overwrites its existing files; the development
 workflow does not create backups.
 For disposable/new storage, the complete `build/cpm-stage09/z80romless-flash.bin`
 contains everything. Building either target never flashes the board.
 
-For a terminal-mapping-only firmware update on an already matching Stage 9
+For a terminal-mapping-only firmware update on an already matching Phase 9
 installation, flash only `z80_stage09_flash_storage.uf2`. The boot package,
 CP/M disks and journal do not need to be rewritten.
 
@@ -328,7 +328,7 @@ are terminal input, not diagnostic commands.
 
 ### ANSI keyboard mapping
 
-Stage 9 ports the ESP32 Altair `ansi_input` mapper into the USB receive path.
+Phase 9 ports the ESP32 Altair `ansi_input` mapper into the USB receive path.
 Picocom forwards the host terminal's ANSI input sequences; the firmware
 converts these to the CP/M application's WordStar-style control keys:
 
@@ -355,7 +355,7 @@ Use normal cursor-key mode in the host terminal.
 
 Ctrl+] supervisor commands are intercepted before mapping. Starting a
 supervisor command, stopping the CPU or changing the USB connection resets
-partial ANSI state. Terminal output and Stage 10's WebSocket keyboard
+partial ANSI state. Terminal output and Phase 10's WebSocket keyboard
 handling are unchanged. Test the keys in an application configured for these
 control bindings; individual CP/M programs can assign different meanings.
 
@@ -480,7 +480,7 @@ using those same [storage ownership rules](../system/operation.md#63-onboard-fla
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 9 application - src/stage09_flash_storage/main.c"
+??? example "Phase 9 application - src/stage09_flash_storage/main.c"
 
     ```c
     {% include "../../../../src/stage09_flash_storage/main.c" %}
@@ -615,7 +615,7 @@ the reserved record. These are emulator checks, not physical flash or
   services its queue. Verify the completed write uses the drive, LBA, write
   type, and 128-byte payload captured when the command began and changes no
   other record.
-8. <input type="checkbox" data-checklist-id="cpm-filesystem-usb" aria-label="CPM filesystem acceptance completed with Stage 9 USB terminal"> Boot the packaged image using the Stage 9 USB terminal and exercise the filesystem through CP/M itself:
+8. <input type="checkbox" data-checklist-id="cpm-filesystem-usb" aria-label="CPM filesystem acceptance completed with Phase 9 USB terminal"> Boot the packaged image using the Phase 9 USB terminal and exercise the filesystem through CP/M itself:
   run `DIR` on A-D and require each sentinel on only its expected drive; run
   `LS` through natural transient exit and BIOS warm boot; run multi-extent
   `C:ATTNC11`; and use `PIP` to copy files across drives. Reboot and compare
@@ -633,7 +633,7 @@ the reserved record. These are emulator checks, not physical flash or
   and header clear. Reboot after every hook and require recovery to
   produce either the complete old block (before valid header) or the
   complete new block (after valid header), never a mixture.
-11. <input type="checkbox" data-checklist-id="network-storage-stage10" aria-label="Storage tested in every Wi-Fi state with Stage 10"> Repeat reads and writes with Wi-Fi absent, associating, connected,
+11. <input type="checkbox" data-checklist-id="network-storage-stage10" aria-label="Storage tested in every Wi-Fi state with Phase 10"> Repeat reads and writes with Wi-Fi absent, associating, connected,
   and reconnecting. Disk completion must not depend on network state,
   and WebSocket queue overflow must remain counted rather than block.
 12. <input type="checkbox" data-checklist-id="journal-rotation-smoke" aria-label="Journal rotation and endurance smoke test recorded"> Rewrite hot directory blocks repeatedly while tracking journal-pair
@@ -644,7 +644,7 @@ the reserved record. These are emulator checks, not physical flash or
   the core-0 release queue; recovery must retain the verified old or new
   disk block.
 
-Stage 9 **Ctrl+] then `1` through `6`** arms the six power-cut points
+Phase 9 **Ctrl+] then `1` through `6`** arms the six power-cut points
 in test 10; **Ctrl+] then `7` or `8`** arms safe-execute entry and exit failure in
 test 13. Each key arms one watchdog reset for the next CP/M write or flush.
 Before arming, preserve host copies of the old and intended new 4 KiB block;
@@ -653,17 +653,17 @@ the next injection point.
 
 ## Bring-up checkpoint
 
-Before adding the Stage 10 network transport:
+Before adding the Phase 10 network transport:
 
-- <input type="checkbox" data-checklist-id="checkpoint-provisioning" aria-label="Stage 9 checkpoint provisioning verified"> Require verified provisioning.
-- <input type="checkbox" data-checklist-id="checkpoint-boot-recovery" aria-label="Stage 9 checkpoint journal recovery and full SRAM boot verification passed"> Require successful journal recovery and full SRAM boot-image verification.
-- <input type="checkbox" data-checklist-id="checkpoint-status" aria-label="Stage 9 checkpoint has no fatal storage status"> Require no fatal storage status.
-- <input type="checkbox" data-checklist-id="checkpoint-phase8" aria-label="Stage 9 checkpoint Phase 8 bus and IO measurements still pass"> Require the Phase 8 bus/I/O measurements still passing.
-- <input type="checkbox" data-checklist-id="checkpoint-usb" aria-label="Stage 9 USB CPM prompt directory transient and warm boot verified"> Require the USB CP/M prompt, per-drive directories, transient execution and warm boot.
+- <input type="checkbox" data-checklist-id="checkpoint-provisioning" aria-label="Phase 9 checkpoint provisioning verified"> Require verified provisioning.
+- <input type="checkbox" data-checklist-id="checkpoint-boot-recovery" aria-label="Phase 9 checkpoint journal recovery and full SRAM boot verification passed"> Require successful journal recovery and full SRAM boot-image verification.
+- <input type="checkbox" data-checklist-id="checkpoint-status" aria-label="Phase 9 checkpoint has no fatal storage status"> Require no fatal storage status.
+- <input type="checkbox" data-checklist-id="checkpoint-phase8" aria-label="Phase 9 checkpoint Phase 8 bus and IO measurements still pass"> Require the Phase 8 bus/I/O measurements still passing.
+- <input type="checkbox" data-checklist-id="checkpoint-usb" aria-label="Phase 9 USB CPM prompt directory transient and warm boot verified"> Require the USB CP/M prompt, per-drive directories, transient execution and warm boot.
 - <input type="checkbox" data-checklist-id="checkpoint-disk-reader" aria-label="Read-only Z80 all-record disk diagnostic verified"> Record the read-only all-record Z80 diagnostic separately from CP/M filesystem tests.
 - <input type="checkbox" data-checklist-id="checkpoint-outstanding" aria-label="Outstanding network and fault tests recorded"> Record network and any fault-injection cases that remain outstanding.
 
-Proceeding to Stage 10 enables network concurrency tests; it does not mark
+Proceeding to Phase 10 enables network concurrency tests; it does not mark
 them passed or replace the USB baseline.
 
 ## Host validation versus bench evidence
@@ -703,7 +703,7 @@ items remain unticked until measured.
 
 ## Pass gate
 
-Final storage acceptance, including the tests completed with Stage 10:
+Final storage acceptance, including the tests completed with Phase 10:
 
 - <input type="checkbox" data-checklist-id="gate-crcs" aria-label="Phase 9 boot and four disk CRCs match host images"> Boot and all four disks match host CRC32 values.
 - <input type="checkbox" data-checklist-id="gate-sentinels" aria-label="Phase 9 all four drive sentinels have no aliasing"> A-D expose their distinct expected sentinel files with no aliasing.

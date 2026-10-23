@@ -55,7 +55,7 @@ means it is safe to connect that node to an arbitrary supply.
 | Manifest | Header describing an image and its integrity data | Gives boot-image length, version, and CRC values before SRAM loading. |
 | CRC / CRC32 | Cyclic redundancy check, using a 32-bit result here | Detects corruption in boot images, journal entries, and generated artifacts. |
 | SHA-256 | 256-bit cryptographic hash | Records reproducible host-artifact identities; it is not calculated by the Z80. |
-| Firmware | Software executed by a microcontroller | The staged Pico applications under `src/`. |
+| Firmware | Software executed by a microcontroller | The phase-based Pico applications under `src/`. |
 | Boot loader | Code that prepares and starts another program | Validates the flash package, copies the Z80 image to SRAM, then releases reset. |
 | UF2 | USB Flashing Format | Drag-and-drop or `picotool` firmware image format supported by Pico boot ROM. |
 | BOOTSEL | Pico USB boot-selection mode | Allows firmware or complete flash images to be loaded while the application is not running. |

@@ -1,8 +1,8 @@
 # Appendix C: Source Code Index
 
 Canonical repository: [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC).
-All phase applications are cumulative: each stage links the shared modules
-proven by earlier stages, while remaining independently buildable for hardware
+All phase applications are cumulative: each phase links the shared modules
+proven by earlier phases, while remaining independently buildable for hardware
 bring-up.
 
 ## Project Build Files
@@ -10,13 +10,13 @@ bring-up.
 | File | Purpose |
 | --- | --- |
 | [CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/CMakeLists.txt) | Pico SDK import, Pico 2 W target, project languages, and protected firmware flash linker boundary |
-| [src/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/CMakeLists.txt) | Shared firmware libraries, stage registration, and the manual Stage 9, automatic Stage 9 (`z80_stage09_cpm_loader_images`) and Stage 10 CP/M artifact targets |
+| [src/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/CMakeLists.txt) | Shared firmware libraries, phase registration, and the manual Phase 9, automatic Phase 9 (`z80_stage09_cpm_loader_images`) and Phase 10 CP/M artifact targets |
 | [.gitignore](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.gitignore) | Generated build, Python cache, and assembler-output exclusions |
 | [package.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/package.json), [package-lock.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/package-lock.json) | Repository utility commands, including generated breadboard layout |
 | [MkDocs configuration](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/docs/docs/mkdocs.yml), [requirements](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/docs/docs/requirements.txt) | Documentation navigation, theme, plugins, and pinned Python dependencies |
 | [documentation workflow](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.github/workflows/docs.yml) | Strict MkDocs build and GitHub Pages deployment |
 
-### Cumulative Stage Applications
+### Cumulative Phase Applications
 
 | Phase | Application | Target definition | Responsibility |
 | ---: | --- | --- | --- |
@@ -44,7 +44,7 @@ bring-up.
 
 ### Shared Firmware Modules
 
-Stage 9 and Stage 10 also share
+Phases 9 and 10 also share
 [`usb_console.c`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/usb_console.c)
 and its [header](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/usb_console.h):
 core-1 USB/alarm initialization, endpoint ownership and bounded multicore
@@ -75,7 +75,7 @@ queued Z80 control requests execute only on core 0.
 
 | Area | Files | Purpose |
 | --- | --- | --- |
-| Flash and USB supervision | [pico_flash.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_flash.py), [pico_supervisor.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_supervisor.py), [requirements-flash.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/requirements-flash.txt), [test_pico_flash.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/test_pico_flash.py), [test_pico_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/test_pico_disks.py) | Discovered-port Stage 9 commands, graceful picocom disconnection, clean stop/flush, verified firmware or selected no-backup disk writes, journal and Drive A compatibility checks, and host safety tests |
+| Flash and USB supervision | [pico_flash.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_flash.py), [pico_supervisor.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_supervisor.py), [requirements-flash.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/requirements-flash.txt), [test_pico_flash.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/test_pico_flash.py), [test_pico_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/test_pico_disks.py) | Discovered-port Phase 9 commands, graceful picocom disconnection, clean stop/flush, verified firmware or selected no-backup disk writes, journal and Drive A compatibility checks, and host safety tests |
 | Native CP/M | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/README.md), [z80_bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/z80_bios.asm), [build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/build_images.py), [test_build_images.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/test_build_images.py) | 64K CCP/BDOS image, native BIOS, boot package, full-flash composition, and host regression tests |
 | Dynamic debug I/O | [adapter README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/README.md), [adapter entry point](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/src/dcc_debug_io_adapter.c), [port dispatcher](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/dcc_io_adapter/host/PortDrivers/io_ports.c) | Project-hosted SBC disk adapter, complete Altair host port drivers, interrupt service, and ANSI terminal-input pipeline |
 | Disk geometry and conversion | [README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md), [geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py), [convert_altair_disks.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/convert_altair_disks.py) | Shared CP/M geometry and deterministic Altair-media conversion |

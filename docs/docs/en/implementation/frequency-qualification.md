@@ -12,12 +12,12 @@ application. It tests both halves of the accessible SRAM at each distinct
 speed for at least 60 seconds of execution-phase time, with bounded progress
 checks and a stop at the first failure. A screening PASS does not satisfy
 this page's integrated-system prerequisites or timing-evidence requirements.
-The existing Stage 8/10 RAM/terminal checker repeatedly checks address 0100;
+The existing Phase 8/10 RAM/terminal checker repeatedly checks address 0100;
 it must not be described as a full-range PWM memory test.
 The separately built
 [8-12 MHz experimental screen](phase-6-sram.md#experimental-8-12-mhz-screening)
 continues the same write/read/compare workload beyond the normal 8 MHz
-firmware limit, without changing that limit for normal stages. Its four
+firmware limit, without changing that limit for normal phases. Its four
 distinct nominal rates are 8, 9, 10.285714 and 12 MHz. These are exploratory
 functional results, not an extension of this qualification procedure.
 The [exact 14 MHz screening variant](phase-6-sram.md#exact-14-mhz-experimental-screening)
@@ -45,7 +45,7 @@ A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
 baseline and change only the clock setting between tests, not the wiring,
 power arrangement, and probe layout at the same time.
 
-Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Stage 2 and Stage 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing injection or trap code.
+Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Phase 2 and Phase 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing injection or trap code.
 
 **Setup time** is how long data must be valid before the CPU samples it;
 **hold time** is how long it must remain valid afterward. Measure at the
@@ -100,7 +100,7 @@ but do not count duplicate actual rates as independent speed evidence. The
 last transition is 7.2 to 8 MHz, not a 500 kHz increase. Qualify every distinct
 actual rate and stop increasing the request after any failure.
 
-Stage 10's generated address-test program and RAM checker report on masked
+Phase 10's generated address-test program and RAM checker report on masked
 port `06`; the address-test completion marker uses `05`. These diagnostic ports
 do not collide with terminal `00/01` or disk `10-14`. An `E1` RAM-error report
 must increment the error counter and prevent an hour-test PASS.

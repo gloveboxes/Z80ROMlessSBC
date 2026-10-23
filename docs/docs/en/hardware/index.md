@@ -3,7 +3,7 @@
 The hardware chapters progress from the bill of materials through pin-level
 wiring, address generation, physical construction, buffering, and final bus
 isolation. For a first build, read the inventory and construction basics,
-then follow the staged [implementation plan](../implementation/index.md).
+then follow the phased [implementation plan](../implementation/index.md).
 Consult the other hardware chapters when a phase refers to them; their
 chapter order is not the chip-installation order.
 
@@ -26,4 +26,4 @@ than additional hardware chapters. Use the
 [RIGOL DHO814 capture plan](oscilloscope.md) for analogue integrity and exact
 timing, and the [DSLogic Plus capture plan](logic-analyzer.md) for bus-wide
 digital state and event ordering. Individual implementation pass gates name
-the captures required at each stage.
+the captures required at each phase.

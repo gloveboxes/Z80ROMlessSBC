@@ -11,7 +11,7 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 8 prerequisite passed"> **Prerequisite:** [Phase 6](phase-6-sram.md#pass-gate), including its [bus-grant and reset/fetch measurements](phase-6-bus-grants.md#pass-gate).
 **Install:** No further chips.
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 8 firmware built and loaded"> Build `z80_stage08_virtual_io`; UF2 lives in
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 8 firmware built and loaded"> Build `z80_stage08_virtual_io`; UF2 lives in
 `build/src/stage08_virtual_io/`.
 [Application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage08_virtual_io/main.c)
 and [trap implementation](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
@@ -86,8 +86,8 @@ required.
 The trap handler/release loop, clock stop/resume/preparation/prepared pulse,
 and shared data/port bus helpers use the SDK SRAM code-placement attribute.
 This removes instruction fetches from flash for those selected routines,
-not for the complete call chain: SDK timing/mux helpers, Stage 8 application
-callbacks and failure handling can still execute from flash. Stages 9/10 also
+not for the complete call chain: SDK timing/mux helpers, Phase 8 application
+callbacks and failure handling can still execute from flash. Phases 9/10 also
 place their terminal/disk callbacks and register handlers in SRAM; see the
 [placement checks and limits](phase-9-flash-storage.md#sram-resident-terminal-and-disk-register-path).
 **This is not permission
@@ -107,7 +107,7 @@ Decode is `address & 0x17`: `00/01` terminal and `10-14` disk ports retain
 their contracts. A3/A5-A7 and high-byte aliases are intentional. A trap while
 BUSACK LOW is ignored and IRQ disabled until the grant-release path rearms it.
 
-The Stage 8 diagnostic result port is `06`, which survives the mask. The
+The Phase 8 diagnostic result port is `06`, which survives the mask. The
 self-test still emits raw ports `00/01/55/AA/FF` to exercise aliases: OUT checks
 the masked port and the full transmitted byte; IN expects
 `(raw_port & 0x17) ^ 0xA5`. Both successful completion and the RAM-checker's
@@ -144,8 +144,8 @@ those from echoed host input when inspecting the terminal.
 ## Test Plan
 
 Use [I/O ports and services](../system/io-ports.md) as the allocation
-reference. Its extended services are implemented in Stage 9/10, not in this
-Stage 8 application, and are not required by these tests.
+reference. Its extended services are implemented in Phases 9/10, not in this
+Phase 8 application, and are not required by these tests.
 
 <input type="checkbox" data-checklist-id="trap-release-captures" aria-label="WAIT clock handover stepped release and isolation captured"> Capture IORQ, WAIT, CLK, RD/WR and both OEs. Confirm WAIT asserts before the
 CPU could complete the I/O cycle, and the stepped release isolates before
@@ -180,7 +180,7 @@ before watchdog reboot.
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 8 application - src/stage08_virtual_io/main.c"
+??? example "Phase 8 application - src/stage08_virtual_io/main.c"
 
     ```c
     {% include "../../../../src/stage08_virtual_io/main.c" %}

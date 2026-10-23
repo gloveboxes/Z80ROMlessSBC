@@ -188,19 +188,19 @@ claim.
 
 ## MCP Acceptance Runner
 
-The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Stage 2 clock translation or Stage 8 I/O captures. External SPI mode is retired. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent gates pass. The legacy single-pause evaluator returns inconclusive for multi-step completion: inspect the raw clocks, data OEs, and rearming manually before accepting this revision.
+The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Phase 2 clock translation or Phase 8 I/O captures. External SPI mode is retired. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent gates pass. The legacy single-pause evaluator returns inconclusive for multi-step completion: inspect the raw clocks, data OEs, and rearming manually before accepting this revision.
 
 ### Preparation
 
-1. Build the correct cumulative firmware and pass preceding phases. Stage 2 uses the empty Z80 socket; Stage 8 requires the assisted-loader board at the 1 MHz baseline.
+1. Build the correct cumulative firmware and pass preceding phases. Phase 2 uses the empty Z80 socket; Phase 8 requires the assisted-loader board at the 1 MHz baseline.
 2. Power off before changing probes. Use compensated 10X probes, full bandwidth, DC coupling, 1 MOhm inputs, verified deskew and common circuit ground. Scope ground clips are not floating inputs.
 3. Install Node.js 20 or later and run `npm ci`. Build the current [rigol-mcp image](https://github.com/gloveboxes/rigol-mcp) in the selected runtime and initialize its capture volume using that project's instructions.
 4. Stop the registered Rigol MCP server yourself and close the Pico serial terminal. The runner starts one dedicated server and calls it sequentially. `--exclusive-session` is your acknowledgement, not automatic proof that no other client is connected.
 5. Use a new output directory under `build/bench/`. The runner checks firmware identity and scope readbacks before collecting evidence, and asks for board/probe/datasheet provenance.
 
-### Stage 2 Clock Translation
+### Phase 2 Clock Translation
 
-Connect CH1 to Pico GP2 (3.3 V), CH2 to Z80 socket CLK pin 6 (5 V), and CH3 to the Z80 VCC supply node. Repeat a separate capture on AHCT244 pin 18 to distinguish buffer delay from interconnect delay. Keep the Stage 2 reset state; do not release a CPU merely to obtain a clock measurement.
+Connect CH1 to Pico GP2 (3.3 V), CH2 to Z80 socket CLK pin 6 (5 V), and CH3 to the Z80 VCC supply node. Repeat a separate capture on AHCT244 pin 18 to distinguish buffer delay from interconnect delay. Keep the Phase 2 reset state; do not release a CPU merely to obtain a clock measurement.
 
 ```sh
 mkdir -p build/bench
@@ -213,7 +213,7 @@ Use `--runtime docker` for Docker. Commands `1`, `2`, and `3` report requested a
 
 Use robust settled levels for logic swing and raw extrema for overshoot/undershoot; inspect both against receiving-device limits. Check extra threshold crossings and the first/last pulses. Full qualification still requires every buffer path, HCT32 gates, startup and power-cycle tests. A firmware `DONE` message means only that stimulus completed.
 
-### Stage 8 Clock Stop and Resume
+### Phase 8 Clock Stop and Resume
 
 Connect CH1=Z80 IORQ# pin 20, CH2=WAIT# pin 24, CH3=CLK pin 6, CH4=Pico IO_RELEASE GP9 (header pin 12). Thresholds are 2.5 V on the 5 V side and 1.65 V on the Pico side. Verify actual rails separately. Set these variables using the CPU datasheet and approved latency/pause budget; the runner has no guessed limits:
 
@@ -226,7 +226,7 @@ npm run scope:acceptance -- --mode stage8 --runtime container \
    --duration 60 --captures 3 --exclusive-session --bench-confirmed
 ```
 
-The runner starts the existing one-hour RAM/USB checker, samples I/O events, checks fault-counter deltas, and holds the CPU in reset on exit. A 60-second run is not a one-hour pass. For a full run use `--duration 3600`; the firmware's one-hour PASS message must also be observed. Exercise USB traffic externally; later-stage Wi-Fi/storage workload evidence remains separate. Discrete captures cannot prove there were no faults between records.
+The runner starts the existing one-hour RAM/USB checker, samples I/O events, checks fault-counter deltas, and holds the CPU in reset on exit. A 60-second run is not a one-hour pass. For a full run use `--duration 3600`; the firmware's one-hour PASS message must also be observed. Exercise USB traffic externally; later-phase Wi-Fi/storage workload evidence remains separate. Discrete captures cannot prove there were no faults between records.
 
 Aligned stopped RAW CSV captures are streamed to the host. The evaluator separates ordinary pulse minima from extended intervals, checks WAIT and IO_RELEASE ordering, and rejects unaligned data. Its exactly-one-pause assumption is not sufficient for stepped completion; retain inconclusive results and review every completion clock manually. Insufficient sampling or incomplete events are inconclusive. Never include deliberate pauses/steps in periodic-jitter statistics.
 

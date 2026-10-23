@@ -113,7 +113,7 @@ is not proof of that helper's real SDK implementation.
 | CTest name | Maintained code exercised | Important boundary |
 | --- | --- | --- |
 | `flash_backend_recovery` | Actual `flash_backend.c`: manifest validation, byte loading/readback controller, cache, journal programming and recovery | Flash, SRAM byte access, bus/clock calls and reboot are modeled |
-| `stage09_usb_cpm` | Actual Stage 9 application functions and shared `terminal_queue.c` | Boot/storage and SDK calls are substituted; command/stop interleavings are driven by the harness |
+| `stage09_usb_cpm` | Actual Phase 9 application functions and shared `terminal_queue.c` | Boot/storage and SDK calls are substituted; command/stop interleavings are driven by the harness |
 | `usb_core1_console` | Actual `usb_console.c` routing and bounded diagnostic ring | Modeled SDK endpoints assert core-1 affinity; checks concurrent producer/drain, CRLF vs raw console bytes, backpressure, wrap, overflow, disconnect and init failure, not physical IRQ delivery |
 | `stage09_autoboot_cpm` | The same application compiled with automatic startup, including its actual `main` initialization path | SDK/storage calls are substituted; tests cover boot before USB connection, retained CP/M output, late failure reporting and no automatic retries |
 | `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, queues, BUSY publication and fatal error latch | The flash backend is stubbed; this is not the journal test |
@@ -253,30 +253,30 @@ If the Newlib query prints only `libc.a` rather than a library path, check
 the toolchain installation. Initial configuration also needs network access
 to obtain the pinned WebSocket dependency if it is not cached.
 
-This builds both Stage 9 variants and Stage 10 against the **real SDK**. Empty Wi-Fi
+This builds both Phase 9 variants and Phase 10 against the **real SDK**. Empty Wi-Fi
 credentials keep networking disabled; credentials are not needed for the
-Stage 9 USB baseline. For network testing, configure credentials locally
+Phase 9 USB baseline. For network testing, configure credentials locally
 without sharing generated headers or CMake caches.
 
 | Output under `build/pico/` | Purpose |
 | --- | --- |
 | `src/stage09_flash_storage/z80_stage09_flash_storage.uf2` | Deployable Phase 9 Pico firmware |
 | `src/stage09_flash_storage/z80_stage09_cpm_loader.uf2` | Automatic Phase 9 loader, independent of USB connection |
-| `src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2` | Deployable Stage 10 Pico firmware |
-| `cpm-stage09/` | Matching Stage 9 boot package, disks, manifest and complete flash image |
+| `src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2` | Deployable Phase 10 Pico firmware |
+| `cpm-stage09/` | Matching Phase 9 boot package, disks, manifest and complete flash image |
 | `cpm-stage09-loader/` | Matching automatic-loader provisioning set |
-| `cpm/` | Matching Stage 10 provisioning set |
+| `cpm/` | Matching Phase 10 provisioning set |
 
 The build generates UF2/binary images; it **does not flash or execute them**.
-The stage definitions retain their distinct clock configuration:
-Stage 9 uses nominal 20 MHz after complete load/verification, either on explicit
-commands or automatically on reset with the loader variant, while Stage 10
+The firmware variants retain their distinct clock configuration:
+Phase 9 uses nominal 20 MHz after complete load/verification, either on explicit
+commands or automatically on reset with the loader variant, while Phase 10
 retains its separate 1 MHz startup default. Neither is qualified by a build.
 The linker protects storage above firmware offset `0x290000`; the physical
 flash size remains 4 MiB.
 
 Use the [firmware build/provisioning reference](firmware-build.md) for other
-stage targets and
+phase firmware targets and
 [verified provisioning commands](firmware-build.md#72-flash-provisioning).
 Use matching boot-package and Drive A system images after BIOS changes.
 Full-flash provisioning replaces all disk contents; keep backups.

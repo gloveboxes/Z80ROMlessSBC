@@ -43,11 +43,11 @@ Never connect the 5 V Z80 signals directly to the Pico; route them through U7.
 The four monitored bits provide 16 distinct I/O ports. See
 [I/O ports and services](../system/io-ports.md) for
 [why A4 is monitored but A3 is not](../system/io-ports.md#why-a4-is-monitored-but-a3-is-not),
-fixed terminal/disk assignments and the Stage 9/10 shared service allocation.
+fixed terminal/disk assignments and the Phase 9/10 shared service allocation.
 
 ## Firmware and Tests
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 3 firmware built and loaded"> Build `z80_stage03_control_inputs`; UF2:
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 3 firmware built and loaded"> Build `z80_stage03_control_inputs`; UF2:
 `build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2`.
 [Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage03_mcp23s17/main.c).
 
@@ -77,7 +77,7 @@ remove the temporary pull. This tests WAIT independently of data direction.
 The complete application below is included from the repository at documentation
 build time, not copied into this page.
 
-??? example "Stage 3 application - src/stage03_mcp23s17/main.c"
+??? example "Phase 3 application - src/stage03_mcp23s17/main.c"
 
     ```c
     {% include "../../../../src/stage03_mcp23s17/main.c" %}

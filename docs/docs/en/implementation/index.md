@@ -2,7 +2,7 @@
 
 ## Start here
 
-**Scope: the three-BB830 breadboard prototype.** Phases 0-10 below describe
+**Scope: the three-BB830 breadboard prototype.** Phase 0-10 below describe
 incremental socket installation, jumper wiring, and breadboard bring-up.
 PCB migration is deferred and its historical documentation is hidden from
 this site. The existing PCB is incompatible with the current firmware;
@@ -17,7 +17,7 @@ Read the [construction guide](../hardware/construction.md) before handling
 the boards, then complete Phase 0 onward in order. Use the hardware pages as
 references, not as an instruction to wire and populate the whole computer at
 once. Prepare the [firmware build tools](../system/firmware-build.md) before
-Phase 1; use the maintained stage programs rather than assembling displayed
+Phase 1; use the maintained phase programs rather than assembling displayed
 source files into your own test firmware.
 
 For each phase:
@@ -58,7 +58,7 @@ For each phase:
 | [Frequency qualification](frequency-qualification.md) | Measured operating limit and complete timing evidence |
 
 The former Phase 7 CPU checks are consolidated into Phase 6. There is no
-separate Phase 7 target; Phases 8-10 retain their numbers and target names.
+separate Phase 7 target; Phase 8-10 retain their numbers and target names.
 
 Build and test one functional block at a time. Do not install the next
 chip until the current phase passes. Use sockets for all DIP devices,
@@ -88,7 +88,7 @@ Record idle current after each populated phase; Phase 0 needs only resistance
 and voltage readings. Unless stated otherwise, keep all chips
 from later phases out of their sockets.
 
-Phases 1-10 embed the complete maintained applications and relevant shared
+Phase 1-10 embed the complete maintained applications and relevant shared
 modules in collapsed **Maintained Source** sections. Expand a file to read
 the code compiled by the firmware build; MkDocs includes it directly from
 `src/` on every documentation build. Test plans include both existing diagnostic commands
@@ -98,7 +98,7 @@ Record any test not performed as **not verified**, rather than inferring a pass.
 
 ### Saved phase checklists
 
-The **Done** boxes and inline checkboxes on Phases 0-10 save progress in your
+The **Done** boxes and inline checkboxes on Phase 0-10 save progress in your
 browser on this device. Each phase has its own **Clear checklist** button
 with confirmation; clearing one phase does not clear another. Progress is
 not synced across devices and is removed if you clear the site's browser
@@ -112,7 +112,7 @@ permission to skip a prerequisite, or evidence that hardware timing is
 qualified. Leave deferred, optional, or unperformed tests unticked.
 
 The [source index](../reference/source-index.md) links the public headers,
-shared modules, and build definitions. Build each stage from the repository,
+shared modules, and build definitions. Build each phase from the repository,
 not by compiling the displayed files as standalone programs.
 
 `PIN_BUSACK_N` is GP0, driven from Z80 BUSACK# pin 23 through the

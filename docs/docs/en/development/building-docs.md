@@ -20,7 +20,7 @@ The generated website is written to `docs/site` from the repository root.
 
 ## Source-backed phase code
 
-Phases 1-10 use the existing `include-markdown` plugin's plain `include`
+Phase 1-10 use the existing `include-markdown` plugin's plain `include`
 directive inside fenced code blocks and collapsed `??? example` sections.
 Each section includes one complete maintained file from `src/`; do not paste
 firmware into Markdown or use line-number slices that drift when code changes.

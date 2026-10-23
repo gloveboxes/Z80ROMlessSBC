@@ -13,7 +13,7 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 
 ## Wiring - Pico 2 W
 
-<input type="checkbox" data-checklist-id="pico-wiring" aria-label="Pico installation and wiring complete"> Program Stage 1 off-board, disconnect USB, fit its soldered headers with USB
+<input type="checkbox" data-checklist-id="pico-wiring" aria-label="Pico installation and wiring complete"> Program Phase 1 off-board, disconnect USB, fit its soldered headers with USB
 toward row 1, then wire every connection in the
 [Pico table](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map).
 Continuity-check actual empty socket contacts and adjacent pins, not only
@@ -26,20 +26,20 @@ loops to equalize wire lengths.
   end="phase-1-pico-wiring-end</template>"
 %}
 
-## Stage 1 Firmware
+## Phase 1 Firmware
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 1 firmware built and loaded"> Build `z80_stage01_supervisor`; load
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 1 firmware built and loaded"> Build `z80_stage01_supervisor`; load
 `build/src/stage01_supervisor/z80_stage01_supervisor.uf2` using the
-[firmware/console procedure](../system/firmware-build.md#load-a-stage-and-open-its-console).
+[firmware/console procedure](../system/firmware-build.md#load-phase-firmware-and-open-its-console).
 [Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c).
 
 | Done | Command | Behavior | Measurement |
 | --- | --- | --- | --- |
-| <input type="checkbox" data-checklist-id="sample-inputs" aria-label="Stage 1 input sampling recorded"> | `s` | Sample input/data levels | Monitor inputs may float with U7 absent |
+| <input type="checkbox" data-checklist-id="sample-inputs" aria-label="Phase 1 input sampling recorded"> | `s` | Sample input/data levels | Monitor inputs may float with U7 absent |
 | <input type="checkbox" data-checklist-id="walking-controls" aria-label="All seven walking control outputs measured"> | `w` | Walk seven control outputs, 250 ms each | Scope the correct empty socket contact and neighbors |
 | <input type="checkbox" data-checklist-id="held-reset" aria-label="Held reset levels measured"> | `r` | Hold RESET# alternately HIGH/LOW | GP3/header 5 and Z80 socket 26: 3.20-3.40 V / near zero |
 | <input type="checkbox" data-checklist-id="held-data" aria-label="All eight held data outputs measured"> | `d` | Hold one data GPIO HIGH; advance D0-D7 | Probe U9/U10 A pins 2-9 |
-| <input type="checkbox" data-checklist-id="restore-defaults" aria-label="Stage 1 defaults restored and checked"> | `x` | Restore defaults and data inputs | Both OE requests HIGH; RESET LOW |
+| <input type="checkbox" data-checklist-id="restore-defaults" aria-label="Phase 1 defaults restored and checked"> | `x` | Restore defaults and data inputs | Both OE requests HIGH; RESET LOW |
 
 ## Single-Step Data-Pin Test
 
@@ -75,7 +75,7 @@ Floating monitor readings are not a pass or a fault by themselves.
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 1 application - src/stage01_supervisor/main.c"
+??? example "Phase 1 application - src/stage01_supervisor/main.c"
 
     ```c
     {% include "../../../../src/stage01_supervisor/main.c" %}

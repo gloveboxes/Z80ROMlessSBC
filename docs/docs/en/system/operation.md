@@ -109,7 +109,7 @@ The initial terminal decode is intentionally small:
 |----:|----|----|
 | `0x00` | Z80 `OUT` | Terminal transmit byte from Z80 to host terminal |
 | `0x00` | Z80 `IN` | Terminal receive byte from host to Z80; returns `0x00` if empty |
-| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit-ready (queue has room or transport disconnected), bit 7 = transport connected (USB in Stage 9; browser or fallback USB in Stage 10) |
+| `0x01` | Z80 `IN` | Terminal status: bit 0 = receive byte available, bit 1 = transmit-ready (queue has room or transport disconnected), bit 7 = transport connected (USB in Phase 9; browser or fallback USB in Phase 10) |
 
 Connected terminals retain the 512-byte output buffer. If it is full, a new
 Z80 output write is discarded and the TX-drop counter increments; older
@@ -121,7 +121,7 @@ terminal, output writes are discarded immediately and transmit-ready remains
 set, preventing CP/M console output from waiting for a client. Disconnecting
 clears queued output; reconnecting does not replay it. These intentional
 discards do not increment the terminal overflow counter.
-Stage 10 also clears queued input/output on browser/USB handover and rejects
+Phase 10 also clears queued input/output on browser/USB handover and rejects
 additional browser sessions without changing the active owner.
 Wi-Fi-only events leave USB-owned queues intact. The Phase 10 browser and
 firmware use a [sequenced, acknowledged binary protocol](../implementation/phase-10-websocket.md#acknowledged-terminal-protocol-version-3):
@@ -177,7 +177,7 @@ Use separate artifacts only for selective updates. The
 and addresses. Full provisioning, `flash_nuke.uf2`, and mass erase destroy
 existing disk contents and environment variables, so keep backups.
 
-Stage 9 and Stage 10 implement the
+Phases 9 and 10 implement the
 [ROMLESS-SVC/1 extended I/O protocol](io-ports.md), including persistent
 environment variables. ENV uses the unused boot-partition tail, not the disk
 journal. Exact firmware-only and boot-package-only updates preserve it;
@@ -192,14 +192,14 @@ Z80's external SRAM. Directory writes flush immediately. Other writes flush
 on cache eviction, an explicit BIOS request, warm boot, or 250 ms of
 inactivity.
 
-Stage 9 waits for USB commands rather than automatically executing CP/M:
+Phase 9 waits for USB commands rather than automatically executing CP/M:
 Ctrl+] `l` loads/verifies with slow injected clocks and holds reset afterward;
 Ctrl+] `g` starts at nominal 20 MHz using a 120 MHz supervisor clock.
 The manifest must describe a complete 65,536-byte image beginning with
 `JP FD00h`. BIOS reports on reserved port `0x05` distinguish cold entry
 (`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
-and filesystem tests remain necessary. The separate Stage 9 automatic-loader
-target and Stage 10 use automatic verified startup at nominal 20 MHz.
+and filesystem tests remain necessary. The separate Phase 9 automatic-loader
+target and Phase 10 use automatic verified startup at nominal 20 MHz.
 
 A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
 At startup, firmware replays complete, CRC-valid committed entries and rejects

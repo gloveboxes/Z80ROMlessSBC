@@ -100,7 +100,7 @@ not make USB-only operation safe. Never enable both data paths at once.
 
 ## Firmware and Tests
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 5 firmware built and loaded"> Build `z80_stage05_data_bus`; UF2 lives in `build/src/stage05_data_bus/`.
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 5 firmware built and loaded"> Build `z80_stage05_data_bus`; UF2 lives in `build/src/stage05_data_bus/`.
 [Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage05_data_bus/main.c).
 
 <input type="checkbox" data-checklist-id="upward-fixture" aria-label="Upward data test fixture fitted with CPU and SRAM absent"> For upward `d` patterns, temporarily pull **raw RD# LOW through 1 kOhm** with
@@ -145,7 +145,7 @@ These complete files are included from the repository at documentation build
 time, not copied into this page. The shared bus module also implements the
 four-bit port sampling used in Phase 3.
 
-??? example "Stage 5 application - src/stage05_data_bus/main.c"
+??? example "Phase 5 application - src/stage05_data_bus/main.c"
 
     ```c
     {% include "../../../../src/stage05_data_bus/main.c" %}

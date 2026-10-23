@@ -1,7 +1,7 @@
 # 0. Project Inventory
 
 This is the **eight-active-package assisted-loader design**, excluding the
-power diode and the external Stage 10 matrix module. No PLD, PLD programmer,
+power diode and the external Phase 10 matrix module. No PLD, PLD programmer,
 address expander, or reset transistor is needed. Match the complete part
 number and PDIP package before ordering.
 
@@ -33,7 +33,7 @@ Do not interchange AHCT, AHC, HCT, HC, or LVC parts. Pico headers must be
 soldered, not merely pushed through unsoldered holes. U5/U6/U8 are not fitted;
 reference gaps retain continuity with existing project labels.
 
-### Stage 10 Display Module
+### Phase 10 Display Module
 
 | Done | Qty | Reference | Part | Role |
 | --- | ---: | --- | --- | --- |
@@ -42,7 +42,7 @@ reference gaps retain continuity with existing project labels.
 A2 is additional to the eight base packages and is shown off-board in the
 schematic, without a PCB footprint. Use the backpack's fitted pull-ups to
 3.3 V, or provide external 3.3 V pull-ups if absent. See the
-[Stage 10 display wiring](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix)
+[Phase 10 display wiring](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix)
 for GP22 SDA, GP26 SCL, power, and bench-tested operation.
 
 ## Passive Components

@@ -17,7 +17,7 @@ see [Building and Testing Pico C Firmware](firmware-testing.md).
 
 ## Breadboard-first, shared Pico firmware
 
-The staged Pico applications remain focused on the breadboard construction
+The phase-based Pico applications remain focused on the breadboard construction
 and bring-up plan. The existing PCB is for the superseded circuit and is not
 compatible with this firmware. Its migration is deferred; do not manufacture
 it or use the new firmware on that layout without separately updating wiring.
@@ -28,7 +28,7 @@ Phase 10 1 MHz default. This does not qualify combined Wi-Fi/storage operation
 or the deferred PCB. Operating-frequency qualification remains specific to
 each physical build.
 
-All stages configure `clk_sys` to 144 MHz at SDK startup. The 12 MHz crystal
+All phase firmware targets configure `clk_sys` to 144 MHz at SDK startup. The 12 MHz crystal
 feeds PLL_SYS with reference divider 1, a 1440 MHz VCO, and post-dividers 5 and 2.
 This stays within the RP2350's rated limits and lets integer PWM generate a
 nominally exact 8 MHz Z80 clock (`144 MHz / 18`) with 50% duty cycle. USB keeps
@@ -36,16 +36,16 @@ its separate 48 MHz PLL; peripheral/PIO timing uses the configured system clock.
 This does not change the 1 MHz Z80 startup default or qualify 8 MHz hardware
 operation. See the [frequency qualification plan](../implementation/frequency-qualification.md).
 
-Stages 9 and 10 are explicit exceptions: after safe startup and before initializing
+Phases 9 and 10 are explicit exceptions: after safe startup and before initializing
 USB it selects a 120 MHz supervisor clock, then uses nominal 20 MHz PWM only
 after complete SRAM loading/verification. The diagnostic variant starts on
 command; the automatic loader starts on Pico reset without waiting for USB.
 Their clock/CPU/trap chain is compiled
-separately with the existing 20 MHz opt-in; other stages retain their own
+separately with the existing 20 MHz opt-in; other phases retain their own
 limits/defaults. This is an operating assumption, not new bench qualification.
 
-Shared firmware does not make every early-stage diagnostic safe on a fully
-populated PCB. Respect each stage's required device population and test
+Shared firmware does not make every early-phase diagnostic safe on a fully
+populated PCB. Respect each phase's required device population and test
 preconditions, especially walking-output tests intended for empty destination
 sockets.
 
@@ -56,13 +56,13 @@ the supervisor and diagnostics; **Z80 programs** run from SRAM after the Pico
 loads them by feeding instructions to the Z80. No PLD or external programmer
 is required; the HCT32 implements fixed combinational logic.
 
-During construction, load only the Pico stage matching the hardware you have
-installed. Stage 10 and the complete flash image assume the whole circuit is
-ready; they are not substitutes for Stage 1 diagnostics. The phase pages link
+During construction, load only the Pico firmware matching the phase of hardware you have
+installed. Phase 10 and the complete flash image assume the whole circuit is
+ready; they are not substitutes for Phase 1 diagnostics. The phase pages link
 their maintained applications, and the [source index](../reference/source-index.md)
-lists the stage directories.
+lists the corresponding source directories.
 
-Phase numbers match the `stageNN_*` directory numbers, not the documentation's
+Phase numbers match the `NN` values in source directory names, not the documentation's
 section numbers (for example, section 8.2 is Phase 1). Directory names describe
 the firmware diagnostic, so they need not repeat the hardware phase title.
 `src/stage00_power/` contains only a checklist: Phase 0 has no Pico firmware
@@ -88,10 +88,10 @@ Build the target in the table for your phase. Its UF2 is written to
 
 ## 7.1 Firmware and CP/M Build
 
-The repository implements the cumulative firmware stages under `src/`.
+The repository implements the cumulative phase firmware under `src/`.
 The former Phase 7 CPU fixture is now the Phase 6 bus-grant diagnostic;
-Phases 8-10 keep their existing numbers and target names.
-Stage 10 includes the journaled flash disks, CP/M boot loader, and WebSocket
+Phase 8-10 keep their existing numbers and target names.
+Phase 10 includes the journaled flash disks, CP/M boot loader, and WebSocket
 terminal. Its host build also assembles the board-native CP/M 2.2 BIOS,
 assembles the optimized CCP/BDOS from `cpm64_z80.asm`, and emits all
 provisionable images.
@@ -130,9 +130,9 @@ See the
 [Phase 10 setup procedure](../implementation/phase-10-websocket.md).
 Remote-FS I/O remains deferred.
 
-### Building from the Stage 1 directory
+### Building from the Phase 1 directory
 
-The stage directories are not standalone CMake projects: they depend on the
+These source directories are not standalone CMake projects: they depend on the
 repository's top-level CMake configuration. `cmake --build` requires an
 already configured build tree; `mkdir build` alone does not create one.
 If it reports that the build directory is missing or that `CMakeCache.txt`
@@ -150,15 +150,15 @@ cmake --build build --target z80_stage01_supervisor -j
 
 As above, adjust the toolchain and SDK paths for your installation. Here,
 `-S ../..` selects the repository root, while `-B build` writes the generated
-build tree inside the current stage directory. The UF2 is therefore at
+build tree inside the current source directory. The UF2 is therefore at
 `src/stage01_supervisor/build/src/stage01_supervisor/z80_stage01_supervisor.uf2`
 relative to the repository root. Run subsequent build commands from the same
-stage directory; root-level build and flashing examples elsewhere on this
+source directory; root-level build and flashing examples elsewhere on this
 page assume a repository-root `build/` tree instead.
 
 ### Building the full image set
 
-The Stage 1 target builds the first hardware diagnostic. When you reach the
+The Phase 1 target builds the first hardware diagnostic. When you reach the
 storage/terminal phases, use the repository-root configuration above and run
 this from the repository root to build the full image set:
 
@@ -167,7 +167,7 @@ cmake --build build --target z80_cpm_images -j
 ```
 
 The
-`z80_cpm_images` target builds Stage 10 and writes these files to `build/cpm/`:
+`z80_cpm_images` target builds Phase 10 and writes these files to `build/cpm/`:
 
 | Artifact | Purpose |
 | --- | --- |
@@ -190,7 +190,7 @@ cmake --build build --target z80_stage09_cpm_images -j
 ```
 
 It writes the same artifact names to `build/cpm-stage09/`, but the complete
-flash image contains Stage 9 firmware, not Stage 10. Stage 9 waits with RESET
+flash image contains Phase 9 firmware, not Phase 10. Phase 9 waits with RESET
 LOW until Ctrl+] `l` loads/verifies SRAM and Ctrl+] `g` starts at nominal
 20 MHz. Its optional Ctrl+] `t` read-only Z80 disk test requires a reboot
 and fresh load before CP/M execution. See the
@@ -220,19 +220,19 @@ Run the host regression checks with:
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 ```
 
-### Load a stage and open its console
+### Load phase firmware and open its console
 
 1. Disconnect the bench supply and USB before changing installed devices.
-  For initial Stage 1 loading, program the Pico off the breadboard so USB
+  For initial Phase 1 loading, program the Pico off the breadboard so USB
   cannot energize untested wiring. Do this before fitting it and adding
   signal jumpers in Phase 1.
 2. Hold the Pico's **BOOTSEL** button while connecting its USB data cable to
   the computer, then release it. It appears as a removable drive in this
   mode, not as the application's serial port. BOOTSEL does not erase flash
   by itself.
-3. Load your phase's UF2 and reboot. The commands below are for Stage 1;
+3. Load your phase's UF2 and reboot. The commands below are for Phase 1;
   for later phases, use the UF2 path for that phase from the table above.
-4. For initial Stage 1 setup, disconnect USB, fit the Pico, and complete the
+4. For initial Phase 1 setup, disconnect USB, fit the Pico, and complete the
   [Phase 1 wiring checks](../implementation/phase-1-supervisor.md#wiring-pico-2-w)
   with all power disconnected. Apply external +5 V before reconnecting USB,
   then open its USB serial port using a
@@ -240,7 +240,7 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
   port belonging to this Pico. No external USB-to-UART adapter is required.
 5. Select 115200 baud, 8 data bits, no parity, 1 stop bit, and no flow control
   if the terminal asks. This is USB CDC, so baud rate does not set Z80 clock
-  speed. Commands are single characters, such as Stage 1 `s` for status and
+  speed. Commands are single characters, such as Phase 1 `s` for status and
   `w` for walking outputs; no Enter is required. Only one terminal program
   can use the port at a time.
 
@@ -250,7 +250,7 @@ external +5 V. Do not program or run the populated board from USB alone:
 U9's AHCT245 data ports lack power-off isolation. Remove the Pico with both
 supplies disconnected if USB-only programming is needed.
 
-Stage 1 programming commands for step 3, run from the repository root:
+Phase 1 programming commands for step 3, run from the repository root:
 
 ```sh
 picotool load -v build/src/stage01_supervisor/z80_stage01_supervisor.uf2
@@ -259,14 +259,14 @@ picotool reboot
 
 The port disappears during BOOTSEL/reboot and may get a different name when
 the application returns. Reconnect the terminal if needed. A missed startup
-banner is not a failed boot: try the stage's status command. If no port
+banner is not a failed boot: try the phase's status command. If no port
 appears, first check that the cable carries data, the UF2 is for Pico 2 W,
 and the application has left BOOTSEL mode.
 
 ### macOS console with picocom
 
 Install `picocom` once, then list the USB serial ports with the Pico running
-the stage firmware (not in BOOTSEL mode):
+the phase firmware (not in BOOTSEL mode):
 
 ```sh
 brew install picocom
@@ -281,7 +281,7 @@ picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbm
 ```
 
 Follow the power sequence above before connecting USB. Keep `picocom` open
-during console-driven tests. For Stage 1, type `s` to sample the inputs and
+during console-driven tests. For Phase 1, type `s` to sample the inputs and
 `w` to run the control-output walking-one test; neither command needs Enter.
 Run `w` only with the required Phase 1 hardware population. To exit `picocom`,
 press **Ctrl+A**, then **Ctrl+X**. Close it before programming the Pico again
@@ -297,7 +297,7 @@ or opening another terminal on the same port.
 ### Reusable Python flashing tools
 
 Routine updates use `scripts/pico_flash.py`; standalone serial discovery and
-Stage 9 commands use `scripts/pico_supervisor.py`. Their complete setup,
+Phase 9 commands use `scripts/pico_supervisor.py`. Their complete setup,
 same-shell `.venv-flash` activation/preflight, examples, command options and
 troubleshooting now live under
 [Tools: Pico flashing and USB supervisor](../tools/pico-tools.md).
@@ -306,7 +306,7 @@ For an already matching installation, follow the
 [firmware-only update procedure](../tools/pico-tools.md#firmware-updates).
 It confirms stop/flush, gracefully closes verified picocom owners, and verifies
 the programmed bytes without post-flash boot checks. Automatic stop speaks the
-currently running Stage 9 protocol; other running phases require their own safe
+currently running Phase 9 protocol; other running phases require their own safe
 stop before using `--stopped`.
 
 #### Selective disk updates without backups
@@ -325,7 +325,7 @@ On new/disposable storage, build `z80_stage09_cpm_loader_images` and use its
 `build/cpm-stage09-loader/z80romless-flash.bin` instead of the manual image in
 the full-provisioning example below.
 
-For **Stage 9**, build `z80_stage09_cpm_images`, enter BOOTSEL with the
+For **Phase 9**, build `z80_stage09_cpm_images`, enter BOOTSEL with the
 documented external-5-V-before-USB sequence, then provision new/disposable
 storage using:
 
@@ -334,7 +334,7 @@ picotool load -v build/cpm-stage09/z80romless-flash.bin -t bin -o 0x10000000
 picotool reboot
 ```
 
-To preserve drives B-D and the journal, selectively update the Stage 9
+To preserve drives B-D and the journal, selectively update the Phase 9
 firmware, boot package and matching Drive A system image:
 
 ```sh
@@ -353,7 +353,7 @@ Before a selective disk-image update, complete a clean stop/flush. If a fault
 left a committed journal entry, recover and verify that old/new block first;
 do not let a pending replay overwrite part of a newly provisioned disk image.
 
-The remaining examples provision the final **Stage 10** network image.
+The remaining examples provision the final **Phase 10** network image.
 For a new or disposable flash, put the Pico in BOOTSEL mode and write the
 complete image. This erases existing CP/M disk contents, the journal and
 [persistent environment variables](io-ports.md#persistent-environment-api):
@@ -377,6 +377,6 @@ picotool reboot
 ```
 
 After association, browse to `http://<pico-dhcp-address>:8088/`. The USB serial
-console reports Stage 10 startup and accepts `s` to print terminal queue/drop
+console reports Phase 10 startup and accepts `s` to print terminal queue/drop
 counts and disk/fatal status. CP/M disk writes are persistent; full reprovisioning
 replaces their contents without backups in this development workflow.

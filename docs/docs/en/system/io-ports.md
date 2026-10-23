@@ -3,8 +3,8 @@
 The Pico provides virtual peripherals through Z80 `IN` and `OUT` instructions.
 This page owns the port allocation and the **ROMLESS-SVC/1** extended-service
 protocol, compatible with the ESP32 Altair `io_ports.h` and dcc `DXSVC.H`
-client. Extended services are implemented in both Stage 9 variants and Stage 10.
-Stage 8 retains its original bring-up diagnostics.
+client. Extended services are implemented in both Phase 9 variants and Phase 10.
+Phase 8 retains its original bring-up diagnostics.
 
 Maintained sources:
 [transport and timers](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_ports.c),
@@ -29,8 +29,8 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x02` | 2 | Shared service command (OUT) / status (IN) | Implemented |
 | `0x03` | 3 | Shared service length-prefixed request bytes (OUT) | Implemented |
 | `0x04` | 4 | Shared service length-prefixed response bytes (IN) | Implemented |
-| `0x05` | 5 | BIOS cold-entry/CCP-handoff reports; Stage 9 disk-test and Stage 10 qualification results | Reserved for diagnostics |
-| `0x06` | 6 | Stage 9 disk-test bytes and Stage 10 qualification data; Stage 8 test results | Reserved for diagnostics |
+| `0x05` | 5 | BIOS cold-entry/CCP-handoff reports; Phase 9 disk-test and Phase 10 qualification results | Reserved for diagnostics |
+| `0x06` | 6 | Phase 9 disk-test bytes and Phase 10 qualification data; Phase 8 test results | Reserved for diagnostics |
 | `0x07` | 7 | Spare; ESP32 interrupt timer is deferred on this hardware | Unallocated |
 | `0x10` | 16 | Disk command (OUT) / status (IN) | Fixed |
 | `0x11` | 17 | Disk drive selection | Fixed |
@@ -45,7 +45,7 @@ This assigns or reserves **15 ports and leaves one spare**. A port supports
 both IN and OUT, so a command and its status can share one number.
 
 The BIOS emits `B0h` on port `0x05` at cold entry and `C0h` immediately before
-handoff to CCP (including warm boot). Stage 9 observes these as execution
+handoff to CCP (including warm boot). Phase 9 observes these as execution
 milestones, not proof of a working CP/M prompt. Its read-only disk test uses
 port `0x06` for compared bytes and `5Ah`/`E1h` on port `0x05` for completion/
 failure. These diagnostic meanings are mode-specific and do not change the
@@ -142,7 +142,7 @@ report failure and RESET. Reading status never acknowledges COMPLETE.
 
 ### Bounded trap work
 
-Stage 9/10 dispatch the already-masked port directly to the terminal, disk or
+Phases 9/10 dispatch the already-masked port directly to the terminal, disk or
 extended-service handler. Terminal and disk requests do not probe the list of
 extended-service ports. Adding service groups behind `0x02-0x04` therefore
 does not add dispatch checks to those existing hot paths.
@@ -186,8 +186,8 @@ All integer request fields and binary results are little-endian.
 | Clock `0x20` | `[0]` uptime seconds; `[1]` UTC ISO 8601; `[2]` local ISO 8601; `[3]` long local date; `[4]` DATE-style local date/time | Text |
 | Utility `0x21` | `[0]` random; `[1, selector]` system info; `[2, 0xA5]` confirmed reboot; `[3]` version; `[4, state]` set onboard LED; `[5]` read LED state | Two random bytes, text, COMPLETE, or one LED-state byte |
 | Environment `0x30` | Operations below | Text or COMPLETE |
-| Weather `0x40` | `[0, field_id]` reads text; `[1]` reads status | Phase 10 cached weather; Stage 9 UNAVAILABLE |
-| Chat `0x50` | Reset/append/submit/status/chunk operations below | Phase 10 streaming OpenAI/Ollama; Stage 9 UNAVAILABLE |
+| Weather `0x40` | `[0, field_id]` reads text; `[1]` reads status | Phase 10 cached weather; Phase 9 UNAVAILABLE |
+| Chat `0x50` | Reset/append/submit/status/chunk operations below | Phase 10 streaming OpenAI/Ollama; Phase 9 UNAVAILABLE |
 | Sense HAT `0x60` | Recognized group without a Pico driver | UNAVAILABLE |
 
 There are **four countdown timers**: IDs 0-2 take 0-65535 milliseconds;
@@ -200,9 +200,9 @@ There are **three stopwatches**, IDs 0-2. Reads do not reset them. A latched
 32-bit millisecond count wraps after about 49.7 days; seconds wrap after
 about 136 years. Internal deadlines and uptime use a 64-bit monotonic clock.
 
-Stage 10 starts SNTP against `pool.ntp.org` after Wi-Fi association. Calendar
+Phase 10 starts SNTP against `pool.ntp.org` after Wi-Fi association. Calendar
 operations return CLOCK_UNSYNCED until the first valid synchronization.
-Stage 9 has no network time source and returns CLOCK_UNSYNCED for calendar
+Phase 9 has no network time source and returns CLOCK_UNSYNCED for calendar
 queries. Uptime remains available in both. Local formatting uses persistent
 `TZ` in POSIX timezone syntax (for example, `AEST-10`); an absent `TZ` means UTC.
 
@@ -492,7 +492,7 @@ retains its original launch path and reports weather UNAVAILABLE.
 
 System-info selectors are 0 = hostname `z80romless-sbc`, 1 = current Wi-Fi
 IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
-UNAVAILABLE without a connection, including Stage 9. Reboot requires the
+UNAVAILABLE without a connection, including Phase 9. Reboot requires the
 exact confirmation byte `0xA5`; it flushes queued/cached disk writes, then
 core 0 disables traps, holds reset, isolates the data paths and stops the
 clock before watchdog reboot. New disk commands are gated before the reboot
@@ -502,7 +502,7 @@ instead.
 
 ### Onboard LED device
 
-Stages 9 and 10 expose the Pico 2 W onboard LED through Utility group `0x21`,
+Phases 9 and 10 expose the Pico 2 W onboard LED through Utility group `0x21`,
 using the existing shared-service ports `0x02`-`0x04`. No wiring changes,
 expansion GPIOs, or additional port IDs are needed; `0x07` remains spare
 for a future interrupt timer.
@@ -516,10 +516,10 @@ for a future interrupt timer.
 - An initial read after firmware boot initializes the LED off; an initial
   write applies the requested state directly. Its state is not persisted to
   flash, and transport RESET does not undo it.
-- Both stages initialize the wireless-chip driver lazily if necessary.
-  Stage 9 uses the SDK's LED-only `pico_cyw43_arch_none` backend: no Wi-Fi
+- Both phases initialize the wireless-chip driver lazily if necessary.
+  Phase 9 uses the SDK's LED-only `pico_cyw43_arch_none` backend: no Wi-Fi
   association or network stack is enabled, and the USB terminal and nominal
-  20 MHz Z80 operation are unchanged. Stage 10 also works with empty Wi-Fi
+  20 MHz Z80 operation are unchanged. Phase 10 also works with empty Wi-Fi
   credentials or without a network connection. Driver initialization/write
   failures return UNAVAILABLE; a failed write does not update the reported state.
 
@@ -663,7 +663,7 @@ work never run inside the I/O trap.
 
 Host tests cover framing, aliases, recovery, timer boundaries and latching,
 ENV commands/capacity, unchanged-write suppression, snapshot recovery,
-calendar formatting, stage routing and flash-safe ownership. These are
+calendar formatting, phase routing and flash-safe ownership. These are
 software checks, not bench timing or physical power-cut qualification.
 
 - [Phase 3](../implementation/phase-3-address-generator.md) owns address wiring.

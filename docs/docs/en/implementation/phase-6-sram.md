@@ -24,7 +24,7 @@ INT/NMI have pulls to +5 V; M1 goes to TP1; HALT/RFSH outputs remain open.
 
 ## Firmware and Loader Qualification
 
-<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 6 firmware built and loaded"> Build `z80_stage06_sram_loader`; UF2:
+<input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 6 firmware built and loaded"> Build `z80_stage06_sram_loader`; UF2:
 `build/src/stage06_sram_dma/z80_stage06_sram_loader.uf2`.
 [Application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage06_sram_dma/main.c)
 and [loader protocol](../hardware/address-interface.md#loader-sequence).
@@ -222,7 +222,7 @@ performs the comparisons while executing from SRAM at the selected rate;
 these are not clock-output-only tests or slow-loader readback results.
 
 The target compiles its clock, CPU, SRAM and I/O-trap chain separately with
-`Z80_EXPERIMENTAL_12MHZ`. Normal stages and the original PWM diagnostic
+`Z80_EXPERIMENTAL_12MHZ`. Normal phases and the original PWM diagnostic
 retain their **8 MHz maximum**. The Pico system clock remains 144 MHz,
 with no fractional PWM divider or PLL retuning.
 
@@ -789,7 +789,7 @@ No normal-run MHz claim follows from slow injected tests alone.
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 6 application - src/stage06_sram_dma/main.c"
+??? example "Phase 6 application - src/stage06_sram_dma/main.c"
 
     ```c
     {% include "../../../../src/stage06_sram_dma/main.c" %}

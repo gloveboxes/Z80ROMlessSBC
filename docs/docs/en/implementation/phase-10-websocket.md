@@ -24,7 +24,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 
 | Update | Exact task name | What changes |
 | --- | --- | --- |
-| Firmware | **Flash Pico - Stage 10** | Builds and flashes firmware; preserves disks and ENV settings |
+| Firmware | **Flash Pico - Phase 10 WebSocket terminal** | Builds and flashes firmware; preserves disks and ENV settings |
 | All disks | **Flash Pico - All disks (A-D)** | Replaces A-D; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
@@ -36,7 +36,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 - Disk tasks do not rebuild firmware or applications. Install updated applications into the source disk first.
 - Setup/details: [firmware build and provisioning](../system/firmware-build.md) and [VS Code disk tasks](../tools/pico-tools.md#vs-code-disk-flashing-tasks).
 
-<input type="checkbox" data-checklist-id="firmware-first-connection" aria-label="Phase 10 built and provisioned"> Stage 10 firmware deployed.
+<input type="checkbox" data-checklist-id="firmware-first-connection" aria-label="Phase 10 built and provisioned"> Phase 10 firmware deployed.
 
 ??? example "First checkout or manual build"
 
@@ -351,10 +351,10 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 
 ### Maintained source
 
-Stage 10 compiles the Phase 9 application with `Z80_STAGE09_AUTOBOOT=1` and
+Phase 10 compiles the Phase 9 application with `Z80_STAGE09_AUTOBOOT=1` and
 `Z80_STAGE10_NETWORK=1`; it does not maintain a separate loader.
 
-- [Stage 10 build configuration](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt)
+- [Phase 10 build configuration](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt)
 - [Browser page and update tool](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/stage10_websocket_terminal/Terminal) (CMake compresses changes automatically)
 - [WebSocket server fork](https://github.com/gloveboxes/pico-ws-server) (publish submodule changes to the fork before updating the parent gitlink)
 

@@ -45,7 +45,7 @@ Keep the CPU, SRAM and data translators absent throughout this phase.
 
 | Done | Test | Procedure and pass condition |
 | --- | --- | --- |
-| <input type="checkbox" data-checklist-id="stage-firmware" aria-label="Stage 2 firmware built and loaded"> | Firmware | Build `z80_stage02_buffers_clock` and load its UF2 from `build/src/stage02_buffers_clock/`. See the [maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c) |
+| <input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 2 firmware built and loaded"> | Firmware | Build `z80_stage02_buffers_clock` and load its UF2 from `build/src/stage02_buffers_clock/`. See the [maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage02_buffers_clock/main.c) |
 | <input type="checkbox" data-checklist-id="held-buffer-levels" aria-label="All three buffer input and output level pairs measured"> | Buffer levels | Press `d` for each LOW/HIGH step and probe U4 pairs 2/18, 4/16 and 6/14. Inputs are near 0/3.3 V; outputs are near 0/+5 V, LOW below 0.3 V and HIGH at least 4.4 V. The seventh step or `x` restores defaults |
 | <input type="checkbox" data-checklist-id="clock-waveforms" aria-label="All three unloaded clock rates qualified"> | Clock | Use `1`, `2`, `3` for 1 kHz, 100 kHz and 1 MHz. At U4 pin 18 and Z80 socket pin 6 verify frequency, 45-55% duty, and no runt pulses or threshold-crossing ringing. HIGH must reach measured CPU VCC minus 0.5 V: at 5.0 V, at least 4.5 V |
 | <input type="checkbox" data-checklist-id="inhibit-wait" aria-label="SRAM inhibit and WAIT behavior measured"> | Inhibit and WAIT | Drive raw RD# and IORQ# LOW one at a time through 1 kOhm. SRAM OE stays HIGH while boot inhibit is HIGH; WAIT is LOW only while IORQ and IO_RELEASE are both LOW |
@@ -62,7 +62,7 @@ Never drive a connected Pico GPIO or another active output.
 
 | Done | Step |
 | --- | --- |
-| <input type="checkbox" data-checklist-id="gate-fixture-ready" aria-label="OR gate fixture configured safely"> | Set the fixture ground, voltage range and current limit; keep Stage 2 loaded and do not use the Stage 1 walking test |
+| <input type="checkbox" data-checklist-id="gate-fixture-ready" aria-label="OR gate fixture configured safely"> | Set the fixture ground, voltage range and current limit; keep Phase 2 loaded and do not use the Phase 1 walking test |
 | <input type="checkbox" data-checklist-id="gate-1-input-1-isolated" aria-label="U4 output 7 disconnected from U3 input 1"> | Gate 1: disconnect U4 output 7 from U3 input 1 |
 | <input type="checkbox" data-checklist-id="gate-1-input-2-isolated" aria-label="U4 output 14 disconnected from U3 input 2"> | Gate 1: disconnect U4 output 14 from U3 input 2 |
 | <input type="checkbox" data-checklist-id="gate-1-input-1-fixture" aria-label="Fixture output A connected to U3 input 1"> | Gate 1: attach fixture output A to U3 input 1 |
@@ -97,7 +97,7 @@ unloaded socket clock only; repeat with the CPU fitted.
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Stage 2 application - src/stage02_buffers_clock/main.c"
+??? example "Phase 2 application - src/stage02_buffers_clock/main.c"
 
     ```c
     {% include "../../../../src/stage02_buffers_clock/main.c" %}

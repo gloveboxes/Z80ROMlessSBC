@@ -27,8 +27,8 @@ are not 5 V-tolerant pads. Do not rely on GP0-GP25 FT tolerance during power-off
 | GP19 | 25 | A1 input | U7 pin 7 | Input |
 | GP20 | 26 | A2 input | U7 pin 5 | Input |
 | GP21 | 27 | A4 input | U7 pin 3 | Input |
-| GP22 | 29 | Expansion GPIO / Stage 10 matrix SDA | J2 pin 2 | Unconfigured until matrix service |
-| GP26 | 31 | Expansion GPIO / ADC0 / Stage 10 matrix SCL | J2 pin 3 | Unconfigured until matrix service |
+| GP22 | 29 | Expansion GPIO / Phase 10 matrix SDA | J2 pin 2 | Unconfigured until matrix service |
+| GP26 | 31 | Expansion GPIO / ADC0 / Phase 10 matrix SCL | J2 pin 3 | Unconfigured until matrix service |
 | GP27 | 32 | RD# input | U7 pin 14 | Input |
 | GP28 | 34 | WR# input | U7 pin 12 | Input |
 
@@ -48,8 +48,8 @@ future PCB migration. The existing PCB does not yet include this header.
 | J2 pin | Net | Pico physical header pin | Use |
 | ---: | --- | ---: | --- |
 | 1 | `PICO_GP8` | 11 | GP8 digital GPIO |
-| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Stage 10 matrix SDA |
-| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Stage 10 matrix SCL |
+| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Phase 10 matrix SDA |
+| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Phase 10 matrix SCL |
 | 4 | `+3V3` | 36 | Pico 3.3 V output; not an external supply input |
 | 5 | `GND` | 3,8,13,18,23,28,33,38 | Common ground |
 
@@ -61,7 +61,7 @@ current-limiting resistor for each LED. External I2C pull-ups must go to
 remaining current budget with Wi-Fi, the LVC devices, and existing pulls;
 do not back-feed pin 4 or assume a dedicated peripheral power allowance.
 
-Earlier stages leave these GPIOs unconfigured. Stage 10 uses GP22 as SDA and
+Earlier phases leave these GPIOs unconfigured. Phase 10 uses GP22 as SDA and
 GP26 as SCL for the [HT16K33 matrix](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix);
 GP8 remains available. The schematic shows this bench wiring as external
 module A2, powered from J2 pin 4 with common GND on pin 5; A2 has no PCB

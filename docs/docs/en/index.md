@@ -16,7 +16,7 @@ USB terminal; Phase 10 adds a browser-based WebSocket terminal.
 After bring-up, the [Phase 9 automatic loader](implementation/phase-9-flash-storage.md#automatic-cpm-loader)
 starts CP/M on Pico reset, ready for a later picocom connection.
 
-This guide covers the hardware, firmware, and staged tests needed to reproduce
+This guide covers the hardware, firmware, and phased tests needed to reproduce
 the build. Validate your own wiring and operation as you go; clock-rate
 qualification and timing margins require measurements on your build.
 
@@ -57,8 +57,8 @@ USB interrupts and endpoint operations remain on core 1.
 [![Hardware, multicore firmware and ROMless boot architecture](images/system-architecture.svg)](images/system-architecture.svg)
 
 [Open or download the full-size SVG](images/system-architecture.svg).
-The diagram follows the maintained Stage 10 implementation, which compiles
-the Stage 9 automatic-loader application with networking enabled.
+The diagram follows the maintained Phase 10 implementation, which compiles
+the Phase 9 automatic-loader application with networking enabled.
 
 ## Explore further
 

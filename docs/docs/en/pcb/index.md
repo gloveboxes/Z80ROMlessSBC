@@ -23,7 +23,7 @@ incremental jumper-wiring instructions as PCB assembly instructions.
 | [PCB inventory](inventory.md) | PCB-specific fitted parts, sockets, connectors, mechanical items, and differences from the breadboard BOM |
 | [Design considerations](design-considerations.md) | Layer stack, component placement, power sequencing, routing, timing, and assembly constraints |
 | [Shared electrical reference](../hardware/pin-mapping.md) | Exact IC pin assignments and SRAM-control logic |
-| [Current breadboard firmware](../system/firmware-build.md) | Stage programs, CP/M images, Pico provisioning; not compatible with this previous PCB |
+| [Current breadboard firmware](../system/firmware-build.md) | Phase programs, CP/M images, Pico provisioning; not compatible with this previous PCB |
 
 ## Board preview
 

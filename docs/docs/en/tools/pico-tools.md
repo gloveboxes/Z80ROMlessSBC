@@ -5,7 +5,7 @@ Use these maintained Python command-line tools from the repository root:
 | Tool | Purpose |
 | --- | --- |
 | [scripts/pico_flash.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_flash.py) | Verified firmware updates, selective CP/M disk replacement, BOOTSEL preparation and journal checks |
-| [scripts/pico_supervisor.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_supervisor.py) | Serial discovery and standalone Stage 9 status, help, clean stop and optional boot checks |
+| [scripts/pico_supervisor.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/scripts/pico_supervisor.py) | Serial discovery and standalone Phase 9 status, help, clean stop and optional boot checks |
 
 For build targets, first-time full provisioning, or coordinated firmware/BIOS
 changes, use [Firmware build and provisioning](../system/firmware-build.md).
@@ -24,9 +24,9 @@ Never power the populated board from USB alone. `--power-confirmed` records
 the operator's confirmation; it does not measure the power rails.
 
 The automatic pre-flash stop and standalone supervisor commands speak the
-**currently running Stage 9 protocol**. They do not infer that protocol from
-the target UF2. If another phase is running, obtain its stage-appropriate safe
-stopped state first, then use `--stopped`. Do not send Stage 9 commands to
+**currently running Phase 9 protocol**. They do not infer that protocol from
+the target UF2. If another phase is running, obtain its phase-appropriate safe
+stopped state first, then use `--stopped`. Do not send Phase 9 commands to
 unknown firmware or treat a timeout as permission to force a reset.
 
 ## Environment setup
@@ -79,7 +79,7 @@ name changes.
 
 ## Firmware updates
 
-To update an already matching Stage 9 installation, save CP/M work and keep
+To update an already matching Phase 9 installation, save CP/M work and keep
 external +5 V applied. The firmware command **gracefully disconnects picocom
 and stops/flushes the CPU by default**, then writes only the firmware:
 
@@ -219,7 +219,7 @@ python -c 'import sys, serial; print("Using", sys.executable)' &&
 python scripts/pico_flash.py prepare --power-confirmed
 ```
 
-`prepare` still disconnects picocom, stops/flushes the Stage 9 CPU, enters
+`prepare` still disconnects picocom, stops/flushes the Phase 9 CPU, enters
 BOOTSEL and checks the journal. It leaves the Pico in BOOTSEL; it is not a
 passive status query. Routine firmware/disk commands need no separate
 preparation invocation.
@@ -247,7 +247,7 @@ and `prepare`:
 | `--power-confirmed` | Required confirmation that external +5 V remains applied |
 | `--serial DEVICE_SERIAL` | Select the intended Pico by USB serial number |
 | `--port PORT` | Restrict initial USB serial-port discovery |
-| `--timeout SECONDS` | Stage 9 response timeout; finite positive number, default 60 seconds |
+| `--timeout SECONDS` | Phase 9 response timeout; finite positive number, default 60 seconds |
 | `--no-disconnect` | Refuse occupied ports rather than gracefully closing picocom |
 | `--stopped` | Skip serial stop/flush only after the operator confirmed a safe clean stop |
 | `--bootsel` | Target already in ROM BOOTSEL; requires `--stopped --serial DEVICE_SERIAL` and bypasses serial commands |
@@ -257,7 +257,7 @@ and `prepare`:
 not because it always leaves BOOTSEL. The `journal` subcommand takes only
 the required `--serial DEVICE_SERIAL` selector.
 
-## Standalone Stage 9 supervisor commands
+## Standalone Phase 9 supervisor commands
 
 Unlike flashing, standalone supervisor commands **refuse occupied ports**
 instead of disconnecting picocom. Close the terminal first. Connections use
@@ -266,11 +266,11 @@ on completion or failure.
 
 | Command | Behavior |
 | --- | --- |
-| `ports` | List serial devices without opening them; no Stage 9 protocol required |
+| `ports` | List serial devices without opening them; no Phase 9 protocol required |
 | `status` | Send Ctrl+] then `s` and print the diagnostic status; not a full health qualification |
 | `help` | Send Ctrl+] then `h` and print the firmware's supervisor menu |
 | `stop` | Query status, then stop/flush if running; confirm clean storage and the CPU held stopped |
-| `wait-boot` | Await a fresh CP/M prompt, then require a healthy Stage 9 status; does not reset the Pico |
+| `wait-boot` | Await a fresh CP/M prompt, then require a healthy Phase 9 status; does not reset the Pico |
 
 For example, to query the current status:
 
@@ -308,7 +308,7 @@ resetting. Do not add this check to routine flashing.
 
 Use `--help` after either script name or a flash subcommand for its CLI usage;
 this does not access hardware. Supervisor `help` without the leading `--`
-instead communicates with the running Stage 9 firmware.
+instead communicates with the running Phase 9 firmware.
 
 Host regression tests do not stop or flash hardware:
 

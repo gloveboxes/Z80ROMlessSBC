@@ -68,7 +68,7 @@ SN74HCT32N and U4 SN74AHCT244N, use the separate `z80_reset_meter`
 application for static measurements. U7 SN74LVC244AN, U9 SN74AHCT245N
 and U10 SN74LVC245AN may be absent. This is a troubleshooting exception,
 **not permission to skip the normal population order or a Phase 4/6 pass**.
-Do not use the ordinary Stage 2 output walk or the active address diagnostic
+Do not use the ordinary Phase 2 output walk or the active address diagnostic
 with this partial population.
 
 The guide never releases reset, drives the data bus, reads missing monitor
@@ -190,7 +190,7 @@ The complete application below is included from the repository at documentation
 build time, not copied into this page. Its active diagnostic remains deferred
 until Phase 6.
 
-??? example "Stage 4 application - src/stage04_address_bus/main.c"
+??? example "Phase 4 application - src/stage04_address_bus/main.c"
 
     ```c
     {% include "../../../../src/stage04_address_bus/main.c" %}
