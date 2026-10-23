@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-10-21T15:16:57")
+		(date "2026-10-23T12:23:07")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -2978,6 +2978,47 @@
 					(num "14")
 					(name "VCC")
 					(type "power_in")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "HT16K33_MATRIX")
+			(description "Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX")
+			(fields
+				(field
+					(name "Reference") "A")
+				(field
+					(name "Value") "HT16K33 8x8 MATRIX")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX")
+			)
+			(pins
+				(pin
+					(num "+")
+					(name "VCC")
+					(type "power_in")
+				)
+				(pin
+					(num "-")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "C")
+					(name "SCL")
+					(type "input")
+				)
+				(pin
+					(num "D")
+					(name "SDA")
+					(type "bidirectional")
 				)
 			)
 		)

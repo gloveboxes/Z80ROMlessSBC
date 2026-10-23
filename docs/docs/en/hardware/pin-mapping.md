@@ -48,8 +48,8 @@ future PCB migration. The existing PCB does not yet include this header.
 | J2 pin | Net | Pico physical header pin | Use |
 | ---: | --- | ---: | --- |
 | 1 | `PICO_GP8` | 11 | GP8 digital GPIO |
-| 2 | `PICO_GP22` | 29 | GP22 digital GPIO |
-| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 analogue input |
+| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Stage 10 matrix SDA |
+| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Stage 10 matrix SCL |
 | 4 | `+3V3` | 36 | Pico 3.3 V output; not an external supply input |
 | 5 | `GND` | 3,8,13,18,23,28,33,38 | Common ground |
 
@@ -63,7 +63,9 @@ do not back-feed pin 4 or assume a dedicated peripheral power allowance.
 
 Earlier stages leave these GPIOs unconfigured. Stage 10 uses GP22 as SDA and
 GP26 as SCL for the [HT16K33 matrix](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix);
-GP8 remains available. This bench wiring does not change the schematic or PCB.
+GP8 remains available. The schematic shows this bench wiring as external
+module A2, powered from J2 pin 4 with common GND on pin 5; A2 has no PCB
+footprint. The existing PCB remains unchanged and deferred.
 GP3 is RESET#, not a fourth spare pin. As defined in the
 [RP2350 GPIO function table](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf),
 GP8, GP22, and GP26 offer SDA functions but no hardware I2C SCL, and do not

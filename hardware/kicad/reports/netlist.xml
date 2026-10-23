@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-10-21T15:16:55</date>
+    <date>2026-10-23T12:23:06</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -81,6 +81,31 @@
             <pin num="23"/>
             <pin num="22"/>
             <pin num="21"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="A2">
+      <value>Adafruit HT16K33 8x8 MATRIX</value>
+      <description>External Stage 10 matrix; pins use printed backpack markings, not connector positions; 3.3V supply and I2C pull-ups</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">External Stage 10 matrix; pins use printed backpack markings, not connector positions; 3.3V supply and I2C pull-ups</field>
+      </fields>
+      <libsource lib="Z80SBC" part="HT16K33_MATRIX" description="Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1709f962-84c3-5791-9e1c-8d50e359bd38</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="D"/>
+            <pin num="C"/>
+            <pin num="-"/>
+            <pin num="+"/>
           </pins>
         </unit>
       </units>
@@ -1295,6 +1320,22 @@
         <pin num="14" name="VCC" type="power_in"/>
       </pins>
     </libpart>
+    <libpart lib="Z80SBC" part="HT16K33_MATRIX">
+      <description>Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">HT16K33 8x8 MATRIX</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX</field>
+      </fields>
+      <pins>
+        <pin num="+" name="VCC" type="power_in"/>
+        <pin num="-" name="GND" type="power_in"/>
+        <pin num="C" name="SCL" type="input"/>
+        <pin num="D" name="SDA" type="bidirectional"/>
+      </pins>
+    </libpart>
     <libpart lib="Z80SBC" part="LVC244">
       <description>Z80ROMlessSBC project symbol: SN74LVC244AN</description>
       <fields>
@@ -1578,6 +1619,7 @@
   <nets>
     <net code="1" name="/+3V3" class="Default">
       <node ref="A1" pin="36" pinfunction="3V3_OUT_36" pintype="power_out"/>
+      <node ref="A2" pin="+" pinfunction="VCC_+" pintype="power_in"/>
       <node ref="C5" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="C7" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="J2" pin="4" pinfunction="3V3_OUT_4" pintype="passive"/>
@@ -1782,6 +1824,7 @@
       <node ref="A1" pin="33" pinfunction="AGND_33" pintype="power_in"/>
       <node ref="A1" pin="38" pinfunction="GND7_38" pintype="power_in"/>
       <node ref="A1" pin="8" pinfunction="GND2_8" pintype="power_in"/>
+      <node ref="A2" pin="-" pinfunction="GND_-" pintype="power_in"/>
       <node ref="C1" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C10" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C11" pin="2" pinfunction="-_2" pintype="passive"/>
@@ -1935,10 +1978,12 @@
     </net>
     <net code="60" name="/PICO_GP22" class="Default">
       <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional"/>
+      <node ref="A2" pin="D" pinfunction="SDA_D" pintype="bidirectional"/>
       <node ref="J2" pin="2" pinfunction="GP22_2" pintype="passive"/>
     </net>
     <net code="61" name="/PICO_GP26" class="Default">
       <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional"/>
+      <node ref="A2" pin="C" pinfunction="SCL_C" pintype="input"/>
       <node ref="J2" pin="3" pinfunction="GP26_ADC0_3" pintype="passive"/>
     </net>
     <net code="62" name="/PICO_IORQ_N" class="Default">

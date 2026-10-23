@@ -1,8 +1,9 @@
 # 0. Project Inventory
 
 This is the **eight-active-package assisted-loader design**, excluding the
-power diode. No PLD, PLD programmer, address expander, or reset transistor is
-needed. Match the complete part number and PDIP package before ordering.
+power diode and the external Stage 10 matrix module. No PLD, PLD programmer,
+address expander, or reset transistor is needed. Match the complete part
+number and PDIP package before ordering.
 
 <div data-checklist="hardware-inventory" data-checklist-label="hardware inventory" markdown="1">
 
@@ -31,6 +32,18 @@ on this device, separately from the implementation-phase checklists.
 Do not interchange AHCT, AHC, HCT, HC, or LVC parts. Pico headers must be
 soldered, not merely pushed through unsoldered holes. U5/U6/U8 are not fitted;
 reference gaps retain continuity with existing project labels.
+
+### Stage 10 Display Module
+
+| Done | Qty | Reference | Part | Role |
+| --- | ---: | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="a2-matrix" aria-label="HT16K33 8x8 matrix backpack available"> | 1 | A2 | Adafruit HT16K33 8x8 LED matrix backpack | External 3.3 V PIO I2C moving-row diagnostic |
+
+A2 is additional to the eight base packages and is shown off-board in the
+schematic, without a PCB footprint. Use the backpack's fitted pull-ups to
+3.3 V, or provide external 3.3 V pull-ups if absent. See the
+[Stage 10 display wiring](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix)
+for GP22 SDA, GP26 SCL, power, and bench-tested operation.
 
 ## Passive Components
 

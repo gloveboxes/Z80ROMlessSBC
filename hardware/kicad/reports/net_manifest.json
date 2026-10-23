@@ -1,9 +1,10 @@
 {
   "generated_by": "scripts/build-kicad-schematic.py",
   "schematic": "hardware/kicad/z80_romless_sbc.kicad_sch",
-  "component_count": 40,
+  "component_count": 41,
   "components": [
     "A1",
+    "A2",
     "C1",
     "C10",
     "C11",
@@ -50,6 +51,12 @@
       "value": "Raspberry Pi Pico 2 W",
       "footprint": "Module:RaspberryPi_Pico_Common_THT",
       "description": "Z80ROMlessSBC Raspberry Pi Pico 2 W"
+    },
+    "A2": {
+      "symbol": "HT16K33_MATRIX",
+      "value": "Adafruit HT16K33 8x8 MATRIX",
+      "footprint": "",
+      "description": "External Stage 10 matrix; pins use printed backpack markings, not connector positions; 3.3V supply and I2C pull-ups"
     },
     "C1": {
       "symbol": "CAPACITOR",
@@ -292,6 +299,7 @@
   "nets": {
     "+3V3": [
       "A1.36",
+      "A2.+",
       "C5.1",
       "C7.1",
       "J2.4",
@@ -496,6 +504,7 @@
       "A1.33",
       "A1.38",
       "A1.8",
+      "A2.-",
       "C1.2",
       "C10.2",
       "C11.2",
@@ -645,10 +654,12 @@
     ],
     "PICO_GP22": [
       "A1.29",
+      "A2.D",
       "J2.2"
     ],
     "PICO_GP26": [
       "A1.31",
+      "A2.C",
       "J2.3"
     ],
     "PICO_GP8": [

@@ -15,8 +15,11 @@ than maintaining a second loader. It retains the 120 MHz Pico system clock
 and nominal **20 MHz Z80 clock** selected for that tested baseline. Networked
 operation at that rate still requires the combined acceptance tests below.
 
-**Install/wiring:** Pico 2 W onboard Wi-Fi only. No bus, pin, flash-layout,
-disk-geometry or BIOS changes. The existing PCB remains deferred.
+**Install/wiring:** Pico 2 W onboard Wi-Fi plus the external
+[HT16K33 8x8 matrix](#ht16k33-8x8-matrix): SDA on GP22, SCL on GP26,
+powered from Pico 3.3 V with common GND and 3.3 V I2C pull-ups.
+No Z80 bus, flash-layout, disk-geometry or BIOS changes. The existing PCB
+remains deferred.
 
 ## First connection and USB provisioning
 
@@ -466,13 +469,18 @@ custom PIO I2C on core 1. This is a moving-row diagnostic, not an IP address
 or uptime display. The earlier OLED and software-I2C experiments are not
 part of the maintained firmware.
 
-| Backpack connection | Pico connection |
-| --- | --- |
-| `+` / VCC | 3V3, physical header pin 36 |
-| `-` / GND | Common GND |
-| `C` / SCL | GP26, physical header pin 31 |
-| `D` / SDA | GP22, physical header pin 29 |
-| Vi2c / IO, if fitted | 3V3 |
+The schematic shows the external backpack as **A2**, connected to the same
+nets as J2. Symbol pin identifiers use the backpack's printed `+`, `-`, `C`,
+and `D` markings, not an assumed connector pin order. A2 is an off-board
+module with no PCB footprint.
+
+| Backpack connection | Pico connection | J2 equivalent |
+| --- | --- | --- |
+| `+` / VCC | 3V3, physical header pin 36 | Pin 4 |
+| `-` / GND | Common GND | Pin 5 |
+| `C` / SCL | GP26, physical header pin 31 | Pin 3 |
+| `D` / SDA | GP22, physical header pin 29 | Pin 2 |
+| Vi2c / IO, if fitted | 3V3 | Pin 4 |
 
 Both I2C pull-ups must go to **3.3 V**, never 5 V; GP26 is not 5 V tolerant.
 Use the backpack's pull-ups if fitted. Follow the board power sequence

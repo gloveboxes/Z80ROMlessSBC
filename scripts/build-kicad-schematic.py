@@ -290,6 +290,16 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin(5, "GND", "passive", "left"),
         ],
     ),
+    "HT16K33_MATRIX": (
+        "A",
+        "HT16K33 8x8 MATRIX",
+        [
+            pin("+", "VCC", "power_in", "left"),
+            pin("-", "GND", "power_in", "left"),
+            pin("C", "SCL", "input", "left"),
+            pin("D", "SDA", "bidirectional", "left"),
+        ],
+    ),
     "TESTPOINT": (
         "TP", "M1# TEST", [pin(1, "TP", "passive", "left")]
     ),
@@ -363,7 +373,7 @@ def build_symbol_geometry(symbol_name: str, *, embedded: bool) -> SymbolGeometry
         pinNames=True,
         pinNamesOffset=1.0,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name != "PWR_FLAG",
+        onBoard=symbol_name not in ("PWR_FLAG", "HT16K33_MATRIX"),
         properties=[
             property_value("Reference", reference_prefix, 0, -half_height - 5.08),
             property_value("Value", default_value, 0, half_height + 5.08),
@@ -451,7 +461,7 @@ def add_component(
         position=pos(x, y, 0),
         unit=1,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name != "PWR_FLAG",
+        onBoard=symbol_name not in ("PWR_FLAG", "HT16K33_MATRIX"),
         uuid=symbol_uuid,
         properties=instance_properties(
             reference, value,
@@ -635,6 +645,11 @@ add_component(
     {1: "PICO_GP8", 2: "PICO_GP22", 3: "PICO_GP26", 4: "+3V3", 5: "GND"},
     footprint="Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
     description="3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting",
+)
+add_component(
+    "A2", "HT16K33_MATRIX", "Adafruit HT16K33 8x8 MATRIX", 1016.0, 254.0,
+    {"+": "+3V3", "-": "GND", "C": "PICO_GP26", "D": "PICO_GP22"},
+    description="External Stage 10 matrix; pins use printed backpack markings, not connector positions; 3.3V supply and I2C pull-ups",
 )
 add_component("D1", "DIODE", "1N5819", 127.0, 50.8, {1: "VSYS", 2: "+5V"}, footprint="Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal")
 add_component("#FLG01", "PWR_FLAG", "PWR_FLAG", 203.2, 50.8, {1: "VSYS"})
@@ -828,12 +843,19 @@ schematic.texts.extend([
         effects=effects(1.27),
         uuid=uid("text:expansion-note"),
     ),
+    Text(
+        text="A2: external Stage 10 matrix, no PCB footprint.\\nD/SDA = J2.2 / GP22; C/SCL = J2.3 / GP26.\\n+ = J2.4 / 3V3; - = J2.5 / GND.\\nBackpack I2C pull-ups to 3.3V only, never 5V.\\nPIO I2C on core 1; tested address 0x72.\\nBench-tested moving row every 500ms.\\nPins use printed markings, not connector order.",
+        position=pos(1016.0, 292.1, 0),
+        effects=effects(1.27),
+        uuid=uid("text:matrix-note"),
+    ),
 ])
 
 
 required_endpoints = {
     "VSYS": {"D1.1", "A1.39"},
-    "GND": {"A1.38"},
+    "GND": {"A1.38", "J2.5", "A2.-"},
+    "+3V3": {"A1.36", "J2.4", "A2.+"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},
     "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},
@@ -852,8 +874,8 @@ for net, required in required_endpoints.items():
 
 for net, required in {
     "PICO_GP8": {"A1.11", "J2.1"},
-    "PICO_GP22": {"A1.29", "J2.2"},
-    "PICO_GP26": {"A1.31", "J2.3"},
+    "PICO_GP22": {"A1.29", "J2.2", "A2.D"},
+    "PICO_GP26": {"A1.31", "J2.3", "A2.C"},
 }.items():
     actual = set(net_endpoints.get(net, []))
     if actual != required:

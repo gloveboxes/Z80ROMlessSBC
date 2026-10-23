@@ -35,6 +35,8 @@ FIXED_ENDPOINT_NETS = {
     "A1.11": "PICO_GP8", "A1.29": "PICO_GP22", "A1.31": "PICO_GP26",
     "J2.1": "PICO_GP8", "J2.2": "PICO_GP22", "J2.3": "PICO_GP26",
     "J2.4": "+3V3", "J2.5": "GND",
+    "A2.+": "+3V3", "A2.-": "GND",
+    "A2.C": "PICO_GP26", "A2.D": "PICO_GP22",
 }
 DOCUMENTED_NO_CONNECTS = {
     "U1.18", "U1.28", "U2.1", "U3.11", "U4.3", "U4.5",

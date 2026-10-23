@@ -14,6 +14,14 @@ the PCB and fabrication package have not been updated. All expansion signals
 are 3.3 V only, with no fixed pulls or level shifting. See the
 [expansion pin map and interface limits](../../docs/docs/en/hardware/pin-mapping.md#j2-peripheral-expansion).
 
+The schematic also shows **A2**, the external Adafruit HT16K33 8x8 matrix
+operating in Stage 10: `D`/SDA joins GP22 (J2 pin 2), `C`/SCL joins GP26
+(J2 pin 3), `+` joins Pico 3.3 V (J2 pin 4), and `-` joins common GND
+(J2 pin 5). Symbol pin identifiers are the backpack's printed markings, not
+connector positions. A2 is excluded from the PCB and has no footprint;
+backpack pull-ups must connect to 3.3 V, never 5 V. See the
+[Stage 10 wiring and bench results](../../docs/docs/en/implementation/phase-10-websocket.md#ht16k33-8x8-matrix).
+
 This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
 The Pico 2 W is horizontal in the bottom-left corner with USB flush to the
