@@ -22,8 +22,10 @@ constexpr size_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
 constexpr uint32_t OUTPUT_COALESCE_US = 1000;
 constexpr uint32_t PROTOCOL_VERSION = 3;
 constexpr uint32_t FRAME_RETRY_MS = 250;
-constexpr uint32_t HEARTBEAT_MS = 5000;
-constexpr uint32_t CLIENT_TIMEOUT_MS = 15000;
+constexpr uint32_t HEARTBEAT_MS = 5u * 60u * 1000u;
+constexpr uint32_t PONG_TIMEOUT_MS = 5u * 60u * 1000u;
+constexpr uint8_t MAX_MISSED_PONGS = 4;
+constexpr uint32_t OUTPUT_ACK_TIMEOUT_MS = 15000;
 enum : uint8_t {
   OUTPUT = 1, INPUT = 2, OUTPUT_ACK = 3, INPUT_ACK = 4,
   HELLO = 5, READY = 6,
@@ -59,11 +61,12 @@ std::atomic<int32_t> active_connection{-1};
 std::atomic<bool> pending_connected{false};
 std::atomic<bool> pending_disconnected{false};
 absolute_time_t hello_retry;
-absolute_time_t client_deadline;
 absolute_time_t ping_retry;
+absolute_time_t pong_deadline;
 uint32_t ping_sequence;
 uint8_t ping_payload[4];
 bool awaiting_pong;
+uint8_t missed_pongs;
 uint32_t session_network_generation;
 bool network_online;
 
@@ -119,8 +122,9 @@ void reset_session() {
   publish_buffer_usage();
   output_batch_deadline = nil_time;
   hello_retry = ping_retry = nil_time;
-  client_deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
   awaiting_pong = false;
+  missed_pongs = 0;
+  pong_deadline = nil_time;
 }
 
 void close_connection(WebSocketServer &websocket, uint32_t connection) {
@@ -242,7 +246,8 @@ void on_pong(WebSocketServer &, uint32_t connection,
       length == sizeof(ping_payload) &&
       memcmp(data, ping_payload, length) == 0) {
     awaiting_pong = false;
-    client_deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
+    missed_pongs = 0;
+    pong_deadline = nil_time;
     ping_retry = make_timeout_time_ms(HEARTBEAT_MS);
   }
 }
@@ -296,20 +301,37 @@ void poll_output() {
   int32_t connection = active_connection.load(std::memory_order_acquire);
   if (connection < 0)
     return;
-  if (time_reached(client_deadline) ||
-      (output_count && time_reached(output_frames[output_head].deadline))) {
+  if (output_count && time_reached(output_frames[output_head].deadline)) {
     increment_stat(terminal_stats.timeouts);
     printf("[network] Terminal client timed out; restoring USB.\n");
     disconnect_client();
     return;
   }
-  if (time_reached(ping_retry)) {
-    if (!awaiting_pong) {
-      write_sequence(ping_payload, ++ping_sequence);
-      awaiting_pong = true;
+  if (awaiting_pong && time_reached(pong_deadline)) {
+    awaiting_pong = false;
+    pong_deadline = nil_time;
+    if (++missed_pongs > MAX_MISSED_PONGS) {
+      increment_stat(terminal_stats.timeouts);
+      printf("[network] Terminal client missed too many PONGs; restoring USB.\n");
+      disconnect_client();
+      return;
     }
-    server->sendPing((uint32_t)connection, ping_payload, sizeof(ping_payload));
-    ping_retry = make_timeout_time_ms(FRAME_RETRY_MS);
+    // The next heartbeat is due now: each ping attempt remains five minutes
+    // apart, whether or not the previous ping received a pong.
+    ping_retry = nil_time;
+  }
+  if (!awaiting_pong && time_reached(ping_retry)) {
+    write_sequence(ping_payload, ++ping_sequence);
+    if (server->sendPing((uint32_t)connection, ping_payload,
+                         sizeof(ping_payload))) {
+      awaiting_pong = true;
+      // A queued ping is outstanding until its matching PONG or the client
+      // timeout. Do not retransmit it every poll; retry only failed enqueues.
+      ping_retry = nil_time;
+      pong_deadline = make_timeout_time_ms(PONG_TIMEOUT_MS);
+    } else {
+      ping_retry = make_timeout_time_ms(FRAME_RETRY_MS);
+    }
   }
   if (!protocol_ready) {
     if (time_reached(hello_retry)) {
@@ -335,7 +357,7 @@ void poll_output() {
     write_sequence(frame.data + 1, output_sequence++);
     frame.length = HEADER_BYTES + staged_output_length;
     frame.retry = nil_time;
-    frame.deadline = make_timeout_time_ms(CLIENT_TIMEOUT_MS);
+    frame.deadline = make_timeout_time_ms(OUTPUT_ACK_TIMEOUT_MS);
     frame.sent = false;
     retained_output_bytes += staged_output_length;
     ++output_count;

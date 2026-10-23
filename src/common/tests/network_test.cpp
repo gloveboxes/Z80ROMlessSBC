@@ -623,10 +623,13 @@ int main() {
   message(1, OUTPUT_ACK, output_sequence - 1);
   assert(z80_web_terminal_get_stats().ack_max_us == FRAME_RETRY_MS * 1000);
 
-  // Idle vanished browsers time out even when the Pico Wi-Fi link remains up.
-  pong(100);
-  advance(CLIENT_TIMEOUT_MS);
-  poll_terminal();
+  // Pings remain five minutes apart; four missed PONGs are tolerated.
+  for (unsigned miss = 0; miss <= MAX_MISSED_PONGS; ++miss) {
+    advance(PONG_TIMEOUT_MS);
+    poll_terminal();
+    if (miss < MAX_MISSED_PONGS)
+      assert(connected);
+  }
   assert(!connected && active_connection.load() == -1 && fake_link == CYW43_LINK_UP);
   assert(z80_web_terminal_get_stats().timeouts >= 1);
   connect_client(2);

@@ -118,7 +118,7 @@ Passwords and API keys are hidden during entry and masked on display.
 | CP/M still does not respond | Use **Ctrl-] s** to inspect boot evidence, disk errors, queue drops and browser ownership. A working web page does not prove Z80 operation. |
 | USB ignores normal typing | A browser owns CP/M. Close it to return to USB; USB supervisor commands still work. |
 | Second browser cannot connect | Only one browser may own the terminal. |
-| Browser disappears | USB ownership returns on disconnect/Wi-Fi loss, or after a 15-second liveness timeout. The Z80 keeps running. |
+| Browser disappears | USB ownership returns on disconnect/Wi-Fi loss, or after five missed pongs; pings are sent every five minutes. The Z80 keeps running. |
 | Wrong address | Use the Pico's address, not `FS_SERVER`. HTTP/WebSocket use port 8088; `?altair=<pico-ip>` changes the host only. |
 | Configuration save fails | Reopen **Ctrl-] c**, inspect saved values and retry affected fields. |
 
@@ -230,7 +230,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 - <input type="checkbox" data-checklist-id="tx-order-overflow" aria-label="Ordered output and bounded queues tested"> **Traffic:** sustain output and paste over 128 bytes. Check order, zero drops/faults and no duplicate output when ACKs pause.
 - <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="CP/M keys and status tested"> **Keys:** test Ctrl+C, Ctrl+Z, Ctrl+M/Enter, ESC, arrows, Insert/Delete and Page Up/Down. Ctrl+M is carriage return.
 - <input type="checkbox" data-checklist-id="cpm-storage-acceptance" aria-label="Combined terminal and disk operations tested"> **Disks:** repeat [Phase 9 sentinel, A-D, warm-boot and copy tests](phase-9-flash-storage.md#pass-gate) through the browser.
-- <input type="checkbox" data-checklist-id="reconnect-races" aria-label="USB fallback and Wi-Fi recovery tested"> **Recovery:** disconnect browser/Wi-Fi during output and writes; verify USB fallback and no stale replay. Suspend the browser computer; verify fallback after 15 seconds. Without a browser, Wi-Fi changes must preserve USB queues.
+- <input type="checkbox" data-checklist-id="reconnect-races" aria-label="USB fallback and Wi-Fi recovery tested"> **Recovery:** disconnect browser/Wi-Fi during output and writes; verify USB fallback and no stale replay. Suspend the browser computer; verify missed-pong counting and fallback after the fifth missed response. Without a browser, Wi-Fi changes must preserve USB queues.
 - **Settings:** reboot and verify persistence. Reject invalid/overlong values, hide secrets and report failed saves.
 - **Weather:** run CLOCK with Wi-Fi/time ready; verify conditions, units and forecast while typing and using disks. Drop Wi-Fi: cached values remain readable with increasing age. Test invalid/missing keys and recovery without reboot.
 - **Performance:** compare CLOCK redraws and active-play BREAKOUT response. Record bytes/second, key-to-echo latency and maximum network-poll gaps during reads, cached writes and flash commits.
@@ -304,7 +304,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     - **Input:** one frame waits for RX space; admission/rejected ACKs retry each pass. ACK means queued, not executed. The browser caps pending input at 64 KiB, rejects an overflowing paste entirely and warns when disconnect discards input.
     - **Bounds:** 69-byte incoming messages; queued payload at most 1,024 bytes/16 messages; dispatch at most eight per connection/pass. Overflow disconnects.
     - **Memory:** maximum build buffer 521 bytes; four frames use 2,084 of 5,840 TCP send-buffer bytes. Core-1 stack is 8 KiB in main RAM. These are not total memory-use measurements.
-    - **Cleanup:** one-second close grace; callback-safe abort also runs offline. Heartbeat pings every 5 seconds; no valid pong for 15 seconds releases ownership.
+    - **Cleanup:** one-second close grace; callback-safe abort also runs offline. Heartbeat pings every 5 minutes. A missing pong is counted at the next heartbeat; the fifth miss releases ownership.
 
 ### Terminal performance diagnostics
 

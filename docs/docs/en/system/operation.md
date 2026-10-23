@@ -129,8 +129,9 @@ up to four 512-byte output frames are retained in flight and cumulatively acknow
 after xterm consumes them. Output survives temporary send failures without
 duplication. One pending browser input frame waits for RX-queue space and is
 admitted on the next service pass rather than waiting for retransmission or
-evicting older bytes. A 15-second
-ping/pong or output-ACK timeout releases a vanished/stalled browser to USB.
+evicting older bytes. The terminal sends a ping every five minutes. A missing
+pong is counted at the next five-minute heartbeat; a fifth miss releases the
+browser to USB. A stalled output ACK still times out after 15 seconds.
 
 This is enough for ROM monitors, BASIC, CP/M console glue, and small
 diagnostics. If later software needs modem-control style signals, add
