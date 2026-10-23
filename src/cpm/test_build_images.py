@@ -556,6 +556,13 @@ class BuildImagesTest(unittest.TestCase):
                 [self.native_drive] * build_images.DRIVE_COUNT,
             )
 
+    def test_complete_flash_requires_exactly_four_disks(self) -> None:
+        for count in (0, 3, 5):
+            with self.subTest(count=count), self.assertRaisesRegex(ValueError, "four disks"):
+                build_images.build_flash_image(
+                    b"firmware", self.package, [self.native_drive] * count
+                )
+
     def test_complete_flash_layout(self) -> None:
         firmware = b"stage10"
         disks = [self.native_drive] * build_images.DRIVE_COUNT

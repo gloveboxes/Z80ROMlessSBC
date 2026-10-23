@@ -100,7 +100,7 @@ Use a matching boot package and Drive A system image after BIOS changes.
 
 ## Native auto-run
 
-The builder requires Python 3.10+, `z80asm`, and `cpmtools` (`cpmcp` and
+The builder requires Python 3.9+, `z80asm`, and `cpmtools` (`cpmcp` and
 `cpmrm`). It produces `AUTORUN.COM` and replaces the old Altair utility in
 user 0 on the generated native drive A. Other files and drives are preserved.
 Provision a **matching boot package and native drive A** to install this

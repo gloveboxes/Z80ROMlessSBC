@@ -121,8 +121,8 @@ The `disks` command handles one or more selected drives end-to-end. For example:
 . .venv-flash/bin/activate &&
 python -c 'import sys, serial; print("Using", sys.executable)' &&
 python scripts/pico_flash.py disks \
-  --drive B=src/disks/bdsc-v1.60.dsk \
-  --drive C=src/disks/escape-posix.dsk \
+  --drive B=src/disks/source-altair/bdsc-v1.60.dsk \
+  --drive C=src/disks/source-altair/escape-posix.dsk \
   --power-confirmed
 ```
 
@@ -178,20 +178,25 @@ Open **Tasks: Run Task** from the Command Palette and select one of:
 | Task | Replaced drives | Input images (paths relative to the repository root) |
 | --- | --- | --- |
 | **Flash Pico - All disks (A-D)** | A, B, C, D | All four images below |
-| **Flash Pico - Drive A** | A only | `build/cpm-stage09-loader/drive_a_cpm63k-z80.img` |
-| **Flash Pico - Drive B** | B only | `build/cpm-stage09-loader/drive_b_bdsc.img` (BDS C) |
+| **Flash Pico - Drive A** | A only | `src/disks/source-altair/cpm63k.dsk`, regenerated as native A before flashing |
+| **Flash Pico - Drive B** | B only | `src/disks/source-altair/bdsc-v1.60.dsk` (BDS C) |
 | **Flash Pico - Drive C** | C only | `src/disks/source-altair/escape-posix.dsk` (Escape) |
-| **Flash Pico - Drive D** | D only | `build/cpm-stage09-loader/drive_d_blank.img` (blank) |
+| **Flash Pico - Drive D** | D only | `src/disks/source-altair/blank.dsk` (blank) |
 
-These tasks do not rebuild firmware or CP/M applications. Drive C uses the
-maintained framed Escape source disk, which the flash tool validates and
-converts at deployment time, avoiding stale generated copies of `CLOCK.COM`.
-After rebuilding an application, install it into that source disk before
-running the task. A, B and D use existing prepared native images. All inputs
-must already exist and contain the files you intend to deploy. A fresh checkout needs the
-[CP/M image-build workflow](../system/firmware-build.md#building-the-full-image-set)
-first. Drive A must match the installed boot package; the flash tool checks this
-before writing any selected disk.
+All disk tasks read the current disks in `src/disks/source-altair/`, never
+stale images from an earlier firmware build. B-D are validated and converted
+by the flash tool at deployment time. After rebuilding an application, install
+it into the corresponding source disk before running the task.
+
+The all-disks and A-only tasks first convert the current source disks into
+`build/cpm-disk-update/converted/`, then run the CP/M image builder to create
+`build/cpm-disk-update/drive_a_cpm63k-z80.img`. This replaces A's Altair system
+tracks with native CCP/BDOS and BIOS records and installs native `AUTORUN.COM`;
+other files are preserved and native auto-run starts disabled. It requires
+`z80asm` and `cpmtools` (`cpmcp` and `cpmrm`). Source disks and tracked
+`src/disks/generated/` images are not modified. Drive A must match the installed
+boot package; the flash tool checks this before writing any selected disk.
+These tasks do not rebuild or flash firmware or CP/M applications.
 
 The confirmation defaults to **Cancel**. Select **Replace selected disks** only
 after saving CP/M work and applying external +5 V before USB. Each task activates

@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 from contextlib import redirect_stdout
 import io
+import json
 from pathlib import Path
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -15,6 +17,50 @@ from pico_supervisor import FlashError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 IMAGE_BYTES = flash.cpm_images.DISK_IMAGE_BYTES
+
+
+class DiskFlashTaskTests(unittest.TestCase):
+    def test_disk_tasks_use_current_source_disks(self) -> None:
+        tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
+        source_images = {
+            "A": "build/cpm-disk-update/drive_a_cpm63k-z80.img",
+            "B": "src/disks/source-altair/bdsc-v1.60.dsk",
+            "C": "src/disks/source-altair/escape-posix.dsk",
+            "D": "src/disks/source-altair/blank.dsk",
+        }
+        labels = ["Flash Pico - All disks (A-D)", *(
+            f"Flash Pico - Drive {drive}" for drive in "ABCD"
+        )]
+        for label in labels:
+            with self.subTest(task=label):
+                task = next(task for task in tasks if task["label"] == label)
+                command = task["command"]
+                stages = [shlex.split(stage.strip()) for stage in command.split("&&")]
+                flash_index = next(
+                    index for index, stage in enumerate(stages)
+                    if stage[:3] == ["python", "scripts/pico_flash.py", "disks"]
+                )
+                arguments = stages[flash_index]
+                assignments = [
+                    arguments[index + 1]
+                    for index, argument in enumerate(arguments) if argument == "--drive"
+                ]
+                drives = "ABCD" if label == labels[0] else label[-1]
+                self.assertEqual(
+                    assignments, [f"{drive}={source_images[drive]}" for drive in drives]
+                )
+                self.assertEqual(flash_index, len(stages) - 1)
+                self.assertEqual(command.count("scripts/pico_flash.py disks"), 1)
+                if "A" in drives:
+                    self.assertEqual(stages[flash_index - 2], [
+                        "python", "src/disks/convert_altair_disks.py",
+                        "--output-dir", "build/cpm-disk-update/converted",
+                    ])
+                    self.assertEqual(stages[flash_index - 1], [
+                        "python", "src/cpm/build_images.py",
+                        "--disk-dir", "build/cpm-disk-update/converted",
+                        "--output-dir", "build/cpm-disk-update",
+                    ])
 
 
 class DiskFlashTests(unittest.TestCase):
@@ -70,12 +116,12 @@ class DiskFlashTests(unittest.TestCase):
 
     def test_altair_sources_use_maintained_conversion(self) -> None:
         source = REPO_ROOT / "src/disks/source-altair/bdsc-v1.60.dsk"
-        expected = REPO_ROOT / "src/disks/generated/drive_b_bdsc.img"
-        self.assertEqual(flash.load_disk_image("B", source), expected.read_bytes())
+        expected = flash.convert(source.read_bytes())
+        self.assertEqual(flash.load_disk_image("B", source), expected)
         grid = source.read_bytes()[:flash.SOURCE_GRID_BYTES]
         marked = self.directory / "altair-with-marker.img"
         marked.write_bytes(grid + bytes(96))
-        self.assertEqual(flash.load_disk_image("D", marked), expected.read_bytes())
+        self.assertEqual(flash.load_disk_image("D", marked), expected)
 
     def test_corrupt_altair_and_framed_drive_a_fail_before_hardware(self) -> None:
         source = REPO_ROOT / "src/disks/source-altair/bdsc-v1.60.dsk"

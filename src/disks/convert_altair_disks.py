@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -133,9 +134,17 @@ def convert(source: bytes) -> bytes:
 
 def main() -> None:
     disk_dir = Path(__file__).resolve().parent
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=disk_dir / "generated",
+        help="directory for converted disks and manifest (default: src/disks/generated)",
+    )
+    args = parser.parse_args()
     source_dir = disk_dir / "source-altair"
-    output_dir = disk_dir / "generated"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = args.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, object] = {
         "format": "80 tracks x 32 records x 128 bytes",
@@ -147,6 +156,7 @@ def main() -> None:
 
     for output_name, source_name in DISKS.items():
         source = (source_dir / source_name).read_bytes()
+        validate_source(source)
         output = convert(source)
         (output_dir / output_name).write_bytes(output)
         images[output_name] = {

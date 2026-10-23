@@ -309,11 +309,13 @@ def build_flash_image(firmware: bytes, package: bytes, disks: list[bytes]) -> by
         raise ValueError("firmware binary is empty or crosses the flash link limit")
     if len(package) > FLASH_ENV_OFFSET - FLASH_BOOT_OFFSET:
         raise ValueError("boot package overlaps persistent environment storage")
+    if len(disks) != len(FLASH_DISK_OFFSETS):
+        raise ValueError("complete flash image requires exactly four disks")
 
     image = bytearray([0xFF]) * FLASH_BYTES
     image[: len(firmware)] = firmware
     image[FLASH_BOOT_OFFSET : FLASH_BOOT_OFFSET + len(package)] = package
-    for offset, disk in zip(FLASH_DISK_OFFSETS, disks, strict=True):
+    for offset, disk in zip(FLASH_DISK_OFFSETS, disks):
         image[offset : offset + len(disk)] = disk
     return bytes(image)
 
@@ -376,7 +378,7 @@ def main() -> None:
         "z80boot.img": z80_image,
         "z80boot.pkg": package,
     }
-    artifacts.update(dict(zip(OUTPUT_DISK_NAMES, disks, strict=True)))
+    artifacts.update({name: disks[index] for index, name in enumerate(OUTPUT_DISK_NAMES)})
 
     if args.firmware is not None:
         artifacts["z80romless-flash.bin"] = build_flash_image(

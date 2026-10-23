@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 
 DISK_DIR = Path(__file__).resolve().parent
@@ -13,6 +16,41 @@ import geometry
 
 
 class ConvertAltairDisksTest(unittest.TestCase):
+    def test_cli_converts_current_sources_into_separate_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "nested" / "converted"
+            with mock.patch.object(
+                sys, "argv", ["convert_altair_disks.py", "--output-dir", str(output_dir)]
+            ):
+                convert_altair_disks.main()
+            manifest = json.loads((output_dir / "manifest.json").read_text())
+            for output_name, source_name in convert_altair_disks.DISKS.items():
+                with self.subTest(image=output_name):
+                    source = (DISK_DIR / "source-altair" / source_name).read_bytes()
+                    output = (output_dir / output_name).read_bytes()
+                    self.assertEqual(output, convert_altair_disks.convert(source))
+                    self.assertEqual(len(output), geometry.IMAGE_BYTES)
+                    self.assertEqual(
+                        manifest["images"][output_name]["source_sha256"],
+                        convert_altair_disks.sha256(source),
+                    )
+                    self.assertEqual(
+                        manifest["images"][output_name]["output_sha256"],
+                        convert_altair_disks.sha256(output),
+                    )
+
+    def test_cli_rejects_corrupt_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            with (
+                mock.patch.object(
+                    sys, "argv", ["convert_altair_disks.py", "--output-dir", temporary]
+                ),
+                mock.patch.object(Path, "read_bytes", return_value=b"invalid"),
+                self.assertRaisesRegex(ValueError, "size"),
+            ):
+                convert_altair_disks.main()
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
     def test_every_record_uses_authentic_burcon_mapping(self) -> None:
         source = bytearray(convert_altair_disks.SOURCE_GRID_BYTES)
         expected: dict[tuple[int, int], bytes] = {}

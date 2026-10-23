@@ -27,6 +27,10 @@ The Pico firmware does not consume that framing. Run:
 python3 src/disks/convert_altair_disks.py
 ```
 
+Use `--output-dir DIRECTORY` to generate fresh converted images outside the
+tracked `generated/` folder. The converter validates source framing and
+checksums before conversion.
+
 This writes four exact 327,680-byte files under `generated/`:
 
 | Flash drive | Generated image | Source image |
@@ -47,7 +51,7 @@ track 2 onward retain the original files, including the Altair-only AUTORUN.
 Run the CP/M image builder to replace those two system tracks with sequential
 CCP/BDOS records, the board-native BIOS, and a disabled native auto-run
 configuration record. The builder also replaces user 0's `AUTORUN.COM`
-with the native utility; it requires Python 3.10+, `z80asm`, and `cpmtools`
+with the native utility; it requires Python 3.9+, `z80asm`, and `cpmtools`
 (`cpmcp` and `cpmrm`):
 
 ```sh
@@ -81,8 +85,8 @@ and write commands:
 . .venv-flash/bin/activate &&
 python -c 'import sys, serial; print("Using", sys.executable)' &&
 python scripts/pico_flash.py disks \
-  --drive B=src/disks/bdsc-v1.60.dsk \
-  --drive C=src/disks/escape-posix.dsk \
+  --drive B=src/disks/source-altair/bdsc-v1.60.dsk \
+  --drive C=src/disks/source-altair/escape-posix.dsk \
   --power-confirmed
 ```
 
