@@ -132,6 +132,90 @@ USB remains serviced while stopped or draining for a stop. Flash programming
 can temporarily suspend it through SDK lockout. Real enumeration, concurrent
 network traffic and timing still require bench acceptance.
 
+### SRAM-resident terminal and disk register path
+
+The local performance hypothesis is that SRAM instruction placement reduces
+flash-cache-dependent latency in the core-0 I/O trap. It is not a claim that
+flash instruction fetches are the dominant cost. The SDK
+`__not_in_flash_func` attribute places the following routines in SRAM:
+
+- The shared Stage 9/10 application's `virtual_read` and `virtual_write`.
+- `z80_terminal_io_read`, `z80_terminal_io_write`, and their ring-add and
+  connection-state helpers.
+- `z80_flash_disk_io_read`, `z80_flash_disk_io_write`, their command/status/address
+  helpers, and `z80_flash_backend_read_record`.
+
+Small helpers may be inlined into these SRAM-resident handlers and have no
+separate linked symbol. The application still runs on core 0; USB, networking,
+and runtime flash programming remain on core 1. Locks, queue bounds, register
+semantics, and all hardware-settling waits are unchanged.
+
+This is **not a completely flash-independent call chain**. SDK timing/mux
+helpers, failure handling, extended service/timer ports, `queue_try_add`, and
+`memcpy` can still execute from flash. Uncached disk records and diagnostic
+comparison bytes are still read from flash. SRAM placement does not permit
+trapping during flash programming or relax BUSACK/IRQ/multicore lockout.
+
+#### Build verification
+
+The 2026-10-23 comparison used the same local SDK, toolchain, build configuration,
+and working-tree sources before and after adding placement attributes. Each
+Stage 9/10 linker map and ELF places the seven top-level routines above in
+`.data` at SRAM addresses beginning `0x2000...`; disassembly also places callback
+switch tables there. Terminal ring/connection helpers and disk command/status/
+address helpers are inlined into their handlers in this build.
+
+| Target | Initialized SRAM `.data`, before | After | Additional SRAM |
+| --- | ---: | ---: | ---: |
+| Stage 9 diagnostic | 9,256 bytes | 10,472 bytes | 1,216 bytes |
+| Stage 9 automatic loader | 9,256 bytes | 10,472 bytes | 1,216 bytes |
+| Stage 10 WebSocket terminal | 13,936 bytes | 15,152 bytes | 1,216 bytes |
+
+BSS and stack reservations are unchanged. Total loadable ELF content grows
+by 32 bytes for each Stage 9 variant and 40 bytes for Stage 10, including
+linker alignment and veneers. SRAM code is included in `.data`; the plain
+`size` summary's `data` column alone does not measure its RAM cost. Inspect
+ELF sections and the linker map:
+
+```sh
+elf=build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.elf
+arm-none-eabi-objdump -h "$elf"
+arm-none-eabi-nm -S -n "$elf" |
+  grep -E ' (virtual_read|virtual_write|z80_terminal_io_read|z80_terminal_io_write|z80_flash_disk_io_read|z80_flash_disk_io_write|z80_flash_backend_read_record)$'
+arm-none-eabi-objdump -d --disassemble=virtual_read "$elf"
+arm-none-eabi-objdump -d --disassemble=z80_flash_disk_io_write "$elf"
+```
+
+Repeat for both Stage 9 ELFs. Check that the selected functions have SRAM
+execution addresses, not merely flash load addresses. Inspect each handler's
+disassembly for outlined helpers and veneers: a veneer in SRAM can still jump
+to flash. In this build terminal register handlers need no out-of-line calls;
+disk record copies and queue submission still reach flash-resident routines.
+
+#### Hardware comparison still required
+
+No before/after trap-latency result was recorded for this change; hardware
+deployment and measurement were explicitly deferred. Successful builds,
+placement checks and host tests do not establish a measured speedup.
+
+For a comparison, preserve both firmware builds and use identical clock settings,
+CP/M images, workload, USB/browser ownership and network load. With the safe
+setup in the [logic-analyzer procedure](../hardware/logic-analyzer.md), capture
+Group C IN and OUT separately in 16-channel, 100 MHz Buffer Mode. Separate
+terminal status/data accesses, disk status/data accesses, read commands, and
+write-record submission rather than mixing their latency distributions.
+
+Measure IORQ falling to IO_RELEASE rising as the service-response interval,
+and the end of free-running CLK to its resumed free-running edges as the total
+Z80 clock pause, including stepped completion. Neither is an exact IRQ-entry/
+exit timestamp. Record sample count, sample resolution, median, tail percentile,
+maximum, and workload/capture length for each category, both idle and with
+concurrent network traffic. Check control errors, drops and trap timeouts before
+and after; review the original data setup/hold, isolation, PWM handover and
+settling guards on raw captures. The acceptance gate is a repeatable reduction
+in the selected latency metric with no correctness/timing regression, not an
+assumed improvement based on SRAM addresses alone.
+
 Connect picocom whenever convenient, using the actual USB CDC port name:
 
 ```sh

@@ -175,17 +175,20 @@ have been replaced when a later write fails.
 
 Open **Tasks: Run Task** from the Command Palette and select one of:
 
-| Task | Replaced drives | Prepared images in `build/cpm-stage09-loader/` |
+| Task | Replaced drives | Input images (paths relative to the repository root) |
 | --- | --- | --- |
 | **Flash Pico - All disks (A-D)** | A, B, C, D | All four images below |
-| **Flash Pico - Drive A** | A only | `drive_a_cpm63k-z80.img` |
-| **Flash Pico - Drive B** | B only | `drive_b_bdsc.img` (BDS C) |
-| **Flash Pico - Drive C** | C only | `drive_c_escape.img` (Escape) |
-| **Flash Pico - Drive D** | D only | `drive_d_blank.img` (blank) |
+| **Flash Pico - Drive A** | A only | `build/cpm-stage09-loader/drive_a_cpm63k-z80.img` |
+| **Flash Pico - Drive B** | B only | `build/cpm-stage09-loader/drive_b_bdsc.img` (BDS C) |
+| **Flash Pico - Drive C** | C only | `src/disks/source-altair/escape-posix.dsk` (Escape) |
+| **Flash Pico - Drive D** | D only | `build/cpm-stage09-loader/drive_d_blank.img` (blank) |
 
-These tasks use existing prepared native images; they do not rebuild firmware
-or regenerate disks. The images must already exist and contain the files you
-intend to deploy. A fresh checkout needs the
+These tasks do not rebuild firmware or CP/M applications. Drive C uses the
+maintained framed Escape source disk, which the flash tool validates and
+converts at deployment time, avoiding stale generated copies of `CLOCK.COM`.
+After rebuilding an application, install it into that source disk before
+running the task. A, B and D use existing prepared native images. All inputs
+must already exist and contain the files you intend to deploy. A fresh checkout needs the
 [CP/M image-build workflow](../system/firmware-build.md#building-the-full-image-set)
 first. Drive A must match the installed boot package; the flash tool checks this
 before writing any selected disk.

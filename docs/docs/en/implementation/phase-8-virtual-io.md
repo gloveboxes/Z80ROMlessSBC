@@ -86,8 +86,11 @@ required.
 The trap handler/release loop, clock stop/resume/preparation/prepared pulse,
 and shared data/port bus helpers use the SDK SRAM code-placement attribute.
 This removes instruction fetches from flash for those selected routines,
-not for the complete call chain: SDK timing/mux helpers, application callbacks
-and failure handling can still execute from flash. **This is not permission
+not for the complete call chain: SDK timing/mux helpers, Stage 8 application
+callbacks and failure handling can still execute from flash. Stages 9/10 also
+place their terminal/disk callbacks and register handlers in SRAM; see the
+[placement checks and limits](phase-9-flash-storage.md#sram-resident-terminal-and-disk-register-path).
+**This is not permission
 to execute during flash programming**; the existing BUSACK, IRQ and multicore
 flash-lockout contracts remain mandatory.
 

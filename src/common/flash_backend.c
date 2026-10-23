@@ -455,8 +455,8 @@ static bool select_disk_cache(unsigned int drive, uint16_t lba) {
   return true;
 }
 
-bool z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
-                                   uint8_t *data, size_t length) {
+bool __not_in_flash_func(z80_flash_backend_read_record)(
+    unsigned int drive, uint16_t lba, uint8_t *data, size_t length) {
   if (drive >= Z80_FLASH_DISK_SLOT_COUNT ||
       lba >= Z80_FLASH_RECORD_COUNT || data == NULL ||
       length != Z80_FLASH_RECORD_BYTES)

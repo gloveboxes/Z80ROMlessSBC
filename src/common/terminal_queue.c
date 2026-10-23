@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "pico/critical_section.h"
+#include "pico/stdlib.h"
 
 enum {
   TERM_DATA_PORT = 0x00,
@@ -38,7 +39,7 @@ static void clear_queues(void) {
   tx_queue.head = tx_queue.count = 0;
 }
 
-static void ring_add(terminal_ring_t *ring, uint8_t value) {
+static void __not_in_flash_func(ring_add)(terminal_ring_t *ring, uint8_t value) {
   ring->data[(ring->head + ring->count++) & (ring->capacity - 1)] = value;
   if (ring->count > ring->peak)
     ring->peak = ring->count;
@@ -69,7 +70,7 @@ void z80_terminal_queue_init(void) {
   __atomic_store_n(&tx_drops, 0, __ATOMIC_RELAXED);
 }
 
-uint8_t z80_terminal_io_read(uint8_t port) {
+uint8_t __not_in_flash_func(z80_terminal_io_read)(uint8_t port) {
   if (port != TERM_DATA_PORT && port != TERM_STATUS_PORT)
     return 0xFF;
   critical_section_enter_blocking(&terminal_lock);
@@ -93,7 +94,7 @@ uint8_t z80_terminal_io_read(uint8_t port) {
   return value;
 }
 
-void z80_terminal_io_write(uint8_t port, uint8_t value) {
+void __not_in_flash_func(z80_terminal_io_write)(uint8_t port, uint8_t value) {
   if (port != TERM_DATA_PORT)
     return;
   critical_section_enter_blocking(&terminal_lock);
@@ -225,6 +226,6 @@ z80_terminal_buffer_stats_t z80_terminal_get_buffer_stats(void) {
   return stats;
 }
 
-bool z80_terminal_client_connected(void) {
+bool __not_in_flash_func(z80_terminal_client_connected)(void) {
   return __atomic_load_n(&client_connected, __ATOMIC_ACQUIRE) != 0;
 }

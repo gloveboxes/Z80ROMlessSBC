@@ -43,20 +43,32 @@ disk-geometry or BIOS changes. The existing PCB remains deferred.
    stop/flush, writes and read-back verifies firmware, then requests reboot.
    Disks and ENV are preserved; no forced-recovery or postboot checks are added.
 2. Open the USB terminal. CP/M loads, verifies and starts without waiting for
-   USB, Wi-Fi or a browser. Missing/invalid settings trigger a USB setup
-   prompt once CP/M is running. **Ctrl-] n** starts setup again at any time
-   while running, including after failed association.
-3. Enter SSID, password, and the **remote filesystem server's IPv4 address**.
-   Password input is not echoed. An empty password selects an open network;
+   USB, Wi-Fi or a browser. Missing/invalid Wi-Fi credentials open the unified
+   system configuration shell once CP/M is running. **Ctrl-] c** opens it
+   again while running, including after failed association. The former
+   **Ctrl-] n** command is removed.
+3. Select **1 - Wi-Fi**, then **C** to configure SSID and password.
+   Password input is not echoed. At an edit prompt, Enter keeps the existing
+   value and `-` clears it; a cleared password selects an open network.
    WPA2 passwords require 8-63 bytes or a 64-digit hexadecimal key.
-   ESC cancels before saving. SSIDs are limited to 32 bytes.
+   ESC cancels the current unsaved edit and returns to its menu.
+   SSIDs are limited to 32 bytes. **Q** returns from a submenu to the main menu.
+   Select **2 - Remote filesystem** to configure its server IPv4 address
+   independently; it is optional and is not needed to connect Wi-Fi.
 4. Settings use the existing durable ENV store as `WIFI_SSID`,
    `WIFI_PASSWORD`, and `FS_SERVER`. They are not compiled into firmware.
    Core 1 saves each key through the existing ENV parser/snapshot backend,
    preserves unrelated keys, and reports failure explicitly. Each key save is
-   atomic; the three-key setup is not one transaction. After a failed save,
-   retry all settings with Ctrl-] n. ENV is plaintext onboard flash, not
-   encrypted secret storage.
+   atomic; a multi-field edit is not one transaction. After a failed save,
+   reload with **Ctrl-] c**, inspect settings and retry the affected fields.
+   ENV is plaintext onboard flash, not encrypted secret storage.
+   **Q** at the main menu returns to the terminal without rebooting if nothing
+   changed. If settings were saved, it reports that a reboot is required and
+   automatically performs the normal disk flush and safe stop, holds Z80 RESET
+   LOW and stops its clock, then reboots the Pico after a one-second notice.
+   A storage error cancels automatic reboot and is reported explicitly.
+   Save CP/M application work before quitting with configuration changes:
+   flushing the disk cache cannot save an application's unsaved RAM.
 5. <input type="checkbox" data-checklist-id="conditional-network-diagnosis" aria-label="Network address verified">
    Press **Ctrl-] s** on USB to show
    `[network] Terminal: http://<pico-ip>:8088/` and open that URL.
@@ -91,8 +103,60 @@ disk-geometry or BIOS changes. The existing PCB remains deferred.
    Internet access on first use.
 
 `FS_SERVER` is collected and stored **only**. This phase adds no remote-FS
-client, socket, service, or I/O-port controller. Direct ENV edits are read on
-the next reboot or USB setup; USB setup applies immediately.
+client, socket, service, or I/O-port controller. Direct network ENV edits are
+read on the next reboot or configuration-shell reload. Saved shell edits can
+take effect before exit (Wi-Fi credential changes reconnect Wi-Fi); quitting
+after changes always performs an orderly reboot so all services restart with
+the persisted configuration.
+
+## Unified system configuration
+
+Press **Ctrl-] c** on USB while CP/M is running. This shell is available even
+when a browser owns the CP/M terminal; the browser does not receive secret
+entry. Ordinary USB bytes belong to the shell until it exits.
+
+```text
+System configuration
+  1 - Wi-Fi
+  2 - Remote filesystem
+  3 - OpenAI / Ollama / compatible chat
+  4 - OpenWeatherMap
+  5 - Timezone
+  S - show all settings (secrets masked)
+  Q - return to terminal
+config>
+```
+
+| Menu | Configuration |
+| --- | --- |
+| Wi-Fi | **C** edits `WIFI_SSID` and `WIFI_PASSWORD`; **U** clears the credentials without clearing remote FS or service settings. |
+| Remote filesystem | **C** edits `FS_SERVER`; **U** clears it. Only unicast server IPv4 addresses are accepted. Remote FS I/O is not implemented. |
+| Chat | **1** selects OpenAI and edits `CHAT_OPENAI_KEY`; **2** selects an OpenAI-compatible endpoint; **3** selects Ollama. Both local/custom choices edit `CHAT_ENDPOINT`, including scheme, host, optional port and path, such as `http://192.168.1.26:11434/v1/chat/completions`. **4**, **5**, and **6** edit `CHAT_MODEL`, `CHAT_MAX_TOKENS`, and `CHAT_TEMPERATURE` respectively. |
+| OpenWeatherMap | **C** (or **1**) edits `OWM_KEY`, `OWM_LOCATION`, and `OWM_UNITS`. Location accepts city/country or `lat=-33.8&lon=151.2`; units are `metric`, `imperial`, or `standard`. |
+| Timezone | **C** edits the existing POSIX `TZ`, not the ESP32's `UTC_OFFSET`. For example, `AEST-10` means UTC+10; `AEST-10AEDT,M10.1.0,M4.1.0/3` includes daylight saving. Clearing TZ uses UTC. |
+
+**S** shows the current submenu's settings; **Q** returns to the main menu.
+Passwords and API keys are hidden during entry and masked when shown.
+Only OpenAI requests use `CHAT_OPENAI_KEY`; selecting Ollama or a compatible
+endpoint preserves the saved key but never sends it to that endpoint.
+Custom-provider authentication is not supported by the existing Pico chat
+transport. Chat model/options remain consumed by the CP/M chat application.
+
+Edits are stored literally through ENV rather than the ENV CLI's arithmetic
+assignment syntax, so hyphens in models, keys, and timezone rules are preserved.
+Enter keeps the displayed value; `-` clears a field and restores the consuming
+service/application's default where one exists. Values are checked for their
+size and service-specific syntax (including endpoint ports, IPv4, coordinate
+ranges, positive token counts and temperature 0-2).
+Wi-Fi requires only SSID and a valid password, not a remote FS address.
+
+There is no Bluetooth configuration. Quitting without a persisted change does
+not reboot. Merely viewing settings, keeping every existing value, or cancelling
+an edit does not count as a change. Successful changes remain marked for reboot
+across USB disconnect/re-entry; successfully saved fields in a partially failed
+edit also count. Disconnecting USB discards unsaved edits, not saved settings.
+During a save, input is ignored until the result is reported; disk and network
+service work continue through the existing core-1 scheduler.
 
 ## Core ownership and terminal routing
 

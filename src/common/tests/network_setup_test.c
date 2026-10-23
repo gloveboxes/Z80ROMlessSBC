@@ -15,8 +15,9 @@ static size_t snapshot_length;
 static bool on_core1;
 static int read_error;
 static int write_error;
+static int write_fail_after = -1;
 static unsigned writes;
-static char output[16384];
+static char output[131072];
 static size_t output_length;
 
 static int setup_printf(const char *format, ...) {
@@ -66,6 +67,8 @@ int z80_env_snapshot_save(const uint8_t *data, size_t length) {
   assert(on_core1 && length <= sizeof(snapshot));
   if (write_error)
     return write_error;
+  if (write_fail_after >= 0 && writes >= (unsigned)write_fail_after)
+    return -3;
   memcpy(snapshot, data, length);
   snapshot_length = length;
   ++writes;
@@ -82,16 +85,31 @@ static void type(const char *text) {
   for (; *text; ++text)
     assert(z80_network_setup_input((uint8_t)*text));
 }
-static void provision(const char *password) {
-  z80_network_setup_request();
-  type("Test WiFi\r\n");
-  type(password);
-  type("\r\n192.0.2.10\r\n");
-  assert(step == SETUP_SAVING && !z80_network_setup_quiescent());
+static void finish(void) {
+  assert(step == SETUP_SAVING || step == SETUP_LOADING);
+  assert(!z80_network_setup_quiescent());
   service();
   assert(z80_network_setup_quiescent());
   z80_network_setup_usb_service(true, true);
-  assert(!z80_network_setup_active());
+  assert(step == SETUP_MENU);
+}
+
+static void open_shell(void) {
+  z80_network_setup_request();
+  finish();
+  assert(menu == MENU_MAIN);
+}
+
+static void expect_value(const char *key, const char *expected) {
+  char value[256];
+  assert(environment_io_get(key, value, sizeof(value)));
+  assert(!strcmp(value, expected));
+}
+
+static void restart_shell(void) {
+  z80_network_setup_init();
+  service();
+  open_shell();
 }
 
 int main(void) {
@@ -100,64 +118,200 @@ int main(void) {
   service();
   assert(__atomic_load_n(&settings_state, __ATOMIC_ACQUIRE) == SETTINGS_MISSING);
   z80_network_setup_usb_service(true, true);
-  assert(step == SETUP_SSID);
-  type("\r");
-  assert(step == SETUP_SSID && strstr(output, "Invalid"));
-  type("abcdefghijklmnopqrstuvwxyz123456789\r");
-  assert(step == SETUP_SSID);
-  type("WiFi\rshort\r");
-  assert(step == SETUP_PASSWORD);
-  type("HiddenSecret\r999.1.1.1\r");
-  assert(step == SETUP_SERVER);
+  assert(step == SETUP_LOADING);
+  finish();
+  assert(strstr(output, "System configuration"));
+  type("1cabcdefghijklmnopqrstuvwxyz123456789\r");
+  assert(step == SETUP_EDITING && edit_position == 0);
+  type("Test WiFi\r\nshort\r");
+  assert(step == SETUP_EDITING && edit_position == 1);
+  type("HiddenSecret\r\n");
+  assert(writes == 0 && !strstr(output, "HiddenSecret"));
+  finish();
+  assert(writes == 2);
+  assert(z80_network_config() && !z80_network_config()->fs_server[0]);
+  assert(!strcmp(z80_network_config()->password, "HiddenSecret"));
+  type("q2c999.1.1.1\r");
+  assert(step == SETUP_EDITING);
   type("192.0.2.10junk\r");
-  assert(step == SETUP_SERVER);
+  assert(step == SETUP_EDITING);
   type("192.0.2.10\r\n");
-  assert(writes == 0);
-  service();
+  finish();
   assert(writes == 3);
-  z80_network_setup_usb_service(true, true);
-  assert(strstr(output, "Saved in ENV"));
+  assert(!strcmp(z80_network_config()->fs_server, "192.0.2.10"));
+  type("qs");
   assert(!strstr(output, "HiddenSecret"));
-  assert(strcmp(z80_network_config()->password, "HiddenSecret") == 0);
-  assert(strcmp(z80_network_config()->fs_server, "192.0.2.10") == 0);
-  on_core1 = true;
-  assert(save_value("TZ", "UTC0") == 0);
-  on_core1 = false;
-  provision("");
+  type("q");
+  assert(step == SETUP_REBOOT && z80_network_setup_reboot_requested());
+  assert(strstr(output, "reboot required"));
+  z80_network_setup_reboot_queued();
+  assert(!z80_network_setup_reboot_requested());
+  assert(z80_network_setup_input('x'));
+
+  restart_shell();
+  assert(!changed && settings_loaded);
+  type("1c\r\n\r\n");
+  finish();
+  assert(!changed && writes == 3);
+  type("qq");
+  assert(!z80_network_setup_active() && !z80_network_setup_reboot_requested());
+
+  open_shell();
+  type("3");
+  type("1Fake-OpenAI-Secret\r\n");
+  finish();
+  expect_value("CHAT_PROVIDER", "openai");
+  expect_value("CHAT_OPENAI_KEY", "Fake-OpenAI-Secret");
+  assert(!strstr(output, "Fake-OpenAI-Secret"));
+  type("2https://bad.example:65536/v1/chat/completions\r");
+  assert(step == SETUP_EDITING);
+  type("http://192.0.2.20:11434/v1/chat/completions\r\n");
+  finish();
+  expect_value("CHAT_PROVIDER", "compatible");
+  expect_value("CHAT_ENDPOINT", "http://192.0.2.20:11434/v1/chat/completions");
+  expect_value("CHAT_OPENAI_KEY", "Fake-OpenAI-Secret");
+  type("3\r\n");
+  finish();
+  expect_value("CHAT_PROVIDER", "ollama");
+  type("4phi4-mini:3.8b\r\n");
+  finish();
+  type("50\r1024\r\n");
+  finish();
+  type("6nan\r2.1\r0.7\r\n");
+  finish();
+  expect_value("CHAT_MODEL", "phi4-mini:3.8b");
+  expect_value("CHAT_MAX_TOKENS", "1024");
+  expect_value("CHAT_TEMPERATURE", "0.7");
+  type("q4cWeatherSecret\r\nlat=91&lon=0\r");
+  assert(step == SETUP_EDITING && edit_position == 1);
+  type("lat=-33.8&lon=151.2\r\nkelvin\rmetric\r\n");
+  finish();
+  expect_value("OWM_KEY", "WeatherSecret");
+  expect_value("OWM_LOCATION", "lat=-33.8&lon=151.2");
+  expect_value("OWM_UNITS", "metric");
+  assert(!strstr(output, "WeatherSecret"));
+  type("q5cAEST-10AEDT,M10.1.0,M4.1.0/3\r\n");
+  finish();
+  expect_value("TZ", "AEST-10AEDT,M10.1.0,M4.1.0/3");
+  type("q1c\r\n-\r\n");
+  finish();
   assert(z80_network_config()->password[0] == '\0');
+  expect_value("FS_SERVER", "192.0.2.10");
+  type("q2u");
+  finish();
   char value[256];
-  assert(environment_io_get("TZ", value, sizeof(value)));
-  assert(strcmp(value, "UTC0") == 0);
-  z80_network_setup_init();
-  service();
-  assert(z80_network_config() && strcmp(z80_network_config()->ssid, "Test WiFi") == 0);
-  z80_network_setup_usb_service(true, true);
-  assert(!z80_network_setup_active());
-  z80_network_setup_request();
-  type("CancelMe\033");
-  assert(!z80_network_setup_active());
-  write_error = -3;
-  provision("OtherSecret");
-  assert(strstr(output, "FAIL: ENV status=-3"));
-  assert(!strstr(output, "OtherSecret"));
-  assert(z80_network_config()->password[0] == '\0');
-  write_error = 0;
-  read_error = -2;
-  z80_network_setup_init();
-  service();
-  z80_network_setup_usb_service(true, true);
-  assert(!z80_network_config() && strstr(output, "cannot read ENV"));
-  read_error = 0;
-  provision("RecoveredSecret");
+  assert(!environment_io_get("FS_SERVER", value, sizeof(value)));
   assert(z80_network_config());
-  z80_network_setup_request();
-  type("Discarded");
+  type("q5c-\r\n");
+  finish();
+  assert(!environment_io_get("TZ", value, sizeof(value)));
+  type("q3");
+  type("4");
+  unsigned before = writes;
+  for (unsigned i = 0; i < 256; ++i)
+    type("x");
+  type("\r");
+  assert(step == SETUP_EDITING && writes == before);
+  type("Discarded\033");
+  assert(step == SETUP_MENU && writes == before);
+  expect_value("CHAT_MODEL", "phi4-mini:3.8b");
+  type("1-\r");
+  finish();
+  assert(!environment_io_get("CHAT_OPENAI_KEY", value, sizeof(value)));
+  type("q1u");
+  finish();
+  assert(!z80_network_config());
+  expect_value("OWM_KEY", "WeatherSecret");
+  expect_value("CHAT_MODEL", "phi4-mini:3.8b");
+
+  restart_shell();
+  type("1cWillNotSave\033");
+  assert(step == SETUP_MENU && !changed);
   z80_network_setup_usb_service(false, true);
   assert(!z80_network_setup_active());
-  z80_network_setup_request();
-  type("DiscardWhenStopped");
+  open_shell();
+  type("1cDiscardWhenStopped");
   z80_network_setup_usb_service(true, false);
   assert(!z80_network_setup_active() && z80_network_setup_quiescent());
   assert(strstr(output, "CP/M is stopping or stopped"));
-  puts("PASS: USB setup validation/masking, core-1 ENV persistence, failures and recovery");
+
+  read_error = -2;
+  open_shell();
+  assert(!settings_loaded && !z80_network_config());
+  before = writes;
+  type("1c");
+  assert(step == SETUP_MENU && writes == before);
+  read_error = 0;
+  open_shell();
+  type("1cRecoveredWiFi\rRecoveredSecret\r");
+  write_error = -3;
+  finish();
+  assert(!settings_loaded && !changed);
+  assert(strstr(output, "FAIL: ENV status=-3"));
+  assert(!strstr(output, "RecoveredSecret"));
+  write_error = 0;
+  open_shell();
+  type("1cRecoveredWiFi\rRecoveredSecret\r");
+  finish();
+  assert(z80_network_config());
+  assert(changed);
+  /* Persisted changes survive disconnect/re-entry until the requested reboot. */
+  z80_network_setup_usb_service(false, true);
+  open_shell();
+  type("q");
+  assert(z80_network_setup_reboot_requested());
+
+  restart_shell();
+  type("1cPartiallySaved\rReplacementSecret\r");
+  write_fail_after = (int)writes + 1;
+  finish();
+  assert(changed && !settings_loaded);
+  expect_value("WIFI_SSID", "PartiallySaved");
+  expect_value("WIFI_PASSWORD", "RecoveredSecret");
+  type("qq");
+  assert(z80_network_setup_reboot_requested());
+  write_fail_after = -1;
+
+  restart_shell();
+  type("1c12345678901234567890123456789012\r");
+  for (unsigned i = 0; i < 64; ++i)
+    type("a");
+  type("\r\n");
+  finish();
+  assert(strlen(z80_network_config()->ssid) == 32);
+  assert(strlen(z80_network_config()->password) == 64);
+  type("q3");
+  type("1");
+  for (unsigned i = 0; i < 255; ++i)
+    type("k");
+  type("\r\n");
+  finish();
+  assert(environment_io_get("CHAT_OPENAI_KEY", value, sizeof(value)));
+  assert(strlen(value) == 255);
+  type("1");
+  before = writes;
+  for (unsigned i = 0; i < 256; ++i)
+    type("z");
+  type("\r\n");
+  assert(step == SETUP_EDITING && writes == before);
+  type("\033");
+  type("4");
+  for (unsigned i = 0; i < 64; ++i)
+    type("m");
+  type("\r\n");
+  finish();
+  assert(environment_io_get("CHAT_MODEL", value, sizeof(value)));
+  assert(strlen(value) == 64);
+  type("61.0\r\n");
+  finish();
+  type("6-\r\n");
+  finish();
+  assert(!environment_io_get("CHAT_TEMPERATURE", value, sizeof(value)));
+  assert(!valid_value(TEMPERATURE, "1e0"));
+  assert(valid_value(TEMPERATURE, "0") && valid_value(TEMPERATURE, "2"));
+  assert(!valid_value(ENDPOINT, "http://host/v1/chat/completions#fragment"));
+  assert(!valid_value(ENDPOINT, "http://host:0/v1/chat/completions"));
+  assert(valid_value(ENDPOINT, "http://host:65535/v1/chat/completions"));
+  puts("PASS: unified config menus, literal ENV persistence, validation, secrets, "
+       "cancel/disconnect, partial failures and changed-only reboot requests");
 }

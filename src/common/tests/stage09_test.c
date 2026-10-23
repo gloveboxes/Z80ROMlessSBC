@@ -89,6 +89,7 @@ static size_t input_length;
 
 #ifdef Z80_STAGE10_NETWORK
 static unsigned setup_requests;
+static bool setup_reboot_request;
 static unsigned matrix_status_requests;
 static const char *network_address = "";
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
@@ -106,6 +107,14 @@ void z80_network_setup_usb_service(bool usb, bool active) {
 }
 bool z80_network_setup_input(uint8_t value) { (void)value; return false; }
 bool z80_network_setup_active(void) { return false; }
+bool z80_network_setup_reboot_requested(void) {
+  assert(fake_core == 1);
+  return setup_reboot_request;
+}
+void z80_network_setup_reboot_queued(void) {
+  assert(fake_core == 1);
+  setup_reboot_request = false;
+}
 bool z80_network_setup_quiescent(void) { return true; }
 void z80_network_setup_core1_service(void) {}
 void z80_network_core1_service(void) {
@@ -375,6 +384,8 @@ static void reset_fixture(void) {
   z80_terminal_usb_connected(connected);
   browser_was_connected = false;
   setup_requests = 0;
+  setup_reboot_request = false;
+  config_reboot_after_stop = config_reboot_ready = config_reboot_queue_full = false;
   matrix_status_requests = 0;
   network_address = "";
 #endif
@@ -655,6 +666,8 @@ static void test_browser_usb_routing(void) {
   assert(strstr(output, "192.0.2.42") == NULL);
   assert(strstr(output, "[network] Terminal:") == NULL);
   command('n');
+  assert(setup_requests == 0);
+  command('c');
   assert(setup_requests == 1);
   z80_terminal_receive((const uint8_t *)"stale", 5);
   virtual_write(0, 'X', NULL);
@@ -884,6 +897,74 @@ static void test_stop_and_failure(void) {
   service_run();
   assert(held && !running);
 }
+
+#ifdef Z80_STAGE10_NETWORK
+static void test_config_orderly_reboot(void) {
+  reset_fixture();
+  command('l');
+  command('g');
+  setup_reboot_request = true;
+  service_usb();
+  assert(!setup_reboot_request && config_reboot_after_stop);
+  assert(running && stop_requested && flash_pause_request && !reboots);
+  quiescent = false;
+  service_run();
+  assert(flushes == 1 && !reboots);
+  flash_paused = 1;
+  service_run();
+  assert(flash_resuming && running && !reboots);
+  flash_paused = 0;
+  service_run();
+  quiescent = true;
+  flash_paused = 1;
+  service_run();
+  assert(held && !running && config_reboot_ready && !reboots);
+  assert(strstr(output, "Disks flushed; RESET held LOW, PWM stopped"));
+  command('g');
+  assert(!running && start_calls == 1);
+  now += 999999;
+  service_control();
+  assert(!reboots);
+  ++now;
+  service_control();
+  assert(reboots == 1);
+
+  reset_fixture();
+  command('l');
+  command('g');
+  setup_reboot_request = true;
+  service_usb();
+  fatal = true;
+  service_run();
+  now += 2000000;
+  service_control();
+  assert(held && !running && !reboots && !config_reboot_ready);
+  assert(strstr(output, "automatic reboot cancelled"));
+
+  reset_fixture();
+  command('l');
+  command('g');
+  fatal = true;
+  setup_reboot_request = true;
+  service_usb();
+  assert(!config_reboot_after_stop && !reboots);
+  assert(strstr(output, "automatic reboot rejected"));
+
+  reset_fixture();
+  command('l');
+  command('g');
+  for (unsigned i = 0; i < 4; ++i) {
+    uint16_t status_command = 's';
+    assert(queue_try_add(&control_commands, &status_command));
+  }
+  setup_reboot_request = true;
+  service_usb();
+  assert(setup_reboot_request && !config_reboot_after_stop);
+  assert(strstr(output, "queue full; retrying orderly reboot"));
+  service_usb();
+  assert(!setup_reboot_request && config_reboot_after_stop && !reboots);
+}
+#endif
 
 static void test_disk_diagnostic(void) {
   reset_fixture();
@@ -1197,6 +1278,9 @@ static void test_supervisor_queue_ownership(void) {
 }
 
 int main(void) {
+#ifdef Z80_STAGE10_NETWORK
+  test_config_orderly_reboot();
+#endif
   test_direct_port_dispatch();
   for (unsigned address = 0; address < 256; ++address) {
     uint8_t port = (uint8_t)(address & 0x17);

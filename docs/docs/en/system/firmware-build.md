@@ -116,11 +116,17 @@ cmake -S . -B build -G Ninja \
 cmake --build build --target z80_stage01_supervisor -j
 ```
 
-Phase 10 prompts over USB for missing network settings; Ctrl-] n changes
-them later. SSID, password and the remote-FS IPv4 address are saved in the
+Phase 10 opens the unified system configuration shell over USB when Wi-Fi
+credentials are missing; **Ctrl-] c** opens it later. The old Ctrl-] n entry
+point is removed. SSID, password and the optional remote-FS IPv4 address are saved in the
 existing ENV store (`WIFI_SSID`, `WIFI_PASSWORD`, `FS_SERVER`). No credentials
 belong in CMake arguments or generated firmware headers. Until configured,
-CP/M and disk services continue over USB. See the
+CP/M and disk services continue over USB. The same shell configures
+OpenAI/Ollama chat, OpenWeatherMap and POSIX timezone settings.
+Quitting its main menu after saved changes announces a required reboot,
+flushes disks, safely stops the Z80, and reboots the Pico. Unchanged settings
+do not trigger a reboot. Save application work before quitting with changes.
+See the
 [Phase 10 setup procedure](../implementation/phase-10-websocket.md).
 Remote-FS I/O remains deferred.
 

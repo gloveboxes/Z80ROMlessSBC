@@ -99,7 +99,8 @@ extern "C" bool z80_network_poll(void) {
     }
     return false;
   }
-  if (memcmp(&active_config, config, sizeof(active_config)) != 0) {
+  if (strcmp(active_config.ssid, config->ssid) != 0 ||
+      strcmp(active_config.password, config->password) != 0) {
     clear_address();
     if (wifi_state != WifiState::uninitialized)
       cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);

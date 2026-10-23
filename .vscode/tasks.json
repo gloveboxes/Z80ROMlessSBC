@@ -20,9 +20,9 @@
 		},
 		{
 			"label": "Flash Pico - All disks (A-D)",
-			"detail": "Replace all four disks from build/cpm-stage09-loader; no backups. Firmware, boot and ENV are preserved.",
+			"detail": "Replace A/B/D from build/cpm-stage09-loader and C from the maintained Escape source disk; no backups. Firmware, boot and ENV are preserved.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive A=build/cpm-stage09-loader/drive_a_cpm63k-z80.img --drive B=build/cpm-stage09-loader/drive_b_bdsc.img --drive C=build/cpm-stage09-loader/drive_c_escape.img --drive D=build/cpm-stage09-loader/drive_d_blank.img --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive A=build/cpm-stage09-loader/drive_a_cpm63k-z80.img --drive B=build/cpm-stage09-loader/drive_b_bdsc.img --drive C=src/disks/source-altair/escape-posix.dsk --drive D=build/cpm-stage09-loader/drive_d_blank.img --power-confirmed",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -71,9 +71,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive C",
-			"detail": "Replace only C with drive_c_escape.img (Escape); no backups.",
+			"detail": "Replace only C from src/disks/source-altair/escape-posix.dsk, converted and verified at flash time; no backups.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=build/cpm-stage09-loader/drive_c_escape.img --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=src/disks/source-altair/escape-posix.dsk --power-confirmed",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},

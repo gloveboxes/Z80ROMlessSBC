@@ -15,7 +15,10 @@ cmake --build build --target z80_cpm_images -j
 ```
 
 Phase 10 provisions `WIFI_SSID`, `WIFI_PASSWORD` and `FS_SERVER` over USB
-with Ctrl-] n and saves them in ENV; do not pass credentials to CMake.
+through the unified Ctrl-] c configuration shell and saves them in ENV; do not
+pass credentials to CMake. Remote FS is optional. Quitting after saved changes
+announces and performs a disk-flushed, safe-stop reboot; unchanged settings do
+not reboot.
 Without settings, CP/M continues over USB. Never expose real credentials
 in logs or commits. `FS_SERVER` is stored only, with no remote-FS controller.
 

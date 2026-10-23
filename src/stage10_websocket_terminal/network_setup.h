@@ -14,12 +14,15 @@ typedef struct {
   char fs_server[16];
 } z80_network_config_t;
 
-/* Initialize before launching core 1. All other functions are core 1 only. */
+/* Unified USB configuration shell. Initialize before launching core 1;
+ * all other functions are core 1 only. */
 void z80_network_setup_init(void);
 void z80_network_setup_request(void);
 void z80_network_setup_usb_service(bool connected, bool running);
 bool z80_network_setup_input(uint8_t value);
 bool z80_network_setup_active(void);
+bool z80_network_setup_reboot_requested(void);
+void z80_network_setup_reboot_queued(void);
 
 /* ENV access and persistence belong exclusively to core 1. */
 void z80_network_setup_core1_service(void);

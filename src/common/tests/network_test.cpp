@@ -689,6 +689,12 @@ int main() {
   assert(!poll_network());
   fake_link = CYW43_LINK_UP;
   assert(poll_network() && time_client_starts == 1);
+  uint32_t before_fs_change = z80_network_generation();
+  strcpy(test_config.fs_server, "192.0.2.99");
+  assert(poll_network() && z80_network_generation() == before_fs_change);
+  assert(wifi_state == WifiState::online);
+  test_config.fs_server[0] = '\0';
+  assert(poll_network() && z80_network_generation() == before_fs_change);
   outgoing = {'U'};
   received = {'K'};
   unsigned old_disconnects = disconnects;

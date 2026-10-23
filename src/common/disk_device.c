@@ -47,20 +47,20 @@ static uint8_t disk_write_type;
 static uint16_t disk_data_index;
 static uint8_t disk_data[Z80_FLASH_RECORD_BYTES];
 
-static uint32_t disk_status_load(void) {
+static uint32_t __not_in_flash_func(disk_status_load)(void) {
   return __atomic_load_n(&disk_status, __ATOMIC_ACQUIRE);
 }
 
-static void disk_status_store(uint32_t value) {
+static void __not_in_flash_func(disk_status_store)(uint32_t value) {
   __atomic_store_n(&disk_status, value, __ATOMIC_RELEASE);
 }
 
-static bool disk_address_valid(void) {
+static bool __not_in_flash_func(disk_address_valid)(void) {
   return disk_drive < Z80_FLASH_DISK_SLOT_COUNT &&
          disk_lba < Z80_FLASH_RECORD_COUNT;
 }
 
-static void disk_start_command(uint8_t command) {
+static void __not_in_flash_func(disk_start_command)(uint8_t command) {
   if (disk_status_load() & DISK_STATUS_BUSY)
     return;
 
@@ -106,7 +106,7 @@ static void disk_start_command(uint8_t command) {
   }
 }
 
-uint8_t z80_flash_disk_io_read(uint8_t port) {
+uint8_t __not_in_flash_func(z80_flash_disk_io_read)(uint8_t port) {
   if (port == DISK_COMMAND_STATUS_PORT &&
       !__atomic_load_n(&disk_write_enabled, __ATOMIC_ACQUIRE))
     return DISK_STATUS_BUSY | DISK_STATUS_ERROR;
@@ -122,7 +122,7 @@ uint8_t z80_flash_disk_io_read(uint8_t port) {
   return value;
 }
 
-void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
+void __not_in_flash_func(z80_flash_disk_io_write)(uint8_t port, uint8_t value) {
   if (!__atomic_load_n(&disk_write_enabled, __ATOMIC_ACQUIRE))
     return;
   uint32_t status = disk_status_load();

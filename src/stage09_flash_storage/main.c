@@ -40,6 +40,7 @@ enum {
   SYSTEM_CLOCK_HZ = 120000000,
   USB_COMMAND_ESCAPE = 0x1D,
   USB_REPORT_CONNECTION = 0x100,
+  USB_CONFIG_REBOOT = 0x101,
   DISK_READY = 1,
   DISK_BUSY = 8,
   DIAGNOSTIC_BYTES = Z80_FLASH_DISK_SLOT_COUNT * Z80_FLASH_DISK_SLOT_BYTES,
@@ -69,6 +70,10 @@ static bool usb_was_connected;
 static uint32_t previous_cpu_state;
 #ifdef Z80_STAGE10_NETWORK
 static bool browser_was_connected;
+static bool config_reboot_after_stop;
+static bool config_reboot_ready;
+static absolute_time_t config_reboot_deadline;
+static bool config_reboot_queue_full;
 _Alignas(8) static uint32_t core1_network_stack[8192 / sizeof(uint32_t)];
 #endif
 static bool stop_requested;
@@ -104,7 +109,7 @@ static void publish_cpu_state(void) {
                    (loading ? CPU_LOADING : 0), __ATOMIC_RELEASE);
 }
 
-static uint8_t virtual_read(uint8_t port, void *context) {
+static uint8_t __not_in_flash_func(virtual_read)(uint8_t port, void *context) {
   (void)context;
   switch (port) {
   case 0x00:
@@ -126,7 +131,8 @@ static uint8_t virtual_read(uint8_t port, void *context) {
   }
 }
 
-static void virtual_write(uint8_t port, uint8_t value, void *context) {
+static void __not_in_flash_func(virtual_write)(uint8_t port, uint8_t value,
+                                              void *context) {
   (void)context;
   if (port == 0x00) {
     z80_terminal_io_write(port, value);
@@ -447,7 +453,7 @@ static void print_status(bool requested) {
 static void print_help(void) {
 #ifdef Z80_STAGE10_NETWORK
   printf("\nStage 10: Phase 9 automatic CP/M loader plus Wi-Fi terminal.\n"
-         "Ctrl-] n=network setup; browser owns CP/M while connected, "
+         "Ctrl-] c=system configuration; browser owns CP/M while connected, "
          "USB resumes on disconnect.\n");
 #else
   printf("\nStage 9: USB CP/M terminal; nominal 20 MHz after slow loading.\n");
@@ -531,11 +537,11 @@ static void receive_usb_byte(uint8_t value) {
     command_pending = false;
     if (value != USB_COMMAND_ESCAPE) {
 #ifdef Z80_STAGE10_NETWORK
-      if (value == 'n') {
+      if (value == 'c') {
         if ((state & (CPU_RUNNING | CPU_STOPPING)) == CPU_RUNNING)
           z80_network_setup_request();
         else
-          printf("\n[network setup] Rejected: CP/M must be running, not stopping.\n");
+          printf("\n[config] Rejected: CP/M must be running, not stopping.\n");
         return;
       }
 #endif
@@ -595,6 +601,16 @@ static void service_usb(void) {
   }
   z80_network_setup_usb_service(
       connected, (state & (CPU_RUNNING | CPU_STOPPING)) == CPU_RUNNING);
+  if (z80_network_setup_reboot_requested()) {
+    uint16_t command = USB_CONFIG_REBOOT;
+    if (queue_try_add(&control_commands, &command)) {
+      z80_network_setup_reboot_queued();
+      config_reboot_queue_full = false;
+    } else if (!config_reboot_queue_full) {
+      printf("\n[config] Supervisor queue full; retrying orderly reboot.\n");
+      config_reboot_queue_full = true;
+    }
+  }
 #else
   z80_terminal_set_connected(connected);
 #endif
@@ -654,8 +670,32 @@ static void service_usb(void) {
 }
 
 static void service_control(void) {
+#ifdef Z80_STAGE10_NETWORK
+  if (config_reboot_ready && time_reached(config_reboot_deadline)) {
+    config_reboot_ready = false;
+    watchdog_reboot(0, 0, 0);
+    return;
+  }
+#endif
   uint16_t command;
   if (queue_try_remove(&control_commands, &command)) {
+#ifdef Z80_STAGE10_NETWORK
+    if (command == USB_CONFIG_REBOOT) {
+      if (!running || diagnostic_active || z80_flash_disk_has_fatal_error()) {
+        printf("\n[config] FAIL: automatic reboot rejected: CP/M is not "
+               "running normally or storage has failed. CPU state unchanged; "
+               "inspect Ctrl-] s before manual recovery.\n");
+      } else {
+        config_reboot_after_stop = true;
+        if (!stop_requested)
+          diagnostic_command('x');
+      }
+    } else if ((config_reboot_after_stop || config_reboot_ready) &&
+               command != 's' && command != 'h' &&
+               command != USB_REPORT_CONNECTION) {
+      printf("\n[config] Orderly reboot in progress; command rejected.\n");
+    } else
+#endif
     if (command == USB_REPORT_CONNECTION) {
       if (!Z80_STAGE09_AUTOBOOT) {
         print_help();
@@ -723,6 +763,12 @@ static void service_run(void) {
     __atomic_store_n(&flash_pause_request, 1, __ATOMIC_RELEASE);
   }
   if (z80_flash_disk_has_fatal_error()) {
+#ifdef Z80_STAGE10_NETWORK
+    if (config_reboot_after_stop) {
+      config_reboot_after_stop = false;
+      printf("\n[config] FAIL: storage error; automatic reboot cancelled.\n");
+    }
+#endif
     boot_failure = "fatal storage error";
     hold_cpu();
     printf("\n[diag] FAIL: fatal storage error; RESET held LOW. "
@@ -747,9 +793,20 @@ static void service_run(void) {
       hold_cpu();
     restore_interrupts(interrupts);
     if (quiescent) {
-      printf("\n[diag] Disk quiescent; RESET held LOW, PWM stopped. "
-             "Ctrl-] r reboots/reloads the supervisor.\n");
-      print_help();
+#ifdef Z80_STAGE10_NETWORK
+      if (config_reboot_after_stop) {
+        config_reboot_after_stop = false;
+        config_reboot_ready = true;
+        config_reboot_deadline = make_timeout_time_ms(1000);
+        printf("\n[config] Disks flushed; RESET held LOW, PWM stopped. "
+               "Rebooting in one second.\n");
+      } else
+#endif
+      {
+        printf("\n[diag] Disk quiescent; RESET held LOW, PWM stopped. "
+               "Ctrl-] r reboots/reloads the supervisor.\n");
+        print_help();
+      }
     } else {
       flash_resuming = true;
       __atomic_store_n(&flash_pause_request, 0, __ATOMIC_RELEASE);
