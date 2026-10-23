@@ -102,12 +102,12 @@ to distinguish a switching clock from a line stuck at an invalid mid-level.
 Use the separate [Phase 6 scope diagnostic](../implementation/20mhz-scope.md)
 for an uninterrupted 20 MHz CPU/SRAM workload. The ordinary frequency screens
 and arithmetic soak deliberately pause/step CLK for OUT reports; this target
-does not. Build and later deployment are separate operations.
+does not. You can build it and deploy it separately, or use the VS Code task
+**Flash Pico - Phase 6 20 MHz scope diagnostic** to build, flash and verify it.
 
-1. Let any existing soak finish and retain its results. **Before attaching
-   probes, bond the DHO814 chassis to protective earth** as described above.
-   Compensate CH1 at 10X, then power off the SBC: USB disconnected before
-   external 5 V. Stopping acquisition is not a substitute for power-off.
+1. Once the Phase 6 scope diagnostic is deployed, bond the DHO814 chassis to
+   protective earth and compensate CH1 at 10X. Power down the SBC (disconnect
+   USB before external 5 V), then attach the scope probe as described below.
 2. For an accessible measurement of the **buffered 5 V clock**, attach CH1's
    tip to **AHCT244 U4 output pin 18** and its short ground spring only to
    nearby common circuit GND. Do not use a signal/supply rail as probe ground.
