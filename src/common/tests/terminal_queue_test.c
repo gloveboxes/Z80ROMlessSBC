@@ -33,7 +33,10 @@ static void *browser_worker(void *context) {
   size_t sent = 0, received = 0;
   uint8_t data[256];
   while (sent < TRANSFER_BYTES || received < TRANSFER_BYTES) {
-    size_t count = z80_terminal_supply(data, sizeof(data));
+    size_t count = z80_terminal_peek(data, sizeof(data));
+    if (count > 17)
+      count = 17;
+    assert(z80_terminal_supply(data, count) == count);
     for (size_t i = 0; i < count; ++i)
       assert(data[i] == pattern(received++));
     if (sent < TRANSFER_BYTES) {
@@ -67,6 +70,8 @@ int main(void) {
   assert(z80_terminal_rx_drop_count() == 0 && z80_terminal_tx_drop_count() == 0);
 
   uint8_t data[512];
+  assert(z80_terminal_peek(NULL, sizeof(data)) == 0);
+  assert(z80_terminal_peek(data, sizeof(data)) == 0);
   memset(data, 'X', sizeof(data));
   assert(z80_terminal_browser_try_receive(data, 128));
   for (size_t i = 0; i < sizeof(data); ++i)

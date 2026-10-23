@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include "hardware/clocks.h"
 #include "hardware/pio.h"
@@ -60,64 +61,73 @@ DisplayFailure failure = DisplayFailure::none;
 uint32_t published_status;
 uint64_t next_matrix_update_us;
 
-bool write_word(uint32_t value, bool read_result, uint32_t *result = nullptr) {
-  uint64_t deadline = time_us_64() + PIO_TIMEOUT_US;
-  while (pio_sm_is_tx_fifo_full(pio, state_machine)) {
-    if (time_us_64() >= deadline) {
-      pio_timed_out = true;
-      return false;
-    }
-    tight_loop_contents();
+enum class TransferStep : uint8_t { idle, start, write, ack, stop, stop_ack };
+enum class TransferResult : uint8_t { pending, complete, nack, timeout };
+struct {
+  TransferStep step = TransferStep::idle;
+  uint8_t data[I2C_CHUNK_BYTES + 2] = {};
+  size_t length = 0;
+  size_t index = 0;
+  bool acknowledged = true;
+  uint64_t deadline = 0;
+} transfer;
+
+void begin_transfer(uint8_t address, uint8_t command,
+                    const uint8_t *data, size_t length, bool probe = false) {
+  transfer.data[0] = static_cast<uint8_t>(address << 1);
+  transfer.data[1] = command;
+  if (length)
+    memcpy(transfer.data + 2, data, length);
+  transfer.length = probe ? 1 : length + 2;
+  transfer.index = 0;
+  transfer.acknowledged = true;
+  transfer.deadline = time_us_64() + PIO_TIMEOUT_US;
+  transfer.step = TransferStep::start;
+}
+
+TransferResult service_transfer() {
+  bool receiving = transfer.step == TransferStep::ack ||
+                   transfer.step == TransferStep::stop_ack;
+  bool waiting = receiving ? pio_sm_is_rx_fifo_empty(pio, state_machine)
+                           : pio_sm_is_tx_fifo_full(pio, state_machine);
+  if (waiting) {
+    if (time_us_64() < transfer.deadline)
+      return TransferResult::pending;
+    pio_timed_out = true;
+    return TransferResult::timeout;
   }
-  pio_sm_put(pio, state_machine, value);
-  if (!read_result)
-    return true;
-  while (pio_sm_is_rx_fifo_empty(pio, state_machine)) {
-    if (time_us_64() >= deadline) {
-      pio_timed_out = true;
-      return false;
-    }
-    tight_loop_contents();
-  }
-  if (result != nullptr)
-    *result = pio_sm_get(pio, state_machine);
-  else
+  switch (transfer.step) {
+  case TransferStep::start:
+    pio_sm_put(pio, state_machine, 1u << 30);
+    transfer.step = TransferStep::write;
+    break;
+  case TransferStep::write:
+    // Two action bits precede eight inverted, MSB-first pin-direction bits.
+    pio_sm_put(pio, state_machine,
+               static_cast<uint32_t>(
+                   static_cast<uint8_t>(~transfer.data[transfer.index])) << 22);
+    transfer.step = TransferStep::ack;
+    break;
+  case TransferStep::ack:
+    transfer.acknowledged = (pio_sm_get(pio, state_machine) & 1u) == 0;
+    ++transfer.index;
+    transfer.step = transfer.acknowledged && transfer.index < transfer.length
+                        ? TransferStep::write : TransferStep::stop;
+    break;
+  case TransferStep::stop:
+    pio_sm_put(pio, state_machine, 2u << 30);
+    transfer.step = TransferStep::stop_ack;
+    break;
+  case TransferStep::stop_ack:
     (void)pio_sm_get(pio, state_machine);
-  return true;
-}
-
-bool start_action(uint8_t action) {
-  return write_word(static_cast<uint32_t>(action) << 30, false);
-}
-
-bool write_byte(uint8_t value) {
-  uint32_t result = 1;
-  // Two action bits precede eight inverted, MSB-first pin-direction bits.
-  uint32_t encoded =
-      static_cast<uint32_t>(static_cast<uint8_t>(~value)) << 22;
-  if (!write_word(encoded, true, &result))
-    return false;
-  return (result & 1u) == 0;
-}
-
-bool probe_address(uint8_t address) {
-  if (!start_action(1))
-    return false;
-  bool acknowledged = write_byte(static_cast<uint8_t>(address << 1));
-  bool stopped = start_action(2);
-  return acknowledged && stopped;
-}
-
-bool write_transaction(uint8_t command, const uint8_t *data, size_t length) {
-  if (!start_action(1))
-    return false;
-  bool acknowledged = write_byte(static_cast<uint8_t>(display_address << 1));
-  if (acknowledged)
-    acknowledged = write_byte(command);
-  for (size_t i = 0; acknowledged && i < length; ++i)
-    acknowledged = write_byte(data[i]);
-  bool stopped = start_action(2);
-  return acknowledged && stopped;
+    transfer.step = TransferStep::idle;
+    return transfer.acknowledged ? TransferResult::complete
+                                 : TransferResult::nack;
+  case TransferStep::idle:
+    return TransferResult::pending;
+  }
+  transfer.deadline = time_us_64() + PIO_TIMEOUT_US;
+  return TransferResult::pending;
 }
 
 bool initialize_bus() {
@@ -169,45 +179,32 @@ void mark_failed(DisplayFailure reason) {
   state = DisplayState::failed;
 }
 
-void service_matrix() {
+void begin_matrix_transfer() {
   if (state == DisplayState::initialize) {
-    bool acknowledged;
     if (initialization_index == 2 || initialization_index == 3) {
       const uint8_t blank[I2C_CHUNK_BYTES] = {};
-      acknowledged = write_transaction(
-          initialization_index == 2 ? 0x00 : 0x08, blank, sizeof(blank));
+      begin_transfer(display_address,
+                     initialization_index == 2 ? 0x00 : 0x08,
+                     blank, sizeof(blank));
     } else {
       constexpr uint8_t commands[] = {0x21, 0x80, 0x00, 0x00, 0xe0, 0x81};
-      acknowledged = write_transaction(commands[initialization_index], nullptr, 0);
-    }
-    if (!acknowledged) {
-      mark_failed(DisplayFailure::initialization_nack);
-      return;
-    }
-    if (++initialization_index == 6) {
-      state = DisplayState::ready;
+      begin_transfer(display_address, commands[initialization_index], nullptr, 0);
     }
     return;
   }
 
-  if (time_us_64() < next_matrix_update_us)
-    return;
   uint8_t data[I2C_CHUNK_BYTES] = {};
   uint8_t first_row = matrix_chunk * 4;
   if (matrix_row >= first_row && matrix_row < first_row + 4)
     data[(matrix_row - first_row) * 2] = 0xff;
-  if (!write_transaction(matrix_chunk * I2C_CHUNK_BYTES, data, sizeof(data))) {
-    mark_failed(DisplayFailure::ram_nack);
-    return;
-  }
-  if (++matrix_chunk == 2) {
-    matrix_chunk = 0;
-    matrix_row = (matrix_row + 1) % 8;
-    next_matrix_update_us = time_us_64() + ROW_INTERVAL_US;
-  }
+  begin_transfer(display_address, matrix_chunk * I2C_CHUNK_BYTES,
+                 data, sizeof(data));
 }
-void service_display() {
+
+void service_display(bool updates_allowed) {
   if (state == DisplayState::failed)
+    return;
+  if (!updates_allowed && transfer.step == TransferStep::idle)
     return;
   if (state == DisplayState::uninitialized) {
     if (!initialize_bus()) {
@@ -217,23 +214,48 @@ void service_display() {
     }
     return;
   }
+  if (transfer.step == TransferStep::idle) {
+    if (state == DisplayState::scan_addresses) {
+      begin_transfer(scan_address, 0, nullptr, 0, true);
+    } else {
+      if (state == DisplayState::ready && time_us_64() < next_matrix_update_us)
+        return;
+      begin_matrix_transfer();
+    }
+  }
+  TransferResult result = service_transfer();
+  if (result == TransferResult::pending)
+    return;
   if (state == DisplayState::scan_addresses) {
-    if (probe_address(scan_address)) {
+    if (result == TransferResult::complete) {
       display_address = scan_address;
       state = DisplayState::initialize;
-    } else if (pio_timed_out) {
+    } else if (result == TransferResult::timeout) {
       mark_failed(DisplayFailure::scan_timeout);
     } else if (++scan_address > LAST_SCANNED_ADDRESS) {
       mark_failed(DisplayFailure::no_device);
     }
     return;
   }
-  service_matrix();
+  if (result != TransferResult::complete) {
+    mark_failed(state == DisplayState::initialize
+                    ? DisplayFailure::initialization_nack
+                    : DisplayFailure::ram_nack);
+    return;
+  }
+  if (state == DisplayState::initialize) {
+    if (++initialization_index == 6)
+      state = DisplayState::ready;
+  } else if (++matrix_chunk == 2) {
+    matrix_chunk = 0;
+    matrix_row = (matrix_row + 1) % 8;
+    next_matrix_update_us = time_us_64() + ROW_INTERVAL_US;
+  }
 }
 }  // namespace
 
-extern "C" void z80_matrix_core1_service(void) {
-  service_display();
+extern "C" void z80_matrix_core1_service(bool updates_allowed) {
+  service_display(updates_allowed);
   // One atomic word keeps core-0 status independent of the core-1 driver state.
   uint32_t snapshot = static_cast<uint32_t>(state) |
                       (static_cast<uint32_t>(display_address) << 8) |

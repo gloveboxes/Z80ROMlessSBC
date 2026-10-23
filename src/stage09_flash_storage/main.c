@@ -217,6 +217,12 @@ static void core1_service(void) {
 #ifdef Z80_STAGE10_NETWORK
   if (active && !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE))
     z80_network_core1_service();
+  if (active) {
+    uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
+    z80_matrix_core1_service(
+        (state & (CPU_RUNNING | CPU_STOPPING | CPU_LOADING)) == CPU_RUNNING &&
+        !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE));
+  }
 #endif
 }
 
@@ -645,18 +651,20 @@ static void service_usb(void) {
   )
     forward_terminal_byte(
         ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
-  for (unsigned int count = 0;
-       count < 32 && stdio_usb_connected() &&
-       tud_cdc_write_available() != 0; ++count) {
-    uint8_t value;
+  if (stdio_usb_connected()
 #ifdef Z80_STAGE10_NETWORK
-    if (z80_network_setup_active() ||
-        z80_terminal_usb_supply(&value, 1) == 0)
-#else
-    if (z80_terminal_supply(&value, 1) == 0)
+      && !z80_network_setup_active() && !z80_terminal_browser_connected()
 #endif
-      break;
-    z80_usb_console_put(value);
+  ) {
+    uint8_t data[32];
+    size_t capacity = tud_cdc_write_available();
+    if (capacity > sizeof(data))
+      capacity = sizeof(data);
+    size_t count = z80_terminal_peek(data, capacity);
+    if (count) {
+      size_t accepted = z80_usb_console_write(data, count);
+      z80_terminal_supply(data, accepted);
+    }
   }
   uint32_t rx = z80_terminal_rx_drop_count();
   uint32_t tx = z80_terminal_tx_drop_count();

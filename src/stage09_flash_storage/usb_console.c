@@ -126,8 +126,17 @@ void z80_usb_console_service(void) {
   }
 }
 
-void z80_usb_console_put(uint8_t value) {
+size_t z80_usb_console_write(const uint8_t *data, size_t length) {
   assert(get_core_num() == 1);
-  char byte = (char)value;
-  stdio_usb.out_chars(&byte, 1);
+  if (!stdio_usb_connected())
+    return 0;
+  size_t room = tud_cdc_write_available();
+  if (length > room)
+    length = room;
+  if (!length)
+    return 0;
+  size_t accepted = tud_cdc_write(data, (uint32_t)length);
+  if (accepted)
+    tud_cdc_write_flush();
+  return accepted;
 }

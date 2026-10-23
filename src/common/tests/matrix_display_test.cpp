@@ -18,6 +18,9 @@ struct test_pio {
   bool scl = true, sda = true, enabled = false;
   bool stalled = false, acknowledge = true, available = true;
   bool tx_full = false, sm_available = true;
+  bool rx_blocked = false;
+  uint fifo_operations = 0;
+  size_t nack_byte = 0;
   uint8_t device_address = 0x72;
   uint bits = 0;
   uint8_t byte = 0;
@@ -112,7 +115,8 @@ struct test_pio {
         }
       } else if (operation == 2) {
         assert(destination == 0 && value == 1);
-        bool ack = acknowledge && !transaction.empty() &&
+        bool ack = acknowledge && transaction.size() != nack_byte &&
+                   !transaction.empty() &&
                    transaction.front() == device_address * 2;
         uint32_t input = ack ? 0 : 1;
         isr = config.in_right ? (isr >> 1) | (input << 31)
@@ -161,12 +165,16 @@ void pio_sm_set_consecutive_pindirs(PIO p, uint, uint pin, uint count,
 }
 void pio_sm_set_enabled(PIO p, uint, bool enabled) { p->enabled = enabled; }
 bool pio_sm_is_tx_fifo_full(PIO p, uint) { return p->tx_full; }
-bool pio_sm_is_rx_fifo_empty(PIO p, uint) { return p->received.empty(); }
+bool pio_sm_is_rx_fifo_empty(PIO p, uint) {
+  return p->rx_blocked || p->received.empty();
+}
 void pio_sm_put(PIO p, uint, uint32_t word) {
   assert(p->enabled);
+  ++p->fifo_operations;
   p->execute(word);
 }
 uint32_t pio_sm_get(PIO p, uint) {
+  ++p->fifo_operations;
   uint32_t result = p->received.front();
   p->received.pop_front();
   return result;
@@ -175,7 +183,7 @@ void pio_sm_unclaim(PIO, uint) {}
 void pio_remove_program(PIO, const pio_program *, uint) {}
 uint32_t clock_get_hz(uint) { return 120000000; }
 uint64_t time_us_64() { return now++; }
-void tight_loop_contents() {}
+void tight_loop_contents() { assert(false && "Display must not busy-wait"); }
 
 static std::string diagnostic_output;
 static int display_printf(const char *format, ...) {
@@ -204,7 +212,29 @@ static void reset() {
   published_status = 0;
   display_address = 0;
   next_matrix_update_us = now = 0;
+  transfer = {};
   diagnostic_output.clear();
+}
+
+static void service_once(bool updates_allowed = true) {
+  uint64_t before = now;
+  uint operations = machine.fifo_operations;
+  z80_matrix_core1_service(updates_allowed);
+  assert(now - before <= 3);
+  assert(machine.fifo_operations - operations <= 1);
+}
+
+static void service_until(DisplayState expected) {
+  for (uint i = 0; i < 2000 && state != expected; ++i)
+    service_once();
+  assert(state == expected);
+}
+
+static void complete_transfer() {
+  service_once();
+  for (uint i = 0; i < 32 && transfer.step != TransferStep::idle; ++i)
+    service_once();
+  assert(transfer.step == TransferStep::idle);
 }
 
 static void assert_disabled() {
@@ -212,7 +242,7 @@ static void assert_disabled() {
   assert(!machine.enabled && machine.scl && machine.sda);
   assert(diagnostic_output.empty());
   auto before_count = machine.transactions.size();
-  z80_matrix_core1_service();
+  service_once();
   assert(machine.transactions.size() == before_count);
   z80_matrix_print_status();
   assert(diagnostic_output.find("state=failed") != std::string::npos);
@@ -223,14 +253,56 @@ static void assert_disabled() {
     assert(diagnostic_output.find("PIO FIFO timeout") != std::string::npos);
 }
 
+static void test_running_gate() {
+  reset();
+  for (uint i = 0; i < 16; ++i)
+    service_once(false);
+  assert(state == DisplayState::uninitialized && machine.instructions.empty());
+
+  service_until(DisplayState::scan_addresses);
+  service_once();
+  while (transfer.step != TransferStep::idle)
+    service_once(false);
+  assert(scan_address == FIRST_SCANNED_ADDRESS + 1);
+  auto transactions = machine.transactions.size();
+  now += PIO_TIMEOUT_US * 2;
+  service_once(false);
+  assert(machine.transactions.size() == transactions && !pio_timed_out);
+  service_until(DisplayState::ready);
+
+  for (TransferStep step : {TransferStep::write, TransferStep::ack,
+                            TransferStep::stop, TransferStep::stop_ack}) {
+    reset();
+    service_until(DisplayState::ready);
+    while (transfer.step != step)
+      service_once();
+    transactions = machine.transactions.size();
+    for (uint i = 0; i < 32 && transfer.step != TransferStep::idle; ++i)
+      service_once(false);
+    assert(transfer.step == TransferStep::idle);
+    assert(machine.transactions.size() ==
+           transactions + (step == TransferStep::stop_ack ? 0 : 1));
+    assert(machine.scl && machine.sda && machine.received.empty());
+    transactions = machine.transactions.size();
+    uint operations = machine.fifo_operations;
+    now += ROW_INTERVAL_US * 2;
+    for (uint i = 0; i < 16; ++i)
+      service_once(false);
+    assert(machine.transactions.size() == transactions);
+    assert(machine.fifo_operations == operations && !pio_timed_out);
+    complete_transfer();
+    assert(machine.transactions.size() == transactions + 1);
+  }
+}
+
 int main() {
+  test_running_gate();
   reset();
   z80_matrix_print_status();
   assert(diagnostic_output.find("state=uninitialized address=unavailable") !=
          std::string::npos);
   diagnostic_output.clear();
-  for (uint i = 0; i < 10; ++i)
-    z80_matrix_core1_service();
+  service_until(DisplayState::ready);
   assert(state == DisplayState::ready && display_address == 0x72);
   assert(machine.config.scl == 26 && machine.config.sda == 22);
   assert(!machine.config.out_right && !machine.config.in_right);
@@ -269,7 +341,7 @@ int main() {
     now = next_matrix_update_us;
     for (uint chunk = 0; chunk < 2; ++chunk) {
       auto before_count = machine.transactions.size();
-      z80_matrix_core1_service();
+      complete_transfer();
       assert(machine.transactions.size() == before_count + 1);
       std::vector<uint8_t> expected(10, 0);
       expected[0] = address_byte;
@@ -282,9 +354,9 @@ int main() {
     assert(next_matrix_update_us >= now + 499'999);
     auto before_count = machine.transactions.size();
     for (uint i = 0; i < 10; ++i)
-      z80_matrix_core1_service();
+      service_once();
     now = next_matrix_update_us - 1;
-    z80_matrix_core1_service();
+    service_once();
     assert(machine.transactions.size() == before_count);
   }
   assert(machine.minimum_high * machine.config.divider / 120 >= 4.0);
@@ -293,57 +365,97 @@ int main() {
   for (uint8_t address : {0x70, 0x77}) {
     reset();
     machine.device_address = address;
-    for (uint i = 0; i < 20; ++i)
-      z80_matrix_core1_service();
+    service_until(DisplayState::ready);
     assert(state == DisplayState::ready && display_address == address);
   }
 
   reset();
-  for (uint i = 0; i < 4; ++i)
-    z80_matrix_core1_service();
+  service_until(DisplayState::initialize);
   assert(state == DisplayState::initialize);
   machine.acknowledge = false;
-  z80_matrix_core1_service();
+  service_until(DisplayState::failed);
   assert_disabled();
 
   reset();
-  for (uint i = 0; i < 10; ++i)
-    z80_matrix_core1_service();
+  service_until(DisplayState::ready);
   machine.acknowledge = false;
-  z80_matrix_core1_service();
+  service_until(DisplayState::failed);
   assert_disabled();
 
   reset();
   machine.acknowledge = false;
-  for (uint i = 0; i < 10; ++i)
-    z80_matrix_core1_service();
+  service_until(DisplayState::failed);
   assert(machine.transactions.size() == 8);
   assert_disabled();
 
   reset();
-  z80_matrix_core1_service();
+  service_once();
   machine.tx_full = true;
   uint64_t before = now;
-  z80_matrix_core1_service();
-  assert(pio_timed_out && now - before < 2 * PIO_TIMEOUT_US);
+  service_once();
+  assert(!pio_timed_out && now - before <= 3);
+  now += PIO_TIMEOUT_US;
+  service_once();
+  assert(pio_timed_out);
   assert_disabled();
 
   reset();
-  z80_matrix_core1_service();
+  service_once();
   machine.stalled = true;
   before = now;
-  z80_matrix_core1_service();
-  assert(pio_timed_out && now - before < 2 * PIO_TIMEOUT_US);
+  service_once();
+  service_once();
+  service_once();
+  assert(!pio_timed_out && now - before < 10);
+  now += PIO_TIMEOUT_US;
+  service_once();
+  assert(pio_timed_out);
+  assert_disabled();
+
+  reset();
+  service_until(DisplayState::initialize);
+  machine.nack_byte = 2;
+  service_until(DisplayState::failed);
+  assert(machine.transactions.back().size() == 2);
+  assert_disabled();
+
+  reset();
+  service_until(DisplayState::ready);
+  machine.nack_byte = 5;
+  service_until(DisplayState::failed);
+  assert(machine.transactions.back().size() == 5);
+  assert_disabled();
+
+  reset();
+  service_until(DisplayState::initialize);
+  while (transfer.step != TransferStep::stop_ack)
+    service_once();
+  machine.rx_blocked = true;
+  service_once();
+  assert(initialization_index == 0 && !pio_timed_out);
+  machine.rx_blocked = false;
+  service_once();
+  assert(initialization_index == 1 && transfer.step == TransferStep::idle);
+
+  reset();
+  service_until(DisplayState::ready);
+  while (transfer.step != TransferStep::stop_ack)
+    service_once();
+  machine.rx_blocked = true;
+  service_once();
+  now += PIO_TIMEOUT_US;
+  service_once();
+  assert(pio_timed_out);
   assert_disabled();
 
   reset();
   machine.available = false;
-  z80_matrix_core1_service();
+  service_once();
   assert_disabled();
 
   reset();
   machine.sm_available = false;
-  z80_matrix_core1_service();
+  service_once();
   assert_disabled();
   puts("PASS: assembled matrix PIO, HT16K33 initialization, row pattern, "
        "timing, ACK/NACK, missing display and timeout isolation");

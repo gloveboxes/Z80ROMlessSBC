@@ -9,6 +9,7 @@
 static _Thread_local uint core;
 static bool connected, alarm_ready, init_ok = true;
 static unsigned usb_inits, room, written;
+static unsigned write_calls, flush_calls, write_limit = UINT32_MAX;
 static char output[16384];
 static stdio_driver_t *registered;
 static bool streaming_test;
@@ -54,6 +55,18 @@ static void usb_write(const char *data, int length) {
   written += (unsigned)length;
   output[written] = '\0';
   room -= (unsigned)length;
+}
+uint32_t tud_cdc_write(const void *data, uint32_t length) {
+  ++write_calls;
+  if (length > write_limit)
+    length = write_limit;
+  usb_write(data, (int)length);
+  return length;
+}
+uint32_t tud_cdc_write_flush(void) {
+  assert(core == 1);
+  ++flush_calls;
+  return 0;
 }
 static int usb_input(char *data, int length) {
   assert(core == 1 && length > 0);
@@ -139,7 +152,7 @@ int main(void) {
   assert(reported_drops == 1);
   char key;
   assert(registered->in_chars(&key, 1) == 1 && key == 'K');
-  z80_usb_console_put('Z');
+  assert(z80_usb_console_write((const uint8_t *)"Z", 1) == 1);
   assert(output[written - 1] == 'Z');
   registered->out_chars("stale", 5);
   connected = false;
@@ -163,8 +176,31 @@ int main(void) {
   z80_usb_console_service();
   assert(!strcmp(output + previous, "line1\r\nline2\r\n"));
   previous = written;
-  z80_usb_console_put('\n');
+  assert(z80_usb_console_write((const uint8_t *)"\n", 1) == 1);
   assert(written == previous + 1 && output[previous] == '\n');
+  unsigned calls = write_calls, flushes = flush_calls;
+  uint8_t burst[32];
+  memset(burst, 'T', sizeof(burst));
+  previous = written;
+  room = sizeof(burst);
+  assert(z80_usb_console_write(burst, sizeof(burst)) == sizeof(burst));
+  assert(written == previous + sizeof(burst));
+  assert(write_calls == calls + 1 && flush_calls == flushes + 1);
+  assert(!z80_usb_console_write(burst, sizeof(burst)));
+  assert(write_calls == calls + 1 && flush_calls == flushes + 1);
+  room = 8;
+  write_limit = 3;
+  assert(z80_usb_console_write(burst, sizeof(burst)) == 3);
+  write_limit = 0;
+  flushes = flush_calls;
+  assert(!z80_usb_console_write(burst, sizeof(burst)));
+  assert(flush_calls == flushes);
+  write_limit = UINT32_MAX;
+  connected = false;
+  calls = write_calls;
+  assert(!z80_usb_console_write(burst, sizeof(burst)));
+  assert(write_calls == calls);
+  connected = true;
   test_concurrent_diagnostics();
   init_ok = false;
   assert(!z80_usb_console_init());

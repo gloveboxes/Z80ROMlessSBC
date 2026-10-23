@@ -45,14 +45,20 @@ static void __not_in_flash_func(ring_add)(terminal_ring_t *ring, uint8_t value) 
     ring->peak = ring->count;
 }
 
-static size_t ring_remove(terminal_ring_t *ring, uint8_t *data,
-                          size_t capacity) {
+static size_t ring_peek(const terminal_ring_t *ring, uint8_t *data,
+                        size_t capacity) {
   size_t count = capacity < ring->count ? capacity : ring->count;
   size_t first = ring->capacity - ring->head;
   if (first > count)
     first = count;
   memcpy(data, ring->data + ring->head, first);
   memcpy(data + first, ring->data, count - first);
+  return count;
+}
+
+static size_t ring_remove(terminal_ring_t *ring, uint8_t *data,
+                          size_t capacity) {
+  size_t count = ring_peek(ring, data, capacity);
   ring->head = (ring->head + count) & (ring->capacity - 1);
   ring->count -= count;
   return count;
@@ -120,6 +126,15 @@ void z80_terminal_receive(const uint8_t *data, size_t length) {
     ring_add(&rx_queue, data[index] == '\n' ? '\r' : data[index]);
     critical_section_exit(&terminal_lock);
   }
+}
+
+size_t z80_terminal_peek(uint8_t *data, size_t capacity) {
+  if (data == NULL)
+    return 0;
+  critical_section_enter_blocking(&terminal_lock);
+  size_t count = ring_peek(&tx_queue, data, capacity);
+  critical_section_exit(&terminal_lock);
+  return count;
 }
 
 size_t z80_terminal_supply(uint8_t *data, size_t capacity) {

@@ -221,9 +221,9 @@ stop/flush protocol remain unchanged.
 - `web_terminal.cpp` owns HTTP/WebSocket sessions, protocol negotiation,
   heartbeat and terminal flow control. It receives online state and a network
   generation from the application; it does not configure or poll Wi-Fi.
-- `network_services.c` schedules these independent network services, weather,
-  chat and the core-1 matrix display.
-  The application still services disk work before network work.
+- `network_services.c` schedules these independent network services, weather
+  and chat. The application services disk work before network work, then
+  independently advances the core-1 matrix display.
 - `chat.c` owns the CHATC11 framed ABI, bounded request/response storage and
   per-request ENV settings on core 1. The existing atomic service mailbox
   remains its only core-0 boundary. `chat_stream.c` decodes bounded HTTP/SSE
@@ -498,9 +498,22 @@ eight rows.
 
 [matrix_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_display.cpp)
 is called after the network services, once the existing runtime-worker gate
-opens after CP/M startup. Each call probes one address or writes one bounded
-transaction; RAM updates use two eight-byte chunks on separate service calls.
-The 500 ms wait uses a deadline rather than a sleep. FIFO timeouts and transfer
+opens after CP/M startup. A resumable state machine probes one address or
+writes one bounded transaction at a time. Each pass performs at most one
+FIFO write or read and returns immediately if PIO is not ready; it never waits
+for a byte to finish. PIO clocks the byte independently, and later passes
+collect its ACK before submitting the next byte. STOP publishes a completion
+token only after releasing the bus. RAM updates use two eight-byte chunks,
+with each transaction spanning multiple service calls.
+New transactions start only while the existing CPU-state snapshot reports
+running, not stopping or loading, and no flash pause is requested. If that
+permission is withdrawn mid-transaction, core 1 continues only that transaction
+through STOP, including during the normal worker flash-pause gate, then leaves
+the last display pattern unchanged. No new core-0 publication, lock, interrupt
+or handshake is introduced. USB and network servicing are not gated by the
+display's running-state permission.
+The 500 ms interval and 5 ms FIFO progress timeout use deadlines rather than
+sleeps or busy-waits. FIFO timeouts and transfer
 NACKs disable the display service, retain a failure reason for status, and
 release its pins and PIO resources. All display GPIO and service work runs on
 core 1; core 0 reads only a compact atomic status snapshot. No display code

@@ -78,6 +78,7 @@ static unsigned service_writes;
 static unsigned service_probes;
 static unsigned usb_room;
 static unsigned disconnect_after_usb_writes;
+static unsigned usb_write_calls, usb_write_limit;
 static bool watchdog_reset;
 static z80_io_trap_reset_fault_t retained_reset_fault;
 static uint32_t fake_inactive_irqs;
@@ -91,6 +92,8 @@ static size_t input_length;
 static unsigned setup_requests;
 static bool setup_reboot_request;
 static unsigned matrix_status_requests;
+static unsigned matrix_services;
+static bool matrix_updates_allowed;
 static const char *network_address = "";
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   int length = snprintf(address, capacity, "%s", network_address);
@@ -126,6 +129,11 @@ void z80_matrix_print_status(void) {
   assert(fake_core == 0);
   ++matrix_status_requests;
   firmware_printf("[matrix] test status\n");
+}
+void z80_matrix_core1_service(bool updates_allowed) {
+  assert(fake_core == 1 && disk_services && io_services);
+  ++matrix_services;
+  matrix_updates_allowed = updates_allowed;
 }
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
   return (z80_web_terminal_stats_t){
@@ -230,7 +238,14 @@ int putchar_raw(int value) {
     connected = false;
   return value;
 }
-void z80_usb_console_put(uint8_t value) { putchar_raw(value); }
+size_t z80_usb_console_write(const uint8_t *data, size_t length) {
+  ++usb_write_calls;
+  size_t accepted = 0;
+  while (connected && usb_room && accepted < length &&
+         accepted < usb_write_limit)
+    putchar_raw(data[accepted++]);
+  return accepted;
+}
 bool watchdog_caused_reboot(void) { return watchdog_reset; }
 z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
   z80_io_trap_reset_fault_t fault = retained_reset_fault;
@@ -361,6 +376,8 @@ static void reset_fixture(void) {
   reset_was_watchdog = watchdog_reset = false;
   reset_fault = retained_reset_fault = (z80_io_trap_reset_fault_t){0};
   disconnect_after_usb_writes = 0;
+  usb_write_calls = 0;
+  usb_write_limit = 32;
   fake_inactive_irqs = 0;
   boot_failure = NULL;
   diagnostic_active = false;
@@ -387,6 +404,8 @@ static void reset_fixture(void) {
   setup_reboot_request = false;
   config_reboot_after_stop = config_reboot_ready = config_reboot_queue_full = false;
   matrix_status_requests = 0;
+  matrix_services = 0;
+  matrix_updates_allowed = false;
   network_address = "";
 #endif
 }
@@ -578,6 +597,34 @@ static void test_disconnect_during_output(void) {
     uint8_t value;
     assert(z80_terminal_supply(&value, 1) == 0);
   }
+
+}
+
+static void test_usb_batched_output(void) {
+  reset_fixture();
+  command('l');
+  command('g');
+  usb_was_connected = true;
+  for (unsigned i = 0; i < 64; ++i)
+    virtual_write(0, (uint8_t)('A' + i % 26), NULL);
+  size_t before = output_length;
+  service_usb();
+  assert(usb_write_calls == 1 && output_length == before + 32);
+  assert(z80_terminal_get_buffer_stats().tx_used == 32);
+  usb_write_limit = 3;
+  service_usb();
+  assert(usb_write_calls == 2 && output_length == before + 35);
+  assert(z80_terminal_get_buffer_stats().tx_used == 29);
+  usb_write_limit = 0;
+  service_usb();
+  assert(output_length == before + 35);
+  assert(z80_terminal_get_buffer_stats().tx_used == 29);
+  usb_write_limit = 32;
+  service_usb();
+  assert(output_length == before + 64);
+  for (unsigned i = 0; i < 64; ++i)
+    assert(output[before + i] == (char)('A' + i % 26));
+  assert(z80_terminal_get_buffer_stats().tx_used == 0);
 }
 
 static void usb_input(const char *bytes) {
@@ -899,6 +946,34 @@ static void test_stop_and_failure(void) {
 }
 
 #ifdef Z80_STAGE10_NETWORK
+static void test_matrix_running_gate(void) {
+  reset_fixture();
+  fake_core = 1;
+  core1_service();
+  assert(!matrix_services && !network_services);
+  workers_ready = 1;
+  const uint32_t states[] = {
+      0, CPU_RUNNING, CPU_RUNNING | CPU_STOPPING, CPU_STOPPING,
+      CPU_LOADING, CPU_RUNNING | CPU_LOADING, CPU_RUNNING,
+  };
+  for (unsigned i = 0; i < sizeof(states) / sizeof(states[0]); ++i) {
+    cpu_state = states[i];
+    core1_service();
+    assert(matrix_services == i + 1 && network_services == i + 1);
+    assert(matrix_updates_allowed == (states[i] == CPU_RUNNING));
+  }
+  unsigned polls = network_services;
+  unsigned display_calls = matrix_services;
+  flash_pause_request = 1;
+  core1_service();
+  assert(network_services == polls && matrix_services == display_calls + 1);
+  assert(!matrix_updates_allowed);
+  core1_service();
+  assert(network_services == polls && matrix_services == display_calls + 2);
+  assert(!matrix_updates_allowed);
+  fake_core = 0;
+}
+
 static void test_config_orderly_reboot(void) {
   reset_fixture();
   command('l');
@@ -1279,6 +1354,7 @@ static void test_supervisor_queue_ownership(void) {
 
 int main(void) {
 #ifdef Z80_STAGE10_NETWORK
+  test_matrix_running_gate();
   test_config_orderly_reboot();
 #endif
   test_direct_port_dispatch();
@@ -1299,6 +1375,7 @@ int main(void) {
   test_control_and_terminal();
   test_status_uptime();
   test_usb_backpressure_and_disconnect();
+  test_usb_batched_output();
   test_disconnect_during_output();
   test_reset_reporting();
   test_websocket_disconnect_queues();

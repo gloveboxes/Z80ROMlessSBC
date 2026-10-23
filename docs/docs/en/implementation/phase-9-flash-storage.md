@@ -128,6 +128,11 @@ ring lock over USB calls. Connected overflow is reported as `log_drops`;
 disconnected logs are discarded and not replayed. CP/M output retains its
 separate 512-byte terminal ring. The SDK stdout mutex is disabled for these
 targets, so core 0 never waits on USB output serialization.
+CP/M USB output submits at most 32 bytes in one nonblocking CDC write per pass,
+with one flush attempt when bytes are accepted. It peeks at the terminal ring
+and removes only the accepted prefix, leaving short or rejected writes queued
+for a later pass. No terminal lock is held during endpoint calls, and single
+interactive characters are submitted immediately without a batching delay.
 USB remains serviced while stopped or draining for a stop. Flash programming
 can temporarily suspend it through SDK lockout. Real enumeration, concurrent
 network traffic and timing still require bench acceptance.
