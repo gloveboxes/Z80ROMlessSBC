@@ -108,9 +108,14 @@ does not. Build and later deployment are separate operations.
    probes, bond the DHO814 chassis to protective earth** as described above.
    Compensate CH1 at 10X, then power off the SBC: USB disconnected before
    external 5 V. Stopping acquisition is not a substitute for power-off.
-2. Attach CH1's tip to **Z80 CLK pin 6** and its short ground spring only to
+2. For an accessible measurement of the **buffered 5 V clock**, attach CH1's
+   tip to **AHCT244 U4 output pin 18** and its short ground spring only to
    nearby common circuit GND. Do not use a signal/supply rail as probe ground.
-   Measuring this receiving pin includes the AHCT244 and breadboard path.
+   This checks the clock after the level-shifting buffer and is a useful
+   alternative to the less accessible Z80 socket pin. For a source-only check,
+   Pico **GP2 / header pin 4** is also suitable, but it is a 3.3 V point before
+   U4. To verify the waveform at the CPU's actual receiving point, probe
+   **Z80 CLK pin 6**; that also includes the short U4-to-socket connection.
 3. Enable CH1 only: **1 MOhm, DC coupling, 10X probe, Invert OFF, Delay 0,
    bandwidth limit OFF**. Start at **2 V/div** with ground and both levels
    visible, **20 ns/div**, Normal acquisition and Auto memory depth.
@@ -136,9 +141,12 @@ does not. Build and later deployment are separate operations.
     not measured results or independent timing-margin limits.
 
 7. Save a screenshot and waveform with firmware identity, rail voltage,
-   probe ratio, bandwidth, sample rate, memory depth and measured values.
-   Inspect clock levels/ringing as well; a correct frequency alone does not
-   qualify the receiving-pin waveform.
+   **probe point** (Pico GP2, U4 pin 18, or Z80 CLK pin 6), probe ratio,
+   bandwidth, sample rate, memory depth and measured values. A GP2 capture
+   verifies the generated frequency only; U4 pin 18 also checks the buffered
+   output. For receiving-pin waveform and signal-integrity evidence, capture
+   Z80 CLK pin 6 and inspect its levels and ringing; a correct frequency alone
+   does not qualify that waveform.
 
 8. Use `x` to end the measurement interval and retrieve the SRAM mailbox.
    The resulting slow readback clocks are outside the capture interval.
