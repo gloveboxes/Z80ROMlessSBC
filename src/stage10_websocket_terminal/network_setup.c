@@ -30,6 +30,7 @@ enum {
   MODEL,
   TOKENS,
   TEMPERATURE,
+  THINKING,
   WEATHER_KEY,
   LOCATION,
   UNITS,
@@ -53,6 +54,7 @@ static const struct {
     {"CHAT_MODEL", "Chat model", 64, false},
     {"CHAT_MAX_TOKENS", "Maximum tokens (positive integer)", 8, false},
     {"CHAT_TEMPERATURE", "Temperature (0-2)", 8, false},
+    {"CHAT_THINK", "Thinking (false, true, default)", 7, false},
     {"OWM_KEY", "OpenWeatherMap API key", 40, true},
     {"OWM_LOCATION", "Location (city,country or lat=...&lon=...)", 64, false},
     {"OWM_UNITS", "Units (metric, imperial, standard)", 12, false},
@@ -153,6 +155,9 @@ static bool valid_value(unsigned field, const char *text) {
     return strtoul(text, NULL, 10) > 0;
   case TEMPERATURE:
     return decimal(text, 0, 2);
+  case THINKING:
+    return !strcmp(text, "false") || !strcmp(text, "true") ||
+           !strcmp(text, "default");
   case LOCATION:
     return valid_location(text);
   case UNITS:
@@ -205,6 +210,8 @@ static void print_menu(void) {
            "  3 - configure Ollama (OpenAI-compatible /v1/chat/completions)\n"
            "  4 - configure model\n  5 - configure maximum tokens\n"
            "  6 - configure temperature\n"
+           "  7 - configure thinking (false, true, default)\n"
+           "  Thinking applies only to compatible/Ollama models that support it.\n"
            "  Only OpenAI uses CHAT_OPENAI_KEY; it is never sent to other "
            "providers.\n");
     break;
@@ -225,7 +232,7 @@ static void print_menu(void) {
 static bool in_menu(unsigned field) {
   return menu == MENU_MAIN || (menu == MENU_WIFI && field <= PASSWORD) ||
          (menu == MENU_FS && field == SERVER) ||
-         (menu == MENU_CHAT && field >= PROVIDER && field <= TEMPERATURE) ||
+         (menu == MENU_CHAT && field >= PROVIDER && field <= THINKING) ||
          (menu == MENU_WEATHER && field >= WEATHER_KEY && field <= UNITS) ||
          (menu == MENU_TIME && field == TIMEZONE);
 }
@@ -412,7 +419,7 @@ static void menu_command(int command) {
       editing[1][0] = '\0';
     }
     return;
-  } else if (menu == MENU_CHAT && command >= '4' && command <= '6') {
+  } else if (menu == MENU_CHAT && command >= '4' && command <= '7') {
     begin_edit(MODEL + (unsigned)(command - '4'), 1, 0);
     return;
   } else if (menu == MENU_WEATHER && (command == 'C' || command == '1')) {

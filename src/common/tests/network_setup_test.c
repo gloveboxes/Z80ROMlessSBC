@@ -112,6 +112,79 @@ static void restart_shell(void) {
   open_shell();
 }
 
+static void test_chat_thinking(void) {
+  restart_shell();
+  size_t menu_start = output_length;
+  type("3");
+  assert(strstr(output + menu_start, "7 - configure thinking"));
+  unsigned before = writes;
+  type("7yes\r1\rfalsex\rdefaultx\r");
+  assert(step == SETUP_EDITING && writes == before && !changed);
+  assert(strstr(output + menu_start, "Invalid value or length"));
+  type("\0337true\033");
+  assert(step == SETUP_MENU && writes == before && !changed);
+
+  const char *choices[] = {"false", "true", "default"};
+  for (unsigned i = 0; i < sizeof(choices) / sizeof(choices[0]); ++i) {
+    type("7");
+    type(choices[i]);
+    type("\r\n");
+    finish();
+    expect_value("CHAT_THINK", choices[i]);
+    assert(changed);
+    size_t show_start = output_length;
+    type("s");
+    char expected[32];
+    snprintf(expected, sizeof(expected), "CHAT_THINK: %s", choices[i]);
+    assert(strstr(output + show_start, expected));
+    type("qq");
+    assert(z80_network_setup_reboot_requested());
+    restart_shell();
+    expect_value("CHAT_THINK", choices[i]);
+    show_start = output_length;
+    type("s");
+    assert(strstr(output + show_start, expected));
+    type("3");
+  }
+
+  before = writes;
+  type("7\r\n");
+  finish();
+  assert(!changed && writes == before);
+  expect_value("CHAT_THINK", "default");
+  type("qq");
+  assert(!z80_network_setup_reboot_requested());
+
+  open_shell();
+  type("37-\r\n");
+  finish();
+  char value[256];
+  assert(!environment_io_get("CHAT_THINK", value, sizeof(value)));
+  assert(changed);
+  restart_shell();
+  assert(!environment_io_get("CHAT_THINK", value, sizeof(value)));
+  type("37\r\n");
+  before = writes;
+  finish();
+  assert(!changed && writes == before);
+  type("7true\r\n");
+  finish();
+  restart_shell();
+  type("37false\r\n");
+  write_error = -3;
+  size_t failure_start = output_length;
+  finish();
+  assert(!settings_loaded && !changed);
+  assert(strstr(output + failure_start, "FAIL: ENV status=-3"));
+  expect_value("CHAT_THINK", "true");
+  write_error = 0;
+  open_shell();
+  type("37false\r\n");
+  finish();
+  expect_value("CHAT_THINK", "false");
+  assert(changed);
+}
+
 int main(void) {
   z80_network_setup_init();
   assert(!z80_network_config());
@@ -312,6 +385,7 @@ int main(void) {
   assert(!valid_value(ENDPOINT, "http://host/v1/chat/completions#fragment"));
   assert(!valid_value(ENDPOINT, "http://host:0/v1/chat/completions"));
   assert(valid_value(ENDPOINT, "http://host:65535/v1/chat/completions"));
+  test_chat_thinking();
   puts("PASS: unified config menus, literal ENV persistence, validation, secrets, "
        "cancel/disconnect, partial failures and changed-only reboot requests");
 }

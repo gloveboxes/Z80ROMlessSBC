@@ -301,6 +301,11 @@ boolean-control models, medium effort where supported), or
 `ENV CHAT_THINK=default` to omit the field and use the server/model default.
 Only models that support disabling thinking can honor `none`.
 
+The USB configuration shell also edits this setting: **Ctrl-] c**, then
+**3 - Chat**, then **7 - configure thinking**. Enter `false`, `true` or
+`default`; `-` clears the key to the app's `false` default. Like other saved
+configuration changes, exiting the shell triggers a safe reboot.
+
 The app re-reads provider/thinking settings before each turn and never adds
 the parameter to OpenAI requests. Invalid values or ENV errors stop submission
 explicitly. An absent/empty thinking value is seeded as `false` on first use;
