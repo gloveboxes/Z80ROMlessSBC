@@ -9,3 +9,68 @@
   max-width: 100%;
   width: 100%;
 }
+
+/* Project directory cards: local styles, with Material light/dark colours. */
+.md-typeset .related-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.md-typeset .related-project {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 1.25rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.75rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+}
+
+.md-typeset .related-project:hover,
+.md-typeset .related-project:focus-visible {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0.3rem 1rem var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .related-project:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 3px;
+}
+
+.md-typeset .related-project__badge {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.9rem;
+  color: #fff;
+  font: 700 2.1rem var(--md-code-font-family);
+}
+
+.md-typeset .related-project__badge--dcc { background: #245bb5; }
+.md-typeset .related-project__badge--altair {
+  background: #137566;
+  font-size: 1.1rem;
+}
+
+.md-typeset .related-project__kind {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.md-typeset .related-project__name { font-size: 1.05rem; }
+.md-typeset .related-project__description { font-size: 0.8rem; }
+.md-typeset .related-project__link {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  color: var(--md-typeset-a-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+}

@@ -24,6 +24,35 @@ Do not manufacture its existing Gerbers for this redesign. The current
 eight-package breadboard circuit uses fixed HCT32 logic and Z80-executed RAM
 loading, with no PLD programmer or address expander.
 
+## Related projects
+
+Build C applications, package CP/M disks, and run them on this Z80 computer.
+The supplied disks already include a default set of applications.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://davidly.github.io/dcc/">
+        <img src="docs/docs/en/images/projects/dcc.svg" width="64" height="64" alt="DCC C Compiler" /><br />
+        <strong>DCC C Compiler</strong>
+      </a>
+      <p>Build Z80 CP/M applications on Windows, macOS, or Linux. C89 with selected C99/C11 features.</p>
+      <a href="https://davidly.github.io/dcc/">Explore DCC ↗</a>
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://gloveboxes.github.io/Altair-8800-AI-Edition/">
+        <img src="docs/docs/en/images/projects/altair.svg" width="64" height="64" alt="Altair 8800 AI Edition" /><br />
+        <strong>Altair 8800 AI Edition</strong>
+      </a>
+      <p>Explore CP/M applications and build Altair disk images for deployment to this project's Pico flash storage.</p>
+      <a href="https://gloveboxes.github.io/Altair-8800-AI-Edition/">Explore Altair ↗</a>
+    </td>
+  </tr>
+</table>
+
+See the [application and disk workflow](https://gloveboxes.github.io/Z80ROMlessSBC/related-projects/)
+when you reach Phases 9–10, after completing the earlier hardware bring-up tests.
+
 ## Build
 
 Configure and build the Pico firmware and CP/M artifacts from the repository

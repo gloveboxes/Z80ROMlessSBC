@@ -5,6 +5,23 @@ CP/M applications and disk images for this computer. Together, they offer a
 path from C source on a modern development machine to applications running
 under CP/M on this project's real Z80.
 
+<div class="related-projects" aria-label="Explore related projects">
+  <a class="related-project" href="https://davidly.github.io/dcc/">
+    <span class="related-project__badge related-project__badge--dcc" aria-hidden="true">C</span>
+    <span class="related-project__kind">Compiler &amp; toolchain</span>
+    <strong class="related-project__name">DCC C Compiler</strong>
+    <span class="related-project__description">Build C applications on your computer. Run them on a Z80 under CP/M.</span>
+    <span class="related-project__link">Explore DCC <span aria-hidden="true">↗</span></span>
+  </a>
+  <a class="related-project" href="https://gloveboxes.github.io/Altair-8800-AI-Edition/">
+    <span class="related-project__badge related-project__badge--altair" aria-hidden="true">8800</span>
+    <span class="related-project__kind">Applications &amp; disk images</span>
+    <strong class="related-project__name">Altair 8800 AI Edition</strong>
+    <span class="related-project__description">Explore CP/M applications and build disk images for this Z80 computer.</span>
+    <span class="related-project__link">Explore Altair <span aria-hidden="true">↗</span></span>
+  </a>
+</div>
+
 The disks supplied with this project already include a default set of
 applications. The system boots **`64K CP/M 2.2 - Burcon Z80 Edition`**, a
 custom version of the original Burcon CP/M 2.2 and BIOS, modified and optimised
