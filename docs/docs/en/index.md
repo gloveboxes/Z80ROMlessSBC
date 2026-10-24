@@ -63,6 +63,18 @@ USB interrupts and endpoint operations remain on core 1.
 The diagram follows the maintained Phase 10 implementation, which compiles
 the Phase 9 automatic-loader application with networking enabled.
 
+## Working and tested breadboard implementation
+
+The breadboard implementation shown below has been built and tested, running
+the Z80 at 20 MHz with CP/M executing from SRAM. It brings together the Z80,
+Pico 2 W, SRAM, and interface logic across three BB830 breadboards.
+
+[![Working and tested Z80 ROMless SBC breadboard implementation](images/breadboard-z80.jpeg)](images/breadboard-z80.jpeg)
+
+Follow the [staged implementation plan](implementation/index.md) to reproduce
+the build and validate each stage, from power and clock checks through ROMless
+boot loading, terminal access, and persistent disk I/O.
+
 ## Explore further
 
 - [USB CP/M terminal and flash storage](implementation/phase-9-flash-storage.md) -

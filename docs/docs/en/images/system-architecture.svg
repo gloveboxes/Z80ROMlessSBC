@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1640" viewBox="0 0 1920 1640" role="img" aria-labelledby="title description">
   <title id="title">Z80 ROMless SBC: hardware and software architecture</title>
-  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi and WebSocket networking. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives memory addresses and writes SRAM, including during assisted loading. After independent read-back verification and reset, it executes CP/M directly from 64 KiB SRAM.</desc>
+  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the HT16K33 matrix service. A PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the matrix. The Z80 clock uses PWM. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives memory addresses and writes SRAM, including during assisted loading. After independent read-back verification and reset, it executes CP/M directly from 64 KiB SRAM.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -39,7 +39,7 @@
   <text x="1720" y="60" class="small" text-anchor="middle">IMPLEMENTED STAGE 10</text>
 
   <!-- The Pico boundary contains firmware ownership, shared RAM and onboard flash. -->
-  <rect x="320" y="145" width="1240" height="685" rx="20" fill="#ffffff" stroke="#b9c8dc" stroke-width="2"/>
+  <rect x="320" y="145" width="1240" height="715" rx="20" fill="#ffffff" stroke="#b9c8dc" stroke-width="2"/>
   <text x="350" y="183" class="heading">Raspberry Pi Pico 2 W</text>
   <text x="1530" y="181" class="body muted" text-anchor="end">RP2350 multicore I/O controller | clk_sys = 120 MHz</text>
 
@@ -134,10 +134,18 @@
   <text x="1620" y="593" class="body">Chat: OpenAI / compatible</text>
   <text x="1620" y="623" class="small muted">Async DNS / TCP / TLS; bounded data</text>
   <path d="M1530 575H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
-  <text x="1600" y="700" class="small muted">Network code never owns Z80 GPIO.</text>
-  <text x="1600" y="727" class="small muted">CP/M boot does not wait for Wi-Fi.</text>
-  <text x="1600" y="754" class="small muted">FS_SERVER is stored only:</text>
-  <text x="1600" y="779" class="small muted">no remote-filesystem client.</text>
+  <!-- Core 1 feeds PIO FIFOs; the PIO state machine generates the I2C signals. -->
+  <path d="M1530 620H1545V834H1530" class="network" marker-end="url(#teal-arrow)"/>
+  <rect x="1120" y="817" width="410" height="33" rx="8" fill="#eaf8f4" stroke="#aad8cd"/>
+  <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0 state machine: I²C signal generation</text>
+  <path d="M1530 834H1580V745H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
+  <rect x="1600" y="680" width="280" height="170" rx="14" fill="#ffffff" stroke="#aad8cd"/>
+  <text x="1620" y="710" class="section teal">MATRIX DISPLAY</text>
+  <text x="1620" y="740" class="subheading">HT16K33 over 100 kHz I²C</text>
+  <text x="1620" y="768" class="small">GP26: SCL; GP22: SDA</text>
+  <text x="1620" y="793" class="small">Core 1: bounded FIFO service</text>
+  <text x="1620" y="816" class="small">Moving row every 500 ms</text>
+  <text x="1620" y="839" class="source">matrix_display.cpp / matrix_i2c.pio</text>
 
   <text x="350" y="885" class="section">HARDWARE DATA PLANE</text>
   <text x="1880" y="885" class="small muted" text-anchor="end">Current breadboard circuit | 5 V CPU / SRAM; buffered 3.3 V Pico interface | # = active LOW</text>
@@ -167,8 +175,8 @@
   <text x="149" y="844" class="subheading orange" text-anchor="middle">20 MHz Z80 CLK</text>
   <text x="265" y="922" class="source orange">via AHCT244</text>
   <path d="M620 790V930" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
-  <rect x="635" y="837" width="600" height="32" rx="6" fill="#f6f8fc"/>
-  <text x="650" y="859" class="small blue">Boot injection / read-back; runtime I/O data + control; bus grants</text>
+  <rect x="635" y="894" width="600" height="32" rx="6" fill="#f6f8fc"/>
+  <text x="650" y="916" class="small blue">Boot injection / read-back; runtime I/O data + control; bus grants</text>
   <path d="M430 1010H520" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
   <text x="475" y="992" class="source" text-anchor="middle">I/O</text>
   <path d="M1200 1010H1320" class="line" marker-end="url(#arrow)"/>
@@ -242,6 +250,6 @@
   <rect x="40" y="1492" width="1840" height="65" rx="10" fill="#e9eef6"/>
   <text x="60" y="1518" class="small"><tspan font-weight="700">Runtime flash programming:</tspan> core 1 requests a core-0 BUSREQ#/BUSACK# grant + SDK flash-safe execution; release after commit. No SRAM bus mastering.</text>
   <text x="60" y="1543" class="small"><tspan font-weight="700">I/O cycle:</tspan> HCT32 asserts WAIT#; core 0 stops PWM, transfers one byte, releases WAIT#, steps to cycle end, isolates data paths and resumes PWM.</text>
-  <text x="40" y="1590" class="source">Implementation: Stage 10 / core-1 USB migration | Shared Stage 9 main.c. Blue = Z80 I/O and USB queues; teal = networking; orange = clock; purple = SRAM.</text>
+  <text x="40" y="1590" class="source">Implementation: Stage 10 / core-1 USB migration | Shared Stage 9 main.c. Blue = Z80 I/O and USB queues; teal = network + display; orange = clock; purple = SRAM.</text>
   <text x="40" y="1617" class="source">20 MHz is the configured nominal Z80 clock, not a claim of combined network timing qualification. Boot failures hold RESET# LOW; trap faults fail closed via reset/watchdog.</text>
 </svg>
