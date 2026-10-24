@@ -75,6 +75,8 @@ static bool config_reboot_after_stop;
 static bool config_reboot_ready;
 static absolute_time_t config_reboot_deadline;
 static bool config_reboot_queue_full;
+static bool web_reboot_active;
+static absolute_time_t web_reboot_deadline;
 _Alignas(8) static uint32_t core1_network_stack[8192 / sizeof(uint32_t)];
 #endif
 static bool stop_requested;
@@ -220,8 +222,12 @@ static void core1_service(void) {
   z80_usb_console_service();
   service_usb();
 #ifdef Z80_STAGE10_NETWORK
-  if (active && !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE))
-    z80_network_core1_service();
+  if (active) {
+    if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE))
+      z80_network_terminal_core1_service();
+    else
+      z80_network_core1_service();
+  }
   if (active) {
     uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
     z80_matrix_core1_service(
@@ -734,6 +740,31 @@ static void service_usb(void) {
 
 static void service_control(void) {
 #ifdef Z80_STAGE10_NETWORK
+  if (z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_REQUESTED) {
+    if (config_reboot_after_stop || config_reboot_ready || stop_requested ||
+        !running || diagnostic_active || z80_flash_disk_has_fatal_error()) {
+      z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_REJECTED);
+    } else {
+      web_reboot_active = true;
+      web_reboot_deadline = make_timeout_time_ms(30000);
+      config_reboot_after_stop = true;
+      z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_FLUSHING);
+      diagnostic_command('x');
+    }
+  }
+  if (web_reboot_active && z80_flash_disk_has_fatal_error()) {
+    web_reboot_active = false;
+    config_reboot_after_stop = config_reboot_ready = false;
+    z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_STORAGE_ERROR);
+  }
+  if (web_reboot_active && time_reached(web_reboot_deadline)) {
+    web_reboot_active = false;
+    config_reboot_after_stop = config_reboot_ready = false;
+    // Keep draining/stopping; never force a reset through an unfinished write.
+    z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_TIMEOUT);
+    printf("\n[web] Reboot timed out; automatic restart cancelled. "
+           "Orderly stop remains pending.\n");
+  }
   if (config_reboot_ready && time_reached(config_reboot_deadline)) {
     config_reboot_ready = false;
     watchdog_reboot(0, 0, 0);
@@ -831,6 +862,10 @@ static void service_run(void) {
       config_reboot_after_stop = false;
       printf("\n[config] FAIL: storage error; automatic reboot cancelled.\n");
     }
+    if (web_reboot_active) {
+      web_reboot_active = false;
+      z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_STORAGE_ERROR);
+    }
 #endif
     boot_failure = "fatal storage error";
     hold_cpu();
@@ -838,6 +873,11 @@ static void service_run(void) {
            "Reboot to recover; preserve USB log.\n");
     return;
   }
+#ifdef Z80_STAGE10_NETWORK
+  if (bios_announced && ccp_announced && !stop_requested &&
+      z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_IDLE)
+    z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_CPM_READY);
+#endif
   if (!stop_requested)
     return;
   if (flash_resuming) {
@@ -861,6 +901,8 @@ static void service_run(void) {
         config_reboot_after_stop = false;
         config_reboot_ready = true;
         config_reboot_deadline = make_timeout_time_ms(1000);
+        if (web_reboot_active)
+          z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_RESTARTING);
         printf("\n[config] Disks flushed; RESET held LOW, PWM stopped. "
                "Rebooting in one second.\n");
       } else

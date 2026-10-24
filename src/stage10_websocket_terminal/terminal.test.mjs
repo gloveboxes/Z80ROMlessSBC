@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const html = readFileSync(new URL('./Terminal/index.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1]
-  .replace('        initialize,', '        state, elements, setupTerminalEventHandlers, setupMonitorButton, getWebSocketUrl, handleProtocolFrame, resetProtocol, closeConnection, scheduleReconnect, initialize,');
+  .replace('        initialize,', '        state, elements, setupTerminalEventHandlers, setupMonitorButton, setupRebootButton, setupWebSocketEventHandlers, getWebSocketUrl, handleProtocolFrame, resetProtocol, closeConnection, scheduleReconnect, initialize,');
 
 function frame(type, sequence, payload = []) {
   const bytes = new Uint8Array(5 + payload.length);
@@ -47,7 +47,7 @@ function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }
     document: { getElementById() { return null; } },
     setTimeout(callback) { const id = nextTimer++; timers.set(id, callback); return id; },
     clearTimeout(id) { timers.delete(id); },
-    window: { location },
+    window: { location, confirm() { return true; } },
   });
   vm.runInContext(script + ';globalThis.api = AltairTerminal;', context);
   const api = context.api;
@@ -59,10 +59,10 @@ function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }
   // Use the actual error display, capturing its console notification.
   context.console = { ...console, error(...args) { errors.push(args.join(' ')); } };
   const receive = bytes => api.handleProtocolFrame(bytes.buffer, api.state.ws);
-  receive(frame(5, 3));
+  receive(frame(5, 4));
   sent.length = 0;
   return {
-    api, sent, written, errors, timers, receive, type: data => onData(data),
+    api, context, sent, written, errors, timers, receive, type: data => onData(data),
     acknowledge() { receive(frame(4, api.state.inputSequence)); },
     retry() {
       const callback = timers.get(api.state.inputTimer);
@@ -193,7 +193,7 @@ test('input limit rejects the whole new paste and reconnect never replays pendin
   assert.equal(input.timers.size, 0);
   input.type('not ready');
   assert.equal(input.api.state.inputBuffer.length, 0);
-  input.receive(frame(5, 3));
+  input.receive(frame(5, 4));
   input.type('N');
   assert.deepEqual(input.sent.at(-1), [2, 1, 0, 0, 0, 78]);
 });
@@ -204,7 +204,7 @@ test('an old xterm callback cannot acknowledge bytes on a replacement connection
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
   input.api.state.ws = { readyState: 1, send(data) { input.sent.push([...data]); } };
-  input.receive(frame(5, 3));
+  input.receive(frame(5, 4));
   const count = input.sent.length;
   input.finishOutput();
   assert.equal(input.sent.length, count);
@@ -217,8 +217,8 @@ test('protocol readiness is required and sequence counters wrap at uint32', () =
   input.type('A');
   assert.equal(input.sent.length, 0);
   assert.match(input.api.elements.error.textContent, /handshake/);
-  input.receive(frame(5, 3));
-  assert.deepEqual(input.sent.shift(), [6, 3, 0, 0, 0]);
+  input.receive(frame(5, 4));
+  assert.deepEqual(input.sent.shift(), [6, 4, 0, 0, 0]);
 
   input.api.state.inputSequence = 0xffffffff;
   input.type('AB'.repeat(64));
@@ -280,7 +280,7 @@ test('protocol reset invalidates callbacks even if the socket object is unchange
   input.deferOutput();
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
-  input.receive(frame(5, 3));
+  input.receive(frame(5, 4));
   const count = input.sent.length;
   input.finishOutput();
   assert.equal(input.sent.length, count);
@@ -288,10 +288,11 @@ test('protocol reset invalidates callbacks even if the socket object is unchange
   assert.equal(input.api.state.outputSequence, 1);
 });
 
-test('version 1/2 handshakes are rejected and reconnect attempts really stop at five', () => {
+test('version 1/2/3 handshakes are rejected and reconnect attempts really stop at five', () => {
   const input = terminal();
   assert.throws(() => input.receive(frame(5, 1)), /Unsupported/);
   assert.throws(() => input.receive(frame(5, 2)), /Unsupported/);
+  assert.throws(() => input.receive(frame(5, 3)), /Unsupported/);
   input.api.state.connected = false;
   for (let attempt = 0; attempt < 7; ++attempt) {
     input.api.state.reconnectTimer = null;
@@ -321,4 +322,104 @@ test('embedded gzip is deterministic and decompresses to the exact copied termin
   } finally {
     rmSync(temporary, { recursive: true });
   }
+});
+
+
+test('reboot bypasses terminal input, requires confirmation, and suppresses duplicate clicks', () => {
+  const input = terminal();
+  input.api.elements.rebootBtn = {};
+  input.api.elements.rebootStatus = { textContent: '' };
+  input.api.setupRebootButton();
+  input.context.window.confirm = () => false;
+  input.api.elements.rebootBtn.onclick();
+  assert.equal(input.sent.length, 0);
+  input.context.window.confirm = () => true;
+  input.type('busy'); // Leave ordinary input unacknowledged.
+  input.sent.length = 0;
+  input.api.elements.rebootBtn.onclick();
+  assert.deepEqual(input.sent, [[7, 0, 0, 0, 0]]);
+  assert.equal(input.api.elements.rebootBtn.disabled, true);
+  input.api.elements.rebootBtn.onclick();
+  input.type('ignored');
+  assert.equal(input.sent.length, 1);
+  input.receive(frame(8, 2));
+  assert.match(input.api.elements.rebootStatus.textContent, /Flushing/);
+  input.receive(frame(8, 3));
+  assert.equal(input.api.elements.rebootStatus.textContent, 'Flushing disks -> Restarting...');
+  input.receive(frame(8, 3));
+  assert.equal(input.api.elements.rebootStatus.textContent, 'Flushing disks -> Restarting...');
+  input.receive(frame(8, 7)); // A pre-reboot ready report cannot complete this request.
+  assert.equal(input.api.state.rebootPending, true);
+  input.api.state.rebootDisconnected = true;
+  input.api.resetProtocol();
+  input.receive(frame(5, 4));
+  assert.equal(input.api.state.rebootPending, false);
+  assert.equal(input.api.elements.rebootStatus.textContent, '');
+  input.receive(frame(8, 7));
+  assert.equal(input.api.state.rebootPending, false);
+  assert.equal(input.api.elements.rebootBtn.disabled, false);
+  assert.equal(input.api.elements.rebootStatus.textContent, '');
+  assert.equal(input.api.state.rebootTimer, null);
+});
+
+test('reboot reports storage failure, timeout and rejection without forcing reset', () => {
+  for (const [status, message] of [[4, /storage error/], [5, /timed out/], [6, /rejected/]]) {
+    const input = terminal();
+    input.api.elements.rebootBtn = {};
+    input.api.elements.rebootStatus = { textContent: '' };
+    input.api.setupRebootButton();
+    input.api.elements.rebootBtn.onclick();
+    input.receive(frame(8, status));
+    assert.equal(input.api.state.rebootPending, false);
+    assert.match(input.api.elements.rebootStatus.textContent, message);
+    assert.equal(input.api.state.rebootTimer, null);
+    assert.equal(input.sent.filter(f => f[0] === 7).length, 1);
+  }
+});
+
+
+test('only a requested reboot automatically reconnects after socket closure', () => {
+  for (const reboot of [false, true]) {
+    const input = terminal();
+    input.api.elements.rebootBtn = {};
+    input.api.elements.rebootStatus = { textContent: '' };
+    input.api.setupRebootButton();
+    input.api.setupWebSocketEventHandlers('192.0.2.1');
+    if (reboot) input.api.elements.rebootBtn.onclick();
+    input.api.state.ws.onclose({ code: 1006, reason: '' });
+    if (reboot) {
+      assert.equal(input.api.elements.rebootStatus.textContent, 'Reconnecting...');
+    }
+    assert.equal(input.api.state.rebootDisconnected, reboot);
+    assert.equal(input.api.state.reconnectTimer !== null, reboot);
+    assert.equal(input.api.state.connected, false);
+    assert.equal(input.api.elements.rebootBtn.disabled, true);
+  }
+});
+
+test('an unconfirmed reboot times out without resending the request', () => {
+  const input = terminal();
+  input.api.elements.rebootBtn = {};
+  input.api.elements.rebootStatus = { textContent: '' };
+  input.api.setupRebootButton();
+  input.api.elements.rebootBtn.onclick();
+  const callback = input.timers.get(input.api.state.rebootTimer);
+  callback();
+  assert.equal(input.api.state.rebootPending, false);
+  assert.match(input.api.elements.rebootStatus.textContent, /not confirmed/);
+  assert.equal(input.sent.filter(f => f[0] === 7).length, 1);
+});
+
+
+test('reconnect clears reboot progress without claiming the reboot was confirmed', () => {
+  const input = terminal();
+  input.api.elements.rebootBtn = {};
+  input.api.elements.rebootStatus = { textContent: '' };
+  input.api.setupRebootButton();
+  input.api.elements.rebootBtn.onclick();
+  input.api.state.rebootDisconnected = true;
+  input.api.resetProtocol();
+  input.receive(frame(5, 4));
+  input.receive(frame(8, 7));
+  assert.equal(input.api.elements.rebootStatus.textContent, '');
 });

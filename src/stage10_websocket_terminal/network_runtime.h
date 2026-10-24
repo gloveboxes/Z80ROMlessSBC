@@ -11,6 +11,8 @@ extern "C" {
 bool z80_network_poll(void);
 uint32_t z80_network_generation(void);
 void z80_network_core1_service(void);
+/* Keep supervisor transport alive while disk/application workers are paused. */
+void z80_network_terminal_core1_service(void);
 
 #ifdef __cplusplus
 }

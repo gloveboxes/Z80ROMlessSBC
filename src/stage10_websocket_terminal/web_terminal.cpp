@@ -20,7 +20,7 @@ constexpr size_t INPUT_BYTES = 64;
 constexpr size_t HEADER_BYTES = 5;
 constexpr size_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
 constexpr uint32_t OUTPUT_COALESCE_US = 1000;
-constexpr uint32_t PROTOCOL_VERSION = 3;
+constexpr uint32_t PROTOCOL_VERSION = 4;
 constexpr uint32_t FRAME_RETRY_MS = 250;
 constexpr uint32_t HEARTBEAT_MS = 30u * 1000u;
 constexpr uint32_t PONG_TIMEOUT_MS = 20u * 1000u;
@@ -31,7 +31,7 @@ constexpr uint8_t MAX_MISSED_PONGS = 2;
 constexpr uint32_t OUTPUT_ACK_TIMEOUT_MS = 5u * 60u * 1000u;
 enum : uint8_t {
   OUTPUT = 1, INPUT = 2, OUTPUT_ACK = 3, INPUT_ACK = 4,
-  HELLO = 5, READY = 6,
+  HELLO = 5, READY = 6, REBOOT = 7, REBOOT_STATUS = 8,
 };
 
 struct OutputFrame {
@@ -54,6 +54,8 @@ uint32_t output_sequence;
 uint32_t input_sequence;
 bool input_ack_pending;
 bool protocol_ready;
+std::atomic<uint32_t> reboot_status{Z80_WEB_REBOOT_IDLE};
+uint32_t reported_reboot_status = UINT32_MAX;
 WebSocketServer *server;
 bool server_started;
 absolute_time_t server_retry_deadline = nil_time;
@@ -210,6 +212,7 @@ void write_sequence(uint8_t *data, uint32_t value) {
 
 void reset_session() {
   protocol_ready = false;
+  reported_reboot_status = UINT32_MAX;
   input_sequence = output_sequence = 1;
   output_head = output_count = pending_input_length = 0;
   input_ack_pending = false;
@@ -268,6 +271,17 @@ bool send_control(uint8_t type, uint32_t sequence) {
                              sizeof(frame));
 }
 
+void report_reboot_status() {
+  uint32_t status = reboot_status.load(std::memory_order_acquire);
+  if (protocol_ready && status != reported_reboot_status && send_control(REBOOT_STATUS, status)) {
+    reported_reboot_status = status;
+    // A watchdog reset sends no TCP FIN. Close explicitly while the network is
+    // still alive so the browser can reconnect without waiting for TCP timeout.
+    if (status == Z80_WEB_REBOOT_RESTARTING)
+      close_connection(*server, (uint32_t)active_connection.load());
+  }
+}
+
 void retry_input_ack() {
   if (input_ack_pending && send_control(INPUT_ACK, input_sequence - 1))
     input_ack_pending = false;
@@ -321,9 +335,22 @@ void on_message(WebSocketServer &, uint32_t connection,
   if (frame[0] == READY && length == HEADER_BYTES &&
       sequence == PROTOCOL_VERSION) {
     protocol_ready = true;
+    report_reboot_status();
     if (ping_retry == nil_time)
       ping_retry = make_timeout_time_ms(HEARTBEAT_MS);
     note_browser_activity();
+  } else if (frame[0] == REBOOT && protocol_ready &&
+             length == HEADER_BYTES && sequence == 0) {
+    note_browser_activity();
+    uint32_t status = reboot_status.load(std::memory_order_acquire);
+    // Repeated commands cannot restart an active operation. Failure can be
+    // retried, but only core 0 decides whether it is safe to proceed.
+    while (status != Z80_WEB_REBOOT_REQUESTED &&
+           status != Z80_WEB_REBOOT_FLUSHING &&
+           status != Z80_WEB_REBOOT_RESTARTING &&
+           !reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_REQUESTED,
+                                                std::memory_order_acq_rel)) {}
+    reported_reboot_status = UINT32_MAX;
   } else if (frame[0] == OUTPUT_ACK && protocol_ready &&
              length == HEADER_BYTES) {
     note_browser_activity();
@@ -660,10 +687,24 @@ extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
     process_events();
     accept_pending_input();
     retry_input_ack();
+    report_reboot_status();
     poll_output();
   } else if (server != nullptr) {
     server->popMessages();
     process_events();
   }
   cyw43_arch_lwip_end();
+}
+
+extern "C" z80_web_reboot_status_t z80_web_terminal_reboot_status(void) {
+  return (z80_web_reboot_status_t)reboot_status.load(std::memory_order_acquire);
+}
+
+extern "C" void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t status) {
+  if (status == Z80_WEB_REBOOT_CPM_READY) {
+    uint32_t expected = Z80_WEB_REBOOT_IDLE;
+    reboot_status.compare_exchange_strong(expected, status, std::memory_order_acq_rel);
+  } else {
+    reboot_status.store(status, std::memory_order_release);
+  }
 }

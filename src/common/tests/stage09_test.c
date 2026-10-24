@@ -90,6 +90,12 @@ static size_t input_index;
 static size_t input_length;
 
 #ifdef Z80_STAGE10_NETWORK
+static z80_web_reboot_status_t web_reboot_status;
+z80_web_reboot_status_t z80_web_terminal_reboot_status(void) { return web_reboot_status; }
+void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t value) {
+  web_reboot_status = value;
+}
+static unsigned terminal_network_services;
 static unsigned setup_requests;
 static bool setup_reboot_request;
 static unsigned matrix_status_requests;
@@ -121,6 +127,10 @@ void z80_network_setup_reboot_queued(void) {
 }
 bool z80_network_setup_quiescent(void) { return true; }
 void z80_network_setup_core1_service(void) {}
+void z80_network_terminal_core1_service(void) {
+  assert(fake_core == 1 && workers_ready && flash_pause_request);
+  ++terminal_network_services;
+}
 void z80_network_core1_service(void) {
   assert(fake_core == 1 && disk_services && io_services);
   ++network_services;
@@ -404,6 +414,9 @@ static void reset_fixture(void) {
 #ifdef Z80_STAGE10_NETWORK
   z80_terminal_usb_connected(connected);
   browser_was_connected = false;
+  web_reboot_status = Z80_WEB_REBOOT_IDLE;
+  web_reboot_active = false;
+  terminal_network_services = 0;
   setup_requests = 0;
   setup_reboot_request = false;
   config_reboot_after_stop = config_reboot_ready = config_reboot_queue_full = false;
@@ -972,11 +985,54 @@ static void test_matrix_running_gate(void) {
   flash_pause_request = 1;
   core1_service();
   assert(network_services == polls && matrix_services == display_calls + 1);
-  assert(!matrix_updates_allowed);
+  assert(!matrix_updates_allowed && terminal_network_services == 1);
   core1_service();
   assert(network_services == polls && matrix_services == display_calls + 2);
-  assert(!matrix_updates_allowed);
+  assert(!matrix_updates_allowed && terminal_network_services == 2);
   fake_core = 0;
+}
+
+static void test_web_orderly_reboot(void) {
+  reset_fixture();
+  command('l'); command('g');
+  web_reboot_status = Z80_WEB_REBOOT_REQUESTED;
+  service_control();
+  assert(web_reboot_status == Z80_WEB_REBOOT_FLUSHING);
+  assert(running && stop_requested && !reboots);
+  service_run();
+  assert(flushes == 1 && !reboots);
+  quiescent = true; flash_paused = 1;
+  service_run();
+  assert(held && !running && web_reboot_status == Z80_WEB_REBOOT_RESTARTING);
+  now += 1000000;
+  service_control();
+  assert(reboots == 1);
+
+  reset_fixture();
+  command('l'); command('g');
+  web_reboot_status = Z80_WEB_REBOOT_REQUESTED;
+  service_control();
+  fatal = true;
+  service_run(); service_control();
+  assert(web_reboot_status == Z80_WEB_REBOOT_STORAGE_ERROR && !reboots);
+
+  reset_fixture();
+  command('l'); command('g');
+  web_reboot_status = Z80_WEB_REBOOT_REQUESTED;
+  service_control();
+  now += 30000000;
+  service_control();
+  assert(web_reboot_status == Z80_WEB_REBOOT_TIMEOUT && !reboots);
+  assert(stop_requested && !config_reboot_after_stop);
+  quiescent = true; flash_paused = 1;
+  service_run();
+  now += 2000000; service_control();
+  assert(held && !reboots);
+
+  reset_fixture();
+  web_reboot_status = Z80_WEB_REBOOT_REQUESTED;
+  service_control();
+  assert(web_reboot_status == Z80_WEB_REBOOT_REJECTED && !reboots);
 }
 
 static void test_config_orderly_reboot(void) {
@@ -1385,6 +1441,7 @@ int main(void) {
 #ifdef Z80_STAGE10_NETWORK
   test_matrix_running_gate();
   test_config_orderly_reboot();
+  test_web_orderly_reboot();
 #endif
   test_direct_port_dispatch();
   for (unsigned address = 0; address < 256; ++address) {

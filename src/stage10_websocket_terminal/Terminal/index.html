@@ -2,6 +2,7 @@
 <html>
 
 <head>
+  <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 
@@ -338,6 +339,10 @@
         outputPending: 0,
         protocolGeneration: 0,
         protocolReady: false,
+        rebootPending: false,
+        rebootDisconnected: false,
+        rebootSteps: [],
+        rebootTimer: null,
         encoder: new TextEncoder()
       };
 
@@ -352,7 +357,7 @@
         INPUT_FRAME_BYTES: 64,
         MAX_PENDING_INPUT: 65536,
         INPUT_RETRY_MS: 250,
-        PROTOCOL_VERSION: 3,
+        PROTOCOL_VERSION: 4,
         OUTPUT_FRAME_BYTES: 512,
         OUTPUT_WINDOW: 4,
         STORAGE_THEME_KEY: 'altair_theme',
@@ -373,6 +378,8 @@
         sendEscBtn: null,
         sendCtrlCBtn: null,
         error: null,
+        rebootBtn: null,
+        rebootStatus: null,
         monitorBtn: null
       };
 
@@ -396,7 +403,7 @@
         }
       }
 
-      const PROTOCOL = { OUTPUT: 1, INPUT: 2, OUTPUT_ACK: 3, INPUT_ACK: 4, HELLO: 5, READY: 6 };
+      const PROTOCOL = { OUTPUT: 1, INPUT: 2, OUTPUT_ACK: 3, INPUT_ACK: 4, HELLO: 5, READY: 6, REBOOT: 7, REBOOT_STATUS: 8 };
 
       function protocolFrame(type, sequence, payload = new Uint8Array()) {
         const frame = new Uint8Array(5 + payload.length);
@@ -404,6 +411,75 @@
         new DataView(frame.buffer).setUint32(1, sequence, true);
         frame.set(payload, 5);
         return frame;
+      }
+
+      function updateRebootButton() {
+        if (elements.rebootBtn) {
+          elements.rebootBtn.disabled = !state.connected || !state.protocolReady || state.rebootPending;
+          elements.rebootBtn.textContent = state.rebootPending ? 'Rebooting Zeta-80...' : 'Reboot Zeta-80';
+        }
+      }
+
+      function rebootMessage(message) {
+        if (elements.rebootStatus) elements.rebootStatus.textContent = message || 'Zeta-80 | Z80, 20 MHz, 64K';
+      }
+
+      function rebootProgress(step) {
+        if (!state.rebootSteps.includes(step)) state.rebootSteps.push(step);
+        rebootMessage(state.rebootSteps.join(' -> ') + '...');
+      }
+
+      function finishReboot(message) {
+        state.rebootPending = false;
+        if (state.rebootTimer !== null) clearTimeout(state.rebootTimer);
+        state.rebootTimer = null;
+        if (!message) state.rebootSteps = [];
+        rebootMessage(message ? [...state.rebootSteps, message].join(' -> ') : '');
+        updateRebootButton();
+        pumpInput();
+      }
+
+      function setupRebootButton() {
+        if (!elements.rebootBtn) return;
+        updateRebootButton();
+        elements.rebootBtn.onclick = () => {
+          if (!state.connected || !state.protocolReady || state.rebootPending) return;
+          if (!window.confirm('Reboot Zeta-80? Unsaved application work will be lost. Disks will be flushed before restarting.')) return;
+          state.rebootPending = true;
+          state.rebootDisconnected = false;
+          state.rebootSteps = [];
+          // Discard unsent keystrokes; retain the in-flight frame until its ACK.
+          if (state.inputTimer !== null) clearTimeout(state.inputTimer);
+          state.inputTimer = null;
+          state.inputBuffer = state.inputFrame ? state.inputBuffer.slice(0, state.inputFrame.length - 5) : [];
+          updateRebootButton();
+          rebootMessage('Requesting orderly reboot...');
+          if (!sendToServer(protocolFrame(PROTOCOL.REBOOT, 0))) {
+            finishReboot('Reboot request could not be sent.');
+            return;
+          }
+          state.rebootTimer = setTimeout(() => {
+            state.rebootTimer = null;
+            // No retry: delivery may have succeeded even if its reply was lost.
+            finishReboot('Reboot completion was not confirmed. Check the connection and CP/M output.');
+          }, 120000);
+        };
+      }
+
+      function handleRebootStatus(status) {
+        if (status === 1 || status === 2 || status === 3) {
+          state.rebootPending = true;
+          rebootProgress(status === 3 ? 'Restarting' : 'Flushing disks');
+        } else if (status === 4) {
+          finishReboot('Reboot cancelled: storage error. Check the USB supervisor log.');
+        } else if (status === 5) {
+          finishReboot('Reboot timed out. Automatic restart cancelled; orderly stop remains pending.');
+        } else if (status === 6) {
+          finishReboot('Reboot rejected: the supervisor is busy, CP/M is stopped, or storage has failed. Check USB status.');
+        } else if (status === 7 && state.rebootPending && state.rebootDisconnected) {
+          finishReboot('');
+        }
+        updateRebootButton();
       }
 
       function resetProtocol(reportPending = false) {
@@ -420,10 +496,11 @@
         state.outputPending = 0;
         state.protocolGeneration++;
         state.protocolReady = false;
+        updateRebootButton();
       }
 
       function pumpInput() {
-        if (!state.protocolReady || !state.connected || !state.inputBuffer.length) return;
+        if (!state.protocolReady || !state.connected || state.rebootPending || !state.inputBuffer.length) return;
         if (state.inputTimer !== null) clearTimeout(state.inputTimer);
         if (!state.inputFrame) {
           state.inputFrame = protocolFrame(PROTOCOL.INPUT, state.inputSequence,
@@ -437,7 +514,7 @@
       }
 
       function queueInput(data) {
-        if (!data || !state.connected) return;
+        if (!data || !state.connected || state.rebootPending) return;
         if (!state.protocolReady) {
           showError("Terminal handshake is not complete; please retry this input.");
           return;
@@ -459,8 +536,12 @@
         const sequence = new DataView(frame.buffer, frame.byteOffset, frame.byteLength).getUint32(1, true);
         if (frame[0] === PROTOCOL.HELLO && frame.length === 5 && sequence === CONFIG.PROTOCOL_VERSION) {
           state.protocolReady = true;
+          if (state.rebootPending && state.rebootDisconnected) finishReboot('');
+          updateRebootButton();
           sendToServer(protocolFrame(PROTOCOL.READY, CONFIG.PROTOCOL_VERSION));
           if (!state.inputFrame) pumpInput();
+        } else if (frame[0] === PROTOCOL.REBOOT_STATUS && state.protocolReady && frame.length === 5 && sequence <= 7) {
+          handleRebootStatus(sequence);
         } else if (frame[0] === PROTOCOL.INPUT_ACK && frame.length === 5) {
           if (state.inputFrame && sequence === state.inputSequence) {
             state.inputBuffer.splice(0, state.inputFrame.length - 5);
@@ -513,6 +594,8 @@
           elements.sendCtrlCBtn = document.getElementById("sendCtrlCBtn");
           elements.error = document.getElementById("terminal_error");
           elements.monitorBtn = document.getElementById("monitorBtn");
+          elements.rebootBtn = document.getElementById("rebootZ80Btn");
+          elements.rebootStatus = document.getElementById("reboot_status");
 
           // Validate critical elements exist
           if (!elements.terminal) {
@@ -621,6 +704,7 @@
         if (elements.sendEscBtn) elements.sendEscBtn.disabled = !isOpen;
         if (elements.sendCtrlCBtn) elements.sendCtrlCBtn.disabled = !isOpen;
         if (elements.monitorBtn) elements.monitorBtn.disabled = !isOpen;
+        updateRebootButton();
       }
       // Add reconnect button click handler
       function setupReconnectButton() {
@@ -824,16 +908,25 @@
           const urlParams = new URLSearchParams(window.location.search);
           const hostAddress = urlParams.get('altair');
 
+          // Dev Tunnels terminate TLS and route the public hostname to the
+          // configured tunnel port, so keep that hostname and omit :8088.
+          const pageHostname = window.location.hostname || '';
+          if (pageHostname.toLowerCase().endsWith('.devtunnels.ms')) {
+            return `wss://${pageHostname}/`;
+          }
+
           // Use same host as page, or override with ?altair= parameter
           const altairAddress = hostAddress
             ? sanitizeHostAddress(hostAddress)
             : window.location.hostname || 'localhost';
 
           // Pico HTTP and WebSocket share port 8088 at the root path.
-          return `ws://${altairAddress}:${CONFIG.WEBSOCKET_PORT}/`;
+          const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+          return `${scheme}://${altairAddress}:${CONFIG.WEBSOCKET_PORT}/`;
         } catch (error) {
           console.error("Failed to construct WebSocket URL:", error);
-          return `ws://localhost:${CONFIG.WEBSOCKET_PORT}/`;
+          const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+          return `${scheme}://localhost:${CONFIG.WEBSOCKET_PORT}/`;
         }
       }
 
@@ -978,9 +1071,14 @@
 
           // Only show message and attempt reconnect if not user initiated
           if (!state.userInitiatedDisconnect) {
-            showMessage('Connection closed. Click Connect to reconnect.', true);
-            // Auto-reconnect disabled - single client mode means server may have
-            // kicked us for a new client, so don't fight for the connection
+            if (state.rebootPending) {
+              state.rebootDisconnected = true;
+              rebootProgress('Reconnecting');
+              scheduleReconnect();
+            } else {
+              showMessage('Connection closed. Click Connect to reconnect.', true);
+            }
+            // Outside reboot, require manual reconnect to preserve single-client ownership
           } else {
             showMessage('Disconnected.', true);
             // Reset flag after handling disconnect
@@ -1176,6 +1274,7 @@
        * Cleanup function for page unload
        */
       function cleanup() {
+        if (state.rebootTimer !== null) clearTimeout(state.rebootTimer);
         // Stop periodic cleanup
         if (state.cleanupInterval) {
           clearInterval(state.cleanupInterval);
@@ -1219,6 +1318,7 @@
           setupSendEscButton();
           setupSendCtrlCButton();
           setupMonitorButton();
+          setupRebootButton();
           initializeNetworkHandlers();
 
           if (!initializeTerminal()) {
@@ -1314,9 +1414,11 @@
     <button id="sendEscBtn" class="altair-btn">Esc</button>
     <button id="sendCtrlCBtn" class="altair-btn">Ctrl+C</button>
     <button id="monitorBtn" class="altair-btn">Enter</button>
+    <button id="rebootZ80Btn" class="altair-btn" disabled>Reboot Zeta-80</button>
     <button id="toggleTheme" class="altair-btn" onclick="toggleTheme()">Dark</button>
   </div>
 
+  <div id="reboot_status" role="status" aria-live="polite" style="height: 1.25em; line-height: 1.25em; width: 100%; text-align: center; white-space: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;">Zeta-80 | Z80, 20 MHz, 64K</div>
   <div id="terminal_error" role="alert" style="color: #ff7777; white-space: normal;"></div>
 
 

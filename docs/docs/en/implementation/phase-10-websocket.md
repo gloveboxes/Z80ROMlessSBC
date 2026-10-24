@@ -286,22 +286,50 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     retries. IPv4 publication refreshes once per second. Chat never touches
     terminal queues, USB input or Z80 GPIO.
 
-### Acknowledged terminal protocol, version 3
+### Acknowledged terminal protocol, version 4
 
 ??? info "Protocol and buffer limits"
 
-    Use the served browser page, not a raw-byte WebSocket client. Version 1/2
+    Use the served browser page, not a raw-byte WebSocket client. Version 1/2/3
     pages are rejected. Messages start with a one-byte type and four-byte
     little-endian sequence; data sequences start at 1 and wrap modulo 2^32.
 
     | Type | Direction | Sequence / payload |
     | --- | --- | --- |
-    | 5 HELLO | Pico to browser | Version 3 / none |
-    | 6 READY | Browser to Pico | Version 3 / none |
+    | 5 HELLO | Pico to browser | Version 4 / none |
+    | 6 READY | Browser to Pico | Version 4 / none |
     | 1 OUTPUT | Pico to browser | Output sequence / 1-512 bytes |
     | 3 OUTPUT_ACK | Browser to Pico | Last consumed output sequence / none |
     | 2 INPUT | Browser to Pico | Input sequence / 1-64 bytes |
     | 4 INPUT_ACK | Pico to browser | Accepted input sequence / none |
+    | 7 REBOOT | Browser to Pico | Zero / none |
+    | 8 REBOOT_STATUS | Pico to browser | Status code / none |
+
+    **Reboot Z80:** the toolbar button asks for confirmation, then sends a control
+    frame directly to the Pico supervisor, independently of CP/M input and its
+    queue. The supervisor drains outstanding disk/service work, flushes storage,
+    holds RESET and stops the clock, then reboots the Pico after one second.
+    Terminal networking stays active while disk/application workers are paused,
+    so restart and error statuses can still be delivered. Before reboot, the
+    supervisor sends the restarting status and explicitly closes the WebSocket;
+    this starts browser reconnection without waiting for a TCP timeout.
+    Startup reloads and verifies CP/M. Wi-Fi disconnects briefly; the browser
+    automatically reconnects for this operation and clears reboot progress as soon
+    as the terminal handshake completes and controls are re-enabled. The supervisor
+    reports CP/M ready after observing BIOS and CCP boot markers. Unsaved application data is
+    lost; flushing preserves only writes already received by the Pico.
+
+    Storage failure cancels automatic reboot. A 30-second timeout cancels restart
+    while leaving orderly stop pending; it never forces reset through unfinished
+    writes. Inspect USB supervisor status/logs if recovery fails. The browser
+    reports an unconfirmed request after two minutes without reconnection and never resends reboot
+    automatically. Ordinary disconnects still require manual connection.
+
+    Status codes: 0 idle, 1 requested, 2 flushing, 3 restarting, 4 storage error,
+    5 timeout, 6 rejected (busy/stopped/storage failure), 7 CP/M ready.
+    Requests during an active reboot are idempotent. Controls require the active
+    connection and completed version-4 handshake. Update firmware and any
+    separately hosted terminal page together.
 
     - **Output:** four frames retain at most 2 KiB. ACKs are cumulative, after xterm consumes bytes; duplicates are not rendered twice. Retry after 250 ms; oldest-frame timeout is 15 seconds.
     - **Batching:** isolated/full frames send immediately. Later partial frames wait up to a fixed 1 ms deadline, then the next service pass. Flash pauses may delay service. Accepted TCP writes are not duplicated after failed flushes.

@@ -66,6 +66,20 @@ typedef struct {
   uint32_t rx_queue_byte_limit;
 } z80_web_terminal_stats_t;
 
+/* Atomic handoff: WebSocket/core 1 requests; supervisor/core 0 publishes. */
+typedef enum {
+  Z80_WEB_REBOOT_IDLE = 0,
+  Z80_WEB_REBOOT_REQUESTED = 1,
+  Z80_WEB_REBOOT_FLUSHING = 2,
+  Z80_WEB_REBOOT_RESTARTING = 3,
+  Z80_WEB_REBOOT_STORAGE_ERROR = 4,
+  Z80_WEB_REBOOT_TIMEOUT = 5,
+  Z80_WEB_REBOOT_REJECTED = 6,
+  Z80_WEB_REBOOT_CPM_READY = 7,
+} z80_web_reboot_status_t;
+z80_web_reboot_status_t z80_web_terminal_reboot_status(void);
+void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t status);
+
 void z80_web_terminal_poll(bool online, uint32_t generation);
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void);
 #ifdef __cplusplus

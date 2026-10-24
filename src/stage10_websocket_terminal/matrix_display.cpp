@@ -15,7 +15,8 @@ constexpr uint8_t I2C_CHUNK_BYTES = 8;
 constexpr uint8_t FIRST_SCANNED_ADDRESS = 0x70;
 constexpr uint8_t LAST_SCANNED_ADDRESS = 0x77;
 constexpr uint64_t PIO_TIMEOUT_US = 5000;
-constexpr uint64_t ROW_INTERVAL_US = 500'000;
+constexpr uint64_t OFFLINE_ROW_INTERVAL_US = 500'000;
+constexpr uint64_t ONLINE_ROW_INTERVAL_US = 250'000;
 constexpr uint32_t PIO_CYCLES_PER_I2C_BIT = 12;
 constexpr uint32_t I2C_FREQUENCY_HZ = 100'000;
 
@@ -60,6 +61,11 @@ bool pio_timed_out;
 DisplayFailure failure = DisplayFailure::none;
 uint32_t published_status;
 uint64_t next_matrix_update_us;
+bool wifi_connected;
+
+uint64_t matrix_update_interval_us() {
+  return wifi_connected ? ONLINE_ROW_INTERVAL_US : OFFLINE_ROW_INTERVAL_US;
+}
 
 enum class TransferStep : uint8_t { idle, start, write, ack, stop, stop_ack };
 enum class TransferResult : uint8_t { pending, complete, nack, timeout };
@@ -249,7 +255,7 @@ void service_display(bool updates_allowed) {
   } else if (++matrix_chunk == 2) {
     matrix_chunk = 0;
     matrix_row = (matrix_row + 1) % 8;
-    next_matrix_update_us = time_us_64() + ROW_INTERVAL_US;
+    next_matrix_update_us = time_us_64() + matrix_update_interval_us();
   }
 }
 }  // namespace
@@ -262,6 +268,14 @@ extern "C" void z80_matrix_core1_service(bool updates_allowed) {
                       (static_cast<uint32_t>(failure) << 16) |
                       (static_cast<uint32_t>(pio_timed_out) << 24);
   __atomic_store_n(&published_status, snapshot, __ATOMIC_RELEASE);
+}
+
+extern "C" void z80_matrix_set_wifi_connected(bool connected) {
+  if (wifi_connected == connected)
+    return;
+  wifi_connected = connected;
+  if (state == DisplayState::ready)
+    next_matrix_update_us = time_us_64() + matrix_update_interval_us();
 }
 
 extern "C" void z80_matrix_print_status(void) {
@@ -279,7 +293,7 @@ extern "C" void z80_matrix_print_status(void) {
   printf("[matrix] driver=HT16K33 transport=PIO_I2C SCL=GP%u SDA=GP%u "
          "state=%s address=%s brightness=0 pattern=moving_row interval_ms=%llu\n",
          PIN_SCL, PIN_SDA, state_names[static_cast<uint8_t>(display_state)], address,
-         static_cast<unsigned long long>(ROW_INTERVAL_US / 1000));
+         static_cast<unsigned long long>(OFFLINE_ROW_INTERVAL_US / 1000));
   if (display_state == DisplayState::failed)
     printf("[matrix] FAIL: %s%s; display service disabled.\n", failure_reasons[failure],
            timed_out ? " (PIO FIFO timeout)" : "");

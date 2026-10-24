@@ -246,7 +246,7 @@ static void poll_terminal() {
 }
 
 static void test_output_coalescing() {
-  static_assert(FRAME_BYTES == 512 && OUTPUT_WINDOW == 4 && PROTOCOL_VERSION == 3);
+  static_assert(FRAME_BYTES == 512 && OUTPUT_WINDOW == 4 && PROTOCOL_VERSION == 4);
   advance(1);
   outgoing = {'A'};
   unsigned before = sends;
@@ -775,6 +775,37 @@ int main() {
   assert(sends == offline_sends && !lock_depth);
   test_input_ack_recovery();
   test_disconnect_diagnostics();
+  connect_client(90);
+  // Controls from another socket or before READY cannot request a reboot.
+  message(91, REBOOT, 0);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_IDLE);
+  message(90, REBOOT, 0);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_IDLE);
+  connect_client(92);
+  message(92, READY, PROTOCOL_VERSION);
+  received.assign(128, 'Q');
+  message(92, INPUT, 1, INPUT_BYTES);
+  assert(pending_input_length == INPUT_BYTES);
+  message(92, REBOOT, 0);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_REQUESTED);
+  z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_CPM_READY);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_REQUESTED);
+  z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_FLUSHING);
+  message(92, REBOOT, 0);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_FLUSHING);
+  poll_terminal();
+  assert(sent[0] == REBOOT_STATUS && read_sequence(sent.data() + 1) == Z80_WEB_REBOOT_FLUSHING);
+  z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_STORAGE_ERROR);
+  poll_terminal();
+  assert(sent[0] == REBOOT_STATUS && read_sequence(sent.data() + 1) == Z80_WEB_REBOOT_STORAGE_ERROR);
+  z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_RESTARTING);
+  unsigned close_count = closed.size();
+  poll_terminal();
+  assert(sent[0] == REBOOT_STATUS && read_sequence(sent.data() + 1) == Z80_WEB_REBOOT_RESTARTING);
+  assert(closed.size() == close_count + 1 && closed.back() == 92);
+  poll_terminal();
+  assert(closed.size() == close_count + 1); // One close per status transition.
+  close_client(92);
   assert(terminal_diagnostics.find("[network] Terminal: http://") ==
          std::string::npos);
   delete server;
