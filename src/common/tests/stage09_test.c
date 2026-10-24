@@ -92,8 +92,14 @@ static size_t input_length;
 #ifdef Z80_STAGE10_NETWORK
 static z80_web_reboot_status_t web_reboot_status;
 z80_web_reboot_status_t z80_web_terminal_reboot_status(void) { return web_reboot_status; }
+bool z80_web_terminal_begin_reboot(void) {
+  if (web_reboot_status != Z80_WEB_REBOOT_REQUESTED) return false;
+  web_reboot_status = Z80_WEB_REBOOT_FLUSHING;
+  return true;
+}
 void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t value) {
-  web_reboot_status = value;
+  if (web_reboot_status != Z80_WEB_REBOOT_TIMEOUT)
+    web_reboot_status = value;
 }
 static unsigned terminal_network_services;
 static unsigned setup_requests;
@@ -1028,6 +1034,18 @@ static void test_web_orderly_reboot(void) {
   service_run();
   now += 2000000; service_control();
   assert(held && !reboots);
+
+  reset_fixture();
+  command('l'); command('g');
+  web_reboot_status = Z80_WEB_REBOOT_REQUESTED;
+  service_control();
+  web_reboot_status = Z80_WEB_REBOOT_TIMEOUT; // Core 1 expired the request.
+  quiescent = true; flash_paused = 1;
+  service_run(); // A stop completes before core 0 handles the expired status.
+  assert(config_reboot_ready && held);
+  now += 1000000;
+  service_control();
+  assert(!config_reboot_ready && !config_reboot_after_stop && !reboots);
 
   reset_fixture();
   web_reboot_status = Z80_WEB_REBOOT_REQUESTED;

@@ -22,6 +22,7 @@ constexpr size_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
 constexpr uint32_t OUTPUT_COALESCE_US = 1000;
 constexpr uint32_t PROTOCOL_VERSION = 4;
 constexpr uint32_t FRAME_RETRY_MS = 250;
+constexpr uint32_t REBOOT_DEADLINE_MS = 35000;
 constexpr uint32_t HEARTBEAT_MS = 30u * 1000u;
 constexpr uint32_t PONG_TIMEOUT_MS = 20u * 1000u;
 // Tolerate two misses; disconnect on the third consecutive miss.
@@ -56,6 +57,10 @@ bool input_ack_pending;
 bool protocol_ready;
 std::atomic<uint32_t> reboot_status{Z80_WEB_REBOOT_IDLE};
 uint32_t reported_reboot_status = UINT32_MAX;
+// Core 1 owns this deadline. Keep it across browser disconnects so core 0
+// cannot leave a request looking active forever if its main loop stalls.
+absolute_time_t reboot_deadline;
+bool reboot_deadline_active;
 WebSocketServer *server;
 bool server_started;
 absolute_time_t server_retry_deadline = nil_time;
@@ -271,6 +276,24 @@ bool send_control(uint8_t type, uint32_t sequence) {
                              sizeof(frame));
 }
 
+void check_reboot_deadline() {
+  if (!reboot_deadline_active)
+    return;
+  uint32_t status = reboot_status.load(std::memory_order_acquire);
+  while (status == Z80_WEB_REBOOT_REQUESTED || status == Z80_WEB_REBOOT_FLUSHING ||
+         status == Z80_WEB_REBOOT_RESTARTING) {
+    if (!time_reached(reboot_deadline))
+      return;
+    if (reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_TIMEOUT,
+                                             std::memory_order_acq_rel)) {
+      printf("[web] Reboot timed out waiting for supervisor progress. "
+             "No forced reset; inspect USB supervisor status.\n");
+      break;
+    }
+  }
+  reboot_deadline_active = false;
+}
+
 void report_reboot_status() {
   uint32_t status = reboot_status.load(std::memory_order_acquire);
   if (protocol_ready && status != reported_reboot_status && send_control(REBOOT_STATUS, status)) {
@@ -348,8 +371,14 @@ void on_message(WebSocketServer &, uint32_t connection,
     while (status != Z80_WEB_REBOOT_REQUESTED &&
            status != Z80_WEB_REBOOT_FLUSHING &&
            status != Z80_WEB_REBOOT_RESTARTING &&
-           !reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_REQUESTED,
-                                                std::memory_order_acq_rel)) {}
+           status != Z80_WEB_REBOOT_TIMEOUT) {
+      if (reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_REQUESTED,
+                                               std::memory_order_acq_rel)) {
+        reboot_deadline = make_timeout_time_ms(REBOOT_DEADLINE_MS);
+        reboot_deadline_active = true;
+        break;
+      }
+    }
     reported_reboot_status = UINT32_MAX;
   } else if (frame[0] == OUTPUT_ACK && protocol_ready &&
              length == HEADER_BYTES) {
@@ -669,6 +698,7 @@ extern "C" z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
 }
 
 extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
+  check_reboot_deadline();
   if (!online && !network_online && generation == session_network_generation)
     return;
   if (!online && server == nullptr) {
@@ -700,11 +730,22 @@ extern "C" z80_web_reboot_status_t z80_web_terminal_reboot_status(void) {
   return (z80_web_reboot_status_t)reboot_status.load(std::memory_order_acquire);
 }
 
+extern "C" bool z80_web_terminal_begin_reboot(void) {
+  uint32_t expected = Z80_WEB_REBOOT_REQUESTED;
+  return reboot_status.compare_exchange_strong(expected, Z80_WEB_REBOOT_FLUSHING,
+                                                std::memory_order_acq_rel);
+}
+
 extern "C" void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t status) {
   if (status == Z80_WEB_REBOOT_CPM_READY) {
     uint32_t expected = Z80_WEB_REBOOT_IDLE;
     reboot_status.compare_exchange_strong(expected, status, std::memory_order_acq_rel);
   } else {
-    reboot_status.store(status, std::memory_order_release);
+    uint32_t previous = reboot_status.load(std::memory_order_acquire);
+    // Timeout is terminal for this boot. A late supervisor must not overwrite
+    // it with progress, or allow a browser retry to resurrect a cancelled stop.
+    while (previous != Z80_WEB_REBOOT_TIMEOUT &&
+           !reboot_status.compare_exchange_weak(previous, status,
+                                                std::memory_order_acq_rel)) {}
   }
 }

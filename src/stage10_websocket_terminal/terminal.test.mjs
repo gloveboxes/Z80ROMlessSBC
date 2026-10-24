@@ -423,3 +423,40 @@ test('reconnect clears reboot progress without claiming the reboot was confirmed
   input.receive(frame(8, 7));
   assert.equal(input.api.elements.rebootStatus.textContent, '');
 });
+
+
+test('a reopened browser watches a pending request without claiming disks are flushing', () => {
+  const input = terminal();
+  input.api.elements.rebootBtn = {};
+  input.api.elements.rebootStatus = { textContent: '' };
+  input.api.setupRebootButton();
+  input.receive(frame(8, 1));
+  assert.match(input.api.elements.rebootStatus.textContent, /Waiting for Pico supervisor/);
+  assert.doesNotMatch(input.api.elements.rebootStatus.textContent, /Flushing/);
+  const timer = input.api.state.rebootTimer;
+  assert.notEqual(timer, null);
+  input.receive(frame(8, 2));
+  assert.equal(input.api.state.rebootTimer, timer);
+  input.timers.get(timer)();
+  assert.equal(input.api.state.rebootPending, false);
+  assert.equal(input.api.elements.rebootBtn.disabled, true);
+  assert.match(input.api.elements.rebootStatus.textContent, /not confirmed/);
+  input.api.elements.rebootBtn.onclick();
+  assert.equal(input.sent.filter(f => f[0] === 7).length, 0);
+});
+
+test('a server timeout survives reconnect and blocks repeated reboot requests', () => {
+  const input = terminal();
+  input.api.elements.rebootBtn = {};
+  input.api.elements.rebootStatus = { textContent: '' };
+  input.api.setupRebootButton();
+  input.receive(frame(8, 5));
+  assert.equal(input.api.elements.rebootBtn.disabled, true);
+  input.api.elements.rebootBtn.onclick();
+  assert.equal(input.sent.filter(f => f[0] === 7).length, 0);
+  input.api.resetProtocol();
+  input.receive(frame(5, 4));
+  input.receive(frame(8, 5));
+  assert.match(input.api.elements.rebootStatus.textContent, /timed out/);
+  assert.equal(input.api.elements.rebootBtn.disabled, true);
+});

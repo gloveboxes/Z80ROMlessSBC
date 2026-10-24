@@ -806,6 +806,45 @@ int main() {
   poll_terminal();
   assert(closed.size() == close_count + 1); // One close per status transition.
   close_client(92);
+  // A live browser/network core cannot depend on core 0 servicing its loop.
+  // Keep the original deadline even when the browser reconnects or retries.
+  reboot_status.store(Z80_WEB_REBOOT_IDLE);
+  connect_client(93);
+  message(93, READY, PROTOCOL_VERSION);
+  message(93, REBOOT, 0);
+  absolute_time_t original_deadline = reboot_deadline;
+  advance(1000);
+  message(93, REBOOT, 0);
+  assert(reboot_deadline == original_deadline);
+  close_client(93);
+  connect_client(94);
+  message(94, READY, PROTOCOL_VERSION);
+  advance(REBOOT_DEADLINE_MS - 1001);
+  poll_terminal();
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_REQUESTED);
+  advance(1);
+  poll_terminal();
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_TIMEOUT);
+  assert(!z80_web_terminal_begin_reboot());
+  message(94, REBOOT, 0);
+  z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_RESTARTING);
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_TIMEOUT);
+  close_client(94);
+  connect_client(95);
+  message(95, READY, PROTOCOL_VERSION);
+  assert(sent[0] == REBOOT_STATUS && read_sequence(sent.data() + 1) == Z80_WEB_REBOOT_TIMEOUT);
+  close_client(95);
+
+  reboot_status.store(Z80_WEB_REBOOT_IDLE);
+  connect_client(96);
+  message(96, READY, PROTOCOL_VERSION);
+  message(96, REBOOT, 0);
+  assert(z80_web_terminal_begin_reboot());
+  assert(!z80_web_terminal_begin_reboot());
+  advance(REBOOT_DEADLINE_MS);
+  poll_terminal();
+  assert(z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_TIMEOUT);
+  close_client(96);
   assert(terminal_diagnostics.find("[network] Terminal: http://") ==
          std::string::npos);
   delete server;

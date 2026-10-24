@@ -208,6 +208,7 @@ static void reset() {
   scan_address = FIRST_SCANNED_ADDRESS;
   initialization_index = matrix_row = matrix_chunk = 0;
   pio_timed_out = false;
+  wifi_connected = frame_wifi_connected = displayed_wifi_connected = false;
   failure = DisplayFailure::none;
   published_status = 0;
   display_address = 0;
@@ -285,7 +286,7 @@ static void test_running_gate() {
     assert(machine.scl && machine.sda && machine.received.empty());
     transactions = machine.transactions.size();
     uint operations = machine.fifo_operations;
-    now += ROW_INTERVAL_US * 2;
+    now += OFFLINE_INTERVAL_US * 2;
     for (uint i = 0; i < 16; ++i)
       service_once(false);
     assert(machine.transactions.size() == transactions);
@@ -295,8 +296,53 @@ static void test_running_gate() {
   }
 }
 
+static void assert_column_chunk(uint8_t position, uint8_t chunk) {
+  std::vector<uint8_t> expected(10, 0);
+  expected[0] = machine.device_address * 2;
+  expected[1] = chunk * 8;
+  for (uint8_t row = 0; row < 4; ++row)
+    expected[2 + row * 2] = 1u << position;
+  assert(machine.transactions.back() == expected);
+}
+
+static void test_wifi_patterns() {
+  reset();
+  service_until(DisplayState::ready);
+  // Change connectivity between the two halves of an offline frame.
+  complete_transfer();
+  assert(machine.transactions.back()[2] == 0xff);
+  z80_matrix_set_wifi_connected(true);
+  complete_transfer();
+  for (size_t i = 2; i < 10; ++i)
+    assert(machine.transactions.back()[i] == 0);
+  assert(!displayed_wifi_connected);
+
+  for (uint8_t step = 0; step < 8; ++step) {
+    now = next_matrix_update_us;
+    uint8_t position = (step + 1) % 8;
+    complete_transfer();
+    assert_column_chunk(position, 0);
+    complete_transfer();
+    assert_column_chunk(position, 1);
+    assert(displayed_wifi_connected);
+    assert(next_matrix_update_us >= now + 249'999);
+  }
+  z80_matrix_print_status();
+  assert(diagnostic_output.find("pattern=moving_column interval_ms=250") != std::string::npos);
+
+  z80_matrix_set_wifi_connected(false);
+  complete_transfer();
+  complete_transfer();
+  assert(!displayed_wifi_connected);
+  assert(next_matrix_update_us >= now + 499'999);
+  diagnostic_output.clear();
+  z80_matrix_print_status();
+  assert(diagnostic_output.find("pattern=moving_row interval_ms=500") != std::string::npos);
+}
+
 int main() {
   test_running_gate();
+  test_wifi_patterns();
   reset();
   z80_matrix_print_status();
   assert(diagnostic_output.find("state=uninitialized address=unavailable") !=

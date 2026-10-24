@@ -744,13 +744,19 @@ static void service_control(void) {
     if (config_reboot_after_stop || config_reboot_ready || stop_requested ||
         !running || diagnostic_active || z80_flash_disk_has_fatal_error()) {
       z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_REJECTED);
-    } else {
+    } else if (z80_web_terminal_begin_reboot()) {
       web_reboot_active = true;
       web_reboot_deadline = make_timeout_time_ms(30000);
       config_reboot_after_stop = true;
-      z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_FLUSHING);
       diagnostic_command('x');
     }
+  }
+  if (web_reboot_active &&
+      z80_web_terminal_reboot_status() == Z80_WEB_REBOOT_TIMEOUT) {
+    web_reboot_active = false;
+    config_reboot_after_stop = config_reboot_ready = false;
+    printf("\n[web] Reboot cancelled after network-side timeout; "
+           "orderly stop remains pending.\n");
   }
   if (web_reboot_active && z80_flash_disk_has_fatal_error()) {
     web_reboot_active = false;

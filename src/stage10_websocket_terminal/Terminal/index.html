@@ -338,6 +338,7 @@
         protocolGeneration: 0,
         protocolReady: false,
         rebootPending: false,
+        rebootTimedOut: false,
         rebootDisconnected: false,
         rebootSteps: [],
         rebootTimer: null,
@@ -415,7 +416,7 @@
 
       function updateRebootButton() {
         if (elements.rebootBtn) {
-          elements.rebootBtn.disabled = !state.connected || !state.protocolReady || state.rebootPending;
+          elements.rebootBtn.disabled = !state.connected || !state.protocolReady || state.rebootPending || state.rebootTimedOut;
           elements.rebootBtn.textContent = state.rebootPending ? 'Rebooting Zeta-80...' : 'Reboot Zeta-80';
         }
       }
@@ -446,11 +447,20 @@
         pumpInput();
       }
 
+      function watchReboot() {
+        if (state.rebootTimer !== null) return;
+        state.rebootTimer = setTimeout(() => {
+          state.rebootTimer = null;
+          state.rebootTimedOut = true;
+          finishReboot('Reboot not confirmed. Check USB supervisor status before resetting the board.');
+        }, 40000);
+      }
+
       function setupRebootButton() {
         if (!elements.rebootBtn) return;
         updateRebootButton();
         elements.rebootBtn.onclick = () => {
-          if (!state.connected || !state.protocolReady || state.rebootPending) return;
+          if (!state.connected || !state.protocolReady || state.rebootPending || state.rebootTimedOut) return;
           if (!window.confirm('Reboot Zeta-80? Unsaved application work will be lost. Disks will be flushed before restarting.')) return;
           state.rebootPending = true;
           state.rebootDisconnected = false;
@@ -465,26 +475,25 @@
             finishReboot('Reboot request could not be sent.');
             return;
           }
-          state.rebootTimer = setTimeout(() => {
-            state.rebootTimer = null;
-            // No retry: delivery may have succeeded even if its reply was lost.
-            finishReboot('Reboot completion was not confirmed. Check the connection and CP/M output.');
-          }, 120000);
+          watchReboot();
         };
       }
 
       function handleRebootStatus(status) {
         if (status === 1 || status === 2 || status === 3) {
           state.rebootPending = true;
-          rebootProgress(status === 3 ? 'Restarting' : 'Flushing disks');
+          watchReboot();
+          rebootProgress(status === 1 ? 'Waiting for Pico supervisor' : status === 3 ? 'Restarting' : 'Flushing disks');
         } else if (status === 4) {
           finishReboot('Reboot cancelled: storage error. Check the USB supervisor log.');
         } else if (status === 5) {
-          finishReboot('Reboot timed out. Automatic restart cancelled; orderly stop remains pending.');
+          state.rebootTimedOut = true;
+          finishReboot('Reboot timed out. Restart cancelled; check USB supervisor status.');
         } else if (status === 6) {
           finishReboot('Reboot rejected: the supervisor is busy, CP/M is stopped, or storage has failed. Check USB status.');
-        } else if (status === 7 && state.rebootPending && state.rebootDisconnected) {
-          finishReboot('');
+        } else if (status === 0 || status === 7) {
+          state.rebootTimedOut = false;
+          if (status === 7 && state.rebootPending && state.rebootDisconnected) finishReboot('');
         }
         updateRebootButton();
       }

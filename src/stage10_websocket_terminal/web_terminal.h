@@ -78,6 +78,8 @@ typedef enum {
   Z80_WEB_REBOOT_CPM_READY = 7,
 } z80_web_reboot_status_t;
 z80_web_reboot_status_t z80_web_terminal_reboot_status(void);
+/* Claim a live request; an expired request must never start a late reboot. */
+bool z80_web_terminal_begin_reboot(void);
 void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t status);
 
 void z80_web_terminal_poll(bool online, uint32_t generation);

@@ -133,8 +133,11 @@ periodic diagnostics into CP/M output.
 
 ## HT16K33 8x8 matrix
 
-**Expected display:** one horizontal row moves every 500 ms. It is a diagnostic,
-not an IP-address or uptime display.
+**Expected display while the Z80 is running:** a horizontal row moves every
+500 ms without Wi-Fi; a vertical column moves every 250 ms when Wi-Fi is
+connected. The display holds its last pattern while the supervisor stops the
+Z80 or pauses storage work. It is a supervisor diagnostic, not proof that a
+CP/M application is responsive.
 
 | Backpack marking | Pico connection | J2 pin |
 | --- | --- | --- |
@@ -153,7 +156,9 @@ not an IP-address or uptime display.
 
     [matrix_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_display.cpp)
     runs on core 1 after network work. Each pass performs at most one non-blocking
-    FIFO operation; RAM updates use two eight-byte chunks.
+    FIFO operation; RAM updates use two eight-byte chunks. Both halves of a frame
+    use the same connectivity state, so a Wi-Fi change takes effect on the next
+    full frame. USB status reports the displayed pattern and its interval.
 
     New transactions require a running CPU and no flash pause. If permission
     changes, finish the transaction through STOP before holding the pattern.
@@ -168,8 +173,10 @@ not an IP-address or uptime display.
     ctest --test-dir build/host-control --output-on-failure -R '^matrix_pio_HT16K33$'
     ```
 
-    The moving row was bench-tested with CP/M and networking. Host tests do not
-    qualify physical waveform margins or core-0 latency.
+    The original moving row was bench-tested with CP/M and networking. Host tests
+    check row/column RAM writes and connectivity changes between chunks; the new
+    column pattern still needs checking on hardware. Host tests do not qualify
+    physical waveform margins or core-0 latency.
 
 ## Network time and CLOCK services
 
@@ -305,7 +312,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     | 7 REBOOT | Browser to Pico | Zero / none |
     | 8 REBOOT_STATUS | Pico to browser | Status code / none |
 
-    **Reboot Z80:** the toolbar button asks for confirmation, then sends a control
+    **Reboot Zeta-80:** the toolbar button asks for confirmation, then sends a control
     frame directly to the Pico supervisor, independently of CP/M input and its
     queue. The supervisor drains outstanding disk/service work, flushes storage,
     holds RESET and stops the clock, then reboots the Pico after one second.
@@ -319,10 +326,21 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     reports CP/M ready after observing BIOS and CCP boot markers. Unsaved application data is
     lost; flushing preserves only writes already received by the Pico.
 
-    Storage failure cancels automatic reboot. A 30-second timeout cancels restart
-    while leaving orderly stop pending; it never forces reset through unfinished
-    writes. Inspect USB supervisor status/logs if recovery fails. The browser
-    reports an unconfirmed request after two minutes without reconnection and never resends reboot
+    The browser distinguishes **Waiting for Pico supervisor** (request not yet
+    acknowledged) from **Flushing disks** (the supervisor has begun the stop).
+    Neither message proves that flash is currently being written.
+
+    Storage failure cancels automatic reboot. Core 0 cancels a stop/restart after
+    30 seconds. Independently, core 1 expires an unfinished request after 35 seconds,
+    including when core 0 stops servicing its loop. That deadline survives browser
+    disconnects; retries cannot extend it. An expired request cannot later start or
+    resume automatic reboot. Any orderly stop already begun remains pending.
+    Timeout is retained until the board restarts; the button stays disabled so
+    reconnecting cannot queue another reboot. Inspect USB supervisor status/logs
+    before manual recovery. No deadline forces reset through unfinished writes.
+
+    The browser also reports unconfirmed progress after 40 seconds, including when
+    a newly opened page receives an existing request. It never resends reboot
     automatically. Ordinary disconnects still require manual connection.
 
     Status codes: 0 idle, 1 requested, 2 flushing, 3 restarting, 4 storage error,
