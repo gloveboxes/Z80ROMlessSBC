@@ -1,7 +1,7 @@
 # 0. Project Inventory
 
 This is the **eight-active-package assisted-loader design**, excluding the
-power diode and the external Phase 10 matrix module. No PLD, PLD programmer,
+power diode. No PLD, PLD programmer,
 address expander, or reset transistor is needed. Match the complete part
 number and PDIP package before ordering.
 
@@ -32,18 +32,6 @@ on this device, separately from the implementation-phase checklists.
 Do not interchange AHCT, AHC, HCT, HC, or LVC parts. Pico headers must be
 soldered, not merely pushed through unsoldered holes. U5/U6/U8 are not fitted;
 reference gaps retain continuity with existing project labels.
-
-### Phase 10 Display Module
-
-| Done | Qty | Reference | Part | Role |
-| --- | ---: | --- | --- | --- |
-| <input type="checkbox" data-checklist-id="a2-matrix" aria-label="HT16K33 8x8 matrix backpack available"> | 1 | A2 | Adafruit HT16K33 8x8 LED matrix backpack | External 3.3 V PIO I2C moving-row diagnostic |
-
-A2 is additional to the eight base packages and is shown off-board in the
-schematic, without a PCB footprint. Use the backpack's fitted pull-ups to
-3.3 V, or provide external 3.3 V pull-ups if absent. See the
-[Phase 10 display wiring](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix)
-for GP22 SDA, GP26 SCL, power, and bench-tested operation.
 
 ## Passive Components
 
@@ -103,6 +91,62 @@ External +5 V must precede USB; remove USB before external +5 V. Fitted
 AHCT245 data ports are not power-off-safe. See the [power phase](../implementation/phase-0-power.md).
 
 </div>
+
+## Bill of Materials — Pricing and Suppliers
+
+Prices checked on **24 October 2026**, in **USD** from **digikey.com** except
+the user-supplied AliExpress Z80 price below,
+excluding shipping, tax, and any tariffs. These are the displayed catalogue
+prices, not a quotation; recheck price and stock before ordering. Unit prices
+use the quantity-one tier except the 39 resistors, which use the 25-piece tier.
+Line totals are rounded to cents. Links identify the priced ordering option.
+
+The Z80 listing costs **AU$9.29 for two**, as supplied by the project owner.
+Using [1 AUD = 0.70156 USD on 24 October 2026](https://exchangeratetool.com/historical/aud-usd),
+that is approximately **US$6.52 per two-pack**, or **US$3.26 per CPU**.
+The BOM allocates one CPU to this build; purchasing the pack leaves one spare.
+Select the specified Z84C0020PEC DIP-40 variant. The AliExpress price was
+provided by the project owner and could not be independently checked.
+
+Sockets and Pico headers are priced separately below, although the inventory
+checks above group them with their devices. Passive components and connectors
+without a specified manufacturer use the listed through-hole ordering examples.
+The Pico needs **two separate 1x20 male headers**, one along each side, plus
+two matching socket strips.
+
+### Base circuit and breadboard construction
+
+| Qty | Component / use | Supplier / ordering option | Unit (USD) | Line total (USD) |
+| ---: | --- | --- | ---: | ---: |
+| 1 | A1 Raspberry Pi Pico 2 W, without headers | [SC1633 — 2648-SC1633CT-ND](https://www.digikey.com/en/products/detail/raspberry-pi/SC1633/25862726) | $7.00 | $7.00 |
+| 1 kit | A1 pair of 1x20 male headers | [SparkFun 17907 — 1568-17907-ND](https://www.digikey.com/en/products/detail/sparkfun-electronics/17907/13910058) | $1.59 | $1.59 |
+| 2 | A1 1x20, 2.54 mm socket strips | [Würth 61302011821 — 732-61302011821-ND](https://www.digikey.com/en/products/detail/w%C3%BCrth-elektronik/61302011821/16608603) | $0.88 | $1.76 |
+| 1 | U1 Z84C0020PEC, DIP-40 | [AliExpress two-pack](https://www.aliexpress.com/item/1005006323138580.html); not stocked by DigiKey | ~$3.26 | ~$3.26 |
+| 1 | U2 AS6C1008-55PCN, DIP-32 | [1450-1017-ND](https://www.digikey.com/en/products/detail/alliance-memory-inc/AS6C1008-55PCN/4234576) | $9.37 | $9.37 |
+| 1 | U3 SN74HCT32N, DIP-14 | [296-1615-5-ND](https://www.digikey.com/en/products/detail/texas-instruments/SN74HCT32N/277261) | $0.99 | $0.99 |
+| 1 | U4 SN74AHCT244N, DIP-20 | [296-4723-5-ND](https://www.digikey.com/en/products/detail/texas-instruments/SN74AHCT244N/375869) | $1.24 | $1.24 |
+| 1 | U7 SN74LVC244AN, DIP-20 | [296-8501-5-ND](https://www.digikey.com/en/products/detail/texas-instruments/SN74LVC244AN/377479) | $1.18 | $1.18 |
+| 1 | U9 SN74AHCT245N, DIP-20 | [296-1476-5-ND](https://www.digikey.com/en/products/detail/texas-instruments/SN74AHCT245N/277122) | $1.12 | $1.12 |
+| 1 | U10 SN74LVC245AN, DIP-20 | [296-8503-5-ND](https://www.digikey.com/en/products/detail/texas-instruments/SN74LVC245AN/377483) | $1.83 | $1.83 |
+| 1 | U1 DIP-40 socket, 15.24 mm row spacing | [On Shore ED40DT — ED3048-5-ND](https://www.digikey.com/en/products/detail/on-shore-technology-inc/ED40DT/4147604) | $2.95 | $2.95 |
+| 1 | U2 DIP-32 socket, 15.24 mm row spacing | [On Shore ED32DT — ED3053-5-ND](https://www.digikey.com/en/products/detail/on-shore-technology-inc/ED32DT/4147603) | $0.97 | $0.97 |
+| 1 | U3 DIP-14 socket, 7.62 mm row spacing | [On Shore ED14DT — ED3045-5-ND](https://www.digikey.com/en/products/detail/on-shore-technology-inc/ED14DT/4147595) | $0.52 | $0.52 |
+| 4 | U4/U7/U9/U10 DIP-20 sockets, 7.62 mm row spacing | [On Shore ED20DT — ED3054-5-ND](https://www.digikey.com/en/products/detail/on-shore-technology-inc/ED20DT/4147598) | $1.85 | $7.40 |
+| 1 | D1 1N5819 Schottky diode, DO-41 | [Diodes Inc. 1N5819-T — 1N5819DICT-ND](https://www.digikey.com/en/products/detail/diodes-incorporated/1N5819-T/190960) | $0.59 | $0.59 |
+| 7 | 100 nF ceramic, 50 V, X7R, radial | [Vishay K104K15X7RF5TL2 — BC1084CT-ND](https://www.digikey.com/en/products/detail/vishay-beyschlag-draloric-bc-components/K104K15X7RF5TL2/286706) | $0.31 | $2.17 |
+| 3 | 22 uF electrolytic, 25 V, radial | [Panasonic ECA-1EM220 — P5149-ND](https://www.digikey.com/en/products/detail/panasonic-industry/ECA-1EM220/245008) | $0.23 | $0.69 |
+| 1 | 100 uF electrolytic, 25 V, radial | [Panasonic ECA-1EM101B — 10-ECA-1EM101BCT-ND](https://www.digikey.com/en/products/detail/panasonic-industry/ECA-1EM101B/268461) | $0.33 | $0.33 |
+| 39 | Permanent 10 kOhm resistors, 1/4 W, 5%, axial | [YAGEO CFR-25JB-52-10K](https://www.digikey.com/en/products/detail/yageo/CFR-25JB-52-10K/338) | $0.03040 | $1.19 |
+| 3 | BB830 830-point breadboards | [4526-BB830-ND](https://www.digikey.com/en/products/detail/busboard-prototype-systems/BB830/19200392) | $19.73 | $59.19 |
+| 1 kit | 22 AWG solid-core wire, six colours, 25 ft each | [Adafruit 1311 — 1528-1743-ND](https://www.digikey.com/en/products/detail/adafruit-industries-llc/1311/6198255) | $15.95 | $15.95 |
+| 1 | USB-A to Micro-B data cable, 1 m | [Cvilux DH-20M50055 — 2987-DH-20M50055-ND](https://www.digikey.com/en/products/detail/cvilux-usa/DH-20M50055/13175849) | $1.58 | $1.58 |
+
+**Base subtotal: approximately $122.87 USD, including one Z80.** Buying the
+full two-pack brings the purchase subtotal to **approximately $126.13 USD**,
+including a spare CPU. The DigiKey-only subtotal remains **$119.61 USD**.
+This includes the full wire kit, three breadboards, sockets, headers, and USB
+cable. The subtotals exclude bench equipment, temporary test parts, spares,
+optional J2, shipping, tax, and tariffs.
 
 ## PCB Status
 
