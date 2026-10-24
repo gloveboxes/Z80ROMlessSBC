@@ -1,4 +1,4 @@
-# Z80 ROMless SBC - WIP Engineering and Build Specification
+# Zeta-80 a Z80 ROMless SBC
 
 ![Zeta-80: Z80 ROMless SBC project banner](images/banner.svg)
 
