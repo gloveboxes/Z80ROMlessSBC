@@ -36,23 +36,6 @@ uint32_t generation;
 bool initialized, active, handshake_ready, remote_closed;
 const char *failure;
 absolute_time_t deadline;
-enum class Stage { setup, dns, connect, request, response, receive };
-Stage stage, reported_stage;
-uint32_t received_bytes, chained_receives;
-err_t transport_error;
-char failure_detail[512];
-
-const char *stage_name() {
-  switch (stage) {
-  case Stage::setup: return "setup";
-  case Stage::dns: return "DNS";
-  case Stage::connect: return endpoint->https ? "TCP/TLS" : "TCP";
-  case Stage::request: return "request";
-  case Stage::response: return "awaiting response";
-  case Stage::receive: return "receiving";
-  }
-  return "unknown";
-}
 
 bool current(void *arg) {
   return active && reinterpret_cast<uintptr_t>(arg) == generation;
@@ -76,9 +59,8 @@ void cancel() {
   cyw43_arch_lwip_end();
 }
 
-void socket_error(void *arg, err_t error) {
+void socket_error(void *arg, err_t) {
   if (!current(arg)) return;
-  transport_error = error;
   client = nullptr;
   failure = "HTTP DNS/TCP/TLS connection failed";
 }
@@ -86,12 +68,10 @@ void socket_error(void *arg, err_t error) {
 err_t connected(void *arg, altcp_pcb *pcb, err_t error) {
   if (!current(arg) || pcb != client) return ERR_OK;
   if (error != ERR_OK) {
-    transport_error = error;
     failure = "HTTP TCP/TLS connection failed";
   }
   else {
     handshake_ready = true;
-    stage = Stage::request;
     deadline = make_timeout_time_ms(TIMEOUT_MS);
   }
   return ERR_OK;
@@ -105,7 +85,6 @@ err_t receive(void *arg, altcp_pcb *pcb, pbuf *data, err_t error) {
   if (!data) {
     remote_closed = true;
     if (error != ERR_OK) {
-      transport_error = error;
       failure = "HTTP receive failed";
     }
     return ERR_OK;
@@ -116,21 +95,17 @@ err_t receive(void *arg, altcp_pcb *pcb, pbuf *data, err_t error) {
   }
   if (error != ERR_OK || data->tot_len > RECEIVE_MAX ||
       (pending && data->tot_len > RECEIVE_MAX - pending->tot_len)) {
-    transport_error = error;
     pbuf_free(data);
     failure = "HTTP receive failed or backlog exceeds TCP/TLS bound";
     return ERR_OK;
   }
   if (pending) {
-    ++chained_receives;
     pbuf_cat(pending, data);
   } else pending = data;
   /* Keep successive decrypted buffers in one bounded chain instead of
    * refusing a final plaintext fragment to the TLS wrapper. TCP credit is
    * withheld until the normal worker consumes bytes; no payload is copied or
    * parsed in this callback. Fully consumed pbufs are released incrementally. */
-  received_bytes += data->tot_len;
-  stage = Stage::receive;
   deadline = make_timeout_time_ms(TIMEOUT_MS);
   return ERR_OK;
 }
@@ -146,7 +121,6 @@ err_t poll(void *, altcp_pcb *) {
 void resolved(const char *, const ip_addr_t *address, void *arg) {
   if (!current(arg) || failure || !z80_http_io_active()) return;
   if (!address) { failure = "HTTP DNS lookup failed"; return; }
-  stage = Stage::connect;
   client = endpoint->https ? altcp_tls_new(tls_config, IPADDR_TYPE_V4) :
                              altcp_tcp_new_ip_type(IPADDR_TYPE_V4);
   if (!client) { failure = "HTTP TCP/TLS allocation failed"; return; }
@@ -163,7 +137,6 @@ void resolved(const char *, const ip_addr_t *address, void *arg) {
   altcp_poll(client, poll, 1);
   err_t result = altcp_connect(client, address, endpoint->port, connected);
   if (result != ERR_OK) {
-    transport_error = result;
     failure = "HTTP connection start failed";
   }
 }
@@ -173,9 +146,6 @@ bool start(const z80_http_url_t *target) {
   endpoint = target;
   header_sent = 0;
   failure = nullptr;
-  stage = reported_stage = Stage::setup;
-  received_bytes = chained_receives = 0;
-  transport_error = ERR_OK;
   remote_closed = handshake_ready = false;
   int used = snprintf(header, sizeof(header),
       "GET %s HTTP/1.1\r\nHost: %s\r\nAccept: */*\r\n"
@@ -184,8 +154,6 @@ bool start(const z80_http_url_t *target) {
   if (used <= 0 || static_cast<size_t>(used) >= sizeof(header)) return false;
   header_length = static_cast<size_t>(used);
   active = true;
-  printf("[http] GET host=%s port=%u tls=%u\n", target->host,
-         static_cast<unsigned>(target->port), target->https ? 1u : 0u);
   deadline = make_timeout_time_ms(TIMEOUT_MS);
   if (target->https && !z80_network_time(nullptr)) {
     failure = "HTTP TLS needs synchronized SNTP time";
@@ -197,13 +165,11 @@ bool start(const z80_http_url_t *target) {
         reinterpret_cast<const u8_t *>(HTTP_CA), sizeof(HTTP_CA));
   if (target->https && !tls_config) failure = "HTTP TLS trust configuration failed";
   else {
-    stage = Stage::dns;
     ip_addr_t address;
     void *token = reinterpret_cast<void *>(static_cast<uintptr_t>(generation));
     err_t result = dns_gethostbyname(target->host, &address, resolved, token);
     if (result == ERR_OK) resolved(target->host, &address, token);
     else if (result != ERR_INPROGRESS) {
-      transport_error = result;
       failure = "HTTP DNS lookup start failed";
     }
   }
@@ -220,12 +186,6 @@ extern "C" void z80_http_network_service(bool online, uint32_t network_generatio
   z80_http_io_network_state(online, network_generation);
   z80_http_io_core1_service();
   if (!active) return;
-  if (stage != reported_stage) {
-    printf("[http] stage=%s queued=%u/%u received=%lu chained=%lu\n", stage_name(),
-           static_cast<unsigned>(header_sent), static_cast<unsigned>(header_length),
-           static_cast<unsigned long>(received_bytes), static_cast<unsigned long>(chained_receives));
-    reported_stage = stage;
-  }
   cyw43_arch_lwip_begin();
   if (!failure && !pending && time_reached(deadline)) failure = "HTTP transfer idle timeout (30 seconds)";
   if (!failure && client && handshake_ready) {
@@ -234,16 +194,12 @@ extern "C" void z80_http_network_service(bool online, uint32_t network_generatio
       err_t result = altcp_write(client, header + header_sent, n, TCP_WRITE_FLAG_COPY);
       if (result == ERR_OK) {
         header_sent += n;
-        if (header_sent == header_length && stage == Stage::request)
-          stage = Stage::response;
       } else if (result != ERR_MEM) {
-        transport_error = result;
         failure = "HTTP request write failed";
       }
     }
     err_t result = altcp_output(client);
     if (result != ERR_OK && result != ERR_MEM) {
-      transport_error = result;
       failure = "HTTP request flush failed";
     }
   }
@@ -263,15 +219,7 @@ extern "C" void z80_http_network_service(bool online, uint32_t network_generatio
   }
   if (!failure && remote_closed && !pending) z80_http_io_remote_close();
   cyw43_arch_lwip_end();
-  if (failure) {
-    snprintf(failure_detail, sizeof(failure_detail),
-        "%s; stage=%s host=%s:%u queued=%u/%u received=%lu chained=%lu lwip=%d",
-        failure, stage_name(), endpoint->host, static_cast<unsigned>(endpoint->port),
-        static_cast<unsigned>(header_sent), static_cast<unsigned>(header_length),
-        static_cast<unsigned long>(received_bytes), static_cast<unsigned long>(chained_receives),
-        static_cast<int>(transport_error));
-    z80_http_io_error(failure_detail);
-  }
+  if (failure) z80_http_io_error(failure);
   /* Cancels/redirects outside lwIP callbacks and outside the stack guard. */
   z80_http_io_core1_service();
 }

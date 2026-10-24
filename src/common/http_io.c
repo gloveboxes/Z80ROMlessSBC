@@ -128,7 +128,6 @@ void z80_http_io_network_state(bool connected, uint32_t generation) {
 bool z80_http_io_active(void) { return active; }
 
 void z80_http_io_error(const char *message) {
-  if (!stream.error || active) printf("[http] %s\n", message);
   if (!stream.error) {
     stream.error = message;
   }

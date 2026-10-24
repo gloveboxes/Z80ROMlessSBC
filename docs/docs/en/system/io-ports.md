@@ -149,11 +149,8 @@ is available to acknowledge. A compile-time check and the native test with
 the real crypto configuration enforce this size relationship. The existing
 pbuf pool and lwIP heap sizes are unchanged.
 
-USB diagnostics beginning `[http]` report connection stages and failure details.
-A timeout includes `stage` (DNS, TCP/TLS, request, awaiting response or receiving),
-the host/port, request bytes queued, plaintext bytes received, chained receive
-count and the last lwIP error code. Stage messages are emitted on transitions,
-not for each packet. URLs' paths/queries and stored credentials are not logged.
+HTTP transfer diagnostics are kept off the serial console. Transfer failures
+remain available through the FT status response.
 
 The parser accepts HTTP/1.0 and 1.1, content-length, chunked (including trailers),
 and connection-close bodies, preserving binary NULs. It rejects truncated
