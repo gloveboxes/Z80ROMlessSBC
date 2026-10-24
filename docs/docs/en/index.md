@@ -1,6 +1,6 @@
 # Z80 ROMless SBC - WIP Engineering and Build Specification
 
-![Z80 ROMless SBC project banner](images/banner.svg)
+![Zeta-80: Z80 ROMless SBC project banner](images/banner.svg)
 
 **Repository:** [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC)
 
