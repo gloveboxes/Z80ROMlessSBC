@@ -10,6 +10,13 @@ input support. The copied Altair sources retain their MIT license in
 
 ## Build and test
 
+Ports 21/22 run the production HTTP(S) FT driver/parser with a native async curl
+backend when libcurl is available. The loader's activation byte A5h on port 21
+is retained. Legacy local-file transfers on ports 60/61 remain available.
+The end-to-end [FT test](../../../docs/docs/en/cpm-dcc/interactive.md#build-and-run-ft-locally-before-deployment)
+builds the unchanged assembly client with CP/M MAC/LOAD and verifies saved disk
+files and MBASIC execution before hardware deployment.
+
 ```sh
 cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter
 cmake --build build/cpm/dcc_io_adapter

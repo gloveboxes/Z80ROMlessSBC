@@ -8,7 +8,7 @@ typedef uint16_t u16_t;
 enum { ERR_OK = 0, ERR_MEM = -1, ERR_INPROGRESS = -5, ERR_ABRT = -13 };
 enum { IPADDR_TYPE_V4 = 0, TCP_WRITE_FLAG_COPY = 1 };
 struct ip_addr_t { uint32_t address; };
-struct pbuf { const void *payload; u16_t tot_len; };
+struct pbuf { const void *payload; u16_t tot_len; pbuf *next = nullptr; };
 struct altcp_tls_config {};
 struct altcp_pcb {
   void *arg;
@@ -35,4 +35,6 @@ err_t altcp_output(altcp_pcb *);
 void altcp_recved(altcp_pcb *, u16_t);
 u16_t pbuf_copy_partial(const pbuf *, void *, u16_t, u16_t);
 u8_t pbuf_free(pbuf *);
+void pbuf_cat(pbuf *, pbuf *);
+pbuf *pbuf_free_header(pbuf *, u16_t);
 #endif

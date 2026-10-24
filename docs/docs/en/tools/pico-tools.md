@@ -30,13 +30,11 @@ Open the Command Palette, choose **Tasks: Run Task**, then select:
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replaces complete flash image, including disks and ENV |
 | **Flash Pico - Phase 6 20 MHz scope diagnostic** | Builds and force-flashes the isolated CPU/SRAM scope diagnostic |
 | **Build and flash Pico - Phase 10 firmware** | Builds and force-flashes firmware; preserves disks and ENV |
-| **Build and flash Pico - Phase 10 firmware and disks** | Builds and writes the complete flash image; replaces disks and ENV |
 | **Prepare interactive CP/M emulator** | Builds the host emulator, I/O adapter, and CP/M images; no Pico required |
 
-Phase 9 and 10 tasks both build and deploy. They force-update without a
-previous-firmware handshake, verify written bytes, and request reboot.
-Firmware-only tasks preserve disks and ENV; firmware-and-disks tasks replace
-the complete flash image. Save work before using them.
+Phase 9 and 10 firmware tasks build and deploy. They force-update without a
+previous-firmware handshake, verify written bytes, and request reboot while
+preserving disks and ENV. Save work before using them.
 Phase 9 tasks prompt for **Diagnostic** (bring-up) or **Automatic loader**
 (normal operation after tests pass).
 
@@ -61,11 +59,10 @@ Phase 0 has no firmware.
 
 ### Firmware and disks
 
-The **Build and flash Pico - Phase 9 firmware and disks** and
-**Build and flash Pico - Phase 10 firmware and disks** tasks build and write
-the complete flash image. They replace firmware, boot package, disks,
-journal, and ENV without backups. They require USB serial selection and
-explicit confirmation, and force BOOTSEL entry without a firmware handshake.
+The **Build and flash Pico - Phase 9 firmware and disks** task builds and
+writes the complete flash image. It replaces firmware, boot package, disks,
+journal, and ENV without backups. It requires USB serial selection and
+explicit confirmation, and forces BOOTSEL entry without a firmware handshake.
 Use firmware-only tasks to preserve existing disks and settings.
 
 ## VS Code disk flashing tasks

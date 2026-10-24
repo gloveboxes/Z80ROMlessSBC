@@ -6,6 +6,11 @@ file(READ ${CMAKE_CURRENT_LIST_DIR}/weather_ca.pem weather_ca)
 configure_file(weather_ca.h.in ${stage10_generated_dir}/weather_ca.h @ONLY)
 file(READ ${CMAKE_CURRENT_LIST_DIR}/chat_ca.pem chat_ca)
 configure_file(chat_ca.h.in ${stage10_generated_dir}/chat_ca.h @ONLY)
+set(Z80_HTTP_CA_FILE "${CMAKE_CURRENT_LIST_DIR}/http_ca.pem" CACHE FILEPATH
+  "PEM trust bundle for HTTPS file transfer (include private server roots here)")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${Z80_HTTP_CA_FILE}")
+file(READ "${Z80_HTTP_CA_FILE}" http_ca)
+configure_file(http_ca.h.in ${stage10_generated_dir}/http_ca.h @ONLY)
 target_compile_definitions(pico_mbedtls_headers INTERFACE
   MBEDTLS_USER_CONFIG_FILE="weather_tls_config.h")
 add_custom_command(
@@ -50,6 +55,7 @@ add_library(z80_terminal STATIC
   ../common/weather_http.c
   weather_network.cpp
   chat_network.cpp
+  http_network.cpp
   network_setup.c)
 pico_generate_pio_header(z80_terminal ${CMAKE_CURRENT_LIST_DIR}/matrix_i2c.pio)
 target_include_directories(z80_terminal PUBLIC
@@ -59,7 +65,7 @@ target_include_directories(z80_terminal PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
 set_source_files_properties(
   network_services.c network_runtime.cpp matrix_display.cpp web_terminal.cpp
-  ../common/weather_http.c weather_network.cpp chat_network.cpp network_setup.c
+  ../common/weather_http.c weather_network.cpp chat_network.cpp http_network.cpp network_setup.c
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 target_link_libraries(z80_terminal PUBLIC
   z80_terminal_queue z80_io_services z80_pico_ws_server pico_lwip_sntp

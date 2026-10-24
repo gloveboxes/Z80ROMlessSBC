@@ -79,6 +79,35 @@ cmake --build build/host-control
 ctest --test-dir build/host-control --output-on-failure --no-tests=error
 ```
 
+The HTTP file-transfer tests exercise the production parser and port 21/22
+handshake, binary data, files larger than 64 KiB, framing errors, EOF,
+cancellation, stale DNS callbacks and TCP backpressure. The async transport
+regression covers consecutive TLS receive callbacks before the worker runs,
+a full 16 KiB record, incremental freeing during a 70 KB stream, backlog
+overflow, and stage-specific timeout diagnostics. The test with the actual
+Mbed TLS configuration enforces a TCP window large enough for an input record
+and framing overhead. These tests run offline.
+To also build the optional live runner with the firmware's real Mbed TLS
+configuration and trust bundle, configure with `PICO_SDK_PATH`:
+
+```sh
+cmake -S src/common/tests -B build/host-control -G Ninja \
+  -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ \
+  -DPICO_SDK_PATH=/absolute/path/to/pico-sdk
+cmake --build build/host-control --target http_live_test
+python3 src/common/tests/http_transfer_integration.py \
+  --runner build/host-control/http_live_test --https
+```
+
+The script starts temporary local Python HTTP servers, transfers a 76,805-byte
+binary, an empty file, a redirect and a chunked response, checks 404 failure,
+and rejects an untrusted local HTTPS certificate. `--https` additionally
+transfers the supplied GitHub `LOVE.BAS` through verified TLS 1.2 and compares
+every byte with an independent HTTPS fetch. It needs network access and the
+`openssl` CLI. The native socket adapter tests the production FT driver,
+parser and crypto; the separate async transport regression covers the Pico
+lwIP adapter. These checks do not flash hardware or prove board timing.
+
 This configures a standalone host CMake project. Its test targets enable
 warnings as errors and keep assertions enabled with `-UNDEBUG`, including
 when the build type would normally disable assertions.

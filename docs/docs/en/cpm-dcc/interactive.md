@@ -49,18 +49,19 @@ D>DIR
 - The `PIP` commands exercise cross-drive reads, writes, directory updates, and
   persistence in the emulator's generated Drive D image.
 
-The dynamic adapter preserves the native SBC disk ports `0x10`-`0x14`, adds
-the adapter-only activation port `0x15`, and mirrors all active ports in the
+The dynamic adapter preserves the native SBC disk ports `0x10`-`0x14`, uses
+the loader-only byte `A5h` on `0x15` for activation, and mirrors all active ports in the
 ESP32 Altair `port_drivers/io_ports.c` dispatcher:
 
 | Ports | Host-emulated function |
 |---|---|
+| 21-22 | Production HTTP(S) file-transfer driver/parser with native asynchronous curl transport |
 | 24-31, 37-39, 41-44 | Time and timer requests |
 | 24-30 | Time and timer input |
 | 45, 48, 49, 70 | Utility strings and host information |
 | 46-47 | OpenWeatherMap field request and status |
 | 52 | DCC-host interrupt timer |
-| 60-61 | Host file transfer |
+| 60-61 | Legacy host-file transfer |
 | 71-72 | Text-file-backed environment variables |
 | 120-124 | OpenAI-compatible chat request and response |
 | 200 | Shared response-buffer input |
@@ -70,6 +71,62 @@ extensions because those ports are absent from the firmware source-of-truth
 dispatcher. Weather and chat use libcurl when available and explicitly report
 an unavailable/error state when network support or configuration is absent.
 No API keys are stored in the repository.
+
+## Build and run FT locally before deployment
+
+The FT integration test assembles the canonical `FT.ASM` from the sibling
+ESP32 Altair project with the real CP/M `MAC` and `LOAD` programs. It runs the
+resulting `FT.COM` against a temporary local Python HTTP server, then optionally
+downloads the supplied GitHub BASIC example over HTTPS and executes it in
+MBASIC. The emulator adapter uses the production `http_io.c` mailbox/port logic and `http_stream.c` parser;
+curl supplies the native asynchronous socket/TLS backend. The firmware's Mbed
+TLS configuration is checked separately by the native live-transfer test.
+
+From the repository root, with Python 3.10+, cpmtools, z80asm and curl development
+headers/libraries available:
+
+```sh
+cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+cmake --build build/cpm/z80_debug_host
+cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter
+cmake --build build/cpm/dcc_io_adapter
+python3 src/cpm/test_http_ft.py --https
+```
+
+The test assembles `Apps/FT/FT.ASM` from the sibling ESP32 Altair project with
+CP/M MAC and LOAD. It converts line endings for MAC input and generates a
+dedicated disk set in `build/cpm-http-ft/images`. It checks:
+
+- MAC/LOAD produce a runnable `FT.COM` under the board's CP/M and BIOS.
+- `FT -GB BINARY.BIN` saves all 65,797 bytes, including NULs, followed by the
+  expected CP/M record padding; this crosses multiple file extents.
+- An empty binary file completes, HTTP 404 removes the partial file, and the
+  next transfer succeeds after the error.
+- A small `MENU.BAS` fixture checks mixed line-ending normalization and lets
+  LOVE's final `RUN "MENU"` return cleanly to BASIC.
+- Running `FT -G` without a filename prompts for `MiXeD.Bas`, requests that
+  exact remote path, and saves its contents as uppercase `MIXED.BAS`.
+- With `--https`, `FT -G LOVE.BAS` downloads all 1,664 source bytes, saves the
+  expected CR LF text and `^Z`/record padding, then MBASIC loads and executes it.
+
+The build leaves `FT.COM`, `results.json` with source/file hashes, and readable
+`transcript.txt` plus debugger `transcript.mi` in `build/cpm-http-ft`. The original
+source and ordinary `build/cpm` disks are unchanged by this test. No Pico is
+accessed. Loader activation stays latched until CPU reset; FT commands 1/3/4 on
+port 21 retain native SBC I/O routing.
+
+Use `build_images.cpm_diskdefs()` when injecting or extracting native CP/M
+files with cpmtools. Its reference is the ESP32 Altair project's
+[`diskdefs` entry `altair88`](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/diskdefs),
+which already explicitly sets `logicalextents 1` to match the Burcon BIOS's
+`EXM=0`. This board's native definition uses 80 tracks and `skew 1` because
+conversion has already applied the Altair sector mapping. The other shared
+filesystem parameters come from `src/disks/geometry.py`.
+Keep the explicit logical-extent setting:
+inferring extents from the 2 KiB block size produces incompatible files larger
+than 16 KiB. The test explicitly flushes the modeled disk before reading saved
+files from another process.
 
 Terminal input uses the same policy as `altair_local`: Up/Down/Right/Left map to
 Ctrl-E/Ctrl-X/Ctrl-D/Ctrl-S, Insert/Delete map to Ctrl-O/Ctrl-G, Page Up/Page

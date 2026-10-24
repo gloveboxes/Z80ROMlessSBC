@@ -137,3 +137,10 @@ int main(void) {
   test_reset_and_errors();
   puts("PASS: response handoff copies zero payload bytes; framing, reset and errors preserved");
 }
+
+void environment_io_init(const char *path) { (void)path; }
+void environment_io_close(void) {}
+uint8_t environment_input(uint8_t port) { (void)port; return 0; }
+bool environment_io_get(const char *key, char *value, size_t capacity) {
+  (void)key; (void)value; (void)capacity; return false;
+}

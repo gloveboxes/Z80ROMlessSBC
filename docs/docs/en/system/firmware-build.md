@@ -92,14 +92,13 @@ Build the target in the table for your phase. Its UF2 is written to
 Use **Tasks: Run Task** in the Z80ROMlessSBC workspace. Each implementation
 phase lists its **Build Pico - …** and **Flash Pico - …** tasks.
 
-| Phase | Firmware only | Firmware and disks |
-| --- | --- | --- |
-| 9 | **Build and flash Pico - Phase 9 firmware** | **Build and flash Pico - Phase 9 firmware and disks** |
-| 10 | **Build and flash Pico - Phase 10 firmware** | **Build and flash Pico - Phase 10 firmware and disks** |
+| Phase | Firmware task |
+| --- | --- |
+| 9 | **Build and flash Pico - Phase 9 firmware** |
+| 10 | **Build and flash Pico - Phase 10 firmware** |
 
-Phase 9 prompts for **Diagnostic** or **Automatic loader**. Firmware-only
-tasks preserve disks and ENV; firmware-and-disks tasks replace the complete
-flash image, including disks and ENV. All force-update without checking the
+Phase 9 prompts for **Diagnostic** or **Automatic loader**. Firmware tasks
+preserve disks and ENV settings. They force-update without checking the
 previous firmware. See [task requirements](../tools/pico-tools.md#deployment-task-requirements).
 The commands below remain available for manual builds and provisioning.
 

@@ -22,6 +22,7 @@
 #include "ansi_input.h"
 #include "usb_console.h"
 #include "../common/io_service.h"
+#include "../common/http_io.h"
 #include "disk_diagnostic_image.h"
 
 #ifdef Z80_STAGE10_NETWORK
@@ -125,6 +126,8 @@ static uint8_t __not_in_flash_func(virtual_read)(uint8_t port, void *context) {
   case IO_SERVICE_REQUEST_PORT:
   case IO_SERVICE_RESPONSE_PORT:
   case IO_TIMER_PORT:
+  case HTTP_COMMAND_PORT:
+  case HTTP_DATA_PORT:
     return z80_io_port_in(port);
   default:
     return 0xFF;
@@ -179,6 +182,8 @@ static void __not_in_flash_func(virtual_write)(uint8_t port, uint8_t value,
   case IO_SERVICE_REQUEST_PORT:
   case IO_SERVICE_RESPONSE_PORT:
   case IO_TIMER_PORT:
+  case HTTP_COMMAND_PORT:
+  case HTTP_DATA_PORT:
     z80_io_port_out(port, value);
     break;
   default:

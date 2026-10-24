@@ -159,6 +159,7 @@ extern "C" void z80_reset(z80_t *cpu, port_in in, port_out out, read_sense_switc
     cpu->iff = false;
 
     g_cpu = cpu;
+    sbc_mode = false;
 
     // Zero-initialize the core's registers. The boot loader address is loaded
     // subsequently via z80_examine().
@@ -485,7 +486,10 @@ void x80_invoke_out(uint8_t port)
             cpu->term_out(reg.a);
         break;
     case 0x15:
-        sbc_mode = reg.a == 0xa5;
+        // Native-loader activation is sticky until reset. Port 21 also carries
+        // the board's FT commands (1/3/4), which must retain SBC disk routing.
+        if (reg.a == 0xa5)
+            sbc_mode = true;
         cpu->io_port_out_handler(port, reg.a);
         break;
     default:

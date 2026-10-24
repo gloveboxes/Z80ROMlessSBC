@@ -37,8 +37,8 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x12` | 18 | Disk sector address, low byte | Fixed |
 | `0x13` | 19 | Disk sector address, high byte | Fixed |
 | `0x14` | 20 | Disk data, IN/OUT | Fixed |
-| `0x15` | 21 | File-transfer command (OUT) / status (IN) | Reserved, not implemented |
-| `0x16` | 22 | File-transfer filename/data bytes | Reserved, not implemented |
+| `0x15` | 21 | HTTP(S) file-transfer command (OUT) / status (IN) | Implemented in Phase 10 |
+| `0x16` | 22 | File-transfer filename/data bytes | Implemented in Phase 10 |
 | `0x17` | 23 | Independent countdown timers and stopwatches, IN/OUT | Implemented |
 
 This assigns or reserves **15 ports and leaves one spare**. A port supports
@@ -50,6 +50,121 @@ milestones, not proof of a working CP/M prompt. Its read-only disk test uses
 port `0x06` for compared bytes and `5Ah`/`E1h` on port `0x05` for completion/
 failure. These diagnostic meanings are mode-specific and do not change the
 fixed terminal or disk ABI.
+
+### HTTP and HTTPS file transfer
+
+Phase 10 implements the existing
+[FT.ASM](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/FT/FT.ASM)
+port protocol without changing the application. Use the existing `FT.COM`, or
+assemble the original source with CP/M `MAC FT` followed by `LOAD FT`.
+The network uses standard HTTP/1.1 GET requests; a Python-specific file server
+and HTTP Range support are unnecessary. Phase 9 exposes the same ports but
+returns ERROR for downloads because it has no network backend.
+
+The driver accepts a full `http://` or `https://` URL, or a filename relative
+to persistent **`HTTP_BASE_URL`**. A relative filename extends the base path;
+a name starting with `/` uses the server's root. The base must have no query.
+Settings are reloaded on core 1 at the first GET of each new transfer.
+
+CP/M uppercases command tails. Use the interactive **ENV** editor (run `ENV`
+without arguments, then **A** to add, or the entry number to edit) to preserve
+the case of URL paths. Set the key to `HTTP_BASE_URL` and its value to:
+
+```text
+https://raw.githubusercontent.com/AzureSphereCloudEnabledAltair8800/RetroGames/refs/heads/main/
+```
+
+Quit ENV with **Q**, then download and run the supplied BASIC example:
+
+```text
+FT -G LOVE.BAS
+MBASIC LOVE
+```
+
+`-G` retains FT's existing text behavior: normalize line endings to CR LF and
+append CP/M's `^Z` marker. Use `FT -GB PROGRAM.COM` for byte-preserving binary
+transfers. FT saves the basename using CP/M's uppercase 8.3 naming and pads the
+final 128-byte disk record with NULs. If the remote filename is omitted, run
+`FT -G` or `FT -GB`; FT prompts for a case-preserving remote path and derives
+the local uppercase basename. This supports mixed-case HTTP paths while keeping
+the CCP command-tail behavior unchanged.
+
+For a local server, run this on the host in the directory containing files:
+
+```sh
+python3 -m http.server 8000 --bind 0.0.0.0
+```
+
+In interactive ENV, change `HTTP_BASE_URL` to the host's LAN address, for
+example `http://192.168.1.10:8000/`, then use `FT -G LOVE.BAS` or
+`FT -GB PROGRAM.COM`. For mixed-case server paths, omit the filename and enter
+it at FT's prompt. Plain HTTP works without synchronized calendar time.
+
+HTTPS requires Wi-Fi and synchronized SNTP time, and verifies certificate
+dates, hostname (with SNI), and chain. The default
+[trust bundle](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/http_ca.pem)
+contains ISRG Root X1, USERTrust RSA Certification Authority and GTS Root R4.
+For a different public/private CA, configure the firmware with
+`-DZ80_HTTP_CA_FILE=/absolute/path/to/bundle.pem`, retaining any roots you still
+need. Self-signed/untrusted servers fail; verification is never disabled.
+
+The dedicated
+[`http_io.c`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/http_io.c)
+driver provides this ABI, independently of framed services on ports 2/3/4:
+
+| Operation | Behavior |
+| --- | --- |
+| OUT 21, 1 | Reset transfer; collect a new filename/URL |
+| OUT 22, byte | Append filename bytes, terminated by NUL |
+| OUT 21, 3 | Request the next chunk; status becomes BUSY |
+| IN 21 | `0` IDLE, `1` DATA, `2` EOF, `3` BUSY, `4` missing/empty `HTTP_BASE_URL`, `255` ERROR |
+| IN 22 | Read the count (`0` means 256), then exactly that many file bytes |
+| OUT 21, 4 | Close/cancel and return to IDLE |
+
+DATA remains visible until the entire chunk is consumed, including the final
+partial chunk. Empty files report EOF without a count byte. Repeated GET
+commands while busy or while unread data remains do not duplicate requests.
+SET_FILENAME and CLOSE invalidate pending work; late responses and DNS answers
+cannot become part of a new file. Reset the transfer to recover after ERROR.
+For relative filenames, status `4` means `HTTP_BASE_URL` is missing or empty;
+FT prints instructions for adding or editing it in ENV. Absolute HTTP/HTTPS
+URLs do not need this setting.
+
+Core 0 only handles bounded port operations and a release/acquire mailbox.
+Core 1 owns ENV reads, DNS, TCP/TLS, HTTP parsing and a 1024-byte ring. One GET
+stream supplies 256-byte FT chunks; files need not fit in RAM. Network writes
+and receive parsing are limited to 512 bytes per poll. A bounded chain of lwIP
+receive buffers and deferred TCP credit apply backpressure when FT stops reading, while the
+worker continues servicing disks, USB and the terminal.
+Consumed buffer prefixes are freed on each poll, so the backlog stays bounded
+as the file grows. Successive decrypted TLS fragments are accepted together,
+including a final fragment followed by TLS close notification. The receive
+bound is the TCP window plus one TLS input record (33,904 bytes); exceeding it
+fails explicitly. The client also registers lwIP's half-second poll callback
+to advance buffered TLS work after temporary memory pressure.
+
+The TCP receive window is 17,520 bytes, enough for Mbed TLS's 16 KiB input
+record and framing overhead. A smaller window can stall TLS before plaintext
+is available to acknowledge. A compile-time check and the native test with
+the real crypto configuration enforce this size relationship. The existing
+pbuf pool and lwIP heap sizes are unchanged.
+
+USB diagnostics beginning `[http]` report connection stages and failure details.
+A timeout includes `stage` (DNS, TCP/TLS, request, awaiting response or receiving),
+the host/port, request bytes queued, plaintext bytes received, chained receive
+count and the last lwIP error code. Stage messages are emitted on transitions,
+not for each packet. URLs' paths/queries and stored credentials are not logged.
+
+The parser accepts HTTP/1.0 and 1.1, content-length, chunked (including trailers),
+and connection-close bodies, preserving binary NULs. It rejects truncated
+framed responses, conflicting lengths, unsupported compression and HTTP errors.
+Up to five redirects are followed, including relative locations; HTTPS-to-HTTP
+downgrades fail. DNS names/IPv4 and optional ports are supported; IPv6,
+credentials, fragments and control characters are rejected. Filename/URL and
+path buffers allow 767 bytes, hostnames 253, header lines 1023, and each header
+or trailer section 8192. The unchanged FT application has CP/M's shorter
+127-byte command-tail limit. A network stall times out after 30 seconds;
+waiting on a retained receive chain due to consumer backpressure is exempt.
 
 ### Interpreting CP/M SURVEY results
 

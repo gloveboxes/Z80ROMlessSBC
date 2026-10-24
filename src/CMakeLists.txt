@@ -58,6 +58,8 @@ add_library(z80_io_services STATIC
   common/io_ports.c
   common/io_service.c
   common/io_service_platform.c
+  common/http_io.c
+  common/http_stream.c
   common/weather.c
   common/chat.c
   common/chat_stream.c

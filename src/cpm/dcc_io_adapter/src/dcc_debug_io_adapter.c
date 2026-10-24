@@ -5,6 +5,8 @@
 #include "PortDrivers/chat_io.h"
 #include "PortDrivers/environment_io.h"
 #include "PortDrivers/host_files_io.h"
+#include "PortDrivers/host_http_io.h"
+#include "http_io.h"
 #include "PortDrivers/time_io.h"
 #include "PortDrivers/weather_io.h"
 #include "interrupt_timer.h"
@@ -33,6 +35,9 @@ static void set_error(char *error, size_t error_size, const char *message)
 static uint8_t adapter_input(void *context, uint8_t port)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
+    host_http_io_poll();
+    if (port == HTTP_COMMAND_PORT || port == HTTP_DATA_PORT)
+        return z80_http_io_in(port);
     if (sbc_disk_handles_port(port))
         return sbc_disk_input(&adapter->disk, port);
     return io_port_in(port);
@@ -41,6 +46,12 @@ static uint8_t adapter_input(void *context, uint8_t port)
 static void adapter_output(void *context, uint8_t port, uint8_t data)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
+    host_http_io_poll();
+    /* Keep the native-loader activation byte; FT never sends command A5h. */
+    if (port == HTTP_DATA_PORT || (port == HTTP_COMMAND_PORT && data != 0xa5)) {
+        z80_http_io_out(port, data);
+        return;
+    }
     if (sbc_disk_handles_port(port))
         sbc_disk_output(&adapter->disk, port, data);
     else
@@ -60,6 +71,7 @@ static size_t adapter_terminal_poll(
     void *context, uint8_t *output, size_t output_size, uint64_t now_ms)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
+    host_http_io_poll();
     return dcc_debug_terminal_input_poll(
         &adapter->terminal, output, output_size, now_ms);
 }
@@ -72,6 +84,7 @@ static void adapter_close(void *context)
     interrupt_timer_close();
     weather_io_close();
     chat_io_close();
+    host_http_io_close();
     host_files_close();
     environment_io_close();
     sbc_disk_close(&s_context.disk);
@@ -122,6 +135,7 @@ int dcc_debug_io_adapter_init(const dcc_debug_io_adapter_config_t *config,
     dcc_debug_terminal_input_init(&s_context.terminal);
     host_files_init(config->files_root ? config->files_root : ".");
     environment_io_init(config->environment_file);
+    host_http_io_init();
     chat_io_init();
     weather_io_init();
     time_reset();

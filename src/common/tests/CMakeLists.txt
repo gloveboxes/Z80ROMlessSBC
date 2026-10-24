@@ -25,6 +25,7 @@ else()
   message(STATUS "Set MATRIX_PIOASM to enable the assembled matrix PIO regression")
 endif()
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
+  ../http_io.c ../http_stream.c
   ../chat.c ../chat_stream.c
   ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
   ../environment_store.c
@@ -35,7 +36,7 @@ target_compile_features(io_ports_test PRIVATE c_std_11)
 target_compile_options(io_ports_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME extended_io_services COMMAND io_ports_test)
 set_tests_properties(extended_io_services PROPERTIES TIMEOUT 30)
-add_executable(io_transport_test io_transport_test.c)
+add_executable(io_transport_test io_transport_test.c ../http_io.c ../http_stream.c)
 target_include_directories(io_transport_test PRIVATE ../include ..)
 target_compile_features(io_transport_test PRIVATE c_std_11)
 target_compile_options(io_transport_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
@@ -48,6 +49,7 @@ target_compile_options(io_service_platform_test PRIVATE -Wall -Wextra -Werror -U
 add_test(NAME service_clock_and_info COMMAND io_service_platform_test)
 set_tests_properties(service_clock_and_info PROPERTIES TIMEOUT 5)
 add_executable(clock_service_test clock_service_test.c ../io_ports.c
+  ../http_io.c ../http_stream.c
   ../chat.c ../chat_stream.c
   ../weather.c ../../cpm/dcc_io_adapter/port_drivers/json_scan.c
   ../io_service.c ../io_service_platform.c ../environment_store.c
@@ -83,6 +85,18 @@ target_compile_features(chat_network_test PRIVATE cxx_std_17 c_std_11)
 target_compile_options(chat_network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME chat_async_transport COMMAND chat_network_test)
 set_tests_properties(chat_async_transport PROPERTIES TIMEOUT 5)
+add_executable(http_io_test http_io_test.c ../http_io.c ../http_stream.c)
+target_include_directories(http_io_test PRIVATE ../include ..)
+target_compile_features(http_io_test PRIVATE c_std_11)
+target_compile_options(http_io_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME http_file_transfer_ports_and_parser COMMAND http_io_test)
+set_tests_properties(http_file_transfer_ports_and_parser PROPERTIES TIMEOUT 5)
+add_executable(http_network_test http_network_test.cpp ../http_io.c ../http_stream.c)
+target_include_directories(http_network_test PRIVATE fakes ../include ..)
+target_compile_features(http_network_test PRIVATE cxx_std_17 c_std_11)
+target_compile_options(http_network_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME http_file_transfer_async_network COMMAND http_network_test)
+set_tests_properties(http_file_transfer_async_network PROPERTIES TIMEOUT 5)
 set(PICO_SDK_PATH "$ENV{PICO_SDK_PATH}" CACHE PATH
   "Pico SDK used for the real weather TLS regression")
 if(EXISTS "${PICO_SDK_PATH}/lib/mbedtls/library/CMakeLists.txt")
@@ -102,6 +116,20 @@ if(EXISTS "${PICO_SDK_PATH}/lib/mbedtls/library/CMakeLists.txt")
   file(READ ../../stage10_websocket_terminal/chat_ca.pem chat_ca)
   configure_file(../../stage10_websocket_terminal/chat_ca.h.in
     weather_tls/chat_ca.h @ONLY)
+  set(Z80_HTTP_CA_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/http_ca.pem"
+    CACHE FILEPATH "PEM trust bundle for HTTPS file transfer")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${Z80_HTTP_CA_FILE}")
+  file(READ "${Z80_HTTP_CA_FILE}" http_ca)
+  configure_file(../../stage10_websocket_terminal/http_ca.h.in
+    weather_tls/http_ca.h @ONLY)
+  if(UNIX)
+    add_executable(http_live_test http_live_test.cpp ../http_io.c ../http_stream.c)
+    target_include_directories(http_live_test PRIVATE .. ../include
+      "${CMAKE_CURRENT_BINARY_DIR}/weather_tls")
+    target_link_libraries(http_live_test PRIVATE weather_mbedtls)
+    target_compile_features(http_live_test PRIVATE cxx_std_17 c_std_11)
+    target_compile_options(http_live_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  endif()
   add_executable(weather_tls_test weather_tls_test.cpp)
   target_include_directories(weather_tls_test PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}/weather_tls")

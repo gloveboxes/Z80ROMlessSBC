@@ -953,23 +953,6 @@
 			"problemMatcher": []
 		},
 		{
-			"label": "Build and flash Pico - Phase 10 firmware and disks",
-			"detail": "Force BOOTSEL entry; no running-phase check. Replaces all flash including disks, journal and ENV; no backups.",
-			"type": "shell",
-			"command": "if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_cpm_images && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"presentation": {
-				"reveal": "always",
-				"focus": true,
-				"panel": "dedicated",
-				"showReuseMessage": false,
-				"clear": true
-			},
-			"problemMatcher": []
-		},
-		{
 			"label": "Build Pico - Phase 6 20 MHz scope diagnostic",
 			"detail": "Build only. Output: build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2",
 			"type": "shell",

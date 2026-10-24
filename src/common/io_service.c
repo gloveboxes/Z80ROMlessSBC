@@ -1,6 +1,7 @@
 #include "io_service.h"
 #include "weather.h"
 #include "chat.h"
+#include "http_io.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -218,6 +219,7 @@ static io_service_error_t utility_service(void) {
 }
 
 void z80_io_ports_core1_service(void) {
+  z80_http_io_core1_service();
   if (__atomic_load_n(&work_state, __ATOMIC_ACQUIRE) != WORK_PENDING)
     return;
   memset(&result, 0, sizeof(result));

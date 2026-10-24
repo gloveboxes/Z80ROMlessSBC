@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "io_service.h"
+#include "http_io.h"
 
 static struct {
   io_service_status_t status;
@@ -196,11 +197,13 @@ void z80_io_ports_init(void) {
   memset(&timers, 0, sizeof(timers));
   timers.command = 0x30;
   z80_io_service_init();
+  z80_http_io_init();
 }
 
 bool z80_io_ports_handles(uint8_t port) {
   port &= 0x17;
-  return (port >= 0x02 && port <= 0x04) || port == IO_TIMER_PORT;
+  return (port >= 0x02 && port <= 0x04) || port == IO_TIMER_PORT ||
+         port == HTTP_COMMAND_PORT || port == HTTP_DATA_PORT;
 }
 
 static void command_out(uint8_t command) {
@@ -286,6 +289,10 @@ static void request_out(uint8_t data) {
 
 void z80_io_port_out(uint8_t port, uint8_t data) {
   switch (port & 0x17) {
+  case HTTP_COMMAND_PORT:
+  case HTTP_DATA_PORT:
+    z80_http_io_out(port & 0x17, data);
+    break;
   case IO_TIMER_PORT:
     timer_out(data);
     break;
@@ -303,6 +310,9 @@ void z80_io_port_out(uint8_t port, uint8_t data) {
 
 uint8_t z80_io_port_in(uint8_t port) {
   switch (port & 0x17) {
+  case HTTP_COMMAND_PORT:
+  case HTTP_DATA_PORT:
+    return z80_http_io_in(port & 0x17);
   case IO_TIMER_PORT:
     return timer_in();
   case IO_SERVICE_COMMAND_PORT:

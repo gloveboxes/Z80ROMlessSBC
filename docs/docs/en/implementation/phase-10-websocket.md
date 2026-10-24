@@ -29,7 +29,6 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | Update | Exact task name | What changes |
 | --- | --- | --- |
 | Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
-| Firmware and disks | **Build and flash Pico - Phase 10 firmware and disks** | Replaces all flash, including disks and ENV |
 | All disks | **Flash Pico - All disks (A-D)** | Replaces A-D; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
@@ -56,11 +55,6 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
     Output: `build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2`.
     These commands build only; they do not deploy. Flash verification proves
     written bytes, not a successful CP/M boot.
-
-Use **Build and flash Pico - Phase 10 firmware and disks** for initial installation or a complete
-firmware/BIOS/disk refresh. It replaces all flash, including disks and ENV,
-and requires USB serial selection. Use the firmware-only task for routine
-firmware changes.
 
 ### 2. Set Wi-Fi over USB
 

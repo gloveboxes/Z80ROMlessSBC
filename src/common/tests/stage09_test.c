@@ -76,6 +76,7 @@ uint64_t z80_service_millis(void) { return now / 1000; }
 static unsigned service_reads;
 static unsigned service_writes;
 static unsigned service_probes;
+static uint8_t service_read_port, service_write_port, service_write_value;
 static unsigned usb_room;
 static unsigned disconnect_after_usb_writes;
 static unsigned usb_write_calls, usb_write_limit;
@@ -151,15 +152,18 @@ void z80_io_ports_init(void) {}
 bool z80_io_ports_handles(uint8_t port) {
   ++service_probes;
   port &= 0x17;
-  return (port >= 2 && port <= 4) || port == 0x17;
+  return (port >= 2 && port <= 4) || (port >= 0x15 && port <= 0x17);
 }
 uint8_t z80_io_port_in(uint8_t port) {
-  (void)port;
+  assert(fake_core == 0);
+  service_read_port = port;
   ++service_reads;
   return 0x42;
 }
 void z80_io_port_out(uint8_t port, uint8_t value) {
-  (void)port; (void)value;
+  assert(fake_core == 0);
+  service_write_port = port;
+  service_write_value = value;
   ++service_writes;
 }
 void z80_io_ports_core1_service(void) {
@@ -507,7 +511,7 @@ static void test_direct_port_dispatch(void) {
     assert(service_reads == reads && service_writes == writes);
   }
   assert(service_probes == probes);
-  const uint8_t spare_ports[] = {5, 6, 7, 0x15, 0x16};
+  const uint8_t spare_ports[] = {5, 6, 7};
   unsigned reads = service_reads, writes = service_writes;
   unsigned disk_count = disk_writes;
   for (size_t i = 0; i < sizeof(spare_ports); ++i) {
@@ -1353,7 +1357,31 @@ static void test_supervisor_queue_ownership(void) {
   assert(strstr(output, "core 1 USB/flash-safe initialization; CPU held reset"));
 }
 
+static void test_http_port_dispatch(void) {
+  reset_fixture();
+  unsigned disks = disk_writes, probes = service_probes;
+  /* Use FT.ASM's actual ABI, independently of the mock's handles predicate.
+   * The previous emulator test called the driver directly and skipped these
+   * firmware callbacks, leaving both registers mapped to the default FFh. */
+  const uint8_t ports[] = {21, 22};
+  const uint8_t values[] = {1, 'L', 'O', 'V', 'E', '.', 'B', 'A', 'S', 0, 3, 4};
+  for (size_t i = 0; i < sizeof(ports); ++i) {
+    for (size_t j = 0; j < sizeof(values); ++j) {
+      unsigned writes = service_writes;
+      virtual_write(ports[i], values[j], NULL);
+      assert(service_writes == writes + 1);
+      assert(service_write_port == ports[i] && service_write_value == values[j]);
+    }
+    unsigned reads = service_reads;
+    assert(virtual_read(ports[i], NULL) == 0x42);
+    assert(service_reads == reads + 1 && service_read_port == ports[i]);
+  }
+  assert(disk_writes == disks && service_probes == probes);
+  assert(!io_services && !network_services);
+}
+
 int main(void) {
+  test_http_port_dispatch();
 #ifdef Z80_STAGE10_NETWORK
   test_matrix_running_gate();
   test_config_orderly_reboot();

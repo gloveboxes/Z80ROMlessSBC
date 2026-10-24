@@ -24,6 +24,9 @@ set(ADAPTER_SOURCES
     host/PortDrivers/host_chat_io.c
     host/PortDrivers/environment_io.c
     host/PortDrivers/host_files_io.c
+    host/PortDrivers/host_http_io.c
+    ../../common/http_io.c
+    ../../common/http_stream.c
     host/PortDrivers/time_io.c
     host/PortDrivers/utility_io.c
     host/PortDrivers/weather_io.c
@@ -37,6 +40,7 @@ target_include_directories(dcc-debug-io-adapter PRIVATE
     host
     host/PortDrivers
     port_drivers
+    ../../common
 )
 target_compile_definitions(dcc-debug-io-adapter PRIVATE
     DCC_DEBUG_IO_ADAPTER_BUILD=1
@@ -48,7 +52,11 @@ set_target_properties(dcc-debug-io-adapter PROPERTIES
 )
 
 if(CURL_FOUND AND TARGET CURL::libcurl)
+    set(Z80_HTTP_CA_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/http_ca.pem"
+        CACHE FILEPATH "PEM trust bundle for native HTTPS file transfer")
     target_compile_definitions(dcc-debug-io-adapter PRIVATE HAVE_LIBCURL=1)
+    target_compile_definitions(dcc-debug-io-adapter PRIVATE
+        Z80_HTTP_CA_FILE="${Z80_HTTP_CA_FILE}")
     target_link_libraries(dcc-debug-io-adapter PRIVATE CURL::libcurl)
 endif()
 

@@ -8,6 +8,10 @@
 #include "mbedtls/x509_crt.h"
 #include "weather_ca.h"
 #include "chat_ca.h"
+#include "../../stage10_websocket_terminal/lwipopts.h"
+
+static_assert(TCP_WND >= MBEDTLS_SSL_IN_CONTENT_LEN + 512,
+              "TCP window must hold a complete incoming TLS record plus overhead");
 
 extern "C" time_t z80_network_time(time_t *result) {
   time_t now = time(nullptr);

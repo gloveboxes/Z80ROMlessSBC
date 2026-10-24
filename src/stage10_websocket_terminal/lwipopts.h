@@ -12,7 +12,10 @@
 #define MEMP_NUM_SYS_TIMEOUT 16
 #define PBUF_POOL_SIZE 24
 #define TCP_MSS 1460
-#define TCP_WND (4 * TCP_MSS)
+/* altcp_mbedtls retains encrypted bytes until it can decrypt a complete TLS
+ * record. A receive window below the 16 KiB input record can deadlock before
+ * application callbacks have any bytes to consume and acknowledge. */
+#define TCP_WND (12 * TCP_MSS)
 #define TCP_SND_BUF (4 * TCP_MSS)
 #define TCP_SND_QUEUELEN ((4 * TCP_SND_BUF + TCP_MSS - 1) / TCP_MSS)
 #define LWIP_ARP 1

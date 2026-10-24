@@ -8,11 +8,14 @@ name. The Z80 engine files are direct copies from the sibling DCC checkout:
 - `x80.cxx`
 - `x80.hxx`
 - `z80.h`
-- `cpu_x80_adapter.cpp`
 
 The engine is kept in this project so the test does not silently use a
 different installed emulator. Update these files only by copying the matching
 current versions from `dcc/src/dcc_debug_host/` and verify them with `cmp`.
+`cpu_x80_adapter.cpp` is the project-specific bridge around that engine. It
+adds the native SBC console/disk routing and loader activation on port 21.
+Activation is sticky until CPU reset so the FT commands on port 21 do not
+switch back to Altair I/O routing.
 The host uses the DCC Z80 engine for instruction execution, while the project
 adapter supplies the SBC console and ports `0x10`-`0x14` backed by the generated
 320 KiB disk images.

@@ -329,8 +329,7 @@ flashing and the board's required power sequence.
 ## VS Code builds and final checks
 
 On macOS/Linux, choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware**
-to build and deploy Phase 10 firmware. Use **Build and flash Pico - Phase 10 firmware and disks**
-for a complete installation, replacing disks and ENV as well. These tasks use
+to build and deploy Phase 10 firmware while preserving disks and ENV. This task uses
 `scripts/pico_build.py` for their build step. It searches an explicit `ARM_GNU_TOOLCHAIN_BIN`
 override, the build's cached compiler, complete toolchains on `PATH`, then
 `~/.local/share/arm-gnu-toolchain*/bin`. It checks the runtimes before building.

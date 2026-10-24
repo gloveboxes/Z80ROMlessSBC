@@ -200,19 +200,32 @@ def build_autorun(assembler: str) -> bytes:
         return binary.read_bytes()
 
 
+def cpm_diskdefs() -> str:
+    """Native flat-image variant of the Altair project's diskdefs/altair88.
+
+    Preserve its explicit logicalextents 1 (EXM=0). This board's converted
+    images have 80 tracks and already-decoded sector order, hence skew 1.
+    Numeric parameters come from the shared native geometry used by the BIOS.
+    """
+    return (
+        "diskdef z80sbc\n"
+        f"  seclen {RECORD_BYTES}\n"
+        f"  tracks {TRACKS}\n"
+        f"  sectrk {SECTORS_PER_TRACK}\n"
+        f"  blocksize {RECORD_BYTES << DPB_BSH}\n"
+        f"  maxdir {DPB_DRM + 1}\n"
+        f"  logicalextents {DPB_EXM + 1}\n"
+        "  skew 1\n"
+        f"  boottrk {RESERVED_TRACKS}\n"
+        "  os 2.2\nend\n"
+    )
+
+
 def install_autorun(disk: bytes, utility: bytes, cpmcp: str) -> bytes:
     with tempfile.TemporaryDirectory(prefix="z80sbc-cpmcp-") as directory:
         temporary = Path(directory)
         (temporary / "diskdefs").write_text(
-            "diskdef z80sbc\n"
-            f"  seclen {RECORD_BYTES}\n"
-            f"  tracks {TRACKS}\n"
-            f"  sectrk {SECTORS_PER_TRACK}\n"
-            f"  blocksize {RECORD_BYTES << DPB_BSH}\n"
-            f"  maxdir {DPB_DRM + 1}\n"
-            "  skew 1\n"
-            f"  boottrk {RESERVED_TRACKS}\n"
-            "  os 2.2\nend\n",
+            cpm_diskdefs(),
             encoding="ascii",
         )
         image = temporary / "drive.img"

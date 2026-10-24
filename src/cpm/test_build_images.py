@@ -3,13 +3,50 @@ from __future__ import annotations
 import binascii
 import shutil
 import struct
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 import build_images
 import disassemble_cpm64
 
 
 class BuildImagesTest(unittest.TestCase):
+    def test_cpmtools_multi_extent_files_match_bios(self) -> None:
+        cpmcp = shutil.which("cpmcp")
+        if cpmcp is None:
+            self.skipTest("cpmtools is required")
+        payload = bytes(range(256)) * 137 + b"last bytes"
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "diskdefs").write_text(build_images.cpm_diskdefs())
+            disk = directory / "drive.img"
+            disk.write_bytes(self.native_drive)
+            program = directory / "LARGE.BIN"
+            program.write_bytes(payload)
+            subprocess.run([cpmcp, "-f", "z80sbc", str(disk), str(program), "0:LARGE.BIN"],
+                           cwd=directory, check=True)
+            data = disk.read_bytes()
+            entries = [data[offset:offset + 32] for offset in range(
+                build_images.SYSTEM_BYTES, build_images.SYSTEM_BYTES + 2048, 32)]
+            found = sorted((e for e in entries if e[0] == 0 and e[1:12] == b"LARGE   BIN"),
+                           key=lambda e: e[12])
+            self.assertEqual([entry[12] for entry in found], [0, 1, 2])
+            restored = bytearray()
+            for entry in found:
+                self.assertLessEqual(entry[15], 128)
+                self.assertEqual(entry[24:], bytes(8))
+                contents = b"".join(data[build_images.SYSTEM_BYTES + block * 2048:
+                                            build_images.SYSTEM_BYTES + (block + 1) * 2048]
+                                    for block in entry[16:24] if block)
+                restored.extend(contents[:entry[15] * 128])
+            self.assertEqual(restored[:len(payload)], payload)
+            extracted = directory / "extracted.bin"
+            subprocess.run([cpmcp, "-f", "z80sbc", str(disk), "0:LARGE.BIN", str(extracted)],
+                           cwd=directory, check=True)
+            self.assertEqual(extracted.read_bytes(), payload)
+
     @classmethod
     def setUpClass(cls) -> None:
         assembler = shutil.which("z80asm")

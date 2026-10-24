@@ -1,0 +1,4 @@
+#ifndef Z80SBC_HTTP_CA_H
+#define Z80SBC_HTTP_CA_H
+static const char HTTP_CA[] = R"pem(@http_ca@)pem";
+#endif

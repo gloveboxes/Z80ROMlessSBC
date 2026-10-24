@@ -5,6 +5,7 @@
 #include "../io_service.h"
 #include "../weather.h"
 #include "../chat.h"
+#include "../http_io.h"
 #include "hardware/flash.h"
 #include "z80sbc/environment.h"
 #include "z80sbc/flash_layout.h"
@@ -127,7 +128,7 @@ static void test_transport(void) {
   for (unsigned port = 0; port < 256; ++port) {
     unsigned masked = port & 0x17;
     assert(z80_io_ports_handles((uint8_t)port) ==
-           ((masked >= 2 && masked <= 4) || masked == 0x17));
+           ((masked >= 2 && masked <= 4) || masked >= 0x15));
     if (masked == 2) {
       z80_io_port_out((uint8_t)port, IO_SERVICE_RESET);
       z80_io_port_out((uint8_t)port, IO_SERVICE_IDENTIFY);
@@ -148,6 +149,22 @@ static void test_transport(void) {
       assert(z80_io_port_in((uint8_t)port) == 0);
       for (unsigned i = 0; i < 13; ++i)
         assert(z80_io_port_in((uint8_t)port) == (uint8_t)"ROMLESS-SVC/1"[i]);
+      assert(z80_io_port_in(2) == IO_SERVICE_READY);
+    } else if (masked == HTTP_COMMAND_PORT || masked == HTTP_DATA_PORT) {
+      uint8_t command_port = masked == HTTP_COMMAND_PORT ? (uint8_t)port : 21;
+      uint8_t data_port = masked == HTTP_DATA_PORT ? (uint8_t)port : 22;
+      z80_io_port_out(command_port, HTTP_SET_FILENAME);
+      assert(z80_io_port_in(command_port) == HTTP_IDLE);
+      for (const char *p = "http://example.org/FILE.BIN"; *p; ++p)
+        z80_io_port_out(data_port, (uint8_t)*p);
+      z80_io_port_out(data_port, 0);
+      z80_io_port_out(command_port, HTTP_REQUEST_CHUNK);
+      assert(z80_io_port_in(command_port) == HTTP_BUSY);
+      z80_io_ports_core1_service();
+      /* This common-service fixture has no installed network backend. */
+      assert(z80_io_port_in(command_port) == HTTP_ERROR);
+      z80_io_port_out(command_port, HTTP_CLOSE);
+      assert(z80_io_port_in(command_port) == HTTP_IDLE);
       assert(z80_io_port_in(2) == IO_SERVICE_READY);
     }
   }
