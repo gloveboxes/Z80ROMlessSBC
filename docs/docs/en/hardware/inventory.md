@@ -95,7 +95,7 @@ AHCT245 data ports are not power-off-safe. See the [power phase](../implementati
 ## Bill of Materials — Pricing and Suppliers
 
 Prices checked on **24 October 2026**, in **USD** from **digikey.com** except
-the user-supplied AliExpress Z80 price below,
+the user-supplied AliExpress Z80 price below and the Amazon Australia breadboards,
 excluding shipping, tax, and any tariffs. These are the displayed catalogue
 prices, not a quotation; recheck price and stock before ordering. Unit prices
 use the quantity-one tier except the 39 resistors, which use the 25-piece tier.
@@ -107,6 +107,12 @@ that is approximately **US$6.52 per two-pack**, or **US$3.26 per CPU**.
 The BOM allocates one CPU to this build; purchasing the pack leaves one spare.
 Select the specified Z84C0020PEC DIP-40 variant. The AliExpress price was
 provided by the project owner and could not be independently checked.
+
+The breadboards were purchased from Amazon Australia using the linked listing.
+The supplied price and screenshot show **AU$10.20 per BB830**. At the same
+exchange rate used above, this is approximately **US$7.16 each**, or
+**AU$30.60 / US$21.47 for three**. The three-board total uses the unrounded
+currency conversion before rounding to cents.
 
 Sockets and Pico headers are priced separately below, although the inventory
 checks above group them with their devices. Passive components and connectors
@@ -137,16 +143,17 @@ two matching socket strips.
 | 3 | 22 uF electrolytic, 25 V, radial | [Panasonic ECA-1EM220 — P5149-ND](https://www.digikey.com/en/products/detail/panasonic-industry/ECA-1EM220/245008) | $0.23 | $0.69 |
 | 1 | 100 uF electrolytic, 25 V, radial | [Panasonic ECA-1EM101B — 10-ECA-1EM101BCT-ND](https://www.digikey.com/en/products/detail/panasonic-industry/ECA-1EM101B/268461) | $0.33 | $0.33 |
 | 39 | Permanent 10 kOhm resistors, 1/4 W, 5%, axial | [YAGEO CFR-25JB-52-10K](https://www.digikey.com/en/products/detail/yageo/CFR-25JB-52-10K/338) | $0.03040 | $1.19 |
-| 3 | BB830 830-point breadboards | [4526-BB830-ND](https://www.digikey.com/en/products/detail/busboard-prototype-systems/BB830/19200392) | $19.73 | $59.19 |
+| 3 | BB830 830-point breadboards | [Amazon Australia — B0040Z4QN8](https://www.amazon.com.au/dp/B0040Z4QN8); purchased, AU$10.20 each | ~$7.16 | ~$21.47 |
 | 1 kit | 22 AWG solid-core wire, six colours, 25 ft each | [Adafruit 1311 — 1528-1743-ND](https://www.digikey.com/en/products/detail/adafruit-industries-llc/1311/6198255) | $15.95 | $15.95 |
 | 1 | USB-A to Micro-B data cable, 1 m | [Cvilux DH-20M50055 — 2987-DH-20M50055-ND](https://www.digikey.com/en/products/detail/cvilux-usa/DH-20M50055/13175849) | $1.58 | $1.58 |
 
-**Base subtotal: approximately $122.87 USD, including one Z80.** Buying the
-full two-pack brings the purchase subtotal to **approximately $126.13 USD**,
-including a spare CPU. The DigiKey-only subtotal remains **$119.61 USD**.
-This includes the full wire kit, three breadboards, sockets, headers, and USB
-cable. The subtotals exclude bench equipment, temporary test parts, spares,
-optional J2, shipping, tax, and tariffs.
+**Base subtotal: approximately $85.15 USD, including one Z80 and three
+Amazon breadboards.** Buying the full Z80 two-pack brings the purchase
+subtotal to **approximately $88.41 USD**, including a spare CPU. The
+DigiKey-only subtotal is **$60.42 USD**. These include the full wire kit,
+sockets, headers, and USB cable. The subtotals exclude
+bench equipment, temporary test parts, spares, optional
+J2, shipping, tax, and tariffs.
 
 ## PCB Status
 
