@@ -1,0 +1,3573 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../operation/">
+      
+      
+        <link rel="next" href="../firmware-build/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo-icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>I/O ports and services - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#io-ports-and-services" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  <img src="../../images/logo-icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              I/O ports and services
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  <img src="../../images/logo-icon.svg" alt="logo">
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../toolchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Toolchain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../related-projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Related projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8">
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O ports and services
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O ports and services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#port-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port allocation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Port allocation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-and-https-file-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP and HTTPS file transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreting-cpm-survey-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting CP/M SURVEY results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a4-is-monitored-but-a3-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why A4 is monitored but A3 is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-service-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared service interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared service interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#framing-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Framing and recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bounded-trap-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounded trap work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups-and-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups and operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clock-application-time-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLOCK application time compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat-application-openai-and-ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CHAT application: OpenAI and Ollama
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openweathermap-weather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenWeatherMap weather
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-information-and-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System information and reboot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onboard-led-device" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onboard LED device
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistent-environment-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistent environment API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-request-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked request bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-timer-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Independent timer port
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deferred-services-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred services and validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building and testing Pico C
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_8">
+        
+          
+          <label class="md-nav__link" for="__nav_6_8" id="__nav_6_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SRAM loading and tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-bus-grants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPU reset, fetch and bus grants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/20mhz-soak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20 MHz arithmetic and SRAM soak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/20mhz-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    No-I/O 20 MHz scope test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Bidirectional I/O and USB terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - USB CP/M and flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7">
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpm-dcc/interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8">
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/pico-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pico flashing and USB supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9">
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#port-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port allocation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Port allocation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-and-https-file-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP and HTTPS file transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreting-cpm-survey-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting CP/M SURVEY results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a4-is-monitored-but-a3-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why A4 is monitored but A3 is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-service-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared service interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared service interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#framing-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Framing and recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bounded-trap-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounded trap work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups-and-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups and operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clock-application-time-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLOCK application time compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat-application-openai-and-ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CHAT application: OpenAI and Ollama
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openweathermap-weather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenWeatherMap weather
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-information-and-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System information and reboot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onboard-led-device" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onboard LED device
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistent-environment-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistent environment API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-request-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked request bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-timer-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Independent timer port
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deferred-services-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred services and validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="io-ports-and-services">I/O Ports and Services<a class="headerlink" href="#io-ports-and-services" title="Permanent link">¶</a></h1>
+<p>The Pico provides virtual peripherals through Z80 <code>IN</code> and <code>OUT</code> instructions.
+This page owns the port allocation and the <strong>ROMLESS-SVC/1</strong> extended-service
+protocol, compatible with the ESP32 Altair <code>io_ports.h</code> and dcc <code>DXSVC.H</code>
+client. Extended services are implemented in both Phase 9 variants and Phase 10.
+Phase 8 retains its original bring-up diagnostics.</p>
+<p>Maintained sources:
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_ports.c">transport and timers</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_service.c">service worker</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_service_platform.c">clock and utilities</a>,
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/environment_store.c">persistent environment store</a>
+and <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/include/z80sbc/io_ports.h">public constants</a>.
+See <a href="../operation/">operational boundaries</a> for the terminal, disk and
+clock-stop trap contracts.</p>
+<h2 id="port-allocation">Port allocation<a class="headerlink" href="#port-allocation" title="Permanent link">¶</a></h2>
+<p>The four monitored address bits, A0/A1/A2/A4, provide <strong>16 distinct ports</strong>:
+<code>0x00-0x07</code> and <code>0x10-0x17</code>, using <code>address &amp; 0x17</code>.
+Other addresses are aliases, not additional ports. For example, <code>0x08</code>
+aliases <code>0x00</code> and <code>0x18</code> aliases <code>0x10</code>. No additional wiring is required.</p>
+<table>
+<thead>
+<tr>
+<th>Port (hex)</th>
+<th style="text-align: right;">Decimal</th>
+<th>Function</th>
+<th>Allocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td style="text-align: right;">0</td>
+<td>Terminal data, IN/OUT</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x01</code></td>
+<td style="text-align: right;">1</td>
+<td>Terminal status</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x02</code></td>
+<td style="text-align: right;">2</td>
+<td>Shared service command (OUT) / status (IN)</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td><code>0x03</code></td>
+<td style="text-align: right;">3</td>
+<td>Shared service length-prefixed request bytes (OUT)</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td style="text-align: right;">4</td>
+<td>Shared service length-prefixed response bytes (IN)</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td><code>0x05</code></td>
+<td style="text-align: right;">5</td>
+<td>BIOS cold-entry/CCP-handoff reports; Phase 9 disk-test and Phase 10 qualification results</td>
+<td>Reserved for diagnostics</td>
+</tr>
+<tr>
+<td><code>0x06</code></td>
+<td style="text-align: right;">6</td>
+<td>Phase 9 disk-test bytes and Phase 10 qualification data; Phase 8 test results</td>
+<td>Reserved for diagnostics</td>
+</tr>
+<tr>
+<td><code>0x07</code></td>
+<td style="text-align: right;">7</td>
+<td>Spare; ESP32 interrupt timer is deferred on this hardware</td>
+<td>Unallocated</td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td style="text-align: right;">16</td>
+<td>Disk command (OUT) / status (IN)</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x11</code></td>
+<td style="text-align: right;">17</td>
+<td>Disk drive selection</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x12</code></td>
+<td style="text-align: right;">18</td>
+<td>Disk sector address, low byte</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x13</code></td>
+<td style="text-align: right;">19</td>
+<td>Disk sector address, high byte</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x14</code></td>
+<td style="text-align: right;">20</td>
+<td>Disk data, IN/OUT</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><code>0x15</code></td>
+<td style="text-align: right;">21</td>
+<td>HTTP(S) file-transfer command (OUT) / status (IN)</td>
+<td>Implemented in Phase 10</td>
+</tr>
+<tr>
+<td><code>0x16</code></td>
+<td style="text-align: right;">22</td>
+<td>File-transfer filename/data bytes</td>
+<td>Implemented in Phase 10</td>
+</tr>
+<tr>
+<td><code>0x17</code></td>
+<td style="text-align: right;">23</td>
+<td>Independent countdown timers and stopwatches, IN/OUT</td>
+<td>Implemented</td>
+</tr>
+</tbody>
+</table>
+<p>This assigns or reserves <strong>15 ports and leaves one spare</strong>. A port supports
+both IN and OUT, so a command and its status can share one number.</p>
+<p>The BIOS emits <code>B0h</code> on port <code>0x05</code> at cold entry and <code>C0h</code> immediately before
+handoff to CCP (including warm boot). Phase 9 observes these as execution
+milestones, not proof of a working CP/M prompt. Its read-only disk test uses
+port <code>0x06</code> for compared bytes and <code>5Ah</code>/<code>E1h</code> on port <code>0x05</code> for completion/
+failure. These diagnostic meanings are mode-specific and do not change the
+fixed terminal or disk ABI.</p>
+<h3 id="http-and-https-file-transfer">HTTP and HTTPS file transfer<a class="headerlink" href="#http-and-https-file-transfer" title="Permanent link">¶</a></h3>
+<p>Phase 10 implements the existing
+<a href="https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/FT/FT.ASM">FT.ASM</a>
+port protocol without changing the application. Use the existing <code>FT.COM</code>, or
+assemble the original source with CP/M <code>MAC FT</code> followed by <code>LOAD FT</code>.
+The network uses standard HTTP/1.1 GET requests; a Python-specific file server
+and HTTP Range support are unnecessary. Phase 9 exposes the same ports but
+returns ERROR for downloads because it has no network backend.</p>
+<p>The driver accepts a full <code>http://</code> or <code>https://</code> URL, or a filename relative
+to persistent <strong><code>HTTP_BASE_URL</code></strong>. A relative filename extends the base path;
+a name starting with <code>/</code> uses the server's root. The base must have no query.
+Settings are reloaded on core 1 at the first GET of each new transfer.</p>
+<p>CP/M uppercases command tails. Use the interactive <strong>ENV</strong> editor (run <code>ENV</code>
+without arguments, then <strong>A</strong> to add, or the entry number to edit) to preserve
+the case of URL paths. Set the key to <code>HTTP_BASE_URL</code> and its value to:</p>
+<div class="highlight"><pre><span></span><code>https://raw.githubusercontent.com/AzureSphereCloudEnabledAltair8800/RetroGames/refs/heads/main/
+</code></pre></div>
+<p>Quit ENV with <strong>Q</strong>, then download and run the supplied BASIC example:</p>
+<div class="highlight"><pre><span></span><code>FT -G LOVE.BAS
+MBASIC LOVE
+</code></pre></div>
+<p><code>-G</code> retains FT's existing text behavior: normalize line endings to CR LF and
+append CP/M's <code>^Z</code> marker. Use <code>FT -GB PROGRAM.COM</code> for byte-preserving binary
+transfers. FT saves the basename using CP/M's uppercase 8.3 naming and pads the
+final 128-byte disk record with NULs. If the remote filename is omitted, run
+<code>FT -G</code> or <code>FT -GB</code>; FT prompts for a case-preserving remote path and derives
+the local uppercase basename. This supports mixed-case HTTP paths while keeping
+the CCP command-tail behavior unchanged.</p>
+<p>For a local server, run this on the host in the directory containing files:</p>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--bind<span class="w"> </span><span class="m">0</span>.0.0.0
+</code></pre></div>
+<p>In interactive ENV, change <code>HTTP_BASE_URL</code> to the host's LAN address, for
+example <code>http://192.168.1.10:8000/</code>, then use <code>FT -G LOVE.BAS</code> or
+<code>FT -GB PROGRAM.COM</code>. For mixed-case server paths, omit the filename and enter
+it at FT's prompt. Plain HTTP works without synchronized calendar time.</p>
+<p>HTTPS requires Wi-Fi and synchronized SNTP time, and verifies certificate
+dates, hostname (with SNI), and chain. The default
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/http_ca.pem">trust bundle</a>
+contains ISRG Root X1, USERTrust RSA Certification Authority and GTS Root R4.
+For a different public/private CA, configure the firmware with
+<code>-DZ80_HTTP_CA_FILE=/absolute/path/to/bundle.pem</code>, retaining any roots you still
+need. Self-signed/untrusted servers fail; verification is never disabled.</p>
+<p>The dedicated
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/http_io.c"><code>http_io.c</code></a>
+driver provides this ABI, independently of framed services on ports 2/3/4:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OUT 21, 1</td>
+<td>Reset transfer; collect a new filename/URL</td>
+</tr>
+<tr>
+<td>OUT 22, byte</td>
+<td>Append filename bytes, terminated by NUL</td>
+</tr>
+<tr>
+<td>OUT 21, 3</td>
+<td>Request the next chunk; status becomes BUSY</td>
+</tr>
+<tr>
+<td>IN 21</td>
+<td><code>0</code> IDLE, <code>1</code> DATA, <code>2</code> EOF, <code>3</code> BUSY, <code>4</code> missing/empty <code>HTTP_BASE_URL</code>, <code>255</code> ERROR</td>
+</tr>
+<tr>
+<td>IN 22</td>
+<td>Read the count (<code>0</code> means 256), then exactly that many file bytes</td>
+</tr>
+<tr>
+<td>OUT 21, 4</td>
+<td>Close/cancel and return to IDLE</td>
+</tr>
+</tbody>
+</table>
+<p>DATA remains visible until the entire chunk is consumed, including the final
+partial chunk. Empty files report EOF without a count byte. Repeated GET
+commands while busy or while unread data remains do not duplicate requests.
+SET_FILENAME and CLOSE invalidate pending work; late responses and DNS answers
+cannot become part of a new file. Reset the transfer to recover after ERROR.
+For relative filenames, status <code>4</code> means <code>HTTP_BASE_URL</code> is missing or empty;
+FT prints instructions for adding or editing it in ENV. Absolute HTTP/HTTPS
+URLs do not need this setting.</p>
+<p>Core 0 only handles bounded port operations and a release/acquire mailbox.
+Core 1 owns ENV reads, DNS, TCP/TLS, HTTP parsing and a 1024-byte ring. One GET
+stream supplies 256-byte FT chunks; files need not fit in RAM. Network writes
+and receive parsing are limited to 512 bytes per poll. A bounded chain of lwIP
+receive buffers and deferred TCP credit apply backpressure when FT stops reading, while the
+worker continues servicing disks, USB and the terminal.
+Consumed buffer prefixes are freed on each poll, so the backlog stays bounded
+as the file grows. Successive decrypted TLS fragments are accepted together,
+including a final fragment followed by TLS close notification. The receive
+bound is the TCP window plus one TLS input record (33,904 bytes); exceeding it
+fails explicitly. The client also registers lwIP's half-second poll callback
+to advance buffered TLS work after temporary memory pressure.</p>
+<p>The TCP receive window is 17,520 bytes, enough for Mbed TLS's 16 KiB input
+record and framing overhead. A smaller window can stall TLS before plaintext
+is available to acknowledge. A compile-time check and the native test with
+the real crypto configuration enforce this size relationship. The existing
+pbuf pool and lwIP heap sizes are unchanged.</p>
+<p>HTTP transfer diagnostics are kept off the serial console. Transfer failures
+remain available through the FT status response.</p>
+<p>The parser accepts HTTP/1.0 and 1.1, content-length, chunked (including trailers),
+and connection-close bodies, preserving binary NULs. It rejects truncated
+framed responses, conflicting lengths, unsupported compression and HTTP errors.
+Up to five redirects are followed, including relative locations; HTTPS-to-HTTP
+downgrades fail. DNS names/IPv4 and optional ports are supported; IPv6,
+credentials, fragments and control characters are rejected. Filename/URL and
+path buffers allow 767 bytes, hostnames 253, header lines 1023, and each header
+or trailer section 8192. The unchanged FT application has CP/M's shorter
+127-byte command-tail limit. A network stall times out after 30 seconds;
+waiting on a retained receive chain due to consumer backpressure is exempt.</p>
+<h3 id="interpreting-cpm-survey-results">Interpreting CP/M SURVEY results<a class="headerlink" href="#interpreting-cpm-survey-results" title="Permanent link">¶</a></h3>
+<p>On the earlier Phase 9 USB CP/M loader, before extended services, <code>SURVEY</code>
+(System Survey, June 1982) reported 111 active ports. This was the alias set
+of the seven terminal/disk registers, not 111 independent peripherals.</p>
+<p>Because A3 and A5-A7 are ignored, each register has 16 equivalent addresses
+within the low-byte range <code>0x00-0xFF</code>. For example, <code>0x01</code>, <code>0x09</code>, <code>0x21</code>
+and <code>0x29</code> all access terminal status; <code>0x10</code>, <code>0x18</code>, <code>0x30</code> and <code>0x38</code>
+all access disk command/status. Seven registers occupy 112 low-byte addresses;
+the captured scan omitted <code>0x00</code>, leaving 111.</p>
+<p>Extended services add readable registers, so a new scan need not reproduce
+that historical count. An active result does not prove correct peripheral
+operation. Scanning the response port can also cause an explicit UNDERFLOW
+error; RESET the shared channel before using it afterward.</p>
+<h2 id="why-a4-is-monitored-but-a3-is-not">Why A4 is monitored but A3 is not<a class="headerlink" href="#why-a4-is-monitored-but-a3-is-not" title="Permanent link">¶</a></h2>
+<p>The Pico decodes I/O ports using <code>address &amp; 0x17</code>. The <code>&amp;</code> operator is
+<strong>bitwise AND</strong>: a result bit is 1 only when both corresponding bits are 1.
+The hexadecimal mask <code>0x17</code> is binary <code>0001 0111</code>:</p>
+<div class="highlight"><pre><span></span><code>Address bit:  A7 A6 A5 A4 A3 A2 A1 A0
+Mask 0x17:     0  0  0  1  0  1  1  1
+</code></pre></div>
+<p>This keeps <strong>A4, A2, A1 and A0</strong>, matching the four address connections to U7.
+A3, A5-A7 and the high address byte are deliberately ignored for I/O decoding.</p>
+<div class="highlight"><pre><span></span><code>Address 0x08:  0000 1000
+Mask    0x17:  0001 0111
+               ---------
+AND result:    0000 0000 = 0x00
+</code></pre></div>
+<p>Thus <code>0x08</code> aliases <code>0x00</code>, <code>0x09</code> aliases <code>0x01</code>, and <code>0xFF</code> aliases the
+timer port <code>0x17</code>. A4 distinguishes console <code>0x00/01</code> from disk <code>0x10-14</code>.
+With a mask of <code>0x07</code>, disk command <code>0x10</code> would incorrectly alias console data.
+Service <strong>group</strong> <code>0x30</code> is a byte written to command port <code>0x02</code>, not an
+OUT to physical port <code>0x30</code> (which aliases disk command <code>0x10</code>).</p>
+<p>This omission applies only to <strong>I/O monitoring</strong>, not memory addressing.
+A3 still connects <strong>Z80 pin 33 to SRAM pin 9</strong> in
+<a href="../../implementation/phase-4-address-bus/#wiring-address-trunk">Phase 4</a>;
+do not connect it to U7.</p>
+<h2 id="shared-service-interface">Shared service interface<a class="headerlink" href="#shared-service-interface" title="Permanent link">¶</a></h2>
+<h3 id="framing-and-recovery">Framing and recovery<a class="headerlink" href="#framing-and-recovery" title="Permanent link">¶</a></h3>
+<p>There is one outstanding shared transaction at a time:</p>
+<ol>
+<li>Write RESET (<code>0x01</code>) to port <code>0x02</code> to recover an unknown parser state.</li>
+<li>Write the service group to <code>0x02</code>.</li>
+<li>Write a <strong>16-bit little-endian payload length</strong> to <code>0x03</code>, then that many
+   payload bytes. Length includes the operation byte and must be 1-2048.</li>
+<li>Poll status on <code>0x02</code> with a bounded client-side polling limit.</li>
+<li>For RESPONSE_READY, read the <strong>16-bit little-endian response length</strong> from
+   <code>0x04</code>, then exactly that many bytes. The last byte returns the channel to
+   READY. An empty response still has its two length bytes.</li>
+<li>For COMPLETE, write ACK (<code>0x00</code>) to <code>0x02</code>.</li>
+<li>For ERROR, read the length prefix and one-byte error code from <code>0x04</code>,
+   then ACK. If an overlapping transaction poisoned the parser, RESET is
+   required instead.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>READY</td>
+<td><code>0x00</code></td>
+<td>Can accept a new command</td>
+</tr>
+<tr>
+<td>COMPLETE</td>
+<td><code>0x01</code></td>
+<td>Successful operation with no response; ACK required</td>
+</tr>
+<tr>
+<td>RESPONSE_READY</td>
+<td><code>0x02</code></td>
+<td>Length-prefixed response can be read</td>
+</tr>
+<tr>
+<td>COLLECTING</td>
+<td><code>0x03</code></td>
+<td>Awaiting the length prefix or remaining payload</td>
+</tr>
+<tr>
+<td>BUSY</td>
+<td><code>0x04</code></td>
+<td>Worker executing the request</td>
+</tr>
+<tr>
+<td>ERROR</td>
+<td><code>0xFF</code></td>
+<td>Length-prefixed error can be read</td>
+</tr>
+</tbody>
+</table>
+<p>Special commands on <code>0x02</code> are ACK (<code>0x00</code>), RESET (<code>0x01</code>) and IDENTIFY
+(<code>0x02</code>). IDENTIFY needs no request and returns the text <code>ROMLESS-SVC/1</code>
+with the usual response length prefix. Text replies have <strong>no trailing NUL</strong>;
+binary replies are not strings.</p>
+<p>RESET invalidates pending replies through a generation identifier, but
+<strong>does not undo side effects</strong> or cancel a worker already writing flash.
+A new worker request can return BUSY_ERROR until that job finishes. RESET
+does not reset running timers or stopwatches. There is no automatic server
+timeout for an incomplete request: the client must use bounded polling,
+report failure and RESET. Reading status never acknowledges COMPLETE.</p>
+<h3 id="bounded-trap-work">Bounded trap work<a class="headerlink" href="#bounded-trap-work" title="Permanent link">¶</a></h3>
+<p>Phases 9/10 dispatch the already-masked port directly to the terminal, disk or
+extended-service handler. Terminal and disk requests do not probe the list of
+extended-service ports. Adding service groups behind <code>0x02-0x04</code> therefore
+does not add dispatch checks to those existing hot paths.</p>
+<p>Core 0 reads a completed worker response in place instead of copying its
+payload during the status trap. The worker's result stays unchanged until
+core 0 submits another job; the parser must consume or discard the response
+before that submission. Errors, IDENTIFY and local timer replies use a
+separate small buffer. RESET still invalidates stale worker generations.
+This removes up to 2048 copied bytes from a completion trap and the separate
+2048-byte response array; it does not remove the bounded request copy at
+submission or change the one-outstanding-transaction protocol.</p>
+<p>Native regressions check zero response-payload copying for lengths 0, 1, 16
+and 2048, response lifetime, framing, RESET, errors, and terminal/disk dispatch
+without service probes. These are work-count and correctness checks, not
+measurements of Z80 throughput or worst-case trap latency. Clock handover,
+data-path settling, disk-first worker scheduling and regular network polling
+are unchanged; hardware before/after measurements remain necessary.</p>
+<p>Error codes match the ESP32 client:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x01</code> / <code>0x02</code></td>
+<td>UNKNOWN_GROUP / UNKNOWN_OPERATION</td>
+</tr>
+<tr>
+<td><code>0x03</code> / <code>0x04</code></td>
+<td>INVALID_LENGTH / INVALID_PARAMETER</td>
+</tr>
+<tr>
+<td><code>0x05</code> / <code>0x06</code></td>
+<td>UNAVAILABLE / BUSY_ERROR</td>
+</tr>
+<tr>
+<td><code>0x07</code> / <code>0x08</code> / <code>0x09</code></td>
+<td>TIMEOUT (reserved) / INVALID_STATE / UNDERFLOW</td>
+</tr>
+<tr>
+<td><code>0x10</code> / <code>0x11</code> / <code>0x12</code></td>
+<td>STORAGE_OPEN / STORAGE_READ / STORAGE_WRITE</td>
+</tr>
+<tr>
+<td><code>0x13</code> / <code>0x14</code></td>
+<td>CAPACITY / NOT_FOUND</td>
+</tr>
+<tr>
+<td><code>0x15</code> / <code>0x16</code></td>
+<td>CLOCK_UNSYNCED / REBOOT_CONFIRMATION</td>
+</tr>
+</tbody>
+</table>
+<h3 id="groups-and-operations">Groups and operations<a class="headerlink" href="#groups-and-operations" title="Permanent link">¶</a></h3>
+<p>All integer request fields and binary results are little-endian.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Operations and payloads</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Timers <code>0x10</code></td>
+<td><code>[0, id, duration_u32]</code> starts/replaces; <code>[1, id]</code> queries</td>
+<td>COMPLETE or one byte, 1 running / 0 expired</td>
+</tr>
+<tr>
+<td>Stopwatches <code>0x11</code></td>
+<td><code>[0, id]</code> resets; <code>[1, id]</code> reads seconds; <code>[2, id]</code> reads milliseconds</td>
+<td>COMPLETE or unsigned 32-bit elapsed count</td>
+</tr>
+<tr>
+<td>Clock <code>0x20</code></td>
+<td><code>[0]</code> uptime seconds; <code>[1]</code> UTC ISO 8601; <code>[2]</code> local ISO 8601; <code>[3]</code> long local date; <code>[4]</code> DATE-style local date/time</td>
+<td>Text</td>
+</tr>
+<tr>
+<td>Utility <code>0x21</code></td>
+<td><code>[0]</code> random; <code>[1, selector]</code> system info; <code>[2, 0xA5]</code> confirmed reboot; <code>[3]</code> version; <code>[4, state]</code> set onboard LED; <code>[5]</code> read LED state</td>
+<td>Two random bytes, text, COMPLETE, or one LED-state byte</td>
+</tr>
+<tr>
+<td>Environment <code>0x30</code></td>
+<td>Operations below</td>
+<td>Text or COMPLETE</td>
+</tr>
+<tr>
+<td>Weather <code>0x40</code></td>
+<td><code>[0, field_id]</code> reads text; <code>[1]</code> reads status</td>
+<td>Phase 10 cached weather; Phase 9 UNAVAILABLE</td>
+</tr>
+<tr>
+<td>Chat <code>0x50</code></td>
+<td>Reset/append/submit/status/chunk operations below</td>
+<td>Phase 10 streaming OpenAI/Ollama; Phase 9 UNAVAILABLE</td>
+</tr>
+<tr>
+<td>Sense HAT <code>0x60</code></td>
+<td>Recognized group without a Pico driver</td>
+<td>UNAVAILABLE</td>
+</tr>
+</tbody>
+</table>
+<p>There are <strong>four countdown timers</strong>: IDs 0-2 take 0-65535 milliseconds;
+ID 3 takes 0-255 whole seconds. The shared duration field is four bytes for
+client compatibility, but out-of-range values are rejected. Timer 3 uses
+the ESP32 whole-second boundary rule: <code>(current_ms / 1000 + duration) * 1000</code>.
+A zero duration expires immediately.</p>
+<p>There are <strong>three stopwatches</strong>, IDs 0-2. Reads do not reset them. A latched
+32-bit millisecond count wraps after about 49.7 days; seconds wrap after
+about 136 years. Internal deadlines and uptime use a 64-bit monotonic clock.</p>
+<p>Phase 10 starts SNTP against <code>pool.ntp.org</code> after Wi-Fi association. Calendar
+operations return CLOCK_UNSYNCED until the first valid synchronization.
+Phase 9 has no network time source and returns CLOCK_UNSYNCED for calendar
+queries. Uptime remains available in both. Local formatting uses persistent
+<code>TZ</code> in POSIX timezone syntax (for example, <code>AEST-10</code>); an absent <code>TZ</code> means UTC.</p>
+<h3 id="clock-application-time-compatibility">CLOCK application time compatibility<a class="headerlink" href="#clock-application-time-compatibility" title="Permanent link">¶</a></h3>
+<p>The ESP32 Altair dcc <code>Apps/CLOCK</code> time interface is already provided by these
+services; no extra physical ports or separate time driver are needed:</p>
+<table>
+<thead>
+<tr>
+<th>CLOCK request</th>
+<th>Pico interface</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local time</td>
+<td>Clock group <code>0x20</code>, payload <code>[2]</code> on shared ports 2/3/4</td>
+<td><code>YYYY-MM-DDTHH:MM:SS</code> (19 bytes)</td>
+</tr>
+<tr>
+<td>Local date</td>
+<td>Clock group <code>0x20</code>, payload <code>[3]</code></td>
+<td><code>Monday, 01 January 2024</code></td>
+</tr>
+<tr>
+<td>Uptime</td>
+<td>Clock group <code>0x20</code>, payload <code>[0]</code></td>
+<td>Decimal seconds since Pico startup</td>
+</tr>
+<tr>
+<td>Start refresh timer</td>
+<td>OUT 23: <code>0x12</code>, <code>50</code>, <code>0</code></td>
+<td>Timer 2, 50 ms, low duration byte first</td>
+</tr>
+<tr>
+<td>Query refresh timer</td>
+<td>OUT 23: <code>0x22</code>, then IN 23</td>
+<td><code>1</code> while running, <code>0</code> when expired</td>
+</tr>
+</tbody>
+</table>
+<p>The timer port remains usable while a shared clock request is BUSY. Calendar
+formatting, ENV access, and network time synchronization run on core 1; the
+Z80 trap only transfers the framed request/reply or handles the independent
+monotonic timer. Calendar replies contain exactly their length-prefixed text,
+without a trailing NUL.</p>
+<p>For Phase 10, connect Wi-Fi and allow DNS/UDP access to <code>pool.ntp.org</code>.
+Calendar requests return explicit <code>CLOCK_UNSYNCED</code> (<code>0x15</code>) errors until SNTP
+has supplied a valid time. Once synchronized, time continues advancing from
+the monotonic clock through Wi-Fi outages and is corrected by later SNTP
+updates. Uptime and the refresh timer do not depend on Wi-Fi or SNTP.</p>
+<p>Configure the timezone through the existing ENV service, for example
+<code>ENV TZ=AEST-10</code> for UTC+10 or <code>ENV TZ=ACST-9:30</code> for UTC+09:30. POSIX signs
+are opposite to conventional UTC offsets. A full POSIX <code>TZ</code> rule can include
+daylight-saving transitions. Changes take effect on the next clock request
+without rebooting. The Pico remains <strong>TZ-only</strong>: the ESP32 CLOCK help text's
+<code>UTC_OFFSET</code> setting is not used here.</p>
+<p>The unchanged CLOCK source also polls the weather group on every refresh.
+Phase 10 now supplies its cached status and field requests through the
+<a href="#openweathermap-weather">weather service</a>. Phase 9 remains USB-only and
+returns UNAVAILABLE for weather.</p>
+<p>The <code>clock_app_time_services</code> host integration test drives CLOCK's port
+transactions through the real parser, worker, calendar formatter, SNTP
+callback hook, and persistent ENV backend. It covers unsynchronized errors,
+UTC/local/date/uptime shapes, timezone updates and DST, 50 ms timer operation
+during a BUSY request, and the 32-bit millisecond rollover. It does not execute
+the CLOCK binary or qualify physical network/hardware operation.</p>
+<h3 id="chat-application-openai-and-ollama">CHAT application: OpenAI and Ollama<a class="headerlink" href="#chat-application-openai-and-ollama" title="Permanent link">¶</a></h3>
+<p>Phase 10 implements the framed ABI used by the ESP32 Altair dcc
+<code>Apps/CHAT/CHATC11.C</code> application. Use the existing CP/M application and its
+<code>CHAT.SYS</code> system-prompt file; no BIOS, pin or disk-layout change is needed.
+CHAT 1.7-c11 adds application-side thinking control as described below; earlier
+versions still work but leave thinking at the server default. Firmware builds
+do not install the application on a disk.
+Do not use the legacy physical chat ports 120-124: they alias unrelated
+peripherals with this board's address decoding.</p>
+<p>All requests use group <code>0x50</code> through shared ports 2/3/4:</p>
+<table>
+<thead>
+<tr>
+<th>Payload</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[0]</code></td>
+<td>Cancel any previous request and clear request assembly; COMPLETE</td>
+</tr>
+<tr>
+<td><code>[1, json_bytes...]</code></td>
+<td>Append 1-2047 bytes; COMPLETE, or explicit CAPACITY/BUSY/invalid-input error</td>
+</tr>
+<tr>
+<td><code>[2]</code></td>
+<td>Cancel the connection and clear queued response/error text; COMPLETE; assembled request is retained</td>
+</tr>
+<tr>
+<td><code>[3]</code></td>
+<td>Submit the assembled request asynchronously; COMPLETE, or BUSY/empty-request error</td>
+</tr>
+<tr>
+<td><code>[4]</code></td>
+<td>One status byte: <code>0</code> EOF, <code>1</code> WAITING, <code>2</code> DATA_READY</td>
+</tr>
+<tr>
+<td><code>[5, maximum_u16]</code></td>
+<td><code>[status, count_u16, text_bytes...]</code>, with status <strong>after</strong> removing the returned bytes</td>
+</tr>
+</tbody>
+</table>
+<p><code>maximum</code> is 1-2045, bounded by the 2048-byte service payload. CHATC11 requests
+256 bytes at a time and appends JSON in 2047-byte pieces. The assembled request
+limit is <strong>8191 bytes</strong>, excluding its local NUL terminator. Overflow never
+silently truncates a request. Appending or resubmitting while active returns
+BUSY. Operation 0 cancels before reusing the request buffer, so a new turn
+recovers safely after CHATC11 fills its local response buffer or times out.
+Operation 2 also cancels immediately. Shared transport RESET only invalidates
+the mailbox reply; as with ENV, it does not undo service side effects.</p>
+<h4 id="provider-configuration">Provider configuration<a class="headerlink" href="#provider-configuration" title="Permanent link">¶</a></h4>
+<p>For a local Ollama server with its OpenAI-compatible API:</p>
+<div class="highlight"><pre><span></span><code>ENV CHAT_PROVIDER=compatible
+ENV CHAT_ENDPOINT=http://192.168.1.26:11434/v1/chat/completions
+ENV -I CHAT_MODEL=phi4-mini:3.8b
+ENV CHAT_MAX_TOKENS=1024
+ENV CHAT_TEMPERATURE=0.7
+</code></pre></div>
+<p>With <strong>CHAT 1.7-c11</strong>, <code>CHAT_THINK</code> defaults to <code>false</code> for
+<code>CHAT_PROVIDER=compatible</code> or <code>ollama</code>. The application sends
+<code>"reasoning_effort":"none"</code> to request a direct answer. Set
+<code>ENV CHAT_THINK=true</code> to send <code>"reasoning_effort":"medium"</code> (thinking on for
+boolean-control models, medium effort where supported), or
+<code>ENV CHAT_THINK=default</code> to omit the field and use the server/model default.
+Only models that support disabling thinking can honor <code>none</code>.</p>
+<p>The USB configuration shell also edits this setting: <strong>Ctrl-] c</strong>, then
+<strong>3 - Chat</strong>, then <strong>7 - configure thinking</strong>. Enter <code>false</code>, <code>true</code> or
+<code>default</code>; <code>-</code> clears the key to the app's <code>false</code> default. Like other saved
+configuration changes, exiting the shell triggers a safe reboot.</p>
+<p>The app re-reads provider/thinking settings before each turn and never adds
+the parameter to OpenAI requests. Invalid values or ENV errors stop submission
+explicitly. An absent/empty thinking value is seeded as <code>false</code> on first use;
+the standard service helper can print NOT_FOUND while seeding a missing key.
+Other compatible servers that do not support <code>reasoning_effort</code> should use
+<code>CHAT_THINK=default</code> to retain their old request format. Installing the updated
+<code>CHAT.COM</code> is required for this behavior; the existing Pico firmware needs no
+change and continues to forward the application's bounded JSON unchanged.</p>
+<p><code>CHAT_PROVIDER=ollama</code> is an alias for <code>compatible</code>. Discover installed model
+names from a host with <code>curl http://192.168.1.26:11434/api/tags</code>; the model must
+match a deployed name exactly. CHATC11's built-in <code>gemma3:1b</code> default is not
+guaranteed to be installed. The example server address is configuration, not
+a compiled-in endpoint.</p>
+<p>For OpenAI:</p>
+<div class="highlight"><pre><span></span><code>ENV CHAT_PROVIDER=openai
+ENV -I CHAT_OPENAI_KEY=&lt;your-api-key&gt;
+ENV -I CHAT_MODEL=gpt-4o-mini
+ENV CHAT_MAX_TOKENS=1024
+ENV CHAT_TEMPERATURE=0.7
+</code></pre></div>
+<p>The ENV CLI evaluates <code>+</code>/<code>-</code> inside ordinary assignments as arithmetic.
+Use literal <code>-I</code> for API keys and model names; it only inserts absent keys.
+To replace an existing key, first use <code>ENV -D CHAT_MODEL</code> (or
+<code>ENV -D CHAT_OPENAI_KEY</code>), then its literal insert command. Do not paste real
+keys into logs or source control. ENV is plaintext onboard flash, not
+encrypted secret storage.</p>
+<p>An absent provider defaults to <code>openai</code>. OpenAI always uses
+<code>https://api.openai.com/v1/chat/completions</code>, ignoring <code>CHAT_ENDPOINT</code>.
+Only OpenAI requests carry <code>CHAT_OPENAI_KEY</code>; a saved OpenAI key is <strong>never</strong>
+forwarded to an Ollama/compatible endpoint. Authenticated third-party compatible
+providers are not supported. URLs require an explicit path and accept HTTP or
+HTTPS, a DNS name/IPv4 address, and an optional port 1-65535. User-info,
+fragments, whitespace and control characters are rejected. Limits are 95
+host bytes, 103 authority bytes, 159 path bytes, and 255 key bytes.</p>
+<p>Core 1 reloads provider/endpoint/key from durable ENV on each submission.
+CHATC11 owns the JSON model, history, system prompt, token count, temperature
+and thinking parameter; restart CHAT after changing model/token/temperature
+settings. Thinking/provider changes are read at the next turn by CHAT 1.7-c11.
+HTTPS requires synchronized
+SNTP time and verifies certificate dates, chain and hostname using the bundled
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/chat_ca.pem">GTS Root R4</a>.
+There is no insecure TLS fallback. Compatible HTTPS endpoints need a chain
+trusted by that root; arbitrary private/self-signed CAs are not supported.
+Plain HTTP Ollama works without SNTP but must remain on a trusted LAN.</p>
+<h4 id="ownership-bounds-and-failure-behavior">Ownership, bounds and failure behavior<a class="headerlink" href="#ownership-bounds-and-failure-behavior" title="Permanent link">¶</a></h4>
+<p>The trap transfers framed bytes through the existing release/acquire atomic
+single-request mailbox. It does not access ENV, JSON, sockets or TLS, and never
+waits for an answer from the provider. Core 1 owns request assembly, the
+4096-byte response ring, configuration, and the independent async HTTP client.
+Wi-Fi, terminal sessions and chat do not consume one another's queues or
+configure one another. Disk work still runs first on every application loop.</p>
+<p>HTTP writes and received wire processing are limited to 512 bytes per service
+pass. A received pbuf chain is retained without extra copying, bounded to one
+chain of at most 16 KiB; further chains receive lwIP <code>ERR_MEM</code> backpressure.
+TCP credit advances only for bytes consumed by the parser. A full CP/M response
+ring pauses parsing rather than dropping text or blocking the other services.
+Accepted TCP writes are never replayed after a failed flush. Callback teardown
+is deferred to the service loop, callbacks are detached before abort, and
+generation tokens reject stale DNS/connection callbacks after cancellation.</p>
+<p>The decoder accepts HTTP/1.0 or 1.1, content-length, connection-close or chunked
+bodies, and OpenAI-style single-line SSE JSON records. It requires HTTP 200,
+<code>text/event-stream</code>, uncompressed content, and a final <code>[DONE]</code> marker.
+Headers are limited to 4096 bytes, each HTTP/SSE line to 4095 bytes, decoded
+text per event to 4095 bytes, and JSON nesting to 16 levels. Only
+<code>choices[0].delta.content</code> is displayed; role, usage, tools and reasoning fields
+are ignored. JSON escapes and UTF-8 are validated and converted to CP/M-safe
+7-bit text, preserving newline/tab and mapping common smart punctuation;
+other non-ASCII code points become <code>?</code>.</p>
+<p>The request has a <strong>120-second total deadline</strong>, including backpressure.
+Wi-Fi loss/reconfiguration, premature EOF, allocation/write errors, oversized
+input, malformed HTTP/JSON and HTTP/provider errors terminate the connection
+and publish explicit <code>Chat: ...</code> text after already queued content, then EOF.
+Configuration failures are reported the same way. Diagnostics do not print
+credentials, prompts, provider error bodies or generated answers. CHATC11 itself
+has an approximately <strong>30-second no-content timeout</strong> and an 8191-byte local
+answer limit; a long-thinking model can hit that client limit before the
+firmware deadline. No artificial answer bytes or automatic duplicate POSTs
+are generated to hide these limits.</p>
+<p>Native <code>extended_io_services</code>, <code>chat_http_sse</code>, <code>chat_async_transport</code> and
+<code>weather_real_tls_config</code> tests exercise the real mailbox/worker/parser/client
+and both trust roots. They cover chunk framing, split input, full queues,
+no-duplicate writes, cancellation/restart, failure cleanup, stale callbacks,
+and missing or invalid configuration. They do not execute the CP/M binary or
+prove live inference, heap/stack headroom, or combined hardware timing.</p>
+<h3 id="openweathermap-weather">OpenWeatherMap weather<a class="headerlink" href="#openweathermap-weather" title="Permanent link">¶</a></h3>
+<p>Phase 10 supports the ESP32 Altair weather ABI through shared service group
+<code>0x40</code> on ports 2/3/4. Do not use the old physical ports 46/47/200: these
+alias other peripherals on this board.</p>
+<ul>
+<li>Payload <code>[1]</code> returns one status byte: <code>0</code> NONE, <code>1</code> FETCHING, <code>2</code> READY,
+  or <code>3</code> ERROR. Status reads never wait for an HTTP request.</li>
+<li>Payload <code>[0, field_id]</code> returns length-prefixed text, without a trailing
+  NUL. Units and error text are available before the first successful fetch;
+  other fields return UNAVAILABLE until data exists.</li>
+<li>Unknown operations, incorrect lengths and unknown fields return the usual
+  explicit service errors. An HTTP failure is exposed by status ERROR and
+  field 12, not by inventing weather data or failing every status query.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Field</th>
+<th>Text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td>City</td>
+</tr>
+<tr>
+<td style="text-align: right;">1 / 2</td>
+<td>Current condition / description</td>
+</tr>
+<tr>
+<td style="text-align: right;">3 / 13</td>
+<td>Current temperature / feels-like temperature</td>
+</tr>
+<tr>
+<td style="text-align: right;">4 / 5</td>
+<td>Humidity percent / wind speed</td>
+</tr>
+<tr>
+<td style="text-align: right;">6 / 7</td>
+<td>Forecast condition / description</td>
+</tr>
+<tr>
+<td style="text-align: right;">8 / 14</td>
+<td>Forecast temperature / feels-like temperature</td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td>First forecast block time, as supplied by OWM in UTC</td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td>Seconds since the last successful current-data refresh</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td>Temperature units: <code>C</code>, <code>F</code>, or <code>K</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td>Last error or forecast warning; empty after a fully successful refresh</td>
+</tr>
+</tbody>
+</table>
+<p>Temperatures and wind speed are rounded to integer strings as in the
+reference driver; wind is m/s for metric/standard and mph for imperial.
+Only the first forecast block is requested (<code>cnt=1</code>).</p>
+<p>Configure the existing durable ENV store:</p>
+<div class="highlight"><pre><span></span><code>ENV OWM_KEY=&lt;your-api-key&gt;
+ENV OWM_LOCATION=Sydney,AU
+ENV OWM_UNITS=metric
+</code></pre></div>
+<p><code>OWM_KEY</code> is limited to 40 bytes, location to 64 bytes. Location accepts a
+city/country query or a validated <code>lat=-33.8&amp;lon=151.2</code> coordinate pair.
+The ENV CLI treats <code>+</code> and <code>-</code> inside assignments as arithmetic; use its
+literal insert mode for coordinates or names containing these characters:
+<code>ENV -D OWM_LOCATION</code>, then
+<code>ENV -I OWM_LOCATION=lat=-33.8&amp;lon=151.2</code>.
+Units are <code>metric</code> (default), <code>imperial</code>, or <code>standard</code>. Missing keys or invalid
+settings produce an explanatory error; no request is sent. Settings are
+reloaded at most once per second. Changing them cancels an in-flight request,
+clears data belonging to the old configuration, and starts a new fetch without
+rebooting. ENV remains plaintext onboard flash; do not publish its contents.
+Firmware diagnostics never print the key, request URL or provider response body.</p>
+<p>Core 1 waits for Wi-Fi and a synchronized SNTP clock, then allows 5 seconds
+for the network to settle before fetching current conditions and forecast.
+Successful refreshes repeat every 20 minutes. Initial failures retry every
+2 minutes for five retries, then every 20 minutes; failures after a successful
+fetch use the 20-minute interval. Reconnection schedules a fresh fetch.
+The last successful cache remains readable after failures, with its increasing
+age and explicit error status. A failed forecast still publishes valid current
+conditions as READY, leaves forecast fields empty, and reports a forecast
+warning in field 12 and on USB.</p>
+<p>HTTPS uses port 443, required certificate-chain and hostname verification,
+and certificate date checks against the SNTP-derived UTC clock. There is no
+HTTP or insecure-TLS fallback. The bundled USERTrust RSA public root is
+maintained in
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/weather_ca.pem">weather_ca.pem</a>
+(SHA-256 <code>E793C9B02FD8AA13E21C31228ACCB08119643B749C898964B1746D46C3D4CBD2</code>,
+valid through 18 January 2038). Update the trust anchor if the provider changes
+its chain. Its RSA/SHA-384 signature requires <code>MBEDTLS_SHA384_C</code>; enabling
+SHA-512 alone does not enable SHA-384 in Mbed TLS 3. Without it, TLS
+configuration fails while parsing the CA, before DNS or HTTP starts.
+DNS, connection and response work share a 15-second request deadline;
+responses are bounded to 16 KiB on the wire and 8 KiB decoded, with at most
+2 KiB of HTTP headers. Content-length, connection-close and chunked responses
+are supported; malformed, oversized or compressed bodies fail explicitly.</p>
+<p>The weather worker uses no Z80 trap callbacks, extra core, or blocking socket.
+Network callbacks only collect bounded data; parsing, ENV access and cache
+publication happen on core 1 between its normal disk/service/network polls.
+Phase 10 uses an explicit 8 KiB core-1 stack in main RAM for TLS; Phase 9
+retains its original launch path and reports weather UNAVAILABLE.</p>
+<h3 id="system-information-and-reboot">System information and reboot<a class="headerlink" href="#system-information-and-reboot" title="Permanent link">¶</a></h3>
+<p>System-info selectors are 0 = hostname <code>z80romless-sbc</code>, 1 = current Wi-Fi
+IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
+UNAVAILABLE without a connection, including Phase 9. Reboot requires the
+exact confirmation byte <code>0xA5</code>; it flushes queued/cached disk writes, then
+core 0 disables traps, holds reset, isolates the data paths and stops the
+clock before watchdog reboot. New disk commands are gated before the reboot
+job is published, with BUSY+ERROR reported on disk status, so writes cannot
+race the final flush. Failed flushes reopen the gate and report STORAGE_WRITE
+instead.</p>
+<h3 id="onboard-led-device">Onboard LED device<a class="headerlink" href="#onboard-led-device" title="Permanent link">¶</a></h3>
+<p>Phases 9 and 10 expose the Pico 2 W onboard LED through Utility group <code>0x21</code>,
+using the existing shared-service ports <code>0x02</code>-<code>0x04</code>. No wiring changes,
+expansion GPIOs, or additional port IDs are needed; <code>0x07</code> remains spare
+for a future interrupt timer.</p>
+<ul>
+<li>Payload <code>[4, 0]</code> turns the LED off; <code>[4, 1]</code> turns it on. Success is
+  COMPLETE and requires ACK.</li>
+<li>Payload <code>[5]</code> returns a one-byte response: <code>0</code> off or <code>1</code> on. This is the
+  last successfully commanded state, not an optical measurement.</li>
+<li>Other state values return INVALID_PARAMETER. Incorrect payload lengths
+  return INVALID_LENGTH.</li>
+<li>An initial read after firmware boot initializes the LED off; an initial
+  write applies the requested state directly. Its state is not persisted to
+  flash, and transport RESET does not undo it.</li>
+<li>Both phases initialize the wireless-chip driver lazily if necessary.
+  Phase 9 uses the SDK's LED-only <code>pico_cyw43_arch_none</code> backend: no Wi-Fi
+  association or network stack is enabled, and the USB terminal and nominal
+  20 MHz Z80 operation are unchanged. Phase 10 also works with empty Wi-Fi
+  credentials or without a network connection. Driver initialization/write
+  failures return UNAVAILABLE; a failed write does not update the reported state.</li>
+</ul>
+<p>The worker accesses the wireless chip on core 1, never inside the core 0
+Z80 I/O trap. LED control is an asynchronous service, not a cycle-timed output.</p>
+<p>For example, to turn the LED on, issue these Z80 I/O writes:</p>
+<div class="highlight"><pre><span></span><code>OUT port 0x02, value 0x01   ; RESET shared transport
+OUT port 0x02, value 0x21   ; Utility group
+OUT port 0x03, value 0x02   ; Payload length, low byte
+OUT port 0x03, value 0x00   ; Payload length, high byte
+OUT port 0x03, value 0x04   ; Set LED operation
+OUT port 0x03, value 0x01   ; On (use 0x00 for off)
+</code></pre></div>
+<p>These are transaction steps, not literal assembly syntax. Poll port <code>0x02</code>
+with a bounded limit until COMPLETE (<code>0x01</code>) or ERROR (<code>0xFF</code>); acknowledge
+COMPLETE by writing <code>0x00</code> to port <code>0x02</code>. On ERROR, read and acknowledge
+the framed error as described above. RESET is for recovering/starting an
+idle channel, not for cancelling another client's active transaction.</p>
+<h3 id="persistent-environment-api">Persistent environment API<a class="headerlink" href="#persistent-environment-api" title="Permanent link">¶</a></h3>
+<p>Keys are case-insensitive, stored uppercase, and contain 1-16 non-NUL bytes.
+Values contain 0-255 non-NUL bytes. Empty and absent values are distinct:
+GET of an empty value returns a zero-length response; an absent key returns
+NOT_FOUND.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Payload</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 reset / 1 initialize</td>
+<td><code>[operation]</code></td>
+<td>COMPLETE</td>
+</tr>
+<tr>
+<td>2 get</td>
+<td><code>[2, key_length_u8, key_bytes]</code></td>
+<td>Value text</td>
+</tr>
+<tr>
+<td>3 set</td>
+<td><code>[3, key_length_u8, key_bytes, value_length_u16, value_bytes]</code></td>
+<td>COMPLETE, durable before success</td>
+</tr>
+<tr>
+<td>4 delete</td>
+<td><code>[4, key_length_u8, key_bytes]</code></td>
+<td>COMPLETE or NOT_FOUND</td>
+</tr>
+<tr>
+<td>5 list</td>
+<td><code>[5]</code></td>
+<td><code>KEY=VALUE</code> lines with CRLF</td>
+</tr>
+<tr>
+<td>6 count</td>
+<td><code>[6]</code></td>
+<td>Decimal count text</td>
+</tr>
+<tr>
+<td>7 clear</td>
+<td><code>[7]</code></td>
+<td>COMPLETE, durable before success</td>
+</tr>
+<tr>
+<td>8 exists</td>
+<td><code>[8, key_length_u8, key_bytes]</code></td>
+<td>COMPLETE or NOT_FOUND</td>
+</tr>
+<tr>
+<td>9 execute ENV command</td>
+<td><code>[9, command_text]</code>, at most 511 command bytes</td>
+<td>Text</td>
+</tr>
+</tbody>
+</table>
+<p>The ENV command parser is shared with the maintained host driver. It supports
+listing, <code>NAME</code>, <code>NAME=VALUE</code>, copying another variable, numeric addition/
+subtraction, <code>NAME+N</code>, <code>NAME-N</code>, <code>-I NAME=VALUE</code>, <code>-D NAME</code>, <code>-N</code>, <code>NOW</code>
+(uptime seconds), and <code>-H</code>/<code>HELP</code>/<code>?</code>. Numeric overflow is an explicit error.
+No additional physical ports expose the host's private legacy selectors.</p>
+<p>The store supports at most 128 entries, subject to a <strong>3,840-byte serialized
+snapshot limit</strong>. Each entry consumes <code>key length + value length + 2</code> bytes.
+There is room for at least 14 maximum-length key/value pairs. Requests that
+exceed storage or the 2,048-byte reply capacity fail explicitly; LIST never
+silently truncates. After a failed write, the in-memory state is reloaded
+from the newest valid durable snapshot; an error does not undo a commit
+that already reached flash.</p>
+<p>Two 4 KiB sectors at <strong><code>0x2BE000</code> and <code>0x2BF000</code></strong> occupy unused space in the
+boot partition, beyond the boot payload ending at <code>0x2B1000</code>. Firmware, the
+disk journal, boot package and all four disk offsets remain unchanged.
+Each snapshot has a version, sequence number, payload CRC32 and header CRC32.
+Updates erase/program the inactive sector, verify the payload, and commit the
+header last. The previous committed snapshot remains recoverable after an
+interrupted replacement. A durable empty baseline is established before the
+first mutation. Repeated unchanged writes do not erase flash.</p>
+<p>Flash erase/program uses the disk backend's BUSREQ/BUSACK and flash-safe
+multicore handshake. A non-success flash-safe result fails closed through
+watchdog reboot. Both sectors erased means a new empty store; neither erased
+nor CRC-valid means STORAGE_READ, not a fabricated empty environment.
+Flash has finite endurance: use countdown timers and stopwatches, not
+repeated persistent writes, for high-frequency counters.</p>
+<div class="admonition warning">
+<p class="admonition-title">Preserving environment variables during updates</p>
+<p>Firmware-only and exact boot-package-only updates preserve variables.
+Complete 4 MiB provisioning, mass erase and <code>flash_nuke.uf2</code> destroy them.
+Do not write a padded 128 KiB boot-partition image: it would overwrite ENV.
+Full generated images deliberately contain erased environment sectors.</p>
+</div>
+<h3 id="worked-request-bytes">Worked request bytes<a class="headerlink" href="#worked-request-bytes" title="Permanent link">¶</a></h3>
+<p>These examples show the actual wire framing; prefer the existing dcc
+<code>svc_operation_send()</code>, <code>svc_get_text()</code> and timer helpers in <code>DXSVC.H</code>.
+Use bounded client polling, drain error frames, and RESET after failure.</p>
+<div class="highlight"><pre><span></span><code>Read uptime:
+  OUT 02,20
+  OUT 03,01  OUT 03,00       ; payload length = 1
+  OUT 03,00                 ; operation = uptime seconds
+  IN 02 until 02 or FF       ; RESPONSE_READY or ERROR
+  IN 04 twice, then length bytes
+
+Set TZ=UTC0:
+  OUT 02,30
+  OUT 03,0A  OUT 03,00       ; payload length = 10
+  OUT 03,03  OUT 03,02       ; SET, key length
+  OUT 03,54  OUT 03,5A       ; "TZ"
+  OUT 03,04  OUT 03,00       ; value length = 4
+  OUT 03,55  OUT 03,54  OUT 03,43  OUT 03,30  ; "UTC0"
+  IN 02 until 01 or FF       ; COMPLETE or ERROR
+  OUT 02,00                 ; ACK only after success
+</code></pre></div>
+<h2 id="independent-timer-port">Independent timer port<a class="headerlink" href="#independent-timer-port" title="Permanent link">¶</a></h2>
+<p>Port <code>0x17</code> uses no shared-service framing and remains usable while the
+service worker is BUSY. Its timers/stopwatches are the same instances as
+groups <code>0x10/0x11</code>.</p>
+<table>
+<thead>
+<tr>
+<th>OUT command</th>
+<th>Subsequent transfers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td>Reset only this parser; running timers remain unchanged</td>
+</tr>
+<tr>
+<td><code>0x10</code>-<code>0x12</code></td>
+<td>Two OUT bytes, low then high: start millisecond timer 0-2</td>
+</tr>
+<tr>
+<td><code>0x13</code></td>
+<td>One OUT byte: start whole-second timer 3</td>
+</tr>
+<tr>
+<td><code>0x20</code>-<code>0x23</code></td>
+<td>IN returns selected timer's running flag</td>
+</tr>
+<tr>
+<td><code>0x30</code></td>
+<td>IN returns running bitmask, bits 0-3</td>
+</tr>
+<tr>
+<td><code>0x40</code>-<code>0x42</code></td>
+<td>Reset stopwatch 0-2</td>
+</tr>
+<tr>
+<td><code>0x50</code>-<code>0x52</code></td>
+<td>Four IN bytes: latched stopwatch seconds, little-endian</td>
+</tr>
+<tr>
+<td><code>0x60</code>-<code>0x62</code></td>
+<td>Four IN bytes: latched stopwatch milliseconds, little-endian</td>
+</tr>
+</tbody>
+</table>
+<p>The parser initially selects the timer bitmask. An invalid command, an IN
+during parameter collection, or stopwatch over-read returns <code>0xFF</code> and
+requires recovery. To recover an unknown state, perform <strong>IN <code>0x17</code>,
+then OUT <code>0x17</code>, <code>0x00</code></strong>. Multi-byte port-23 operations must not be
+interleaved with other users of that port.</p>
+<h2 id="deferred-services-and-validation">Deferred services and validation<a class="headerlink" href="#deferred-services-and-validation" title="Permanent link">¶</a></h2>
+<p>File transfer remains reserved on <code>0x15/0x16</code>; it is not implemented.
+Chat and Sense HAT requests return explicit UNAVAILABLE errors. Weather is
+implemented only in Phase 10; Phase 9 reports UNAVAILABLE.
+The ESP32 interrupt timer on <code>0x07</code> is deferred: current hardware has
+no Pico-to-<code>INT#</code> driver, and the <code>RD#</code>-gated data path cannot provide an
+interrupt vector. No interrupt, GPIO or PCB wiring changes accompany this work.</p>
+<p>Core 0 owns traps and timer state. Core 1 executes slow services after disk
+service and before network work. A generation-tagged mailbox prevents stale
+worker replies from becoming new responses. Pause/drain logic accounts for
+pending service work before flash is declared quiescent. Flash and network
+work never run inside the I/O trap.</p>
+<p>Host tests cover framing, aliases, recovery, timer boundaries and latching,
+ENV commands/capacity, unchanged-write suppression, snapshot recovery,
+calendar formatting, phase routing and flash-safe ownership. These are
+software checks, not bench timing or physical power-cut qualification.</p>
+<ul>
+<li><a href="../../implementation/phase-3-address-generator/">Phase 3</a> owns address wiring.</li>
+<li><a href="../../implementation/phase-8-virtual-io/">Phase 8</a> owns initial trap checks.</li>
+<li><a href="../../implementation/phase-9-flash-storage/">Phase 9</a> owns flash bring-up.</li>
+<li><a href="https://davidly.github.io/dcc/">DCC documentation</a> covers port access
+  and CP/M BDOS/BIOS APIs.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../operation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Operational boundaries">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Operational boundaries
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../firmware-build/" class="md-footer__link md-footer__link--next" aria-label="Next: Firmware build and provisioning">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Firmware build and provisioning
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="../../javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

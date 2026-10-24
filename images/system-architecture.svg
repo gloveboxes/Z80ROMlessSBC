@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1640" viewBox="0 0 1920 1640" role="img" aria-labelledby="title description">
+  <title id="title">Z80 ROMless SBC: hardware and software architecture</title>
+  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the HT16K33 matrix service. A PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the matrix. The Z80 clock uses PWM. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives memory addresses and writes SRAM, including during assisted loading. After independent read-back verification and reset, it executes CP/M directly from 64 KiB SRAM.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
+      .title { font-size: 40px; font-weight: 750; letter-spacing: -1px; }
+      .subtitle { font-size: 21px; fill: #536780; }
+      .section { font-size: 15px; font-weight: 750; letter-spacing: 2px; }
+      .heading { font-size: 25px; font-weight: 750; }
+      .subheading { font-size: 19px; font-weight: 700; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; }
+      .source { font-size: 14px; fill: #536780; }
+      .white { fill: #ffffff; }
+      .muted { fill: #536780; }
+      .blue { fill: #1d5fc0; }
+      .teal { fill: #007f79; }
+      .orange { fill: #ac530b; }
+      .line { fill: none; stroke: #536780; stroke-width: 2.5; stroke-linejoin: round; }
+      .io { fill: none; stroke: #1d5fc0; stroke-width: 3; stroke-linejoin: round; }
+      .network { fill: none; stroke: #007f79; stroke-width: 3; stroke-linejoin: round; }
+      .clock { fill: none; stroke: #c66a15; stroke-width: 5; stroke-linejoin: round; }
+      .memory { fill: none; stroke: #7644b5; stroke-width: 4; stroke-linejoin: round; }
+      .dash { stroke-dasharray: 7 6; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#536780"/></marker>
+    <marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#1d5fc0"/></marker>
+    <marker id="teal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#007f79"/></marker>
+    <marker id="clock-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#c66a15"/></marker>
+    <marker id="purple-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#7644b5"/></marker>
+  </defs>
+
+  <path fill="#f6f8fc" d="M0 0H1920V1640H0Z"/>
+  <path fill="#162b45" d="M0 0H1920V8H0Z"/>
+  <text x="40" y="68" class="title">Z80 ROMless SBC</text>
+  <text x="40" y="105" class="subtitle">A real Z80 executes CP/M from SRAM. A dual-core Pico 2 W provides boot, clock, virtual I/O and networking.</text>
+  <rect x="1560" y="34" width="320" height="40" rx="20" fill="#e5eaf4"/>
+  <text x="1720" y="60" class="small" text-anchor="middle">IMPLEMENTED STAGE 10</text>
+
+  <!-- The Pico boundary contains firmware ownership, shared RAM and onboard flash. -->
+  <rect x="320" y="145" width="1240" height="715" rx="20" fill="#ffffff" stroke="#b9c8dc" stroke-width="2"/>
+  <text x="350" y="183" class="heading">Raspberry Pi Pico 2 W</text>
+  <text x="1530" y="181" class="body muted" text-anchor="end">RP2350 multicore I/O controller | clk_sys = 120 MHz</text>
+
+  <rect x="350" y="210" width="380" height="580" rx="14" fill="#edf4ff" stroke="#b5cef2"/>
+  <path d="M364 210H716Q730 210 730 224V262H350V224Q350 210 364 210Z" fill="#1d5fc0"/>
+  <text x="372" y="244" class="heading white">CORE 0</text>
+  <text x="372" y="294" class="subheading blue">Z80-facing real-time control</text>
+  <text x="372" y="326" class="body">GPIO ownership; RESET#; bus grants</text>
+  <text x="372" y="356" class="body">Assisted SRAM load + read-back</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c"><text x="372" y="382" class="source">sram.c / cpu.c / bus.c</text></a>
+  <path d="M372 401H708" stroke="#b5cef2"/>
+  <text x="372" y="432" class="subheading blue">I/O trap + virtual port adapters</text>
+  <text x="372" y="462" class="body">00-01h console; 10-14h disk</text>
+  <text x="372" y="491" class="body">02-04h service ABI; 17h timers</text>
+  <text x="372" y="520" class="body">Stop PWM; service byte; step; resume</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c"><text x="372" y="546" class="source">io_trap.c / io_ports.c / disk_device.c</text></a>
+  <path d="M372 565H708" stroke="#b5cef2"/>
+  <text x="372" y="597" class="subheading blue">Z80 supervisor + flash handshakes</text>
+  <text x="372" y="627" class="body">Queued Z80 commands; no USB calls</text>
+  <text x="372" y="656" class="body">State publication + bounded diagnostics</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c"><text x="372" y="682" class="source">Shared main.c; stdout queued to USB core</text></a>
+  <rect x="370" y="707" width="340" height="62" rx="9" fill="#fff0dc" stroke="#e5b77c"/>
+  <text x="540" y="733" class="subheading orange" text-anchor="middle">Pico PWM generates Z80 CLK</text>
+  <text x="540" y="757" class="body orange" text-anchor="middle">20 MHz nominal; slow steps for boot/I/O</text>
+
+  <rect x="770" y="210" width="310" height="435" rx="14" fill="#f2f4fa" stroke="#cbd3e3"/>
+  <text x="790" y="243" class="section">SHARED RAM BOUNDARY</text>
+  <text x="790" y="286" class="subheading">Console router + rings</text>
+  <text x="790" y="316" class="body">RX 128 B / TX 512 B</text>
+  <text x="790" y="344" class="small">USB or one browser owns CP/M</text>
+  <text x="790" y="370" class="small">Short locks; clear queues on handover</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_queue.c"><text x="790" y="397" class="source">terminal_queue.c</text></a>
+  <path d="M790 415H1060" stroke="#cbd3e3"/>
+  <text x="790" y="447" class="subheading">Disk + control requests</text>
+  <text x="790" y="477" class="small">Immutable disk write/flush queue</text>
+  <text x="790" y="504" class="small">Atomic service request/result mailbox</text>
+  <text x="790" y="531" class="small">Flash grant request/result queues</text>
+  <text x="790" y="558" class="small">Supervisor queue + diagnostic ring</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_service.c"><text x="790" y="587" class="source">Bounded queues; atomic state + results</text></a>
+  <text x="790" y="621" class="small blue">No network calls from the Z80 trap</text>
+
+  <rect x="1120" y="210" width="410" height="435" rx="14" fill="#eaf8f4" stroke="#aad8cd"/>
+  <path d="M1134 210H1516Q1530 210 1530 224V262H1120V224Q1120 210 1134 210Z" fill="#007f79"/>
+  <text x="1142" y="244" class="heading white">CORE 1</text>
+  <text x="1142" y="294" class="subheading teal">USB CDC + supervisor framing</text>
+  <text x="1142" y="326" class="body">USB IRQs, console, ANSI + provisioning</text>
+  <text x="1142" y="355" class="source">usb_console.c / shared main.c; USB alarm pool here</text>
+  <path d="M1142 375H1508" stroke="#aad8cd"/>
+  <text x="1142" y="406" class="subheading teal">Disk first; then services + network</text>
+  <text x="1142" y="435" class="small">Runtime cache / journal / ROMLESS-SVC/1 workers</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/network_runtime.cpp"><text x="1142" y="465" class="subheading teal">Wi-Fi / CYW43 / lwIP / SNTP</text></a>
+  <text x="1142" y="492" class="small">Poll architecture; async join, retry, IP publication</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/web_terminal.cpp"><text x="1142" y="522" class="subheading teal">HTTP + WebSocket terminal</text></a>
+  <text x="1142" y="549" class="small">Sessions, heartbeat, ACKs and backpressure</text>
+  <text x="1142" y="577" class="subheading teal">Independent weather + chat clients</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/chat.c"><text x="1142" y="605" class="source">chat.c + chat_stream.c + chat_network.cpp</text></a>
+  <text x="1142" y="629" class="source">USB + network never own Z80 GPIO</text>
+
+  <path d="M730 325H770" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <path d="M1080 325H1120" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <path d="M730 495H770" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <path d="M1080 495H1120" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <path d="M925 645V680" class="line" marker-end="url(#arrow)"/>
+  <path d="M1325 645V680" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
+  <rect x="770" y="680" width="760" height="125" rx="12" fill="#fff6e8" stroke="#e5c38c"/>
+  <text x="790" y="711" class="subheading orange">Onboard QSPI flash | 4 MiB persistent storage</text>
+  <text x="790" y="741" class="body">Pico firmware | recovery journal | 64 KiB Z80 boot payload | ENV</text>
+  <text x="790" y="770" class="body">CP/M A:-D: = 4 x 320 KiB; 128-byte records; no SD card</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c"><text x="790" y="793" class="source">Core 0: fast reads from flash/cache. Core 1: runtime commits. Source: flash_backend.c</text></a>
+
+  <!-- External transports terminate at their owning core, not at the Z80. -->
+  <rect x="40" y="250" width="240" height="230" rx="14" fill="#ffffff" stroke="#b9c8dc"/>
+  <text x="60" y="286" class="section">USB HOST</text>
+  <text x="60" y="328" class="heading">Serial terminal</text>
+  <text x="60" y="364" class="body">CP/M fallback console</text>
+  <text x="60" y="395" class="body">Supervisor + setup</text>
+  <text x="60" y="441" class="small muted">USB works without Wi-Fi</text>
+  <path d="M160 250V130H1580V280H1530" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <rect x="820" y="113" width="250" height="30" rx="6" fill="#f6f8fc"/>
+  <text x="945" y="134" class="small blue" text-anchor="middle">USB CDC: core 1 only</text>
+
+  <rect x="1600" y="250" width="280" height="200" rx="14" fill="#ffffff" stroke="#aad8cd"/>
+  <text x="1620" y="286" class="section teal">WI-FI CLIENT</text>
+  <text x="1620" y="328" class="heading">Browser / xterm.js</text>
+  <text x="1620" y="366" class="body">HTTP + WebSocket :8088</text>
+  <text x="1620" y="399" class="small">Exclusive CP/M console owner</text>
+  <text x="1620" y="426" class="small muted">Disconnect restores USB console</text>
+  <path d="M1530 350H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
+  <rect x="1600" y="490" width="280" height="155" rx="14" fill="#ffffff" stroke="#aad8cd"/>
+  <text x="1620" y="526" class="section teal">NETWORK SERVICES</text>
+  <text x="1620" y="562" class="body">SNTP time; weather HTTP(S)</text>
+  <text x="1620" y="593" class="body">Chat: OpenAI / compatible</text>
+  <text x="1620" y="623" class="small muted">Async DNS / TCP / TLS; bounded data</text>
+  <path d="M1530 575H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
+  <!-- Core 1 feeds PIO FIFOs; the PIO state machine generates the I2C signals. -->
+  <path d="M1530 620H1545V834H1530" class="network" marker-end="url(#teal-arrow)"/>
+  <rect x="1120" y="817" width="410" height="33" rx="8" fill="#eaf8f4" stroke="#aad8cd"/>
+  <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0 state machine: I²C signal generation</text>
+  <path d="M1530 834H1580V745H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
+  <rect x="1600" y="680" width="280" height="170" rx="14" fill="#ffffff" stroke="#aad8cd"/>
+  <text x="1620" y="710" class="section teal">MATRIX DISPLAY</text>
+  <text x="1620" y="740" class="subheading">HT16K33 over 100 kHz I²C</text>
+  <text x="1620" y="768" class="small">GP26: SCL; GP22: SDA</text>
+  <text x="1620" y="793" class="small">Core 1: bounded FIFO service</text>
+  <text x="1620" y="816" class="small">Moving row every 500 ms</text>
+  <text x="1620" y="839" class="source">matrix_display.cpp / matrix_i2c.pio</text>
+
+  <text x="350" y="885" class="section">HARDWARE DATA PLANE</text>
+  <text x="1880" y="885" class="small muted" text-anchor="end">Current breadboard circuit | 5 V CPU / SRAM; buffered 3.3 V Pico interface | # = active LOW</text>
+  <rect x="40" y="930" width="390" height="190" rx="14" fill="#ffffff" stroke="#b9c8dc"/>
+  <text x="60" y="967" class="heading">Z84C0020PEC Z80</text>
+  <text x="60" y="1000" class="body">Real CPU; not emulated by the Pico</text>
+  <text x="60" y="1032" class="body">CP/M BIOS + BDOS + CCP + applications</text>
+  <text x="60" y="1063" class="body">Owns A0-A15 and all SRAM writes</text>
+  <text x="60" y="1095" class="small muted">Memory runs directly; only IN/OUT is trapped</text>
+
+  <rect x="520" y="930" width="680" height="190" rx="14" fill="#edf4ff" stroke="#b5cef2"/>
+  <text x="540" y="967" class="heading">Fixed logic + voltage translation</text>
+  <text x="540" y="1000" class="body">AHCT244: CLK / BUSREQ / inhibit + Z80 memory controls</text>
+  <text x="540" y="1032" class="body">AHCT245: Pico to data bus; LVC245: data bus to Pico</text>
+  <text x="540" y="1063" class="body">LVC244: buffered controls + A0/A1/A2/A4 port decode</text>
+  <text x="540" y="1095" class="body">HCT32: WAIT# = IORQ# OR IO_RELEASE; SRAM/OE gating</text>
+
+  <rect x="1320" y="930" width="560" height="190" rx="14" fill="#f3eefb" stroke="#cdbbe7"/>
+  <text x="1340" y="967" class="heading">AS6C1008 SRAM</text>
+  <text x="1340" y="1000" class="body">64 KiB Z80 address space; A16 held LOW</text>
+  <text x="1340" y="1032" class="body">Boot image includes JP FD00h at 0000h</text>
+  <text x="1340" y="1063" class="body">CPU fetches instructions + reads/writes data here</text>
+  <text x="1340" y="1095" class="small muted">SRAM reads inhibited while Pico injects boot instructions</text>
+
+  <path d="M420 790V850H235V930" class="clock" marker-end="url(#clock-arrow)"/>
+  <rect x="42" y="822" width="215" height="31" rx="6" fill="#fff0dc"/>
+  <text x="149" y="844" class="subheading orange" text-anchor="middle">20 MHz Z80 CLK</text>
+  <text x="265" y="922" class="source orange">via AHCT244</text>
+  <path d="M620 790V930" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <rect x="635" y="894" width="600" height="32" rx="6" fill="#f6f8fc"/>
+  <text x="650" y="916" class="small blue">Boot injection / read-back; runtime I/O data + control; bus grants</text>
+  <path d="M430 1010H520" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
+  <text x="475" y="992" class="source" text-anchor="middle">I/O</text>
+  <path d="M1200 1010H1320" class="line" marker-end="url(#arrow)"/>
+  <text x="1260" y="978" class="source" text-anchor="middle">SRAM</text>
+  <text x="1260" y="998" class="source" text-anchor="middle">controls</text>
+  <path d="M235 1120V1153H1600V1120" class="memory" marker-start="url(#purple-arrow)" marker-end="url(#purple-arrow)"/>
+  <rect x="478" y="1138" width="875" height="31" rx="6" fill="#f3eefb"/>
+  <text x="915" y="1160" class="body" text-anchor="middle">Direct SRAM bus: Z80 drives A0-A15; D0-D7 bidirectional. Pico never masters memory.</text>
+
+  <text x="40" y="1215" class="section">ROMLESS COLD BOOT TO CODE EXECUTION</text>
+  <text x="1880" y="1215" class="small muted" text-anchor="end">Core 1 owns USB before loading; storage/network workers remain gated until run</text>
+  <rect x="40" y="1240" width="285" height="230" rx="14" fill="#ffffff" stroke="#b9c8dc"/>
+  <circle cx="70" cy="1271" r="17" fill="#1d5fc0"/><text x="70" y="1277" class="small white" text-anchor="middle">1</text>
+  <text x="98" y="1278" class="subheading">Recover + validate</text>
+  <text x="60" y="1320" class="body">Safe GPIO; CPU held reset.</text>
+  <text x="60" y="1350" class="body">Start USB core 1 + lockout.</text>
+  <text x="60" y="1380" class="body">Recover journal; check CRCs</text>
+  <text x="60" y="1410" class="body">and 64 KiB boot manifest.</text>
+  <text x="60" y="1450" class="source">flash_backend.c</text>
+
+  <rect x="351" y="1240" width="285" height="230" rx="14" fill="#edf4ff" stroke="#b5cef2"/>
+  <circle cx="381" cy="1271" r="17" fill="#1d5fc0"/><text x="381" y="1277" class="small white" text-anchor="middle">2</text>
+  <text x="409" y="1278" class="subheading">Inject + load</text>
+  <text x="371" y="1320" class="body">Slow clocks; SRAM reads off.</text>
+  <text x="371" y="1350" class="body">Pico feeds LD HL,nn then</text>
+  <text x="371" y="1380" class="body">LD (HL),n for each byte.</text>
+  <text x="371" y="1410" class="body">Z80 writes all 65,536 bytes.</text>
+  <text x="371" y="1450" class="source">sram.c / cpu.c</text>
+
+  <rect x="662" y="1240" width="285" height="230" rx="14" fill="#edf4ff" stroke="#b5cef2"/>
+  <circle cx="692" cy="1271" r="17" fill="#1d5fc0"/><text x="692" y="1277" class="small white" text-anchor="middle">3</text>
+  <text x="720" y="1278" class="subheading">Read back + verify</text>
+  <text x="682" y="1320" class="body">Inject LD A,(HL).</text>
+  <text x="682" y="1350" class="body">Pico samples SRAM data;</text>
+  <text x="682" y="1380" class="body">compares every byte.</text>
+  <text x="682" y="1410" class="body">Then isolate + hold RESET#.</text>
+  <text x="682" y="1450" class="source">sram.c / flash_backend.c</text>
+
+  <rect x="973" y="1240" width="285" height="230" rx="14" fill="#ffffff" stroke="#b9c8dc"/>
+  <circle cx="1003" cy="1271" r="17" fill="#1d5fc0"/><text x="1003" y="1277" class="small white" text-anchor="middle">4</text>
+  <text x="1031" y="1278" class="subheading">Initialize runtime</text>
+  <text x="993" y="1320" class="body">Initialize service transport;</text>
+  <text x="993" y="1350" class="body">core 1 already owns USB.</text>
+  <text x="993" y="1380" class="body">Enable core-0 I/O trap.</text>
+  <text x="993" y="1410" class="body">No Wi-Fi/browser prerequisite.</text>
+  <text x="993" y="1450" class="source">main.c: start_cpm()</text>
+
+  <rect x="1284" y="1240" width="285" height="230" rx="14" fill="#fff0dc" stroke="#e5b77c"/>
+  <circle cx="1314" cy="1271" r="17" fill="#c66a15"/><text x="1314" y="1277" class="small white" text-anchor="middle">5</text>
+  <text x="1342" y="1278" class="subheading">Reset + run</text>
+  <text x="1304" y="1320" class="body">Reset Z80 PC to 0000h.</text>
+  <text x="1304" y="1350" class="body">Enable SRAM reads.</text>
+  <text x="1304" y="1380" class="body">Release reset; start Pico's</text>
+  <text x="1304" y="1410" class="body">20 MHz PWM clock.</text>
+  <text x="1304" y="1450" class="source">cpu.c / clock.c</text>
+
+  <rect x="1595" y="1240" width="285" height="230" rx="14" fill="#f3eefb" stroke="#cdbbe7"/>
+  <circle cx="1625" cy="1271" r="17" fill="#7644b5"/><text x="1625" y="1277" class="small white" text-anchor="middle">6</text>
+  <text x="1653" y="1278" class="subheading">Execute CP/M</text>
+  <text x="1615" y="1320" class="body">Fetch JP FD00h from SRAM.</text>
+  <text x="1615" y="1350" class="body">BIOS cold entry; CCP starts.</text>
+  <text x="1615" y="1380" class="body">Apps execute on the Z80;</text>
+  <text x="1615" y="1410" class="body">IN/OUT reaches Pico services.</text>
+  <text x="1615" y="1450" class="source">BIOS / BDOS / CCP / .COM programs</text>
+  <path d="M325 1356H351" class="line" marker-end="url(#arrow)"/>
+  <path d="M636 1356H662" class="line" marker-end="url(#arrow)"/>
+  <path d="M947 1356H973" class="line" marker-end="url(#arrow)"/>
+  <path d="M1258 1356H1284" class="line" marker-end="url(#arrow)"/>
+  <path d="M1569 1356H1595" class="line" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="1492" width="1840" height="65" rx="10" fill="#e9eef6"/>
+  <text x="60" y="1518" class="small"><tspan font-weight="700">Runtime flash programming:</tspan> core 1 requests a core-0 BUSREQ#/BUSACK# grant + SDK flash-safe execution; release after commit. No SRAM bus mastering.</text>
+  <text x="60" y="1543" class="small"><tspan font-weight="700">I/O cycle:</tspan> HCT32 asserts WAIT#; core 0 stops PWM, transfers one byte, releases WAIT#, steps to cycle end, isolates data paths and resumes PWM.</text>
+  <text x="40" y="1590" class="source">Implementation: Stage 10 / core-1 USB migration | Shared Stage 9 main.c. Blue = Z80 I/O and USB queues; teal = network + display; orange = clock; purple = SRAM.</text>
+  <text x="40" y="1617" class="source">20 MHz is the configured nominal Z80 clock, not a claim of combined network timing qualification. Boot failures hold RESET# LOW; trap faults fail closed via reset/watchdog.</text>
+</svg>
