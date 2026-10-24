@@ -1,5 +1,7 @@
 # Z80 ROMless SBC
 
+![Z80 ROMless SBC project banner](docs/docs/en/images/banner.svg)
+
 This repository contains a work-in-progress engineering specification and
 reference implementation for a ROMless Z80 computer supervised by a Raspberry
 Pi Pico 2 W. The design has not yet been physically built or qualified; treat

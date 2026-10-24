@@ -85,6 +85,8 @@ plugins:
 
 theme:
   name: material
+  logo: images/logo-icon.svg
+  favicon: images/logo-icon.svg
   features:
     - navigation.footer
     - navigation.tabs.sticky
