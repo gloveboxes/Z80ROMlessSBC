@@ -1,5 +1,18 @@
 # Phase 8 - Bidirectional I/O and USB Terminal Qualification
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 8 virtual I/O | **Build Pico - Phase 8 virtual I/O** | **Flash Pico - Phase 8 virtual I/O** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-8" data-checklist-label="Phase 8" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

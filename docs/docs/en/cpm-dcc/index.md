@@ -23,11 +23,12 @@ custom BIOS performs the final hardware-dependent transfer.
 
 ## In this section
 
+For the compiler, C library, and CP/M APIs, see the
+[DCC documentation](https://davidly.github.io/dcc/).
+
 - [Image provenance and machine boundary](image-provenance.md)
 - [CP/M memory map and entry points](memory-map.md)
 - [Custom BIOS responsibilities](bios.md)
-- [dcc console and file-I/O paths](console-files.md)
-- [Direct CP/M, BIOS, and port access](direct-access.md)
 - [Compatibility boundaries](boundaries.md)
 - [Validation requirements](validation.md)
 - [Automated end-to-end test](end-to-end.md)

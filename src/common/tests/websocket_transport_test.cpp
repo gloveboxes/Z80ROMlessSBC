@@ -14,17 +14,25 @@
 #include "lwip/tcp.h"
 
 using Result = WebSocketServer::SendResult;
+using CloseReason = WebSocketServer::CloseReason;
 static constexpr char handshake[] =
     "GET / HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
     "Sec-WebSocket-Version: 13\r\n"
     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n";
 
 struct Fixture {
+  struct CloseDetails {
+    uint32_t id;
+    CloseReason reason;
+    int transport_error;
+    WebSocketServer::ReceiveQueueStats queue;
+  };
   // PCBs must outlive the server destructor.
   tcp_pcb first, second, replacement;
   WebSocketServer server{2};
   std::vector<uint32_t> ids, closed, delivered_ids;
   std::vector<std::vector<uint8_t>> messages, pongs;
+  std::vector<CloseDetails> close_details;
   bool abort_on_message = false, abort_on_connect = false, abort_on_pong = false;
   bool reenter_dispatch = false;
 
@@ -42,10 +50,22 @@ struct Fixture {
     });
     server.setCloseCallback([](WebSocketServer& s, uint32_t id) {
       auto& f = *static_cast<Fixture*>(s.getCallbackExtra());
+      assert(!f.close_details.empty() && f.close_details.back().id == id);
       f.closed.push_back(id);
       // A teardown notification must not resurrect a dying connection.
       assert(s.enqueueMessage(id, "x", 1) == Result::closed);
       s.popMessages();
+    });
+    server.setCloseDetailsCallback([](WebSocketServer& s, uint32_t id,
+        CloseReason reason, int transport_error, size_t queued_messages,
+        size_t queued_bytes, size_t peak_messages, size_t peak_bytes,
+        size_t message_limit, size_t byte_limit) {
+      auto& f = *static_cast<Fixture*>(s.getCallbackExtra());
+      f.close_details.push_back({id, reason, transport_error,
+          {queued_messages, queued_bytes, peak_messages, peak_bytes,
+           message_limit, byte_limit}});
+      WebSocketServer::ReceiveQueueStats removed;
+      assert(!s.getReceiveQueueStats(id, removed));
     });
     server.setMessageCallback([](WebSocketServer& s, uint32_t id, const void* data, size_t len) {
       auto& f = *static_cast<Fixture*>(s.getCallbackExtra());
@@ -285,9 +305,15 @@ static void test_limits() {
     assert(f.feed(f.first, frame(2)) == ERR_OK);
   assert(f.feed(f.first, frame(2)) == ERR_OK);
   assert(f.first.closed && f.closed.size() == 1);
+  assert(f.close_details.back().reason == CloseReason::receive_queue_message_limit);
+  assert(f.close_details.back().queue.queuedMessages == 4 &&
+         f.close_details.back().queue.peakQueuedMessages == 5);
   assert(f.feed(f.second, frame(2, std::vector<uint8_t>(40, 'x'))) == ERR_OK);
   assert(f.feed(f.second, frame(2, std::vector<uint8_t>(25, 'x'))) == ERR_OK);
   assert(f.second.closed && f.closed.size() == 2);
+  assert(f.close_details.back().reason == CloseReason::receive_queue_byte_limit);
+  assert(f.close_details.back().queue.queuedBytes == 40 &&
+         f.close_details.back().queue.peakQueuedBytes == 65);
   f.upgrade(f.replacement);
   assert(f.feed(f.replacement, frame(2, std::vector<uint8_t>(65, 'x'))) == ERR_OK);
   assert(f.replacement.closed && f.closed.size() == 3);
@@ -339,6 +365,7 @@ static void test_lifecycle() {
     test_now += 1;
     assert(Fixture::poll(f.first) == ERR_ABRT);
     assert(f.first.aborted && f.closed.size() == 1 && !f.first.error && !f.first.poll);
+    assert(f.close_details.back().reason == CloseReason::close_timeout);
     f.upgrade(f.replacement);
     assert(f.ids.back() != id);
   }
@@ -418,17 +445,79 @@ static void test_disconnects() {
     assert(f.first.recv(f.first.arg, &f.first, nullptr, ERR_OK) == ERR_OK);
   }
   assert(f.first.closed && f.closed.size() == 1 && !f.first.poll);
+  assert(f.close_details.back().reason == CloseReason::peer_tcp_closed);
   f.upgrade(f.second);
   {
     Cyw43Guard guard;
     tcp_abort(&f.second);
   }
   assert(f.second.aborted && f.closed.size() == 2);
+  assert(f.close_details.back().reason == CloseReason::tcp_error &&
+         f.close_details.back().transport_error == ERR_ABRT);
   f.server.popMessages();
   f.upgrade(f.replacement);
   assert(f.server.abort(f.ids.back()));
   f.server.popMessages();
   assert(f.replacement.aborted && f.closed.size() == 3);
+  assert(f.close_details.back().reason == CloseReason::server_abort);
+}
+
+static void test_diagnostics() {
+  // Explicit abort must retain its cause on both cleanup paths, even at t=0.
+  for (bool timer_cleanup : {false, true}) {
+    Fixture f;
+    f.start();
+    f.upgrade(f.first);
+    uint32_t id = f.ids.back();
+    assert(f.server.close(id) && test_now == 0);
+    assert(f.server.abort(id));
+    if (timer_cleanup)
+      assert(Fixture::poll(f.first) == ERR_ABRT);
+    else
+      f.server.popMessages();
+    assert(f.closed.size() == 1 && f.close_details.size() == 1);
+    assert(f.close_details.back().reason == CloseReason::server_abort);
+    assert(f.close_details.back().transport_error == 0);
+  }
+  // A hard error while sending the close frame also precedes the deadline.
+  for (bool output_error : {false, true}) {
+    Fixture f;
+    f.start();
+    f.upgrade(f.first);
+    uint32_t id = f.ids.back();
+    if (output_error)
+      f.first.output_result = ERR_ARG;
+    else
+      f.first.write_result = ERR_ARG;
+    assert(f.server.close(id) == output_error);
+    assert(f.server.abort(id));
+    f.server.popMessages();
+    assert(f.close_details.back().reason ==
+           (output_error ? CloseReason::tcp_output_error : CloseReason::tcp_write_error));
+    assert(f.close_details.back().transport_error == ERR_ARG);
+  }
+  Fixture f;
+  assert(f.server.setReceiveLimits({64, 64, 4, 2}));
+  f.start();
+  f.upgrade(f.first);
+  uint32_t id = f.ids.back();
+  WebSocketServer::ReceiveQueueStats queue;
+  assert(f.server.getReceiveQueueStats(id, queue));
+  assert(queue.messageLimit == 4 && queue.byteLimit == 64 &&
+         queue.queuedMessages == 0 && queue.peakQueuedMessages == 0);
+  for (unsigned i = 0; i < 4; ++i)
+    assert(f.feed(f.first, frame(2, std::vector<uint8_t>(5, 'x'))) == ERR_OK);
+  assert(f.server.getReceiveQueueStats(id, queue));
+  assert(queue.queuedMessages == 4 && queue.queuedBytes == 20 &&
+         queue.peakQueuedMessages == 4 && queue.peakQueuedBytes == 20);
+  f.server.popMessages();
+  assert(f.server.getReceiveQueueStats(id, queue));
+  assert(queue.queuedMessages == 2 && queue.queuedBytes == 10 &&
+         queue.peakQueuedMessages == 4 && queue.peakQueuedBytes == 20);
+  f.server.popMessages();
+  assert(f.server.getReceiveQueueStats(id, queue));
+  assert(queue.queuedMessages == 0 && queue.queuedBytes == 0 &&
+         queue.peakQueuedMessages == 4 && queue.peakQueuedBytes == 20);
 }
 
 int main(int argc, char** argv) {
@@ -436,7 +525,7 @@ int main(int argc, char** argv) {
   const Test tests[] = {{"send", test_send}, {"flush", test_flush}, {"receive", test_receive},
                         {"limits", test_limits}, {"invalid", test_invalid},
                         {"lifecycle", test_lifecycle}, {"http", test_http},
-                        {"disconnects", test_disconnects}};
+                        {"disconnects", test_disconnects}, {"diagnostics", test_diagnostics}};
   unsigned ran = 0;
   for (auto& test : tests) {
     if (argc == 1 || std::strcmp(argv[1], test.name) == 0) {

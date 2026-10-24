@@ -1,4 +1,4 @@
-# 8.11 Phase 10 - WebSocket Terminal Console
+# Phase 10 - WebSocket Terminal Console
 
 <div data-checklist="phase-10" data-checklist-label="Phase 10" markdown="1">
 
@@ -13,6 +13,10 @@
 
 ## First connection and USB provisioning
 
+See [Related projects](../related-projects.md) for building C applications
+with DCC, importing application disks from Altair 8800 AI Edition, and
+deploying them with the Z80ROMlessSBC VS Code disk tasks.
+
 ### 1. Deploy from VS Code
 
 !!! warning "Before any update"
@@ -24,7 +28,8 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 
 | Update | Exact task name | What changes |
 | --- | --- | --- |
-| Firmware | **Flash Pico - Phase 10 WebSocket terminal** | Builds and flashes firmware; preserves disks and ENV settings |
+| Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
+| Firmware and disks | **Build and flash Pico - Phase 10 firmware and disks** | Replaces all flash, including disks and ENV |
 | All disks | **Flash Pico - All disks (A-D)** | Replaces A-D; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
@@ -32,7 +37,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | Blank disk | **Flash Pico - Drive D** | Replaces D only |
 
 - Firmware confirmation: **Proceed**. Disk confirmation: **Replace selected disks**. Both default to **Cancel**.
-- The Phase 10 firmware task force-flashes without waiting for a stop/flush handshake; save CP/M work first. Disk tasks stop/flush safely. All tasks verify written bytes and request reboot.
+- Firmware and disk tasks force-update without a previous-firmware handshake; save CP/M work first. All tasks verify written bytes and request reboot.
 - Disk tasks do not rebuild firmware or applications. Install updated applications into the source disk first.
 - Setup/details: [firmware build and provisioning](../system/firmware-build.md) and [VS Code disk tasks](../tools/pico-tools.md#vs-code-disk-flashing-tasks).
 
@@ -51,6 +56,11 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
     Output: `build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2`.
     These commands build only; they do not deploy. Flash verification proves
     written bytes, not a successful CP/M boot.
+
+Use **Build and flash Pico - Phase 10 firmware and disks** for initial installation or a complete
+firmware/BIOS/disk refresh. It replaces all flash, including disks and ENV,
+and requires USB serial selection. Use the firmware-only task for routine
+firmware changes.
 
 ### 2. Set Wi-Fi over USB
 

@@ -350,7 +350,7 @@ if(TARGET weather_mbedcrypto)
   target_compile_definitions(websocket_transport_test PRIVATE DEBUG_PRINT=0)
   target_compile_options(websocket_transport_test PRIVATE
     -Wall -Wextra -Werror -UNDEBUG)
-  foreach(case send flush receive limits invalid lifecycle http disconnects)
+  foreach(case send flush receive limits invalid lifecycle http disconnects diagnostics)
     add_test(NAME websocket_${case} COMMAND websocket_transport_test ${case})
     set_tests_properties(websocket_${case} PROPERTIES TIMEOUT 5)
   endforeach()

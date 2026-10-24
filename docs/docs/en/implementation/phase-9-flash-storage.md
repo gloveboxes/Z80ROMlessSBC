@@ -1,4 +1,4 @@
-# 8.10 Phase 9 - USB CP/M Terminal and Flash Storage
+# Phase 9 - USB CP/M Terminal and Flash Storage
 
 <div data-checklist="phase-9" data-checklist-label="Phase 9" markdown="1">
 
@@ -12,33 +12,37 @@ The bring-up checkpoint is not the final storage pass gate.
 
 <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 9 prerequisite passed"> **Prerequisite:** The [Phase 8 pass gate](phase-8-virtual-io.md#pass-gate) must pass.
 
-**Install:** No hardware rework. Keep the board's physical
-`PICO_FLASH_SIZE_BYTES` value at 4 MiB; the root `CMakeLists.txt` writes a
-`pico_flash_region.ld` include that limits linked firmware to `0x290000`.
-Leave `PICO_FLASH_ASSUME_CORE1_SAFE` disabled: USB runs on core 1 even during
-journal recovery, so both cores participate in SDK flash lockout. Link the libraries listed in
-the [flash-storage architecture](../system/operation.md#63-onboard-flash-cpm-disk-storage).
-Provision the manifest-backed boot package and all four 320 KiB disk slots
-with the verified `picotool` commands there.
+For building C applications with DCC, importing application disks from
+Altair 8800 AI Edition, and deploying them with VS Code tasks, see
+[Related projects](../related-projects.md). Use the supplied applications for
+this phase's bring-up tests before adding your own.
 
-**Wiring:** Make no hardware changes. Keep the Phase 8 board intact and
-recheck boot inhibit, injected data, and CPU SRAM-control paths if cold-boot
-loading checks fail.
+**Hardware:** Keep the tested Phase 8 wiring unchanged.
 
-**What you are proving:** persistent images survive reboot, load into SRAM
-correctly, and recover safely from interrupted writes. SRAM is volatile
-working memory; Pico flash holds the boot package and the four persistent
-virtual disks. A **cold boot** starts the Pico and reloads SRAM; a CP/M
-**warm boot** restarts its command environment without removing power.
+**Goal:** Boot CP/M over USB and verify persistent disks, SRAM loading, and
+recovery from interrupted writes.
 
-<input type="checkbox" data-checklist-id="storage-provisioning" aria-label="Storage provisioned with host backups and Phase 9 firmware loaded"> The maintained build already sets the linker boundary and flash definitions
-above; you do not need to edit CMake for normal construction. Use the
-[provisioning procedure](../system/firmware-build.md#72-flash-provisioning)
-and retain host backups. Build `z80_stage09_cpm_images` for a complete
-Phase 9 image in `build/cpm-stage09/`; this starts with the CPU held reset
-and does not temporarily boot Phase 10. The existing `z80_cpm_images` target
-still packages Phase 10 in `build/cpm/`. Do not mistake disk image files
-for Pico firmware.
+## Build and provision from VS Code
+
+Open the **Z80ROMlessSBC project folder**, run **Tasks: Run Task** from the
+Command Palette, then choose:
+
+| Task | Result |
+| --- | --- |
+| **Build and flash Pico - Phase 9 firmware** | Builds and force-flashes firmware; preserves disks and ENV |
+| **Build and flash Pico - Phase 9 firmware and disks** | Builds and writes the complete image; replaces disks and ENV |
+
+Choose **Diagnostic** for bring-up tests or **Automatic loader** after those
+tests pass. Both tasks force-update without checking the previous firmware.
+Use firmware and disks for initial installation or a complete BIOS/disk
+refresh; use firmware only for routine updates. See
+[task requirements](../tools/pico-tools.md#deployment-task-requirements).
+
+!!! warning "Before deployment"
+    Save CP/M work. Apply external **+5 V before USB** and keep it applied.
+    Disk tasks overwrite selected drives without backups.
+
+<input type="checkbox" data-checklist-id="storage-provisioning" aria-label="Storage provisioned with host backups and Phase 9 firmware loaded"> Matching Phase 9 firmware, boot package, and disks installed; host backups retained.
 
 !!! warning "Use disposable disk contents for fault tests"
     Complete normal boot/read/write checks before injecting faults. Tests
@@ -78,25 +82,10 @@ the interrupt timer remains deferred. Check these services with the updated
 Drive C applications after the terminal/disk pass gates. Software regression
 tests do not replace physical timing and persistence checks.
 
-For normal use after bring-up, build the separate auto-start firmware:
-
-```sh
-cmake --build build --target z80_stage09_cpm_loader -j
-```
-
-On an already provisioned, matching Phase 9 installation, safely stop/flush
-CP/M, close the serial terminal and enter BOOTSEL using the
-[power and provisioning procedure](../system/firmware-build.md#72-flash-provisioning).
-Then update **only the firmware**:
-
-```sh
-picotool load -v build/src/stage09_flash_storage/z80_stage09_cpm_loader.uf2
-picotool reboot
-```
-
-No boot-package or disk update is needed when switching between these Phase 9
-variants without BIOS changes. The original `z80_stage09_flash_storage`
-diagnostic target remains available and still requires manual `l`/`g`.
+After the bring-up tests pass, run **Build and flash Pico - Phase 9 firmware**
+and choose **Automatic loader**. Switching variants requires only a firmware update when the
+installed boot package and disks already match; the diagnostic variant uses
+manual `l`/`g` commands.
 
 Every Pico reset now:
 
@@ -286,10 +275,6 @@ After that test finishes, follow the
 [power and provisioning procedure](../system/firmware-build.md#72-flash-provisioning).
 Both the Pico firmware and the boot package/Drive A system tracks must come
 from the same new build: the BIOS now emits startup evidence.
-
-```sh
-cmake --build build --target z80_stage09_cpm_images -j
-```
 
 For an already provisioned board, selectively update the Phase 9 UF2,
 `z80boot.pkg`, and matching `drive_a_cpm63k-z80.img` using Section 7's

@@ -10,7 +10,6 @@ extern "C" {
 
 bool z80_network_poll(void);
 uint32_t z80_network_generation(void);
-uint32_t z80_network_max_poll_gap_us(void);
 void z80_network_core1_service(void);
 
 #ifdef __cplusplus

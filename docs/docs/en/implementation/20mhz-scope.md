@@ -1,5 +1,13 @@
 # Continuous 20 MHz CPU/SRAM Scope Test
 
+## VS Code tasks
+
+Choose **Tasks: Run Task**, then **Build Pico - Phase 6 20 MHz scope diagnostic**
+to build only, or **Flash Pico - Phase 6 20 MHz scope diagnostic** to build and
+deploy. The flash task force-enters BOOTSEL; save work and finish running tests
+first. Follow the hardware and power prerequisites below.
+
+
 `z80_stage06_scope_20mhz` is an isolated diagnostic for observing the clock,
 instruction fetches and SRAM activity **without Z80 I/O reports or clock
 pauses**. It is separate from both the full-memory frequency screens and the

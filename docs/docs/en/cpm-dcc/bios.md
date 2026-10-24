@@ -28,5 +28,5 @@ Console ports occupy the aligned `0x00` group and disk ports the aligned
 `0x10` group. The supervisor samples only A0/A1/A2/A4, equivalent to
 `port & 0x17`, so these established addresses remain distinct. A3, A5-A7,
 and the high I/O address byte alias; see the
-[direct-access contract](direct-access.md). Every I/O cycle uses the same trap,
+[I/O port map](../system/io-ports.md). Every I/O cycle uses the same trap,
 so moving the canonical ports would not reduce Pico trap work.

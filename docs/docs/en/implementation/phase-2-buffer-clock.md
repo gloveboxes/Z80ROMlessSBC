@@ -1,5 +1,18 @@
 # Phase 2 - Output Buffer, Fixed Logic, and Clock
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 2 buffers and clock | **Build Pico - Phase 2 buffers and clock** | **Flash Pico - Phase 2 buffers and clock** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-2" data-checklist-label="Phase 2" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

@@ -1,5 +1,18 @@
 # Phase 3 - Control and Port Monitor
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 3 control inputs | **Build Pico - Phase 3 control inputs** | **Flash Pico - Phase 3 control inputs** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-3" data-checklist-label="Phase 3" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

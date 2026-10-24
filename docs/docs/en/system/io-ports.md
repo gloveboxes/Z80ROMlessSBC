@@ -669,5 +669,5 @@ software checks, not bench timing or physical power-cut qualification.
 - [Phase 3](../implementation/phase-3-address-generator.md) owns address wiring.
 - [Phase 8](../implementation/phase-8-virtual-io.md) owns initial trap checks.
 - [Phase 9](../implementation/phase-9-flash-storage.md) owns flash bring-up.
-- [CP/M direct access](../cpm-dcc/direct-access.md) explains `IN`/`OUT`
-  versus BDOS/BIOS interfaces.
+- [DCC documentation](https://davidly.github.io/dcc/) covers port access
+  and CP/M BDOS/BIOS APIs.

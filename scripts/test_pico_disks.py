@@ -97,6 +97,20 @@ class DiskFlashTests(unittest.TestCase):
         native = flash.cpm_images.build_native_drive(self.data, system, bios)
         return package, native
 
+    def test_force_skips_firmware_handshake_but_checks_journal(self) -> None:
+        with (
+            patch.object(flash, "resolve_device", return_value=("PORT", "TEST")),
+            patch.object(flash, "disconnect_picocom"),
+            patch.object(flash, "require_free_port"),
+            patch.object(flash, "open_supervisor") as connection,
+            patch.object(flash, "picotool") as picotool,
+            patch.object(flash, "check_journal") as journal,
+        ):
+            self.assertEqual(flash.prepare_storage(self.arguments(force=True)), "TEST")
+        connection.assert_not_called()
+        picotool.assert_called_once_with(["info", "-F"], "TEST")
+        journal.assert_called_once_with("TEST")
+
     def test_drive_mapping_parser(self) -> None:
         self.assertEqual(flash.drive_image("b=some path/disk=1.dsk"), (
             "B", Path("some path/disk=1.dsk"),

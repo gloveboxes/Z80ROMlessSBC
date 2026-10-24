@@ -46,6 +46,7 @@ static bool send_ok = true;
 static bool close_ok = true;
 static unsigned sends;
 static unsigned flushes;
+static unsigned queue_snapshot_queries;
 static bool flush_ok = true;
 static std::vector<uint8_t> sent;
 static std::vector<std::vector<uint8_t>> sent_frames;
@@ -140,6 +141,15 @@ size_t z80_terminal_supply(uint8_t *data, size_t capacity) {
   return length;
 }
 void WebSocketServer::popMessages() { assert(lock_depth); }
+bool WebSocketServer::getReceiveQueueStats(uint32_t connection, ReceiveQueueStats& stats) {
+  ++queue_snapshot_queries;
+  if ((int32_t)connection != active_connection.load())
+    return false;
+  stats = receive_queue_stats;
+  stats.messageLimit = receive_limits.queuedMessages;
+  stats.byteLimit = receive_limits.queuedBytes;
+  return true;
+}
 bool WebSocketServer::close(uint32_t connection) {
   assert(lock_depth);
   closed.push_back(connection);
@@ -185,7 +195,7 @@ static void assert_buffer_usage() {
          stats.window_frames_peak <= OUTPUT_WINDOW);
   assert(stats.retained_bytes <= stats.retained_bytes_peak &&
          stats.retained_bytes_peak <= OUTPUT_WINDOW * FRAME_BYTES);
-  assert(stats.staged_bytes < FRAME_BYTES && stats.frame_bytes_max <= FRAME_BYTES);
+  assert(stats.staged_bytes < FRAME_BYTES);
 }
 
 static void connect_client(uint32_t id) {
@@ -196,6 +206,14 @@ static void connect_client(uint32_t id) {
 }
 static void close_client(uint32_t id) {
   cyw43_arch_lwip_begin();
+  if (server->close_details_callback) {
+    const auto& queue = server->receive_queue_stats;
+    server->close_details_callback(*server, id, WebSocketServer::CloseReason::peer_tcp_closed,
+                                   0, queue.queuedMessages, queue.queuedBytes,
+                                   queue.peakQueuedMessages, queue.peakQueuedBytes,
+                                   server->receive_limits.queuedMessages,
+                                   server->receive_limits.queuedBytes);
+  }
   on_close(*server, id);
   cyw43_arch_lwip_end();
 }
@@ -232,11 +250,9 @@ static void test_output_coalescing() {
   advance(1);
   outgoing = {'A'};
   unsigned before = sends;
-  z80_web_terminal_stats_t initial_stats = z80_web_terminal_get_stats();
   poll_terminal();
   assert(sends == before + 1 && output_count == 1);
   assert(sent == std::vector<uint8_t>({OUTPUT, 1, 0, 0, 0, 'A'}));
-  assert(z80_web_terminal_get_stats().small_frames == initial_stats.small_frames + 1);
 
   for (unsigned i = 1; i <= 63; ++i) {
     now += 10;
@@ -259,8 +275,6 @@ static void test_output_coalescing() {
   outgoing.assign(FRAME_BYTES, 'F');
   poll_terminal();
   assert(sends == before + 3 && output_count == 3);
-  assert(z80_web_terminal_get_stats().full_frames == initial_stats.full_frames + 1);
-  assert(z80_web_terminal_get_stats().frame_bytes_max == FRAME_BYTES);
   outgoing = {'E'};
   poll_terminal();
   assert(staged_output_length == 1 && output_count == 3);
@@ -274,7 +288,6 @@ static void test_output_coalescing() {
   assert(sent == std::vector<uint8_t>({OUTPUT, 4, 0, 0, 0, 'E'}));
   message(1, OUTPUT_ACK, 4);
   assert(output_count == 0);
-  assert(z80_web_terminal_get_stats().small_frames == initial_stats.small_frames + 2);
 
   advance(1);
   z80_web_terminal_stats_t stats = z80_web_terminal_get_stats();
@@ -298,12 +311,7 @@ static void test_output_coalescing() {
   message(1, OUTPUT_ACK, output_sequence - 1);
   assert(output_count == 0);
   z80_web_terminal_stats_t after = z80_web_terminal_get_stats();
-  assert(after.output_frames - stats.output_frames == 4);
-  assert(after.output_bytes - stats.output_bytes == 256);
   assert(after.retransmits == stats.retransmits);
-  assert(after.window_full_polls > stats.window_full_polls);
-  assert(after.window_wait_max_us == 10000);
-  assert(after.ack_max_us >= 10000);
 }
 
 static void test_complete_redraw() {
@@ -311,7 +319,6 @@ static void test_complete_redraw() {
   sent_frames.clear();
   uint32_t first_sequence = output_sequence;
   unsigned before = sends;
-  z80_web_terminal_stats_t initial_stats = z80_web_terminal_get_stats();
   std::vector<uint8_t> expected(1039);
   for (size_t i = 0; i < expected.size(); ++i)
     expected[i] = (uint8_t)i;
@@ -338,27 +345,8 @@ static void test_complete_redraw() {
   assert(actual == expected && output_sequence == first_sequence + 3);
   z80_web_terminal_stats_t stats = z80_web_terminal_get_stats();
   assert(stats.retained_bytes == 1039 && stats.staged_bytes == 0);
-  assert(stats.output_frames == initial_stats.output_frames + 3);
-  assert(stats.output_bytes == initial_stats.output_bytes + 1039);
-  assert(stats.small_frames == initial_stats.small_frames + 1 &&
-         stats.full_frames == initial_stats.full_frames + 2);
   message(1, OUTPUT_ACK, output_sequence - 1);
   assert(output_count == 0);
-}
-
-static void test_small_frame_boundary() {
-  z80_web_terminal_stats_t before = z80_web_terminal_get_stats();
-  for (size_t bytes : {16, 17}) {
-    advance(1);
-    outgoing.assign(bytes, 'S');
-    poll_terminal();
-    message(1, OUTPUT_ACK, output_sequence - 1);
-  }
-  z80_web_terminal_stats_t after = z80_web_terminal_get_stats();
-  assert(after.output_frames == before.output_frames + 2);
-  assert(after.output_bytes == before.output_bytes + 33);
-  assert(after.small_frames == before.small_frames + 1);
-  assert(after.full_frames == before.full_frames);
 }
 
 static void test_input_ack_recovery() {
@@ -431,6 +419,78 @@ static void test_input_ack_recovery() {
   assert(sends == before && received.empty() && input_sequence == 1);
   close_client(22);
   poll_terminal();
+}
+
+static void test_disconnect_diagnostics() {
+  using Reason = WebSocketServer::CloseReason;
+  assert(!z80_web_terminal_get_stats().rx_queue_active);
+  connect_client(30);
+  server->receive_queue_stats = {2, 10, 4, 20, 64, 1024};
+  unsigned queries = queue_snapshot_queries;
+  z80_web_terminal_poll(true, z80_network_generation());
+  assert(queue_snapshot_queries == queries);
+  auto stats = z80_web_terminal_get_stats();
+  assert(stats.rx_queue_active && stats.rx_queue_messages == 2 &&
+         stats.rx_queue_bytes == 10 && stats.rx_queue_peak_messages == 4 &&
+         stats.rx_queue_peak_bytes == 20 && stats.rx_queue_message_limit == 64 &&
+         stats.rx_queue_byte_limit == 1024);
+  close_client(30);
+  poll_terminal();
+  stats = z80_web_terminal_get_stats();
+  assert(!stats.rx_queue_active && stats.rx_queue_messages == 0 &&
+         stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_PEER_TCP_CLOSED);
+
+  connect_client(31);
+  cyw43_arch_lwip_begin();
+  disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_SEND_ERROR);
+  cyw43_arch_lwip_end();
+  stats = z80_web_terminal_get_stats();
+  assert(stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_UNKNOWN &&
+         stats.last_ws_transport_error == 0 && stats.last_ws_queue_peak_messages == 0);
+
+  // Teardown can arrive after a replacement connects; preserve that session's queue.
+  connect_client(32);
+  server->receive_queue_stats = {1, 5, 2, 10, 64, 1024};
+  stats = z80_web_terminal_get_stats();
+  assert(stats.rx_queue_active && stats.rx_queue_peak_messages == 2);
+  auto finish_close = [](uint32_t id, Reason reason, int error) {
+    cyw43_arch_lwip_begin();
+    server->close_details_callback(*server, id, reason, error,
+                                   3, 15, 9, 45, 64, 1024);
+    on_close(*server, id);
+    cyw43_arch_lwip_end();
+  };
+  finish_close(31, Reason::tcp_write_error, -16);
+  assert(connected && active_connection.load() == 32 &&
+         terminal_stats.rx_queue_messages == 1 &&
+         terminal_stats.rx_queue_peak_messages == 2);
+  stats = z80_web_terminal_get_stats();
+  assert(stats.last_disconnect_reason == Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_SEND_ERROR &&
+         stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_TCP_WRITE_ERROR &&
+         stats.last_ws_transport_error == -16 && stats.last_ws_queue_peak_messages == 9);
+
+  cyw43_arch_lwip_begin();
+  disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
+  cyw43_arch_lwip_end();
+  finish_close(31, Reason::tcp_write_error, -16);
+  stats = z80_web_terminal_get_stats();
+  assert(stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_UNKNOWN);
+  finish_close(32, Reason::server_abort, 0);
+  stats = z80_web_terminal_get_stats();
+  assert(!stats.rx_queue_active && stats.rx_queue_messages == 0 &&
+         stats.last_disconnect_reason == Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR &&
+         stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_SERVER_ABORT &&
+         stats.last_ws_queue_peak_messages == 9);
+
+  connect_client(33);
+  close_client(33);
+  poll_terminal();
+  finish_close(32, Reason::tcp_write_error, -16);
+  stats = z80_web_terminal_get_stats();
+  assert(stats.last_disconnect_reason == Z80_WEB_TERMINAL_DISCONNECT_SOCKET_CLOSED &&
+         stats.last_ws_close_reason == Z80_WEB_TERMINAL_WS_CLOSE_PEER_TCP_CLOSED &&
+         stats.last_ws_transport_error == 0);
+  server->receive_queue_stats = {};
 }
 
 int main() {
@@ -555,10 +615,7 @@ int main() {
   advance(FRAME_RETRY_MS);
   poll_terminal();
   assert(sent == first && output_sequence == 3);
-  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames);
   assert(z80_web_terminal_get_stats().retained_bytes == 2 * FRAME_BYTES);
-  assert(z80_web_terminal_get_stats().full_frames == old_stats.full_frames);
-  assert(z80_web_terminal_get_stats().write_blocks > old_stats.write_blocks);
   message(1, OUTPUT_ACK, 77);
   assert(output_count == 2);
   message(1, OUTPUT_ACK, 1);
@@ -569,7 +626,6 @@ int main() {
   poll_terminal();
   assert(flushes == old_flushes + 1);
   assert(z80_web_terminal_get_stats().flush_failures == old_stats.flush_failures + 1);
-  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames + 2);
   assert(output_count == 2 && output_frames[output_head].sent);
   assert(outgoing.empty() && read_sequence(sent.data() + 1) == 2);
   old_sends = sends;
@@ -610,28 +666,25 @@ int main() {
   assert(output_count == 0 && output_sequence == 1);
   test_output_coalescing();
   test_complete_redraw();
-  test_small_frame_boundary();
   old_stats = z80_web_terminal_get_stats();
   outgoing.assign(FRAME_BYTES, 'T');
   poll_terminal();
   advance(FRAME_RETRY_MS);
   poll_terminal();
-  assert(z80_web_terminal_get_stats().output_frames == old_stats.output_frames + 1);
   assert(z80_web_terminal_get_stats().retransmits == old_stats.retransmits + 1);
-  assert(z80_web_terminal_get_stats().output_bytes == old_stats.output_bytes + FRAME_BYTES);
-  assert(z80_web_terminal_get_stats().full_frames == old_stats.full_frames + 1);
   message(1, OUTPUT_ACK, output_sequence - 1);
-  assert(z80_web_terminal_get_stats().ack_max_us == FRAME_RETRY_MS * 1000);
 
-  // Pings remain five minutes apart; four missed PONGs are tolerated.
+  // Idle PINGs are 30 seconds apart; disconnect after three missed PONGs.
+  advance(HEARTBEAT_MS);
+  poll_terminal();
   for (unsigned miss = 0; miss <= MAX_MISSED_PONGS; ++miss) {
-    advance(PONG_TIMEOUT_MS);
+    advance(HEARTBEAT_MS);
     poll_terminal();
     if (miss < MAX_MISSED_PONGS)
       assert(connected);
   }
   assert(!connected && active_connection.load() == -1 && fake_link == CYW43_LINK_UP);
-  assert(z80_web_terminal_get_stats().timeouts >= 1);
+  assert(z80_web_terminal_get_stats().pong_timeouts >= 1);
   connect_client(2);
   message(2, READY, PROTOCOL_VERSION);
   assert(input_sequence == 1 && output_sequence == 1 && output_count == 0);
@@ -644,7 +697,7 @@ int main() {
   // PONG alone cannot keep unrendered terminal output alive forever.
   outgoing = {'X'};
   poll_terminal();
-  for (unsigned i = 0; i < 3; ++i) {
+  for (unsigned i = 0; i <= OUTPUT_ACK_TIMEOUT_MS / HEARTBEAT_MS; ++i) {
     advance(HEARTBEAT_MS);
     poll_terminal();
     if (connected)
@@ -720,14 +773,8 @@ int main() {
   unsigned offline_sends = sends;
   assert(!poll_network());
   assert(sends == offline_sends && !lock_depth);
-  uint32_t old_poll_gap = z80_network_max_poll_gap_us();
-  now += (uint64_t)old_poll_gap + 123000;
-  assert(!poll_network());
-  assert(z80_network_max_poll_gap_us() == old_poll_gap + 123000);
-  now += (uint64_t)UINT32_MAX + 1;
-  assert(!poll_network());
-  assert(z80_network_max_poll_gap_us() == UINT32_MAX);
   test_input_ack_recovery();
+  test_disconnect_diagnostics();
   assert(terminal_diagnostics.find("[network] Terminal: http://") ==
          std::string::npos);
   delete server;

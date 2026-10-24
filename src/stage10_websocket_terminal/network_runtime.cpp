@@ -22,9 +22,6 @@ absolute_time_t address_deadline = nil_time;
 bool time_client_started;
 z80_network_config_t active_config = {};
 uint32_t network_generation;
-bool network_polled;
-uint64_t last_network_poll_us;
-uint32_t max_network_poll_gap_us;
 
 void clear_address() {
   ++network_generation;
@@ -72,22 +69,9 @@ extern "C" uint32_t z80_network_generation(void) {
   return network_generation;
 }
 
-extern "C" uint32_t z80_network_max_poll_gap_us(void) {
-  return __atomic_load_n(&max_network_poll_gap_us, __ATOMIC_RELAXED);
-}
-
 extern "C" bool z80_network_poll(void) {
   if (!z80_wireless_init())
     return false;
-  uint64_t now = time_us_64();
-  if (network_polled) {
-    uint64_t elapsed = now - last_network_poll_us;
-    uint32_t gap = elapsed > UINT32_MAX ? UINT32_MAX : (uint32_t)elapsed;
-    if (gap > __atomic_load_n(&max_network_poll_gap_us, __ATOMIC_RELAXED))
-      __atomic_store_n(&max_network_poll_gap_us, gap, __ATOMIC_RELAXED);
-  }
-  network_polled = true;
-  last_network_poll_us = now;
   cyw43_arch_poll();
   const z80_network_config_t *config = z80_network_config();
   if (config == nullptr) {

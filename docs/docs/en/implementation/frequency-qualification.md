@@ -1,157 +1,19 @@
-# 8.12 Frequency Qualification
+# Frequency Qualification (Optional)
 
-This procedure qualifies the breadboard prototype. A PCB result is a separate
-qualification record, not evidence that a breadboard has passed.
+The project breadboard has already demonstrated 20 MHz operation. See the
+[20 MHz oscilloscope measurement](../hardware/oscilloscope.md#20-mhz-no-io-clock-measurement)
+for the recorded clock evidence and capture procedure. Phases 9 and 10 use
+this 20 MHz configuration after SRAM loading and verification.
 
-**Prerequisite:** The [Phase 10 pass gate](phase-10-websocket.md#pass-gate) must pass at
-1 MHz before testing any higher rate.
+Additional frequency testing is optional. Complete the normal phase tests;
+use this check if you change the wiring, components, or clock configuration,
+or want measurements from your own board.
 
-For earlier bring-up without CP/M, disks or networking, use the separate
-[Phase 6 PWM memory screening](phase-6-sram.md#pwm-speed-screening-after-the-slow-test)
-application. It tests both halves of the accessible SRAM at each distinct
-speed for at least 60 seconds of execution-phase time, with bounded progress
-checks and a stop at the first failure. A screening PASS does not satisfy
-this page's integrated-system prerequisites or timing-evidence requirements.
-The existing Phase 8/10 RAM/terminal checker repeatedly checks address 0100;
-it must not be described as a full-range PWM memory test.
-The separately built
-[8-12 MHz experimental screen](phase-6-sram.md#experimental-8-12-mhz-screening)
-continues the same write/read/compare workload beyond the normal 8 MHz
-firmware limit, without changing that limit for normal phases. Its four
-distinct nominal rates are 8, 9, 10.285714 and 12 MHz. These are exploratory
-functional results, not an extension of this qualification procedure.
-The [exact 14 MHz screening variant](phase-6-sram.md#exact-14-mhz-experimental-screening)
-alone sets the Pico system clock to 140 MHz before USB/Z80 execution,
-then tests nominal 11.666667 and 14 MHz PWM. It keeps 50% duty without
-fractional-divider dither or exceeding a 14 MHz request. Record this
-different supervisor clock; do not apply the 144 MHz table below to it.
-The [exact 15 MHz variant](phase-6-sram.md#exact-15-mhz-experimental-screening)
-similarly uses a separate 150 MHz supervisor-clock startup, tests a
-12.5 MHz baseline and nominal 15 MHz, and leaves prior targets unchanged.
-Its results also require the supervisor clock to be recorded and are
-exploratory functional evidence only.
-The [exact 16 MHz variant](phase-6-sram.md#exact-16-mhz-experimental-screening)
-uses a 128 MHz supervisor clock to test nominal 12.8 and 16 MHz with the
-same self-validating workload. Earlier targets remain unchanged; this
-variant likewise does not extend the normal system qualification.
-The [17-20 MHz screening sequence](phase-6-sram.md#exact-17-18-19-and-20-mhz-screening)
-uses four separate single-rate builds, with supervisor clocks of
-136/144/114/120 MHz respectively. Advance only after each point completes
-its full write/read/compare screening without error; stop at the first
-failure. The Z80's 20 MHz component rating is not a system qualification.
+1. Run the [Phase 6 SRAM screening](phase-6-sram.md#pwm-speed-screening-after-the-slow-test)
+   or [20 MHz soak test](20mhz-soak.md) appropriate to your setup.
+2. Measure the clock using the [oscilloscope guide](../hardware/oscilloscope.md).
+3. Repeat the applicable Phase 9/10 boot, disk, and terminal checks. Record
+   the measured frequency, firmware revision, and any errors.
 
-**Qualification is measurement, not overclocking until CP/M looks stable.**
-A clean terminal session can miss rare bus errors. Keep a passing 1 MHz
-baseline and change only the clock setting between tests, not the wiring,
-power arrangement, and probe layout at the same time.
-
-Use the [MCP acceptance evidence workflow](../hardware/oscilloscope.md#mcp-acceptance-runner) for Phase 2 and Phase 8 baseline records. Its automated result is not a frequency qualification. Separate intentional I/O clock pauses from periodic jitter, use actual configured rates, and record firmware/probe/scope metadata and receiving-pin margins. Repeat latency/throughput measurements after changing injection or trap code.
-
-**Setup time** is how long data must be valid before the CPU samples it;
-**hold time** is how long it must remain valid afterward. Measure at the
-receiving pin relative to the specified sampling edge. A waveform that
-eventually reaches HIGH can still arrive too late. Use the scope for these
-small timing margins, not just a logic-analyzer byte decode.
-
-Begin only after CP/M has flushed all disks. Use USB `+`/`-` to select
-each frequency under the firmware's BUSREQ#/BUSACK# and core-1
-flash-quiescence interlocks.
-
-The clock generator uses integer PWM dividers and even period counts so every
-edge remains at a fixed `clk_sys` position and duty cycle is exactly 50%. It does
-not use the PWM fractional divider, whose dither can produce alternating edge
-positions on an oscilloscope. Some requested 500 kHz steps cannot be generated
-exactly from the fixed system clock; the generator selects the closest stable
-rate **at or below the request**, never above it. The firmware prints both `clock_requested` and
-`clock_actual`; use the latter for timing and frequency evidence, and record
-both values.
-
-The firmware configures the Pico system clock to 144 MHz during SDK startup,
-below the RP2350's 150 MHz rated maximum. An 8 MHz request selects exactly
-8 MHz nominally (divider 1, count 18); HIGH and LOW each last nine system-clock
-ticks. Crystal tolerance and PLL jitter still require measurement. The system
-clock is not retuned while running, and the Z80 PWM uses no fractional divider.
-The independent USB PLL retains its 48 MHz clock.
-
-The `+`/`-` commands change the **requested** rate by 500 kHz, not necessarily
-the generated rate. At 144 MHz, these are the nominal PWM results:
-
-| Requested MHz | Actual MHz (rounded) | PWM period count |
-| ---: | ---: | ---: |
-| 1.0 | 1.000000 | 144 |
-| 1.5 | 1.500000 | 96 |
-| 2.0 | 2.000000 | 72 |
-| 2.5 | 2.482759 | 58 |
-| 3.0 | 3.000000 | 48 |
-| 3.5 | 3.428571 | 42 |
-| 4.0 | 4.000000 | 36 |
-| 4.5 | 4.500000 | 32 |
-| 5.0 | 4.800000 | 30 |
-| 5.5 | 5.142857 | 28 |
-| 6.0 | 6.000000 | 24 |
-| 6.5 | 6.000000 | 24 |
-| 7.0 | 6.545455 | 22 |
-| 7.5 | 7.200000 | 20 |
-| 8.0 | 8.000000 | 18 |
-
-Every row uses integer divider 1. The 6.5 MHz request repeats the 6 MHz
-waveform; it is not a new qualification point. Record both requested settings,
-but do not count duplicate actual rates as independent speed evidence. The
-last transition is 7.2 to 8 MHz, not a 500 kHz increase. Qualify every distinct
-actual rate and stop increasing the request after any failure.
-
-Phase 10's generated address-test program and RAM checker report on masked
-port `06`; the address-test completion marker uses `05`. These diagnostic ports
-do not collide with terminal `00/01` or disk `10-14`. An `E1` RAM-error report
-must increment the error counter and prevent an hour-test PASS.
-
-- **Step sequence:** Test 2 MHz, then increase the request in 500 kHz steps to
-  6 MHz. If and only if 6 MHz passes with margin, continue
-  in requested 500 kHz steps to 8 MHz, using the actual rates above.
-  Treat actual rates above 6 MHz as experimental on the
-  breadboard, not as a required design target.
-- **Functional checks at each step:** Run `a` for CPU SRAM
-  readback/address activity and `h` for the one-hour self-checking
-  memory loop plus continuous terminal IN/OUT while measuring stop
-  latency.
-- **Address-pattern captures:** Use requested settings of 1, 2, 3, 4, 5,
-  and 6 MHz, corresponding to nominal actual rates of 1, 2, 3, 4, **4.8**,
-  and 6 MHz, plus every distinct experimental rate in the table above.
-  Label captures with both the requested setting and measured frequency;
-  passing the 5 MHz setting qualifies 4.8 MHz, not 5 MHz.
-  Apply address patterns 0x0000, 0xFFFF, 0x5555,
-  0xAAAA, walking one, and walking zero while capturing A0, A7, A8, and
-  A15 at the SRAM pins. Capture CLK, MREQ#, RD#/WR#, SRAM CE#/OE#/WE#,
-  and D0-D7 as well; require valid read data before the Z80 setup
-  deadline and every SRAM write pulse to meet the 45 ns minimum after
-  propagation through the AHCT244.
-- **WAIT# handshake, every I/O cycle:** Require WAIT# LOW before the
-  Z80 sampling edge, WAIT# HIGH only after IO_RELEASE and the selected data
-  path are valid, and no WAIT# reassertion until IORQ# and RD#/WR# are inactive.
-  Capture stepped completion, isolation/rearming, and the first resumed PWM
-  pulse. Require at least 1 us of settled CLK LOW after each manual falling
-  edge before the next step, and no step into the following memory cycle while
-  either data path is enabled. Both actual data OEs must be HIGH before PWM
-  resumes; measure the isolation interval as well as the GPIO requests.
-- **Oscilloscope evidence:** Use the DHO814 groups in the
-  [oscilloscope capture plan](../hardware/oscilloscope.md#four-channel-connections-and-expected-results)
-  and repeat the listed alternatives for each analogue signal.
-- **Logic-analyzer evidence:** At every tested rate, also save the
-  DSLogic Plus
-  [Group A, B, C-IN, C-OUT, and D captures](../hardware/logic-analyzer.md)
-  using 16-channel, 100 MHz Buffer Mode. Do not infer whole-bus
-  ordering from four analogue channels, and do not imply that the
-  16-channel analyzer captured the complete address bus, complete data
-  bus, and controls simultaneously.
-
-The qualified frequency is the highest error-free tested step for which the
-DSLogic capture set proves digital ordering and the DHO814 proves memory margin
-and the complete WAIT/clock-stop handshake. Report actual rates above 6 MHz separately as
-experimental. Do not claim any rate without
-equivalent timing evidence and repeated cold/runtime tests.
-
-Record the requested and reported clock, firmware revision, rail voltages,
-functional error counts, worst measured timing margins, and capture filenames
-for each step. On any failed criterion, stop increasing the clock and return
-to the last fully passing rate. After changing wiring, repeat qualification;
-the old result describes the old physical build.
+A clock capture confirms frequency; functional tests confirm operation under
+the tested workload. If a check fails, resolve it before continuing.

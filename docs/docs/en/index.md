@@ -22,6 +22,9 @@ qualification and timing margins require measurements on your build.
 
 ## Start building
 
+Install the software listed in [Toolchain](toolchain.md), including the
+complete Arm compiler, Python, Pico SDK and USB utilities.
+
 1. Check the [parts inventory](hardware/inventory.md) and read the
    [breadboard and meter basics](hardware/construction.md#before-you-wire).
 2. Follow the [implementation plan](implementation/index.md) in order, from

@@ -19,6 +19,8 @@ copyright: >-
 
 nav:
   - Introduction: en/index.md
+  - Toolchain: en/toolchain.md
+  - Related projects: en/related-projects.md
   - Hardware design:
     - Overview: en/hardware/index.md
     - 0 - Inventory: en/hardware/inventory.md
@@ -57,8 +59,6 @@ nav:
       - Image provenance: en/cpm-dcc/image-provenance.md
       - Memory map: en/cpm-dcc/memory-map.md
       - Custom BIOS: en/cpm-dcc/bios.md
-      - Console and file I/O: en/cpm-dcc/console-files.md
-      - Direct access: en/cpm-dcc/direct-access.md
       - Compatibility boundaries: en/cpm-dcc/boundaries.md
       - Validation requirements: en/cpm-dcc/validation.md
       - End-to-end test: en/cpm-dcc/end-to-end.md

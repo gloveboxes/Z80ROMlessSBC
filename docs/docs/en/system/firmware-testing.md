@@ -219,6 +219,9 @@ commands. Neither host model replaces the Pico/physical-board gate.
 
 ## 6. Cross-compile the real Pico firmware
 
+Follow [Toolchain](../toolchain.md) for host prerequisites and complete Arm
+compiler installation before configuring a firmware build.
+
 Install a complete
 [Arm GNU bare-metal toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 for your host, including Newlib. Select the `arm-none-eabi` toolchain; a

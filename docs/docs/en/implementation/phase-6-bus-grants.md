@@ -1,5 +1,18 @@
 # Phase 6 - CPU Reset, Fetch and Bus Grants
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 6 bus grants | **Build Pico - Phase 6 bus grants** | **Flash Pico - Phase 6 bus grants** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-6-bus-grants" data-checklist-label="Phase 6 bus grants" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

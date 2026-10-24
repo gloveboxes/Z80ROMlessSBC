@@ -277,6 +277,10 @@ def main() -> int:
         help="repeat DRIVE=IMAGE for each selected A-D slot; native images or Altair B-D sources",
     )
     disks.add_argument("--no-reboot", action="store_true")
+    disks.add_argument(
+        "--force", action="store_true",
+        help="skip the running firmware stop/flush handshake; retain journal and image checks",
+    )
     prepare = commands.add_parser(
         "prepare", help="disconnect picocom, stop/flush, enter BOOTSEL and check journal; no writes"
     )

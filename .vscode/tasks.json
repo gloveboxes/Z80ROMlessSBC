@@ -5,7 +5,7 @@
 			"label": "Flash Pico - Phase 6 20 MHz scope diagnostic",
 			"detail": "Build and force flash the isolated no-I/O CPU/SRAM scope diagnostic without waiting for a firmware stop handshake; CP/M disks and ENV are preserved.",
 			"type": "shell",
-			"command": "if [ \"${input:picoPhase6FlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build/scope20 -G Ninja -DPICO_BOARD=pico2_w && cmake --build build/scope20 --target z80_stage06_scope_20mhz -j && python scripts/pico_flash.py firmware build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2 --power-confirmed --force",
+			"command": "if [ \"${input:picoPhase6FlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_build.py --build-dir build/scope20 --target z80_stage06_scope_20mhz && python scripts/pico_flash.py firmware build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2 --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -16,13 +16,15 @@
 				"showReuseMessage": false,
 				"clear": true
 			},
-			"problemMatcher": ["$gcc"]
+			"problemMatcher": [
+				"$gcc"
+			]
 		},
 		{
-			"label": "Flash Pico - Phase 10 WebSocket terminal",
+			"label": "Build and flash Pico - Phase 10 firmware",
 			"detail": "Build and force flash firmware without waiting for a stop handshake; preserves CP/M disks and ENV.",
 			"type": "shell",
-			"command": "if [ \"${input:picoFlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w && cmake --build build --target z80_stage10_websocket_terminal -j && python scripts/pico_flash.py firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2 --power-confirmed --force",
+			"command": "if [ \"${input:picoFlashSafety}\" != \"Proceed\" ]; then printf '%s\\n' 'Flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_build.py --build-dir build --target z80_stage10_websocket_terminal && python scripts/pico_flash.py firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2 --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -33,13 +35,15 @@
 				"showReuseMessage": false,
 				"clear": true
 			},
-			"problemMatcher": ["$gcc"]
+			"problemMatcher": [
+				"$gcc"
+			]
 		},
 		{
 			"label": "Flash Pico - All disks (A-D)",
-			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; firmware, boot and ENV are preserved.",
+			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; firmware, boot and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=src/disks/source-altair/bdsc-v1.60.dsk --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=src/disks/source-altair/bdsc-v1.60.dsk --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -54,9 +58,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive A",
-			"detail": "Regenerate native A from src/disks/source-altair/cpm63k.dsk; installed boot compatibility is checked. No backups.",
+			"detail": "Regenerate native A from src/disks/source-altair/cpm63k.dsk; installed boot compatibility is checked. No backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -71,9 +75,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive B",
-			"detail": "Replace only B from src/disks/source-altair/bdsc-v1.60.dsk (BDS C), converted and verified at flash time; no backups.",
+			"detail": "Replace only B from src/disks/source-altair/bdsc-v1.60.dsk (BDS C), converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive B=src/disks/source-altair/bdsc-v1.60.dsk --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive B=src/disks/source-altair/bdsc-v1.60.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -88,9 +92,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive C",
-			"detail": "Replace only C from src/disks/source-altair/escape-posix.dsk, converted and verified at flash time; no backups.",
+			"detail": "Replace only C from src/disks/source-altair/escape-posix.dsk, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=src/disks/source-altair/escape-posix.dsk --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=src/disks/source-altair/escape-posix.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -105,9 +109,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive D",
-			"detail": "Replace only D from src/disks/source-altair/blank.dsk, converted and verified at flash time; no backups.",
+			"detail": "Replace only D from src/disks/source-altair/blank.dsk, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/source-altair/blank.dsk --power-confirmed",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -136,6 +140,854 @@
 			},
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "Build Pico - Phase 1 supervisor",
+			"detail": "Build only. Output: build/src/stage01_supervisor/z80_stage01_supervisor.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage01_supervisor",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 1 supervisor",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage01_supervisor && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage01_supervisor/z80_stage01_supervisor.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 2 buffers and clock",
+			"detail": "Build only. Output: build/src/stage02_buffers_clock/z80_stage02_buffers_clock.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage02_buffers_clock",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 2 buffers and clock",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage02_buffers_clock && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage02_buffers_clock/z80_stage02_buffers_clock.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 3 control inputs",
+			"detail": "Build only. Output: build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage03_control_inputs",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 3 control inputs",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage03_control_inputs && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 4 address bus",
+			"detail": "Build only. Output: build/src/stage04_address_bus/z80_stage04_address_bus.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage04_address_bus",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 4 address bus",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage04_address_bus && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage04_address_bus/z80_stage04_address_bus.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 4 reset meter",
+			"detail": "Build only. Output: build/src/stage02_buffers_clock/z80_reset_meter.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_reset_meter",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 4 reset meter",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_reset_meter && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage02_buffers_clock/z80_reset_meter.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 5 data bus",
+			"detail": "Build only. Output: build/src/stage05_data_bus/z80_stage05_data_bus.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage05_data_bus",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 5 data bus",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage05_data_bus && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage05_data_bus/z80_stage05_data_bus.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 SRAM loader",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_sram_loader.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_sram_loader",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 SRAM loader",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_sram_loader && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_sram_loader.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 bus grants",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_bus_grant.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_bus_grant",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 bus grants",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_bus_grant && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_bus_grant.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 stepped loader",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_step_loader.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_step_loader",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 stepped loader",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_step_loader && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_step_loader.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM memory",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM memory",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 experimental 8-12 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_experimental.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_experimental",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 experimental 8-12 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_experimental && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_experimental.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 14 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_14mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_14mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 14 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_14mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_14mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 15 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_15mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_15mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 15 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_15mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_15mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 16 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_16mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_16mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 16 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_16mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_16mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 17 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_17mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_17mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 17 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_17mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_17mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 18 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_18mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_18mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 18 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_18mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_18mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 19 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_19mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_19mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 19 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_19mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_19mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 PWM 20 MHz",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_pwm_memory_20mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_20mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 PWM 20 MHz",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_pwm_memory_20mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_pwm_memory_20mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 one-hour 20 MHz soak",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_math_soak_20mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_math_soak_20mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 one-hour 20 MHz soak",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_math_soak_20mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_math_soak_20mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 14-hour 20 MHz soak",
+			"detail": "Build only. Output: build/src/stage06_sram_dma/z80_stage06_math_soak_14h_20mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage06_math_soak_14h_20mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 6 14-hour 20 MHz soak",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage06_math_soak_14h_20mhz && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage06_sram_dma/z80_stage06_math_soak_14h_20mhz.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 8 virtual I/O",
+			"detail": "Build only. Output: build/src/stage08_virtual_io/z80_stage08_virtual_io.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build --target z80_stage08_virtual_io",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Flash Pico - Phase 8 virtual I/O",
+			"detail": "Build and force-flash firmware without checking the running phase; preserves disks and ENV.",
+			"type": "shell",
+			"command": "if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_stage08_virtual_io && .venv-flash/bin/python scripts/pico_flash.py firmware build/src/stage08_virtual_io/z80_stage08_virtual_io.uf2 --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and flash Pico - Phase 9 firmware",
+			"detail": "Select diagnostic or automatic loader; build and force-flash firmware only, preserving disks and ENV.",
+			"type": "shell",
+			"command": "case \"${input:picoPhase9Variant}\" in \"Diagnostic\") phase9_target=z80_stage09_flash_storage; phase9_images=z80_stage09_cpm_images; phase9_output=cpm-stage09 ;; \"Automatic loader\") phase9_target=z80_stage09_cpm_loader; phase9_images=z80_stage09_cpm_loader_images; phase9_output=cpm-stage09-loader ;; *) exit 1 ;; esac; if [ \"${input:picoBootselSafety}\" != \"Flash firmware\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target \"$phase9_target\" && .venv-flash/bin/python scripts/pico_flash.py firmware \"build/src/stage09_flash_storage/$phase9_target.uf2\" --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and flash Pico - Phase 9 firmware and disks",
+			"detail": "Select diagnostic or automatic loader; build and force-flash complete image, replacing all flash including disks and ENV.",
+			"type": "shell",
+			"command": "case \"${input:picoPhase9Variant}\" in \"Diagnostic\") phase9_target=z80_stage09_flash_storage; phase9_images=z80_stage09_cpm_images; phase9_output=cpm-stage09 ;; \"Automatic loader\") phase9_target=z80_stage09_cpm_loader; phase9_images=z80_stage09_cpm_loader_images; phase9_output=cpm-stage09-loader ;; *) exit 1 ;; esac; if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target \"$phase9_images\" && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v \"build/$phase9_output/z80romless-flash.bin\" -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and flash Pico - Phase 10 firmware and disks",
+			"detail": "Force BOOTSEL entry; no running-phase check. Replaces all flash including disks, journal and ENV; no backups.",
+			"type": "shell",
+			"command": "if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then exit 1; fi; python3 scripts/pico_build.py --build-dir build --target z80_cpm_images && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v build/cpm/z80romless-flash.bin -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Pico - Phase 6 20 MHz scope diagnostic",
+			"detail": "Build only. Output: build/scope20/src/stage06_sram_dma/z80_stage06_scope_20mhz.uf2",
+			"type": "shell",
+			"command": "python3 scripts/pico_build.py --build-dir build/scope20 --target z80_stage06_scope_20mhz",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
 		}
 	],
 	"inputs": [
@@ -143,22 +995,76 @@
 			"id": "picoPhase6FlashSafety",
 			"type": "pickString",
 			"description": "Confirm it is safe to interrupt the current firmware, all fitted ICs have external +5 V before USB, and you intend to force replace firmware with the Phase 6 scope diagnostic.",
-			"options": ["Cancel", "Proceed"],
+			"options": [
+				"Cancel",
+				"Proceed"
+			],
 			"default": "Cancel"
 		},
 		{
 			"id": "picoDiskFlashSafety",
 			"type": "pickString",
 			"description": "Selected disks will be overwritten with no backups. Confirm external +5 V is applied before USB and CP/M work is saved.",
-			"options": ["Cancel", "Replace selected disks"],
+			"options": [
+				"Cancel",
+				"Replace selected disks"
+			],
 			"default": "Cancel"
 		},
 		{
 			"id": "picoFlashSafety",
 			"type": "pickString",
 			"description": "Confirm external +5 V is applied before USB, CP/M work is saved, and it is safe to force-replace the current firmware with Phase 10.",
-			"options": ["Cancel", "Proceed"],
+			"options": [
+				"Cancel",
+				"Proceed"
+			],
 			"default": "Cancel"
+		},
+		{
+			"id": "picoUsbSerial",
+			"type": "promptString",
+			"description": "USB serial number of the intended Pico (picotool info in BOOTSEL)."
+		},
+		{
+			"id": "picoBootselSafety",
+			"type": "pickString",
+			"description": "Confirm phase hardware prerequisites, saved work, and safe interruption for force flashing. No running-phase check. Populated board: external +5 V before USB; initial Phase 1: Pico off breadboard.",
+			"options": [
+				"Cancel",
+				"Flash firmware"
+			],
+			"default": "Cancel"
+		},
+		{
+			"id": "picoProvisionSafety",
+			"type": "pickString",
+			"description": "ALL flash, disks and ENV will be replaced without backups. Confirm phase prerequisites, saved work, safe force interruption and external +5 V before USB.",
+			"options": [
+				"Cancel",
+				"Replace all flash"
+			],
+			"default": "Cancel"
+		},
+		{
+			"id": "picoSystemSafety",
+			"type": "pickString",
+			"description": "Firmware, boot package and drive A will be replaced without backups. Confirm saved work, safe force interruption and external +5 V before USB.",
+			"options": [
+				"Cancel",
+				"Replace system and drive A"
+			],
+			"default": "Cancel"
+		},
+		{
+			"id": "picoPhase9Variant",
+			"type": "pickString",
+			"description": "Phase 9 firmware: diagnostic for bring-up tests; automatic loader after tests pass.",
+			"options": [
+				"Diagnostic",
+				"Automatic loader"
+			],
+			"default": "Diagnostic"
 		}
 	]
 }

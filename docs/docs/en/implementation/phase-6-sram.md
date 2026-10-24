@@ -1,5 +1,28 @@
 # Phase 6 - Z80-Assisted SRAM Loading
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 6 SRAM loader | **Build Pico - Phase 6 SRAM loader** | **Flash Pico - Phase 6 SRAM loader** |
+| Phase 6 stepped loader | **Build Pico - Phase 6 stepped loader** | **Flash Pico - Phase 6 stepped loader** |
+| Phase 6 PWM memory | **Build Pico - Phase 6 PWM memory** | **Flash Pico - Phase 6 PWM memory** |
+| Phase 6 experimental 8-12 MHz | **Build Pico - Phase 6 experimental 8-12 MHz** | **Flash Pico - Phase 6 experimental 8-12 MHz** |
+| Phase 6 PWM 14 MHz | **Build Pico - Phase 6 PWM 14 MHz** | **Flash Pico - Phase 6 PWM 14 MHz** |
+| Phase 6 PWM 15 MHz | **Build Pico - Phase 6 PWM 15 MHz** | **Flash Pico - Phase 6 PWM 15 MHz** |
+| Phase 6 PWM 16 MHz | **Build Pico - Phase 6 PWM 16 MHz** | **Flash Pico - Phase 6 PWM 16 MHz** |
+| Phase 6 PWM 17 MHz | **Build Pico - Phase 6 PWM 17 MHz** | **Flash Pico - Phase 6 PWM 17 MHz** |
+| Phase 6 PWM 18 MHz | **Build Pico - Phase 6 PWM 18 MHz** | **Flash Pico - Phase 6 PWM 18 MHz** |
+| Phase 6 PWM 19 MHz | **Build Pico - Phase 6 PWM 19 MHz** | **Flash Pico - Phase 6 PWM 19 MHz** |
+| Phase 6 PWM 20 MHz | **Build Pico - Phase 6 PWM 20 MHz** | **Flash Pico - Phase 6 PWM 20 MHz** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-6" data-checklist-label="Phase 6" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

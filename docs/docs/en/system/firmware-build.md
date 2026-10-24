@@ -87,6 +87,22 @@ Build the target in the table for your phase. Its UF2 is written to
 `build/src/<source-directory-name>/<target>.uf2`; for example, Phase 3 uses
 `build/src/stage03_mcp23s17/z80_stage03_control_inputs.uf2`.
 
+## VS Code deployment options
+
+Use **Tasks: Run Task** in the Z80ROMlessSBC workspace. Each implementation
+phase lists its **Build Pico - …** and **Flash Pico - …** tasks.
+
+| Phase | Firmware only | Firmware and disks |
+| --- | --- | --- |
+| 9 | **Build and flash Pico - Phase 9 firmware** | **Build and flash Pico - Phase 9 firmware and disks** |
+| 10 | **Build and flash Pico - Phase 10 firmware** | **Build and flash Pico - Phase 10 firmware and disks** |
+
+Phase 9 prompts for **Diagnostic** or **Automatic loader**. Firmware-only
+tasks preserve disks and ENV; firmware-and-disks tasks replace the complete
+flash image, including disks and ENV. All force-update without checking the
+previous firmware. See [task requirements](../tools/pico-tools.md#deployment-task-requirements).
+The commands below remain available for manual builds and provisioning.
+
 ## 7.1 Firmware and CP/M Build
 
 The repository implements the cumulative phase firmware under `src/`.
@@ -99,6 +115,8 @@ provisionable images.
 
 Install CMake, Ninja, Python 3.11 or newer, `picotool`, `z80asm`, and
 `cpmtools` (`cpmcp` and `cpmrm` install the native AUTORUN utility into drive A).
+See [Toolchain](../toolchain.md) for downloads, installation steps on
+macOS/Linux/Windows, runtime verification and platform-specific limits.
 The firmware needs a
 complete Arm GNU bare-metal toolchain with Newlib; the Homebrew compiler alone
 does not provide the required runtime. Install the
@@ -116,6 +134,16 @@ cmake -S . -B build -G Ninja \
   -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk"
 cmake --build build --target z80_stage01_supervisor -j
 ```
+
+The VS Code firmware build tasks use `scripts/pico_build.py` to find a
+complete toolchain without pinning a release. It checks `ARM_GNU_TOOLCHAIN_BIN`
+first, then preserves the compiler in an existing build's CMake cache. For a
+new build, it searches `PATH`, skipping compilers without Newlib, followed by
+`~/.local/share/arm-gnu-toolchain*/bin` (newest version first). It checks both
+the C and C++ runtime libraries. For another installation location, set
+`ARM_GNU_TOOLCHAIN_BIN` to its `bin` directory in the environment used to start
+VS Code. Changing an existing build's compiler requires a new build directory
+or an explicit `cmake --fresh` configure with the desired toolchain on `PATH`.
 
 Phase 10 opens the unified system configuration shell over USB when Wi-Fi
 credentials are missing; **Ctrl-] c** opens it later. The old Ctrl-] n entry

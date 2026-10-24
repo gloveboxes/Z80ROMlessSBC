@@ -406,26 +406,76 @@ static void print_status(bool requested) {
     z80_matrix_print_status();
   }
   z80_web_terminal_stats_t web = z80_web_terminal_get_stats();
-  printf("[web] frames=%lu bytes=%lu retransmits=%lu write_blocks=%lu "
-         "flush_failures=%lu timeouts=%lu\n",
-         (unsigned long)web.output_frames, (unsigned long)web.output_bytes,
-         (unsigned long)web.retransmits, (unsigned long)web.write_blocks,
-         (unsigned long)web.flush_failures, (unsigned long)web.timeouts);
-  printf("[web] window_full_polls=%lu window_wait_max_us=%lu ack_max_us=%lu "
-         "net_poll_gap_max_us=%lu\n",
-         (unsigned long)web.window_full_polls,
-         (unsigned long)web.window_wait_max_us, (unsigned long)web.ack_max_us,
-         (unsigned long)z80_network_max_poll_gap_us());
-  printf("[webbuf] frames=%lu/%u peak=%lu retained=%lu/%u peak=%lu staged=%lu/%u\n",
+  printf("[web] retransmits=%lu flush_failures=%lu ack_timeouts=%lu "
+         "pong_timeouts=%lu\n",
+         (unsigned long)web.retransmits, (unsigned long)web.flush_failures,
+         (unsigned long)web.ack_timeouts, (unsigned long)web.pong_timeouts);
+  const char *last_disconnect = "none";
+  switch (web.last_disconnect_reason) {
+  case Z80_WEB_TERMINAL_DISCONNECT_SOCKET_CLOSED:
+    last_disconnect = "socket-closed";
+    break;
+  case Z80_WEB_TERMINAL_DISCONNECT_NETWORK_LOST:
+    last_disconnect = "network-lost";
+    break;
+  case Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_ACK_TIMEOUT:
+    last_disconnect = "output-ack-timeout";
+    break;
+  case Z80_WEB_TERMINAL_DISCONNECT_PONG_TIMEOUT:
+    last_disconnect = "pong-timeout";
+    break;
+  case Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR:
+    last_disconnect = "protocol-error";
+    break;
+  case Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_SEND_ERROR:
+    last_disconnect = "output-send-error";
+    break;
+  default:
+    break;
+  }
+  printf("[web] last_disconnect=%s\n", last_disconnect);
+  const char *ws_close = "unknown";
+  switch (web.last_ws_close_reason) {
+  case Z80_WEB_TERMINAL_WS_CLOSE_PEER_TCP_CLOSED: ws_close = "peer-tcp-closed"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_PEER_WEBSOCKET_CLOSE: ws_close = "peer-ws-close"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_INVALID_INPUT: ws_close = "invalid-ws-input"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_RECEIVE_QUEUE_MESSAGE_LIMIT: ws_close = "receive-queue-message-limit"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_RECEIVE_QUEUE_BYTE_LIMIT: ws_close = "receive-queue-byte-limit"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_PONG_BACKPRESSURE: ws_close = "pong-backpressure"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_TCP_WRITE_ERROR: ws_close = "tcp-write-error"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_TCP_OUTPUT_ERROR: ws_close = "tcp-output-error"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_TCP_ERROR: ws_close = "tcp-error"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_TIMEOUT: ws_close = "close-timeout"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_SERVER_ABORT: ws_close = "server-abort"; break;
+  case Z80_WEB_TERMINAL_WS_CLOSE_LOCAL_CLOSE: ws_close = "local-close"; break;
+  default: break;
+  }
+  if (web.last_ws_close_reason != Z80_WEB_TERMINAL_WS_CLOSE_UNKNOWN)
+    printf("[webclose] reason=%s lwip_error=%ld queue_msgs=%lu/%lu peak=%lu "
+           "queue_bytes=%lu/%lu peak=%lu\n",
+           ws_close, (long)web.last_ws_transport_error,
+           (unsigned long)web.last_ws_queue_messages,
+           (unsigned long)web.last_ws_queue_message_limit,
+           (unsigned long)web.last_ws_queue_peak_messages,
+           (unsigned long)web.last_ws_queue_bytes,
+           (unsigned long)web.last_ws_queue_byte_limit,
+           (unsigned long)web.last_ws_queue_peak_bytes);
+  if (web.rx_queue_active)
+    printf("[webbuf] in_msgs=%lu/%lu peak=%lu in_bytes=%lu/%lu peak=%lu\n",
+           (unsigned long)web.rx_queue_messages,
+           (unsigned long)web.rx_queue_message_limit,
+           (unsigned long)web.rx_queue_peak_messages,
+           (unsigned long)web.rx_queue_bytes,
+           (unsigned long)web.rx_queue_byte_limit,
+           (unsigned long)web.rx_queue_peak_bytes);
+  else
+    printf("[webbuf] in=inactive\n");
+  printf("[webbuf] out_frames=%lu/%u peak=%lu retained=%lu/%u peak=%lu staged=%lu/%u\n",
          (unsigned long)web.window_frames, Z80_WEB_TERMINAL_OUTPUT_WINDOW,
          (unsigned long)web.window_frames_peak, (unsigned long)web.retained_bytes,
          Z80_WEB_TERMINAL_FRAME_BYTES * Z80_WEB_TERMINAL_OUTPUT_WINDOW,
          (unsigned long)web.retained_bytes_peak, (unsigned long)web.staged_bytes,
          Z80_WEB_TERMINAL_FRAME_BYTES);
-  printf("[webbatch] avg_bytes=%lu max_bytes=%lu small_le16=%lu full=%lu\n",
-         (unsigned long)(web.output_frames ? web.output_bytes / web.output_frames : 0),
-         (unsigned long)web.frame_bytes_max, (unsigned long)web.small_frames,
-         (unsigned long)web.full_frames);
   z80_terminal_buffer_stats_t buffers = z80_terminal_get_buffer_stats();
   printf("[consolebuf] rx=%lu/%lu peak=%lu tx=%lu/%lu peak=%lu\n",
          (unsigned long)buffers.rx_used, (unsigned long)buffers.rx_capacity,

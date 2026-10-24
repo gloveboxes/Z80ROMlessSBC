@@ -1,5 +1,18 @@
 # Phase 1 - Pico Supervisor
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 1 supervisor | **Build Pico - Phase 1 supervisor** | **Flash Pico - Phase 1 supervisor** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-1" data-checklist-label="Phase 1" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

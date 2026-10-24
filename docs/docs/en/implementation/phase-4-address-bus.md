@@ -1,5 +1,19 @@
 # Phase 4 - Address-Trunk Wiring
 
+## VS Code tasks
+
+Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
+
+| Diagnostic | Build task | Deployment task |
+| --- | --- | --- |
+| Phase 4 address bus | **Build Pico - Phase 4 address bus** | **Flash Pico - Phase 4 address bus** |
+| Phase 4 reset meter | **Build Pico - Phase 4 reset meter** | **Flash Pico - Phase 4 reset meter** |
+
+Deployment tasks force-update without checking the previous firmware phase.
+Complete this phase's hardware prerequisites and save work before flashing. See
+[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+
+
 <div data-checklist="phase-4" data-checklist-label="Phase 4" markdown="1">
 
 Tick setup items when complete and tests only after recording the measured

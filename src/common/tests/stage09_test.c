@@ -124,7 +124,6 @@ void z80_network_core1_service(void) {
   assert(fake_core == 1 && disk_services && io_services);
   ++network_services;
 }
-uint32_t z80_network_max_poll_gap_us(void) { return 1234; }
 void z80_matrix_print_status(void) {
   assert(fake_core == 0);
   ++matrix_status_requests;
@@ -135,14 +134,15 @@ void z80_matrix_core1_service(bool updates_allowed) {
   ++matrix_services;
   matrix_updates_allowed = updates_allowed;
 }
+static bool web_rx_active = true;
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
   return (z80_web_terminal_stats_t){
-      .output_frames = 4, .output_bytes = 256, .retransmits = 1,
-      .write_blocks = 2, .flush_failures = 3, .window_full_polls = 5,
-      .window_wait_max_us = 6000, .ack_max_us = 7000, .timeouts = 8,
+      .retransmits = 1, .flush_failures = 3, .ack_timeouts = 6,
+      .pong_timeouts = 2,
       .window_frames = 2, .window_frames_peak = 4,
       .retained_bytes = 1039, .retained_bytes_peak = 2048, .staged_bytes = 15,
-      .frame_bytes_max = 512, .small_frames = 1, .full_frames = 2,
+      .rx_queue_active = web_rx_active,
+      .rx_queue_message_limit = 64, .rx_queue_byte_limit = 1024,
   };
 }
 #endif
@@ -696,19 +696,20 @@ static void test_browser_usb_routing(void) {
   command('s');
   assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
   assert(strstr(output, "[network] Terminal: http://192.0.2.42:8088/"));
-  assert(strstr(output, "[web] frames=4 bytes=256 retransmits=1 write_blocks=2 "
-                        "flush_failures=3 timeouts=8"));
-  assert(strstr(output, "[web] window_full_polls=5 window_wait_max_us=6000 "
-                        "ack_max_us=7000 net_poll_gap_max_us=1234"));
-  assert(strstr(output, "[webbuf] frames=2/4 peak=4 retained=1039/2048 "
+  assert(strstr(output, "[web] retransmits=1 flush_failures=3 ack_timeouts=6 "
+                        "pong_timeouts=2"));
+  assert(strstr(output, "[webbuf] in_msgs=0/64 peak=0 in_bytes=0/1024 peak=0"));
+  assert(strstr(output, "[webbuf] out_frames=2/4 peak=4 retained=1039/2048 "
                         "peak=2048 staged=15/512"));
-  assert(strstr(output, "[webbatch] avg_bytes=64 max_bytes=512 small_le16=1 full=2"));
   assert(strstr(output, "[consolebuf] rx="));
   assert(strstr(output, "/128 peak=") && strstr(output, "/512 peak="));
   network_address = "";
   output_length = 0;
   output[0] = '\0';
+  web_rx_active = false;
   command('s');
+  assert(strstr(output, "[webbuf] in=inactive"));
+  assert(strstr(output, "in_msgs=") == NULL);
   assert(strstr(output, "ip=unavailable"));
   assert(strstr(output, "192.0.2.42") == NULL);
   assert(strstr(output, "[network] Terminal:") == NULL);
