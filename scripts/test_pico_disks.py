@@ -20,6 +20,21 @@ IMAGE_BYTES = flash.cpm_images.DISK_IMAGE_BYTES
 
 
 class DiskFlashTaskTests(unittest.TestCase):
+    def test_system_task_builds_matching_pair_before_flashing(self) -> None:
+        tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
+        task = next(t for t in tasks if t["label"] ==
+                    "Build and flash Pico - CP/M system and Drive A")
+        stages = [shlex.split(stage.strip()) for stage in task["command"].split("&&")]
+        self.assertEqual(stages[-2], [
+            "python", "src/cpm/build_images.py", "--disk-dir",
+            "build/cpm-system-update/converted", "--output-dir", "build/cpm-system-update",
+        ])
+        self.assertEqual(stages[-1], [
+            "python", "scripts/pico_flash.py", "system", "--boot-package",
+            "build/cpm-system-update/z80boot.pkg", "--drive-a",
+            "build/cpm-system-update/drive_a_cpm63k-z80.img", "--power-confirmed", "--force",
+        ])
+
     def test_disk_tasks_use_current_source_disks(self) -> None:
         tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
         source_images = {
@@ -110,6 +125,110 @@ class DiskFlashTests(unittest.TestCase):
         connection.assert_not_called()
         picotool.assert_called_once_with(["info", "-F"], "TEST")
         journal.assert_called_once_with("TEST")
+
+    def system_arguments(self, **overrides: object) -> argparse.Namespace:
+        package, native = self.boot_package()
+        boot = self.directory / "z80boot.pkg"
+        boot.write_bytes(package)
+        self.source.write_bytes(native)
+        return self.arguments(boot_package=boot, drive_a=self.source, **overrides)
+
+    def test_system_update_writes_only_matching_boot_and_drive_a_snapshots(self) -> None:
+        args = self.system_arguments()
+        expected = [args.boot_package.read_bytes(), self.source.read_bytes()]
+        writes = []
+
+        def prepare(args: argparse.Namespace) -> str:
+            args.boot_package.write_bytes(b"changed")
+            args.drive_a.write_bytes(b"changed")
+            return "TEST"
+
+        def tool(arguments: list[str], device: str) -> None:
+            if arguments[0] == "load":
+                self.assertEqual(arguments[1], "-v")
+                writes.append((int(arguments[6], 16), Path(arguments[2]).read_bytes()))
+
+        with (
+            patch.object(flash, "prepare_storage", side_effect=prepare),
+            patch.object(flash, "picotool", side_effect=tool) as run,
+        ):
+            flash.flash_system(args)
+        self.assertEqual(writes, list(zip((0x102A0000, 0x102C0000), expected)))
+        self.assertLess(writes[0][0] + len(writes[0][1]),
+                        flash.FLASH_BASE + flash.cpm_images.FLASH_ENV_OFFSET)
+        self.assertEqual(run.call_args.args, (["reboot"], "TEST"))
+
+    def test_system_rejects_damaged_or_mismatched_inputs_before_device_access(self) -> None:
+        for damage in ("header", "payload", "size", "drive"):
+            with self.subTest(damage=damage):
+                args = self.system_arguments()
+                package = bytearray(args.boot_package.read_bytes())
+                if damage == "header":
+                    package[0] ^= 1
+                elif damage == "payload":
+                    package[-1] ^= 1
+                elif damage == "size":
+                    package = package[:-1]
+                else:
+                    args.drive_a.write_bytes(self.data)
+                args.boot_package.write_bytes(package)
+                with (
+                    patch.object(flash, "prepare_storage") as prepare,
+                    patch.object(flash, "picotool") as run,
+                ):
+                    with self.assertRaises(FlashError):
+                        flash.flash_system(args)
+                prepare.assert_not_called()
+                run.assert_not_called()
+
+    def test_system_pending_journal_prevents_writes(self) -> None:
+        args = self.system_arguments()
+        with (
+            patch.object(flash, "prepare_target", return_value="TEST"),
+            patch.object(flash, "check_journal", side_effect=FlashError("pending journal")),
+            patch.object(flash, "picotool") as run,
+        ):
+            with self.assertRaises(FlashError):
+                flash.flash_system(args)
+        run.assert_called_once_with(["info", "-F"], "TEST")
+
+    def test_system_write_failure_prevents_further_writes_and_reboot(self) -> None:
+        for fail_at in (1, 2):
+            args = self.system_arguments()
+            calls = []
+
+            def tool(arguments: list[str], device: str) -> None:
+                self.assertEqual(arguments[0], "load")
+                calls.append(arguments)
+                if len(calls) == fail_at:
+                    raise FlashError("verification failed")
+
+            with (
+                self.subTest(fail_at=fail_at),
+                patch.object(flash, "prepare_storage", return_value="TEST"),
+                patch.object(flash, "picotool", side_effect=tool),
+            ):
+                with self.assertRaises(FlashError):
+                    flash.flash_system(args)
+            self.assertEqual(len(calls), fail_at)
+
+    def test_system_cli_dispatch_and_no_reboot(self) -> None:
+        args = self.system_arguments(no_reboot=True)
+        with (
+            patch.object(flash, "prepare_storage", return_value="TEST"),
+            patch.object(flash, "picotool") as run,
+        ):
+            flash.flash_system(args)
+        self.assertEqual([c.args[0][0] for c in run.call_args_list], ["load", "load"])
+        with (
+            patch.object(flash.sys, "argv", [
+                "pico_flash.py", "system", "--boot-package", str(args.boot_package),
+                "--drive-a", str(args.drive_a), "--power-confirmed",
+            ]),
+            patch.object(flash, "flash_system") as system,
+        ):
+            self.assertEqual(flash.main(), 0)
+        self.assertFalse(system.call_args.args[0].force)
 
     def test_drive_mapping_parser(self) -> None:
         self.assertEqual(flash.drive_image("b=some path/disk=1.dsk"), (

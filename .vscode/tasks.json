@@ -2,6 +2,23 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Build and flash Pico - CP/M system and Drive A",
+			"detail": "Rebuild CP/M assembly, then replace matching boot package and Drive A. No backups; preserves firmware, B-D, journal and ENV. Force entry with journal and read-back checks.",
+			"type": "shell",
+			"command": "if [ \"${input:picoCpmSystemSafety}\" != \"Replace CP/M and drive A\" ]; then printf '%s\\n' 'CP/M update cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-system-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-system-update/converted --output-dir build/cpm-system-update && python scripts/pico_flash.py system --boot-package build/cpm-system-update/z80boot.pkg --drive-a build/cpm-system-update/drive_a_cpm63k-z80.img --power-confirmed --force",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "Flash Pico - Phase 6 20 MHz scope diagnostic",
 			"detail": "Build and force flash the isolated no-I/O CPU/SRAM scope diagnostic without waiting for a firmware stop handshake; CP/M disks and ENV are preserved.",
 			"type": "shell",
@@ -974,6 +991,16 @@
 		}
 	],
 	"inputs": [
+		{
+			"id": "picoCpmSystemSafety",
+			"type": "pickString",
+			"description": "Boot package and all Drive A files will be replaced without backups. Firmware, B-D and settings are preserved. Confirm saved work, safe force interruption, and external +5 V before USB.",
+			"options": [
+				"Cancel",
+				"Replace CP/M and drive A"
+			],
+			"default": "Cancel"
+		},
 		{
 			"id": "picoPhase6FlashSafety",
 			"type": "pickString",

@@ -443,6 +443,15 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(
             disassemble_cpm64.ACTIVE_BDOS_BASE - section_ends["ccp"], 109
         )
+        # CLEAR occupies reclaimed padding without relocating the original CCP
+        # or reducing the TPA. Its BDOS string must retain both ESC bytes.
+        clear_start = section_ends["ccp"] - disassemble_cpm64.ACTIVE_ORIGIN
+        clear_end = clear_start + 55
+        self.assertEqual(
+            self.z80_system[clear_end - 19 : clear_end],
+            b"CLEAR      \x1b[2J\x1b[H$",
+        )
+        self.assertEqual(self.z80_system[clear_end:0x800], bytes(54))
         self.assertEqual(
             disassemble_cpm64.ACTIVE_BIOS_BASE - section_ends["bdos"], 154
         )

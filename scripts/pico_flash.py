@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verified firmware or selected CP/M disk flashing with picotool."""
+"""Verified firmware, CP/M system, or selected disk flashing with picotool."""
 
 from __future__ import annotations
 
@@ -178,8 +178,14 @@ def check_drive_a(image: bytes, device: str, directory: Path) -> None:
     path = directory / "installed-boot.pkg"
     picotool(["save", "-r", hex(address), hex(address + size), str(path), "-t", "bin"], device)
     package = path.read_bytes()
+    validate_boot_pair(package, image)
+
+
+def validate_boot_pair(package: bytes, image: bytes) -> None:
+    """Check a boot package and Drive A before any coordinated writes."""
+    size = cpm_images.BOOT_PAYLOAD_OFFSET + cpm_images.Z80_IMAGE_BYTES
     if len(package) != size:
-        raise FlashError("Short installed boot-package read; Drive A compatibility not confirmed")
+        raise FlashError("Invalid boot-package size; Drive A compatibility not confirmed")
     magic, version, header_bytes, image_bytes, image_crc, header_crc = struct.unpack_from(
         "<IHHIII", package
     )
@@ -190,20 +196,48 @@ def check_drive_a(image: bytes, device: str, directory: Path) -> None:
         )
         or binascii.crc32(package[:16]) & 0xFFFFFFFF != header_crc
     ):
-        raise FlashError("Invalid installed boot manifest; Drive A compatibility not confirmed")
+        raise FlashError("Invalid boot manifest; Drive A compatibility not confirmed")
     memory = package[cpm_images.BOOT_PAYLOAD_OFFSET:]
     if (
         binascii.crc32(memory) & 0xFFFFFFFF != image_crc
         or memory[:3] != bytes((0xC3, cpm_images.BIOS_BASE & 0xFF, cpm_images.BIOS_BASE >> 8))
     ):
-        raise FlashError("Invalid installed boot image; Drive A compatibility not confirmed")
+        raise FlashError("Invalid boot image; Drive A compatibility not confirmed")
     # The native BIOS reloads these sequential CCP/BDOS records on warm boot.
     if image[:cpm_images.CPM_SYSTEM_BYTES] != memory[cpm_images.CCP_BASE:cpm_images.BIOS_BASE]:
         raise FlashError(
-            "Drive A warm-boot records do not match the installed boot package; "
+            "Drive A warm-boot records do not match the boot package; "
             "use a matching board-native image"
         )
-    print("PASS: Drive A warm-boot records match the installed boot package")
+    print("PASS: Drive A warm-boot records match the boot package")
+
+
+def flash_system(args: argparse.Namespace) -> None:
+    with tempfile.TemporaryDirectory(prefix="z80-system-") as directory:
+        temporary = Path(directory)
+        package = args.boot_package.read_bytes()
+        image = load_disk_image("A", args.drive_a)
+        validate_boot_pair(package, image)
+        # Snapshot both validated inputs before interacting with the Pico.
+        boot_path = temporary / "z80boot.pkg"
+        drive_path = temporary / "drive_a.img"
+        boot_path.write_bytes(package)
+        drive_path.write_bytes(image)
+        for label, data in (("Boot package", package), ("Drive A", image)):
+            print(f"{label}: {len(data)} bytes SHA256={hashlib.sha256(data).hexdigest()}")
+        print("No backups: boot package and Drive A will be replaced")
+        device = prepare_storage(args)
+        for path, address in (
+            (boot_path, FLASH_BASE + cpm_images.FLASH_BOOT_OFFSET),
+            (drive_path, DISK_ADDRESSES["A"]),
+        ):
+            picotool(["load", "-v", str(path), "-t", "bin", "-o", hex(address)], device)
+        print("PASS: boot package and Drive A verified; firmware, B-D, journal and ENV not written")
+        if args.no_reboot:
+            print("Device left in BOOTSEL")
+            return
+        picotool(["reboot"], device)
+        print("Reboot requested; CP/M system update complete. Serial port released.")
 
 
 def flash_disks(args: argparse.Namespace) -> None:
@@ -284,7 +318,17 @@ def main() -> int:
     prepare = commands.add_parser(
         "prepare", help="disconnect picocom, stop/flush, enter BOOTSEL and check journal; no writes"
     )
-    for target in (firmware, disks, prepare):
+    system = commands.add_parser(
+        "system", help="update matching CP/M boot package and Drive A; preserve firmware and B-D",
+    )
+    system.add_argument("--boot-package", type=Path, required=True)
+    system.add_argument("--drive-a", type=Path, required=True)
+    system.add_argument("--no-reboot", action="store_true")
+    system.add_argument(
+        "--force", action="store_true",
+        help="skip the running firmware stop/flush handshake; retain journal and image checks",
+    )
+    for target in (firmware, disks, system, prepare):
         target.add_argument("--serial", help="select Pico serial; auto-discover if uniquely connected")
         target.add_argument("--port", help="optional explicit port; otherwise discover by Pico serial")
         target.add_argument(
@@ -309,6 +353,8 @@ def main() -> int:
             print(f"Ready for selective disk writes; Pico {device} left in BOOTSEL")
         elif args.command == "disks":
             flash_disks(args)
+        elif args.command == "system":
+            flash_system(args)
         else:
             flash_firmware(args)
     except (FlashError, OSError, serial.SerialException, subprocess.SubprocessError) as error:

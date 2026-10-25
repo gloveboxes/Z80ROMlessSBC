@@ -30,6 +30,7 @@ Open the Command Palette, choose **Tasks: Run Task**, then select:
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replaces complete flash image, including disks and ENV |
 | **Flash Pico - Phase 6 20 MHz scope diagnostic** | Builds and force-flashes the isolated CPU/SRAM scope diagnostic |
 | **Build and flash Pico - Phase 10 firmware** | Builds and force-flashes firmware; preserves disks and ENV |
+| **Build and flash Pico - CP/M system and Drive A** | Reassembles CP/M and replaces its boot package and Drive A; preserves firmware, B-D and ENV |
 | **Prepare interactive CP/M emulator** | Builds the host emulator, I/O adapter, and CP/M images; no Pico required |
 
 Phase 9 and 10 firmware tasks build and deploy. They force-update without a
@@ -89,12 +90,33 @@ Choose **Tasks: Run Task**, then one of:
 These tasks do not compile applications. Update the source disk first; see
 [Related projects](../related-projects.md) for building and importing apps.
 
+## CP/M system updates
+
+Use **Build and flash Pico - CP/M system and Drive A** after changing
+`src/cpm/cpm64_z80.asm` or `src/cpm/z80_bios.asm`. Select **Replace CP/M and
+drive A** to proceed. The task converts the current source disks and runs
+`build_images.py`, which assembles the existing `.asm` files; it does not run
+`disassemble_cpm64.py` to regenerate source. Output goes to
+`build/cpm-system-update/`.
+
+The task replaces the matching boot package and all of Drive A, including its
+files, without backups. It preserves Pico firmware, drives B-D, the journal,
+and ENV settings. It forces BOOTSEL entry, rejects pending journal entries,
+validates the new boot package and matching warm-boot records before writing,
+verifies both writes, and reboots once. A failed write leaves the device in
+BOOTSEL without automatic reboot or retry. Save work and maintain external
++5 V before USB, as with the existing disk tasks.
+
+The underlying command is `scripts/pico_flash.py system --boot-package PACKAGE
+--drive-a IMAGE --power-confirmed`. Without `--force` it first requests a clean
+stop/flush from the running firmware.
+
 ## Maintained scripts
 
 | Script | Purpose |
 | --- | --- |
 | `scripts/pico_build.py` | Finds a complete Arm GNU/Newlib toolchain, configures CMake, and builds the requested target |
-| `scripts/pico_flash.py` | Verified firmware/disk writes, BOOTSEL preparation, and journal checks |
+| `scripts/pico_flash.py` | Verified firmware, CP/M boot-package/Drive A, and disk writes; BOOTSEL preparation and journal checks |
 | `scripts/pico_supervisor.py` | Serial discovery, status, help, clean stop, and optional boot checks |
 | `src/disks/convert_altair_disks.py` | Converts validated Altair disk images to native images |
 | `src/cpm/build_images.py` | Builds board-native CP/M disks, boot packages, and optional complete flash images |

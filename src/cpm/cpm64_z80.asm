@@ -555,7 +555,7 @@ A_E628:
         db 0x00
         db 0x00
 L_E62E:
-        ld hl,A_E610
+        jp CCP_MATCH_CLEAR
         ld c,0x00
 L_E633:
         ld a,c
@@ -1287,6 +1287,37 @@ A_EAF1:
         db 0x00
         db 0x00
         db 0x00
+
+; Match the full padded filename so CLEARX and CLEAR.COM
+; still follow the ordinary transient-command path.
+CCP_MATCH_CLEAR:
+        ld hl,CCP_CLEAR_NAME
+        ld de,A_EACE
+        ld b,11
+CCP_MATCH_CLEAR_LOOP:
+        ld a,(de)
+        cp (hl)
+        jr nz,CCP_MATCH_STANDARD
+        inc de
+        inc hl
+        djnz CCP_MATCH_CLEAR_LOOP
+; Discard the matcher return address: this handler returns
+; directly to the CCP's normal command-tail validation.
+        pop hl
+CCP_COMMAND_CLEAR:
+        ld de,CCP_CLEAR_MESSAGE
+        ld c,9
+        call 0x0005
+        jp L_EA89
+CCP_MATCH_STANDARD:
+        ld hl,A_E610
+        ld c,0
+        jp L_E633
+CCP_CLEAR_NAME:
+        db "CLEAR      "
+CCP_CLEAR_MESSAGE:
+        db 0x1b,"[2J",0x1b,"[H",0x24
+CCP_PADDING_START:
 
         defs 0xef00-$,0
         org 0xef00

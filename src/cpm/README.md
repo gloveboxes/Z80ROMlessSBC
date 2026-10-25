@@ -19,6 +19,12 @@ in `build_images.py`. The active port relocates page zero's BDOS entry to
 SBC layout. All CCP, BDOS, and BIOS workspace remains inside the resident
 regions above the TPA.
 
+The built-in `CLEAR` command sends `ESC[2J` followed by `ESC[H` to clear a
+VT100/ANSI terminal and move the cursor home. It uses 55 bytes of reclaimed
+CCP padding, leaving 54 bytes free; the image size and TPA are unchanged.
+Command input is case-insensitive. `CLEARX` and `CLEAR.COM` continue through
+the normal transient-program lookup.
+
 `disassemble_cpm64.py` recursively disassembles the exact fingerprinted image
 from the CCP vectors and all indirect CCP/BDOS dispatch tables. It generates
 `cpm64_i8080.asm` with Intel 8080 mnemonics and leaves unvisited strings,

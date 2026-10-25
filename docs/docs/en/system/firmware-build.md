@@ -347,6 +347,12 @@ environment and unselected drives are not written.
 
 ### Full provisioning and coordinated system updates
 
+For CP/M assembly changes on an existing installation, run the VS Code task
+**Build and flash Pico - CP/M system and Drive A**. It assembles the current
+sources and updates the boot package and matching Drive A together, replacing
+Drive A files without backups while preserving firmware, B-D, journal and ENV.
+See [CP/M system updates](../tools/pico-tools.md#cpm-system-updates).
+
 Firmware-only updates leave the boot package, journal, persistent environment and all four disks unchanged. Do not
 overwrite Drive A or use a complete flash image merely to change startup mode.
 On new/disposable storage, build `z80_stage09_cpm_loader_images` and use its

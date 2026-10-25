@@ -409,6 +409,42 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
     address = ORIGIN
     while address < BIOS_BASE:
         if address == BDOS_BASE:
+            if optimize and relocate and deep_optimize:
+                # Extend the active CCP in its reclaimed padding. Keep the
+                # original command table and all existing code addresses intact.
+                lines.extend((
+                    "",
+                    "; Match the full padded filename so CLEARX and CLEAR.COM",
+                    "; still follow the ordinary transient-command path.",
+                    "CCP_MATCH_CLEAR:",
+                    "        ld hl,CCP_CLEAR_NAME",
+                    f"        ld de,{labels[0xEACE]}",
+                    "        ld b,11",
+                    "CCP_MATCH_CLEAR_LOOP:",
+                    "        ld a,(de)",
+                    "        cp (hl)",
+                    "        jr nz,CCP_MATCH_STANDARD",
+                    "        inc de",
+                    "        inc hl",
+                    "        djnz CCP_MATCH_CLEAR_LOOP",
+                    "; Discard the matcher return address: this handler returns",
+                    "; directly to the CCP's normal command-tail validation.",
+                    "        pop hl",
+                    "CCP_COMMAND_CLEAR:",
+                    "        ld de,CCP_CLEAR_MESSAGE",
+                    "        ld c,9",
+                    "        call 0x0005",
+                    f"        jp {labels[0xEA89]}",
+                    "CCP_MATCH_STANDARD:",
+                    f"        ld hl,{labels[0xE610]}",
+                    "        ld c,0",
+                    f"        jp {labels[0xE633]}",
+                    "CCP_CLEAR_NAME:",
+                    '        db "CLEAR      "',
+                    "CCP_CLEAR_MESSAGE:",
+                    '        db 0x1b,"[2J",0x1b,"[H",0x24',
+                    "CCP_PADDING_START:",
+                ))
             lines.extend((
                 "",
                 f"        defs 0x{output_bdos_base:04x}-$,0",
@@ -554,6 +590,8 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             continue
         else:
             text = format_z80_instruction(instruction, labels)
+            if optimize and relocate and deep_optimize and address == 0xE62E:
+                text = "jp CCP_MATCH_CLEAR"
             if (optimize and
                     instruction.flow in {"jump", "conditional_jump"} and
                     instruction.target is not None and
@@ -729,6 +767,9 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         "CCP and 154 bytes in BDOS. Tests independently reconstruct the relocated layout,",
         "verify every generated `JR` and `DJNZ` destination, check the native instruction",
         "encodings, and retain the byte-identical unoptimized round trip.",
+        "The active port uses 55 reclaimed CCP bytes for the built-in `CLEAR` command,",
+        "leaving 54 bytes of CCP padding. It prints `ESC[2J` and `ESC[H` through BDOS",
+        "function 9 without changing the fixed memory map or image size.",
         "",
         "An earlier working-tree revision rejected the `DJNZ`, native `SBC HL,DE`,",
         "`SUB 2`, and `F113` transforms after \"relocated runtime testing\" reported",

@@ -82,6 +82,9 @@ Together with the first pass, the active source reclaims 263 bytes: 109 bytes in
 CCP and 154 bytes in BDOS. Tests independently reconstruct the relocated layout,
 verify every generated `JR` and `DJNZ` destination, check the native instruction
 encodings, and retain the byte-identical unoptimized round trip.
+The active port uses 55 reclaimed CCP bytes for the built-in `CLEAR` command,
+leaving 54 bytes of CCP padding. It prints `ESC[2J` and `ESC[H` through BDOS
+function 9 without changing the fixed memory map or image size.
 
 An earlier working-tree revision rejected the `DJNZ`, native `SBC HL,DE`,
 `SUB 2`, and `F113` transforms after "relocated runtime testing" reported

@@ -319,6 +319,32 @@ def main() -> None:
                     f"DIR did not return the expected listing: {directory_text!r}"
                 )
 
+            if not (args.unoptimized or args.first_pass_only or args.git_revision):
+                for command in ("CLEAR", "clear", "CLEARX", "CLEAR.COM", "DIR"):
+                    before_command = session.target_text()
+                    _, stopped = session.command(
+                        f'-interpreter-exec console "input {command}"', stop=True
+                    )
+                    stopped = resume_past_spurious_exit(session, stopped)
+                    command_text = session.target_text()[len(before_command) :]
+                    if ('reason="end-stepping-range"' not in stopped or
+                            "A>" not in command_text):
+                        raise RuntimeError(
+                            f"{command} did not return to the prompt: {command_text!r}"
+                        )
+                    expected_clear = command.upper() == "CLEAR"
+                    # The MI server drops non-printable bytes, including ESC.
+                    # The image test separately checks the complete byte string.
+                    if command_text.count("[2J[H") != int(expected_clear):
+                        raise RuntimeError(
+                            f"{command} produced incorrect CLEAR output: {command_text!r}"
+                        )
+                    if expected_clear and "?" in command_text:
+                        raise RuntimeError(f"CLEAR was rejected: {command_text!r}")
+                    if command == "DIR" and "DUMP" not in command_text:
+                        raise RuntimeError("DIR failed after CLEAR command checks")
+                print("PASS: CLEAR output, lowercase input, and exact command matching")
+
             before_survey = session.target_text()
             _, stopped = session.command(
                 '-interpreter-exec console "input SURVEY"', stop=True

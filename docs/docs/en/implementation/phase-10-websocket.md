@@ -29,6 +29,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | Update | Exact task name | What changes |
 | --- | --- | --- |
 | Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
+| CP/M system | **Build and flash Pico - CP/M system and Drive A** | Rebuilds CP/M; replaces boot package and Drive A; preserves firmware, B-D and ENV |
 | All disks | **Flash Pico - All disks (A-D)** | Replaces A-D; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
@@ -36,6 +37,9 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | Blank disk | **Flash Pico - Drive D** | Replaces D only |
 
 - Firmware confirmation: **Proceed**. Disk confirmation: **Replace selected disks**. Both default to **Cancel**.
+- CP/M system confirmation: **Replace CP/M and drive A**, default **Cancel**.
+  Use this after changing the CP/M assembly; it updates cold-boot and warm-boot
+  images together. All Drive A files are replaced without backups.
 - Firmware and disk tasks force-update without a previous-firmware handshake; save CP/M work first. All tasks verify written bytes and request reboot.
 - Disk tasks do not rebuild firmware or applications. Install updated applications into the source disk first.
 - Setup/details: [firmware build and provisioning](../system/firmware-build.md) and [VS Code disk tasks](../tools/pico-tools.md#vs-code-disk-flashing-tasks).
