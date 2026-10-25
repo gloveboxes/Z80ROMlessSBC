@@ -1,34 +1,34 @@
 {
-  "format": "80 tracks x 32 records x 128 bytes",
-  "image_bytes": 327680,
+  "format": "128 tracks x 32 records x 128 bytes",
+  "image_bytes": 524288,
   "images": {
     "drive_a_cpm63k.img": {
-      "output_bytes": 327680,
-      "output_sha256": "7f371dd63250efddcc2a53efb37e7cec6fdd73b8df90d8919b7ccabdf389184a",
+      "output_bytes": 524288,
+      "output_sha256": "13ed8d4868661969558d1bc74cc24f37e33649ddaf94c20bd2d9429d2ca33194",
       "source": "cpm63k.dsk",
       "source_bytes": 337664,
-      "source_sha256": "f9fe2d2d11fc60c51076c07a4fe7d8f56e287963fb84c9896618e5da2e84443d"
+      "source_sha256": "19ac07531b4bcb9e33396b50a04ae59f9323a2f0d0fa25ce0c723ee336ba1543"
     },
     "drive_b_bdsc.img": {
-      "output_bytes": 327680,
-      "output_sha256": "16603d9dfe9733872eadbe19632f1c1e513b7d88f570d961031c1eb4d8a3fd1f",
+      "output_bytes": 524288,
+      "output_sha256": "9f75fd329c07985317234947ab040a954583c142d23d9d2329b7fc19db9e45af",
       "source": "bdsc-v1.60.dsk",
       "source_bytes": 337568,
-      "source_sha256": "b14c1782c3bfe7aabcd0e2d0203bd75e86e6e8e550e1a0ee85aba10ab50ab21c"
+      "source_sha256": "b234dfc2ae1cb43c23dcb84cb80a365ecdd5827ee46dc29b803f578fa2f7aabf"
     },
     "drive_c_escape.img": {
-      "output_bytes": 327680,
-      "output_sha256": "2fdb04108b2ea9ca4af0788e5b9c97efdedcae262efb77a05faa2340e8256f12",
+      "output_bytes": 524288,
+      "output_sha256": "82262e7e6c69958c965121793a208b79b91326f9e7557f4cdfca1cc6debb3e9d",
       "source": "escape-posix.dsk",
       "source_bytes": 337568,
-      "source_sha256": "56ae9a5214f76d9ec1ceee03f463c1e619185ed1bf1b5b48f6bd4221d21a3c32"
+      "source_sha256": "d223294644311cfcbbd764a6d95fa6b473ef919682e3b058b99884166fa6632d"
     },
     "drive_d_blank.img": {
-      "output_bytes": 327680,
-      "output_sha256": "550ad181c18786162c7a825c8d3e84a2ce3718f4a5ed0bf89108b0b2a37c4c0f",
+      "output_bytes": 524288,
+      "output_sha256": "0926f8bd657f94102afc2cdf5cdfd82d4c5c23ff3df443c0bb9a2f5b9888a2f9",
       "source": "blank.dsk",
       "source_bytes": 337568,
-      "source_sha256": "3f6f59b785038f5079e5ccf1ff50cff5509dda1bb7c92175f073e707796ac537"
+      "source_sha256": "8e9e9dc764b1cba3e807beb96fd5a72382bcaef583b6eaf94f882c98dcc363f1"
     }
   }
 }

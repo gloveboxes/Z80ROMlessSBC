@@ -62,14 +62,14 @@ BOOT_PAYLOAD_OFFSET = 0x1000
 Z80_IMAGE_BYTES = 65536
 
 FLASH_BYTES = 4 * 1024 * 1024
-FLASH_LINK_LIMIT = 0x290000
-FLASH_JOURNAL_OFFSET = 0x290000
+FLASH_LINK_LIMIT = 0x1D0000
+FLASH_JOURNAL_OFFSET = 0x1D0000
 FLASH_JOURNAL_BYTES = 0x10000
-FLASH_BOOT_OFFSET = 0x2A0000
+FLASH_BOOT_OFFSET = 0x1E0000
 FLASH_BOOT_BYTES = 0x20000
-FLASH_ENV_OFFSET = 0x2BE000
+FLASH_ENV_OFFSET = 0x1FE000
 FLASH_ENV_BYTES = 0x2000
-FLASH_DISK_OFFSETS = (0x2C0000, 0x310000, 0x360000, 0x3B0000)
+FLASH_DISK_OFFSETS = (0x200000, 0x280000, 0x300000, 0x380000)
 
 SOURCE_DISK_NAMES = (
     "drive_a_cpm63k.img",
@@ -139,6 +139,7 @@ def assembler_definitions() -> str:
         "SYSTEM_RECORDS": CPM_SYSTEM_RECORDS,
         "DRIVE_COUNT": DRIVE_COUNT,
         "DPB_SPT": SECTORS_PER_TRACK,
+        "DPB_ALLOCATION_BYTES": (DPB_DSM + 8) // 8,
         "DPB_BSH": DPB_BSH,
         "DPB_BLM": DPB_BLM,
         "DPB_EXM": DPB_EXM,
@@ -204,7 +205,7 @@ def cpm_diskdefs() -> str:
     """Native flat-image variant of the Altair project's diskdefs/altair88.
 
     Preserve its explicit logicalextents 1 (EXM=0). This board's converted
-    images have 80 tracks and already-decoded sector order, hence skew 1.
+    images have 128 tracks and already-decoded sector order, hence skew 1.
     Numeric parameters come from the shared native geometry used by the BIOS.
     """
     return (
@@ -382,7 +383,7 @@ def main() -> None:
     native = build_native_drive(generated[0], cpm_system, bios)
     disks = [install_autorun(native, utility, args.cpmcp), *generated[1:]]
     if any(len(disk) != DISK_IMAGE_BYTES for disk in disks):
-        raise ValueError("all disk images must be exactly 320 KiB")
+        raise ValueError("all disk images must be exactly 512 KiB")
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     artifacts: dict[str, bytes] = {

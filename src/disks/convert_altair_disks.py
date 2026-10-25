@@ -147,7 +147,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, object] = {
-        "format": "80 tracks x 32 records x 128 bytes",
+        "format": f"{OUTPUT_TRACKS} tracks x {SECTORS_PER_TRACK} records x {RECORD_BYTES} bytes",
         "image_bytes": OUTPUT_BYTES,
         "images": {},
     }

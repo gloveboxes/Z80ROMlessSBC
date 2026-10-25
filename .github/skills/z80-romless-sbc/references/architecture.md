@@ -102,10 +102,12 @@ construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
 
 ## Flash, CP/M, and Multicore Ownership
 
-- Pico 2 W onboard flash is 4 MiB. Firmware must end below offset `0x290000`.
-- Layout: journal `0x290000`/64 KiB, boot `0x2A0000`/128 KiB, drives at `0x2C0000`, `0x310000`, `0x360000`, `0x3B0000`, each 320 KiB.
-- Never pass the `0x290000` linker limit as a compiler definition for physical `PICO_FLASH_SIZE_BYTES`; the C macro must remain 4 MiB.
-- CP/M geometry is exactly 327,680 bytes = 2,560 x 128-byte records, 80 tracks x 32 records. It is not IBM 3740 geometry.
+- Pico 2 W onboard flash is 4 MiB. Firmware must end below offset `0x1D0000`.
+- Layout: journal `0x1D0000`/64 KiB, boot `0x1E0000`/128 KiB, drives at `0x200000`, `0x280000`, `0x300000`, `0x380000`, each 512 KiB.
+- Never pass the `0x1D0000` linker limit as a compiler definition for physical `PICO_FLASH_SIZE_BYTES`; the C macro must remain 4 MiB.
+- CP/M geometry is exactly 524,288 bytes = 4,096 x 128-byte records, 128 tracks x 32 records. It is not IBM 3740 geometry.
+- Selective storage writes require matching `z80sbc-storage:` metadata from installed firmware; all drives are guarded. BIOS DPB/allocation maps are validated when pairing Drive A and boot packages.
+- CMake converts current source disks into `build/cpm-converted/` and tracks source changes; checked-in generated images are references.
 - Cold boot recovers journals, validates CRCs, injects instructions to load/verify SRAM, resets again and starts only on success. BUSACK is used for flash quiescence, never cold loading.
 - Core0 owns GPIO, clock, injection and trapping; core1 owns USB, networking and runtime flash writes. Stages 9/10 launch core1 before journal recovery; both cores participate in SDK flash lockout. Never enable `PICO_FLASH_ASSUME_CORE1_SAFE` with the USB core running. Flash offsets, journal and geometry are unchanged.
 - Stage 10 uses `pico_cyw43_arch_lwip_poll` on core1, not core0 network timers or a background architecture. USB provisioning passes requests/results through queues; core1 alone accesses ENV. A browser owns CP/M exclusively while connected, with USB fallback on disconnect. `FS_SERVER` is stored only; remote-FS I/O is deferred.

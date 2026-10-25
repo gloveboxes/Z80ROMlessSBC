@@ -58,7 +58,7 @@ from `altair_local` are intentionally excluded because they are not part of
 that firmware port map.
 
 The adapter environment file must define `DRIVE_A` through `DRIVE_D`, each
-pointing to a 327,680-byte native image. The same file may contain `CHAT_*`,
+pointing to a 524,288-byte native image. The same file may contain `CHAT_*`,
 `OWM_*`, and CP/M environment values. Chat and weather use libcurl when CMake
 finds it; without libcurl their status/error interfaces remain available and
 report that network support is unavailable rather than returning fabricated

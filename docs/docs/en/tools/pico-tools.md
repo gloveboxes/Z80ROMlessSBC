@@ -85,7 +85,9 @@ Choose **Tasks: Run Task**, then one of:
 - Tasks force BOOTSEL entry without a firmware handshake, check the journal,
   verify selected writes, and reboot
   once. They preserve firmware, the boot package, ENV, and unselected drives.
-- A: must match the installed boot package; an incompatibility aborts the update.
+- All selected drives require installed firmware advertising the exact current flash layout.
+- A: must match the installed boot package's warm-boot records and BIOS geometry; an incompatibility aborts the update.
+- Older 512 KiB firmware without layout metadata needs a firmware-only update first, preserving disks and ENV. A 320 KiB board requires full migration.
 
 These tasks do not compile applications. Update the source disk first; see
 [Related projects](../related-projects.md) for building and importing apps.
@@ -144,7 +146,7 @@ flashing. `--force` skips that handshake for firmware and disk updates, as the V
 deployment tasks do. Unknown serial owners or failed verification
 abort the update.
 
-Firmware writes must stay below flash offset `0x290000`. They preserve disks
+Firmware writes must stay below flash offset `0x1D0000`. They preserve disks
 and boot data. Verification confirms written bytes, not a successful CP/M
 boot; check operation separately using the phase guide.
 
@@ -160,7 +162,7 @@ For custom disk assignments:
 ```
 
 Repeat `--drive DRIVE=IMAGE` for unique A:–D: slots. Native images must be
-327,680 bytes. Altair images are accepted for B:–D:; A: requires a prepared
+524,288 bytes. Altair images are accepted for B:–D:; A: requires a prepared
 native image matching the installed boot package. The VS Code A: task handles
 that preparation automatically.
 

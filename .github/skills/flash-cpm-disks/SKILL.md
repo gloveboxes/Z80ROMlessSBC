@@ -41,24 +41,34 @@ dependency paths; restore `scripts/requirements-flash.txt` inside this environme
 only if dependencies are missing. Do not run unit tests as a workaround to make
 imports work, and do not bypass the check with system Python.
 
+## Installed layout compatibility
+
+The flashing tool requires the installed firmware's exact `z80sbc-storage:`
+program feature for every selected drive, including B/C/D-only updates, before
+journal checks or writes. Do not bypass this check. A 512 KiB installation
+without metadata needs the current firmware-only build first, preserving its
+boot package, disks and ENV. A 320 KiB installation requires backed-up full
+provisioning to migrate. Drive A/boot-pair validation checks the current BIOS
+DPB and four non-overlapping allocation maps as well as CCP/BDOS records.
+
 ## Fixed Layout
 
-The Pico 2 W has 4 MiB onboard flash. Every native disk is exactly **327,680
-bytes**: 80 tracks x 32 records x 128 bytes. Addresses passed to `picotool`
+The Pico 2 W has 4 MiB onboard flash. Every native disk is exactly **524,288
+bytes**: 128 tracks x 32 records x 128 bytes. Addresses passed to `picotool`
 include the `0x10000000` XIP base.
 
 | Drive | Typical input | Native image | Flash address | Exclusive end |
 | --- | --- | --- | --- | --- |
-| A | `cpm63k.dsk` | `drive_a_cpm63k-z80.img` | `0x102C0000` | `0x10310000` |
-| B | `bdsc-v1.60.dsk` | `drive_b_bdsc.img` | `0x10310000` | `0x10360000` |
-| C | `escape-posix.dsk` | `drive_c_escape.img` | `0x10360000` | `0x103B0000` |
-| D | `blank.dsk` | `drive_d_blank.img` | `0x103B0000` | `0x10400000` |
+| A | `cpm63k.dsk` | `drive_a_cpm63k-z80.img` | `0x10200000` | `0x10280000` |
+| B | `bdsc-v1.60.dsk` | `drive_b_bdsc.img` | `0x10280000` | `0x10300000` |
+| C | `escape-posix.dsk` | `drive_c_escape.img` | `0x10300000` | `0x10380000` |
+| D | `blank.dsk` | `drive_d_blank.img` | `0x10380000` | `0x10400000` |
 
 Protected regions for disk-only work:
 
-- Firmware: offsets below `0x290000`.
-- Journal: `0x10290000` to `0x102A0000`.
-- Boot package: `0x102A0000` to `0x102C0000`.
+- Firmware: offsets below `0x1D0000`.
+- Journal: `0x101D0000` to `0x101E0000`.
+- Boot package: `0x101E0000` to `0x10200000`.
 - All unselected disk slots.
 
 Never use a complete flash image, mass erase, or firmware UF2 to update disks.
@@ -99,7 +109,7 @@ python -c 'import sys, serial; print("Using", sys.executable)' &&
 python -m unittest discover -s src/disks -p 'test_*.py' -v
 ```
 
-Native inputs must be exactly 327,680 bytes; no conversion is applied. The tool
+Native inputs must be exactly 524,288 bytes; no conversion is applied. The tool
 checks every selected input before disconnecting/stopping hardware and logs each
 resulting image's SHA-256. Duplicate or invalid drive assignments are rejected.
 Drive A requires a board-native image: framed Altair A is rejected, and its
@@ -147,7 +157,7 @@ performs preparation/journal checks without writing any disk.
 
 The disk command always checks before selective writes.
 Reading temporary journal headers is a safety check, not a disk backup.
-There are eight 8 KiB pairs starting at `0x10290000`; each pair has a 256-byte
+There are eight 8 KiB pairs starting at `0x101D0000`; each pair has a 256-byte
 header at its start. Successfully completed writes erase the header sector.
 
 `disks` and `prepare` check all eight headers. To repeat just this read-only check on the

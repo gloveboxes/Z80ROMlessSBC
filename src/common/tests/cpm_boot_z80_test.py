@@ -124,7 +124,7 @@ class CpmBootExecution(unittest.TestCase):
             is_config = self.drive == 0 and self.lba == build_images.AUTORUN_RECORD
             if value == 1:
                 self.assertFalse(self.record)
-                self.assertLess(self.lba, 2560)
+                self.assertLess(self.lba, build_images.DISK_IMAGE_BYTES // 128)
                 if is_config and self.fail_config_reads:
                     self.fail_config_reads -= 1
                     self.disk_error = True
@@ -184,7 +184,8 @@ class CpmBootExecution(unittest.TestCase):
 
     def test_transient_exit_and_warm_boot(self) -> None:
         self.until_prompt()
-        result = self.command("LS")
+        result = self.command("LS -S")
+        self.assertIn(b"502K total capacity", result)
         self.assertNotIn(b"LS?", result)
         self.assertGreater(self.flushes, 0)
         self.assertGreaterEqual(self.markers.count(0xC0), 2)
@@ -347,6 +348,83 @@ class CpmBootExecution(unittest.TestCase):
                     self.assertIn(b"write or verification failed", result)
                 self.assertNotIn(b"Configuration saved and verified.", result)
 
+    def test_fill_expanded_disk_through_bdos(self) -> None:
+        # Exercise every allocation-map byte and the final track using real
+        # BDOS writes, then check the resulting file with independent cpmtools.
+        self.disks[3][build_images.SYSTEM_BYTES:] = b"\xe5" * (
+            build_images.DISK_IMAGE_BYTES - build_images.SYSTEM_BYTES
+        )
+        self.until_prompt()
+        records = build_images.DPB_DSM * (1 << build_images.DPB_BSH)
+        source = f"""
+                org 0100h
+                ld sp,0e600h
+                ld de,fcb
+                ld c,22
+                call 5
+                cp 0ffh
+                jp z,failed
+                ld de,buffer
+                ld c,26
+                call 5
+                ld hl,{records}
+                ld (remaining),hl
+next_record:
+                ld de,fcb
+                ld c,21
+                call 5
+                or a
+                jp nz,failed
+                ld hl,(remaining)
+                dec hl
+                ld (remaining),hl
+                ld a,h
+                or l
+                jr nz,next_record
+                ld de,fcb
+                ld c,21
+                call 5
+                cp 2
+                jr nz,failed
+                ld de,fcb
+                ld c,16
+                call 5
+                cp 0ffh
+                jr z,failed
+                ld a,1
+                jr done
+failed:
+                ld a,0ffh
+done:
+                ld (2000h),a
+                jp 0
+remaining:      dw 0
+fcb:            db 4,"FULL    BIN"
+                defs 24,0
+buffer:         defs 128,0a5h
+"""
+        with tempfile.TemporaryDirectory(prefix="z80-expanded-disk-") as path:
+            directory = Path(path)
+            assembly = directory / "fill.asm"
+            binary = directory / "fill.com"
+            assembly.write_text(source)
+            subprocess.run([shutil.which("z80asm"), "-o", str(binary), str(assembly)],
+                           check=True)
+            program = binary.read_bytes()
+            self.machine.memory[0x100:0x100 + len(program)] = program
+            self.machine.pc = 0x100
+            self.until_prompt(len(self.output))
+            self.assertEqual(self.machine.memory[0x2000], 1)
+            self.assertTrue(any(drive == 3 and lba == 4095
+                                for drive, lba, _, _ in self.writes))
+            (directory / "diskdefs").write_text(build_images.cpm_diskdefs())
+            disk = directory / "drive.img"
+            disk.write_bytes(self.disks[3])
+            extracted = directory / "full.bin"
+            subprocess.run([shutil.which("cpmcp"), "-f", "z80sbc", str(disk),
+                            "0:FULL.BIN", str(extracted)], cwd=directory, check=True)
+            self.assertEqual(extracted.read_bytes(), b"\xa5" * (records * 128))
+
     def test_read_only_all_record_diagnostic(self) -> None:
         self.assertLessEqual(len(self.diagnostic), 256)
         self.machine.memory[:len(self.diagnostic)] = self.diagnostic
@@ -358,7 +436,7 @@ class CpmBootExecution(unittest.TestCase):
                 break
         self.assertTrue(self.machine.halted, "Disk diagnostic exceeded budget")
         self.assertEqual(self.markers, [0x5A])
-        self.assertEqual(self.reads, 4 * 2560)
+        self.assertEqual(self.reads, 4 * (build_images.DISK_IMAGE_BYTES // 128))
         self.assertEqual(self.flushes, 0)
         self.assertEqual(bytes(self.diagnostic_bytes), b"".join(self.disks))
 

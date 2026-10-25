@@ -341,14 +341,14 @@ static void test_cache_and_bounds(void) {
   assert(target_erases == 1);
   for (unsigned index = 0; index < 10; ++index) {
     new_record[0] = (uint8_t)index;
-    assert(z80_flash_backend_write_record(3, 2559, new_record,
+    assert(z80_flash_backend_write_record(3, Z80_FLASH_RECORD_COUNT - 1, new_record,
                                           sizeof(new_record), 1));
-    assert(z80_flash_backend_read_record(3, 2559, record, sizeof(record)));
+    assert(z80_flash_backend_read_record(3, Z80_FLASH_RECORD_COUNT - 1, record, sizeof(record)));
     assert(memcmp(record, new_record, sizeof(record)) == 0);
   }
   assert(next_journal_pair == 11 && journal_sequence == 11);
   assert(!z80_flash_backend_read_record(4, 0, record, sizeof(record)));
-  assert(!z80_flash_backend_read_record(0, 2560, record, sizeof(record)));
+  assert(!z80_flash_backend_read_record(0, Z80_FLASH_RECORD_COUNT, record, sizeof(record)));
   assert(!z80_flash_backend_write_record(0, 0, record, 127, 0));
   assert(!z80_flash_backend_write_record(0, 0, record, sizeof(record), 3));
   new_record[0] ^= 1;

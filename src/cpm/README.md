@@ -8,7 +8,7 @@ The memory map is:
 | --- | ---: | ---: |
 | CCP | `0xE700` | 2,048 bytes |
 | BDOS | `0xEF00` | 3,584 bytes |
-| BIOS | `0xFD00` | 767 bytes currently |
+| BIOS | `0xFD00` | 766 bytes currently |
 
 The checked-in `cpm64_system.bin` was captured from RAM after the matching
 Burcon `MOVCPM 64` and `SYSGEN` utilities produced and booted a 64K system. It
@@ -215,3 +215,27 @@ the regression coverage.
 padding through offset `0x0FFF`, and a 65,536-byte SRAM image at offset
 `0x1000`. The SRAM image starts with `JP 0xFD00`; cold boot then installs the
 normal CP/M warm-boot and BDOS vectors before entering the CCP.
+
+## 512 KiB disk layout
+
+Each native disk has 128 tracks of 32 × 128-byte records. Two system tracks
+leave 252 allocation blocks of 2 KiB (`DSM=251`); one block holds the 64-entry
+directory, leaving 502 KiB for files. Each drive has a 32-byte allocation map.
+The Pico still caches one 4 KiB erase block at a time.
+
+To fit the larger maps in the existing `0xFD00`–`0xFFFF` BIOS region, cold boot
+and configuration errors share a string printer, the startup banner is shortened,
+and warm boot reads its 44 system records using a linear sector index on track 0.
+The public BIOS disk addressing and the TPA remain unchanged.
+
+The flash layout now reserves firmware below `0x1D0000`, journal at `0x1D0000`,
+boot at `0x1E0000`, environment at `0x1FE000`, and four 512 KiB drives starting
+at `0x200000`, `0x280000`, `0x300000`, and `0x380000`.
+
+This layout requires reprovisioning the boot package and all four disks together
+with the firmware. Before upgrading an existing board, save its disks and
+configuration using the old firmware and layout. Preserve the old disk images;
+320 KiB native images can be extended to 512 KiB with `0xE5` padding, keeping
+existing records and allocation block numbers unchanged. Drive A also needs the
+new native BIOS/system tracks. Do not use a firmware-only update to migrate:
+the new offsets overlap the old storage regions.

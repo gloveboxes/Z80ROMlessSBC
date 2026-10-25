@@ -141,25 +141,27 @@ more virtual status bits before adding hardware.
 
 The Pico's 4 MiB onboard flash stores its firmware, the Z80 boot package, and
 four persistent read/write CP/M disks. No external storage, SPI bus, or extra
-GPIO is required. The linker limits Pico firmware to the first 2.5625 MiB and
+GPIO is required. The linker limits Pico firmware to the first 1.8125 MiB and
 reserves the remainder as follows:
 
 | Region | Flash offset | Size | Contents |
 |----|----:|----:|----|
-| Journal | `0x290000` | 64 KiB | Eight rotating metadata/data sector pairs |
-| Boot partition | `0x2A0000` | 128 KiB | Header/image through `0x2B0FFF`; ENV in final 8 KiB |
-| Environment (inside boot partition) | `0x2BE000` | 8 KiB | Two alternating CRC-checked 4 KiB snapshots |
-| Drive A | `0x2C0000` | 320 KiB | CP/M system disk |
-| Drive B | `0x310000` | 320 KiB | CP/M data disk |
-| Drive C | `0x360000` | 320 KiB | CP/M data disk |
-| Drive D | `0x3B0000` | 320 KiB | CP/M data disk |
+| Journal | `0x1D0000` | 64 KiB | Eight rotating metadata/data sector pairs |
+| Boot partition | `0x1E0000` | 128 KiB | Header/image through `0x1F0FFF`; ENV in final 8 KiB |
+| Environment (inside boot partition) | `0x1FE000` | 8 KiB | Two alternating CRC-checked 4 KiB snapshots |
+| Drive A | `0x200000` | 512 KiB | CP/M system disk |
+| Drive B | `0x280000` | 512 KiB | CP/M data disk |
+| Drive C | `0x300000` | 512 KiB | CP/M data disk |
+| Drive D | `0x380000` | 512 KiB | CP/M data disk |
 
-**Disk format.** Each disk is exactly 327,680 bytes: 80 tracks of 32
+**Disk format.** Each disk is exactly 524,288 bytes: 128 tracks of 32
 sequential 128-byte records. This project-specific format is not IBM 3740
-SSSD. Converted Altair source disks are checked into `src/disks/generated/`,
-so normal builds need no conversion step. The optional
-`src/disks/convert_altair_disks.py` script removes Altair framing and skew,
-extracts the CP/M records, and pads the images from 77 to 80 tracks.
+SSSD. CMake automatically converts the current `src/disks/source-altair/`
+images into `build/cpm-converted/` before packaging CP/M. It tracks source-disk
+changes, so rebuilding cannot silently reuse stale checked-in images.
+`src/disks/convert_altair_disks.py` removes Altair framing and skew, extracts
+the CP/M records, and pads the images from 77 to 128 tracks. Its default output
+remains `src/disks/generated/` for refreshing the checked-in reference images.
 
 **Build and provisioning.** The `z80_cpm_images` target automatically creates
 the boot package, four disk images, and combined

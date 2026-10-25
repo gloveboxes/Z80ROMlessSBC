@@ -55,15 +55,7 @@ cold_boot:
                 ld hl,0
                 ld (0003h),hl
                 ld hl,banner
-cold_boot_message:
-                ld a,(hl)
-                or a
-                jr z,cold_boot_ready
-                ld c,a
-                call console_output
-                inc hl
-                jr cold_boot_message
-cold_boot_ready:
+                call print_string
                 ld a,1
                 jr enter_cpm
 
@@ -89,17 +81,11 @@ warm_boot_loop:
                 ld hl,(dma_address)
                 add hl,de
                 ld (dma_address),hl
-                ld hl,(disk_sector)
-                inc hl
-                ld a,l
-                cp DPB_SPT
-                jr c,warm_boot_next
-                ld hl,(disk_track)
-                inc hl
-                ld (disk_track),hl
-                ld hl,0
-warm_boot_next:
-                ld (disk_sector),hl
+                ; Internal reload uses track 0 plus a linear record index.
+                ; prepare_disk_io accepts indices across the track boundary;
+                ; SYSTEM_RECORDS is below 256, so only the low byte changes.
+                ld hl,disk_sector
+                inc (hl)
                 djnz warm_boot_loop
                 ld a,2
 
@@ -189,14 +175,14 @@ autorun_command:
                 ret
 autorun_error:
                 ld hl,autorun_message
-autorun_error_loop:
+print_string:
                 ld a,(hl)
                 or a
                 ret z
                 ld c,a
                 call console_output
                 inc hl
-                jr autorun_error_loop
+                jr print_string
 autorun_message:
                 db 13,10,"AUTORUN config error",13,10,0
 
@@ -307,8 +293,7 @@ read_wait:
                 bit 2,a
                 jr z,read_wait
                 ld hl,(dma_address)
-                ld b,128
-                ld c,DISK_DATA
+                ld bc,128*256+DISK_DATA
                 inir
                 xor a
                 jr disk_io_done
@@ -332,8 +317,7 @@ write_room_wait:
                 bit 3,a
                 jr z,write_room_wait
                 ld hl,(dma_address)
-                ld b,128
-                ld c,DISK_DATA
+                ld bc,128*256+DISK_DATA
                 otir
 write_done_wait:
                 in a,(DISK_COMMAND)
@@ -366,7 +350,7 @@ disk_io_done:
                 ret
 
 banner:
-                db 13,10,10,"64K CP/M 2.2 - Burcon Z80 Edition",13,10,0
+                db 13,10,10,"64K CP/M 2.2",13,10,0
 
 disk_parameter_headers:
                 dw 0,0,0,0,directory_buffer,disk_parameter_block,0,allocation_0
@@ -396,12 +380,12 @@ write_command:
 
 directory_buffer: equ BIOS_DIRECTORY_BUFFER
 allocation_0:
-                defs 20
+                defs DPB_ALLOCATION_BYTES
 allocation_1:
-                defs 20
+                defs DPB_ALLOCATION_BYTES
 allocation_2:
-                defs 20
+                defs DPB_ALLOCATION_BYTES
 allocation_3:
-                defs 20
+                defs DPB_ALLOCATION_BYTES
 
 BIOS_END:      equ $

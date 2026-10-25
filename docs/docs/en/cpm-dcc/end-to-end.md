@@ -21,7 +21,7 @@ python3 src/cpm/build_images.py --output-dir build/cpm
 The builder assembles the optimized CCP/BDOS and BIOS, constructs the
 reset-ready 64 KiB `z80boot.img`, wraps it as `z80boot.pkg` with a manifest and
 CRC, and replaces only Drive A's reserved system tracks in
-`drive_a_cpm63k-z80.img`. Drives B-D remain the converted native 320 KiB
+`drive_a_cpm63k-z80.img`. Drives B-D remain the converted native 512 KiB
 images. With a Phase 10 firmware binary, the same builder can compose
 `z80romless-flash.bin`, a complete 4 MiB image:
 
@@ -33,8 +33,8 @@ python3 src/cpm/build_images.py --output-dir build/cpm \
 The BIOS and flash backend share one deliberately narrow contract. CP/M passes
 drive, track, sector, DMA address, and write type to the BIOS; the BIOS
 converts the request to one 128-byte linear-record transfer through ports
-`0x10`-`0x14`. The Pico maps those records into the four exact 320 KiB flash
-slots at `0x2C0000`, `0x310000`, `0x360000`, and `0x3B0000`. Normal writes can
+`0x10`-`0x14`. The Pico maps those records into the four exact 512 KiB flash
+slots at `0x200000`, `0x280000`, `0x300000`, and `0x380000`. Normal writes can
 coalesce in a 4 KiB cache, while directory and warm-boot writes are journaled;
 the write type is preserved so the Pico can choose the safe persistence path.
 On cold boot, the Pico holds RESET# LOW while recovering the journal and
@@ -56,7 +56,7 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 
 These tests assemble both optimized Z80 components and verify the CP/M 2.2
 version byte, resident placement, BIOS jump-table ABI, boot-package header and
-CRCs, exact 64 KiB and 320 KiB geometries, Drive A system-track replacement,
+CRCs, exact 64 KiB and 512 KiB geometries, Drive A system-track replacement,
 and every flash-region boundary. The end-to-end DCC debug-host test additionally
 boots the optimized image, observes the CP/M banner and `A>` prompt, runs
 `DIR`, executes `LS.COM` to its natural exit, confirms BIOS warm reload, selects

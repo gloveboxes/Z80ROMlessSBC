@@ -18,7 +18,7 @@ Activation is sticky until CPU reset so the FT commands on port 21 do not
 switch back to Altair I/O routing.
 The host uses the DCC Z80 engine for instruction execution, while the project
 adapter supplies the SBC console and ports `0x10`-`0x14` backed by the generated
-320 KiB disk images.
+512 KiB disk images.
 
 Build it from the repository root:
 

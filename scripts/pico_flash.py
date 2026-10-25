@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import binascii
 import hashlib
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -25,9 +26,17 @@ from pico_supervisor import (
 )
 
 FLASH_BASE = 0x10000000
-FIRMWARE_END = FLASH_BASE + 0x290000
-JOURNAL_BASE = FLASH_BASE + 0x290000
+FIRMWARE_END = FLASH_BASE + cpm_images.FLASH_LINK_LIMIT
+JOURNAL_BASE = FLASH_BASE + cpm_images.FLASH_JOURNAL_OFFSET
 ARM_S_FAMILY = 0xE48BFF59
+STORAGE_LAYOUT_FEATURE = "z80sbc-storage:" + ":".join(f"{value:x}" for value in (
+    cpm_images.FLASH_JOURNAL_OFFSET, cpm_images.FLASH_JOURNAL_BYTES,
+    cpm_images.FLASH_BOOT_OFFSET, cpm_images.FLASH_BOOT_BYTES,
+    cpm_images.FLASH_ENV_OFFSET, cpm_images.FLASH_ENV_BYTES,
+    cpm_images.FLASH_DISK_OFFSETS[0], cpm_images.DISK_IMAGE_BYTES,
+    len(cpm_images.FLASH_DISK_OFFSETS), cpm_images.RECORD_BYTES,
+    cpm_images.DISK_IMAGE_BYTES // cpm_images.RECORD_BYTES,
+))
 DISK_ADDRESSES = {
     drive: FLASH_BASE + offset
     for drive, offset in zip("ABCD", cpm_images.FLASH_DISK_OFFSETS)
@@ -79,7 +88,7 @@ def validate_firmware(path: Path) -> None:
     print(f"Validated firmware range: {FLASH_BASE:#x}..{max(addresses) + 256:#x}")
 
 
-def picotool(arguments: list[str], device: str) -> None:
+def picotool(arguments: list[str], device: str) -> str:
     # picotool requires serial selection before the force/reboot options.
     force = [argument for argument in arguments if argument in ("-f", "-F")]
     options = [argument for argument in arguments if argument not in ("-f", "-F")]
@@ -96,6 +105,7 @@ def picotool(arguments: list[str], device: str) -> None:
             f"picotool failed ({result.returncode}); no automatic reboot/retry. "
             "Inspect device state before proceeding."
         )
+    return result.stdout
 
 
 def check_journal(device: str) -> None:
@@ -138,7 +148,16 @@ def prepare_target(args: argparse.Namespace) -> str:
 
 def prepare_storage(args: argparse.Namespace) -> str:
     device = prepare_target(args)
-    picotool(["info"] if args.bootsel else ["info", "-F"], device)
+    info = picotool(["info"] if args.bootsel else ["info", "-F"], device)
+    if not isinstance(info, str) or not re.search(
+        r"(?<![a-zA-Z0-9:-])" + re.escape(STORAGE_LAYOUT_FEATURE) + r"(?![a-zA-Z0-9:])", info
+    ):
+        raise FlashError(
+            "Installed firmware does not advertise the required 512 KiB flash layout; "
+            "no storage writes performed. For an already migrated 512 KiB board, "
+            "install the current firmware-only build first. For a 320 KiB board, "
+            "back up disks/settings and use full firmware-and-disks provisioning."
+        )
     check_journal(device)
     return device
 
@@ -181,8 +200,40 @@ def check_drive_a(image: bytes, device: str, directory: Path) -> None:
     validate_boot_pair(package, image)
 
 
-def validate_boot_pair(package: bytes, image: bytes) -> None:
-    """Check a boot package and Drive A before any coordinated writes."""
+def validate_bios_geometry(bios: bytes) -> None:
+    """Validate a resident DPB and the four DPHs that actually reference it."""
+    expected = struct.pack(
+        "<HBBBHHBBHH", cpm_images.SECTORS_PER_TRACK,
+        cpm_images.DPB_BSH, cpm_images.DPB_BLM, cpm_images.DPB_EXM,
+        cpm_images.DPB_DSM, cpm_images.DPB_DRM,
+        cpm_images.DPB_AL0, cpm_images.DPB_AL1, cpm_images.DPB_CKS,
+        cpm_images.RESERVED_TRACKS,
+    )
+    map_bytes = (cpm_images.DPB_DSM + 8) // 8
+    for dpb in range(len(bios) - len(expected) + 1):
+        if bios[dpb:dpb + len(expected)] != expected:
+            continue
+        address = cpm_images.BIOS_BASE + dpb
+        prefix = struct.pack("<6H", 0, 0, 0, 0,
+                             cpm_images.BIOS_DIRECTORY_BUFFER, address)
+        for start in range(len(bios) - 64 + 1):
+            maps = []
+            for drive in range(4):
+                offset = start + drive * 16
+                if bios[offset:offset + 12] != prefix:
+                    break
+                checksum, bitmap = struct.unpack_from("<2H", bios, offset + 12)
+                if checksum or bitmap < address + len(expected) or bitmap + map_bytes > 65536:
+                    break
+                maps.extend(range(bitmap, bitmap + map_bytes))
+            else:
+                if len(set(maps)) == 4 * map_bytes:
+                    return
+    raise FlashError("BIOS disk geometry/allocation maps do not match the 512 KiB layout")
+
+
+def validate_boot_package(package: bytes) -> bytes:
+    """Validate the CRC-protected image and its resident disk geometry."""
     size = cpm_images.BOOT_PAYLOAD_OFFSET + cpm_images.Z80_IMAGE_BYTES
     if len(package) != size:
         raise FlashError("Invalid boot-package size; Drive A compatibility not confirmed")
@@ -203,13 +254,26 @@ def validate_boot_pair(package: bytes, image: bytes) -> None:
         or memory[:3] != bytes((0xC3, cpm_images.BIOS_BASE & 0xFF, cpm_images.BIOS_BASE >> 8))
     ):
         raise FlashError("Invalid boot image; Drive A compatibility not confirmed")
+    validate_bios_geometry(memory[cpm_images.BIOS_BASE:])
+    return memory
+
+
+def validate_boot_pair(package: bytes, image: bytes) -> None:
+    """Check both resident geometry and Drive A before any coordinated writes."""
+    memory = validate_boot_package(package)
+    if len(image) != cpm_images.DISK_IMAGE_BYTES:
+        raise FlashError("Drive A does not have the required 512 KiB size")
     # The native BIOS reloads these sequential CCP/BDOS records on warm boot.
     if image[:cpm_images.CPM_SYSTEM_BYTES] != memory[cpm_images.CCP_BASE:cpm_images.BIOS_BASE]:
         raise FlashError(
             "Drive A warm-boot records do not match the boot package; "
             "use a matching board-native image"
         )
-    print("PASS: Drive A warm-boot records match the boot package")
+    validate_bios_geometry(image[
+        cpm_images.CPM_SYSTEM_BYTES:
+        cpm_images.CPM_SYSTEM_BYTES + cpm_images.Z80_IMAGE_BYTES - cpm_images.BIOS_BASE
+    ])
+    print("PASS: Drive A warm-boot records and BIOS geometry match the boot package")
 
 
 def flash_system(args: argparse.Namespace) -> None:

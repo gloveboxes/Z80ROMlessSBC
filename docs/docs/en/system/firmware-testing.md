@@ -304,7 +304,7 @@ The firmware variants retain their distinct clock configuration:
 Phase 9 uses 20 MHz after complete load/verification, either on explicit
 commands or automatically on reset with the loader variant, while Phase 10
 retains its separate 1 MHz startup default. Neither is qualified by a build.
-The linker protects storage above firmware offset `0x290000`; the physical
+The linker protects storage above firmware offset `0x1D0000`; the physical
 flash size remains 4 MiB.
 
 Use the [firmware build/provisioning reference](firmware-build.md) for other

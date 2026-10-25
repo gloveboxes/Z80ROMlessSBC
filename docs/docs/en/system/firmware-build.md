@@ -202,7 +202,7 @@ The
 | `z80boot.pkg` | Manifest, CRCs, and the reset-ready 64 KiB Z80 image |
 | `drive_a_cpm63k-z80.img` | Native CP/M system disk with the Z80 SBC BIOS and native AUTORUN |
 | `AUTORUN.COM` | Native auto-run configuration utility, also installed on drive A |
-| `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 320 KiB disks |
+| `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 512 KiB disks |
 | `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
 | `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
 
@@ -347,6 +347,25 @@ environment and unselected drives are not written.
 
 ### Full provisioning and coordinated system updates
 
+For the one-time migration from 320 KiB disks to the 512 KiB layout, use the
+VS Code task **Build and flash Pico - Phase 10 firmware and disks**. It builds
+fresh images and replaces the entire flash, including settings and all four
+disks. Save any required disks and settings before selecting **Replace all
+flash**. The task asks for the intended Pico's USB serial number and verifies
+writes before rebooting.
+
+Every selective disk or CP/M system update first checks the installed Pico
+firmware's `z80sbc-storage:` program feature against the exact current partition
+layout. Missing or mismatched metadata aborts before any storage write. The
+boot-package/Drive A checks also validate the BIOS DPB and four non-overlapping
+allocation maps, rejecting the old 320 KiB BIOS even when CCP/BDOS match.
+
+If the board already runs 512 KiB disks but predates this metadata, run
+**Build and flash Pico - Phase 10 firmware** once. This firmware-only update
+preserves disks, boot package, and ENV. Then use the selective update tasks.
+A board still on 320 KiB disks needs the full migration above; firmware-only
+or disk-only updates cannot migrate its flash layout.
+
 For CP/M assembly changes on an existing installation, run the VS Code task
 **Build and flash Pico - CP/M system and Drive A**. It assembles the current
 sources and updates the boot package and matching Drive A together, replacing
@@ -373,8 +392,8 @@ firmware, boot package and matching Drive A system image:
 
 ```sh
 picotool load -v build/src/stage09_flash_storage/z80_stage09_flash_storage.uf2
-picotool load -v build/cpm-stage09/z80boot.pkg -t bin -o 0x102A0000
-picotool load -v build/cpm-stage09/drive_a_cpm63k-z80.img -t bin -o 0x102C0000
+picotool load -v build/cpm-stage09/z80boot.pkg -t bin -o 0x101E0000
+picotool load -v build/cpm-stage09/drive_a_cpm63k-z80.img -t bin -o 0x10200000
 picotool reboot
 ```
 
@@ -402,11 +421,11 @@ commands preserve regions not named by the input file:
 
 ```sh
 picotool load -v build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2
-picotool load -v build/cpm/z80boot.pkg -t bin -o 0x102A0000
-picotool load -v build/cpm/drive_a_cpm63k-z80.img -t bin -o 0x102C0000
-picotool load -v build/cpm/drive_b_bdsc.img -t bin -o 0x10310000
-picotool load -v build/cpm/drive_c_escape.img -t bin -o 0x10360000
-picotool load -v build/cpm/drive_d_blank.img -t bin -o 0x103B0000
+picotool load -v build/cpm/z80boot.pkg -t bin -o 0x101E0000
+picotool load -v build/cpm/drive_a_cpm63k-z80.img -t bin -o 0x10200000
+picotool load -v build/cpm/drive_b_bdsc.img -t bin -o 0x10280000
+picotool load -v build/cpm/drive_c_escape.img -t bin -o 0x10300000
+picotool load -v build/cpm/drive_d_blank.img -t bin -o 0x10380000
 picotool reboot
 ```
 

@@ -88,6 +88,9 @@ class FlashTests(unittest.TestCase):
             Path(__file__).resolve().parents[1]
             / "src/common/include/z80sbc/flash_layout.h"
         ).read_text()
+        marker = re.search(r'#define Z80_FLASH_LAYOUT_FEATURE "([^"\n]+)"', header)
+        self.assertIsNotNone(marker)
+        self.assertEqual(marker.group(1), flash.STORAGE_LAYOUT_FEATURE)
         for name, value in (
             ("Z80_FLASH_LINK_LIMIT", flash.FIRMWARE_END - flash.FLASH_BASE),
             ("Z80_FLASH_JOURNAL_OFFSET", flash.JOURNAL_BASE - flash.FLASH_BASE),
@@ -178,7 +181,7 @@ class FlashTests(unittest.TestCase):
         with (
             patch.object(flash.sys, "argv", ["pico_flash.py", "prepare", "--power-confirmed"]),
             patch.object(flash, "prepare_target", return_value="TEST"),
-            patch.object(flash, "picotool") as tool,
+            patch.object(flash, "picotool", return_value=flash.STORAGE_LAYOUT_FEATURE) as tool,
             patch.object(flash, "check_journal") as journal,
         ):
             self.assertEqual(flash.main(), 0)

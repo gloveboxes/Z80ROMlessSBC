@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DISK_BYTES (80u * 32u * 128u)
+#define DISK_BYTES (128u * 32u * 128u)
 
 typedef struct test_host
 {

@@ -14,6 +14,10 @@
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_disk.h"
 #include "z80sbc/flash_layout.h"
+#if PICO_ON_DEVICE
+#include "pico/binary_info.h"
+bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
+#endif
 #include "z80sbc/io_trap.h"
 #include "z80sbc/io_ports.h"
 #include "z80sbc/sram.h"
@@ -382,7 +386,7 @@ static void start_disk_diagnostic(void) {
   running = true;
   boot_deadline = make_timeout_time_ms(300000);
   printf("\n[diag] Read-only Z80 INIR/OTIR disk test at nominal 20 MHz: "
-         "all 4 drives x 2560 records x 128 bytes. No disk writes. "
+         "all 4 drives x 4096 records x 128 bytes. No disk writes. "
          "CP/M SRAM image replaced; reboot afterward.\n");
 }
 

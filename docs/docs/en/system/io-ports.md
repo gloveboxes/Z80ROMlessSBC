@@ -688,7 +688,7 @@ silently truncates. After a failed write, the in-memory state is reloaded
 from the newest valid durable snapshot; an error does not undo a commit
 that already reached flash.
 
-Two 4 KiB sectors at **`0x2BE000` and `0x2BF000`** occupy unused space in the
+Two 4 KiB sectors at **`0x1FE000` and `0x1FF000`** occupy unused space in the
 boot partition, beyond the boot payload ending at `0x2B1000`. Firmware, the
 disk journal, boot package and all four disk offsets remain unchanged.
 Each snapshot has a version, sequence number, payload CRC32 and header CRC32.

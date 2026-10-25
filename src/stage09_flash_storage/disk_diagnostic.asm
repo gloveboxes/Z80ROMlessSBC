@@ -27,7 +27,7 @@ wait_record:
                 otir
                 inc de
                 ld a,d
-                cp 0ah
+                cp 10h
                 jr nz,next_record
                 ld a,(drive)
                 inc a

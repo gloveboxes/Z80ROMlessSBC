@@ -103,6 +103,27 @@ add_subdirectory(stage10_websocket_terminal)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_program(Z80ASM_EXECUTABLE z80asm)
 if(Z80ASM_EXECUTABLE)
+  # Build from the current sources rather than potentially stale checked-in images.
+  set(cpm_converted_dir ${CMAKE_BINARY_DIR}/cpm-converted)
+  add_custom_command(
+    OUTPUT ${cpm_converted_dir}/manifest.json
+    BYPRODUCTS
+      ${cpm_converted_dir}/drive_a_cpm63k.img
+      ${cpm_converted_dir}/drive_b_bdsc.img
+      ${cpm_converted_dir}/drive_c_escape.img
+      ${cpm_converted_dir}/drive_d_blank.img
+    COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_LIST_DIR}/disks/convert_altair_disks.py
+      --output-dir ${cpm_converted_dir}
+    DEPENDS
+      disks/convert_altair_disks.py
+      disks/geometry.py
+      disks/source-altair/cpm63k.dsk
+      disks/source-altair/bdsc-v1.60.dsk
+      disks/source-altair/escape-posix.dsk
+      disks/source-altair/blank.dsk
+    VERBATIM
+  )
   function(add_cpm_images target firmware directory)
   set(cpm_output_dir ${CMAKE_BINARY_DIR}/${directory})
   add_custom_command(
@@ -120,6 +141,7 @@ if(Z80ASM_EXECUTABLE)
     COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_LIST_DIR}/cpm/build_images.py
       --assembler ${Z80ASM_EXECUTABLE}
+      --disk-dir ${cpm_converted_dir}
       --firmware
         $<TARGET_FILE_DIR:${firmware}>/${firmware}.bin
       --output-dir ${cpm_output_dir}
@@ -131,10 +153,11 @@ if(Z80ASM_EXECUTABLE)
       cpm/build_images.py
       cpm/cpm64_system.bin
       disks/geometry.py
-      disks/generated/drive_a_cpm63k.img
-      disks/generated/drive_b_bdsc.img
-      disks/generated/drive_c_escape.img
-      disks/generated/drive_d_blank.img
+      ${cpm_converted_dir}/manifest.json
+      ${cpm_converted_dir}/drive_a_cpm63k.img
+      ${cpm_converted_dir}/drive_b_bdsc.img
+      ${cpm_converted_dir}/drive_c_escape.img
+      ${cpm_converted_dir}/drive_d_blank.img
     VERBATIM
   )
   add_custom_target(${target}

@@ -57,6 +57,23 @@
 			]
 		},
 		{
+			"label": "Build and flash Pico - Phase 10 firmware and disks",
+			"detail": "Provision the 512 KiB disk layout: replace ALL flash including firmware, CP/M boot package, A-D and ENV. No backups; save existing disks/settings before running.",
+			"type": "shell",
+			"command": "if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then printf '%s\\n' 'Provisioning cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_build.py --build-dir build --target z80_stage10_websocket_terminal && python src/disks/convert_altair_disks.py --output-dir build/cpm-layout-upgrade/converted && python src/cpm/build_images.py --disk-dir build/cpm-layout-upgrade/converted --output-dir build/cpm-layout-upgrade --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v build/cpm-layout-upgrade/z80romless-flash.bin -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "Flash Pico - All disks (A-D)",
 			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; firmware, boot and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",

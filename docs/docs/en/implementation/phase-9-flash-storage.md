@@ -362,15 +362,15 @@ lockout with the already-running USB core.
 ### 2. Optional read-only Z80 disk qualification
 
 After `l`, type **Ctrl+] then `t`**. The actual Z80 program selects drives
-A-D and LBAs 0-2559, reads exactly 128 bytes per record using `INIR`, and
+A-D and LBAs 0-4095, reads exactly 128 bytes per record using `INIR`, and
 reports those bytes using `OTIR` on diagnostic port `0x06`. The Pico compares
 them in order with the recovered XIP flash image. A PASS requires exactly
-**1,310,720 matching bytes**, all 10,240 records, and the final success
+**2,097,152 matching bytes**, all 16,384 records, and the final success
 report on port `0x05`. The test issues no disk write or flush commands.
 It stops at the first mismatch, disk-reported failure, or five-minute timeout.
 
-The byte offset in a mismatch identifies the drive (`offset / 327680`), LBA
-within that drive (`(offset % 327680) / 128`) and byte within the record
+The byte offset in a mismatch identifies the drive (`offset / 524288`), LBA
+within that drive (`(offset % 524288) / 128`) and byte within the record
 (`offset % 128`). This is stronger than calling the C handlers directly,
 but is not proof of journal durability, filesystem behavior or analogue
 timing margins. Progress is printed every 64 KiB.

@@ -233,7 +233,7 @@ class BuildImagesTest(unittest.TestCase):
             (1, 12),
         )
         allocation_bytes = (build_images.DPB_DSM + 8) // 8
-        self.assertEqual(allocation_bytes, 20)
+        self.assertEqual(allocation_bytes, 32)
         self.assertEqual(build_images.DPB_EXM, 0)
 
         for left, right in zip(

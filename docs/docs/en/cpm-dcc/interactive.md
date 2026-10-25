@@ -19,10 +19,10 @@ project-owned adapter in `src/cpm/dcc_io_adapter`, and the CP/M artifacts in
 passes that built adapter to `z80-debug-host`; no optional selection or external
 Altair checkout is required. The launcher extracts the 64 KiB SRAM payload from
 `z80boot.pkg`, starts it through the board BIOS, and attaches Drives A-D from
-the generated 320 KiB images. A successful start displays:
+the generated 512 KiB images. A successful start displays:
 
 ```text
-64K CP/M 2.2 - Burcon Z80 Edition
+64K CP/M 2.2
 
 A>
 ```
@@ -120,7 +120,7 @@ Use `build_images.cpm_diskdefs()` when injecting or extracting native CP/M
 files with cpmtools. Its reference is the ESP32 Altair project's
 [`diskdefs` entry `altair88`](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/diskdefs),
 which already explicitly sets `logicalextents 1` to match the Burcon BIOS's
-`EXM=0`. This board's native definition uses 80 tracks and `skew 1` because
+`EXM=0`. This board's native definition uses 128 tracks and `skew 1` because
 conversion has already applied the Altair sector mapping. The other shared
 filesystem parameters come from `src/disks/geometry.py`.
 Keep the explicit logical-extent setting:

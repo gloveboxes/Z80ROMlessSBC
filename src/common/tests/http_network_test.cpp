@@ -233,7 +233,7 @@ int main() {
   cyw43_arch_lwip_end();
   for (unsigned i = 0; i < 100 && status() != HTTP_EOF; ++i) { service(); drain(); }
   assert(status() == HTTP_EOF && output == body && !pending && !client);
-  assert(received_bytes == headers.size() + body.size() && chained_receives == 1);
+  assert(test_credited - before_credit == headers.size() + body.size());
 
   /* A complete 16 KiB TLS record split into pool-sized buffers is delivered
    * before worker parsing. It must drain in 512-byte polls without copying or
@@ -283,7 +283,7 @@ int main() {
   assert(receive_buffer(&extra) == ERR_OK); // explicit failure owns/frees input
   service();
   assert(status() == HTTP_ERROR && !pending && !client);
-  assert(strstr(failure_detail, "backlog exceeds TCP/TLS bound"));
+  assert(failure && strstr(failure, "backlog exceeds TCP/TLS bound"));
 
   /* Backpressure retains receive buffers until FT consumes bytes. New buffers
    * are chained within the TCP/TLS bound, with credit returned only on use. */
@@ -306,22 +306,28 @@ int main() {
   for (unsigned i = 0; i < 100 && status() != HTTP_EOF; ++i) { service(); drain(); }
   assert(status() == HTTP_EOF && output == data && !pending && !client);
 
+  /* The backend uses one idle-timeout message for all stages. Check each
+   * starting state explicitly rather than relying on diagnostic stage labels. */
+  auto expect_timeout = [] {
+    test_now += 30001000; service();
+    assert(status() == HTTP_ERROR && !client && !pending);
+    assert(failure && !strcmp(failure, "HTTP transfer idle timeout (30 seconds)"));
+  };
   request("http://localhost/test"); handshake();
-  test_now += 30001000; service();
-  assert(status() == HTTP_ERROR && !client);
-  assert(strstr(failure_detail, "stage=awaiting response"));
+  assert(client && handshake_ready && header_sent == header_length && !pending);
+  expect_timeout();
   test_defer = true;
   request("http://lookup.example/file");
-  test_now += 30001000; service();
-  assert(status() == HTTP_ERROR && !client && strstr(failure_detail, "stage=DNS"));
+  assert(active && !client && !handshake_ready);
+  expect_timeout();
   test_defer = false;
   request(); // TCP/TLS completion callback has not arrived.
-  test_now += 30001000; service();
-  assert(status() == HTTP_ERROR && !client && strstr(failure_detail, "stage=TCP/TLS"));
+  assert(client && !handshake_ready);
+  expect_timeout();
   request(); handshake();
   fragment("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nab");
-  test_now += 30001000; service();
-  assert(status() == HTTP_ERROR && !client && strstr(failure_detail, "stage=receiving"));
+  assert(client && handshake_ready && !pending && status() != HTTP_EOF);
+  expect_timeout();
   test_time = false; request();
   assert(status() == HTTP_ERROR && !client); test_time = true;
   test_hostname_result = -1; request();

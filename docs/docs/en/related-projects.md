@@ -23,7 +23,7 @@ under CP/M on this project's real Z80.
 </div>
 
 The disks supplied with this project already include a default set of
-applications. The system boots **`64K CP/M 2.2 - Burcon Z80 Edition`**, a
+applications. The system boots **`64K CP/M 2.2`**, a
 custom version of the original Burcon CP/M 2.2 and BIOS, modified and optimised
 for the Z80 and this board. You can use these supplied disks when you reach
 the CP/M phases; building or importing additional applications is optional.
@@ -97,7 +97,7 @@ The Pico serves the flash-backed disks while the Z80 executes CP/M and its
 applications. Disk conversion and provisioning are handled by the dedicated
 VS Code disk deployment tasks; no manual conversion commands are required. See
 the [disk provisioning details](system/firmware-build.md#72-flash-provisioning)
-for how this works. The firmware uses native 327,680-byte images rather than
+for how this works. The firmware uses native 524,288-byte images rather than
 the original 88-DCDD sector framing.
 
 ### VS Code disk deployment tasks

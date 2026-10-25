@@ -31,7 +31,7 @@ Use `--output-dir DIRECTORY` to generate fresh converted images outside the
 tracked `generated/` folder. The converter validates source framing and
 checksums before conversion.
 
-This writes four exact 327,680-byte files under `generated/`:
+This writes four exact 524,288-byte files under `generated/`:
 
 | Flash drive | Generated image | Source image |
 | ---: | --- | --- |
@@ -97,13 +97,27 @@ only selected native-sized slots with read-back verification. It reboots once
 after all selected writes, without testing the booted firmware; `--no-reboot`
 leaves BOOTSEL instead.
 
-Native images must be exactly 327,680 bytes. Altair sources are checked with
+Native images must be exactly 524,288 bytes. Altair sources are checked with
 `validate_source()` before conversion. Drive A must be a matching board-native
 image; its warm-boot CCP/BDOS records are checked against the installed,
 CRC-validated boot package before any selected disk is written. Sources and
 unselected flash regions are unchanged.
 
 See the [flashing-tool setup and safety workflow](../../docs/docs/en/system/firmware-build.md#72-flash-provisioning).
+
+## Build freshness and selective updates
+
+CMake converts the current source disks into `build/cpm-converted/` and rebuilds
+CP/M images when any source disk, conversion code, or geometry changes. The
+checked-in `generated/` images are references; refresh them with the converter
+when updating source disks.
+
+Selective writes require the installed firmware's exact `z80sbc-storage:`
+layout metadata, checked before journal reads or storage writes. An existing
+512 KiB installation without this metadata needs a firmware-only update first;
+its boot package, ENV, and disks are preserved. A 320 KiB installation needs
+full provisioning after backup. Drive A and boot packages are checked for the
+current BIOS geometry and allocation-map layout as well as warm-boot records.
 
 ## BIOS compatibility
 

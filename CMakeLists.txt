@@ -27,6 +27,6 @@ pico_sdk_init()
 # the linker region only; PICO_FLASH_SIZE_BYTES remains the board's physical
 # 4 MiB value for hardware bounds checks and layout assertions.
 file(WRITE "${CMAKE_BINARY_DIR}/pico_flash_region.ld"
-  "FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 0x290000\n")
+  "FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 0x1D0000\n")
 
 add_subdirectory(src)

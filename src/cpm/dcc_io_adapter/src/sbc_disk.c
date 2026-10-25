@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DISK_BYTES (80u * 32u * 128u)
+#define DISK_BYTES (128u * 32u * 128u)
 #define RECORD_BYTES 128u
 
 enum
@@ -96,7 +96,7 @@ static int load_environment(sbc_disk_context_t *context, const char *path,
             fseek(context->drives[index], 0, SEEK_SET) != 0)
         {
             set_error(error, error_size,
-                      "each drive must be a configured 327680-byte image");
+                      "each drive must be a configured 524288-byte image");
             return 0;
         }
     }

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import shlex
 import subprocess
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -106,7 +107,15 @@ class DiskFlashTests(unittest.TestCase):
             system[:flash.cpm_images.BIOS_DIRECTORY_BUFFER - flash.cpm_images.CCP_BASE]
             + bytes(128)
         )
-        bios = b"\xc3\x00\xfd"
+        bios = bytearray(256)
+        bios[:3] = b"\xc3\x00\xfd"
+        for drive in range(4):
+            struct.pack_into("<8H", bios, 0x20 + drive * 16,
+                             0, 0, 0, 0, flash.cpm_images.BIOS_DIRECTORY_BUFFER,
+                             0xFD60, 0, 0xFD80 + drive * 32)
+        struct.pack_into("<HBBBHHBBHH", bios, 0x60,
+                         32, 4, 15, 0, 251, 63, 0x80, 0, 0, 2)
+        bios = bytes(bios)
         memory = flash.cpm_images.build_z80_image(system, bios)
         package = flash.cpm_images.build_boot_package(memory)
         native = flash.cpm_images.build_native_drive(self.data, system, bios)
@@ -118,13 +127,65 @@ class DiskFlashTests(unittest.TestCase):
             patch.object(flash, "disconnect_picocom"),
             patch.object(flash, "require_free_port"),
             patch.object(flash, "open_supervisor") as connection,
-            patch.object(flash, "picotool") as picotool,
+            patch.object(flash, "picotool", return_value=flash.STORAGE_LAYOUT_FEATURE) as picotool,
             patch.object(flash, "check_journal") as journal,
         ):
             self.assertEqual(flash.prepare_storage(self.arguments(force=True)), "TEST")
         connection.assert_not_called()
         picotool.assert_called_once_with(["info", "-F"], "TEST")
         journal.assert_called_once_with("TEST")
+
+    def test_every_selected_drive_rejects_unknown_or_old_firmware_layout(self) -> None:
+        for drive in "ABCD":
+            for info in ("features: USB stdin / stdout", "z80sbc-storage:old",
+                         flash.STORAGE_LAYOUT_FEATURE + ":extra", "wrong-" + flash.STORAGE_LAYOUT_FEATURE):
+                with (
+                    self.subTest(drive=drive, info=info),
+                    patch.object(flash, "prepare_target", return_value="TEST"),
+                    patch.object(flash, "picotool", return_value=info) as tool,
+                    patch.object(flash, "check_journal") as journal,
+                ):
+                    with self.assertRaisesRegex(FlashError, "no storage writes"):
+                        flash.flash_disks(self.arguments(drive=[(drive, self.source)], force=True))
+                self.assertEqual([call.args[0][0] for call in tool.call_args_list], ["info"])
+                journal.assert_not_called()
+
+    def test_system_update_rejects_old_firmware_before_any_storage_write(self) -> None:
+        args = self.system_arguments()
+        with (
+            patch.object(flash, "prepare_target", return_value="TEST"),
+            patch.object(flash, "picotool", return_value="old firmware") as tool,
+            patch.object(flash, "check_journal") as journal,
+        ):
+            with self.assertRaisesRegex(FlashError, "no storage writes"):
+                flash.flash_system(args)
+        tool.assert_called_once_with(["info", "-F"], "TEST")
+        journal.assert_not_called()
+
+    def test_old_geometry_and_overlapping_allocation_maps_are_rejected(self) -> None:
+        package, native = self.boot_package()
+        offset = flash.cpm_images.BOOT_PAYLOAD_OFFSET
+        bios = flash.cpm_images.BIOS_BASE
+        for fault in ("old-dsm", "old-reservation", "overlap", "undersized", "unreferenced-dpb"):
+            for target in ("package", "drive"):
+                with self.subTest(fault=fault, target=target):
+                    memory = bytearray(package[offset:])
+                    drive = bytearray(native)
+                    buffer = memory if target == "package" else drive
+                    base = bios if target == "package" else flash.cpm_images.CPM_SYSTEM_BYTES
+                    if fault == "old-dsm":
+                        struct.pack_into("<H", buffer, base + 0x65, 155)
+                    elif fault == "old-reservation":
+                        buffer[base + 0x69] = 0xc0
+                    elif fault == "overlap":
+                        struct.pack_into("<H", buffer, base + 0x20 + 16 + 14, 0xFD80)
+                    elif fault == "undersized":
+                        struct.pack_into("<H", buffer, base + 0x20 + 3 * 16 + 14, 0xFFF0)
+                    else:
+                        struct.pack_into("<H", buffer, base + 0x20 + 10, 0xFD50)
+                    changed_package = flash.cpm_images.build_boot_package(bytes(memory))
+                    with self.assertRaisesRegex(FlashError, "geometry/allocation maps"):
+                        flash.validate_boot_pair(changed_package, bytes(drive))
 
     def system_arguments(self, **overrides: object) -> argparse.Namespace:
         package, native = self.boot_package()
@@ -153,7 +214,7 @@ class DiskFlashTests(unittest.TestCase):
             patch.object(flash, "picotool", side_effect=tool) as run,
         ):
             flash.flash_system(args)
-        self.assertEqual(writes, list(zip((0x102A0000, 0x102C0000), expected)))
+        self.assertEqual(writes, list(zip((0x101E0000, 0x10200000), expected)))
         self.assertLess(writes[0][0] + len(writes[0][1]),
                         flash.FLASH_BASE + flash.cpm_images.FLASH_ENV_OFFSET)
         self.assertEqual(run.call_args.args, (["reboot"], "TEST"))
@@ -186,7 +247,7 @@ class DiskFlashTests(unittest.TestCase):
         with (
             patch.object(flash, "prepare_target", return_value="TEST"),
             patch.object(flash, "check_journal", side_effect=FlashError("pending journal")),
-            patch.object(flash, "picotool") as run,
+            patch.object(flash, "picotool", return_value=flash.STORAGE_LAYOUT_FEATURE) as run,
         ):
             with self.assertRaises(FlashError):
                 flash.flash_system(args)
@@ -294,6 +355,8 @@ class DiskFlashTests(unittest.TestCase):
         def tool(arguments: list[str], device: str) -> None:
             self.assertEqual(device, "TEST")
             events.append(arguments[0])
+            if arguments[0] == "info":
+                return flash.STORAGE_LAYOUT_FEATURE
             if arguments[0] == "save":
                 start, end = int(arguments[2], 16), int(arguments[3], 16)
                 reads.append((start, end))
@@ -318,7 +381,7 @@ class DiskFlashTests(unittest.TestCase):
             (flash.JOURNAL_BASE + pair * 8192, flash.JOURNAL_BASE + pair * 8192 + 256)
             for pair in range(8)
         ])
-        self.assertEqual(writes, [(0x10310000, self.data), (0x10360000, self.data)])
+        self.assertEqual(writes, [(0x10280000, self.data), (0x10300000, self.data)])
         self.assertTrue(all(not path.exists() for path in paths))
         self.assertEqual(self.source.read_bytes(), self.data)
         self.assertIn("No backups", self.output.getvalue())
@@ -338,8 +401,8 @@ class DiskFlashTests(unittest.TestCase):
             flash.flash_disks(self.arguments(drive=[(drive, self.source) for drive in "ABCD"]))
         check_a.assert_called_once()
         self.assertEqual(writes, [
-            (0x102C0000, IMAGE_BYTES), (0x10310000, IMAGE_BYTES),
-            (0x10360000, IMAGE_BYTES), (0x103B0000, IMAGE_BYTES),
+            (0x10200000, IMAGE_BYTES), (0x10280000, IMAGE_BYTES),
+            (0x10300000, IMAGE_BYTES), (0x10380000, IMAGE_BYTES),
         ])
         self.assertEqual(writes[-1][0] + writes[-1][1], 0x10400000)
         for offset in flash.cpm_images.FLASH_DISK_OFFSETS:
@@ -364,7 +427,7 @@ class DiskFlashTests(unittest.TestCase):
         with (
             patch.object(flash, "prepare_target", return_value="TEST"),
             patch.object(flash, "check_journal", side_effect=FlashError("pending journal")),
-            patch.object(flash, "picotool") as tool,
+            patch.object(flash, "picotool", return_value=flash.STORAGE_LAYOUT_FEATURE) as tool,
         ):
             with self.assertRaises(FlashError):
                 flash.flash_disks(self.arguments())
@@ -475,9 +538,9 @@ class DiskFlashTests(unittest.TestCase):
             flash.subprocess, "run",
             return_value=subprocess.CompletedProcess([], 0, "OK\n", ""),
         ) as run:
-            flash.picotool(["load", "-v", "disk.img", "-t", "bin", "-o", "0x10310000"], "BOARD")
+            flash.picotool(["load", "-v", "disk.img", "-t", "bin", "-o", "0x10280000"], "BOARD")
         self.assertEqual(run.call_args.args[0], [
-            "picotool", "load", "-v", "disk.img", "-t", "bin", "-o", "0x10310000",
+            "picotool", "load", "-v", "disk.img", "-t", "bin", "-o", "0x10280000",
             "--ser", "BOARD",
         ])
 
