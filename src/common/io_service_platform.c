@@ -17,6 +17,38 @@ static uint32_t unix_seconds;
 static uint64_t sync_millis;
 static char network_address[16];
 auto_init_mutex(network_address_mutex);
+static char cached_hostname[sizeof("zeta-80-000000")];
+static bool hostname_initialized;
+auto_init_mutex(hostname_mutex);
+
+static size_t get_cached_hostname(char *text, size_t capacity) {
+  if (capacity < sizeof(cached_hostname))
+    return 0;
+  mutex_enter_blocking(&hostname_mutex);
+  if (!hostname_initialized) {
+    char device_id[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
+    pico_get_unique_board_id_string(device_id, sizeof(device_id));
+    size_t id_length = strlen(device_id);
+    if (id_length >= 6) {
+      char *suffix = device_id + id_length - 6;
+      for (size_t i = 0; i < 6; ++i) {
+        if (suffix[i] >= 'A' && suffix[i] <= 'F')
+          suffix[i] = (char)(suffix[i] - 'A' + 'a');
+      }
+      int length = snprintf(cached_hostname, sizeof(cached_hostname),
+                            "zeta-80-%s", suffix);
+      hostname_initialized = length > 0 &&
+                             (size_t)length < sizeof(cached_hostname);
+    }
+  }
+  size_t length = 0;
+  if (hostname_initialized) {
+    memcpy(text, cached_hostname, sizeof(cached_hostname));
+    length = strlen(cached_hostname);
+  }
+  mutex_exit(&hostname_mutex);
+  return length;
+}
 
 void z80_io_ports_set_unix_time(uint32_t seconds) {
   if (seconds < 1704067200u)
@@ -58,8 +90,7 @@ size_t z80_service_info(uint8_t selector, char *text, size_t capacity) {
     pico_get_unique_board_id_string(text, capacity);
     return strlen(text);
   }
-  int length = snprintf(text, capacity, "z80romless-sbc");
-  return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
+  return get_cached_hostname(text, capacity);
 }
 
 time_t z80_network_time(time_t *result) {

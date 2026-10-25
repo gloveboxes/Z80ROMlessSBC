@@ -37,7 +37,7 @@ int main(void) {
   assert(z80_service_millis() == 0);
   assert(z80_service_random() == 0xba98);
   assert(z80_service_info(0, text, sizeof(text)) == 14);
-  assert(strcmp(text, "z80romless-sbc") == 0);
+  assert(strcmp(text, "zeta-80-789abc") == 0);
   assert(z80_service_info(1, text, sizeof(text)) == 0);
   assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);
   assert(text[0] == '\0');

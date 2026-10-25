@@ -22,6 +22,7 @@ absolute_time_t address_deadline = nil_time;
 bool time_client_started;
 z80_network_config_t active_config = {};
 uint32_t network_generation;
+char active_hostname[32];
 
 void clear_address() {
   ++network_generation;
@@ -30,6 +31,15 @@ void clear_address() {
 }
 
 void start_association() {
+  // lwIP copies this into the DHCP client options when it requests a lease.
+  // Set it before starting each association so the router sees the same name
+  // that the Z80 system information reports.
+  if (z80_service_info(0, active_hostname, sizeof(active_hostname)) == 0)
+    return;
+  cyw43_arch_lwip_begin();
+  if (netif_default != nullptr)
+    netif_set_hostname(netif_default, active_hostname);
+  cyw43_arch_lwip_end();
   int result = cyw43_arch_wifi_connect_async(
       active_config.ssid, active_config.password,
       active_config.password[0] ? CYW43_AUTH_WPA2_AES_PSK : CYW43_AUTH_OPEN);

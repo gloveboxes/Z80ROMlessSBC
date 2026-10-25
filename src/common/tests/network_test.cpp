@@ -57,6 +57,11 @@ static bool config_available = true;
 const z80_network_config_t *z80_network_config() {
   return config_available ? &test_config : nullptr;
 }
+size_t z80_service_info(uint8_t selector, char *text, size_t capacity) {
+  assert(selector == 0 && capacity >= sizeof("zeta-80-123456"));
+  snprintf(text, capacity, "zeta-80-123456");
+  return strlen(text);
+}
 void sntp_setoperatingmode(unsigned char mode) {
   assert(lock_depth && mode == SNTP_OPMODE_POLL);
 }
@@ -68,6 +73,10 @@ char *ip4addr_ntoa_r(const struct ip4_addr *, char *buffer, int capacity) {
   assert(lock_depth && capacity >= 10);
   snprintf(buffer, (size_t)capacity, "%s", assigned_address);
   return buffer;
+}
+void netif_set_hostname(struct netif *interface, const char *hostname) {
+  assert(lock_depth && interface && std::string(hostname) == "zeta-80-123456");
+  interface->hostname = hostname;
 }
 void z80_io_ports_set_network_address(const char *address) {
   snprintf(service_address, sizeof(service_address), "%s", address);
@@ -522,6 +531,7 @@ int main() {
 #endif
   outgoing = {'U'};
   assert(!poll_network());
+  assert(std::string(interface.hostname) == "zeta-80-123456");
   assert(outgoing == std::vector<uint8_t>{'U'} && disconnects == 0);
   power_mode_result = -1;
   assert(!poll_network());

@@ -602,7 +602,8 @@ retains its original launch path and reports weather UNAVAILABLE.
 
 ### System information and reboot
 
-System-info selectors are 0 = hostname `z80romless-sbc`, 1 = current Wi-Fi
+System-info selectors are 0 = hostname `zeta-80-xxxxxx` (the final six
+hexadecimal characters of the board ID, in lowercase), 1 = current Wi-Fi
 IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
 UNAVAILABLE without a connection, including Phase 9. Reboot requires the
 exact confirmation byte `0xA5`; it flushes queued/cached disk writes, then
