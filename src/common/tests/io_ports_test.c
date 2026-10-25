@@ -212,7 +212,7 @@ static void test_transport(void) {
 
 static void test_worker_response_lifetime(void) {
   const uint8_t version[] = {3};
-  const char expected[] = "Pico 2 W Z80ROMlessSBC ROMLESS-SVC/1\n";
+  const char expected[] = "Z84C0020PEC @ 20MHz, 64K, Pico 2 W Supervisor\n";
   send(IO_SERVICE_UTILITY, version, sizeof(version));
   z80_io_ports_core1_service();
   assert(z80_io_port_in(2) == IO_SERVICE_RESPONSE_READY);

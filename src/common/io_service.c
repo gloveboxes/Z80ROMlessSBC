@@ -210,7 +210,7 @@ static io_service_error_t utility_service(void) {
     __atomic_store_n(&reboot_requested, 1, __ATOMIC_RELEASE);
     return IO_SERVICE_OK;
   } else {
-    static const char version[] = "Pico 2 W Z80ROMlessSBC ROMLESS-SVC/1\n";
+    static const char version[] = "Z84C0020PEC @ 20MHz, 64K, Pico 2 W Supervisor\n";
     memcpy(result.data, version, sizeof(version));
     result.length = sizeof(version) - 1;
   }
