@@ -8,6 +8,7 @@ import binascii
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import struct
@@ -38,10 +39,10 @@ from geometry import (  # noqa: E402
 )
 
 
-CCP_BASE = 0xE700
-BDOS_BASE = 0xEF00
-BDOS_ENTRY = 0xEF06
-BIOS_BASE = 0xFD00
+CCP_BASE = 0xE600
+BDOS_BASE = 0xEE00
+BDOS_ENTRY = 0xEE06
+BIOS_BASE = 0xFC00
 CPM_SYSTEM_RECORDS = 44
 CPM_SYSTEM_BYTES = CPM_SYSTEM_RECORDS * RECORD_BYTES
 CPM_SYSTEM_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_system.bin"
@@ -49,7 +50,9 @@ CPM_Z80_SOURCE_PATH = REPO_ROOT / "src" / "cpm" / "cpm64_z80.asm"
 CPM_SYSTEM_SHA256 = (
     "2897f0ecf91048c753ea6a09f26fd28f20a607dddbbaca0c96a6943178115d0e"
 )
-BIOS_DIRECTORY_BUFFER = 0xFC80
+BIOS_DIRECTORY_BUFFER = 0xFB80
+BANKED_CODE_ADDRESS = 0xFF00
+BANKED_PARAMETERS = 0xFFF0
 AUTORUN_RECORD = RESERVED_TRACKS * SECTORS_PER_TRACK - 1
 AUTORUN_MAX_COMMAND = 80
 AUTORUN_MAGIC = b"ZAR1"
@@ -174,15 +177,20 @@ def build_bios(assembler: str) -> bytes:
             encoding="ascii",
         )
         subprocess.run(
-            [assembler, "-o", str(binary_path), str(combined_path)],
+            [assembler, "-I", str(REPO_ROOT / "src/common"),
+             "-o", str(binary_path), str(combined_path)],
             check=True,
         )
         bios = binary_path.read_bytes()
 
     if not bios or bios[0] != 0xC3:
         raise ValueError("assembled BIOS does not start with JP")
-    if BIOS_BASE + len(bios) > Z80_IMAGE_BYTES:
-        raise ValueError("assembled BIOS exceeds Z80 address space")
+    if BIOS_BASE + len(bios) != Z80_IMAGE_BYTES:
+        raise ValueError("assembled BIOS must include the complete extension page")
+    resident = banked_transfer_code()
+    if bios[BANKED_CODE_ADDRESS - BIOS_BASE:
+            BANKED_CODE_ADDRESS - BIOS_BASE + len(resident)] != resident:
+        raise ValueError("BIOS bank extension differs from the generated backend")
     if CPM_SYSTEM_BYTES + len(bios) > AUTORUN_OFFSET:
         raise ValueError("CCP, BDOS, and BIOS overlap the autorun record")
     return bios
@@ -276,11 +284,26 @@ def autorun_record(mode: int = 0, command: str = "") -> bytes:
     return bytes(record)
 
 
+def banked_transfer_code() -> bytes:
+    header = (REPO_ROOT / "src/common/include/z80sbc/banked_transfer.h").read_text()
+    code = bytes(int(value, 16) for value in
+                 re.findall(r"0x([0-9A-F]{2})", header.split("= {", 1)[1]))
+    if not code or len(code) > BANKED_PARAMETERS - BANKED_CODE_ADDRESS:
+        raise ValueError("resident transfer code overlaps its parameter block")
+    return code
+
+
 def build_z80_image(cpm_system: bytes, bios: bytes) -> bytes:
     if CCP_BASE + len(cpm_system) != BIOS_BASE:
         raise ValueError("CP/M system does not end at the BIOS base")
     if any(cpm_system[BIOS_DIRECTORY_BUFFER - CCP_BASE:]):
         raise ValueError("native BIOS requires 128 bytes of reserved BDOS padding")
+    if BIOS_BASE + len(bios) != Z80_IMAGE_BYTES:
+        raise ValueError("BIOS must contain the complete bank extension page")
+    resident = banked_transfer_code()
+    if bios[BANKED_CODE_ADDRESS - BIOS_BASE:
+            BANKED_CODE_ADDRESS - BIOS_BASE + len(resident)] != resident:
+        raise ValueError("BIOS bank extension differs from generated backend")
 
     image = bytearray(Z80_IMAGE_BYTES)
     image[0:3] = bytes((0xC3, BIOS_BASE & 0xFF, BIOS_BASE >> 8))
@@ -293,7 +316,7 @@ def build_boot_package(image: bytes) -> bytes:
     if len(image) != Z80_IMAGE_BYTES:
         raise ValueError("CP/M boot image must contain exactly 65536 bytes")
     if image[:3] != bytes((0xC3, BIOS_BASE & 0xFF, BIOS_BASE >> 8)):
-        raise ValueError("CP/M reset vector must jump to the BIOS at FD00h")
+        raise ValueError("CP/M reset vector must jump to the BIOS at FC00h")
     image_crc = binascii.crc32(image) & 0xFFFFFFFF
     header = struct.pack(
         "<IHHII",
@@ -436,6 +459,9 @@ def main() -> None:
             "bdos_entry": BDOS_ENTRY,
             "bios": BIOS_BASE,
             "bios_bytes": len(bios),
+            "banked_transfer": BANKED_CODE_ADDRESS,
+            "banked_transfer_bytes": len(banked_transfer_code()),
+            "banked_parameters": BANKED_PARAMETERS,
         },
         "artifacts": {
             name: {"bytes": len(data), "sha256": sha256(data)}

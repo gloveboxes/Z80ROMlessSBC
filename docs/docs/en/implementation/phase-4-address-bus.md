@@ -11,7 +11,7 @@ Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
 
 Deployment tasks force-update without checking the previous firmware phase.
 Complete this phase's hardware prerequisites and save work before flashing. See
-[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+[Pico tools](../system/firmware-build.md#deployment-task-requirements).
 
 
 <div data-checklist="phase-4" data-checklist-label="Phase 4" markdown="1">
@@ -32,7 +32,6 @@ Disconnect external power and USB; keep CPU and SRAM absent. Each row is
 one shared address net, not a series path through a device. Tick each row
 after checking its wire and existing 10 kOhm pull to +5 V at the actual
 socket contacts. The pulls were fitted in Phase 0; do not add a second set.
-See the [pin table](../hardware/pin-mapping.md#sram-address-and-data-trunks).
 Rows are ordered by SRAM pin number, highest to lowest.
 
 | Done | Signal | Z80 socket → SRAM socket | Existing pull-up |
@@ -61,12 +60,34 @@ no additional monitor wires are needed here.
 | Done | Signal / check | Required connection |
 | --- | --- | --- |
 | <input type="checkbox" data-checklist-id="address-cpu-only" aria-label="Exclusive CPU address drive checked"> | Address ownership | No Pico or expander output connects to any address bit; only the Z80 drives A0-A15 |
-| <input type="checkbox" data-checklist-id="a16-ground" aria-label="SRAM A16 pin 2 ground connection checked"> | A16 | Verify SRAM pin 2 is directly connected to common GND, selecting the lower 64 KiB |
+
+## SRAM Bank Select
+
+The memory design uses one 128 KiB SRAM as two 64 KiB banks. Pico GP8 selects which half the SRAM exposes
+through A16. Route GP8 through U4 SN74AHCT244 level shifter so
+the SRAM receives a valid 5 V logic level. Do not connect Pico GPIO directly
+to SRAM A16.
+
+With external power and USB disconnected, identify the contacts from the
+[pin map](../hardware/pin-mapping.md). GP8 is Pico physical header pin 11;
+U4 pin 17 is its input and U4 pin 3 is the level-shifted output. SRAM U2 pin
+2 is A16.
+
+| Done | Bank-select wiring check | Required connection or condition |
+| --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-bank-input" aria-label="Pico GP8 connected to U4 input"> | GP8 to U4 | Pico physical pin 11 (GP8) connects to U4 pin 17 |
+| <input type="checkbox" data-checklist-id="r24" aria-label="R24 pull-down verified at Pico physical pin 11"> | R24 pull-down | Verify the R24 (10 kOhm) fitted in Phase 0 connects Pico physical pin 11 (GP8) to common GND. |
+| <input type="checkbox" data-checklist-id="wire-bank-a16" aria-label="U4 output connected to SRAM A16"> | U4 to SRAM A16 | U4 pin 3 connects to SRAM U2 pin 2 |
+
+The pull-down holds bank 0 selected while GP8 is an input during startup.
+GP8 LOW selects bank 0; HIGH selects bank 1.
 
 ## Tests
 
 <input type="checkbox" data-checklist-id="socket-continuity" aria-label="Address socket continuity and isolation passed"> With power/USB disconnected, check every actual CPU/SRAM socket contact and
-isolation from neighboring nets.
+isolation from neighboring nets, including the GP8/U4 input net and the
+U4 output-to-SRAM A16 net. Confirm U4 pin 17 and SRAM U2 pin 2 have no direct
+connection to GND.
 
 <input type="checkbox" data-checklist-id="address-high-levels" aria-label="Pulled-up address levels measured"> With power applied and CPU absent, verify
 pulled-up address levels.
@@ -191,6 +212,7 @@ tests in Phase 6 are required.
 ## Pass Gate
 
 - <input type="checkbox" data-checklist-id="gate-address-map" aria-label="Phase 4 all sixteen address mappings passed"> Sixteen distinct, correctly mapped address nets.
+- <input type="checkbox" data-checklist-id="gate-bank-select" aria-label="Phase 4 GP8 bank select wiring continuity passed"> GP8 to U4 pin 17, R24 to GND, and U4 pin 3 to SRAM A16 pass unpowered continuity/isolation checks. Neither U4 pin 17 nor SRAM A16 is directly grounded.
 - <input type="checkbox" data-checklist-id="gate-isolation" aria-label="Phase 4 address net isolation passed"> No shorts.
 - <input type="checkbox" data-checklist-id="gate-monitor-taps" aria-label="Phase 4 address monitor taps passed"> Valid monitor taps.
 

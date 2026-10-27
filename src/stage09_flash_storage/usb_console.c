@@ -10,7 +10,7 @@
 #include "pico/stdlib.h"
 #include "tusb.h"
 
-enum { LOG_BYTES = 4096, LOG_BUDGET = 128 };
+enum { LOG_BYTES = 4096, LOG_BUDGET = 128, TERMINAL_FLUSH_US = 250 };
 static critical_section_t log_lock;
 static char log_data[LOG_BYTES];
 static size_t log_head, log_count;
@@ -18,6 +18,8 @@ static uint32_t log_drops;
 static bool usb_connected;
 static bool last_log_cr;
 static uint32_t reported_drops;
+static bool terminal_flush_pending;
+static uint64_t terminal_flush_deadline;
 
 static void log_write(const char *data, int length) {
   critical_section_enter_blocking(&log_lock);
@@ -91,6 +93,12 @@ uint32_t z80_usb_console_log_drops(void) {
 void z80_usb_console_service(void) {
   assert(get_core_num() == 1);
   bool connected = stdio_usb_connected();
+  if (terminal_flush_pending &&
+      (!connected || time_us_64() >= terminal_flush_deadline)) {
+    if (connected)
+      tud_cdc_write_flush();
+    terminal_flush_pending = false;
+  }
   char data[LOG_BUDGET];
   size_t count = connected ? tud_cdc_write_available() : 0;
   if (count > sizeof(data))
@@ -136,7 +144,14 @@ size_t z80_usb_console_write(const uint8_t *data, size_t length) {
   if (!length)
     return 0;
   size_t accepted = tud_cdc_write(data, (uint32_t)length);
-  if (accepted)
-    tud_cdc_write_flush();
+  if (accepted) {
+    if (memchr(data, '\n', accepted) != NULL) {
+      tud_cdc_write_flush();
+      terminal_flush_pending = false;
+    } else if (!terminal_flush_pending) {
+      terminal_flush_deadline = time_us_64() + TERMINAL_FLUSH_US;
+      terminal_flush_pending = true;
+    }
+  }
   return accepted;
 }

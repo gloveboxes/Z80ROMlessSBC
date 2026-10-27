@@ -110,9 +110,8 @@ currently depend on POSIX shell commands, `lsof` and `ps`. Installing Python
 does not make those workflows native Windows compatible. The automatic
 toolchain checks in `pico_build.py` also currently use Unix executable names.
 With a compatible `z80asm` also available on `PATH`, use direct CMake commands
-for native Windows firmware builds, and the
-[manual BOOTSEL/UF2 procedure](system/firmware-build.md#load-phase-firmware-and-open-its-console)
-for initial programming. Use a Linux environment for the documented
+for native Windows firmware builds, and copy the built UF2 to the Pico’s BOOTSEL removable drive for initial
+programming. Follow the [board power requirements](system/firmware-build.md#deployment-task-requirements). Use a Linux environment for the documented
 `z80asm`/`cpmtools` CP/M image workflow; USB access from a virtual Linux
 environment needs separate configuration.
 
@@ -130,7 +129,9 @@ names look similar.
 The top-level CMake project includes the Phase 9/10 definitions during
 configuration. Their disk-diagnostic generation requires `z80asm`, so install
 it before configuring even when your selected build target is an earlier
-phase. `cpmtools` is additionally required when generating CP/M disk images.
+phase. `cpmtools` is additionally required when generating CP/M disk images:
+`cpmcp` and `cpmrm` install/replace the native `AUTORUN.COM` on Drive A.
+Both are included in the macOS/Linux installation commands above.
 
 [`z80dasm`](https://www.tablix.org/~avian/blog/articles/z80dasm/) is an optional
 independent Z80 disassembler, used for the disassembly/assembly round-trip
@@ -323,14 +324,14 @@ picocom --baud 115200 --databits 8 --parity n --stopbits 1 --flow n /dev/cu.usbm
 Linux commonly uses `/dev/ttyACM0`; Windows uses a `COM` port. Replace these
 examples with your discovered port. Exit `picocom` with **Ctrl+A**, then
 **Ctrl+X**. See [USB console setup](system/firmware-build.md#macos-console-with-picocom)
-and the [Pico utilities guide](tools/pico-tools.md) for device discovery,
+and the [Pico utilities guide](system/firmware-build.md#device-selection-and-diagnostics) for device discovery,
 flashing and the board's required power sequence.
 
 ## VS Code builds and final checks
 
 On macOS/Linux, choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware**
 to build and deploy Phase 10 firmware while preserving disks and ENV. This task uses
-`scripts/pico_build.py` for their build step. It searches an explicit `ARM_GNU_TOOLCHAIN_BIN`
+`scripts/pico_build.py` for its build step. It searches an explicit `ARM_GNU_TOOLCHAIN_BIN`
 override, the build's cached compiler, complete toolchains on `PATH`, then
 `~/.local/share/arm-gnu-toolchain*/bin`. It checks the runtimes before building.
 For an installation outside these locations, set the override before starting

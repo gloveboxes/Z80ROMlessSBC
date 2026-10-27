@@ -5,6 +5,9 @@
 #include <stdint.h>
 
 bool z80_sram_prepare_loader(void);
+/* Loader session required. Probe A16 isolation, initialize bank 1 metadata,
+ * and mirror the 256-byte resident page from the validated boot image. */
+void z80_sram_prepare_banked_memory(const uint8_t *resident_page);
 bool z80_sram_write_byte(uint16_t address, uint8_t value);
 bool z80_sram_read_byte(uint16_t address, uint8_t *value);
 bool z80_sram_load(uint16_t address, const uint8_t *data, uint32_t length);

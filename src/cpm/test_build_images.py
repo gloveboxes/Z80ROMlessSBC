@@ -222,9 +222,9 @@ class BuildImagesTest(unittest.TestCase):
             build_images.CPM_SYSTEM_RECORDS * build_images.RECORD_BYTES,
             build_images.BIOS_BASE - build_images.CCP_BASE,
         )
-        self.assertEqual(build_images.CCP_BASE, 0xE700)
-        self.assertEqual(build_images.BDOS_ENTRY, 0xEF06)
-        self.assertEqual(build_images.BIOS_BASE, 0xFD00)
+        self.assertEqual(build_images.CCP_BASE, 0xE600)
+        self.assertEqual(build_images.BDOS_ENTRY, 0xEE06)
+        self.assertEqual(build_images.BIOS_BASE, 0xFC00)
         self.assertEqual(
             divmod(
                 build_images.CPM_SYSTEM_RECORDS,
@@ -272,6 +272,26 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(self.bios[jump_target(5) - build_images.BIOS_BASE], 0xC9)
         reader = jump_target(7) - build_images.BIOS_BASE
         self.assertEqual(self.bios[reader : reader + 3], bytes((0x3E, 0x1A, 0xC9)))
+
+    def test_bios_extension_matches_assembly_and_generated_reference(self) -> None:
+        code = build_images.banked_transfer_code()
+        self.assertEqual(len(self.bios), 1024)
+        self.assertEqual(self.bios[0x300:0x300 + len(code)], code)
+        self.assertEqual(self.z80_image[0xFF00:0xFF00 + len(code)], code)
+        self.assertEqual(self.z80_image[0xFFF0:], bytes(16))
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "resident.bin"
+            subprocess.run([shutil.which("z80asm"), "-o", str(binary),
+                            str(build_images.REPO_ROOT / "src/common/banked_transfer.asm")],
+                           check=True)
+            self.assertEqual(binary.read_bytes(), code)
+        oversized = self.bios + bytes(1)
+        with self.assertRaisesRegex(ValueError, "complete bank extension"):
+            build_images.build_z80_image(self.z80_system, oversized)
+        tampered = bytearray(self.bios)
+        tampered[0x300] ^= 1
+        with self.assertRaisesRegex(ValueError, "differs from generated"):
+            build_images.build_z80_image(self.z80_system, bytes(tampered))
 
     def test_cpm64_i8080_disassembly(self) -> None:
         image = build_images.load_cpm_system()
@@ -326,6 +346,14 @@ class BuildImagesTest(unittest.TestCase):
                 output_address = disassemble_cpm64.ACTIVE_BDOS_BASE
             relocated[address] = output_address
             instruction = instructions.get(address)
+            if address in {0xEC59, 0xED37}:
+                # Removed printer echo and Ctrl+P toggle; retain label aliases.
+                address = {0xEC59: 0xEC62, 0xED37: 0xED48}[address]
+                continue
+            if address == 0xEC33:
+                # The active port omits the Ctrl+S pause handler.
+                address = 0xEC42
+                continue
             if instruction is None:
                 size = 1
             elif address == 0xE4A7:
@@ -453,7 +481,7 @@ class BuildImagesTest(unittest.TestCase):
         )
         self.assertEqual(self.z80_system[clear_end:0x800], bytes(54))
         self.assertEqual(
-            disassemble_cpm64.ACTIVE_BIOS_BASE - section_ends["bdos"], 154
+            disassemble_cpm64.ACTIVE_BIOS_BASE - section_ends["bdos"], 192
         )
         self.assertEqual(len(djnz_branches), len(disassemble_cpm64.DJNZ_SITES))
         for instruction, target in djnz_branches:
@@ -461,7 +489,7 @@ class BuildImagesTest(unittest.TestCase):
             offset = source - disassemble_cpm64.ACTIVE_ORIGIN
             self.assertEqual(self.z80_system[offset], 0x10)
             displacement = int.from_bytes(
-                self.z80_system[offset + 1 : offset + 2], signed=True
+                self.z80_system[offset + 1 : offset + 2], byteorder="little", signed=True
             )
             self.assertEqual(source + 2 + displacement, relocated[target])
 
@@ -476,7 +504,7 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(block[3], 0x46)  # ld b,(hl)
         self.assertEqual(block[4], 0x3A)  # ld a,(nn)
         self.assertEqual(block[7:10], bytes((0xB7, 0x1F, 0x10)))  # or a; rra; djnz
-        djnz_displacement = int.from_bytes(block[10:11], signed=True)
+        djnz_displacement = int.from_bytes(block[10:11], byteorder="little", signed=True)
         self.assertEqual(
             relocated[0xEF3E] + 11 + djnz_displacement, relocated[0xEF45]
         )
@@ -486,7 +514,7 @@ class BuildImagesTest(unittest.TestCase):
         branch_inversion = relocated[0xF113] - disassemble_cpm64.ACTIVE_ORIGIN
         self.assertEqual(self.z80_system[branch_inversion], 0x38)
         displacement = int.from_bytes(
-            self.z80_system[branch_inversion + 1 : branch_inversion + 2], signed=True
+            self.z80_system[branch_inversion + 1 : branch_inversion + 2], byteorder="little", signed=True
         )
         self.assertEqual(
             relocated[0xF113] + 2 + displacement,
@@ -512,6 +540,11 @@ class BuildImagesTest(unittest.TestCase):
             self.assertEqual(self.z80_system[offset : offset + 2], bytes((0xC0, 0xC3)))
 
         for instruction in instructions.values():
+            if (0xEC59 <= instruction.address < 0xEC62 or
+                    0xED37 <= instruction.address < 0xED48):
+                continue  # Removed printer echo and toggle.
+            if 0xEC33 <= instruction.address < 0xEC42:
+                continue  # Removed Ctrl+S handler.
             if (instruction.target is None or
                     not disassemble_cpm64.BIOS_BASE <= instruction.target <=
                     disassemble_cpm64.BIOS_BASE + 0x30):

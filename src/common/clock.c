@@ -4,8 +4,12 @@
 #include "hardware/pwm.h"
 #include "pico/stdlib.h"
 #include "z80sbc/pins.h"
+#if defined(Z80_BANKED_PIO)
+#include "z80sbc/banked_pio.h"
+#include "z80sbc/gpio_mux.h"
+#endif
 
-static uint32_t actual_clock_hz;
+static volatile uint32_t actual_clock_hz;
 
 void __not_in_flash_func(z80_clock_prepare_stepping)(void) {
   z80_clock_stop();
@@ -14,13 +18,31 @@ void __not_in_flash_func(z80_clock_prepare_stepping)(void) {
   if (gpio_get_function(PIN_CLK) != GPIO_FUNC_SIO) {
     // Extend a frozen PWM HIGH before the mux can create a falling edge.
     busy_wait_us_32(1);
+#if defined(Z80_BANKED_PIO)
+    z80_gpio_mux_select(PIN_CLK, GPIO_FUNC_SIO);
+#else
     gpio_set_function(PIN_CLK, GPIO_FUNC_SIO);
+#endif
   }
 }
 
 bool z80_clock_set_hz(uint32_t hz) {
   if (hz < Z80_CLOCK_MIN_HZ || hz > Z80_CLOCK_MAX_HZ)
     return false;
+#if defined(Z80_BANKED_PIO)
+  if (z80_banked_pio_clock_owned()) {
+    /* Publish before enabling CLK: the first Z80 OUT can interrupt inside
+     * clock_start. Its trap must see a configured clock so resume restarts it.
+     * Publishing after start left the CPU stopped after the BIOS B0 marker. */
+    uint32_t previous_hz = actual_clock_hz;
+    actual_clock_hz = hz;
+    if (!z80_banked_pio_clock_start(hz)) {
+      actual_clock_hz = previous_hz;
+      return false;
+    }
+    return true;
+  }
+#endif
 
   uint slice_num = pwm_gpio_to_slice_num(PIN_CLK);
   uint channel = pwm_gpio_to_channel(PIN_CLK);
@@ -65,10 +87,23 @@ uint32_t z80_clock_get_hz(void) {
 }
 
 void __not_in_flash_func(z80_clock_stop)(void) {
+#if defined(Z80_BANKED_PIO)
+  if (z80_banked_pio_clock_owned()) {
+    z80_banked_pio_clock_stop();
+    return;
+  }
+#endif
   pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), false);
 }
 
 void __not_in_flash_func(z80_clock_resume)(void) {
+#if defined(Z80_BANKED_PIO)
+  if (z80_banked_pio_clock_owned()) {
+    if (actual_clock_hz)
+      z80_banked_pio_clock_resume();
+    return;
+  }
+#endif
   pwm_set_counter(pwm_gpio_to_slice_num(PIN_CLK), 0);
   gpio_set_function(PIN_CLK, GPIO_FUNC_PWM);
   pwm_set_enabled(pwm_gpio_to_slice_num(PIN_CLK), true);

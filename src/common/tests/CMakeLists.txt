@@ -21,6 +21,39 @@ if(MATRIX_PIOASM)
   target_compile_options(matrix_display_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
   add_test(NAME matrix_pio_HT16K33 COMMAND matrix_display_test)
   set_tests_properties(matrix_pio_HT16K33 PROPERTIES TIMEOUT 5)
+  set(banked_pio_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/banked-pio")
+  file(MAKE_DIRECTORY "${banked_pio_generated_dir}")
+  add_custom_command(
+    OUTPUT "${banked_pio_generated_dir}/banked_io.pio.h"
+    COMMAND "${MATRIX_PIOASM}" -o c-sdk
+      "${CMAKE_CURRENT_SOURCE_DIR}/../banked_io.pio"
+      "${banked_pio_generated_dir}/banked_io.pio.h"
+    DEPENDS ../banked_io.pio VERBATIM)
+  add_executable(banked_pio_test banked_pio_test.c
+    "${banked_pio_generated_dir}/banked_io.pio.h")
+  target_include_directories(banked_pio_test PRIVATE
+    pio_fakes "${banked_pio_generated_dir}" fakes ../include)
+  target_compile_features(banked_pio_test PRIVATE c_std_11)
+  target_compile_options(banked_pio_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  add_test(NAME banked_pio_driver COMMAND banked_pio_test)
+  set_tests_properties(banked_pio_driver PROPERTIES TIMEOUT 5)
+  add_executable(banked_pio_integration_test banked_pio_integration_test.c
+    "${banked_pio_generated_dir}/banked_io.pio.h")
+  target_include_directories(banked_pio_integration_test PRIVATE
+    pio_fakes "${banked_pio_generated_dir}" fakes ../include)
+  target_compile_definitions(banked_pio_integration_test PRIVATE
+    Z80_BANKED_PIO=1 Z80_EXPERIMENTAL_20MHZ=1)
+  target_compile_features(banked_pio_integration_test PRIVATE c_std_11)
+  target_compile_options(banked_pio_integration_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  add_test(NAME banked_pio_console_handoff COMMAND banked_pio_integration_test)
+  set_tests_properties(banked_pio_console_handoff PROPERTIES TIMEOUT 5)
+  add_test(NAME banked_pio_startup_interrupt COMMAND banked_pio_integration_test startup-irq)
+  set_tests_properties(banked_pio_startup_interrupt PROPERTIES TIMEOUT 5)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME banked_pio_instruction_cycles COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/banked_pio_cycles_test.py"
+    --program "${banked_pio_generated_dir}/banked_io.pio.h")
+  set_tests_properties(banked_pio_instruction_cycles PROPERTIES TIMEOUT 30)
 else()
   message(STATUS "Set MATRIX_PIOASM to enable the assembled matrix PIO regression")
 endif()
@@ -222,6 +255,9 @@ if(SOAK_Z80ASM)
       "${CMAKE_CURRENT_SOURCE_DIR}/math_soak_z80_test.py"
       --image-builder "$<TARGET_FILE:scope_test>" --scope)
     set_tests_properties(scope_z80_execution PROPERTIES TIMEOUT 60)
+    add_test(NAME banked_memory_z80_execution COMMAND "${SOAK_EMULATOR_PYTHON}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/banked_memory_z80_test.py")
+    set_tests_properties(banked_memory_z80_execution PROPERTIES TIMEOUT 10)
     add_test(NAME cpm_bios_z80_execution COMMAND "${SOAK_EMULATOR_PYTHON}"
       "${CMAKE_CURRENT_SOURCE_DIR}/cpm_boot_z80_test.py")
     set_tests_properties(cpm_bios_z80_execution PROPERTIES TIMEOUT 60)

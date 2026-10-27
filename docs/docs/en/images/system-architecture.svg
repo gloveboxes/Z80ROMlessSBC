@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1640" viewBox="0 0 1920 1640" role="img" aria-labelledby="title description">
   <title id="title">Z80 ROMless SBC: hardware and software architecture</title>
-  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the HT16K33 matrix service. A PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the matrix. The Z80 clock uses PWM. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives memory addresses and writes SRAM, including during assisted loading. After independent read-back verification and reset, it executes CP/M directly from 64 KiB SRAM.</desc>
+  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the HT16K33 matrix service. A PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the matrix. The 20 MHz Z80 clock comes from PWM or PIO1, depending on the active fast-path configuration. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives A0-A15 and writes SRAM, including during assisted loading. The 128 KiB SRAM is two 64 KiB banks selected on A16 by GP8 through U4. PIO1 accelerates OUT 07h bank-select cycles while preserving the 20 MHz Z80 clock. After verification, the Z80 executes CP/M directly from the 64 KiB window.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -54,16 +54,17 @@
   <text x="372" y="432" class="subheading blue">I/O trap + virtual port adapters</text>
   <text x="372" y="462" class="body">00-01h console; 10-14h disk</text>
   <text x="372" y="491" class="body">02-04h service ABI; 17h timers</text>
-  <text x="372" y="520" class="body">Stop PWM; service byte; step; resume</text>
-  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c"><text x="372" y="546" class="source">io_trap.c / io_ports.c / disk_device.c</text></a>
-  <path d="M372 565H708" stroke="#b5cef2"/>
+  <text x="372" y="520" class="body">Standard I/O: stop PWM, service, resume</text>
+  <text x="372" y="548" class="body">PIO1 fast path: OUT 07h bank select</text>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c"><text x="372" y="565" class="source">io_trap.c / banked_io.pio / disk_device.c</text></a>
+  <path d="M372 580H708" stroke="#b5cef2"/>
   <text x="372" y="597" class="subheading blue">Z80 supervisor + flash handshakes</text>
   <text x="372" y="627" class="body">Queued Z80 commands; no USB calls</text>
   <text x="372" y="656" class="body">State publication + bounded diagnostics</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c"><text x="372" y="682" class="source">Shared main.c; stdout queued to USB core</text></a>
   <rect x="370" y="707" width="340" height="62" rx="9" fill="#fff0dc" stroke="#e5b77c"/>
-  <text x="540" y="733" class="subheading orange" text-anchor="middle">Pico PWM generates Z80 CLK</text>
-  <text x="540" y="757" class="body orange" text-anchor="middle">20 MHz nominal; slow steps for boot/I/O</text>
+  <text x="540" y="733" class="subheading orange" text-anchor="middle">PWM / PIO1 clock generator</text>
+  <text x="540" y="757" class="body orange" text-anchor="middle">20 MHz; slow boot / trapped-I/O steps</text>
 
   <rect x="770" y="210" width="310" height="435" rx="14" fill="#f2f4fa" stroke="#cbd3e3"/>
   <text x="790" y="243" class="section">SHARED RAM BOUNDARY</text>
@@ -165,10 +166,10 @@
 
   <rect x="1320" y="930" width="560" height="190" rx="14" fill="#f3eefb" stroke="#cdbbe7"/>
   <text x="1340" y="967" class="heading">AS6C1008 SRAM</text>
-  <text x="1340" y="1000" class="body">64 KiB Z80 address space; A16 held LOW</text>
-  <text x="1340" y="1032" class="body">Boot image includes JP FD00h at 0000h</text>
-  <text x="1340" y="1063" class="body">CPU fetches instructions + reads/writes data here</text>
-  <text x="1340" y="1095" class="small muted">SRAM reads inhibited while Pico injects boot instructions</text>
+  <text x="1340" y="1000" class="body">128 KiB total: two 64 KiB banks</text>
+  <text x="1340" y="1032" class="body">Z80 window stays 64 KiB; A16 selects bank</text>
+  <text x="1340" y="1063" class="body">PIO1: OUT 07h sets GP8 → U4 → SRAM A16</text>
+  <text x="1340" y="1095" class="small muted">Bank settles during I/O wait; Z80 clock stays 20 MHz</text>
 
   <path d="M420 790V850H235V930" class="clock" marker-end="url(#clock-arrow)"/>
   <rect x="42" y="822" width="215" height="31" rx="6" fill="#fff0dc"/>
@@ -184,7 +185,7 @@
   <text x="1260" y="998" class="source" text-anchor="middle">controls</text>
   <path d="M235 1120V1153H1600V1120" class="memory" marker-start="url(#purple-arrow)" marker-end="url(#purple-arrow)"/>
   <rect x="478" y="1138" width="875" height="31" rx="6" fill="#f3eefb"/>
-  <text x="915" y="1160" class="body" text-anchor="middle">Direct SRAM bus: Z80 drives A0-A15; D0-D7 bidirectional. Pico never masters memory.</text>
+  <text x="915" y="1160" class="body" text-anchor="middle">Direct SRAM bus: Z80 drives A0-A15; PIO selects A16; D0-D7 bidirectional. Pico never masters memory.</text>
 
   <text x="40" y="1215" class="section">ROMLESS COLD BOOT TO CODE EXECUTION</text>
   <text x="1880" y="1215" class="small muted" text-anchor="end">Core 1 owns USB before loading; storage/network workers remain gated until run</text>
@@ -230,13 +231,13 @@
   <text x="1304" y="1320" class="body">Reset Z80 PC to 0000h.</text>
   <text x="1304" y="1350" class="body">Enable SRAM reads.</text>
   <text x="1304" y="1380" class="body">Release reset; start Pico's</text>
-  <text x="1304" y="1410" class="body">20 MHz PWM clock.</text>
+  <text x="1304" y="1410" class="body">20 MHz PWM / PIO clock.</text>
   <text x="1304" y="1450" class="source">cpu.c / clock.c</text>
 
   <rect x="1595" y="1240" width="285" height="230" rx="14" fill="#f3eefb" stroke="#cdbbe7"/>
   <circle cx="1625" cy="1271" r="17" fill="#7644b5"/><text x="1625" y="1277" class="small white" text-anchor="middle">6</text>
   <text x="1653" y="1278" class="subheading">Execute CP/M</text>
-  <text x="1615" y="1320" class="body">Fetch JP FD00h from SRAM.</text>
+  <text x="1615" y="1320" class="body">Fetch JP FC00h from SRAM.</text>
   <text x="1615" y="1350" class="body">BIOS cold entry; CCP starts.</text>
   <text x="1615" y="1380" class="body">Apps execute on the Z80;</text>
   <text x="1615" y="1410" class="body">IN/OUT reaches Pico services.</text>
@@ -249,7 +250,7 @@
 
   <rect x="40" y="1492" width="1840" height="65" rx="10" fill="#e9eef6"/>
   <text x="60" y="1518" class="small"><tspan font-weight="700">Runtime flash programming:</tspan> core 1 requests a core-0 BUSREQ#/BUSACK# grant + SDK flash-safe execution; release after commit. No SRAM bus mastering.</text>
-  <text x="60" y="1543" class="small"><tspan font-weight="700">I/O cycle:</tspan> HCT32 asserts WAIT#; core 0 stops PWM, transfers one byte, releases WAIT#, steps to cycle end, isolates data paths and resumes PWM.</text>
+  <text x="60" y="1543" class="small"><tspan font-weight="700">Standard I/O:</tspan> HCT32 asserts WAIT#; software trap steps one cycle and resumes the clock. PIO1 handles OUT 07h bank select in hardware.</text>
   <text x="40" y="1590" class="source">Implementation: Stage 10 / core-1 USB migration | Shared Stage 9 main.c. Blue = Z80 I/O and USB queues; teal = network + display; orange = clock; purple = SRAM.</text>
   <text x="40" y="1617" class="source">20 MHz is the configured nominal Z80 clock, not a claim of combined network timing qualification. Boot failures hold RESET# LOW; trap faults fail closed via reset/watchdog.</text>
 </svg>

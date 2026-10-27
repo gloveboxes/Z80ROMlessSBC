@@ -1,25 +1,17 @@
 # Appendix D: CP/M BIOS and dcc Compatibility
 
-For a first hardware build, this section is supporting software reference,
-not a prerequisite for wiring. You can use the
-[interactive host emulator](interactive.md) to become familiar with CP/M
-before the boards are ready. It tests the software path without powering a
-Pico; it does not qualify the physical buses, flash recovery, or timing.
+This software reference is optional for hardware assembly. The
+[host emulator](interactive.md) lets you try CP/M without a Pico; physical
+buses, flash recovery, and timing require hardware testing.
 
-This system runs CP/M 2.2 with a custom BIOS designed specifically for this
-board. The image builder packages the 64K CP/M CCP and BDOS with the native
-BIOS assembled from
+The system runs 64K CP/M 2.2 with a custom BIOS assembled from
 [src/cpm/z80_bios.asm](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/z80_bios.asm).
-The BIOS is the layer that translates standard CP/M console and disk
-operations into this board's Pico-serviced virtual I/O ports. Applications do
-not need to know that the terminal is a WebSocket or that disk records reside
-in Pico flash.
+The BIOS maps standard console and disk operations to Pico-serviced I/O,
+keeping the WebSocket terminal and flash storage transparent to applications.
 
-[dcc](https://github.com/gloveboxes/dcc) targets CP/M 2.2 on the Z80 and emits
-ordinary `.COM` programs linked with its Z80 runtime. That execution model is
-compatible with this system: the dcc runtime enters CP/M through the standard
-page-zero vectors, CP/M BDOS performs console and file-system policy, and the
-custom BIOS performs the final hardware-dependent transfer.
+[dcc](https://github.com/gloveboxes/dcc) produces compatible Z80 `.COM` programs.
+Its runtime uses standard CP/M page-zero vectors; BDOS handles console and
+file services, and the BIOS handles hardware transfers.
 
 ## In this section
 

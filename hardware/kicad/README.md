@@ -11,8 +11,17 @@ The current schematic includes **J2**, a 1x5, 2.54 mm through-hole peripheral
 expansion header: pin 1 GP8, pin 2 GP22, pin 3 GP26/ADC0, pin 4 Pico 3.3 V
 output, pin 5 GND. Its footprint is assigned for future PCB migration, but
 the PCB and fabrication package have not been updated. All expansion signals
-are 3.3 V only, with no fixed pulls or level shifting. See the
+are 3.3 V only. GP8 is reserved for SRAM bank select and has a 10 kOhm
+pull-down; GP22/GP26 have no fixed pulls on the board. See the
 [expansion pin map and interface limits](../../docs/docs/en/hardware/pin-mapping.md#j2-peripheral-expansion).
+
+The schematic includes the fitted bank-select wiring: **Pico A1 physical
+pin 11 (GP8) -> U4 pin 17**, and **U4 pin 3 -> SRAM U2 pin 2 (A16)**.
+**R24 is 10 kOhm from Pico physical pin 11 to GND**, on the 3.3 V side of
+the level shifter. The former U4 pin 17 and SRAM A16 ground straps are
+removed. The existing AHCT244 provides the 5 V address level; no extra IC
+is required. R24 is drawn beside the Pico and marked with its attachment
+point. The net manifest, schematic exports and BOM include these changes.
 
 The schematic also shows **A2**, the external Adafruit HT16K33 8x8 matrix
 operating in Stage 10: `D`/SDA joins GP22 (J2 pin 2), `C`/SCL joins GP26

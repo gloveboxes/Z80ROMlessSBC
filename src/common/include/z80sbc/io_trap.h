@@ -25,6 +25,8 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         void *context);
 void z80_io_trap_rearm(void);
 void z80_io_trap_disable(void);
+/* Core 0 service loop: retains a 500 ms fail-closed timeout for PIO cycles. */
+void z80_io_trap_poll(void);
 uint32_t z80_io_trap_timeout_count(void);
 uint32_t z80_io_trap_control_error_count(void);
 uint32_t z80_io_trap_inactive_irq_count(void);

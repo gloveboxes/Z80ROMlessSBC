@@ -190,7 +190,7 @@ class CpmBootExecution(unittest.TestCase):
         self.assertGreater(self.flushes, 0)
         self.assertGreaterEqual(self.markers.count(0xC0), 2)
         self.assertEqual(self.machine.memory[5], 0xC3)
-        self.assertEqual(bytes(self.machine.memory[6:8]), b"\x06\xEF")
+        self.assertEqual(bytes(self.machine.memory[6:8]), b"\x06\xEE")
 
     def configure(self, mode: int, command: str) -> None:
         offset = build_images.AUTORUN_OFFSET
@@ -327,7 +327,7 @@ class CpmBootExecution(unittest.TestCase):
 
     def test_autorun_utility_refuses_other_bios(self) -> None:
         self.until_prompt()
-        self.machine.memory[0xFD33] = 0
+        self.machine.memory[build_images.BIOS_BASE + 0x33] = 0
         result = self.command("AUTORUN")
         self.assertIn(b"requires the native ZAR1 BIOS", result)
         self.assertEqual(self.writes, [])

@@ -36,6 +36,7 @@ void gpio_set_dir(uint pin, bool output) {
   assert(!output || pin < PIN_DATA_0 || pin > PIN_DATA_7);
   outputs[pin] = output;
 }
+bool gpio_get(uint pin) { return levels[pin]; }
 void gpio_disable_pulls(uint pin) { (void)pin; }
 void tight_loop_contents(void) {}
 void sleep_ms(uint32_t delay) { (void)delay; assert(false); }

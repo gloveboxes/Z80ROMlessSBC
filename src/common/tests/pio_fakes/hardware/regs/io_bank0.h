@@ -1,0 +1,4 @@
+#ifndef TEST_IO_BANK0_REGS_H
+#define TEST_IO_BANK0_REGS_H
+#define IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB 0
+#endif

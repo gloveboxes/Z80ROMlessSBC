@@ -5,7 +5,14 @@
 #include "z80sbc/pins.h"
 #include "z80sbc/sram.h"
 
-static uint8_t memory[65536];
+static uint8_t banks[2][65536];
+static unsigned selected_bank;
+static bool bank_wired = true;
+static bool bank_available;
+static bool corrupt_bank_read;
+#define memory banks[bank_wired ? selected_bank : 0]
+void z80_memory_bank_select(unsigned bank) { selected_bank = bank & 1u; }
+void z80_memory_bank_set_available(bool available) { bank_available = available; }
 static uint16_t address;
 static unsigned cycle;
 static unsigned reset_tail;
@@ -43,7 +50,7 @@ void z80_data_bus_prepare_input(void) {
 uint8_t z80_data_bus_sample(void) {
   assert(receiving && !driving && !read_disabled);
   assert(opcode == 0x7E && cycle == 6);
-  return memory[address];
+  return memory[address] ^ (selected_bank && corrupt_bank_read ? 1 : 0);
 }
 void z80_reset_with_clock_cycles(unsigned count, uint32_t half_period) {
   assert(count >= 3 && half_period > 0);
@@ -106,6 +113,31 @@ int main(void) {
   assert(z80_sram_pattern_test(true));
   assert(z80_sram_march_test());
   assert(cycle == 0 && !driving && !receiving && read_disabled);
+  /* A package-specific page proves initialization mirrors its input instead
+   * of embedding another independently versioned BIOS in Pico firmware. */
+  uint8_t resident_page[256];
+  for (unsigned i = 0; i < sizeof(resident_page); ++i)
+    resident_page[i] = (uint8_t)(i ^ 0xA5);
+  resident_page[0] = 0xC3;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(bank_available && selected_bank == 0);
+  assert(banks[0][0] == 0x5A && memcmp(banks[1], "BKM2", 4) == 0);
+  assert(banks[1][0x20] == 3 && banks[1][0xFF00] == 0xC3 && banks[1][0x5F] == 0xC0);
+  assert(memcmp(banks[1] + 0xFF00, resident_page, sizeof(resident_page)) == 0);
+  resident_page[19] ^= 0xFF;
+  resident_page[255] ^= 0xFF;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(bank_available && selected_bank == 0);
+  assert(memcmp(banks[1] + 0xFF00, resident_page, sizeof(resident_page)) == 0);
+  bank_wired = false;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(!bank_available && selected_bank == 0);
+  bank_wired = true;
+  corrupt_bank_read = true;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(!bank_available && selected_bank == 0);
+  z80_sram_prepare_banked_memory(NULL);
+  assert(!bank_available && selected_bank == 0);
   puts("PASS: injected cycles, CPU-only writes, readback, bounds and SRAM patterns");
   return 0;
 }

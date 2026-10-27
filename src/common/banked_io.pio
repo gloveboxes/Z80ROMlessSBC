@@ -1,0 +1,46 @@
+; PIO1: two state machines share this 31-word program and IRQ flags 0..2.
+; Clock SM: SET=GP2; wrap clock_start..clock_end; sysclk=120 MHz, divider=1.
+; I/O SM: IN=GP10, OUT=GP8 (1), SET=GP7 (1), side-set=GP9, JMP_PIN=GP0.
+; IRQ0 = slow-service request, IRQ1 = fast clock hold, IRQ2 = CPU clock hold.
+.program banked_io
+.side_set 1 opt
+
+public clock_start:
+    set pins, 1 [2]
+    set pins, 0
+    wait 0 irq 1
+public clock_end:
+    wait 0 irq 2
+
+.wrap_target
+public io_start:
+    wait 1 gpio 0             ; ignore floating bus while BUSACK# is LOW
+    wait 0 gpio 1             ; hardware HCT32 has already asserted WAIT#
+    jmp pin decode
+    jmp io_start
+decode:
+    mov osr, pins
+    out null, 8
+    out x, 4                 ; A0,A1,A2,A4: decoded 07h is nibble 7
+    set y, 7
+    jmp x!=y slow
+    out null, 5
+    out x, 2                 ; RD#,WR#: only 01b is a valid OUT
+    set y, 1
+    jmp x!=y slow
+    irq 1                    ; clock SM stops only at the LOW phase
+    set pins, 0 [7]          ; receive data; allow clock and LVC path to settle
+    mov osr, pins
+    out pins, 1              ; GP8/A16 = D0; only while SRAM is deselected
+    nop side 1 [7]           ; release WAIT, with CLK still LOW for >=8 ticks
+    irq clear 1
+    wait 1 gpio 1
+    wait 1 gpio 28
+    set pins, 1 side 0        ; isolate receive path, rearm hardware WAIT
+    push noblock             ; progress token: never stall on a full FIFO
+    jmp io_start
+public slow:
+    irq wait 0               ; ARM parks SM, owns GP7/GP9, then restarts at io_start
+    wait 1 gpio 1
+    jmp io_start
+.wrap

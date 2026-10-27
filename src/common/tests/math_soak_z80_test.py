@@ -66,14 +66,15 @@ class MathSoakExecution(unittest.TestCase):
         self.assertEqual(self.machine.memory[0x1A00], 0xA5)
         self.phases += 1
 
-    def execute(self, phases: int, corrupt_address: int | None = None) -> None:
+    def execute(self, phases: int, corrupt_address: int | None = None,
+                corrupt_phase: int = 0) -> None:
         injected = False
         if corrupt_address is not None or self.scope_only:
             def write(address: int, value: int) -> None:
                 nonlocal injected
                 self.machine.memory[address] = value
                 if (corrupt_address is not None and address == 0xFFFF
-                        and not injected):
+                        and self.phases == corrupt_phase and not injected):
                     self.machine.memory[corrupt_address] ^= 1
                     injected = True
                 if self.scope_only:
@@ -92,6 +93,13 @@ class MathSoakExecution(unittest.TestCase):
                             self.assertEqual(mailbox[10], self.phases % 4)
                             self.complete_phase()
             self.machine.set_write_callback(write)
+            # The local core's native memory path bypasses callbacks unless
+            # each observed address carries WRITE_MARK. Only intercept the
+            # last fill byte and/or scope mailbox; leave the rest native.
+            if corrupt_address is not None:
+                self.machine.mark_addr(0xFFFF, self.machine.WRITE_MARK)
+            if self.scope_only:
+                self.machine.mark_addrs(0x0F04, 0x10, self.machine.WRITE_MARK)
         for _ in range(4000):
             self.machine.ticks_to_stop = 100000
             self.machine.run()
@@ -140,16 +148,20 @@ class MathSoakExecution(unittest.TestCase):
         self.assertEqual(self.packet[1], 16)
 
     def test_first_middle_last_sram_failure(self) -> None:
-        for address in (0x2000, 0x8000, 0xFFFF):
-            with self.subTest(address=f"{address:04x}"):
-                self.setUp()
-                self.execute(1, address)
-                self.assertEqual(self.phases, 0)
-                self.assertEqual(
-                    self.packet[:5],
-                    [0xE1, 0x80, 0xFF, address & 0xFF, address >> 8],
-                )
-                self.assertNotEqual(self.packet[5:7], self.packet[7:9])
+        for pattern in range(4):
+            for address in (0x2000, 0x8000, 0xFFFF):
+                with self.subTest(pattern=pattern, address=f"{address:04x}"):
+                    self.setUp()
+                    self.execute(pattern + 1, address, corrupt_phase=pattern)
+                    self.assertEqual(self.phases, pattern)
+                    self.assertTrue(self.machine.halted)
+                    expected = ((address >> 8 if pattern & 1 else address) ^
+                                (0xFF if pattern & 2 else 0)) & 0xFF
+                    self.assertEqual(
+                        self.packet,
+                        [0xE1, 0x80 | pattern, 0xFF, address & 0xFF, address >> 8,
+                         expected ^ 1, 0, expected, 0],
+                    )
 
 
 if __name__ == "__main__":

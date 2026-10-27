@@ -30,6 +30,8 @@ static terminal_ring_t tx_queue = {tx_data, TERM_TX_DEPTH, 0, 0, 0};
 static critical_section_t terminal_lock;
 static uint32_t client_connected;
 static uint32_t browser_connected;
+/* Let core 1 skip empty output polls without taking the core 0 I/O lock. */
+static uint32_t tx_pending;
 static bool usb_connected;
 static uint32_t rx_drops;
 static uint32_t tx_drops;
@@ -37,6 +39,7 @@ static uint32_t tx_drops;
 static void clear_queues(void) {
   rx_queue.head = rx_queue.count = 0;
   tx_queue.head = tx_queue.count = 0;
+  __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
 }
 
 static void __not_in_flash_func(ring_add)(terminal_ring_t *ring, uint8_t value) {
@@ -105,9 +108,12 @@ void __not_in_flash_func(z80_terminal_io_write)(uint8_t port, uint8_t value) {
     return;
   critical_section_enter_blocking(&terminal_lock);
   if (z80_terminal_client_connected()) {
-    if (tx_queue.count < TERM_TX_DEPTH)
+    if (tx_queue.count < TERM_TX_DEPTH) {
+      bool was_empty = tx_queue.count == 0;
       ring_add(&tx_queue, value);
-    else
+      if (was_empty)
+        __atomic_store_n(&tx_pending, 1, __ATOMIC_RELEASE);
+    } else
       __atomic_fetch_add(&tx_drops, 1, __ATOMIC_RELAXED);
   }
   critical_section_exit(&terminal_lock);
@@ -129,7 +135,8 @@ void z80_terminal_receive(const uint8_t *data, size_t length) {
 }
 
 size_t z80_terminal_peek(uint8_t *data, size_t capacity) {
-  if (data == NULL)
+  if (data == NULL || capacity == 0 ||
+      !__atomic_load_n(&tx_pending, __ATOMIC_ACQUIRE))
     return 0;
   critical_section_enter_blocking(&terminal_lock);
   size_t count = ring_peek(&tx_queue, data, capacity);
@@ -138,12 +145,19 @@ size_t z80_terminal_peek(uint8_t *data, size_t capacity) {
 }
 
 size_t z80_terminal_supply(uint8_t *data, size_t capacity) {
-  if (data == NULL)
+  if (data == NULL || capacity == 0 ||
+      !__atomic_load_n(&tx_pending, __ATOMIC_ACQUIRE))
     return 0;
   critical_section_enter_blocking(&terminal_lock);
   size_t count = ring_remove(&tx_queue, data, capacity);
+  if (tx_queue.count == 0)
+    __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
   critical_section_exit(&terminal_lock);
   return count;
+}
+
+bool z80_terminal_output_pending(void) {
+  return __atomic_load_n(&tx_pending, __ATOMIC_ACQUIRE) != 0;
 }
 
 bool z80_terminal_browser_try_receive(const uint8_t *data, size_t length) {
@@ -170,8 +184,10 @@ void z80_terminal_browser_connect(void) {
 void z80_terminal_set_connected(bool connected) {
   critical_section_enter_blocking(&terminal_lock);
   __atomic_store_n(&client_connected, connected, __ATOMIC_RELEASE);
-  if (!connected)
+  if (!connected) {
     tx_queue.head = tx_queue.count = 0;
+    __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
+  }
   critical_section_exit(&terminal_lock);
 }
 
@@ -214,11 +230,16 @@ void z80_terminal_usb_receive(uint8_t value) {
 }
 
 size_t z80_terminal_usb_supply(uint8_t *data, size_t capacity) {
-  if (data == NULL)
+  if (data == NULL || capacity == 0 ||
+      !__atomic_load_n(&tx_pending, __ATOMIC_ACQUIRE))
     return 0;
   critical_section_enter_blocking(&terminal_lock);
-  size_t count = usb_connected && !z80_terminal_browser_connected()
-                     ? ring_remove(&tx_queue, data, capacity) : 0;
+  size_t count = 0;
+  if (usb_connected && !z80_terminal_browser_connected()) {
+    count = ring_remove(&tx_queue, data, capacity);
+    if (tx_queue.count == 0)
+      __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
+  }
   critical_section_exit(&terminal_lock);
   return count;
 }

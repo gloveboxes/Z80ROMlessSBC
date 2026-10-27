@@ -10,7 +10,7 @@ Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
 
 Deployment tasks force-update without checking the previous firmware phase.
 Complete this phase's hardware prerequisites and save work before flashing. See
-[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+[Pico tools](../system/firmware-build.md#deployment-task-requirements).
 
 
 <div data-checklist="phase-3" data-checklist-label="Phase 3" markdown="1">
@@ -33,7 +33,7 @@ Disconnect external power and USB; keep U7 out of its socket until wiring
 checks pass. CPU and SRAM remain absent. Tick each channel after checking
 both wires at the actual socket contacts and Pico pins, and isolation from
 adjacent pins. Pico pin numbers below are physical pin positions, not GPIO
-numbers. See the [monitor reference](../hardware/address-interface.md#port-address-monitor).
+numbers. See the [Pico header reference](../hardware/pin-mapping.md#10-raspberry-pi-pico-2-w-header-pin-map).
 
 | Done | Signal | Z80 socket → U7 LVC244 input | U7 LVC244 output → Pico pin |
 | --- | --- | --- | --- |

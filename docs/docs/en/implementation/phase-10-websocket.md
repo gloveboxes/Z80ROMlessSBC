@@ -42,7 +42,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
   images together. All Drive A files are replaced without backups.
 - Firmware and disk tasks force-update without a previous-firmware handshake; save CP/M work first. All tasks verify written bytes and request reboot.
 - Disk tasks do not rebuild firmware or applications. Install updated applications into the source disk first.
-- Setup/details: [firmware build and provisioning](../system/firmware-build.md) and [VS Code disk tasks](../tools/pico-tools.md#vs-code-disk-flashing-tasks).
+- Setup/details: [firmware build and provisioning](../system/firmware-build.md) and [VS Code disk tasks](../system/firmware-build.md#system-and-storage-deployment).
 
 <input type="checkbox" data-checklist-id="firmware-first-connection" aria-label="Phase 10 built and provisioned"> Phase 10 firmware deployed.
 

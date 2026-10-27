@@ -16,7 +16,7 @@ not AHC. Keep output pin 18 to Z80 CLK pin 6 short and local to the Core board.
 | Z80 WR# pin 22 | 11 | 9 | SRAM WE# pin 29 |
 | Z80 RD# pin 21 | 13 | 7 | HCT32 pin 1, RD_5V# |
 | GND | 15 | 5 | Leave output open |
-| GND | 17 | 3 | Leave output open |
+| Pico GP8, header 11; R24 10 kOhm to GND at Pico | 17 | 3 | SRAM A16 pin 2 |
 
 <template id="phase-2-output-buffer-wiring">
 
@@ -30,12 +30,14 @@ not AHC. Keep output pin 18 to Z80 CLK pin 6 short and local to the Core board.
 | <input type="checkbox" data-checklist-id="wire-u4-input-8" aria-label="U4 memory request input pin 8 continuity checked"> | MREQ# | U1 Z80 MREQ# - pin 19 | U4 AHCT244 input - pin 8 |
 | <input type="checkbox" data-checklist-id="wire-u4-input-11" aria-label="U4 write input pin 11 continuity checked"> | WR# | U1 Z80 WR# - pin 22 | U4 AHCT244 input - pin 11 |
 | <input type="checkbox" data-checklist-id="wire-u4-input-13" aria-label="U4 read input pin 13 continuity checked"> | RD# | U1 Z80 RD# - pin 21 | U4 AHCT244 input - pin 13 |
+| <input type="checkbox" data-checklist-id="wire-u4-input-17" aria-label="U4 bank-select input pin 17 continuity checked"> | SRAM bank select | Pico GP8 - header pin 11 | U4 AHCT244 input - pin 17 |
 
 ### U4 AHCT244 outputs to CPU and SRAM
 
 | Done | Signal | Source socket contact | Destination socket contact |
 | --- | --- | --- | --- |
 | <input type="checkbox" data-checklist-id="wire-u4-9" aria-label="AHCT244 pin 9 to SRAM write enable wire continuity checked"> | SRAM WE# | U4 AHCT244 output - pin 9 | U2 SRAM WE# - pin 29 |
+| <input type="checkbox" data-checklist-id="wire-u4-3" aria-label="AHCT244 pin 3 to SRAM A16 checked"> | SRAM A16 | U4 AHCT244 output - pin 3 | U2 SRAM A16 - pin 2 |
 | <input type="checkbox" data-checklist-id="wire-u4-12" aria-label="AHCT244 pin 12 to SRAM chip enable wire continuity checked"> | SRAM CE# | U4 AHCT244 output - pin 12 | U2 SRAM CE# - pin 22 |
 | <input type="checkbox" data-checklist-id="wire-u4-16" aria-label="AHCT244 pin 16 to Z80 bus request wire continuity checked"> | BUSREQ# | U4 AHCT244 output - pin 16 | U1 Z80 BUSREQ# - pin 25 |
 | <input type="checkbox" data-checklist-id="wire-u4-18" aria-label="AHCT244 pin 18 to Z80 clock wire continuity checked"> | CLK | U4 AHCT244 output - pin 18 | U1 Z80 CLK - pin 6 |
@@ -62,15 +64,15 @@ Rows are ordered by U3 pin number. Inputs and outputs are identified explicitly.
 
 These supply and ground connections are **direct links, not resistors**.
 The local capacitors are additional to the direct supply/ground wires.
+R24 is a separate 10 kOhm pull-down from Pico physical pin 11 (GP8) to GND;
+U4 pin 17 and SRAM A16 pin 2 must not be directly grounded.
 
 | Done | Device | Pin / component | Required connection |
 | --- | --- | --- | --- |
 | <input type="checkbox" data-checklist-id="fixed-u4-1" aria-label="U4 enable pin 1 grounded"> | U4 AHCT244 | Pin 1, OE# | Common GND |
-| <input type="checkbox" data-checklist-id="open-u4-3" aria-label="U4 unused output pin 3 left open"> | U4 AHCT244 | Pin 3, unused output | Leave open |
 | <input type="checkbox" data-checklist-id="open-u4-5" aria-label="U4 unused output pin 5 left open"> | U4 AHCT244 | Pin 5, unused output | Leave open |
 | <input type="checkbox" data-checklist-id="fixed-u4-10" aria-label="U4 power ground pin 10 connected"> | U4 AHCT244 | Pin 10, power GND | Common GND |
 | <input type="checkbox" data-checklist-id="fixed-u4-15" aria-label="U4 unused input pin 15 grounded"> | U4 AHCT244 | Pin 15, unused input | Common GND |
-| <input type="checkbox" data-checklist-id="fixed-u4-17" aria-label="U4 unused input pin 17 grounded"> | U4 AHCT244 | Pin 17, unused input | Common GND |
 | <input type="checkbox" data-checklist-id="fixed-u4-19" aria-label="U4 enable pin 19 grounded"> | U4 AHCT244 | Pin 19, OE# | Common GND |
 | <input type="checkbox" data-checklist-id="fixed-u4-20" aria-label="U4 supply pin 20 connected to 5 V"> | U4 AHCT244 | Pin 20, VCC | Core +5 V rail |
 | <input type="checkbox" data-checklist-id="bypass-u4" aria-label="U4 local 100 nF bypass checked"> | U4 AHCT244 | C4, 100 nF | Close to pin 20, between +5 V and nearby common GND |
@@ -86,33 +88,3 @@ at both actual socket contacts and isolation from adjacent pins. Progress
 is saved in the Phase 2 checklist. Keep the CLK connection entirely on Core.
 
 phase-2-output-buffer-wiring-end</template>
-
-## HCT32 Quad OR Logic
-
-Use **SN74HCT32N**, PDIP-14, powered from +5 V at pin 14 and GND at pin 7.
-Do not substitute HC32: TTL and 3.3 V HIGH recognition is required.
-The [TI SN74HCT32 datasheet](https://www.ti.com/lit/ds/symlink/sn74hct32.pdf)
-specifies a minimum HIGH input voltage (VIH) of 2.0 V with a 4.5-5.5 V supply.
-
-| Gate | Input A | Input B | Output | Function |
-| --- | --- | --- | --- | --- |
-| 1 | Pin 1: U4 pin 7 | Pin 2: U4 pin 14 | Pin 3: SRAM OE# pin 24 | Inhibit SRAM reads during injection |
-| 2 | Pin 4: Z80 IORQ# pin 20 | Pin 5: Pico GP9 | Pin 6: Z80 WAIT# pin 24 | Hold I/O until IO_RELEASE HIGH |
-| 3 | Pin 9: Z80 RD# pin 21 | Pin 10: Pico GP6 | Pin 8: U9 OE# pin 19 | Drive only during Z80 read strobes |
-| 4 | Pin 12: GND | Pin 13: GND | Pin 11: open | Unused, defined inputs |
-
-```mermaid
-block-beta
-  columns 2
-  H3["HCT32 output - pin 3"] R24["SRAM OE# - pin 24"]
-  H6["HCT32 output - pin 6"] Z24["Z80 WAIT# - pin 24"]
-  H8["HCT32 output - pin 8"] U19["AHCT245 OE# - pin 19"]
-  H3 --> R24
-  H6 --> Z24
-  H8 --> U19
-```
-
-Pico GP3 RESET# connects directly to Z80 pin 26, with a 10 kOhm pull-down.
-Never connect a +5 V pull-up to it. Add one local 100 nF capacitor per IC.
-These fixed gates require no programming. Propagation delays, clock shape,
-memory setup, and WAIT timing remain measured qualification requirements.

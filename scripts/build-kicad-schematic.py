@@ -398,8 +398,8 @@ schematic = Schematic(
     paper=PageSettings(paperSize="A0"),
     titleBlock=TitleBlock(
         title="Z80ROMlessSBC - Exact Breadboard Electrical Schematic",
-        date="2026-08-23",
-        revision="1",
+        date="2026-10-26",
+        revision="2",
         company="Z80ROMlessSBC",
         comments={1: "Native KiCad 10 schematic generated from the verified README pin map"},
     ),
@@ -549,7 +549,7 @@ z80_nets = {
 add_component("U1", "Z80_CPU", "Z84C0020PEC", 508.0, 152.4, z80_nets, footprint="Package_DIP:DIP-40_W15.24mm")
 
 sram_nets = {
-    1: None, 2: "GND", 3: "A14", 4: "A12", 5: "A7", 6: "A6", 7: "A5",
+    1: None, 2: "SRAM_A16", 3: "A14", 4: "A12", 5: "A7", 6: "A6", 7: "A5",
     8: "A4", 9: "A3", 10: "A2", 11: "A1", 12: "A0", 13: "D0", 14: "D1",
     15: "D2", 16: "GND", 17: "D3", 18: "D4", 19: "D5", 20: "D6", 21: "D7",
     22: "SRAM_CE_N", 23: "A10", 24: "SRAM_OE_N", 25: "A11", 26: "A9",
@@ -566,11 +566,11 @@ hct32_nets = {
 add_component("U3", "HCT32", "SN74HCT32N", 152.4, 330.2, hct32_nets, footprint="Package_DIP:DIP-14_W7.62mm")
 
 ahct244_nets = {
-    1: "GND", 2: "PICO_CLK", 3: None, 4: "PICO_BUSREQ_N",
+    1: "GND", 2: "PICO_CLK", 3: "SRAM_A16", 4: "PICO_BUSREQ_N",
     5: None, 6: "BOOT_READ_DISABLE", 7: "RD_5V_N",
     8: "MREQ_N", 9: "SRAM_WE_N", 10: "GND", 11: "WR_N",
     12: "SRAM_CE_N", 13: "RD_N", 14: "BOOT_READ_DISABLE_5V",
-    15: "GND", 16: "BUSREQ_N", 17: "GND",
+    15: "GND", 16: "BUSREQ_N", 17: "PICO_GP8",
     18: "Z80_CLK", 19: "GND", 20: "+5V",
 }
 add_component("U4", "AHCT244", "SN74AHCT244N", 508.0, 330.2, ahct244_nets, footprint="Package_DIP:DIP-20_W7.62mm")
@@ -644,7 +644,7 @@ add_component(
     "J2", "EXPANSION", "PICO GPIO EXPANSION", 1016.0, 152.4,
     {1: "PICO_GP8", 2: "PICO_GP22", 3: "PICO_GP26", 4: "+3V3", 5: "GND"},
     footprint="Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
-    description="3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting",
+    description="3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND",
 )
 add_component(
     "A2", "HT16K33_MATRIX", "Adafruit HT16K33 8x8 MATRIX", 1016.0, 254.0,
@@ -672,18 +672,23 @@ PULLS = [
     ("PICO_BUSREQ_N", "+3V3"), ("BOOT_READ_DISABLE", "+3V3"),
     ("PICO_DATA_UP_OE_N", "+3V3"), ("DATA_DOWN_OE_N", "+3V3"),
     ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("IO_RELEASE", "GND"),
+    ("PICO_GP8", "GND"),
 ]
-if len(PULLS) != 7:
-    raise AssertionError(f"expected 7 discrete startup resistors, got {len(PULLS)}")
+if len(PULLS) != 8:
+    raise AssertionError(f"expected 8 discrete startup resistors, got {len(PULLS)}")
 for index, (signal, rail) in enumerate(PULLS, start=17):
     column = index - 17
     value = "10k"
+    # R24 is drawn beside the Pico to identify its physical attachment point.
+    x, y = (787.4, 228.6) if signal == "PICO_GP8" else (50.8 + column * 71.12, 711.2)
+    description = ("10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4"
+                   if signal == "PICO_GP8" else f"{value} startup bias for {signal}")
     add_component(
         f"R{index}", "RESISTOR", value,
-        50.8 + column * 71.12, 711.2,
+        x, y,
         {1: signal, 2: rail},
         footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-        description=f"{value} startup bias for {signal}",
+        description=description,
     )
 
 
@@ -838,10 +843,16 @@ schematic.texts.extend([
         uuid=uid("text:pull-note"),
     ),
     Text(
-        text="J2: 3.3V GPIO expansion only.\\nNo fixed pulls or level shifting.\\nUse software/PIO for I2C or full-duplex SPI.",
+        text="J2: 3.3V signals only.\\nPin 1 / GP8 reserved for SRAM bank select.\\nGP22/GP26 available for software/PIO I2C.",
         position=pos(1016.0, 190.5, 0),
         effects=effects(1.27),
         uuid=uid("text:expansion-note"),
+    ),
+    Text(
+        text="BANK SELECT: Pico physical pin 11 / GP8 -> U4.17.\\nR24: 10k from Pico pin 11 to GND (3.3V side).\\nU4.3 -> U2.2 / A16 (5V side); LOW selects bank 0.\\nRemove the former U4.17 and U2.2 ground straps.",
+        position=pos(787.4, 254.0, 0),
+        effects=effects(1.27),
+        uuid=uid("text:bank-select-note"),
     ),
     Text(
         text="A2: external Stage 10 matrix, no PCB footprint.\\nD/SDA = J2.2 / GP22; C/SCL = J2.3 / GP26.\\n+ = J2.4 / 3V3; - = J2.5 / GND.\\nBackpack I2C pull-ups to 3.3V only, never 5V.\\nPIO I2C on core 1; tested address 0x72.\\nBench-tested moving row every 500ms.\\nPins use printed markings, not connector order.",
@@ -854,7 +865,7 @@ schematic.texts.extend([
 
 required_endpoints = {
     "VSYS": {"D1.1", "A1.39"},
-    "GND": {"A1.38", "J2.5", "A2.-"},
+    "GND": {"A1.38", "J2.5", "A2.-", "R24.2"},
     "+3V3": {"A1.36", "J2.4", "A2.+"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},
@@ -873,7 +884,8 @@ for net, required in required_endpoints.items():
         raise AssertionError(f"{net} missing endpoints: {sorted(required - actual)}")
 
 for net, required in {
-    "PICO_GP8": {"A1.11", "J2.1"},
+    "PICO_GP8": {"A1.11", "J2.1", "U4.17", "R24.1"},
+    "SRAM_A16": {"U4.3", "U2.2"},
     "PICO_GP22": {"A1.29", "J2.2", "A2.D"},
     "PICO_GP26": {"A1.31", "J2.3", "A2.C"},
 }.items():

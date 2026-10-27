@@ -1,6 +1,6 @@
 # D.6 Compatibility Boundaries
 
-- Programs must fit within the `0x0100`-`0xE6FF` TPA after runtime, globals,
+- Programs must fit within the `0x0100`-`0xE5FF` TPA after runtime, globals,
   heap, and stack requirements are included.
 - The installed operating system is CP/M 2.2. Optional CP/M 3 or emulator-only
   BDOS extensions are not supplied by this BIOS/BDOS image. In particular,

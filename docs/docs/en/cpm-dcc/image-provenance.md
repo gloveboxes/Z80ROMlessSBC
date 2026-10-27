@@ -20,11 +20,17 @@ and [MOVCPM instructions](https://deramp.com/downloads/altair/software/8_inch_fl
 The generator reports `SAVE 38`; preserve the BIOS reservation and verify
 relocated entry vectors.
 
+## CPM Customisations
+
+- Added the `CLEAR` command to clear the terminal screen.
+- Removed Ctrl+S flow control and printer support from CP/M.
+
 ## Changes for this board
 
 - **Z80 CP/M port:** `src/cpm/cpm64_z80.asm` replaces the original CCP/BDOS
-  at build time. Z80 instruction optimisations reclaim 263 bytes while
-  preserving section sizes; the sections move upward by `0x0400`.
+  at build time. Optimisations and removed features leave 246 bytes of padding
+  (54 in CCP, 192 in BDOS) after adding `CLEAR`. Section sizes are unchanged;
+  CCP and BDOS move upward by `0x0300`.
   See the [memory map](memory-map.md) for the running system's layout.
 - **Custom BIOS:** `src/cpm/z80_bios.asm` replaces the Altair BIOS and cold
   loader. It uses the board's Pico-serviced terminal and flash-disk ports,

@@ -9,18 +9,12 @@ Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
 | Phase 6 SRAM loader | **Build Pico - Phase 6 SRAM loader** | **Flash Pico - Phase 6 SRAM loader** |
 | Phase 6 stepped loader | **Build Pico - Phase 6 stepped loader** | **Flash Pico - Phase 6 stepped loader** |
 | Phase 6 PWM memory | **Build Pico - Phase 6 PWM memory** | **Flash Pico - Phase 6 PWM memory** |
-| Phase 6 experimental 8-12 MHz | **Build Pico - Phase 6 experimental 8-12 MHz** | **Flash Pico - Phase 6 experimental 8-12 MHz** |
-| Phase 6 PWM 14 MHz | **Build Pico - Phase 6 PWM 14 MHz** | **Flash Pico - Phase 6 PWM 14 MHz** |
-| Phase 6 PWM 15 MHz | **Build Pico - Phase 6 PWM 15 MHz** | **Flash Pico - Phase 6 PWM 15 MHz** |
-| Phase 6 PWM 16 MHz | **Build Pico - Phase 6 PWM 16 MHz** | **Flash Pico - Phase 6 PWM 16 MHz** |
-| Phase 6 PWM 17 MHz | **Build Pico - Phase 6 PWM 17 MHz** | **Flash Pico - Phase 6 PWM 17 MHz** |
-| Phase 6 PWM 18 MHz | **Build Pico - Phase 6 PWM 18 MHz** | **Flash Pico - Phase 6 PWM 18 MHz** |
-| Phase 6 PWM 19 MHz | **Build Pico - Phase 6 PWM 19 MHz** | **Flash Pico - Phase 6 PWM 19 MHz** |
 | Phase 6 PWM 20 MHz | **Build Pico - Phase 6 PWM 20 MHz** | **Flash Pico - Phase 6 PWM 20 MHz** |
+| Phase 6 one-hour 20 MHz soak | **Build Pico - Phase 6 one-hour 20 MHz soak** | **Flash Pico - Phase 6 one-hour 20 MHz soak** |
 
 Deployment tasks force-update without checking the previous firmware phase.
 Complete this phase's hardware prerequisites and save work before flashing. See
-[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+[Pico tools](../system/firmware-build.md#deployment-task-requirements).
 
 
 <div data-checklist="phase-6" data-checklist-label="Phase 6" markdown="1">
@@ -37,9 +31,7 @@ The CPU is now required for RAM access; RESET is released during injection.
 
 ## Wiring - SRAM Socket
 
-<input type="checkbox" data-checklist-id="sram-wiring" aria-label="Every SRAM address data and control pin wired and checked"> Complete every [address/data/fixed pin](../hardware/pin-mapping.md), including
-CE# U2.22 from U4.12, WE# U2.29 from U4.9, OE# U2.24 from U3.3, CE2 to +5 V,
-and A16 to GND.
+<input type="checkbox" data-checklist-id="sram-wiring" aria-label="Every SRAM address data and control pin wired and checked"> Confirm the Phase 4 [address trunk and A16 bank-select wiring](phase-4-address-bus.md#sram-bank-select), then complete the SRAM [address/data/fixed pin wiring](../hardware/pin-mapping.md), including CE# U2.22 from U4.12, WE# U2.29 from U4.9, OE# U2.24 from U3.3 and CE2 to +5 V.
 
 <input type="checkbox" data-checklist-id="cpu-wiring" aria-label="Every Z80 control and monitor connection checked"> Complete Z80 CLK/RESET/BUSREQ/WAIT and all control monitor taps.
 INT/NMI have pulls to +5 V; M1 goes to TP1; HALT/RFSH outputs remain open.

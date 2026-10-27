@@ -20,6 +20,10 @@ once. Prepare the [firmware build tools](../system/firmware-build.md) before
 Phase 1; use the maintained phase programs rather than assembling displayed
 source files into your own test firmware.
 
+Phase 4 includes the current SRAM A16 bank-select wiring and its power-off
+continuity checks. Phase 6 installs the SRAM and CPU, then qualifies both
+banks with the loader and CP/M tests.
+
 For each phase:
 
 1. **Power off:** disconnect external power and USB before moving a wire,
@@ -116,7 +120,7 @@ shared modules, and build definitions. Build each phase from the repository,
 not by compiling the displayed files as standalone programs.
 
 `PIN_BUSACK_N` is GP0, driven from Z80 BUSACK# pin 23 through the
-[SN74LVC244 input buffer](../hardware/bus-isolation.md#53-sn74lvc244an-5-v-to-33-v-input-buffer).
+[SN74LVC244 input buffer](phase-3-address-generator.md#wiring-control-and-port-monitor).
 IORQ#, RD#, WR#, and A0/A1/A2/A4 use the same buffer, so no 5 V output reaches
 the Pico directly. GP5 is BOOT_READ_DISABLE, GP6/GP7 are active-low data
 enable requests, and GP9 independently releases WAIT.
@@ -125,6 +129,6 @@ interface (shared with GP24/GP25/GP29) and must never be repurposed.
 `PIN_DATA_0`-`PIN_DATA_7` occupy GP10-GP17. The CPU alone drives SRAM address
 and write controls; there is no memory-source selector. `PIN_WR_N`
 is GP28, buffered through the same
-[SN74LVC244](../hardware/bus-isolation.md#53-sn74lvc244an-5-v-to-33-v-input-buffer);
+[SN74LVC244](phase-3-address-generator.md#wiring-control-and-port-monitor);
 `io_trap_handler()` reads both `PIN_RD_N` and `PIN_WR_N` to resolve cycle
 intent.

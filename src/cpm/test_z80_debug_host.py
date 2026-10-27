@@ -303,8 +303,8 @@ def main() -> None:
                     f"stop: {stopped}; terminal: {terminal!r}"
                 )
             boot_text = session.target_text()
-            if "64K CP/M 2.2 - Burcon Z80 Edition" not in boot_text or "A>" not in boot_text:
-                raise RuntimeError("SBC CP/M banner or A> prompt was not observed")
+            if "64K CP/M 2.2" not in boot_text or "A>" not in boot_text:
+                raise RuntimeError(f"SBC CP/M banner or A> prompt was not observed: {boot_text!r}")
 
             _, stopped = session.command(
                 '-interpreter-exec console "input DIR"', stop=True

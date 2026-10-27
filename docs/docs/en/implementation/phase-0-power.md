@@ -21,7 +21,7 @@ External +5 V goes to the 1N5819 anode; its banded cathode goes to VSYS header
 <div data-checklist="phase-0-passives" data-checklist-label="Phase 0 installation" markdown="1">
 
 **Keep external power and USB disconnected throughout installation. All IC
-sockets and the Pico socket strips remain empty.** Fit 39 individual 10 kOhm
+sockets and the Pico socket strips remain empty.** Fit 40 individual 10 kOhm
 resistors and 11 capacitors using the steps below.
 
 Tick the **Done** box beside each component as you fit it. With JavaScript
@@ -118,8 +118,9 @@ The resistor can face either way. Leave SRAM absent.
 | <input type="checkbox" data-checklist-id="sram-a13" aria-label="SRAM A13 pull-up installed"> | A13 | 28 | +5 V |
 | <input type="checkbox" data-checklist-id="sram-a15" aria-label="SRAM A15 pull-up installed"> | A15 | 31 | +5 V |
 
-Do not join the address pins together. **A16, socket pin 2, connects directly
-to GND**, not through a pull-up; it selects the lower 64 KiB.
+Do not join the address pins together. **A16, socket pin 2, connects to U4
+output pin 3**. U4 input pin 17 connects to Pico GP8, physical pin 11, with
+R24 (10 kOhm) from Pico pin 11 to GND. Do not ground A16 or U4 pin 17 directly.
 
 ### Step 4 - Fit eight Z80 control pull-ups on Core
 
@@ -138,18 +139,19 @@ the CPU is absent or its bus outputs are floating.
 | <input type="checkbox" data-checklist-id="z80-busack" aria-label="Z80 BUSACK# pull-up installed"> | BUSACK# | 23 | +5 V |
 | <input type="checkbox" data-checklist-id="z80-busreq" aria-label="Z80 BUSREQ# pull-up installed"> | BUSREQ# | 25 | +5 V |
 
-### Step 5 - Fit eleven Pico pull-downs on Peripheral
+### Step 5 - Fit twelve Pico pull-downs on Peripheral
 
 For **each row below**, fit one individual 10 kOhm resistor from the listed
-empty Pico header contact to **Peripheral GND**. This group contains three
+empty Pico header contact to **Peripheral GND**. This group contains four
 startup pull-downs and eight data pull-downs. Each pin has its own resistor.
-All eleven connect to GND, not to either positive supply rail.
+All twelve connect to GND, not to either positive supply rail.
 
 | Done | Signal / GPIO (reference) | Physical Pico header pin | Resistor's other end | Default |
 | --- | --- | ---: | --- | --- |
 | <input type="checkbox" data-checklist-id="r21" aria-label="R21 GP2 startup pull-down installed"> | CLK output, GP2 (R21) | 4 | GND | LOW |
 | <input type="checkbox" data-checklist-id="r22" aria-label="R22 GP3 startup pull-down installed"> | RESET# output, GP3 (R22) | 5 | GND | LOW, reset asserted |
 | <input type="checkbox" data-checklist-id="r23" aria-label="R23 GP9 startup pull-down installed"> | IO_RELEASE, GP9 (R23) | 12 | GND | LOW |
+| <input type="checkbox" data-checklist-id="r24" aria-label="R24 GP8 bank-select pull-down installed at Pico pin 11"> | SRAM bank select, GP8 (R24) | 11 | GND | LOW, bank 0 |
 | <input type="checkbox" data-checklist-id="pico-gp10" aria-label="Pico GP10 data pull-down installed"> | D0, GP10 | 14 | GND | LOW |
 | <input type="checkbox" data-checklist-id="pico-gp11" aria-label="Pico GP11 data pull-down installed"> | D1, GP11 | 15 | GND | LOW |
 | <input type="checkbox" data-checklist-id="pico-gp12" aria-label="Pico GP12 data pull-down installed"> | D2, GP12 | 16 | GND | LOW |
@@ -184,7 +186,8 @@ supplies it from header pin 36.
 These are **direct wire links, not additional resistors**. Connect every
 listed empty socket contact to common GND. The checklist includes each
 IC's power ground, permanently enabled buffer controls, unused inputs,
-SRAM A16, and the downward translator's fixed direction.
+and the downward translator's fixed direction. SRAM A16 and U4 pin 17 are
+part of the bank-select signal path and are not grounded directly.
 
 The Pico rows use **physical header pin numbers**, not GPIO numbers. Connect
 these empty header contacts now while the Pico is absent; Phase 1 checks
@@ -200,9 +203,7 @@ does not replace the IC's direct power-ground connection.
 | <input type="checkbox" data-checklist-id="u4-ground-1" aria-label="U4 output enable pin 1 grounded"> | Core / U4 AHCT244 | 1 | OE#, permanently enabled | Common GND |
 | <input type="checkbox" data-checklist-id="u4-ground-10" aria-label="U4 power ground pin 10 connected"> | Core / U4 AHCT244 | 10 | Power GND | Common GND |
 | <input type="checkbox" data-checklist-id="u4-ground-15" aria-label="U4 unused input pin 15 grounded"> | Core / U4 AHCT244 | 15 | Unused input | Common GND |
-| <input type="checkbox" data-checklist-id="u4-ground-17" aria-label="U4 unused input pin 17 grounded"> | Core / U4 AHCT244 | 17 | Unused input | Common GND |
 | <input type="checkbox" data-checklist-id="u4-ground-19" aria-label="U4 output enable pin 19 grounded"> | Core / U4 AHCT244 | 19 | OE#, permanently enabled | Common GND |
-| <input type="checkbox" data-checklist-id="u2-ground-2" aria-label="U2 SRAM address A16 pin 2 grounded"> | Memory / U2 SRAM | 2 | A16, selects lower 64 KiB | Common GND |
 | <input type="checkbox" data-checklist-id="u2-ground-16" aria-label="U2 SRAM power ground pin 16 connected"> | Memory / U2 SRAM | 16 | Power GND | Common GND |
 | <input type="checkbox" data-checklist-id="u3-ground-7" aria-label="U3 power ground pin 7 connected"> | Memory / U3 HCT32 | 7 | Power GND | Common GND |
 | <input type="checkbox" data-checklist-id="u3-ground-12" aria-label="U3 unused input pin 12 grounded"> | Memory / U3 HCT32 | 12 | Unused input | Common GND |
@@ -272,17 +273,17 @@ These wire connections do not change the resistor or capacitor totals.
 
 | IC / component group | Permanent resistors | External capacitors | GND pins | +5 V pins | +3.3 V pins |
 | --- | ---: | --- | ---: | ---: | ---: |
-| Pico 2 W | 15: eleven pull-downs plus four pull-ups | None | 8 | 0 | 1 |
+| Pico 2 W | 16: twelve pull-downs plus four pull-ups | None | 8 | 0 | 1 |
 | U1 Z80 | Eight CPU control pull-ups | C1, 100 nF | 1 | 1 | 0 |
-| U2 SRAM | 16 address pull-ups | C2, 100 nF | 2 | 2 | 0 |
+| U2 SRAM | 16 address pull-ups | C2, 100 nF | 1 | 2 | 0 |
 | U3 HCT32 | None | C3, 100 nF | 3 | 1 | 0 |
-| U4 AHCT244 | None | C4, 100 nF | 5 | 1 | 0 |
+| U4 AHCT244 | None | C4, 100 nF | 4 | 1 | 0 |
 | U7 LVC244 | None | C5, 100 nF | 3 | 0 | 1 |
 | U9 AHCT245 | None | C6, 100 nF | 1 | 2 | 0 |
 | U10 LVC245 | None | C7, 100 nF | 2 | 0 | 1 |
 | Board bulk capacitors | None | C8-C10, three 22 uF | 0 | 0 | 0 |
 | Common supply entry | None | C11, 100 uF | 0 | 0 | 0 |
-| **Total** | **39 individual 10 kOhm resistors** | **11 capacitors** | **25** | **7** | **3** |
+| **Total** | **40 individual 10 kOhm resistors** | **11 capacitors** | **23** | **7** | **3** |
 
 The pin columns count the direct socket/header connections in Steps 7 and 8,
 including grounded or fixed-HIGH control pins. They do not count resistor
@@ -320,7 +321,7 @@ Temporary diagnostic pulls are added only when a later phase requests them.
 1. With everything disconnected, verify every socket power contact, diode
    polarity, capacitor polarity, and no +5 V/3.3 V/GND short. Let capacitor
    resistance readings settle; inspect any near-zero sustained resistance.
-   Check each of the 39 resistor paths from its named socket/header contact
+   Check each of the 40 resistor paths from its named socket/header contact
    to its specified rail: expect approximately 10 kOhm with devices absent.
    The direct GND links should have continuity, not 10 kOhm. If a resistor
    reading is unexpected, inspect parallel wiring paths and isolate one

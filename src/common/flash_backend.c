@@ -9,6 +9,7 @@
 #include "pico/stdlib.h"
 #include "pico/util/queue.h"
 #include "z80sbc/clock.h"
+#include "z80sbc/banked_transfer.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/flash_layout.h"
 #include "z80sbc/io_trap.h"
@@ -290,10 +291,11 @@ static bool load_boot_image(z80_boot_observer_t observer, void *context) {
     return boot_failed(Z80_BOOT_ERROR_MANIFEST);
   if (crc32_bytes(source, manifest->image_bytes) != manifest->image_crc32)
     return boot_failed(Z80_BOOT_ERROR_PAYLOAD_CRC);
-  if (source[0] != 0xC3 || source[1] != 0x00 || source[2] != 0xFD)
+  if (source[0] != 0xC3 || source[1] != 0x00 || source[2] != 0xFC)
     return boot_failed(Z80_BOOT_ERROR_MANIFEST);
   if (!z80_cpu_prepare_loader())
     return boot_failed(Z80_BOOT_ERROR_LOADER);
+  z80_sram_prepare_banked_memory(source + BANKED_CODE_ADDRESS);
 
   for (uint32_t address = 0; address < Z80_BOOT_IMAGE_BYTES; ++address) {
     if (address % BOOT_PROGRESS_BYTES == 0 &&
@@ -334,6 +336,7 @@ static bool request_core0(uint8_t operation) {
 }
 
 void z80_flash_backend_core0_service(void) {
+  z80_io_trap_poll();
   service_request_t request;
   if (!queue_try_remove(&service_request_queue, &request))
     return;

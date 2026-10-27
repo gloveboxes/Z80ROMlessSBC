@@ -199,7 +199,7 @@ Ctrl+] `l` loads/verifies with slow injected clocks and holds reset afterward;
 Ctrl+] `g` starts at the scope-measured 20 MHz Z80 clock using a 120 MHz
 supervisor clock.
 The manifest must describe a complete 65,536-byte image beginning with
-`JP FD00h`. BIOS reports on reserved port `0x05` distinguish cold entry
+`JP FC00h`. BIOS reports on reserved port `0x05` distinguish cold entry
 (`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
 and filesystem tests remain necessary. The separate Phase 9 automatic-loader
 target and Phase 10 use automatic verified startup at 20 MHz.
@@ -260,3 +260,16 @@ wear-levelled storage.
   - *PCB Deferred:* The existing layout implements the previous circuit.
     It provides no qualification evidence or manufacturing package for this
     assisted-loader revision.
+
+### PIO bank-select service
+
+On the main Phase 10 20 MHz build (`Z80_ENABLE_BANKED_PIO=ON`), a verified
+second SRAM bank enables the
+[PIO1 clock and bank-select backend](../hardware/address-interface.md#pio-acceleration).
+Valid OUTs to port 7 complete in PIO while CLK is briefly held LOW. The
+software I/O sequence above remains in use for other ports and all reads,
+with PIO clock stop/resume replacing PWM. If PIO1 cannot be allocated, the
+PWM/software trap continues serving other I/O, but runtime banking is unavailable. No extra wiring is
+required beyond the A16 modification. PIO is the Phase 10 default after
+repeated board boots and BANKED passes. If banking hardware or PIO resources
+are unavailable, firmware retains PWM/software I/O at 20 MHz with runtime banking unavailable.

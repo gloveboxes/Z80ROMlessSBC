@@ -44,7 +44,7 @@ Applied in the separately assembled and relocated `cpm64_z80.asm`:
 These save 247 bytes: 98 in CCP and 149 in BDOS.
 The generated source symbolizes internal operands, dispatch tables, workspace
 pointers, and self-modifying targets. The active port relocates the fixed-size
-sections to `0xE700`/`0xEF00`/`0xFD00`, while its unoptimized reference mode assembles byte-for-byte
+sections to `0xE600`/`0xEE00`/`0xFC00`, while its unoptimized reference mode assembles byte-for-byte
 to the immutable image; this is enforced by the host tests.
 
 ## Deeper Z80 optimization pass

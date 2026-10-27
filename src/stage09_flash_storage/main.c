@@ -19,6 +19,9 @@
 bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
 #endif
 #include "z80sbc/io_trap.h"
+#if defined(Z80_BANKED_PIO)
+#include "z80sbc/banked_pio.h"
+#endif
 #include "z80sbc/io_ports.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
@@ -278,7 +281,7 @@ static const char *fault_name(z80_flash_fault_point_t point) {
 static const char *boot_error_name(z80_boot_error_t error) {
   static const char *const names[] = {
     "none", "journal recovery",
-    "manifest (requires 65536 bytes and JP FD00h)",
+    "manifest (requires 65536 bytes and JP FC00h)",
     "payload CRC", "loader controls", "SRAM write", "SRAM read",
     "SRAM mismatch", "flash-safe core initialization", "cancelled",
   };
@@ -400,6 +403,18 @@ static void print_reset_status(void) {
          reset_was_watchdog, reason, (unsigned long)reset_fault.gpio);
 }
 
+#if defined(Z80_BANKED_PIO)
+static void print_pio_status(void) {
+  z80_banked_pio_status_t p = z80_banked_pio_status();
+  printf("[pio] active=%u running=%u slow=%u requests=%lu reads=%lu writes=%lu "
+         "last=%s:%02x:%02x pc=%u/%u irq=%02x gpio=%08lx\n",
+         p.active, p.running, p.slow, (unsigned long)p.requests,
+         (unsigned long)p.reads, (unsigned long)p.writes,
+         p.read ? "IN" : "OUT", p.port, p.value, p.clock_pc, p.io_pc,
+         p.irqs, (unsigned long)p.pins);
+}
+#endif
+
 static void print_status(bool requested) {
   if (requested)
     print_reset_status();
@@ -497,6 +512,14 @@ static void print_status(bool requested) {
          (unsigned long)buffers.rx_peak, (unsigned long)buffers.tx_used,
          (unsigned long)buffers.tx_capacity, (unsigned long)buffers.tx_peak);
 #endif
+#if defined(Z80_BANKED_PIO)
+  printf("[diag] banked_pio=enabled (software fallback possible)\n");
+  print_pio_status();
+#else
+  printf("[diag] banked_pio=disabled (software I/O, PWM execution clock)\n");
+#endif
+  printf("[diag] banked_sram=%02x (00=unavailable, B4/B5=ready bank 0/1)\n",
+         (unsigned int)z80_memory_bank_status());
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
@@ -663,7 +686,8 @@ static void service_usb(void) {
     previous_cpu_state = state;
   }
 #ifdef Z80_STAGE10_NETWORK
-  z80_terminal_usb_connected(connected);
+  if (connected != usb_was_connected)
+    z80_terminal_usb_connected(connected);
   bool browser_connected = z80_terminal_browser_connected();
   if (browser_connected != browser_was_connected) {
     ansi_input_reset();
@@ -716,7 +740,7 @@ static void service_usb(void) {
   )
     forward_terminal_byte(
         ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
-  if (stdio_usb_connected()
+  if (connected && z80_terminal_output_pending()
 #ifdef Z80_STAGE10_NETWORK
       && !z80_network_setup_active() && !z80_terminal_browser_connected()
 #endif
@@ -862,6 +886,9 @@ static void service_run(void) {
     boot_failure = "BIOS/CCP evidence timeout";
     printf("\n[boot] FAIL: BIOS/CCP evidence timeout; stopping safely. "
            "Rebuild/provision the matching boot package if markers are absent.\n");
+#if defined(Z80_BANKED_PIO)
+    print_pio_status();
+#endif
     stop_requested = true;
     boot_timed_out = true;
     __atomic_store_n(&flash_pause_request, 1, __ATOMIC_RELEASE);

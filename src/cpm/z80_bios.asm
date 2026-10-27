@@ -1,6 +1,6 @@
-CCP_BASE:       equ 0e700h
-BDOS_ENTRY:     equ 0ef06h
-BIOS_BASE:      equ 0fd00h
+CCP_BASE:       equ 0e600h
+BDOS_ENTRY:     equ 0ee06h
+BIOS_BASE:      equ 0fc00h
 
 TERM_DATA:      equ 00h
 TERM_STATUS:    equ 01h
@@ -388,4 +388,8 @@ allocation_2:
 allocation_3:
                 defs DPB_ALLOCATION_BYTES
 
+BIOS_CORE_END: equ $
+                defs 0ff00h-$,0
+                include "banked_transfer.asm"
+                defs 10000h-$,0
 BIOS_END:      equ $

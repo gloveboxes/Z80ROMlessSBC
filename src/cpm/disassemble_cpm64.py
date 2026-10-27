@@ -14,9 +14,9 @@ CCP_BYTES = 0x0800
 BDOS_BASE = 0xEB00
 BIOS_BASE = 0xF900
 IMAGE_BYTES = BIOS_BASE - ORIGIN
-ACTIVE_ORIGIN = 0xE700
-ACTIVE_BDOS_BASE = 0xEF00
-ACTIVE_BIOS_BASE = 0xFD00
+ACTIVE_ORIGIN = 0xE600
+ACTIVE_BDOS_BASE = 0xEE00
+ACTIVE_BIOS_BASE = 0xFC00
 EXPECTED_SHA256 = (
     "2897f0ecf91048c753ea6a09f26fd28f20a607dddbbaca0c96a6943178115d0e"
 )
@@ -467,6 +467,14 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
             lines.append(f"        dw {labels[0xE308]}")
             address += 2
             continue
+        if optimize and deep_optimize and address == 0xEC33:
+            # Treat Ctrl+S as ordinary input; omit the output pause handler.
+            address = 0xEC42
+            continue
+        if optimize and deep_optimize and address in {0xEC59, 0xED37}:
+            # No printer echo or Ctrl+P toggle on the SBC console.
+            address = {0xEC59: 0xEC62, 0xED37: 0xED48}[address]
+            continue
         if optimize and deep_optimize and address == 0xE4A7:
             lines.extend((
                 f"        ld hl,{labels[0xE307]}",
@@ -729,7 +737,7 @@ def audit(image: bytes, instructions: dict[int, Instruction]) -> list[str]:
         f"{ccp_relative_branches + 1} in CCP and {bdos_relative_branches + 2} in BDOS.",
         "The generated source symbolizes internal operands, dispatch tables, workspace",
         "pointers, and self-modifying targets. The active port relocates the fixed-size",
-        "sections to `0xE700`/`0xEF00`/`0xFD00`, while its unoptimized reference mode assembles byte-for-byte",
+        "sections to `0xE600`/`0xEE00`/`0xFC00`, while its unoptimized reference mode assembles byte-for-byte",
         "to the immutable image; this is enforced by the host tests.",
         "",
         "## Deeper Z80 optimization pass",

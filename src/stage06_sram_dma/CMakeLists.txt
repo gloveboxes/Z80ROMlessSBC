@@ -53,6 +53,17 @@ foreach(screen_mhz IN ITEMS 17 18 19 20)
     z80_pwm_${screen_mhz}mhz)
 endforeach()
 
+# Validated on the 20 MHz board through cold/warm boots and BANKED.COM.
+# Runtime banking requires PIO; other I/O can use the software trap.
+option(Z80_ENABLE_BANKED_PIO "Enable PIO bank-select/clock backend" ON)
+if(Z80_ENABLE_BANKED_PIO)
+  target_sources(z80_pwm_20mhz PRIVATE ../common/banked_pio.c)
+  pico_generate_pio_header(z80_pwm_20mhz
+    ${CMAKE_CURRENT_LIST_DIR}/../common/banked_io.pio)
+  target_compile_definitions(z80_pwm_20mhz PUBLIC Z80_BANKED_PIO=1)
+  target_link_libraries(z80_pwm_20mhz PUBLIC hardware_pio hardware_irq hardware_sync)
+endif()
+
 find_program(SOAK_Z80ASM z80asm)
 if(SOAK_Z80ASM)
   include(math_soak_build.cmake)

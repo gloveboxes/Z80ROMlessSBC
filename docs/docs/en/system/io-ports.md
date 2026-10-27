@@ -31,7 +31,7 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x04` | 4 | Shared service length-prefixed response bytes (IN) | Implemented |
 | `0x05` | 5 | BIOS cold-entry/CCP-handoff reports; Phase 9 disk-test and Phase 10 qualification results | Reserved for diagnostics |
 | `0x06` | 6 | Phase 9 disk-test bytes and Phase 10 qualification data; Phase 8 test results | Reserved for diagnostics |
-| `0x07` | 7 | Spare; ESP32 interrupt timer is deferred on this hardware | Unallocated |
+| `0x07` | 7 | SRAM bank select (OUT bit 0) / capability and selected bank (IN) | PIO-only bank switching at 20 MHz; `IN A,(07h)` uses the trap to read availability and selected bank |
 | `0x10` | 16 | Disk command (OUT) / status (IN) | Fixed |
 | `0x11` | 17 | Disk drive selection | Fixed |
 | `0x12` | 18 | Disk sector address, low byte | Fixed |
@@ -41,8 +41,13 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x16` | 22 | File-transfer filename/data bytes | Implemented in Phase 10 |
 | `0x17` | 23 | Independent countdown timers and stopwatches, IN/OUT | Implemented |
 
-This assigns or reserves **15 ports and leaves one spare**. A port supports
+This assigns or reserves **all 16 ports**. A port supports
 both IN and OUT, so a command and its status can share one number.
+
+Bank select returns `B4h`/`B5h` when the loader verified banked SRAM, or `00h`
+when unavailable (including when PIO is inactive). GP8 drives A16 through a spare AHCT244 channel. Use the
+[banked-memory transfer library and wiring](../hardware/address-interface.md#banked-128-kib-sram)
+for C programs: a raw bank select also switches the executing code and stack.
 
 The BIOS emits `B0h` on port `0x05` at cold entry and `C0h` immediately before
 handoff to CCP (including warm boot). Phase 9 observes these as execution
@@ -53,164 +58,66 @@ fixed terminal or disk ABI.
 
 ### HTTP and HTTPS file transfer
 
-Phase 10 implements the existing
-[FT.ASM](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/FT/FT.ASM)
-port protocol without changing the application. Use the existing `FT.COM`, or
-assemble the original source with CP/M `MAC FT` followed by `LOAD FT`.
-The network uses standard HTTP/1.1 GET requests; a Python-specific file server
-and HTTP Range support are unnecessary. Phase 9 exposes the same ports but
-returns ERROR for downloads because it has no network backend.
+Phase 10 supports the existing
+[FT.COM protocol](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/FT/FT.ASM)
+on ports 21/22. Phase 9 returns ERROR for downloads.
 
-The driver accepts a full `http://` or `https://` URL, or a filename relative
-to persistent **`HTTP_BASE_URL`**. A relative filename extends the base path;
-a name starting with `/` uses the server's root. The base must have no query.
-Settings are reloaded on core 1 at the first GET of each new transfer.
-
-CP/M uppercases command tails. Use the interactive **ENV** editor (run `ENV`
-without arguments, then **A** to add, or the entry number to edit) to preserve
-the case of URL paths. Set the key to `HTTP_BASE_URL` and its value to:
+Set `HTTP_BASE_URL` using interactive `ENV` to preserve URL case: run `ENV`,
+choose **A** to add or an entry number to edit, then **Q** to quit. For example:
 
 ```text
 https://raw.githubusercontent.com/AzureSphereCloudEnabledAltair8800/RetroGames/refs/heads/main/
 ```
 
-Quit ENV with **Q**, then download and run the supplied BASIC example:
+Download text with `FT -G LOVE.BAS`, then run `MBASIC LOVE`. Use
+`FT -GB PROGRAM.COM` for binary files. Text mode normalizes CR LF and appends
+`^Z`; binary mode preserves bytes. Files use uppercase 8.3 basenames and
+128-byte record padding. Omit the filename (`FT -G` or `FT -GB`) to enter a
+case-preserving path at the prompt.
 
-```text
-FT -G LOVE.BAS
-MBASIC LOVE
-```
+Full HTTP/HTTPS URLs need no base setting. Relative paths extend the base;
+a leading `/` starts at the server root. For a local server, run
+`python3 -m http.server 8000 --bind 0.0.0.0` and set the base to its LAN URL,
+for example `http://192.168.1.10:8000/`.
 
-`-G` retains FT's existing text behavior: normalize line endings to CR LF and
-append CP/M's `^Z` marker. Use `FT -GB PROGRAM.COM` for byte-preserving binary
-transfers. FT saves the basename using CP/M's uppercase 8.3 naming and pads the
-final 128-byte disk record with NULs. If the remote filename is omitted, run
-`FT -G` or `FT -GB`; FT prompts for a case-preserving remote path and derives
-the local uppercase basename. This supports mixed-case HTTP paths while keeping
-the CCP command-tail behavior unchanged.
+HTTPS requires Wi-Fi, synchronized SNTP time, and a trusted certificate chain
+and hostname. The [CA bundle](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/http_ca.pem)
+can be replaced with `-DZ80_HTTP_CA_FILE=/absolute/path/to/bundle.pem`.
+Plain HTTP needs no synchronized clock.
 
-For a local server, run this on the host in the directory containing files:
+The port ABI is independent of shared services on ports 2/3/4:
 
-```sh
-python3 -m http.server 8000 --bind 0.0.0.0
-```
-
-In interactive ENV, change `HTTP_BASE_URL` to the host's LAN address, for
-example `http://192.168.1.10:8000/`, then use `FT -G LOVE.BAS` or
-`FT -GB PROGRAM.COM`. For mixed-case server paths, omit the filename and enter
-it at FT's prompt. Plain HTTP works without synchronized calendar time.
-
-HTTPS requires Wi-Fi and synchronized SNTP time, and verifies certificate
-dates, hostname (with SNI), and chain. The default
-[trust bundle](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/http_ca.pem)
-contains ISRG Root X1, USERTrust RSA Certification Authority and GTS Root R4.
-For a different public/private CA, configure the firmware with
-`-DZ80_HTTP_CA_FILE=/absolute/path/to/bundle.pem`, retaining any roots you still
-need. Self-signed/untrusted servers fail; verification is never disabled.
-
-The dedicated
-[`http_io.c`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/http_io.c)
-driver provides this ABI, independently of framed services on ports 2/3/4:
-
-| Operation | Behavior |
+| Operation (decimal ports) | Behavior |
 | --- | --- |
-| OUT 21, 1 | Reset transfer; collect a new filename/URL |
+| OUT 21, 1 | Reset; collect a new filename/URL |
 | OUT 22, byte | Append filename bytes, terminated by NUL |
 | OUT 21, 3 | Request the next chunk; status becomes BUSY |
-| IN 21 | `0` IDLE, `1` DATA, `2` EOF, `3` BUSY, `4` missing/empty `HTTP_BASE_URL`, `255` ERROR |
-| IN 22 | Read the count (`0` means 256), then exactly that many file bytes |
-| OUT 21, 4 | Close/cancel and return to IDLE |
+| IN 21 | `0` IDLE, `1` DATA, `2` EOF, `3` BUSY, `4` missing/empty base URL, `255` ERROR |
+| IN 22 | Read count (`0` = 256), then that many file bytes |
+| OUT 21, 4 | Cancel/close; return to IDLE |
 
-DATA remains visible until the entire chunk is consumed, including the final
-partial chunk. Empty files report EOF without a count byte. Repeated GET
-commands while busy or while unread data remains do not duplicate requests.
-SET_FILENAME and CLOSE invalidate pending work; late responses and DNS answers
-cannot become part of a new file. Reset the transfer to recover after ERROR.
-For relative filenames, status `4` means `HTTP_BASE_URL` is missing or empty;
-FT prints instructions for adding or editing it in ENV. Absolute HTTP/HTTPS
-URLs do not need this setting.
-
-Core 0 only handles bounded port operations and a release/acquire mailbox.
-Core 1 owns ENV reads, DNS, TCP/TLS, HTTP parsing and a 1024-byte ring. One GET
-stream supplies 256-byte FT chunks; files need not fit in RAM. Network writes
-and receive parsing are limited to 512 bytes per poll. A bounded chain of lwIP
-receive buffers and deferred TCP credit apply backpressure when FT stops reading, while the
-worker continues servicing disks, USB and the terminal.
-Consumed buffer prefixes are freed on each poll, so the backlog stays bounded
-as the file grows. Successive decrypted TLS fragments are accepted together,
-including a final fragment followed by TLS close notification. The receive
-bound is the TCP window plus one TLS input record (33,904 bytes); exceeding it
-fails explicitly. The client also registers lwIP's half-second poll callback
-to advance buffered TLS work after temporary memory pressure.
-
-The TCP receive window is 17,520 bytes, enough for Mbed TLS's 16 KiB input
-record and framing overhead. A smaller window can stall TLS before plaintext
-is available to acknowledge. A compile-time check and the native test with
-the real crypto configuration enforce this size relationship. The existing
-pbuf pool and lwIP heap sizes are unchanged.
-
-HTTP transfer diagnostics are kept off the serial console. Transfer failures
-remain available through the FT status response.
-
-The parser accepts HTTP/1.0 and 1.1, content-length, chunked (including trailers),
-and connection-close bodies, preserving binary NULs. It rejects truncated
-framed responses, conflicting lengths, unsupported compression and HTTP errors.
-Up to five redirects are followed, including relative locations; HTTPS-to-HTTP
-downgrades fail. DNS names/IPv4 and optional ports are supported; IPv6,
-credentials, fragments and control characters are rejected. Filename/URL and
-path buffers allow 767 bytes, hostnames 253, header lines 1023, and each header
-or trailer section 8192. The unchanged FT application has CP/M's shorter
-127-byte command-tail limit. A network stall times out after 30 seconds;
-waiting on a retained receive chain due to consumer backpressure is exempt.
-
-### Interpreting CP/M SURVEY results
-
-On the earlier Phase 9 USB CP/M loader, before extended services, `SURVEY`
-(System Survey, June 1982) reported 111 active ports. This was the alias set
-of the seven terminal/disk registers, not 111 independent peripherals.
-
-Because A3 and A5-A7 are ignored, each register has 16 equivalent addresses
-within the low-byte range `0x00-0xFF`. For example, `0x01`, `0x09`, `0x21`
-and `0x29` all access terminal status; `0x10`, `0x18`, `0x30` and `0x38`
-all access disk command/status. Seven registers occupy 112 low-byte addresses;
-the captured scan omitted `0x00`, leaving 111.
-
-Extended services add readable registers, so a new scan need not reproduce
-that historical count. An active result does not prove correct peripheral
-operation. Scanning the response port can also cause an explicit UNDERFLOW
-error; RESET the shared channel before using it afterward.
+Consume each chunk fully before requesting another. Empty files return EOF;
+reset after ERROR. Transfers stream on core 1 without loading the whole file
+into RAM. HTTP/1.0 and 1.1, chunked bodies, and up to five redirects are
+supported; HTTPS downgrades, compressed or malformed responses fail.
+Network stalls time out after 30 seconds, excluding consumer backpressure.
+See [http_io.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/http_io.c)
+and [http_stream.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/http_stream.c)
+for implementation limits.
 
 ## Why A4 is monitored but A3 is not
 
-The Pico decodes I/O ports using `address & 0x17`. The `&` operator is
-**bitwise AND**: a result bit is 1 only when both corresponding bits are 1.
-The hexadecimal mask `0x17` is binary `0001 0111`:
+Only A0/A1/A2/A4 are decoded (`address & 0x17`). A3, A5–A7, and the high
+address byte are ignored: `0x09` aliases terminal status `0x01`, `0x30`
+aliases disk command `0x10`, and `0xFF` aliases timer port `0x17`.
+A4 keeps console and disk registers distinct. This applies only to I/O;
+A3 still connects Z80 pin 33 to SRAM pin 9, not U7.
 
-```text
-Address bit:  A7 A6 A5 A4 A3 A2 A1 A0
-Mask 0x17:     0  0  0  1  0  1  1  1
-```
-
-This keeps **A4, A2, A1 and A0**, matching the four address connections to U7.
-A3, A5-A7 and the high address byte are deliberately ignored for I/O decoding.
-
-```text
-Address 0x08:  0000 1000
-Mask    0x17:  0001 0111
-               ---------
-AND result:    0000 0000 = 0x00
-```
-
-Thus `0x08` aliases `0x00`, `0x09` aliases `0x01`, and `0xFF` aliases the
-timer port `0x17`. A4 distinguishes console `0x00/01` from disk `0x10-14`.
-With a mask of `0x07`, disk command `0x10` would incorrectly alias console data.
-Service **group** `0x30` is a byte written to command port `0x02`, not an
-OUT to physical port `0x30` (which aliases disk command `0x10`).
-
-This omission applies only to **I/O monitoring**, not memory addressing.
-A3 still connects **Z80 pin 33 to SRAM pin 9** in
-[Phase 4](../implementation/phase-4-address-bus.md#wiring-address-trunk);
-do not connect it to U7.
+Each register has 16 low-byte aliases. A historical Phase 9 `SURVEY` scan
+reported 111 active addresses for seven registers (112 aliases, excluding
+`0x00`), not 111 peripherals. Current services change that count. Scanning
+response ports can cause UNDERFLOW; RESET the shared channel afterward.
+Service group `0x30` is a command byte written to `0x02`, not a port address.
 
 ## Shared service interface
 
@@ -252,28 +159,13 @@ does not reset running timers or stopwatches. There is no automatic server
 timeout for an incomplete request: the client must use bounded polling,
 report failure and RESET. Reading status never acknowledges COMPLETE.
 
-### Bounded trap work
+### Worker ownership
 
-Phases 9/10 dispatch the already-masked port directly to the terminal, disk or
-extended-service handler. Terminal and disk requests do not probe the list of
-extended-service ports. Adding service groups behind `0x02-0x04` therefore
-does not add dispatch checks to those existing hot paths.
-
-Core 0 reads a completed worker response in place instead of copying its
-payload during the status trap. The worker's result stays unchanged until
-core 0 submits another job; the parser must consume or discard the response
-before that submission. Errors, IDENTIFY and local timer replies use a
-separate small buffer. RESET still invalidates stale worker generations.
-This removes up to 2048 copied bytes from a completion trap and the separate
-2048-byte response array; it does not remove the bounded request copy at
-submission or change the one-outstanding-transaction protocol.
-
-Native regressions check zero response-payload copying for lengths 0, 1, 16
-and 2048, response lifetime, framing, RESET, errors, and terminal/disk dispatch
-without service probes. These are work-count and correctness checks, not
-measurements of Z80 throughput or worst-case trap latency. Clock handover,
-data-path settling, disk-first worker scheduling and regular network polling
-are unchanged; hardware before/after measurements remain necessary.
+Core 0 handles traps and timers; core 1 runs slow services after disk work.
+The trap never performs flash/network work or waits for a service response.
+Worker replies are read in place and remain valid until consumed or discarded.
+Generation tags reject stale replies after RESET. One shared transaction may
+be outstanding at a time.
 
 Error codes match the ESP32 client:
 
@@ -331,36 +223,15 @@ services; no extra physical ports or separate time driver are needed:
 | Start refresh timer | OUT 23: `0x12`, `50`, `0` | Timer 2, 50 ms, low duration byte first |
 | Query refresh timer | OUT 23: `0x22`, then IN 23 | `1` while running, `0` when expired |
 
-The timer port remains usable while a shared clock request is BUSY. Calendar
-formatting, ENV access, and network time synchronization run on core 1; the
-Z80 trap only transfers the framed request/reply or handles the independent
-monotonic timer. Calendar replies contain exactly their length-prefixed text,
-without a trailing NUL.
+The timer port works while a clock request is BUSY. Phase 10 uses SNTP at
+`pool.ntp.org`; calendar calls return CLOCK_UNSYNCED (`0x15`) until synchronized.
+Time then advances through Wi-Fi outages. Uptime and timers need no network.
 
-For Phase 10, connect Wi-Fi and allow DNS/UDP access to `pool.ntp.org`.
-Calendar requests return explicit `CLOCK_UNSYNCED` (`0x15`) errors until SNTP
-has supplied a valid time. Once synchronized, time continues advancing from
-the monotonic clock through Wi-Fi outages and is corrected by later SNTP
-updates. Uptime and the refresh timer do not depend on Wi-Fi or SNTP.
-
-Configure the timezone through the existing ENV service, for example
-`ENV TZ=AEST-10` for UTC+10 or `ENV TZ=ACST-9:30` for UTC+09:30. POSIX signs
-are opposite to conventional UTC offsets. A full POSIX `TZ` rule can include
-daylight-saving transitions. Changes take effect on the next clock request
-without rebooting. The Pico remains **TZ-only**: the ESP32 CLOCK help text's
-`UTC_OFFSET` setting is not used here.
-
-The unchanged CLOCK source also polls the weather group on every refresh.
-Phase 10 now supplies its cached status and field requests through the
-[weather service](#openweathermap-weather). Phase 9 remains USB-only and
-returns UNAVAILABLE for weather.
-
-The `clock_app_time_services` host integration test drives CLOCK's port
-transactions through the real parser, worker, calendar formatter, SNTP
-callback hook, and persistent ENV backend. It covers unsynchronized errors,
-UTC/local/date/uptime shapes, timezone updates and DST, 50 ms timer operation
-during a BUSY request, and the 32-bit millisecond rollover. It does not execute
-the CLOCK binary or qualify physical network/hardware operation.
+Set local time with POSIX `TZ`, for example `ENV TZ=AEST-10` (UTC+10) or
+`ENV TZ=ACST-9:30` (UTC+09:30). POSIX signs are reversed; daylight-saving
+rules are supported. Changes apply on the next request. `UTC_OFFSET` is unused.
+CLOCK’s weather display requires `OWM_KEY` and `OWM_LOCATION` in Phase 10;
+Phase 9 reports weather UNAVAILABLE.
 
 ### CHAT application: OpenAI and Ollama
 
@@ -405,33 +276,15 @@ ENV CHAT_MAX_TOKENS=1024
 ENV CHAT_TEMPERATURE=0.7
 ```
 
-With **CHAT 1.7-c11**, `CHAT_THINK` defaults to `false` for
-`CHAT_PROVIDER=compatible` or `ollama`. The application sends
-`"reasoning_effort":"none"` to request a direct answer. Set
-`ENV CHAT_THINK=true` to send `"reasoning_effort":"medium"` (thinking on for
-boolean-control models, medium effort where supported), or
-`ENV CHAT_THINK=default` to omit the field and use the server/model default.
-Only models that support disabling thinking can honor `none`.
+CHAT 1.7-c11 reads `CHAT_THINK` each turn for compatible/Ollama providers:
+`false` sends `reasoning_effort=none`, `true` sends `medium`, and `default`
+omits the field. Model/server support determines the effect. Missing/empty
+values default to `false`; invalid values fail submission. OpenAI requests
+omit this setting. Older CHAT binaries retain server defaults.
 
-The USB configuration shell also edits this setting: **Ctrl-] c**, then
-**3 - Chat**, then **7 - configure thinking**. Enter `false`, `true` or
-`default`; `-` clears the key to the app's `false` default. Like other saved
-configuration changes, exiting the shell triggers a safe reboot.
-
-The app re-reads provider/thinking settings before each turn and never adds
-the parameter to OpenAI requests. Invalid values or ENV errors stop submission
-explicitly. An absent/empty thinking value is seeded as `false` on first use;
-the standard service helper can print NOT_FOUND while seeding a missing key.
-Other compatible servers that do not support `reasoning_effort` should use
-`CHAT_THINK=default` to retain their old request format. Installing the updated
-`CHAT.COM` is required for this behavior; the existing Pico firmware needs no
-change and continues to forward the application's bounded JSON unchanged.
-
-`CHAT_PROVIDER=ollama` is an alias for `compatible`. Discover installed model
-names from a host with `curl http://192.168.1.26:11434/api/tags`; the model must
-match a deployed name exactly. CHATC11's built-in `gemma3:1b` default is not
-guaranteed to be installed. The example server address is configuration, not
-a compiled-in endpoint.
+The USB shell also offers **Ctrl-] c → 3 Chat → 7 configure thinking**.
+`CHAT_PROVIDER=ollama` aliases `compatible`. Use an installed model name;
+the example address/model is configuration, not a required endpoint.
 
 For OpenAI:
 
@@ -470,51 +323,23 @@ There is no insecure TLS fallback. Compatible HTTPS endpoints need a chain
 trusted by that root; arbitrary private/self-signed CAs are not supported.
 Plain HTTP Ollama works without SNTP but must remain on a trusted LAN.
 
-#### Ownership, bounds and failure behavior
+#### Streaming and limits
 
-The trap transfers framed bytes through the existing release/acquire atomic
-single-request mailbox. It does not access ENV, JSON, sockets or TLS, and never
-waits for an answer from the provider. Core 1 owns request assembly, the
-4096-byte response ring, configuration, and the independent async HTTP client.
-Wi-Fi, terminal sessions and chat do not consume one another's queues or
-configure one another. Disk work still runs first on every application loop.
+Core 1 owns the 4096-byte response ring and async client. Bounded network
+polls and backpressure keep the trap and other services responsive; generation
+tokens reject stale callbacks after cancellation.
 
-HTTP writes and received wire processing are limited to 512 bytes per service
-pass. A received pbuf chain is retained without extra copying, bounded to one
-chain of at most 16 KiB; further chains receive lwIP `ERR_MEM` backpressure.
-TCP credit advances only for bytes consumed by the parser. A full CP/M response
-ring pauses parsing rather than dropping text or blocking the other services.
-Accepted TCP writes are never replayed after a failed flush. Callback teardown
-is deferred to the service loop, callbacks are detached before abort, and
-generation tokens reject stale DNS/connection callbacks after cancellation.
+The decoder requires HTTP 200, uncompressed `text/event-stream`, and a final
+`[DONE]`. It accepts content-length, connection-close, and chunked bodies.
+Only `choices[0].delta.content` is displayed; other fields are ignored.
+JSON/UTF-8 are validated and converted to CP/M-safe 7-bit text. Limits are
+4096 header bytes, 4095 bytes per HTTP/SSE line or decoded event, and 16 JSON
+nesting levels.
 
-The decoder accepts HTTP/1.0 or 1.1, content-length, connection-close or chunked
-bodies, and OpenAI-style single-line SSE JSON records. It requires HTTP 200,
-`text/event-stream`, uncompressed content, and a final `[DONE]` marker.
-Headers are limited to 4096 bytes, each HTTP/SSE line to 4095 bytes, decoded
-text per event to 4095 bytes, and JSON nesting to 16 levels. Only
-`choices[0].delta.content` is displayed; role, usage, tools and reasoning fields
-are ignored. JSON escapes and UTF-8 are validated and converted to CP/M-safe
-7-bit text, preserving newline/tab and mapping common smart punctuation;
-other non-ASCII code points become `?`.
-
-The request has a **120-second total deadline**, including backpressure.
-Wi-Fi loss/reconfiguration, premature EOF, allocation/write errors, oversized
-input, malformed HTTP/JSON and HTTP/provider errors terminate the connection
-and publish explicit `Chat: ...` text after already queued content, then EOF.
-Configuration failures are reported the same way. Diagnostics do not print
-credentials, prompts, provider error bodies or generated answers. CHATC11 itself
-has an approximately **30-second no-content timeout** and an 8191-byte local
-answer limit; a long-thinking model can hit that client limit before the
-firmware deadline. No artificial answer bytes or automatic duplicate POSTs
-are generated to hide these limits.
-
-Native `extended_io_services`, `chat_http_sse`, `chat_async_transport` and
-`weather_real_tls_config` tests exercise the real mailbox/worker/parser/client
-and both trust roots. They cover chunk framing, split input, full queues,
-no-duplicate writes, cancellation/restart, failure cleanup, stale callbacks,
-and missing or invalid configuration. They do not execute the CP/M binary or
-prove live inference, heap/stack headroom, or combined hardware timing.
+The firmware deadline is 120 seconds, including backpressure. Failures publish
+`Chat: ...` after queued text, then EOF; requests are not automatically replayed.
+CHATC11 also has a roughly 30-second no-content timeout and an 8191-byte answer
+limit, so it may stop first. Diagnostics omit credentials and conversation text.
 
 ### OpenWeatherMap weather
 
@@ -569,36 +394,18 @@ clears data belonging to the old configuration, and starts a new fetch without
 rebooting. ENV remains plaintext onboard flash; do not publish its contents.
 Firmware diagnostics never print the key, request URL or provider response body.
 
-Core 1 waits for Wi-Fi and a synchronized SNTP clock, then allows 5 seconds
-for the network to settle before fetching current conditions and forecast.
-Successful refreshes repeat every 20 minutes. Initial failures retry every
-2 minutes for five retries, then every 20 minutes; failures after a successful
-fetch use the 20-minute interval. Reconnection schedules a fresh fetch.
-The last successful cache remains readable after failures, with its increasing
-age and explicit error status. A failed forecast still publishes valid current
-conditions as READY, leaves forecast fields empty, and reports a forecast
-warning in field 12 and on USB.
+Core 1 waits for Wi-Fi/SNTP, then 5 seconds before fetching. Refreshes repeat
+every 20 minutes; initial failures retry every 2 minutes for five retries.
+Reconnection triggers a fresh fetch. Cached data survives fetch failures with
+an increasing age and ERROR status. A forecast-only failure keeps current
+conditions READY and reports a warning in field 12.
 
-HTTPS uses port 443, required certificate-chain and hostname verification,
-and certificate date checks against the SNTP-derived UTC clock. There is no
-HTTP or insecure-TLS fallback. The bundled USERTrust RSA public root is
-maintained in
-[weather_ca.pem](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/weather_ca.pem)
-(SHA-256 `E793C9B02FD8AA13E21C31228ACCB08119643B749C898964B1746D46C3D4CBD2`,
-valid through 18 January 2038). Update the trust anchor if the provider changes
-its chain. Its RSA/SHA-384 signature requires `MBEDTLS_SHA384_C`; enabling
-SHA-512 alone does not enable SHA-384 in Mbed TLS 3. Without it, TLS
-configuration fails while parsing the CA, before DNS or HTTP starts.
-DNS, connection and response work share a 15-second request deadline;
-responses are bounded to 16 KiB on the wire and 8 KiB decoded, with at most
-2 KiB of HTTP headers. Content-length, connection-close and chunked responses
-are supported; malformed, oversized or compressed bodies fail explicitly.
-
-The weather worker uses no Z80 trap callbacks, extra core, or blocking socket.
-Network callbacks only collect bounded data; parsing, ENV access and cache
-publication happen on core 1 between its normal disk/service/network polls.
-Phase 10 uses an explicit 8 KiB core-1 stack in main RAM for TLS; Phase 9
-retains its original launch path and reports weather UNAVAILABLE.
+HTTPS requires certificate-chain, hostname, and SNTP-based date verification,
+using [weather_ca.pem](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/weather_ca.pem).
+There is no insecure fallback. Requests have a 15-second deadline, 16 KiB
+wire/8 KiB decoded limits, and at most 2 KiB of headers. Content-length,
+connection-close, and chunked responses are supported; malformed, oversized,
+or compressed bodies fail. TLS/parsing run on core 1, outside Z80 traps.
 
 ### System information and reboot
 
@@ -615,46 +422,20 @@ instead.
 
 ### Onboard LED device
 
-Phases 9 and 10 expose the Pico 2 W onboard LED through Utility group `0x21`,
-using the existing shared-service ports `0x02`-`0x04`. No wiring changes,
-expansion GPIOs, or additional port IDs are needed; `0x07` remains spare
-for a future interrupt timer.
+Utility group `0x21` controls the Pico 2 W LED in Phases 9/10:
 
-- Payload `[4, 0]` turns the LED off; `[4, 1]` turns it on. Success is
-  COMPLETE and requires ACK.
-- Payload `[5]` returns a one-byte response: `0` off or `1` on. This is the
-  last successfully commanded state, not an optical measurement.
-- Other state values return INVALID_PARAMETER. Incorrect payload lengths
-  return INVALID_LENGTH.
-- An initial read after firmware boot initializes the LED off; an initial
-  write applies the requested state directly. Its state is not persisted to
-  flash, and transport RESET does not undo it.
-- Both phases initialize the wireless-chip driver lazily if necessary.
-  Phase 9 uses the SDK's LED-only `pico_cyw43_arch_none` backend: no Wi-Fi
-  association or network stack is enabled, and the USB terminal and nominal
-  20 MHz Z80 operation are unchanged. Phase 10 also works with empty Wi-Fi
-  credentials or without a network connection. Driver initialization/write
-  failures return UNAVAILABLE; a failed write does not update the reported state.
+- `[4, 0]` turns it off; `[4, 1]` turns it on. Success returns COMPLETE; ACK it.
+- `[5]` returns the last successfully commanded state (`0`/`1`), initially off.
+- Invalid state/length returns INVALID_PARAMETER/INVALID_LENGTH; driver failure
+  returns UNAVAILABLE without changing the reported state.
 
-The worker accesses the wireless chip on core 1, never inside the core 0
-Z80 I/O trap. LED control is an asynchronous service, not a cycle-timed output.
+The worker initializes the wireless-chip driver lazily on core 1. Phase 9 uses
+its LED-only backend; no Wi-Fi connection is required. State is not persisted,
+and transport RESET leaves it unchanged. This is asynchronous LED control.
 
-For example, to turn the LED on, issue these Z80 I/O writes:
-
-```text
-OUT port 0x02, value 0x01   ; RESET shared transport
-OUT port 0x02, value 0x21   ; Utility group
-OUT port 0x03, value 0x02   ; Payload length, low byte
-OUT port 0x03, value 0x00   ; Payload length, high byte
-OUT port 0x03, value 0x04   ; Set LED operation
-OUT port 0x03, value 0x01   ; On (use 0x00 for off)
-```
-
-These are transaction steps, not literal assembly syntax. Poll port `0x02`
-with a bounded limit until COMPLETE (`0x01`) or ERROR (`0xFF`); acknowledge
-COMPLETE by writing `0x00` to port `0x02`. On ERROR, read and acknowledge
-the framed error as described above. RESET is for recovering/starting an
-idle channel, not for cancelling another client's active transaction.
+For example, write `21h` to port `02h`, then `02h,00h,04h,01h` to port `03h`
+(group, length prefix, set operation, on). Poll for COMPLETE/ERROR, then ACK
+success or drain and acknowledge the error.
 
 ### Persistent environment API
 
@@ -690,7 +471,7 @@ from the newest valid durable snapshot; an error does not undo a commit
 that already reached flash.
 
 Two 4 KiB sectors at **`0x1FE000` and `0x1FF000`** occupy unused space in the
-boot partition, beyond the boot payload ending at `0x2B1000`. Firmware, the
+boot partition, beyond the boot payload ending at `0x1F1000` (exclusive). Firmware, the
 disk journal, boot package and all four disk offsets remain unchanged.
 Each snapshot has a version, sequence number, payload CRC32 and header CRC32.
 Updates erase/program the inactive sector, verify the payload, and commit the
@@ -759,25 +540,17 @@ requires recovery. To recover an unknown state, perform **IN `0x17`,
 then OUT `0x17`, `0x00`**. Multi-byte port-23 operations must not be
 interleaved with other users of that port.
 
-## Deferred services and validation
+## Availability and validation
 
-File transfer remains reserved on `0x15/0x16`; it is not implemented.
-Chat and Sense HAT requests return explicit UNAVAILABLE errors. Weather is
-implemented only in Phase 10; Phase 9 reports UNAVAILABLE.
-The ESP32 interrupt timer on `0x07` is deferred: current hardware has
-no Pico-to-`INT#` driver, and the `RD#`-gated data path cannot provide an
-interrupt vector. No interrupt, GPIO or PCB wiring changes accompany this work.
+Phase 10 implements file transfer, weather, and chat. Phase 9 reports download
+errors and weather/chat UNAVAILABLE. Sense HAT is unavailable in both.
+The ESP32 interrupt-timer ABI is unsupported: `0x07` selects SRAM banks, and
+this board has no Pico-to-INT# driver or interrupt-vector path.
 
-Core 0 owns traps and timer state. Core 1 executes slow services after disk
-service and before network work. A generation-tagged mailbox prevents stale
-worker replies from becoming new responses. Pause/drain logic accounts for
-pending service work before flash is declared quiescent. Flash and network
-work never run inside the I/O trap.
-
-Host tests cover framing, aliases, recovery, timer boundaries and latching,
-ENV commands/capacity, unchanged-write suppression, snapshot recovery,
-calendar formatting, phase routing and flash-safe ownership. These are
-software checks, not bench timing or physical power-cut qualification.
+Host tests cover framing, aliases, recovery, timers, ENV persistence/capacity,
+calendar formatting, HTTP/SSE parsing, cancellation, TLS configuration, and
+phase routing. They do not establish physical timing, live provider behavior,
+or power-cut recovery.
 
 - [Phase 3](../implementation/phase-3-address-generator.md) owns address wiring.
 - [Phase 8](../implementation/phase-8-virtual-io.md) owns initial trap checks.

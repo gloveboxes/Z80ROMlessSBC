@@ -224,6 +224,7 @@ bool queue_try_remove(queue_t *queue, void *item) {
   return true;
 }
 unsigned queue_get_level(queue_t *queue) { return queue->count; }
+unsigned z80_memory_bank_status(void) { return 0xB4; }
 void z80_safe_startup(void) { assert(fake_core == 0); held = true; }
 void z80_cpu_fail_closed(void) { assert(fake_core == 0); held = true; }
 void stdio_init_all(void) {}

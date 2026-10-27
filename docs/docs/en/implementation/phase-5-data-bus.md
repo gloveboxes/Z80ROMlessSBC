@@ -10,7 +10,7 @@ Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
 
 Deployment tasks force-update without checking the previous firmware phase.
 Complete this phase's hardware prerequisites and save work before flashing. See
-[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+[Pico tools](../system/firmware-build.md#deployment-task-requirements).
 
 
 <div data-checklist="phase-5" data-checklist-label="Phase 5" markdown="1">
@@ -33,7 +33,7 @@ remain absent.
 
 Each row below is one shared net with branches, not a series path through
 a chip. Tick each row after checking every listed contact and isolation
-from adjacent pins. See the [data table](../hardware/pin-mapping.md#sram-address-and-data-trunks)
+from adjacent pins. Use the connection tables below
 and [translator reference](../hardware/bus-isolation.md#51-data-paths).
 
 ### 5 V data-bus branches

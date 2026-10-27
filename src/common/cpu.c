@@ -16,6 +16,7 @@ void z80_cpu_fail_closed(void) {
 }
 
 bool z80_cpu_prepare_loader(void) {
+  z80_memory_bank_set_available(false);
   z80_cpu_fail_closed();
   z80_reset_with_clock_cycles(3, 1);
   if (!gpio_get(PIN_BUSACK_N) || !gpio_get(PIN_IORQ_N) ||
@@ -42,6 +43,7 @@ bool z80_cpu_release_reset_and_run(uint32_t clock_hz) {
   }
   z80_isolate_buses();
   z80_reset_with_clock_cycles(6, 1);
+  z80_memory_bank_select(0);
   gpio_put(PIN_BOOT_READ_DISABLE, 0);
   gpio_put(PIN_IO_RELEASE, 0);
   gpio_put(PIN_BUSREQ_N, 1);

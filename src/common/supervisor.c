@@ -2,6 +2,29 @@
 
 #include "pico/stdlib.h"
 #include "z80sbc/pins.h"
+#include "z80sbc/banked_transfer.h"
+
+static bool banked_memory_available;
+static z80_memory_bank_driver_t bank_driver;
+
+void z80_memory_bank_set_driver(z80_memory_bank_driver_t driver) {
+  bank_driver = driver;
+}
+
+void __not_in_flash_func(z80_memory_bank_select)(unsigned bank) {
+  if (bank_driver != NULL)
+    bank_driver(bank & 1u);
+  else
+    gpio_put(PIN_MEMORY_BANK, bank & 1u);
+}
+
+void z80_memory_bank_set_available(bool available) {
+  banked_memory_available = available;
+}
+
+unsigned __not_in_flash_func(z80_memory_bank_status)(void) {
+  return banked_memory_available ? BANKED_ABI_STATUS | gpio_get(PIN_MEMORY_BANK) : 0;
+}
 
 void output_with_initial_level(uint pin, bool level) {
   gpio_init(pin);
@@ -24,6 +47,9 @@ void z80_safe_startup(void) {
   output_with_initial_level(PIN_DATA_UP_OE_N, 1);
   output_with_initial_level(PIN_DATA_DOWN_OE_N, 1);
   output_with_initial_level(PIN_RESET_N, 0);
+  output_with_initial_level(PIN_MEMORY_BANK, 0);
+  bank_driver = NULL;
+  banked_memory_available = false;
   output_with_initial_level(PIN_BUSREQ_N, 1);
   output_with_initial_level(PIN_BOOT_READ_DISABLE, 1);
   output_with_initial_level(PIN_IO_RELEASE, 0);

@@ -254,11 +254,38 @@ static void test_timers(void) {
     assert(z80_io_port_in(0x17) == (uint8_t)(0x12345678u >> (8 * i)));
   }
   assert(z80_io_port_in(0x17) == 0xff);
+  z80_io_port_out(0x17, 0); /* recover after the deliberate over-read */
+  z80_io_port_out(0x17, 0x40); /* stopwatch 0 */
+  now += 43200999;             /* 12 hours plus less than one second */
+  z80_io_port_out(0x17, 0x50); /* latch elapsed whole seconds */
+  for (unsigned i = 0; i < 4; ++i) {
+    now += 100;
+    assert(z80_io_port_in(0x17) == (uint8_t)(43200u >> (8 * i)));
+  }
   z80_io_port_out(0x17, 0);
   assert(z80_io_port_in(0x17) == 0);
   z80_io_port_out(0x17, 0x10);
   assert(z80_io_port_in(0x17) == 0xff); /* interrupted parameter collection */
   z80_io_port_out(0x17, 0);
+
+  /* BANKED must recover a previous client's partial command or error before
+   * starting its own stopwatch, regardless of supervisor uptime. */
+  for (unsigned state = 0; state < 3; ++state) {
+    now = 7200000;
+    z80_io_port_out(0x17, 0);
+    z80_io_port_out(0x17, 0x10);
+    if (state == 1)
+      z80_io_port_out(0x17, 0x34); /* one parameter still pending */
+    if (state == 2)
+      (void)z80_io_port_in(0x17); /* enter parser error state */
+    (void)z80_io_port_in(0x17);
+    z80_io_port_out(0x17, 0);
+    z80_io_port_out(0x17, 0x40);
+    now += 10000;
+    z80_io_port_out(0x17, 0x50);
+    for (unsigned i = 0; i < 4; ++i)
+      assert(z80_io_port_in(0x17) == (uint8_t)(10u >> (8 * i)));
+  }
 
   uint8_t start[] = {0, 3, 2, 0, 0, 0};
   now = 1999;

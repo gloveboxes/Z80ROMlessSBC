@@ -7,6 +7,7 @@
 static uint64_t now;
 static bool locked;
 static const char *configured_timezone;
+static unsigned board_id_reads;
 
 uint64_t time_us_64(void) { return now; }
 uint32_t get_rand_32(void) { return 0xfedcba98u; }
@@ -21,6 +22,7 @@ void restore_interrupts(uint32_t state) {
 }
 void pico_get_unique_board_id_string(char *text, size_t capacity) {
   assert(capacity >= 17);
+  ++board_id_reads;
   memcpy(text, "0123456789ABCDEF", 17);
 }
 bool environment_io_get(const char *key, char *value, size_t capacity) {
@@ -36,8 +38,13 @@ int main(void) {
   char text[256];
   assert(z80_service_millis() == 0);
   assert(z80_service_random() == 0xba98);
+  strcpy(text, "unchanged");
+  assert(z80_service_info(0, text, 14) == 0);
+  assert(strcmp(text, "unchanged") == 0 && board_id_reads == 0);
   assert(z80_service_info(0, text, sizeof(text)) == 14);
-  assert(strcmp(text, "zeta-80-789abc") == 0);
+  assert(strcmp(text, "zeta-80-abcdef") == 0 && board_id_reads == 1);
+  assert(z80_service_info(0, text, 15) == 14);
+  assert(strcmp(text, "zeta-80-abcdef") == 0 && board_id_reads == 1);
   assert(z80_service_info(1, text, sizeof(text)) == 0);
   assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);
   assert(text[0] == '\0');

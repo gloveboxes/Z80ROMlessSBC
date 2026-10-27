@@ -14,9 +14,11 @@ static char output[16384];
 static stdio_driver_t *registered;
 static bool streaming_test;
 static uint32_t producer_done;
+static uint64_t fake_us;
 enum { TRANSFER_LINES = 10000 };
 
 uint get_core_num(void) { return core; }
+uint64_t time_us_64(void) { assert(core == 1); return fake_us; }
 void alarm_pool_init_default(void) {
   assert(core == 1);
   alarm_ready = true;
@@ -176,8 +178,10 @@ int main(void) {
   z80_usb_console_service();
   assert(!strcmp(output + previous, "line1\r\nline2\r\n"));
   previous = written;
+  unsigned newline_flushes = flush_calls;
   assert(z80_usb_console_write((const uint8_t *)"\n", 1) == 1);
   assert(written == previous + 1 && output[previous] == '\n');
+  assert(flush_calls == newline_flushes + 1);
   unsigned calls = write_calls, flushes = flush_calls;
   uint8_t burst[32];
   memset(burst, 'T', sizeof(burst));
@@ -185,7 +189,10 @@ int main(void) {
   room = sizeof(burst);
   assert(z80_usb_console_write(burst, sizeof(burst)) == sizeof(burst));
   assert(written == previous + sizeof(burst));
-  assert(write_calls == calls + 1 && flush_calls == flushes + 1);
+  assert(write_calls == calls + 1 && flush_calls == flushes);
+  fake_us += TERMINAL_FLUSH_US;
+  z80_usb_console_service();
+  assert(flush_calls == flushes + 1);
   assert(!z80_usb_console_write(burst, sizeof(burst)));
   assert(write_calls == calls + 1 && flush_calls == flushes + 1);
   room = 8;
@@ -200,6 +207,8 @@ int main(void) {
   calls = write_calls;
   assert(!z80_usb_console_write(burst, sizeof(burst)));
   assert(write_calls == calls);
+  z80_usb_console_service();
+  assert(!terminal_flush_pending);
   connected = true;
   test_concurrent_diagnostics();
   init_ok = false;

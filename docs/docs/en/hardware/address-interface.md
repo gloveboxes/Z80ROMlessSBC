@@ -1,81 +1,105 @@
-# 2. Z80-Assisted Loading and Address Monitoring
+# 2. SRAM Loading and Bank Switching
 
-The Pico never drives A0-A15 and never asserts an SRAM write strobe. The
-fully static CMOS Z80 executes injected instructions under a slow Pico clock.
-This removes the address expander, programmable logic, and external programming
-dependency from the circuit.
+The Z80 alone drives SRAM addresses and write strobes. The Pico loads and
+verifies memory by supplying instructions under a slow clock, then releases
+the Z80 to execute from SRAM. BUSREQ/BUSACK pauses the CPU for flash work;
+it does not permit Pico memory mastering.
+
+For wiring, use the implementation checklists:
+[Phase 3 control/port monitor](../implementation/phase-3-address-generator.md#wiring-control-and-port-monitor),
+[Phase 4 address trunk and bank select](../implementation/phase-4-address-bus.md),
+and [Phase 6 SRAM loading](../implementation/phase-6-sram.md).
+
+## Banked 128 KiB SRAM
+
+The AS6C1008 provides two 64 KiB banks. GP8 controls A16 through U4 AHCT244;
+port `0x07` selects the bank. Switching affects all addresses, including code,
+stack, and vectors, so applications must use the
+[BIOS transfer API](../cpm-dcc/bios.md#implemented-banked-memory-bios-extension-abi-1).
+
+### Physical bank-select path
+
+The [Phase 4 checklist](../implementation/phase-4-address-bus.md#sram-bank-select)
+owns the GP8–U4–A16 wiring and R24 pull-down. GP8/J2 pin 1 is reserved for
+bank selection.
+
+### PIO acceleration
+
+Phase 10 enables PIO-controlled SRAM bank switching after the second-bank probe
+succeeds. PIO1 uses
+two state machines and 31 instruction words with a 120 MHz supervisor clock:
+one generates the 20 MHz Z80 clock; the other handles bank-select OUTs without
+an ARM interrupt. PIO0 remains available for the matrix display.
+
+During a bank write, PIO holds CLK LOW, samples D0 onto A16 while SRAM is
+deselected, releases WAIT, and rearms after IORQ#/WR# release. The fixed HCT32
+WAIT circuit remains required. CLK stays LOW for at least eight system ticks
+(66.7 ns) after WAIT release. Reads and other ports use firmware handlers.
+
+Runtime banking requires active PIO. If bank hardware or PIO resources are
+unavailable, other I/O continues through PWM/software handling, but banking
+reports unavailable. Once allocated, the backend requires 20 MHz Z80 /
+120 MHz supervisor clocks. Stuck transactions trigger fail-closed recovery
+after 500 ms.
+
+### Firmware and port contract
+
+Loading probes bank isolation, initializes/verifies bank-1 metadata and the
+mirrored BIOS page, and restores bank 0. Failed banking checks allow the base
+64 KiB loader to continue. A new image load resets the banked heap; warm boot
+preserves it.
+
+| Operation | Meaning |
+| --- | --- |
+| `IN A,(07h)` | `B4h`: bank 0 ready; `B5h`: bank 1 ready; `00h`: unavailable |
+| `OUT (07h),A` | PIO selects `A & 1`; ignored without active PIO |
+
+Status reads use the firmware trap. Port aliases follow `address & 0x17`;
+see the [port reference](../system/io-ports.md). INT#/NMI# remain inactive on
+this board; the transfer API preserves maskable interrupt state but does not
+support NMI or reentrant calls.
+
+### dcc banked heap example
+
+[examples/BANKED](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/BANKED)
+provides `bmalloc`/`bfree` handles and `bread`/`bwrite` through base-bank buffers.
+Handles are not C pointers. Capacity is 65,024 bytes in 256-byte allocations;
+the metadata block and top BIOS page are reserved.
+
+The BIOS copies 16-byte bursts; the C library buffers partial transfers.
+See the [memory map](../cpm-dcc/memory-map.md) and [BIOS ABI](../cpm-dcc/bios.md)
+for bounds and register conventions. Deploy matching firmware, boot package,
+and Drive A system records. Changes to `src/common/banked_transfer.asm`
+require regenerating its supervisor header with `scripts/build-banked-transfer.py`.
 
 ## Loader Sequence
 
-1. Disable both data paths and PWM. Assert RESET# for at least six slow clock
-   cycles, then release it and clock two reset-exit cycles.
-2. Keep BOOT_READ_DISABLE HIGH. SRAM OE# stays HIGH while the Pico supplies
-   opcode and immediate bytes during Z80 read cycles.
-3. Inject `LD HL,nn` (`21 low high`), then `LD (HL),n` (`36 byte`). Disable the
-   Pico output after the operand read; the Z80 drives the address, data, and
-   write controls for the following three write T-states.
-4. For verification, inject `LD A,(HL)` (`7E`), disable the upward path,
-   enable the downward path, and lower BOOT_READ_DISABLE only for the three
-   memory-read T-states. Sample the bus before the last clock; inhibit SRAM
-   reads again afterward.
-5. Compare every byte. On success, reset the Z80 again so PC is zero, isolate
-   both paths, lower BOOT_READ_DISABLE, release RESET# while CLK is stopped
-   LOW, wait at least 1 us, then start the normal clock. On failure, hold
-   RESET# LOW and stop the clock.
+1. Isolate both data paths, stop the execution clock, and reset the Z80.
+2. Inhibit SRAM reads while supplying `LD HL,nn` and `LD (HL),n` bytes.
+   The Z80 performs each memory write.
+3. Verify with injected `LD A,(HL)`, enabling SRAM reads and the downward
+   buffer only for the read cycle. Compare every byte.
+4. On success, reset to PC zero, isolate the Pico data paths, enable normal
+   SRAM reads, and start execution. On failure, hold RESET# LOW and stop CLK.
 
-Opcode fetches use four T-states; immediate reads use three. Every byte access
-reloads HL, favoring a simple checked implementation over boot speed. These
-operations require an initialized loader session and are not runtime DMA.
-Each slow clock returns with CLK LOW only after a fixed 1 us settling interval.
-This retains injected data through the Z80's
-RD# release and lets the buffered controls settle before readback or isolation.
-The pulse count, not a fixed slow-clock frequency, defines the instruction
-sequence; software overhead and extra settling extend the low intervals.
-PWM-to-SIO handover adds a one-time 1 us guard; already-SIO steps do not repeat
-that guard. An injected step requests 1 us LOW, 1 us HIGH, and 1 us of trailing
-settling, rather than a fixed 500 kHz clock. At 37 clocks per loaded-and-verified
-byte, the 64 KiB image requires about 7.27 seconds of clock waits alone; data
-turnaround waits, instructions, and other overhead increase the real boot time.
-The host cycle model tests ordering, boundary addresses, patterns, March, and
-readback errors; actual reset phase and bus timing still require bench captures.
-
-**Maintained source:** [sram.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c)
+Slow steps include settling delays; boot duration depends on software and
+buffer turnaround as well as clock pulses. See maintained
+[sram.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c)
 and [cpu.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/cpu.c).
+These are loader operations, not runtime DMA.
 
-## Port Address Monitor
+### Board verification and recovery
 
-U7, a 3.3 V-powered SN74LVC244AN, monitors four address bits and four controls.
-Tie enables pins 1/19 and GND pin 10 to GND; VCC pin 20 to Pico 3.3 V.
+The board has passed repeated 20 MHz PIO boots and `BANKED.COM`, including
+32 KiB copies, bounds, reuse, exhaustion, and the final heap byte. This
+establishes operation on that board; copy throughput and electrical margins
+have not been measured.
 
-| Signal | Z80 pin | U7 input | U7 output | Pico GPIO / header |
-| --- | ---: | ---: | ---: | --- |
-| BUSACK# | 23 | 2 | 18 | GP0 / 1 |
-| IORQ# | 20 | 4 | 16 | GP1 / 2 |
-| RD# | 21 | 6 | 14 | GP27 / 32 |
-| WR# | 22 | 8 | 12 | GP28 / 34 |
-| A0 | 30 | 11 | 9 | GP18 / 24 |
-| A1 | 31 | 13 | 7 | GP19 / 25 |
-| A2 | 32 | 15 | 5 | GP20 / 26 |
-| A4 | 34 | 17 | 3 | GP21 / 27 |
+Use **Build and flash Pico - Phase 10 firmware**, confirm the CP/M prompt,
+run `BANKED`, then inspect **Ctrl-] s** for `[pio] active=1 running=1`.
+Firmware-only updates preserve the matching CP/M package, disks, and ENV.
 
-```mermaid
-block-beta
-  columns 2
-  Z0["Z80 A0 - pin 30"] L0["LVC244 input - pin 11"]
-  Z1["Z80 A1 - pin 31"] L1["LVC244 input - pin 13"]
-  Z2["Z80 A2 - pin 32"] L2["LVC244 input - pin 15"]
-  Z4["Z80 A4 - pin 34"] L4["LVC244 input - pin 17"]
-  Z0 --> L0
-  Z1 --> L1
-  Z2 --> L2
-  Z4 --> L4
-```
-
-The decoded port is `address & 0x17`. Terminal ports `00/01` and disk ports
-`10-14` remain distinct. A3, A5-A7, and the high address byte are intentionally
-ignored: for example `08` aliases `00`, and `18` aliases `10`. Unsupported
-decoded ports retain the existing application behavior. There is no SPI
-address sampling or address-driver direction to configure.
-
-BUSREQ#/BUSACK# remains solely a CPU-quiescence handshake for runtime flash
-writes. A granted bus never authorizes Pico memory address or write driving.
+Host regressions cover PIO instruction timing, bus grants, console handoff,
+and an interrupt during clock startup. Clock frequency is published before
+PIO starts so an early BIOS interrupt can resume it correctly. Host models
+complement physical CLK/WAIT#/A16/SRAM-control captures.

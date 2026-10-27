@@ -6,13 +6,13 @@
 
 ## Overview
 
-This breadboard design has been proven to drive the Z80 at its maximum clock
-speed of 20 MHz. It pairs a Z80 processor with a Raspberry Pi Pico 2 W to run
+The project breadboard runs the specified Z84C0020PEC Z80 at its rated
+20 MHz clock speed. It pairs a Z80 processor with a Raspberry Pi Pico 2 W to run
 CP/M without a ROM chip.
 
-The Z80 runs from 64 KiB of SRAM. The Pico handles clocking, boot loading and
-verification, and terminal and disk I/O, with scope for true random number
-generation, timers, and internet access.
+The Z80 runs from 64 KiB of SRAM (plus 64 KiB of banked SRAM). The Pico
+handles clocking, boot loading and verification, terminal and disk I/O, random
+numbers, and timers. Phase 10 also provides network services.
 Four persistent CP/M drives live in the Pico's onboard flash. Phase 9 uses a
 USB terminal; Phase 10 adds a browser-based WebSocket terminal.
 After bring-up, the [Phase 9 automatic loader](implementation/phase-9-flash-storage.md#automatic-cpm-loader)
@@ -51,8 +51,9 @@ the implementation and hardware checks.
 
 ## System architecture
 
-The Pico 2 W is a multicore I/O controller: core 0 generates the nominal
-20 MHz Z80 clock and owns assisted SRAM loading and Z80 I/O; core 1
+The Pico 2 W is a multicore I/O controller: core 0 configures the nominal
+20 MHz Z80 clock and owns assisted SRAM loading and Z80 I/O. Phase 10 uses
+PIO for clock generation and SRAM bank-select writes. Core 1
 owns USB, runtime storage, Wi-Fi and network clients. Bounded console rings
 and request/result mailboxes separate the two cores. The Z80 itself writes
 SRAM during loading and executes CP/M directly from SRAM after verification
@@ -90,8 +91,7 @@ boot loading, terminal access, and persistent disk I/O.
   boot-image construction, disk media, and software compatibility.
 - [Firmware testing](system/firmware-testing.md) -
   host tests, Z80 emulation, and hardware validation boundaries.
-- [Pico flashing and USB supervisor tools](tools/pico-tools.md) -
-  environment setup, verified firmware and selective disk updates, serial
-  discovery, clean stop, and journal diagnostics.
+- [Pico flashing and USB supervisor tools](system/firmware-build.md#device-selection-and-diagnostics) -
+  device selection, verified updates, clean stop, and journal diagnostics.
 - [Source index](reference/source-index.md) -
   maintained firmware, tools, and implementation guides.

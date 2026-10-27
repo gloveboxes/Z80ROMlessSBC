@@ -10,7 +10,7 @@ Choose **Tasks: Run Task** in the Z80ROMlessSBC workspace.
 
 Deployment tasks force-update without checking the previous firmware phase.
 Complete this phase's hardware prerequisites and save work before flashing. See
-[Pico tools](../tools/pico-tools.md#deployment-task-requirements).
+[Pico tools](../system/firmware-build.md#deployment-task-requirements).
 
 
 <div data-checklist="phase-1" data-checklist-label="Phase 1" markdown="1">
@@ -33,17 +33,28 @@ Continuity-check actual empty socket contacts and adjacent pins, not only
 wire ends. Keep the clock path short with a nearby GND return; do not add
 loops to equalize wire lengths.
 
-{%
-  include-markdown "../hardware/pin-mapping.md"
-  start='<template id="phase-1-pico-wiring">'
-  end="phase-1-pico-wiring-end</template>"
-%}
+### Pico Control Outputs
+
+| Done | Signal | Pico connection | Destination socket contact |
+| --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="wire-gp2" aria-label="Pico GP2 clock wire continuity checked"> | CLK | Pico GP2 - header pin 4 | U4 AHCT244 input - pin 2 |
+| <input type="checkbox" data-checklist-id="wire-gp3" aria-label="Pico GP3 reset wire continuity checked"> | RESET# | Pico GP3 - header pin 5 | U1 Z80 RESET# - pin 26 |
+| <input type="checkbox" data-checklist-id="wire-gp4" aria-label="Pico GP4 bus request wire continuity checked"> | BUSREQ# | Pico GP4 - header pin 6 | U4 AHCT244 input - pin 4 |
+| <input type="checkbox" data-checklist-id="wire-gp5" aria-label="Pico GP5 boot read disable wire continuity checked"> | BOOT_READ_DISABLE | Pico GP5 - header pin 7 | U4 AHCT244 input - pin 6 |
+| <input type="checkbox" data-checklist-id="wire-gp6" aria-label="Pico GP6 upward enable request wire continuity checked"> | PICO_DATA_UP_OE# | Pico GP6 - header pin 9 | U3 HCT32 input - pin 10 |
+| <input type="checkbox" data-checklist-id="wire-gp7" aria-label="Pico GP7 downward enable wire continuity checked"> | DATA_DOWN_OE# | Pico GP7 - header pin 10 | U10 LVC245 OE# - pin 19 |
+| <input type="checkbox" data-checklist-id="wire-gp9" aria-label="Pico GP9 IO release wire continuity checked"> | IO_RELEASE | Pico GP9 - header pin 12 | U3 HCT32 input - pin 5 |
+
+Wire all Pico connections from the table above with other active devices
+absent. Continuity-check every destination socket contact and adjacent pins.
+Tick each row after checking its connection; progress is saved in the Phase 1
+checklist.
 
 ## Phase 1 Firmware
 
 <input type="checkbox" data-checklist-id="stage-firmware" aria-label="Phase 1 firmware built and loaded"> Build `z80_stage01_supervisor`; load
 `build/src/stage01_supervisor/z80_stage01_supervisor.uf2` using the
-[firmware/console procedure](../system/firmware-build.md#load-phase-firmware-and-open-its-console).
+[firmware/console procedure](../system/firmware-build.md#vs-code-deployment-options).
 [Maintained application](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage01_supervisor/main.c).
 
 | Done | Command | Behavior | Measurement |

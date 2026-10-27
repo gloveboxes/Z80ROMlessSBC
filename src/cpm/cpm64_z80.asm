@@ -1,7 +1,7 @@
 ; Z80 port generated from the immutable Burcon CP/M 2.2 image.
 ; Internal references are symbolic so each fixed-base section can be compacted.
-BIOS_BASE: equ 0xfd00
-        org 0xe700
+BIOS_BASE: equ 0xfc00
+        org 0xe600
 
 CCP_COLD_ENTRY:
         jp L_E65C
@@ -1319,8 +1319,8 @@ CCP_CLEAR_MESSAGE:
         db 0x1b,"[2J",0x1b,"[H",0x24
 CCP_PADDING_START:
 
-        defs 0xef00-$,0
-        org 0xef00
+        defs 0xee00-$,0
+        org 0xee00
 
 A_EB00:
         db 0x00
@@ -1523,13 +1523,6 @@ L_EC23:
         and 0x01
         ret z
         call BIOS_BASE+0x09
-        cp 0x13
-        jr nz,L_EC42
-        call BIOS_BASE+0x09
-        cp 0x03
-        jp z,0x0000
-        xor a
-        ret
 L_EC42:
         ld (A_EE0E),a
 L_EC45:
@@ -1544,11 +1537,6 @@ L_EC48:
         pop bc
         push bc
         call BIOS_BASE+0x0c
-        pop bc
-        push bc
-        ld a,(A_EE0D)
-        or a
-        call nz,BIOS_BASE+0x0f
         pop bc
 L_EC62:
         ld a,c
@@ -1676,15 +1664,6 @@ L_ED26:
         ld (A_EE0B),a
         jr L_ECF1
 L_ED37:
-        cp 0x10
-        jr nz,L_ED48
-        push hl
-        ld hl,A_EE0D
-        ld a,0x01
-        sub (hl)
-        ld (hl),a
-        pop hl
-        jr L_ECEF
 L_ED48:
         cp 0x18
         jr nz,L_ED5F
@@ -3598,6 +3577,6 @@ A_F8EC:
         db 0x00
 
 ; The final 128 bytes are reserved for the native BIOS directory buffer.
-        defs 0xfc80-$,0
+        defs 0xfb80-$,0
 
-        defs 0xfd00-$,0
+        defs 0xfc00-$,0

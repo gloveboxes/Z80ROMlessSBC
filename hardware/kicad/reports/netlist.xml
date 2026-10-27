@@ -2,14 +2,14 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-10-23T12:23:06</date>
+    <date>2026-10-26T21:17:26</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>Z80ROMlessSBC - Exact Breadboard Electrical Schematic</title>
         <company>Z80ROMlessSBC</company>
-        <rev>1</rev>
-        <date>2026-08-23</date>
+        <rev>2</rev>
+        <date>2026-10-26</date>
         <source>z80_romless_sbc.kicad_sch</source>
         <comment number="1" value="Native KiCad 10 schematic generated from the verified README pin map"/>
         <comment number="2" value=""/>
@@ -412,11 +412,11 @@
     <comp ref="J2">
       <value>PICO GPIO EXPANSION</value>
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</footprint>
-      <description>3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting</description>
+      <description>3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND</description>
       <fields>
         <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">3.3V-only expansion: GP8, GP22, GP26/ADC0, Pico 3V3 output, GND; no pulls or level shifting</field>
+        <field name="Description">3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND</field>
       </fields>
       <libsource lib="Z80SBC" part="EXPANSION" description="Z80ROMlessSBC project symbol: PICO GPIO EXPANSION"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
@@ -587,6 +587,29 @@
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>89c84417-7f0e-5870-af2f-68c4d6cf3ad9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R24">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <description>10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4</description>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4</field>
+      </fields>
+      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <property name="Sheetname" value="z80_romless_sbc"/>
+      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c59bdc4d-06a9-5de7-9590-95da23d5497d</tstamps>
       <units>
         <unit name="A">
           <pins>
@@ -1841,20 +1864,19 @@
       <node ref="R21" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R22" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="R23" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R24" pin="2" pinfunction="2_2" pintype="passive"/>
       <node ref="RN3" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="TP7" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="29" pinfunction="GND_29" pintype="power_in"/>
       <node ref="U10" pin="1" pinfunction="DIR_1" pintype="input"/>
       <node ref="U10" pin="10" pinfunction="GND_10" pintype="power_in"/>
       <node ref="U2" pin="16" pinfunction="GND_16" pintype="power_in"/>
-      <node ref="U2" pin="2" pinfunction="A16_2" pintype="input"/>
       <node ref="U3" pin="12" pinfunction="4A_12" pintype="input"/>
       <node ref="U3" pin="13" pinfunction="4B_13" pintype="input"/>
       <node ref="U3" pin="7" pinfunction="GND_7" pintype="power_in"/>
       <node ref="U4" pin="1" pinfunction="OE1#_1" pintype="input"/>
       <node ref="U4" pin="10" pinfunction="GND_10" pintype="power_in"/>
       <node ref="U4" pin="15" pinfunction="2A3_15" pintype="input"/>
-      <node ref="U4" pin="17" pinfunction="2A4_17" pintype="input"/>
       <node ref="U4" pin="19" pinfunction="OE2#_19" pintype="input"/>
       <node ref="U7" pin="1" pinfunction="1OE#_1" pintype="input"/>
       <node ref="U7" pin="10" pinfunction="GND_10" pintype="power_in"/>
@@ -1975,6 +1997,8 @@
     <net code="59" name="/PICO_GP8" class="Default">
       <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional"/>
       <node ref="J2" pin="1" pinfunction="GP8_1" pintype="passive"/>
+      <node ref="R24" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U4" pin="17" pinfunction="2A4_17" pintype="input"/>
     </net>
     <net code="60" name="/PICO_GP22" class="Default">
       <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional"/>
@@ -2015,67 +2039,68 @@
       <node ref="TP3" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="26" pinfunction="RESET#_26" pintype="input"/>
     </net>
-    <net code="68" name="/SRAM_CE_N" class="Default">
+    <net code="68" name="/SRAM_A16" class="Default">
+      <node ref="U2" pin="2" pinfunction="A16_2" pintype="input"/>
+      <node ref="U4" pin="3" pinfunction="2Y4_3" pintype="tri_state"/>
+    </net>
+    <net code="69" name="/SRAM_CE_N" class="Default">
       <node ref="U2" pin="22" pinfunction="CE#_22" pintype="input"/>
       <node ref="U4" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
     </net>
-    <net code="69" name="/SRAM_OE_N" class="Default">
+    <net code="70" name="/SRAM_OE_N" class="Default">
       <node ref="U2" pin="24" pinfunction="OE#_24" pintype="input"/>
       <node ref="U3" pin="3" pinfunction="1Y_3" pintype="output"/>
     </net>
-    <net code="70" name="/SRAM_WE_N" class="Default">
+    <net code="71" name="/SRAM_WE_N" class="Default">
       <node ref="U2" pin="29" pinfunction="WE#_29" pintype="input"/>
       <node ref="U4" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
     </net>
-    <net code="71" name="/VSYS" class="Default">
+    <net code="72" name="/VSYS" class="Default">
       <node ref="A1" pin="39" pinfunction="VSYS_39" pintype="power_in"/>
       <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
     </net>
-    <net code="72" name="/WAIT_N" class="Default">
+    <net code="73" name="/WAIT_N" class="Default">
       <node ref="TP4" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="24" pinfunction="WAIT#_24" pintype="input"/>
       <node ref="U3" pin="6" pinfunction="2Y_6" pintype="output"/>
     </net>
-    <net code="73" name="/WR_N" class="Default">
+    <net code="74" name="/WR_N" class="Default">
       <node ref="RN4" pin="7" pinfunction="R6_7" pintype="passive"/>
       <node ref="U1" pin="22" pinfunction="WR#_22" pintype="tri_state"/>
       <node ref="U4" pin="11" pinfunction="2A1_11" pintype="input"/>
       <node ref="U7" pin="8" pinfunction="1A4_8" pintype="input"/>
     </net>
-    <net code="74" name="/Z80_CLK" class="Default">
+    <net code="75" name="/Z80_CLK" class="Default">
       <node ref="TP2" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="6" pinfunction="CLK_6" pintype="input"/>
       <node ref="U4" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
     </net>
-    <net code="85" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
+    <net code="86" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
       <node ref="A1" pin="37" pinfunction="3V3_EN_37" pintype="input+no_connect"/>
     </net>
-    <net code="86" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
+    <net code="87" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
       <node ref="A1" pin="35" pinfunction="ADC_VREF_35" pintype="power_in+no_connect"/>
     </net>
-    <net code="87" name="unconnected-(A1-RUN-Pad30)" class="Default">
+    <net code="88" name="unconnected-(A1-RUN-Pad30)" class="Default">
       <node ref="A1" pin="30" pinfunction="RUN_30" pintype="input+no_connect"/>
     </net>
-    <net code="88" name="unconnected-(A1-VBUS-Pad40)" class="Default">
+    <net code="89" name="unconnected-(A1-VBUS-Pad40)" class="Default">
       <node ref="A1" pin="40" pinfunction="VBUS_40" pintype="power_in+no_connect"/>
     </net>
-    <net code="89" name="unconnected-(U1-HALT#-Pad18)" class="Default">
+    <net code="90" name="unconnected-(U1-HALT#-Pad18)" class="Default">
       <node ref="U1" pin="18" pinfunction="HALT#_18" pintype="tri_state+no_connect"/>
     </net>
-    <net code="90" name="unconnected-(U1-RFSH#-Pad28)" class="Default">
+    <net code="91" name="unconnected-(U1-RFSH#-Pad28)" class="Default">
       <node ref="U1" pin="28" pinfunction="RFSH#_28" pintype="tri_state+no_connect"/>
     </net>
-    <net code="91" name="unconnected-(U2-NC-Pad1)" class="Default">
+    <net code="92" name="unconnected-(U2-NC-Pad1)" class="Default">
       <node ref="U2" pin="1" pinfunction="NC_1" pintype="no_connect"/>
     </net>
-    <net code="92" name="unconnected-(U3-4Y-Pad11)" class="Default">
+    <net code="93" name="unconnected-(U3-4Y-Pad11)" class="Default">
       <node ref="U3" pin="11" pinfunction="4Y_11" pintype="output+no_connect"/>
     </net>
-    <net code="93" name="unconnected-(U4-2Y3-Pad5)" class="Default">
+    <net code="94" name="unconnected-(U4-2Y3-Pad5)" class="Default">
       <node ref="U4" pin="5" pinfunction="2Y3_5" pintype="tri_state+no_connect"/>
-    </net>
-    <net code="94" name="unconnected-(U4-2Y4-Pad3)" class="Default">
-      <node ref="U4" pin="3" pinfunction="2Y4_3" pintype="tri_state+no_connect"/>
     </net>
   </nets>
 </export>

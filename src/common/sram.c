@@ -5,6 +5,7 @@
 
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
+#include "z80sbc/banked_transfer.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
@@ -21,10 +22,53 @@ bool z80_sram_prepare_loader(void) {
   gpio_put(PIN_BOOT_READ_DISABLE, 1);
   gpio_put(PIN_BUSREQ_N, 1);
   z80_reset_with_clock_cycles(6, 1);
+  z80_memory_bank_select(0);
   gpio_put(PIN_RESET_N, 1);
   z80_clock_one_cycle(1);
   z80_clock_one_cycle(1);
   return true;
+}
+
+void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
+  z80_memory_bank_set_available(false);
+  z80_memory_bank_select(0);
+  if (resident_page == NULL)
+    return;
+  /* The base image has not been loaded yet, so address zero is scratch. */
+  z80_sram_write_byte(0, 0x5A);
+  z80_memory_bank_select(1);
+  z80_sram_write_byte(0, 0xA5);
+  z80_memory_bank_select(0);
+  uint8_t actual = 0;
+  if (!z80_sram_read_byte(0, &actual) || actual != 0x5A)
+    return; /* Unmodified A16 strap / aliased SRAM: retain 64 KiB operation. */
+  z80_memory_bank_select(1);
+  bool valid = true;
+  for (unsigned address = 0; address < 256; ++address) {
+    uint8_t expected = 0;
+    if (address < 4)
+      expected = (const uint8_t[]){'B', 'K', 'M', '2'}[address];
+    else if (address == 0x20)
+      expected = 3; /* 2-bit map: reserve block zero for metadata and code. */
+    else if (address == 0x5F)
+      expected = 0xC0; /* Reserve block 255 for the resident transfer page. */
+    if (!z80_sram_write_byte((uint16_t)address, expected) ||
+        !z80_sram_read_byte((uint16_t)address, &actual) || actual != expected) {
+      valid = false;
+      break;
+    }
+  }
+  for (unsigned offset = 0; valid && offset < 256; ++offset) {
+    /* Both banks execute this page across OUT (7). Use the boot package's
+     * exact bytes, rather than a separately compiled firmware copy. */
+    uint8_t expected = resident_page[offset];
+    uint16_t address = (uint16_t)(BANKED_CODE_ADDRESS + offset);
+    if (!z80_sram_write_byte(address, expected) ||
+        !z80_sram_read_byte(address, &actual) || actual != expected)
+      valid = false;
+  }
+  z80_memory_bank_select(0);
+  z80_memory_bank_set_available(valid);
 }
 
 static void pulse_clock(unsigned cycles) {

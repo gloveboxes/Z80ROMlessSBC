@@ -75,6 +75,11 @@ bool z80_cpu_prepare_loader(void) {
   cpu_held = false;
   return loader_ok;
 }
+void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
+  assert(!cpu_held);
+  assert(resident_page == test_flash + FLASH_BOOT_PAYLOAD_OFFSET + BANKED_CODE_ADDRESS);
+}
+void z80_io_trap_poll(void) {}
 bool z80_sram_write_byte(uint16_t address, uint8_t value) {
   assert(!cpu_held);
   if ((int)address == failed_write)
@@ -180,7 +185,7 @@ static void reset_fixture(void) {
   for (unsigned index = 0; index < 65536; ++index)
     test_flash[FLASH_BOOT_PAYLOAD_OFFSET + index] =
         (uint8_t)(index ^ (index >> 8));
-  memcpy(test_flash + FLASH_BOOT_PAYLOAD_OFFSET, "\xC3\x00\xFD", 3);
+  memcpy(test_flash + FLASH_BOOT_PAYLOAD_OFFSET, "\xC3\x00\xFC", 3);
   put_manifest(65536);
   memset(old_block, 0xA5, sizeof(old_block));
   memset(new_record, 0x3C, sizeof(new_record));

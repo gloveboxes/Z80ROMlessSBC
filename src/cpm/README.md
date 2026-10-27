@@ -6,18 +6,26 @@ The memory map is:
 
 | Region | Z80 address | Size |
 | --- | ---: | ---: |
-| CCP | `0xE700` | 2,048 bytes |
-| BDOS | `0xEF00` | 3,584 bytes |
-| BIOS | `0xFD00` | 766 bytes currently |
+| CCP | `0xE600` | 2,048 bytes |
+| BDOS | `0xEE00` | 3,584 bytes |
+| BIOS core | `0xFC00` | 766 bytes currently |
+| BIOS bank extension | `0xFF00` | 256-byte reserved page, included in bios.bin |
 
 The checked-in `cpm64_system.bin` was captured from RAM after the matching
 Burcon `MOVCPM 64` and `SYSGEN` utilities produced and booted a 64K system. It
 contains the 44 relocated CCP/BDOS records and is protected by a SHA-256 check
 in `build_images.py`. The active port relocates page zero's BDOS entry to
-`0xEF06`, and the custom BIOS jump table begins at `0xFD00`. The TPA is
-`0x0100`-`0xE6FF` (58,880 bytes), 1,024 bytes larger than the initial 64K
-SBC layout. All CCP, BDOS, and BIOS workspace remains inside the resident
+`0xEE06`, and the custom BIOS jump table begins at `0xFC00`. The TPA is
+`0x0100`-`0xE5FF` (58,624 bytes). The resident banked transfer service occupies
+`0xFF00`-`0xFFFF`, outside the TPA; bank 1 uses the same page for its mirrored
+BIOS extension. All CCP, BDOS, and BIOS workspace remains inside the resident
 regions above the TPA.
+
+The complete `bios.bin` is 1,024 bytes including padding and the bank extension.
+The standard 17-entry jump table is unchanged; [BIOS bank extension ABI 1](../../docs/docs/en/cpm-dcc/banked-bios.md)
+provides stable READ/WRITE/INFO calls for portable clients. The assembly is
+included directly by `z80_bios.asm`, and generated supervisor bytes are checked
+against that BIOS page during packaging.
 
 The built-in `CLEAR` command sends `ESC[2J` followed by `ESC[H` to clear a
 VT100/ANSI terminal and move the cursor home. It uses 55 bytes of reclaimed
@@ -58,7 +66,7 @@ Burcon reserves `0x0700` bytes for its BIOS and reports `SAVE 38` after
 byte-identical unoptimized mode. The active SBC port symbolically relocates the
 same fixed-size sections upward by `0x0400`.
 
-`z80_bios.asm` is assembled at `0xFD00`. It uses terminal data/status ports
+`z80_bios.asm` is assembled at `0xFC00`. It uses terminal data/status ports
 `0x00`/`0x01` and disk command, drive, LBA-low, LBA-high, and data ports
 `0x10`-`0x14`. Warm boot reloads 44 sequential records from native Drive A.
 The BIOS reports `B0h` on reserved port `0x05` at cold entry and `C0h`
@@ -99,10 +107,13 @@ python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
 The boot packer rejects incomplete images and a reset vector other than
-`JP FD00h`; firmware independently checks the same shape and both CRCs.
+`JP FC00h`; firmware independently checks the same shape and both CRCs.
 `z80_stage09_cpm_images` generates a complete Stage 9 provisioning set in
 `build/cpm-stage09/`; `z80_cpm_images` retains Stage 10 in `build/cpm/`.
-Use a matching boot package and Drive A system image after BIOS changes.
+Use a matching boot package and Drive A system image after BIOS changes. The
+current loader mirrors the validated image's FF00h page into bank 1 rather
+than embedding a second routine in firmware. After upgrading to this loader,
+compatible BIOS code changes do not require another firmware flash.
 
 ## Native auto-run
 
@@ -151,7 +162,7 @@ an erased record beginning with `E5h` is treated as unconfigured.
 The BIOS clears the CCP command length on every boot, copies only an
 applicable command, appends NUL, and enters the CCP cold vector to retain
 that prepared line. Its 128-byte directory buffer occupies the optimized
-BDOS padding at `FC80h-FCFFh`, leaving the TPA unchanged. Generation and image
+BDOS padding at `FB80h-FBFFh`, leaving the TPA unchanged. Generation and image
 packing guard this workspace against overlap; unoptimized reference images
 remain available for byte-identical assembly tests, not native BIOS boot.
 
@@ -213,7 +224,7 @@ the regression coverage.
 
 `z80boot.pkg` has a 20-byte little-endian manifest at offset zero, `0xFF`
 padding through offset `0x0FFF`, and a 65,536-byte SRAM image at offset
-`0x1000`. The SRAM image starts with `JP 0xFD00`; cold boot then installs the
+`0x1000`. The SRAM image starts with `JP 0xFC00`; cold boot then installs the
 normal CP/M warm-boot and BDOS vectors before entering the CCP.
 
 ## 512 KiB disk layout
@@ -223,7 +234,7 @@ leave 252 allocation blocks of 2 KiB (`DSM=251`); one block holds the 64-entry
 directory, leaving 502 KiB for files. Each drive has a 32-byte allocation map.
 The Pico still caches one 4 KiB erase block at a time.
 
-To fit the larger maps in the existing `0xFD00`–`0xFFFF` BIOS region, cold boot
+To fit the larger maps in the `0xFC00`–`0xFEFF` BIOS region, cold boot
 and configuration errors share a string printer, the startup banner is shortened,
 and warm boot reads its 44 system records using a linear sector index on track 0.
 The public BIOS disk addressing and the TPA remain unchanged.

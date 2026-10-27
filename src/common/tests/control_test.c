@@ -276,7 +276,43 @@ static void test_inactive_iorq_interrupts(void) {
   }
 }
 
+static void test_banked_port(void) {
+  for (unsigned available = 0; available < 2; ++available) {
+    fixture();
+    assert(!levels[PIN_MEMORY_BANK] && outputs[PIN_MEMORY_BANK]);
+    z80_memory_bank_set_available(available != 0);
+    levels[PIN_RESET_N] = true;
+    levels[PIN_PORT_A0] = levels[PIN_PORT_A1] = levels[PIN_PORT_A2] = true;
+    levels[PIN_PORT_A4] = false;
+    observed_port = 0xFF;
+    z80_io_trap_enable(read_port, write_port, NULL);
+    for (unsigned value = 0; value < 4; ++value) {
+      levels[PIN_IORQ_N] = levels[PIN_WR_N] = false;
+      levels[PIN_RD_N] = release_controls = true;
+      io_clocks = 0;
+      for (unsigned bit = 0; bit < 8; ++bit)
+        levels[PIN_DATA_0 + bit] = (value >> bit) & 1u;
+      irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+      assert(observed_port == 0xFF && running && levels[PIN_BUSREQ_N]);
+      assert(!levels[PIN_MEMORY_BANK]); /* No software bank-select fallback. */
+      assert_isolated();
+      levels[PIN_IORQ_N] = levels[PIN_RD_N] = false;
+      levels[PIN_WR_N] = true;
+      io_clocks = 0;
+      irq_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+      assert(z80_data_bus_sample() == 0); /* PIO is absent in this build. */
+      assert(observed_port == 0xFF && running);
+      assert_isolated();
+    }
+    z80_cpu_fail_closed();
+    assert(!running && !levels[PIN_RESET_N]);
+    assert(z80_cpu_release_reset_and_run(1000000));
+    assert(!levels[PIN_MEMORY_BANK]);
+  }
+}
+
 int main(void) {
+  test_banked_port();
   test_inactive_iorq_interrupts();
   fixture();
   assert_isolated();

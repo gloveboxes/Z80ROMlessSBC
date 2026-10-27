@@ -1,15 +1,9 @@
 # Building and Testing Pico C Firmware
 
-This is the complete software-validation workflow, from a fresh checkout to
-host tests, Z80 execution tests and deployable Pico firmware. Run commands
-from the repository root unless stated otherwise.
-
-!!! important "No Pico emulator is used"
-    The Pico C logic runs **natively on the development computer** with test
-    replacements for hardware-facing SDK calls. A separate emulator executes
-    **Z80 instructions**, not the Pico firmware. Finally, the real ARM
-    firmware is built against the real Pico SDK. These checks complement
-    each other; none replaces testing the physical board.
+Run these software checks from the repository root. Native tests compile Pico
+logic for the host with hardware replacements; the instruction emulator runs
+Z80 code, not ARM firmware. Cross-builds use the real Pico SDK. Physical board
+testing remains a separate qualification step.
 
 ## 1. Understand the four validation layers
 
@@ -20,51 +14,20 @@ from the repository root unless stated otherwise.
 | Pico cross-build | ARM compiler and linker with the real Pico SDK | Firmware compiles/links for Pico 2 W, SDK APIs are valid and artifacts fit the protected flash layout |
 | Physical bench qualification | Deployed firmware, real Pico, Z80, SRAM, buffers and flash | Actual USB behavior, multicore/interrupt operation, bus ownership, timing, electrical margins and sustained reliability |
 
-The host tests do not execute an ARM UF2 or emulate an RP2350.
-The Z80 tests do not execute the Pico C peripheral handlers: their peripherals
-are software models. A successful cross-build does not execute the firmware.
+## 2. Prerequisites
 
-## 2. Prepare a fresh checkout and host tools
-
-For a new checkout:
+Follow [Toolchain](../toolchain.md) for checkout and installation. Native tests
+need host C/C++ compilers, CMake, Ninja, Python 3.11+, and `z80asm`;
+CP/M images also need `cpmtools`. Set `PYTHON` to your installed interpreter:
 
 ```sh
-git clone https://github.com/gloveboxes/Z80ROMlessSBC.git
-cd Z80ROMlessSBC
-git submodule update --init --recursive
-```
-
-If already working in this repository, keep the existing checkout and changes.
-Do not clone over it or reset it to follow this guide.
-
-On macOS, install Apple's Command Line Tools if not already installed:
-
-```sh
-xcode-select --install
-```
-
-With [Homebrew](https://brew.sh/) available:
-
-```sh
-brew install cmake ninja python@3.14 z80asm
-export PYTHON=python3.14
+export PYTHON=python3
 "$PYTHON" --version
-cc --version
-c++ --version
 ```
 
-Python 3.11 or newer is required for the complete image/BIOS workflow; the
-commands use Python 3.14 as the tested macOS example. On another system,
-select an installed Python 3.11+ interpreter and install equivalent native
-C/C++ compilers, CMake, Ninja and `z80asm`. `PYTHON` is a shell convenience
-used by this guide, not a firmware CMake setting.
-
-Node.js is optional for the browser-keyboard test. If it is installed, CMake
-adds `terminal_keyboard`; otherwise that test is not registered. Native
-firmware tests do not require npm dependency installation.
-
-**The native C tests need neither a Pico SDK nor an ARM toolchain.** Both are
-needed later for the real firmware build.
+Node.js optionally enables `terminal_keyboard`; no npm installation is needed
+for native tests. The Pico SDK and Arm toolchain are needed only for SDK/TLS
+checks and firmware cross-builds.
 
 ## 3. Configure, build and run the native C tests
 
@@ -79,15 +42,12 @@ cmake --build build/host-control
 ctest --test-dir build/host-control --output-on-failure --no-tests=error
 ```
 
-The HTTP file-transfer tests exercise the production parser and port 21/22
-handshake, binary data, files larger than 64 KiB, framing errors, EOF,
-cancellation, stale DNS callbacks and TCP backpressure. The async transport
-regression covers consecutive TLS receive callbacks before the worker runs,
-a full 16 KiB record, incremental freeing during a 70 KB stream, backlog
-overflow, and stage-specific timeout diagnostics. The test with the actual
-Mbed TLS configuration enforces a TCP window large enough for an input record
-and framing overhead. These tests run offline.
-To also build the optional live runner with the firmware's real Mbed TLS
+The offline suite covers control/loader state, flash recovery, terminal
+queues, services, PIO banking, and HTTP/weather/chat parsing and transport.
+Warnings are errors and assertions remain enabled. The optional
+`npm run test:control` runs the same configure/build/test sequence.
+
+On macOS/Linux, build the optional live runner with the firmware’s real Mbed TLS
 configuration and trust bundle, configure with `PICO_SDK_PATH`:
 
 ```sh
@@ -99,43 +59,19 @@ python3 src/common/tests/http_transfer_integration.py \
   --runner build/host-control/http_live_test --https
 ```
 
-The script starts temporary local Python HTTP servers, transfers a 76,805-byte
-binary, an empty file, a redirect and a chunked response, checks 404 failure,
-and rejects an untrusted local HTTPS certificate. `--https` additionally
-transfers the supplied GitHub `LOVE.BAS` through verified TLS 1.2 and compares
-every byte with an independent HTTPS fetch. It needs network access and the
-`openssl` CLI. The native socket adapter tests the production FT driver,
-parser and crypto; the separate async transport regression covers the Pico
-lwIP adapter. These checks do not flash hardware or prove board timing.
-
-This configures a standalone host CMake project. Its test targets enable
-warnings as errors and keep assertions enabled with `-UNDEBUG`, including
-when the build type would normally disable assertions.
-
-The equivalent existing convenience command is `npm run test:control`.
-It configures, builds and runs the native suite; it does not provision an
-emulator environment or deploy to hardware.
+The live runner needs `openssl`; `--https` also needs internet access. It tests
+local HTTP binary/text transfers, empty files, redirects, chunking, 404 errors,
+untrusted TLS rejection, and a verified GitHub HTTPS download. The production
+FT/parser/crypto code runs through a native socket adapter; Pico lwIP behavior
+is covered separately by offline transport tests.
 
 ### What replaces the hardware?
 
-Test headers live in
-[src/common/tests/fakes/](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/common/tests/fakes).
-Each harness supplies the functions needed by the production code under
-test. Depending on the test, these include:
-
-| Hardware/SDK operation | Host test implementation |
-| --- | --- |
-| Flash access through XIP (execute-in-place mapping) | A 4 MiB byte array |
-| Flash erase/program | Modeled sector/page operations, alignment/bounds checks and flash programming bit rules |
-| Assisted Z80 SRAM access | A 64 KiB array, or an injected-cycle model in the loader/control tests |
-| GPIO, reset and clock control | Recorded pin/control state, expected operations or requested frequencies |
-| Time and deadlines | Controlled software time rather than a measured real-time clock |
-| Watchdog reboot | An intercepted reboot, followed by simulated restart/recovery using the retained flash array |
-| USB CDC input/output | Controlled connection state, input bytes and output capacity |
-| Core/queue interaction | Test queues and explicitly scripted ordering; not a real RP2350 dual-core execution |
-
-The replacements differ between harnesses. A stubbed helper passing a test
-is not proof of that helper's real SDK implementation.
+[Test SDK replacements](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/common/tests/fakes)
+model flash as a 4 MiB array, SRAM as arrays or injected cycles, GPIO/clock
+state, controlled time, USB queues, reboot, and scripted core interleavings.
+They enforce software contracts without reproducing physical IRQs, dual-core
+scheduling, or electrical timing.
 
 ### Phase 9 coverage and its boundaries
 
@@ -148,17 +84,11 @@ is not proof of that helper's real SDK implementation.
 | `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, queues, BUSY publication and fatal error latch | The flash backend is stubbed; this is not the journal test |
 | `assisted_loader`, `control_faults` | Shared injected-loader and control code | Cycle/pin models do not establish physical setup/hold timing |
 
-The flash-backend test injects bad package lengths/CRCs/reset vectors,
-cancelled loads, SRAM read/write/mismatch faults, corrupt journal
-programming and all eight supported watchdog fault points. The terminal
-test checks framing, ordinary CP/M input, queue/backpressure behavior,
-startup reports, safe stop and a **20 MHz start request**. That last check
-does not generate or measure a 20 MHz signal.
-The application harness also checks deferred supervisor commands, queue-full
-rejection, early core-1 startup, disk-first ordering, USB service while workers
-are disabled or paused, and fail-closed initialization. USB endpoint fakes
-reject any call from core 0; CPU-control fakes reject calls from core 1.
-The SDK alarm/USB IRQ affinity still needs verification on the board.
+Fault cases include invalid packages, cancelled loads, SRAM mismatches,
+interrupted journal writes, queue overflow, disconnects, and initialization
+failures. Harnesses check core ownership, disk-first scheduling, safe stops,
+and automatic boot before USB connection. A requested 20 MHz clock is checked
+as a software value, not measured as a signal.
 
 For a focused native Phase 9 run:
 
@@ -195,10 +125,10 @@ cmake -S src/common/tests -B build/host-control -G Ninja \
   -DSOAK_EMULATOR_PYTHON="$PWD/build/math-soak-emulator/bin/python"
 cmake --build build/host-control
 ctest --test-dir build/host-control -N \
-  -R '^(math_soak_z80_execution|scope_z80_execution|cpm_bios_z80_execution)$'
+  -R '^(math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$'
 ```
 
-The listing must contain **all three named execution tests**. Without
+The listing must contain **all four named execution tests**. Without
 `SOAK_EMULATOR_PYTHON`, those tests are not registered; passing the remaining
 native suite does not imply they ran. `--no-tests=error` rejects an empty
 selection, but does not detect a partly missing selection: inspect the names.
@@ -207,31 +137,18 @@ Run the execution tests:
 
 ```sh
 ctest --test-dir build/host-control \
-  -R '^(math_soak_z80_execution|scope_z80_execution|cpm_bios_z80_execution)$' \
+  -R '^(math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$' \
   --output-on-failure --no-tests=error
 ```
 
-The actual resident Z80 math/scope images run in the independent core.
-The CP/M execution test assembles the maintained BIOS and CCP/BDOS, then
-checks cold boot, BIOS reports, directories on A-D, transient exit/warm boot,
-and all 10,240 records of the read-only disk diagnostic. Software peripheral
-models provide terminal and disk responses. This verifies instructions and
-protocol use, not Pico interrupt latency or USB/flash hardware timing.
-
-For a focused Phase 9 run with emulation enabled:
-
-```sh
-ctest --test-dir build/host-control \
-  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol|cpm_bios_z80_execution)$' \
-  --output-on-failure --no-tests=error
-```
-
-Expect five named CTest checks; the CP/M execution check contains multiple
-Python test cases. The host environment never opens the board's USB port.
+The math/scope and bank-transfer programs execute in the independent core.
+CP/M tests cover cold/warm boot, directories A–D, transients, AUTORUN, expanded
+disk writes, and the read-only disk diagnostic. Modeled peripherals establish
+instruction/protocol behavior, not Pico latency or hardware timing.
 
 ## 5. Validate CP/M image construction
 
-With Python 3.11+ and `z80asm` available:
+With Python 3.11+, `z80asm`, and `cpmtools` available:
 
 ```sh
 "$PYTHON" -m unittest discover -s src/cpm -p 'test_*.py' -v
@@ -248,31 +165,12 @@ commands. Neither host model replaces the Pico/physical-board gate.
 
 ## 6. Cross-compile the real Pico firmware
 
-Follow [Toolchain](../toolchain.md) for host prerequisites and complete Arm
-compiler installation before configuring a firmware build.
+Install the SDK and complete Arm toolchain using [Toolchain](../toolchain.md).
+Keep the firmware build separate from host tests.
 
-Install a complete
-[Arm GNU bare-metal toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
-for your host, including Newlib. Select the `arm-none-eabi` toolchain; a
-compiler without its C runtime is insufficient. The example path below
-matches the tested local installation; adjust it to your installed version.
-
-Install the Pico SDK with submodules if it is not already present:
-
-```sh
-mkdir -p "$HOME/GitHub/pico"
-git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git \
-  "$HOME/GitHub/pico/pico-sdk"
-```
-
-Reuse an existing complete SDK instead of cloning over it. On macOS,
-`picotool` can be installed with `brew install picotool`.
 Then configure the separate firmware build:
 
 ```sh
-export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
-arm-none-eabi-gcc --version
-arm-none-eabi-gcc -print-file-name=libc.a
 cmake -S . -B build/pico -G Ninja \
   -DPICO_BOARD=pico2_w \
   -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
@@ -281,14 +179,9 @@ cmake --build build/pico \
   --target z80_stage09_cpm_images z80_stage09_cpm_loader_images z80_cpm_images
 ```
 
-If the Newlib query prints only `libc.a` rather than a library path, check
-the toolchain installation. Initial configuration also needs network access
-to obtain the pinned WebSocket dependency if it is not cached.
-
-This builds both Phase 9 variants and Phase 10 against the **real SDK**. Empty Wi-Fi
-credentials keep networking disabled; credentials are not needed for the
-Phase 9 USB baseline. For network testing, configure credentials locally
-without sharing generated headers or CMake caches.
+This builds both Phase 9 variants and Phase 10 against the real SDK, without
+flashing. Phase 10 Wi-Fi credentials are configured through USB/ENV at runtime;
+they are not build arguments.
 
 | Output under `build/pico/` | Purpose |
 | --- | --- |
@@ -299,39 +192,22 @@ without sharing generated headers or CMake caches.
 | `cpm-stage09-loader/` | Matching automatic-loader provisioning set |
 | `cpm/` | Matching Phase 10 provisioning set |
 
-The build generates UF2/binary images; it **does not flash or execute them**.
-The firmware variants retain their distinct clock configuration:
-Phase 9 uses 20 MHz after complete load/verification, either on explicit
-commands or automatically on reset with the loader variant, while Phase 10
-retains its separate 1 MHz startup default. Neither is qualified by a build.
-The linker protects storage above firmware offset `0x1D0000`; the physical
-flash size remains 4 MiB.
+Both phases run the Z80 at 20 MHz after SRAM loading/verification. Phase 9
+starts on command or automatically with its loader variant; Phase 10 starts
+automatically. The linker reserves flash above `0x1D0000` for storage.
 
-Use the [firmware build/provisioning reference](firmware-build.md) for other
-phase firmware targets and
-[verified provisioning commands](firmware-build.md#72-flash-provisioning).
-Use matching boot-package and Drive A system images after BIOS changes.
-Full-flash provisioning replaces all disk contents; keep backups.
+Use [VS Code deployment tasks](firmware-build.md#vs-code-deployment-options)
+when ready to flash. BIOS changes require matching boot-package and Drive A
+images; full provisioning replaces disks and ENV.
 
 ## 7. Record software results, then qualify the board
 
-Record the source revision/local changes, tool versions, build configuration,
-test names/results and artifact hashes. Keep separate labels for:
-
-- **Host logic tests passed.**
-- **Z80 instruction-emulator tests passed.**
-- **Real Pico firmware cross-build passed.**
-- **Physical bench tests passed at the recorded measured clock.**
-
-Do not collapse these into an unqualified "hardware passed".
-Native tests do not establish real dual-core scheduling, SDK flash lockout,
-interrupt/trap latency, USB enumeration/backpressure, actual reset/BUSACK
-transitions, electrical margins or flash endurance.
-
-!!! warning "Do not disturb an active physical test"
-    No software check above requires opening serial, resetting or programming
-    the board. Leave an existing soak and its serial owner alone. Wait for it
-    to finish before deploying; do not change probes or wiring while running.
+Record the revision/local changes, tool versions, configuration, test names,
+results, and artifact hashes. Distinguish host tests, Z80 execution, SDK builds,
+and physical bench results. Software checks do not establish electrical
+margins, real interrupt/multicore timing, USB behavior, or power-cut recovery.
+They need no attached Pico; leave active hardware soaks and their serial
+owners undisturbed.
 
 After software validation, follow the
 [Phase 9 controlled USB workflow](../implementation/phase-9-flash-storage.md#controlled-usb-workflow)

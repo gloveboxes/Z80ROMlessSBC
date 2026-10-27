@@ -41,7 +41,7 @@ means it is safe to connect that node to an arbitrary supply.
 | Term | Meaning | Purpose in this project |
 | --- | --- | --- |
 | RAM | Random-access memory | Read/write working memory; contents are normally lost when power is removed. |
-| SRAM | Static random-access memory | The AS6C1008 provides the Z80's 64 KiB address space and needs no refresh clock. |
+| SRAM | Static random-access memory | U2 AS6C1008 provides two 64 KiB banks in a 128 KiB SRAM and needs no refresh clock. |
 | Flash | Nonvolatile electrically erasable storage | Pico onboard flash holds firmware, the Z80 boot package, CP/M disks, and the write journal. |
 | XIP | Execute in place | Pico address mapping that permits flash contents to be read like ordinary memory. |
 | CP/M | Control Program for Microcomputers | The disk operating system run by the Z80. |
@@ -65,7 +65,8 @@ means it is safe to connect that node to an arbitrary supply.
 | Term | Meaning | Purpose in this project |
 | --- | --- | --- |
 | GPIO | General-purpose input/output | Individually programmable Pico pins used for clocks, controls, buses, and status. |
-| PWM | Pulse-width modulation hardware | Pico peripheral used to generate an accurate, variable-frequency Z80 clock. |
+| PWM | Pulse-width modulation hardware | Pico peripheral generating the Z80 clock in non-PIO builds. |
+| PIO | Programmable I/O hardware in the RP2350 | PIO1 generates the Phase 10 20 MHz clock and handles SRAM bank-select writes; PIO0 drives matrix I2C. |
 | SIO | Single-cycle I/O block in the RP2350 | Direct Pico GPIO hardware used for static levels and manual clock stepping; not Z80 serial I/O. |
 | IRQ | Interrupt request | Hardware event that diverts Pico execution to the I/O trap handler. |
 | ISR / handler | Interrupt service routine | Time-critical Pico function that freezes and services a trapped Z80 cycle. |
@@ -99,7 +100,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `BUSREQ#` | Bus request | LOW asks the Z80 to float its buses for runtime flash quiescence, not Pico memory access. |
 | `BUSACK#` | Bus acknowledge | LOW confirms the CPU bus grant before a flash erase/program operation. |
 | `MREQ#` | Memory request | Z80 drives it LOW during a memory transaction; becomes the CPU-owned source for SRAM `CE#`. |
-| `IORQ#` | Input/output request | Z80 drives it LOW during an I/O transaction; its falling edge starts the Pico clock-stop trap. |
+| `IORQ#` | Input/output request | Z80 drives it LOW during an I/O transaction; PIO or the firmware trap detects it to service the I/O cycle. |
 | `RD#` | Read | Z80 drives it LOW when the selected memory or I/O device must place data onto `D0-D7`. |
 | `WR#` | Write | Z80 drives it LOW when the selected memory or I/O device must accept data from `D0-D7`. |
 | `M1#` | Machine-cycle-one | Z80 drives it LOW during an opcode fetch and interrupt acknowledgement; used here as a [Phase 6 reset/fetch](../implementation/phase-6-bus-grants.md) probe point. |
@@ -120,26 +121,29 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | `DATA_DOWN_OE#` | Bus-to-Pico enable | GP7 directly drives LVC245 pin 19. LOW receives CPU/SRAM data. |
 | `PICO_*` / `Z80_*` | Source-name prefix | Distinguishes Pico-generated controls from Z80-generated controls in equations and net names. |
 | `A0-A15` | Address bits 0 through 15 | Shared 16-bit address bus; `A0` is least significant and `A15` most significant. |
-| `A16` | SRAM address bit 16 | Tied LOW so only the lower 64 KiB of the 128 KiB SRAM is used. |
+| `A16` | SRAM address bit 16 | Selected by GP8 through U4 AHCT244 to choose either 64 KiB SRAM bank. |
 | `D0-D7` | Data bits 0 through 7 | Shared 8-bit bidirectional data bus; `D0` is least significant. |
-| `IN` / `OUT` | Z80 input / output instructions | Read a byte from, or write a byte to, an I/O port serviced by the Pico trap. |
+| `IN` / `OUT` | Z80 input / output instructions | Read a byte from, or write a byte to, an I/O port serviced by Pico firmware or PIO. |
 | `#`, `_N`, or overbar | Active-LOW notation | Indicates that LOW means asserted. For example, `PIN_RD_N` in source code represents hardware `RD#`. |
 | `X` in a truth table | Don't-care value | Either LOW or HIGH is allowed because that input cannot alter the stated result. |
 
 ## Component Names and Pin Labels
 
+The fitted IC references below match the current schematic and
+[parts inventory](../hardware/inventory.md). U5, U6, and U8 are not fitted.
+
 | Name or fragment | Meaning | Purpose in this project |
 | --- | --- | --- |
-| `Z84C0020PEC` | Zilog CMOS Z80, 20 MHz grade, plastic DIP commercial part | The exact CPU specified for the build; 20 MHz is a part rating, not the qualified system speed. |
-| `AS6C1008-55PCN` | Alliance Memory 128 KiB x 8 SRAM, 55 ns, plastic DIP | Provides the Z80's lower 64 KiB memory space. |
-| `SN74HCT32N` / `HCT32` | Quad OR gate with TTL-compatible inputs | Fixed boot-inhibit, WAIT-release, and data-strobe gating; HC32 is not a substitute. |
-| `SN74AHCT244N` / `AHCT244` | 8-channel non-inverting 5 V buffer with TTL inputs | Translates clock, bus request, boot inhibit, and Z80 SRAM controls. |
-| `SN74AHCT245N` / `AHCT245` | 8-bit 5 V bus transceiver with TTL inputs | Implements the fixed Pico-to-5 V data path. |
-| `SN74LVC245AN` / `LVC245` | 8-bit low-voltage bus transceiver with 5 V-tolerant inputs | Implements the fixed 5 V-to-Pico data path. |
-| `SN74LVC244AN` / `LVC244` | 8-channel low-voltage buffer with 5 V-tolerant inputs | Buffers BUSACK/IORQ/RD/WR and A0/A1/A2/A4 into the Pico domain. |
+| `Z84C0020PEC` | Zilog CMOS Z80, 20 MHz grade, plastic DIP commercial part | U1: the specified CPU; the project breadboard has demonstrated 20 MHz operation. |
+| `AS6C1008-55PCN` | Alliance Memory 128 KiB x 8 SRAM, 55 ns, plastic DIP | U2: provides 128 KiB as two selectable 64 KiB banks. |
+| `SN74HCT32N` / `HCT32` | Quad OR gate with TTL-compatible inputs | U3: fixed boot-inhibit, WAIT-release, and data-strobe gating; HC32 is not a substitute. |
+| `SN74AHCT244N` / `AHCT244` | 8-channel non-inverting 5 V buffer with TTL inputs | U4: translates clock, bus request, boot inhibit, SRAM controls, and A16 bank select. |
+| `SN74AHCT245N` / `AHCT245` | 8-bit 5 V bus transceiver with TTL inputs | U9: implements the fixed Pico-to-5 V data path. |
+| `SN74LVC245AN` / `LVC245` | 8-bit low-voltage bus transceiver with 5 V-tolerant inputs | U10: implements the fixed 5 V-to-Pico data path. |
+| `SN74LVC244AN` / `LVC244` | 8-channel low-voltage buffer with 5 V-tolerant inputs | U7: buffers BUSACK/IORQ/RD/WR and A0/A1/A2/A4 into the Pico domain. |
 | `1N5819` | Schottky rectifier diode | ORs external 5 V into Pico `VSYS` without feeding the USB `VBUS` node. |
 | `A1-A8` / `B1-B8` | The two eight-bit ports of a `245` transceiver | A faces the Pico and B faces the 5 V bus in this design. |
-| `1A1`, `1Y1`, etc. | Input and output labels on a `244`/`541` buffer bank | `A` is a buffer input and `Y` is its corresponding output; the leading digit selects a bank where present. |
+| `1A1`, `1Y1`, etc. | Input and output labels on a `244` buffer bank | `A` is a buffer input and `Y` is its corresponding output; the leading digit selects a bank where present. |
 | `OE1#` / `OE2#` | Output-enable inputs for buffer bank 1 / 2 | Tied LOW on the always-readable LVC244 and AHCT244 buffers. A `245` transceiver instead has one `OE#` for all eight bits. |
 | `GP0`, `GP1`, etc. | Pico general-purpose pin number | RP2350 GPIO index used by firmware; it is not the Pico header's physical pin number. |
 | `pin 1`, notch, dot | Package orientation references | Identify how to insert a device without rotation or mirroring. |
@@ -244,7 +248,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | --- | --- | --- |
 | IC | Integrated circuit | A packaged electronic device such as the Z80, SRAM, or logic buffer. |
 | DIP / PDIP | Dual in-line package / plastic dual in-line package | Through-hole IC package with two parallel pin rows, suitable for sockets and breadboards. |
-| Discrete resistor | One resistor in its own component body | The breadboard uses 39 individual 10 kOhm resistors, not packaged resistor networks. |
+| Discrete resistor | One resistor in its own component body | The breadboard uses 40 individual 10 kOhm resistors, not packaged resistor networks. |
 | Pin 1 / notch / dot | Package orientation marks | Prevent an IC from being inserted rotated or mirrored. |
 | Breadboard ravine | Insulating center gap of a solderless breadboard | Separates the two IC pin rows so opposite pins are not shorted together. |
 | Net | All electrically connected points sharing one signal name | Fundamental connection represented and checked in the KiCad schematic. |
@@ -260,7 +264,7 @@ most Z80 controls are active LOW, an inactive signal normally sits HIGH.
 | Oscilloscope / scope | Instrument displaying voltage versus time | Measures analog levels, edge shape, pulse width, ringing, and timing between two signals. |
 | Logic analyzer | Instrument recording many digital HIGH/LOW signals | The 16-channel DSLogic Plus correlates bus values and control ordering in repeated capture groups. |
 | Buffer Mode | DSLogic mode that captures into onboard memory before uploading | Provides 100 MHz sampling with all 16 channels for project qualification captures. |
-| Stream Mode | DSLogic mode that transfers samples continuously over USB | Extends duration, but all 16 channels are limited to 20 MHz and are unsuitable for final 8 MHz timing qualification. |
+| Stream Mode | DSLogic mode that transfers samples continuously over USB | Extends duration, but all 16 channels are limited to 20 MHz and are unsuitable for 20 MHz timing qualification. |
 | Input threshold | Voltage at which a logic analyzer changes its displayed digital state | DSLogic Plus provides a global adjustable threshold; it does not replace device-specific analogue $V_{IH}$/$V_{IL}$ checks. |
 | RLE | Run-length encoding | Optional DSLogic compression for sparse Buffer Mode activity; disabled for fixed-depth baseline evidence. |
 | MSO | Mixed-signal oscilloscope | Instrument combining analog scope channels with synchronized digital inputs; the DHO814 has four analog channels but no integrated digital bus inputs. |

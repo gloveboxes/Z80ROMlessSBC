@@ -1,5 +1,9 @@
 # DreamSourceLab DSLogic Plus Capture Plan
 
+A logic analyser is optional for building the board. Use one to investigate
+bus activity and capture digital signal ordering; use a scope for voltage
+and analogue timing measurements.
+
 ## Purpose and instrument limits
 
 The DSLogic Plus proves simultaneous digital state, event ordering, bus values,
@@ -29,19 +33,17 @@ The official DSLogic Plus data sheet specifies:
 | Input threshold | 0-5 V, adjustable in 0.1 V steps |
 | Input impedance | 250 kOhm in parallel with approximately 13 pF |
 | Protected CH0-CH15 range | -30 V to +30 V with the supplied fly wires |
-| 100 MHz timing accuracy | Within one sample interval, approximately +/-10 ns per captured edge |
+| 100 MHz sample interval | 10 ns; sampling and threshold uncertainty limit edge timing |
 
-All 16 channels are required for a complete address-bus capture, so this project
-uses **16-channel, 100 MHz Buffer Mode** for qualification. At the experimental
-8 MHz clock limit this gives 12.5 samples per clock period, satisfying DSView's
-recommendation to use at least 10 times the measured signal frequency when phase
-accuracy matters. It cannot resolve analogue behavior or prove a timing margin
-smaller than its sample uncertainty; use the
-[DHO814 capture plan](oscilloscope.md) for those cases.
+Use **16-channel, 100 MHz Buffer Mode** for the complete address bus. At the
+board’s 20 MHz clock this gives only **five samples per period**, below the
+10× sampling recommendation for phase-sensitive measurements. It is useful
+for bus values and coarse ordering, but cannot prove tight setup/hold margins.
+Use fewer channels at a higher sample rate or the [scope](oscilloscope.md)
+for detailed timing.
 
-The 16-channel Stream Mode limit is 20 MHz, only 2.5 samples per 8 MHz clock.
-Use it for long-duration state/fault searches at low clock rates, not as timing
-qualification evidence at the final operating frequency.
+Sixteen-channel Stream Mode runs at 20 MHz: only one sample per 20 MHz clock
+period. Reserve it for slow state/fault searches, not 20 MHz timing evidence.
 
 ## Safety and connection preparation
 
@@ -57,8 +59,8 @@ qualification evidence at the final operating frequency.
 3. Power off the SBC before attaching or moving clips. Connect ground leads
    first, then signal leads. Remove signal leads first when disconnecting.
 4. Use the supplied shielded fly wires. Each active channel has an independent
-   ground return; connect those returns to nearby common-GND points. Although
-   the Z80 clock is at most 8 MHz, its edges are fast, so use the guide's
+   ground return; connect those returns to nearby common-GND points. The
+   Z80 runs at 20 MHz with fast edges, so use the guide’s
    high-frequency connection method rather than one long shared ground lead.
 5. Probe the physical destination pin listed below, not a distant jumper end.
    Sixteen inputs add meaningful capacitive loading to a solderless breadboard.
@@ -153,10 +155,12 @@ cannot report the full address and must not replace manual inspection of the
 raw controls. Group C remains authoritative for trapped I/O, and Group A
 remains authoritative for the complete address bus.
 
-## Group C: trapped I/O and data-path interlock
+## Group C: trapped I/O and data-path exclusion
 
-Use threshold **1.6 V**. Repeat the group once for IN with RD# on CH10 and once
-for OUT with WR# on CH10.
+Use threshold **1.6 V**. Repeat for IN with RD# on CH10 and OUT with WR#
+on CH10. Data-path exclusion is a firmware rule, not a hardware interlock.
+Port `0x07` bank-select OUTs use PIO; capture A16 separately when checking
+bank switching, following the [PIO reference](address-interface.md#pio-acceleration).
 
 | DSLogic channel | Signal | Physical probe point |
 | --- | --- | --- |
@@ -198,15 +202,15 @@ AHCT244 and HCT32 to SRAM, and checks injected loading and flash quiescence.
 
 | Purpose | Group and trigger | Expected result |
 | --- | --- | --- |
-| Address integrity | Group A. Set all 16 Simple Trigger levels to match 0000, FFFF, 5555, or AAAA; all conditions are ANDed. Repeat for each fixed pattern and trigger on 0000 for walking/CPU-read sequences. | Every captured word equals the commanded address, each walking pattern changes only the intended bit, and no address transition occurs during the active sampling interval of a memory cycle. Repeat at every qualified clock rate. |
+| Address integrity | Group A. Set all 16 Simple Trigger levels to match 0000, FFFF, 5555, or AAAA; all conditions are ANDed. Repeat for each fixed pattern and trigger on 0000 for walking/CPU-read sequences. | Each sampled test address matches its expected pattern; walking-one/zero patterns select the intended bit, and no address transition occurs during the active sampling interval of a memory cycle. Repeat at every qualified clock rate. |
 | Opcode fetch | Group B, CH15 M1# falling. | M1#, MREQ#, RD#, CE#, and OE# assert in the expected active-LOW sequence; WE# remains HIGH and D0-D7 contain the fetched opcode before the Z80 sampling edge. |
 | SRAM read | Group B, CH10 RD# falling with CH9 MREQ# LOW. | CE# and OE# assert once, WE# remains HIGH, and all eight data bits settle to the expected byte before the sampling edge. No extra control transition is permitted. |
-| SRAM write | Group B, CH11 WR# falling with CH9 MREQ# LOW. | D0-D7 contain the expected byte before WE# falls and remain stable through its LOW pulse; CE# and WE# assert once and OE# remains HIGH. DSLogic screens pulse presence and ordering only; the DHO814 must prove the exact 45 ns minimum WE# LOW width. |
+| SRAM write | Group B, CH11 WR# falling with CH9 MREQ# LOW. | D0-D7 meet the SRAM’s setup/hold requirements around write completion; CE# and WE# assert once and OE# remains HIGH. DSLogic screens pulse presence and ordering only; the DHO814 must prove the exact 45 ns minimum WE# LOW width. |
 | Reset and restart | Group D, CH0 RESET# rising, trigger position 30%. | RESET# was LOW for six complete clocks. Injection starts with inhibit HIGH after the two exit clocks. Normal restart has both data paths isolated and inhibit LOW; CPU controls alone operate SRAM. Verify real reset-exit phase before accepting the cycle model. |
 | Flash quiescence | Group D, CH2 BUSACK# falling for acquisition; repeat rising for release. | BUSREQ# falls before BUSACK#. CPU address/control outputs float; pulls make SRAM controls inactive. Pico does not drive memory. Trap is armed before BUSREQ# release. |
 | Injected loading | Group D, CH12 inhibit and CH4 RD# edges. | SRAM OE# stays HIGH during injected instructions. It falls only for a deliberate SRAM read, with Pico output isolated. SRAM WE# follows CPU writes, never a Pico-generated write pulse. |
-| Trapped IN | Group C with RD# on CH10; trigger CH9 IORQ# falling. | WAIT# falls before sampling. Only AHCT245 OE# falls; the Pico supplies the reply byte. GP9 releases WAIT after preload. Slow clocks complete the cycle; both OEs are HIGH and GP9 LOW before PWM resumes. |
-| Trapped OUT | Group C with WR# on CH10; trigger CH9 IORQ# falling. | WAIT# falls first. Only LVC245 OE# falls; the Pico samples the CPU byte. GP9 releases WAIT. Stepped completion isolates/rearms before PWM. The two OE# signals are never LOW together. |
+| Trapped IN | Group C with RD# on CH10; trigger CH9 IORQ# falling. | WAIT# falls before sampling. Only AHCT245 OE# falls; the Pico supplies the reply byte. GP9 releases WAIT after preload. Slow clocks complete the cycle; both OEs are HIGH and GP9 LOW before the execution clock resumes. |
+| Trapped OUT | Group C with WR# on CH10; trigger CH9 IORQ# falling. | WAIT# falls first. Only LVC245 OE# falls; the Pico samples the CPU byte. GP9 releases WAIT. Stepped completion isolates/rearms before execution resumes. The two OE# signals are never LOW together. |
 
 For the final frequency claim, save Group A, B, C-IN, C-OUT, and D captures at
 each tested rate. The separate groups must use the same firmware build, clock

@@ -1,172 +1,84 @@
 # RIGOL DHO814 Capture Plan
 
-## Purpose
+An oscilloscope is optional for building the board. Use one to investigate
+signal quality and measure electrical timing margins.
 
-The DHO814 validates actual voltage, edge shape, ringing, pulse width,
-and timing margin at the device pins. Its four channels allow one stable
-trigger and three related nodes to be captured in the same acquisition.
-It does not replace the
-[DSLogic Plus](logic-analyzer.md): four analog channels cannot prove
-the state or ordering of the complete A0-A15 and D0-D7 buses. Conversely,
-the logic analyzer does not prove analogue voltage or signal integrity.
+## What to measure
 
-## Reading your first capture
-
-For opt-in automated evidence collection, see [MCP acceptance runner](#mcp-acceptance-runner). Automation does not replace the electrical and digital pass gates below.
-
-The horizontal axis is time; the vertical axis is voltage relative to the
-probe's GND. `200 ns/div` means each large horizontal division spans 200 ns.
-A **trigger** tells the scope which event to align on; it does not generate
-that event. Arm a Single capture before issuing the diagnostic command.
-If the scope keeps waiting, check the trigger source, edge, level, and whether
-the test actually ran before concluding that the circuit failed.
-
-A multimeter reports steady or averaged voltage; a running 0-5 V clock may
-therefore read around 2.5 V on a meter without being faulty. Use the scope
-to distinguish a switching clock from a line stuck at an invalid mid-level.
+- Use the scope for voltage, pulse widths, edge shape, ringing, and timing at
+  receiving pins. Use [DSLogic](logic-analyzer.md) for whole-bus ordering.
+- The horizontal axis is time; the vertical axis is voltage relative to GND.
+  Trigger levels align captures; they are not logic pass thresholds.
+- Arm Single before issuing a test command. If it keeps waiting, check source,
+  edge, level, and whether the stimulus ran.
 
 ## Probe and instrument preparation
 
-1. Before connecting any probe or other input/output lead to the DHO814,
-   use its supplied ground cable to bond the oscilloscope chassis to
-   protective earth. The Type-C power connection does not ground this
-   non-isolated oscilloscope. Its BNC shells, probe grounds, chassis, and
-   digital-interface grounds are common; never use an ordinary passive probe
-   for a floating measurement.
-2. Connect each probe to its channel, set the physical probe switch to
-   **10X**, and open that channel's **Vertical > Probe > Probe Ratio** menu.
-   Set the scope ratio to **10X** as well. A mismatched ratio makes every
-   displayed voltage incorrect.
-3. Before each bring-up session, connect each probe in turn to the front
-   panel compensation output and its adjacent ground terminal. Adjust the
-   probe until the square wave has flat tops and square corners, matching
-   the manual's "Perfectly compensated" example. Repeat for CH1-CH4.
-4. Prefer a ground spring on every probe. If a wire ground must be used,
-   keep it shorter than 20 mm. Connect all probe grounds only to nearby points
-   on the circuit's common GND, and never to a node with voltage relative to
-   earth, including +3.3 V, +5 V, or any signal node.
-5. Recall the default setup, then configure every active channel as
-   **1 MOhm input, DC coupling, 10X probe, Invert OFF, Delay 0 s**, and
-   **Bandwidth Limit OFF**. Use the full 100 MHz bandwidth for timing,
-   edge, overshoot, and ringing captures. A bandwidth limit may be used
-   only for a separately labelled supply-noise capture.
-6. Set **Horizontal > Acquisition = Normal**. The DHO800 manual identifies
-   Normal as the best mode for most waveforms and confirms that sampling is
-   real-time only. Do not use Average to qualify glitches or transitions;
-   averaging can hide non-repetitive faults. Peak mode may be used as a
-   second search capture, but the pass/fail evidence must include a Normal
-   acquisition.
-7. Start with **Memory Depth = Auto** for repetitive clock checks. For
-   single-shot RESET#, BUSREQ#/BUSACK#, DMA, I/O-trap, or intermittent-fault
-   captures, select the largest depth available for the number of enabled
-   channels: **25 Mpts** with one channel, **10 Mpts** with two channels, or
-   **5 Mpts** with three or four channels. The corresponding DHO814 maximum
-   real-time sample rates are **1.25 GSa/s**, **625 MSa/s**, and
-   **312.5 MSa/s**. The four-channel maximum gives about 39 samples per 8 MHz
-   clock period and is suitable for the listed multichannel timing captures.
-   For rise/fall time, overshoot, or ringing, disable unneeded channels and
-   shorten the captured time span to obtain the highest displayed sample
-   rate. Place the trigger at about 40% of the screen so both pre-trigger
-   cause and post-trigger response are visible, and record the displayed
-   sample rate and memory depth with the saved evidence.
-8. For 3.3 V nodes start at **1 V/div**; for 5 V nodes start at
-   **2 V/div**. Position ground markers near the bottom of each lane without
-   overlapping traces. Adjust one step finer when useful, but keep ground
-   and both logic levels visible. Start the horizontal scale at 200 us/div
-   for 1 kHz, 2 us/div for 100 kHz, 200 ns/div for 1 MHz, and 50 ns/div for
-   2-8 MHz. Tighten the scale around an edge when measuring rise time or
-   ringing.
-9. Open **Trigger**, choose **Type = Edge**, **Source = CH1**,
-   **Coupling = DC**, and choose the edge stated in the table below. Set the
-   level to **1.65 V** when CH1 is a 3.3 V node or **2.5 V** when it is a
-   5 V node. Use **Sweep = Normal** for repetitive captures and
-   **Sweep = Single** for ownership, reset, trap, and other one-off events;
-   arm Single before issuing the firmware command. Do not use Auto sweep as
-   pass evidence because it can force an acquisition without the requested
-   event.
-10. Add automatic measurements appropriate to the capture: **Frequency,
-    Period, +Duty, -Duty, Rise Time, Fall Time, +Width, -Width, Vmax, Vmin,
-    Vpp, Overshoot**, and the applicable **Delay** measurement between CH1
-    and another channel. Check timing with cursors as well; automatic
-    measurements are invalid if the relevant edges or levels are not fully
-    visible.
-11. Stop acquisition and power off the SBC before attaching or moving probe
-   clips; stopping acquisition does not make the circuit electrically safe.
-   Save a screen image
-    and waveform for every pass gate, naming it with the phase, clock rate,
-    stimulus, and probed signals. Record the displayed sample rate, memory
-    depth, probe ratio, bandwidth limit, and measured minima/maxima.
+1. Bond the DHO814 chassis to protective earth with its supplied ground cable
+   before connecting probes. USB-C power does not earth it. Probe grounds/BNC
+   shells are common: connect them only to circuit GND, never a signal or rail.
+2. Power down before attaching or moving probes: disconnect USB before +5 V;
+   restore +5 V before USB. Stopping acquisition does not remove circuit power.
+3. Set each probe and channel to **10X**. Compensate each probe on the scope’s
+   calibration output. Prefer ground springs; keep wire grounds under 20 mm.
+4. Set active channels to **1 MOhm, DC coupling, Invert OFF, Delay 0,
+   bandwidth limit OFF**. Use full 100 MHz bandwidth for edge/timing evidence.
+5. Use **Normal acquisition**, not Average. Use Normal trigger sweep for
+   repetition or Single for one-off events; Auto sweep is not pass evidence.
+6. Start at **1 V/div** for 3.3 V nodes or **2 V/div** for 5 V. Keep GND and both
+   levels visible. Trigger on CH1 at approximately 1.65 V or 2.5 V respectively.
+7. Use Auto memory for repetitive clocks; for single shots select the largest
+   depth available. Disable unused channels for better sample rate:
+
+   | Active channels | Maximum depth | Maximum sample rate |
+   | --- | --- | --- |
+   | 1 | 25 Mpts | 1.25 GSa/s |
+   | 2 | 10 Mpts | 625 MSa/s |
+   | 3–4 | 5 Mpts | 312.5 MSa/s |
+
+8. Place the trigger around 40% across the screen. Measure frequency, period,
+   duty, HIGH/LOW widths, extrema, rise/fall, and relevant inter-channel delays.
+   Confirm automatic readings with cursors and visible edges.
+9. Save screenshots **and waveforms**, recording firmware identity, phase,
+   stimulus, clock rate, probe points/ratios, bandwidth, sample rate, memory
+   depth, rail voltages, and measured minima/maxima.
+
+Settings follow the [RIGOL DHO800 User Guide](https://www.rigol.com/dam/global/downloads/brochures/en/user-manual/oscilloscopes/DHO800_UserGuide_EN.pdf).
+For supply noise, a separately labelled bandwidth-limited capture may supplement
+full-bandwidth evidence.
 
 ## 20 MHz no-I/O clock measurement
 
-Use the separate [Phase 6 scope diagnostic](../implementation/20mhz-scope.md)
-for an uninterrupted 20 MHz CPU/SRAM workload. The ordinary frequency screens
-and arithmetic soak deliberately pause/step CLK for OUT reports; this target
-does not. You can build it and deploy it separately, or use the VS Code task
-**Flash Pico - Phase 6 20 MHz scope diagnostic** to build, flash and verify it.
+Use the [Phase 6 no-I/O scope diagnostic](../implementation/20mhz-scope.md).
+Unlike the reporting screens/soaks, it does not pause CLK for I/O reports.
 
-1. Once the Phase 6 scope diagnostic is deployed, bond the DHO814 chassis to
-   protective earth and compensate CH1 at 10X. Power down the SBC (disconnect
-   USB before external 5 V), then attach the scope probe as described below.
-2. For an accessible measurement of the **buffered 5 V clock**, attach CH1's
-   tip to **AHCT244 U4 output pin 18** and its short ground spring only to
-   nearby common circuit GND. Do not use a signal/supply rail as probe ground.
-   This checks the clock after the level-shifting buffer and is a useful
-   alternative to the less accessible Z80 socket pin. For a source-only check,
-   Pico **GP2 / header pin 4** is also suitable, but it is a 3.3 V point before
-   U4. To verify the waveform at the CPU's actual receiving point, probe
-   **Z80 CLK pin 6**; that also includes the short U4-to-socket connection.
-3. Enable CH1 only: **1 MOhm, DC coupling, 10X probe, Invert OFF, Delay 0,
-   bandwidth limit OFF**. Start at **2 V/div** with ground and both levels
-   visible, **20 ns/div**, Normal acquisition and Auto memory depth.
-   Record the actual sample rate; one channel permits up to 1.25 GSa/s.
-4. Select Edge trigger, CH1 rising, DC coupling, approximately **2.5 V**,
-   Normal sweep. This trigger level is not the Z80's input-HIGH acceptance
-   threshold.
-5. Restore external 5 V before USB. After separately deploying the scope
-   target, start it with `f` + Enter and wait for its RUN banner. Do not
-   measure the slow assisted load/verify/reset interval as the running clock.
-6. Add CH1 **Frequency, Period, +Duty, +Width and -Width** measurements.
-   The project capture below records a 20.0000 MHz cursor reading and a
-   50.000 ns period. The counter statistics show a 19.929 MHz average and a
-   9.9502 MHz minimum across 482 readings; review the saved waveform for the
-   low reading before using this capture to qualify missing-edge behavior or
-   jitter.
+1. Deploy **Flash Pico - Phase 6 20 MHz scope diagnostic**.
+2. Prepare/earth the scope as above. With board power off, connect CH1 to
+   **Z80 CLK pin 6**, ground spring to nearby common GND. U4 pin 18 is an
+   accessible buffered-output alternative; GP2/header 4 measures only the
+   3.3 V source before U4.
+3. Enable CH1 only: **10X, DC, 1 MOhm, full bandwidth, 2 V/div, 20 ns/div**,
+   Normal acquisition, Auto depth. Trigger CH1 rising at approximately 2.5 V.
+4. Restore +5 V, then USB. Send **`f` + Enter** and wait for **RUN**; exclude
+   the slow load/verify/reset interval from measurements.
+5. Measure frequency, period, duty, and HIGH/LOW widths. At 20 MHz the period
+   is 50 ns. Inspect adjacent edges, levels, ringing, and missing pulses.
+6. Save waveform/screenshot and metadata. Repeat at GP2 and U4 pin 18 if
+   comparing source, buffer, and interconnect; power down before moving probes.
+7. Send **`x`** to stop and read the SRAM mailbox. Exclude this slow readback
+   from the capture interval. A mismatch HALTs Z80 code but leaves PWM running,
+   so a clock alone does not prove the test is progressing.
 
-   | Quantity | Capture reading |
-   | --- | ---: |
-   | Frequency cursor | 20.0000 MHz |
-   | Frequency average | 19.929 MHz |
-   | Frequency minimum / maximum | 9.9502 / 20.202 MHz |
-   | Period | 50.000 ns |
-   | +Duty | 49.0% |
-   | HIGH / LOW width | 24.500 / 25.500 ns |
+### Recorded project capture
 
-   ![DHO814 capture of the project Z80 clock, showing a 20.0000 MHz cursor reading, 50.000 ns period and pulse measurements](../images/clock-20mhz-scope-test.jpeg)
+![Project clock capture: 20 MHz cursor reading and 50 ns period](../images/clock-20mhz-scope-test.jpeg)
 
-   The capture confirms a measured 20 MHz clock on the project prototype.
-   Check adjacent rising edges with time cursors as well: frequency is
-   `1 / period`, so a 50 ns period corresponds to 20 MHz. Record the actual
-   values, probe point and probe ratio with each saved capture.
-
-7. Save a screenshot and waveform with firmware identity, rail voltage,
-   **probe point** (Pico GP2, U4 pin 18, or Z80 CLK pin 6), probe ratio,
-   bandwidth, sample rate, memory depth and measured values. A GP2 capture
-   verifies the generated frequency only; U4 pin 18 also checks the buffered
-   output. For receiving-pin waveform and signal-integrity evidence, capture
-   Z80 CLK pin 6 and inspect its levels and ringing; a correct frequency alone
-   does not qualify that waveform.
-
-8. Use `x` to end the measurement interval and retrieve the SRAM mailbox.
-   The resulting slow readback clocks are outside the capture interval.
-   A Z80 mismatch HALTs the program without stopping PWM; switching CLK,
-   HALT fetches and refresh activity are not proof of advancing tests.
-
-For buffer/path comparison, repeat captures at Pico GP2/header pin 4 and
-AHCT244 pin 18, with power off before moving probes. For simultaneous captures
-use the clock-translation row below and record the reduced multichannel
-sample rate. Never leave a second serial console competing with the test's
-serial owner.
+- Cursor frequency/period: **20.0000 MHz / 50.000 ns**.
+- Duty/HIGH/LOW: **49% / 24.5 ns / 25.5 ns**.
+- Across 482 counter readings: average **19.929 MHz**, range **9.9502–20.202 MHz**.
+- The low counter reading needs waveform review before claiming missing-edge
+  or jitter qualification. Frequency alone does not qualify receiving-pin
+  voltage or signal integrity.
 
 ## Four-channel connections and expected results
 
@@ -185,27 +97,25 @@ alternative while leaving the other channels in place where possible.
 | Address integrity | Z80 CLK pin 6 | SRAM A0 pin 12 or A7 pin 5 | SRAM A8 pin 27 | SRAM A15 pin 31 | CH1 rising. Repeat with A0 and A7 on CH2 at 1, 2, 3, and 4 MHz, then at every [frequency-qualification rate](../implementation/frequency-qualification.md). For 0000/FFFF/5555/AAAA and walking patterns, each observed line matches the commanded bit, reaches valid 0/5 V levels, is stable during the active memory control interval, and has no double edge or excessive ringing. The DSLogic Group A capture proves A0-A15 together. |
 | Boot-read inhibit | BOOT_READ_DISABLE at GP5, header pin 7 | Buffered RD# at AHCT244 pin 7 | SRAM OE# pin 24 | Z80 CLK pin 6 | CH1 edge, Single. Inhibit HIGH keeps OE# HIGH throughout injected instruction reads. Lower it only with Pico output isolated for intentional SRAM reads or normal execution. Repeat CH1 at AHCT244 pin 14. No unintended OE pulse is permitted. |
 | Data-path exclusion | GP6 up-OE request, header pin 9 | GP7 down-OE, header pin 10 | AHCT245 OE# pin 19 | LVC245 OE# pin 19 | CH1 edge, Single; repeat CH2 edge and RD# at pin 21. Both OEs default HIGH. Up OE is GP6 OR RD#; down OE follows GP7. Both actual OEs must never be LOW together. This is a firmware rule with RD qualification, not an all-state hardware interlock; do not force both requests LOW. |
-| I/O trap and WAIT# | Z80 IORQ# pin 20 | Z80 WAIT# pin 24 | Z80 CLK pin 6 | IO_RELEASE at GP9, header pin 12 | CH1 falling, Single. HCT32 asserts WAIT before the sampling edge. GP9 rises only after the data path is ready. Slow clocks complete I/O, then isolate/rearm before PWM resumes. WAIT must not reassert while IORQ/strobe remain active. Repeat CH4 at RD#, WR#, and both actual OEs. |
+| I/O trap and WAIT# | Z80 IORQ# pin 20 | Z80 WAIT# pin 24 | Z80 CLK pin 6 | IO_RELEASE at GP9, header pin 12 | CH1 falling, Single. HCT32 asserts WAIT before the sampling edge. GP9 rises only after the data path is ready. Slow clocks complete I/O, then isolate/rearm before the execution clock resumes. WAIT must not reassert while IORQ/strobe remain active. Repeat CH4 at RD#, WR#, and both actual OEs. |
 | Supply integrity | +5 V logic-rail entry at the 100 uF bulk capacitor | Farthest-board +5 V rail | Pico 3V3 header pin 36 | Z80 CLK pin 6 | Trigger on CH4 rising for repetitive operation; use Single on commands. Repeat at idle, injected RAM patterns, Z80 memory loop, disk write, and Wi-Fi traffic. CH1/CH2 remain 4.75-5.25 V; CH3 meets the Pico rail specification. No capture may show more than 250 mV droop or reset/clock disturbance. Keep DC-coupled full-bandwidth pass evidence. |
 
-For logic nodes, a measured LOW must satisfy the receiving device's LOW
-limit and a measured HIGH must satisfy its HIGH limit; use the device-specific
-thresholds and margins stated in the relevant phase rather than treating the
-trigger level as a pass threshold. Investigate overshoot below GND or above
-the node's supply, non-monotonic threshold crossings, ringing that creates a
-second crossing, or an unusually fast rise/fall time. With the supplied
-150 MHz passive probe, treat a measured rise/fall time approaching about
-4.2 ns as limited by the probe-plus-scope measurement system, not as a
-definitive measurement of the device-under-test edge. The 4.2 ns value is the
-root-sum-square combination of the probe's approximately 2.3 ns and the
-DHO814 front end's approximately 3.5 ns calculated rise-time limits. The scope
-validates analogue quality on the listed nodes; the DSLogic Plus remains
-mandatory for repeated bus-wide digital capture groups and the final frequency
-claim.
+### Accept or investigate
+
+- Compare LOW/HIGH levels and setup/hold times with the **receiving device’s**
+  datasheet limits, not the trigger voltage.
+- Investigate rail overshoot/undershoot, multiple threshold crossings, runt
+  pulses, and ringing. Probe loading/ground leads can introduce artifacts.
+- Rise/fall readings near 4.2 ns approach the combined 100 MHz scope/150 MHz
+  probe response; do not interpret them as exact device edge times.
+- Keep DSLogic whole-bus captures for final digital/frequency qualification.
 
 ## MCP Acceptance Runner
 
-The maintained runner is `scripts/scope-acceptance.mjs`, with evaluation in `scripts/scope-evidence.mjs`. It collects Phase 2 clock translation or Phase 8 I/O captures. External SPI mode is retired. It does not flash firmware, inject electrical faults, or certify a board. Reports retain `qualified=false` until all manual and independent gates pass. The legacy single-pause evaluator returns inconclusive for multi-step completion: inspect the raw clocks, data OEs, and rearming manually before accepting this revision.
+`scripts/scope-acceptance.mjs` collects Phase 2/8 evidence; it does not flash
+or certify the board. Reports remain `qualified=false` until manual gates
+pass. Its single-pause evaluator cannot qualify stepped I/O completion:
+review raw clocks, data enables, and WAIT rearming manually.
 
 ### Preparation
 
@@ -226,9 +136,13 @@ npm run scope:acceptance -- --mode stage2 --runtime container \
    --output build/bench/stage2-first --exclusive-session --bench-confirmed
 ```
 
-Use `--runtime docker` for Docker. Commands `1`, `2`, and `3` report requested and calculated actual clock rates. The runner compares hardware frequency to the calculated rate within 1%, requires 45-55% duty and corresponding pulse widths, checks the 4.75-5.25 V supply, and compares settled Z80 clock HIGH against measured VCC minus 0.5 V. The 1% check detects gross errors, not oscillator accuracy or jitter. Sentinel/missing readings are inconclusive, never zero or PASS.
-
-Use robust settled levels for logic swing and raw extrema for overshoot/undershoot; inspect both against receiving-device limits. Check extra threshold crossings and the first/last pulses. Full qualification still requires every buffer path, HCT32 gates, startup and power-cycle tests. A firmware `DONE` message means only that stimulus completed.
+- Use `--runtime docker` for Docker.
+- The runner checks calculated frequency within 1%, duty 45–55%, supply
+  4.75–5.25 V, and settled clock HIGH against measured VCC minus 0.5 V.
+- Missing/sentinel readings are inconclusive. The frequency tolerance checks
+  gross errors, not oscillator accuracy or jitter.
+- Inspect extrema, threshold crossings, and first/last pulses manually.
+  Firmware DONE means the stimulus completed, not that the waveform passed.
 
 ### Phase 8 Clock Stop and Resume
 
@@ -243,20 +157,28 @@ npm run scope:acceptance -- --mode stage8 --runtime container \
    --duration 60 --captures 3 --exclusive-session --bench-confirmed
 ```
 
-The runner starts the existing one-hour RAM/USB checker, samples I/O events, checks fault-counter deltas, and holds the CPU in reset on exit. A 60-second run is not a one-hour pass. For a full run use `--duration 3600`; the firmware's one-hour PASS message must also be observed. Exercise USB traffic externally; later-phase Wi-Fi/storage workload evidence remains separate. Discrete captures cannot prove there were no faults between records.
-
-Aligned stopped RAW CSV captures are streamed to the host. The evaluator separates ordinary pulse minima from extended intervals, checks WAIT and IO_RELEASE ordering, and rejects unaligned data. Its exactly-one-pause assumption is not sufficient for stepped completion; retain inconclusive results and review every completion clock manually. Insufficient sampling or incomplete events are inconclusive. Never include deliberate pauses/steps in periodic-jitter statistics.
-
-The last observed edge is not the instant PWM stopped: uncertainty includes clock phase. Do not describe it as exact ISR-entry latency. Repeat CH4 on RD#, WR#, GP6/GP7 and both actual transceiver OEs. Measure WAIT and data setup/hold separately. Prove both OEs HIGH and GP9 LOW before PWM resumes. Keep DSLogic Group A-D captures for whole-bus ordering.
-
-Requalify service time, throughput, first resumed pulse, and watchdog margins
-after trap changes; the 500 ms software deadline is not a CPU timing limit.
+- The runner starts the RAM/USB checker, captures events, checks fault counters,
+  and holds reset on exit. `--duration 60` is not a one-hour pass; use 3600 and
+  observe the firmware’s one-hour PASS for a full run.
+- Exercise USB traffic separately. Wi-Fi/storage workloads require later-phase
+  evidence; discrete captures cannot exclude faults between records.
+- Retain inconclusive results for stepped completion. Check every completion
+  clock, data setup/hold, both OEs HIGH, and GP9 LOW before execution resumes.
+- Repeat CH4 at RD#, WR#, GP6/GP7, and actual OEs; retain DSLogic groups A–D.
+- Last-edge delay includes clock-phase uncertainty; it is not exact ISR latency.
+  Exclude deliberate pauses from jitter statistics. The 500 ms watchdog deadline
+  is not a CPU timing limit.
 
 ### Reports and Restoration
 
-Reports include source revision/dirty state, scope identity, requested/applied settings, probe ratios, thresholds, clock rates, sample-rate/memory metadata, counters, measurements, capture paths and manual gates. `serial.log`, copied captures and setup binary/sidecar are retained. Source revision describes the current source tree; verify separately that the flashed UF2 matches it.
-
-The runner stops the diagnostic workload and asks before restoring the saved scope setup and waveform-transfer settings. Check the restoration result and final SCPI queue; a write alone is not proof of restoration. Declined restoration, mismatched settings or errors produce a nonzero exit. Instrument restoration does not restart the preceding firmware workload. If killed or disconnected, cleanup may be incomplete: power down or hold reset safely and inspect state before retrying. Restart the registered MCP server yourself only after the runner exits.
+1. Retain reports, `serial.log`, raw captures, and saved setup. Record source
+   revision, flashed firmware identity, settings, thresholds, counters, and
+   sample metadata; the current checkout does not identify the flashed UF2.
+2. After the workload stops, choose whether to restore the saved scope setup.
+   Check readback and the final SCPI error queue. Declined/failed restoration
+   produces a nonzero exit and does not restart the previous workload.
+3. If interrupted, hold reset or power down and inspect state before retrying.
+   Restart the registered MCP server only after the dedicated runner exits.
 
 ### Fault Injection
 
@@ -267,11 +189,8 @@ npm run test:control
 npm run test:scope
 ```
 
-Native tests compile production bus, CPU, loader, and trap code against GPIO,
-clock, and time fakes. They cover injection cycle/byte behavior, data exclusion,
-address boundaries, verification corruption, absent/stuck BUSACK, stuck I/O
-controls, and invalid RD/WR combinations. They prove code behavior, not real
-Z80 reset-exit phase, analogue safety, or timing.
+Host tests check production control/loader/trap behavior against models;
+they do not qualify electrical faults or real timing.
 
 | Fault | Required observed behavior |
 | --- | --- |

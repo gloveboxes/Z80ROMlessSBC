@@ -27,6 +27,7 @@ void z80_terminal_receive(const uint8_t *data, size_t length);
 /* Core 1 must consume accepted bytes before servicing ownership changes. */
 size_t z80_terminal_peek(uint8_t *data, size_t capacity);
 size_t z80_terminal_supply(uint8_t *data, size_t capacity);
+bool z80_terminal_output_pending(void);
 bool z80_terminal_browser_try_receive(const uint8_t *data, size_t length);
 void z80_terminal_browser_connect(void);
 void z80_terminal_browser_disconnect(void);

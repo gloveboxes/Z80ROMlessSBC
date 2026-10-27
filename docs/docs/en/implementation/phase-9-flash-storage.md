@@ -36,7 +36,7 @@ Choose **Diagnostic** for bring-up tests or **Automatic loader** after those
 tests pass. Both tasks force-update without checking the previous firmware.
 Use firmware and disks for initial installation or a complete BIOS/disk
 refresh; use firmware only for routine updates. See
-[task requirements](../tools/pico-tools.md#deployment-task-requirements).
+[task requirements](../system/firmware-build.md#deployment-task-requirements).
 
 !!! warning "Before deployment"
     Save CP/M work. Apply external **+5 V before USB** and keep it applied.
@@ -300,7 +300,7 @@ are terminal input, not diagnostic commands.
 
 | Sequence | Supervisor action |
 | --- | --- |
-| Ctrl+] then `l` | Recover journal; validate manifest/CRCs, exact 65,536-byte payload and `JP FD00h`; load and independently read back every SRAM byte; leave RESET LOW |
+| Ctrl+] then `l` | Recover journal; validate manifest/CRCs, exact 65,536-byte payload and `JP FC00h`; load and independently read back every SRAM byte; leave RESET LOW |
 | Ctrl+] then `g` | Start the verified image from a fresh reset at 20 MHz |
 | Ctrl+] then `t` | After loading, replace the SRAM entry code with a read-only Z80 disk diagnostic; compare every byte of all four drives; reboot afterward |
 | Ctrl+] then `s` | Print run state, configured clock, BIOS evidence, disk/fatal state, queue drops and trap error counts |
@@ -608,7 +608,7 @@ the reserved record. These are emulator checks, not physical flash or
   images.
 9. <input type="checkbox" data-checklist-id="flash-ownership-captures" aria-label="Flash ownership trap rearming and BUSACK race captures verified"> Use [DSLogic Group D](../hardware/logic-analyzer.md#group-d-sram-boot-inhibit-and-control-propagation)
   during a write to prove BUSREQ#/BUSACK#/CLK ownership and SRAM-control
-  propagation. Repeat with [Group C](../hardware/logic-analyzer.md#group-c-trapped-io-and-data-path-interlock)
+  propagation. Repeat with [Group C](../hardware/logic-analyzer.md#group-c-trapped-io-and-data-path-exclusion)
   to prove the trap remains armed until BUSACK# is LOW and is armed again
   before BUSACK# returns HIGH, with no untrapped I/O edge in either interval.
   Inject an IORQ# falling edge while BUSACK# is LOW and require the handler
