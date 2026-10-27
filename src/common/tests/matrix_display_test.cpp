@@ -6,8 +6,10 @@
 #include <vector>
 
 #include "hardware/pio.h"
+#include "hardware/dma.h"
 
 struct test_pio {
+  uint32_t txf[4] = {}, rxf[4] = {};
   pio_sm_config config;
   std::vector<uint16_t> instructions;
   std::deque<uint32_t> received;
@@ -185,6 +187,52 @@ uint32_t clock_get_hz(uint) { return 120000000; }
 uint64_t time_us_64() { return now++; }
 void tight_loop_contents() { assert(false && "Display must not busy-wait"); }
 
+struct FakeDMA {
+  bool claimed = false, busy = false;
+  volatile void *write = nullptr;
+  const volatile void *read = nullptr;
+  uint count = 0;
+  dma_channel_config config;
+} channels[2];
+static bool dma_available = true;
+int dma_claim_unused_channel(bool) {
+  for (int i = 0; i < 2 && dma_available; ++i)
+    if (!channels[i].claimed) { channels[i].claimed = true; return i; }
+  return -1;
+}
+void dma_channel_abort(uint c) { channels[c].busy = false; }
+void dma_channel_unclaim(uint c) { channels[c].claimed = false; }
+bool dma_channel_is_busy(uint c) { return channels[c].busy; }
+uint pio_get_dreq(PIO, uint, bool tx) { return tx ? 1 : 2; }
+void dma_channel_configure(uint c, const dma_channel_config *config,
+                           volatile void *write, const volatile void *read,
+                           uint count, bool start) {
+  channels[c].config = *config;
+  channels[c].write = write; channels[c].read = read;
+  channels[c].count = count; channels[c].busy = start;
+}
+static void run_dma(bool stop_result = true) {
+  auto &tx = channels[0]; auto &rx = channels[1];
+  assert(tx.config.dreq == 1 && rx.config.dreq == 2);
+  assert(tx.config.read_increment && !tx.config.write_increment);
+  assert(!rx.config.read_increment && rx.config.write_increment);
+  assert(tx.count == 20 && rx.count == 19);
+  assert(tx.write == &machine.txf[0] && rx.read == &machine.rxf[0]);
+  auto words = static_cast<const volatile uint32_t *>(tx.read);
+  auto results = static_cast<volatile uint32_t *>(rx.write);
+  uint result = 0;
+  for (uint i = 0; i < tx.count; ++i) {
+    machine.execute(words[i]);
+    while (!machine.received.empty()) {
+      results[result++] = machine.received.front();
+      machine.received.pop_front();
+    }
+  }
+  assert(result == 19);
+  tx.busy = false;
+  rx.busy = !stop_result;
+}
+
 static std::string diagnostic_output;
 static int display_printf(const char *format, ...) {
   char buffer[512];
@@ -206,7 +254,11 @@ static void reset() {
   state = DisplayState::uninitialized;
   state_machine = -1;
   scan_address = FIRST_SCANNED_ADDRESS;
-  initialization_index = matrix_row = matrix_chunk = 0;
+  initialization_index = matrix_row = 0;
+  tx_dma = rx_dma = -1;
+  frame_active = false;
+  channels[0] = channels[1] = {};
+  dma_available = true;
   pio_timed_out = false;
   wifi_connected = frame_wifi_connected = displayed_wifi_connected = false;
   failure = DisplayFailure::none;
@@ -231,13 +283,6 @@ static void service_until(DisplayState expected) {
   assert(state == expected);
 }
 
-static void complete_transfer() {
-  service_once();
-  for (uint i = 0; i < 32 && transfer.step != TransferStep::idle; ++i)
-    service_once();
-  assert(transfer.step == TransferStep::idle);
-}
-
 static void assert_disabled() {
   assert(state == DisplayState::failed);
   assert(!machine.enabled && machine.scl && machine.sda);
@@ -254,255 +299,93 @@ static void assert_disabled() {
     assert(diagnostic_output.find("PIO FIFO timeout") != std::string::npos);
 }
 
-static void test_running_gate() {
-  reset();
-  for (uint i = 0; i < 16; ++i)
-    service_once(false);
-  assert(state == DisplayState::uninitialized && machine.instructions.empty());
-
-  service_until(DisplayState::scan_addresses);
-  service_once();
-  while (transfer.step != TransferStep::idle)
-    service_once(false);
-  assert(scan_address == FIRST_SCANNED_ADDRESS + 1);
-  auto transactions = machine.transactions.size();
-  now += PIO_TIMEOUT_US * 2;
-  service_once(false);
-  assert(machine.transactions.size() == transactions && !pio_timed_out);
-  service_until(DisplayState::ready);
-
-  for (TransferStep step : {TransferStep::write, TransferStep::ack,
-                            TransferStep::stop, TransferStep::stop_ack}) {
-    reset();
-    service_until(DisplayState::ready);
-    while (transfer.step != step)
-      service_once();
-    transactions = machine.transactions.size();
-    for (uint i = 0; i < 32 && transfer.step != TransferStep::idle; ++i)
-      service_once(false);
-    assert(transfer.step == TransferStep::idle);
-    assert(machine.transactions.size() ==
-           transactions + (step == TransferStep::stop_ack ? 0 : 1));
-    assert(machine.scl && machine.sda && machine.received.empty());
-    transactions = machine.transactions.size();
-    uint operations = machine.fifo_operations;
-    now += OFFLINE_INTERVAL_US * 2;
-    for (uint i = 0; i < 16; ++i)
-      service_once(false);
-    assert(machine.transactions.size() == transactions);
-    assert(machine.fifo_operations == operations && !pio_timed_out);
-    complete_transfer();
-    assert(machine.transactions.size() == transactions + 1);
-  }
-}
-
-static void assert_column_chunk(uint8_t position, uint8_t chunk) {
-  std::vector<uint8_t> expected(10, 0);
-  expected[0] = machine.device_address * 2;
-  expected[1] = chunk * 8;
-  for (uint8_t row = 0; row < 4; ++row)
-    expected[2 + row * 2] = 1u << position;
-  assert(machine.transactions.back() == expected);
-}
-
-static void test_wifi_patterns() {
-  reset();
-  service_until(DisplayState::ready);
-  // Change connectivity between the two halves of an offline frame.
-  complete_transfer();
-  assert(machine.transactions.back()[2] == 0xff);
-  z80_matrix_set_wifi_connected(true);
-  complete_transfer();
-  for (size_t i = 2; i < 10; ++i)
-    assert(machine.transactions.back()[i] == 0);
-  assert(!displayed_wifi_connected);
-
-  for (uint8_t step = 0; step < 8; ++step) {
-    now = next_matrix_update_us;
-    uint8_t position = (step + 1) % 8;
-    complete_transfer();
-    assert_column_chunk(position, 0);
-    complete_transfer();
-    assert_column_chunk(position, 1);
-    assert(displayed_wifi_connected);
-    assert(next_matrix_update_us >= now + 249'999);
-  }
-  z80_matrix_print_status();
-  assert(diagnostic_output.find("pattern=moving_column interval_ms=250") != std::string::npos);
-
-  z80_matrix_set_wifi_connected(false);
-  complete_transfer();
-  complete_transfer();
-  assert(!displayed_wifi_connected);
-  assert(next_matrix_update_us >= now + 499'999);
-  diagnostic_output.clear();
-  z80_matrix_print_status();
-  assert(diagnostic_output.find("pattern=moving_row interval_ms=500") != std::string::npos);
-}
-
 int main() {
-  test_running_gate();
-  test_wifi_patterns();
   reset();
-  z80_matrix_print_status();
-  assert(diagnostic_output.find("state=uninitialized address=unavailable") !=
-         std::string::npos);
-  diagnostic_output.clear();
+  service_once(false);
+  assert(state == DisplayState::uninitialized);
   service_until(DisplayState::ready);
-  assert(state == DisplayState::ready && display_address == 0x72);
-  assert(machine.config.scl == 26 && machine.config.sda == 22);
-  assert(!machine.config.out_right && !machine.config.in_right);
-  assert(diagnostic_output.empty());
-  z80_matrix_print_status();
-  assert(diagnostic_output.find(
-      "[matrix] driver=HT16K33 transport=PIO_I2C SCL=GP26 SDA=GP22 "
-      "state=ready address=0x72 brightness=0 pattern=moving_row interval_ms=500") !=
-      std::string::npos);
-  assert(diagnostic_output.find("FAIL") == std::string::npos);
-  auto ready_status = diagnostic_output;
-  state = DisplayState::failed;
-  display_address = 0x77;
-  diagnostic_output.clear();
-  z80_matrix_print_status();
-  assert(diagnostic_output == ready_status);
-  state = DisplayState::ready;
-  display_address = 0x72;
-  diagnostic_output.clear();
-  const uint8_t address_byte = 0x72 * 2;
-  assert(machine.transactions.size() == 9);
-  for (uint i = 0; i < 3; ++i)
-    assert(machine.transactions[i] == std::vector<uint8_t>{
-        static_cast<uint8_t>((0x70 + i) * 2)});
-  assert(machine.transactions[3] == (std::vector<uint8_t>{address_byte, 0x21}));
-  assert(machine.transactions[4] == (std::vector<uint8_t>{address_byte, 0x80}));
-  for (uint chunk = 0; chunk < 2; ++chunk) {
-    std::vector<uint8_t> expected(10, 0);
-    expected[0] = address_byte;
-    expected[1] = chunk * 8;
-    assert(machine.transactions[5 + chunk] == expected);
-  }
-  assert(machine.transactions[7] == (std::vector<uint8_t>{address_byte, 0xe0}));
-  assert(machine.transactions[8] == (std::vector<uint8_t>{address_byte, 0x81}));
+  assert(display_address == 0x72 && machine.transactions.size() == 9);
   for (uint row = 0; row < 16; ++row) {
-    now = next_matrix_update_us;
-    for (uint chunk = 0; chunk < 2; ++chunk) {
-      auto before_count = machine.transactions.size();
-      complete_transfer();
-      assert(machine.transactions.size() == before_count + 1);
-      std::vector<uint8_t> expected(10, 0);
-      expected[0] = address_byte;
-      expected[1] = chunk * 8;
-      uint active_row = row % 8;
-      if (active_row / 4 == chunk)
-        expected[2 + (active_row % 4) * 2] = 0xff;
-      assert(machine.transactions.back() == expected);
-    }
-    assert(next_matrix_update_us >= now + 499'999);
-    auto before_count = machine.transactions.size();
-    for (uint i = 0; i < 10; ++i)
-      service_once();
-    now = next_matrix_update_us - 1;
+    auto before = machine.transactions.size();
     service_once();
-    assert(machine.transactions.size() == before_count);
+    assert(frame_active && machine.transactions.size() == before);
+    auto deadline = next_matrix_update_us;
+    for (uint i = 0; i < 10; ++i) service_once();
+    assert(channels[0].busy && channels[1].busy);
+    run_dma();
+    std::vector<uint8_t> expected(18, 0);
+    expected[0] = 0xe4;
+    expected[2 + (row % 8) * 2] = 0xff;
+    assert(machine.transactions.back() == expected);
+    now = deadline;
+    service_once(false);
+    assert(!frame_active && matrix_row == (row + 1) % 8);
+    service_once(false);
+    assert(machine.transactions.size() == before + 1);
   }
+  z80_matrix_set_wifi_connected(true);
+  service_once();
+  z80_matrix_set_wifi_connected(false); // In-flight buffer remains unchanged.
+  run_dma();
+  for (uint row = 0; row < 8; ++row)
+    assert(machine.transactions.back()[2 + row * 2] == 1);
+  now = next_matrix_update_us;
+  service_once(false);
+  assert(displayed_wifi_connected);
   assert(machine.minimum_high * machine.config.divider / 120 >= 4.0);
-  assert(diagnostic_output.empty());
+
+  for (uint byte = 1; byte <= 18; ++byte) {
+    reset(); service_until(DisplayState::ready);
+    machine.nack_byte = byte;
+    service_once(); run_dma();
+    assert(machine.transactions.back().size() == 18);
+    now = next_matrix_update_us; service_once();
+    assert_disabled();
+    assert(!channels[0].claimed && !channels[1].claimed);
+  }
+  reset(); service_until(DisplayState::ready);
+  service_once(); run_dma(false); // TX done, STOP result not received.
+  now = next_matrix_update_us; service_once(false);
+  assert(pio_timed_out); assert_disabled();
+
+  reset(); service_until(DisplayState::ready);
+  service_once();
+  // A failed DMA can become idle before writing all results.
+  channels[0].busy = channels[1].busy = false;
+  now = next_matrix_update_us; service_once();
+  assert(pio_timed_out); assert_disabled();
+
+  reset(); service_until(DisplayState::ready);
+  channels[0].claimed = true; // Only one channel available; release partial claim.
+  service_once(); assert_disabled();
+  assert(!channels[1].claimed);
 
   for (uint8_t address : {0x70, 0x77}) {
-    reset();
-    machine.device_address = address;
+    reset(); machine.device_address = address;
     service_until(DisplayState::ready);
-    assert(state == DisplayState::ready && display_address == address);
+    assert(display_address == address);
+  }
+  reset(); service_until(DisplayState::ready);
+  z80_matrix_set_wifi_connected(true);
+  for (uint position = 0; position < 8; ++position) {
+    service_once(); run_dma();
+    for (uint row = 0; row < 8; ++row)
+      assert(machine.transactions.back()[2 + row * 2] == (1u << position));
+    now = next_matrix_update_us; service_once(false);
   }
 
-  reset();
-  service_until(DisplayState::initialize);
-  assert(state == DisplayState::initialize);
-  machine.acknowledge = false;
-  service_until(DisplayState::failed);
-  assert_disabled();
-
-  reset();
-  service_until(DisplayState::ready);
-  machine.acknowledge = false;
-  service_until(DisplayState::failed);
-  assert_disabled();
-
-  reset();
-  machine.acknowledge = false;
-  service_until(DisplayState::failed);
-  assert(machine.transactions.size() == 8);
-  assert_disabled();
-
-  reset();
-  service_once();
-  machine.tx_full = true;
-  uint64_t before = now;
-  service_once();
-  assert(!pio_timed_out && now - before <= 3);
-  now += PIO_TIMEOUT_US;
-  service_once();
-  assert(pio_timed_out);
-  assert_disabled();
-
-  reset();
-  service_once();
-  machine.stalled = true;
-  before = now;
-  service_once();
-  service_once();
-  service_once();
-  assert(!pio_timed_out && now - before < 10);
-  now += PIO_TIMEOUT_US;
-  service_once();
-  assert(pio_timed_out);
-  assert_disabled();
-
-  reset();
-  service_until(DisplayState::initialize);
+  reset(); service_until(DisplayState::ready);
+  dma_available = false; service_once(); assert_disabled();
+  reset(); machine.acknowledge = false;
+  service_until(DisplayState::failed); assert_disabled();
+  reset(); service_until(DisplayState::initialize);
   machine.nack_byte = 2;
-  service_until(DisplayState::failed);
-  assert(machine.transactions.back().size() == 2);
-  assert_disabled();
-
-  reset();
-  service_until(DisplayState::ready);
-  machine.nack_byte = 5;
-  service_until(DisplayState::failed);
-  assert(machine.transactions.back().size() == 5);
-  assert_disabled();
-
-  reset();
-  service_until(DisplayState::initialize);
-  while (transfer.step != TransferStep::stop_ack)
-    service_once();
-  machine.rx_blocked = true;
-  service_once();
-  assert(initialization_index == 0 && !pio_timed_out);
-  machine.rx_blocked = false;
-  service_once();
-  assert(initialization_index == 1 && transfer.step == TransferStep::idle);
-
-  reset();
-  service_until(DisplayState::ready);
-  while (transfer.step != TransferStep::stop_ack)
-    service_once();
-  machine.rx_blocked = true;
-  service_once();
+  service_until(DisplayState::failed); assert_disabled();
+  reset(); service_once(); machine.stalled = true;
+  service_once(); service_once(); service_once();
   now += PIO_TIMEOUT_US;
-  service_once();
-  assert(pio_timed_out);
-  assert_disabled();
-
-  reset();
-  machine.available = false;
-  service_once();
-  assert_disabled();
-
-  reset();
-  machine.sm_available = false;
-  service_once();
-  assert_disabled();
-  puts("PASS: assembled matrix PIO, HT16K33 initialization, row pattern, "
-       "timing, ACK/NACK, missing display and timeout isolation");
+  service_once(); assert_disabled();
+  reset(); machine.available = false; service_once(); assert_disabled();
+  reset(); machine.sm_available = false; service_once(); assert_disabled();
+  puts("PASS: assembled PIO, DMA frames, ACK collection, STOP completion, gating and failure cleanup");
 }

@@ -67,6 +67,8 @@ inline void sm_config_set_clkdiv(pio_sm_config *c, float divider) {
   c->divider = divider;
 }
 
+uint pio_get_dreq(PIO, uint, bool);
+
 bool pio_can_add_program(PIO, const pio_program *);
 int pio_claim_unused_sm(PIO, bool);
 uint pio_add_program(PIO, const pio_program *);

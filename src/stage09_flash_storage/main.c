@@ -745,7 +745,7 @@ static void service_usb(void) {
       && !z80_network_setup_active() && !z80_terminal_browser_connected()
 #endif
   ) {
-    uint8_t data[32];
+    uint8_t data[64];
     size_t capacity = tud_cdc_write_available();
     if (capacity > sizeof(data))
       capacity = sizeof(data);

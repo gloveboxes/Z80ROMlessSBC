@@ -69,7 +69,7 @@ set_source_files_properties(
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 target_link_libraries(z80_terminal PUBLIC
   z80_terminal_queue z80_io_services z80_pico_ws_server pico_lwip_sntp
-  pico_lwip_mbedtls hardware_clocks hardware_pio)
+  pico_lwip_mbedtls hardware_clocks hardware_pio hardware_dma)
 
 # Compile the tested automatic-loader application, not a parallel implementation.
 include(../stage09_flash_storage/disk_diagnostic_build.cmake)

@@ -159,14 +159,22 @@ CP/M application is responsive.
 ??? info "Display implementation and host test"
 
     [matrix_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_display.cpp)
-    runs on core 1 after network work. Each pass performs at most one non-blocking
-    FIFO operation; RAM updates use two eight-byte chunks. Both halves of a frame
-    use the same connectivity state, so a Wi-Fi change takes effect on the next
-    full frame. USB status reports the displayed pattern and its interval.
+    runs on core 1 after network work. Scanning and initialization perform at
+    most one non-blocking FIFO operation per pass. Normal frames use one I2C
+    transaction: RAM pointer `0x00` followed by all 16 display RAM bytes.
+    One DMA channel feeds 20 encoded command words to PIO; a second collects
+    18 byte ACKs and the final STOP result. No per-byte CPU service or DMA
+    interrupt is needed. Persistent buffers remain unchanged until completion.
+    Each frame uses one connectivity state. USB status reports the last
+    confirmed pattern and its interval.
 
     New transactions require a running CPU and no flash pause. If permission
-    changes, finish the transaction through STOP before holding the pattern.
-    A 5 ms FIFO timeout or transfer NACK disables the display, releases resources
+    changes, an in-flight transaction finishes through STOP before holding the
+    pattern. DMA results are checked when the next update is due (250 ms online,
+    500 ms offline), including while new updates are paused. TX completion alone
+    does not confirm STOP; RX must also finish and contain the STOP result.
+    A missing completion, transfer NACK, unavailable DMA channels, or a 5 ms
+    scan/initialization FIFO timeout disables the display, releases resources
     and records the error. No Z80 bus GPIO or new core-0 handshake is used.
 
     [matrix_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_i2c.pio)

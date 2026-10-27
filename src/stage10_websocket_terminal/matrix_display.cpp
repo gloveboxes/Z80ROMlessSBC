@@ -1,8 +1,10 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 #include "hardware/clocks.h"
+#include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "matrix_i2c.pio.h"
 #include "matrix_display.h"
@@ -36,6 +38,7 @@ enum class DisplayFailure : uint8_t {
   ram_nack,
   scan_timeout,
   no_device,
+  no_dma,
 };
 
 constexpr const char *failure_reasons[] = {
@@ -46,6 +49,7 @@ constexpr const char *failure_reasons[] = {
     "HT16K33 matrix RAM write was not acknowledged",
     "I2C transport timeout during address scan",
     "no HT16K33 ACK from address 0x70 through 0x77",
+    "no DMA channels available for matrix transfer",
 };
 
 DisplayState state = DisplayState::uninitialized;
@@ -56,7 +60,10 @@ uint8_t display_address;
 uint8_t scan_address = FIRST_SCANNED_ADDRESS;
 uint8_t initialization_index;
 uint8_t matrix_row;
-uint8_t matrix_chunk;
+int tx_dma = -1, rx_dma = -1;
+bool frame_active;
+uint32_t frame_commands[20];
+uint32_t frame_results[19];
 bool pio_timed_out;
 DisplayFailure failure = DisplayFailure::none;
 uint32_t published_status;
@@ -176,6 +183,14 @@ bool initialize_bus() {
 
 void mark_failed(DisplayFailure reason) {
   failure = reason;
+  for (int *channel : {&tx_dma, &rx_dma}) {
+    if (*channel >= 0) {
+      dma_channel_abort(*channel);
+      dma_channel_unclaim(*channel);
+      *channel = -1;
+    }
+  }
+  frame_active = false;
   if (state_machine >= 0) {
     pio_sm_set_enabled(pio, state_machine, false);
     pio_sm_set_consecutive_pindirs(pio, state_machine, PIN_SCL, 1, false);
@@ -201,23 +216,81 @@ void begin_matrix_transfer() {
     return;
   }
 
-  // Latch the mode for both RAM chunks, even if Wi-Fi changes mid-frame.
-  if (matrix_chunk == 0)
-    frame_wifi_connected = wifi_connected;
-  uint8_t data[I2C_CHUNK_BYTES] = {};
-  uint8_t first_row = matrix_chunk * 4;
-  for (uint8_t row = 0; row < 4; ++row) {
-    data[row * 2] = frame_wifi_connected
-                        ? static_cast<uint8_t>(1u << matrix_row)
-                        : (first_row + row == matrix_row ? 0xff : 0);
+}
+
+bool begin_frame() {
+  if (tx_dma < 0) {
+    tx_dma = dma_claim_unused_channel(false);
+    rx_dma = dma_claim_unused_channel(false);
+    if (tx_dma < 0 || rx_dma < 0) {
+      mark_failed(DisplayFailure::no_dma);
+      return false;
+    }
   }
-  begin_transfer(display_address, matrix_chunk * I2C_CHUNK_BYTES,
-                 data, sizeof(data));
+  frame_wifi_connected = wifi_connected;
+  uint8_t data[16] = {};
+  for (uint8_t row = 0; row < 8; ++row)
+    data[row * 2] = frame_wifi_connected ? static_cast<uint8_t>(1u << matrix_row)
+                                       : (row == matrix_row ? 0xff : 0);
+  frame_commands[0] = 1u << 30;
+  frame_commands[1] = static_cast<uint32_t>(static_cast<uint8_t>(~(display_address << 1))) << 22;
+  frame_commands[2] = 0xffu << 22;  // RAM pointer 0x00.
+  for (uint i = 0; i < 16; ++i)
+    frame_commands[3 + i] = static_cast<uint32_t>(static_cast<uint8_t>(~data[i])) << 22;
+  frame_commands[19] = 2u << 30;
+  // A short/failed RX DMA must not reuse successful results from an old frame.
+  for (auto &result : frame_results)
+    result = UINT32_MAX;
+  auto rx = dma_channel_get_default_config(rx_dma);
+  channel_config_set_transfer_data_size(&rx, DMA_SIZE_32);
+  channel_config_set_read_increment(&rx, false);
+  channel_config_set_write_increment(&rx, true);
+  channel_config_set_dreq(&rx, pio_get_dreq(pio, state_machine, false));
+  dma_channel_configure(rx_dma, &rx, frame_results, &pio->rxf[state_machine], 19, true);
+  auto tx = dma_channel_get_default_config(tx_dma);
+  channel_config_set_transfer_data_size(&tx, DMA_SIZE_32);
+  channel_config_set_read_increment(&tx, true);
+  channel_config_set_write_increment(&tx, false);
+  channel_config_set_dreq(&tx, pio_get_dreq(pio, state_machine, true));
+  dma_channel_configure(tx_dma, &tx, &pio->txf[state_machine], frame_commands, 20, true);
+  frame_active = true;
+  next_matrix_update_us = time_us_64() + matrix_update_interval_us();
+  return true;
+}
+
+void service_frame(bool updates_allowed) {
+  // Inspect the previous frame only when the next update is due. RX completion
+  // includes the PIO STOP result; TX completion alone only means FIFO delivery.
+  if (frame_active) {
+    if (time_us_64() < next_matrix_update_us)
+      return;
+    if (dma_channel_is_busy(tx_dma) || dma_channel_is_busy(rx_dma) ||
+        frame_results[18] != 0) {
+      pio_timed_out = true;
+      mark_failed(DisplayFailure::ram_nack);
+      return;
+    }
+    for (uint i = 0; i < 18; ++i) {
+      if (frame_results[i] & 1u) {
+        mark_failed(DisplayFailure::ram_nack);
+        return;
+      }
+    }
+    frame_active = false;
+    displayed_wifi_connected = frame_wifi_connected;
+    matrix_row = (matrix_row + 1) % 8;
+  }
+  if (updates_allowed && time_us_64() >= next_matrix_update_us)
+    begin_frame();
 }
 
 void service_display(bool updates_allowed) {
   if (state == DisplayState::failed)
     return;
+  if (state == DisplayState::ready) {
+    service_frame(updates_allowed);
+    return;
+  }
   if (!updates_allowed && transfer.step == TransferStep::idle)
     return;
   if (state == DisplayState::uninitialized) {
@@ -260,12 +333,6 @@ void service_display(bool updates_allowed) {
   if (state == DisplayState::initialize) {
     if (++initialization_index == 6)
       state = DisplayState::ready;
-  } else if (++matrix_chunk == 2) {
-    matrix_chunk = 0;
-    matrix_row = (matrix_row + 1) % 8;
-    displayed_wifi_connected = frame_wifi_connected;
-    next_matrix_update_us = time_us_64() +
-        (wifi_connected == frame_wifi_connected ? matrix_update_interval_us() : 0);
   }
 }
 }  // namespace
@@ -285,8 +352,7 @@ extern "C" void z80_matrix_set_wifi_connected(bool connected) {
   if (wifi_connected == connected)
     return;
   wifi_connected = connected;
-  if (state == DisplayState::ready && matrix_chunk == 0 &&
-      transfer.step == TransferStep::idle)
+  if (state == DisplayState::ready && !frame_active)
     next_matrix_update_us = 0;
 }
 
