@@ -36,38 +36,62 @@ The reserved top page supplements CP/M's standard BIOS jump table. Check
 | `FF06h` | INFO | HL=0204h version, DE=0800h heap start, BC=F700h capacity |
 | `FF10h` | HEAP | E=0 allocate, 1 free, 2 size, 3 available, 4 reset, 5 call bank-1 code, 6 call at an offset with a DCC-style argument |
 
+### Transfers and heap calls
+
 READ/WRITE take HL=base buffer, DE=bank offset, BC=length. Positive lengths
 are multiples of 16; addresses need not align. The base buffer starts at or
 above 0100h, both ranges end at or below FF00h without wrapping, and a zero
 length succeeds without touching memory. Success returns A=0/carry clear;
 invalid arguments return A=2/carry set. INFO failure returns A=1/carry set,
-HL=0. HEAP takes HL=bytes or handle and returns HL=handle, size, free bytes,
-or 1/0 for free/reset; its A=0/carry clear, including allocation failure.
-For E=5, HL must be a live allocation containing executable Z80 code. BC=0
-uses the private bank-1 stack, leaving 58 bytes for the payload. A distinct
-live stack handle in BC uses that allocation instead. The payload must return
-with `RET` and must not call bank-0 code, re-enter the allocator, or enable
-interrupts. The gateway returns its HL value to bank 0 and restores IX/IY.
+HL=0.
 
-With BC nonzero, E=5 validates both handles, sets SP to the exclusive end of
-the stack allocation, places a return address there, and jumps to the code.
-After the payload's `RET`, it restores the private stack and bank-0 state.
-The caller keeps both allocations live until return. The payload receives the
-caller's IY, so an adapter can use IY to pass a bank-1 context handle; the
-gateway does not validate that context handle. `bmexec(code, 0)` uses the
-private stack; `bmexec(code, stack)` uses the allocated stack.
-[PRIMEBK1](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/PRIMEBK1) demonstrates direct
-offset calls into two functions with independent contexts and stacks.
+HEAP takes HL=bytes or handle and returns HL=handle, size, free bytes, or
+1/0 for free/reset. Its A=0/carry clear, including allocation failure.
 
-For E=6, HL is a live code handle, BC is a distinct live stack handle, IX is
-the 16-bit byte offset from the code handle, and IY is a bank-1 context
-pointer. The offset must be strictly less than the rounded code capacity;
-zero enters the start of the allocation. The BIOS pushes IY onto the selected
-stack as one 16-bit C argument, then pushes a return address and enters the
-function at `HL+IX`. A DCC function sees the argument at `IX+4` after its
-usual frame prologue and returns a 16-bit result in HL. The context pointer
-and instruction boundary are the caller's responsibility. E=6 requires a
-separate stack allocation, even for offset zero.
+### Calling bank-1 code
+
+#### Entry at the start: E=5
+
+HL must be a live allocation containing executable Z80 code. BC=0 uses the
+private bank-1 stack, leaving 58 bytes for the payload. A distinct live stack
+handle in BC uses that allocation instead. `bmexec(code, 0)` and
+`bmexec(code, stack)` expose these two choices.
+
+With an allocated stack, the BIOS validates both handles, sets SP to the end
+of the stack allocation, places a return address there, and jumps to the
+code. The caller keeps both allocations live until the payload returns.
+The payload receives the caller's IY, but the BIOS does not validate it as a
+context handle.
+
+#### Entry at an offset: E=6
+
+HL is a live code handle, BC is a distinct live stack handle, IX is a 16-bit
+byte offset, and IY is a bank-1 context pointer. The BIOS enters at `HL+IX`.
+Offset zero enters the start; every offset must be smaller than the rounded
+code capacity. E=6 always requires a separate stack allocation.
+
+The BIOS places IY on that stack as one 16-bit C argument. After its usual
+frame prologue, a DCC function reads the argument at `IX+4` and returns its
+16-bit result in HL. The caller must provide a valid context pointer and an
+offset at an instruction boundary.
+
+[PRIMEBK1](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/PRIMEBK1)
+demonstrates two entry offsets with independent contexts and stacks.
+
+#### Stack switch and return
+
+Both CALL operations follow the same handoff:
+
+1. The mirrored gateway saves interrupt state on the bank-0 stack, disables
+   interrupts, and selects bank 1.
+2. The bank-1 allocator records the bank-0 SP value, switches to its private
+   stack, then selects the payload stack. E=5 with BC=0 keeps the private stack.
+3. The payload finishes with `RET`. The allocator restores the saved SP, and
+   the mirrored gateway switches back to bank 0 before returning to the caller.
+
+The gateway returns the payload's HL value and restores IX/IY. Bank-1 code
+never accesses the bank-0 stack, calls bank-0 code, re-enters the allocator,
+or enables interrupts.
 
 ### SPREADS: two-entry-point example
 
@@ -89,6 +113,8 @@ the current checkout on every documentation build.
     ```c
     {% include "../../../../examples/SPREADS/DEMO.C" %}
     ```
+
+### Compatibility and limits
 
 CALL clients should also read bank-1 offset `0008h`: revision 1 supports the
 private-stack call, revision 3 accepts an optional stack handle, and revision
