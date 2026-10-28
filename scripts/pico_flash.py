@@ -319,18 +319,35 @@ def flash_disks(args: argparse.Namespace) -> None:
             path.write_bytes(data)
             images.append((drive, path, data))
             print(f"Drive {drive} <- {source}: {len(data)} bytes SHA256={hashlib.sha256(data).hexdigest()}")
-        print("No backups: only selected disk slots will be written")
+        boot_path = None
+        boot_package = getattr(args, "boot_package", None)
+        if boot_package is not None:
+            drive_a = next((data for drive, _, data in images if drive == "A"), None)
+            if drive_a is None:
+                raise FlashError("--boot-package requires Drive A in the selected disks")
+            package = boot_package.read_bytes()
+            validate_boot_pair(package, drive_a)
+            boot_path = temporary / "z80boot.pkg"
+            boot_path.write_bytes(package)
+            print(f"Boot package: {len(package)} bytes SHA256={hashlib.sha256(package).hexdigest()}")
+        print("No backups: selected disks" +
+              (" and boot package will be replaced" if boot_path else " will be replaced"))
         device = prepare_storage(args)
-        for drive, _, data in images:
-            if drive == "A":
-                check_drive_a(data, device, temporary)
+        if boot_path is not None:
+            picotool(["load", "-v", str(boot_path), "-t", "bin", "-o",
+                      hex(FLASH_BASE + cpm_images.FLASH_BOOT_OFFSET)], device)
+        else:
+            for drive, _, data in images:
+                if drive == "A":
+                    check_drive_a(data, device, temporary)
         for drive, path, _ in images:
             picotool(
                 ["load", "-v", str(path), "-t", "bin", "-o", hex(DISK_ADDRESSES[drive])],
                 device,
             )
             print(f"PASS: Drive {drive} write and read-back verification")
-        print("PASS: selected disks verified; firmware, boot, journal, ENV and unselected drives not written")
+        preserved = "firmware, journal, ENV and unselected drives" if boot_path else "firmware, boot, journal, ENV and unselected drives"
+        print(f"PASS: selected disks verified; {preserved} not written")
         if args.no_reboot:
             print("Device left in BOOTSEL")
             return
@@ -374,6 +391,8 @@ def main() -> int:
         "--drive", action="append", type=drive_image, required=True,
         help="repeat DRIVE=IMAGE for each selected A-D slot; native images or Altair B-D sources",
     )
+    disks.add_argument("--boot-package", type=Path,
+                       help="validate and replace a matching CP/M boot package; requires Drive A")
     disks.add_argument("--no-reboot", action="store_true")
     disks.add_argument(
         "--force", action="store_true",

@@ -30,7 +30,7 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | --- | --- | --- |
 | Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
 | CP/M system | **Build and flash Pico - CP/M system and Drive A** | Rebuilds CP/M; replaces boot package and Drive A; preserves firmware, B-D and ENV |
-| All disks | **Flash Pico - All disks (A-D)** | Replaces A-D; preserves firmware and ENV |
+| All disks | **Flash Pico - All disks (A-D)** | Rebuilds and validates matching boot package and A; replaces boot package and A-D; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
 | Escape disk | **Flash Pico - Drive C** | Replaces C only |

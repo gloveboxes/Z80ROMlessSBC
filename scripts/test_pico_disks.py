@@ -62,6 +62,9 @@ class DiskFlashTaskTests(unittest.TestCase):
                     for index, argument in enumerate(arguments) if argument == "--drive"
                 ]
                 drives = "ABCD" if label == labels[0] else label[-1]
+                if label == labels[0]:
+                    self.assertEqual(arguments[arguments.index("--boot-package") + 1],
+                                     "build/cpm-disk-update/z80boot.pkg")
                 self.assertEqual(
                     assignments, [f"{drive}={source_images[drive]}" for drive in drives]
                 )
@@ -107,19 +110,60 @@ class DiskFlashTests(unittest.TestCase):
             system[:flash.cpm_images.BIOS_DIRECTORY_BUFFER - flash.cpm_images.CCP_BASE]
             + bytes(128)
         )
-        bios = bytearray(256)
+        bios = bytearray(flash.cpm_images.Z80_IMAGE_BYTES - flash.cpm_images.BIOS_BASE)
         bios[:3] = b"\xc3\x00\xfd"
         for drive in range(4):
             struct.pack_into("<8H", bios, 0x20 + drive * 16,
                              0, 0, 0, 0, flash.cpm_images.BIOS_DIRECTORY_BUFFER,
-                             0xFD60, 0, 0xFD80 + drive * 32)
+                             flash.cpm_images.BIOS_BASE + 0x60, 0,
+                             flash.cpm_images.BIOS_BASE + 0x80 + drive * 32)
         struct.pack_into("<HBBBHHBBHH", bios, 0x60,
                          32, 4, 15, 0, 251, 63, 0x80, 0, 0, 2)
+        code = flash.cpm_images.banked_transfer_code()
+        offset = flash.cpm_images.BANKED_CODE_ADDRESS - flash.cpm_images.BIOS_BASE
+        bios[offset:offset + len(code)] = code
         bios = bytes(bios)
         memory = flash.cpm_images.build_z80_image(system, bios)
         package = flash.cpm_images.build_boot_package(memory)
         native = flash.cpm_images.build_native_drive(self.data, system, bios)
         return package, native
+
+    def test_disks_with_boot_package_validate_and_snapshot_before_device_access(self) -> None:
+        package, native = self.boot_package()
+        boot = self.directory / "boot.pkg"
+        boot.write_bytes(package)
+        self.source.write_bytes(native)
+        args = self.arguments(drive=[(drive, self.source) for drive in "ABCD"], boot_package=boot)
+        writes = []
+
+        def prepare(args):
+            boot.write_bytes(b"changed")
+            self.source.write_bytes(b"changed")
+            return "TEST"
+
+        def tool(arguments, device):
+            if arguments[0] == "load":
+                writes.append((int(arguments[6], 16), Path(arguments[2]).read_bytes()))
+
+        with (patch.object(flash, "prepare_storage", side_effect=prepare),
+              patch.object(flash, "check_drive_a") as installed_check,
+              patch.object(flash, "picotool", side_effect=tool)):
+            flash.flash_disks(args)
+        self.assertEqual(writes, [(0x101E0000, package)] +
+                         [(flash.DISK_ADDRESSES[d], native) for d in "ABCD"])
+        installed_check.assert_not_called()
+
+    def test_disks_reject_invalid_boot_pair_before_device_access(self) -> None:
+        package, native = self.boot_package()
+        boot = self.directory / "boot.pkg"
+        boot.write_bytes(package)
+        for drives in ([('B', self.source)], [('A', self.source)]):
+            with (patch.object(flash, "prepare_storage") as prepare,
+                  patch.object(flash, "picotool") as run):
+                with self.assertRaises(FlashError):
+                    flash.flash_disks(self.arguments(drive=drives, boot_package=boot))
+                prepare.assert_not_called()
+                run.assert_not_called()
 
     def test_force_skips_firmware_handshake_but_checks_journal(self) -> None:
         with (
@@ -178,7 +222,7 @@ class DiskFlashTests(unittest.TestCase):
                     elif fault == "old-reservation":
                         buffer[base + 0x69] = 0xc0
                     elif fault == "overlap":
-                        struct.pack_into("<H", buffer, base + 0x20 + 16 + 14, 0xFD80)
+                        struct.pack_into("<H", buffer, base + 0x20 + 16 + 14, bios + 0x80)
                     elif fault == "undersized":
                         struct.pack_into("<H", buffer, base + 0x20 + 3 * 16 + 14, 0xFFF0)
                     else:

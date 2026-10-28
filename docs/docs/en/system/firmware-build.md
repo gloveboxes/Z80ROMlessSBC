@@ -83,7 +83,7 @@ Each entry has both **Build Pico - …** (build only) and **Flash Pico - …**
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replace all flash, including disks and ENV |
 | **Build and flash Pico - Phase 10 firmware and disks** | Replace all flash, including disks and ENV |
 | **Build and flash Pico - CP/M system and Drive A** | Rebuild and replace matching boot package and Drive A; preserve firmware, B–D, journal, and ENV |
-| **Flash Pico - All disks (A-D)** | Regenerate/convert and replace all four disks; preserve firmware, boot package, and ENV |
+| **Flash Pico - All disks (A-D)** | Regenerate/convert all four disks; validate and replace matching boot package and A–D; preserve firmware and ENV |
 | **Flash Pico - Drive A** | Regenerate native system disk; check installed boot compatibility; replace A only |
 | **Flash Pico - Drive B** | Convert BDS C source disk and replace B only |
 | **Flash Pico - Drive C** | Convert Escape source disk and replace C only |

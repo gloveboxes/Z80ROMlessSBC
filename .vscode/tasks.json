@@ -75,9 +75,9 @@
 		},
 		{
 			"label": "Flash Pico - All disks (A-D)",
-			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; firmware, boot and ENV are preserved. Force entry; no running-firmware handshake.",
+			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=src/disks/source-altair/bdsc-v1.60.dsk --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=src/disks/source-altair/bdsc-v1.60.dsk --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},

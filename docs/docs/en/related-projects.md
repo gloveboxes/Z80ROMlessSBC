@@ -117,7 +117,9 @@ Copy an updated disk image using the filename expected by its task, or update
 the task's source path to select a different application image. The A: tasks
 regenerate the board-native boot disk; the B:–D: tasks convert the selected
 Altair images at flash time. The tasks replace the selected disks without
-backups and preserve firmware, the installed boot package, and ENV settings.
+backups and preserve firmware and ENV settings. **All disks (A-D)** also
+validates and installs the newly built boot package with Drive A. Individual
+drive tasks preserve the installed boot package; Drive A checks compatibility.
 Follow the task's confirmation prompt before deployment.
 
 Drive **A:** also contains the boot system and needs the board-native BIOS
