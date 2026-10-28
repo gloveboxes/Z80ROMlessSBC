@@ -116,21 +116,39 @@ void z80_usb_console_service(void) {
     first = count;
   memcpy(data, log_data + log_head, first);
   memcpy(data + first, log_data, count - first);
-  log_head = (log_head + count) % sizeof(log_data);
-  log_count -= count;
   uint32_t drops = log_drops;
   critical_section_exit(&log_lock);
-  if (count)
-    stdio_usb.out_chars(data, (int)count);
+  if (count) {
+    /* Only core 1 consumes this queue. Producers append behind the snapshot;
+     * retain its unaccepted suffix when the endpoint applies backpressure. */
+    size_t accepted = tud_cdc_write(data, (uint32_t)count);
+    critical_section_enter_blocking(&log_lock);
+    log_head = (log_head + accepted) % sizeof(log_data);
+    log_count -= accepted;
+    critical_section_exit(&log_lock);
+    if (accepted)
+      tud_cdc_write_flush();
+  }
   if (connected && drops != reported_drops) {
     char message[96];
     int length = snprintf(message, sizeof(message),
                           "\r\n[diag] FAIL: USB log queue overflow; log_drops=%lu\r\n",
                           (unsigned long)drops);
-    if (tud_cdc_write_available() >= (uint32_t)length) {
-      stdio_usb.out_chars(message, length);
+    /* This message already contains CRLF. Queue it only when it fits;
+     * backpressure must not generate further overflow reports itself. */
+    critical_section_enter_blocking(&log_lock);
+    if ((size_t)length <= sizeof(log_data) - log_count) {
+      size_t head = (log_head + log_count) % sizeof(log_data);
+      size_t first = sizeof(log_data) - head;
+      if (first > (size_t)length)
+        first = (size_t)length;
+      memcpy(log_data + head, message, first);
+      memcpy(log_data, message + first, (size_t)length - first);
+      log_count += (size_t)length;
+      last_log_cr = false;
       reported_drops = drops;
     }
+    critical_section_exit(&log_lock);
   }
 }
 
@@ -138,6 +156,11 @@ size_t z80_usb_console_write(const uint8_t *data, size_t length) {
   assert(get_core_num() == 1);
   if (!stdio_usb_connected())
     return 0;
+  critical_section_enter_blocking(&log_lock);
+  bool logs_pending = log_count != 0;
+  critical_section_exit(&log_lock);
+  if (logs_pending)
+    return 0; /* Do not splice terminal bytes into a queued diagnostic line. */
   size_t room = tud_cdc_write_available();
   if (length > room)
     length = room;

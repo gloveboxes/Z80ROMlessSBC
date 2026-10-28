@@ -1,10 +1,10 @@
-; BIOS bank extension ABI 1: identical page at FF00h in both banks.
+; BIOS bank extension ABI 2.0: identical page at FF00h in both banks.
 ; Public READ=FF00h / WRITE=FF03h: HL=base, DE=bank offset, BC=byte count.
 ; Zero count succeeds. Positive counts must be multiples of 16, base >=0100h,
 ; and both ranges must end <=FF00h without wrapping. INFO=FF06h must succeed
 ; first; data calls trust that capability and avoid a trapped status read.
 ; A=0/carry clear succeeds, A=2/carry set rejects invalid data arguments.
-; INFO: HL=0100h version, DE=0100h first allocation, BC=FE00h capacity;
+; INFO: HL=0200h version, DE=0800h first allocation, BC=F700h capacity;
 ; A=0/carry clear ready, A=1/HL=0/carry set unavailable.
 ; PRIVATE base-only workspace (not part of the public ABI):
 ; FFF0h = initial base address, then advancing source address,
@@ -16,14 +16,19 @@
 ; entire run with no C calls between bursts.
 ; Payload: BC/DE/HL + alternate BC/DE/HL + alternate AF + IY = 16 bytes.
 ; Preserves IX, IY, SP and maskable interrupt enable; clobbers both register
-; sets AF/BC/DE/HL. No NMI or memory access outside this routine while bank 1
+; sets AF/BC/DE/HL. Transfers permit no NMI or access outside this routine while bank 1
 ; is selected. SP temporarily points at payload, never call/push a return then.
         org 0ff00h
-; Stable BIOS extension ABI 1: entry slots and descriptor never move.
+; BIOS extension ABI 2: entry slots and descriptor never move.
         jp bank_read
         jp bank_write
         jp bank_info
-        db "BMX1",1,0,16
+        db "BMX2",2,0,16
+        jp bank_malloc          ; ABI 2.0 HEAP at FF10h, E=operation, HL=input
+heap_return:                    ; Bank-1 allocator jumps here, never CALLs.
+        xor a
+        out (7),a
+        jp restore_interrupts
 bank_read:
         xor a
         jr transfer
@@ -147,6 +152,7 @@ finish:
         ld sp,(0fff8h)
         pop iy
         pop ix
+restore_interrupts:
         pop af
         jp po,interrupts_off
         xor a
@@ -159,10 +165,10 @@ bank_info:
         in a,(7)
         cp 0b4h
         jr nz,unavailable
-        ld hl,0100h             ; ABI 1.0 and heap start both equal 0100h.
-        ld d,h
+        ld hl,0200h             ; ABI 2.0
+        ld d,8
         ld e,l
-        ld bc,0fe00h
+        ld bc,0f700h
         xor a
         ret
 unavailable:
@@ -171,3 +177,12 @@ unavailable:
         scf
         ret
 
+; Bank-1 HEAP gateway preserves SP/IX/IY. Only this mirrored page
+; executes across OUT. The saved AF retains the caller's interrupt state.
+bank_malloc:
+        ld a,i
+        di
+        push af
+        ld a,1
+        out (7),a
+        jp 0500h

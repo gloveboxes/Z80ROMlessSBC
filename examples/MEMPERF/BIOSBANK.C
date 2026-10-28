@@ -4,6 +4,55 @@
 #include "BIOSBANK.H"
 
 #asm
+;@dcc.lto begin _bmsize
+	public _bmsize
+_bmsize:
+	ld hl,2
+	add hl,sp
+	ld e,(hl)
+	inc hl
+	ld d,(hl)
+	ex de,hl
+	ld e,2
+	jp 0ff10h
+;@dcc.lto end _bmsize
+;@dcc.lto begin _bmavl
+	public _bmavl
+_bmavl:
+	ld e,3
+	jp 0ff10h
+;@dcc.lto end _bmavl
+;@dcc.lto begin _bmrset
+	public _bmrset
+_bmrset:
+	ld e,4
+	jp 0ff10h
+;@dcc.lto end _bmrset
+
+;@dcc.lto begin _bmfree
+	public _bmfree
+_bmfree:
+	ld hl,2
+	add hl,sp
+	ld e,(hl)
+	inc hl
+	ld d,(hl)
+	ex de,hl
+	ld e,1
+	jp 0ff10h
+;@dcc.lto end _bmfree
+;@dcc.lto begin _bmaloc
+	public _bmaloc
+_bmaloc:
+	ld hl,2
+	add hl,sp
+	ld e,(hl)
+	inc hl
+	ld d,(hl)
+	ex de,hl
+	ld e,0
+	jp 0ff10h
+;@dcc.lto end _bmaloc
 ;@dcc.lto begin _bmstat
 	public _bmstat
 _bmstat:

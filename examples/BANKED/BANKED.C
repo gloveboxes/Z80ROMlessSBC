@@ -3,7 +3,7 @@
 #include <string.h>
 #include "BANKMEM.H"
 
-#define BANK_BYTES 65024U
+#define BANK_BYTES 63232U
 #define CHUNK_BYTES 256U
 #define RUN_SECONDS 43200UL
 #define TIMER_PORT 0x17
@@ -282,7 +282,7 @@ int main(void)
     printf("Elapsed: 0 s; remaining: 43200 s; iterations: 0; "
            "bank data access calls total/read/write: %lu/%lu/%lu; avg data ops/s: 0\n",
            total_access_calls, read_access_calls, write_access_calls);
-    puts("Each cycle writes and verifies all 65024 bytes with 24 data patterns.");
+    puts("Each cycle writes and verifies all 63232 bytes with 24 data patterns.");
     puts("Patterns: 00/FF/55/AA, address and inverse, walking 1s and 0s.");
 
     cycle = 0;

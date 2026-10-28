@@ -295,7 +295,6 @@ static bool load_boot_image(z80_boot_observer_t observer, void *context) {
     return boot_failed(Z80_BOOT_ERROR_MANIFEST);
   if (!z80_cpu_prepare_loader())
     return boot_failed(Z80_BOOT_ERROR_LOADER);
-  z80_sram_prepare_banked_memory(source + BANKED_CODE_ADDRESS);
 
   for (uint32_t address = 0; address < Z80_BOOT_IMAGE_BYTES; ++address) {
     if (address % BOOT_PROGRESS_BYTES == 0 &&
@@ -323,6 +322,15 @@ static bool load_boot_image(z80_boot_observer_t observer, void *context) {
   }
   if (!boot_progress(Z80_BOOT_VERIFY, Z80_BOOT_IMAGE_BYTES, observer, context))
     return false;
+  z80_sram_prepare_banked_memory(source + BANKED_CODE_ADDRESS);
+  /* The isolation probe borrows bank 0's reset-vector byte. Confirm it was
+   * restored before accepting the already-verified base image. */
+  boot_status.address = 0;
+  boot_status.expected = source[0];
+  if (!z80_sram_read_byte(0, &boot_status.actual))
+    return boot_failed(Z80_BOOT_ERROR_READ);
+  if (boot_status.actual != source[0])
+    return boot_failed(Z80_BOOT_ERROR_MISMATCH);
   z80_cpu_fail_closed();
   return true;
 }

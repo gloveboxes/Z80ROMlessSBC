@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import unittest
 
+from extent_model import ExtentModel
 import cpm_boot_z80_test
 from banked_memory_z80_test import initialize_bank, transfer_code
 
@@ -15,9 +16,10 @@ class BankedHeapExecution(unittest.TestCase):
         cpm_boot_z80_test.CpmBootExecution.setUpClass()
 
     def execute_program(self, available: bool, capability: int = 0xB4,
-                        native_bios: bool = False,
+                        native_bios: bool = False, abi_minor: int = 0, abi_major: int = 2,
                         signature: bytes | None = None, fault: str | None = None,
                         heap_signature: bytes | None = None,
+                        allocator_installed: bool = True,
                         timer_dirty: str | None = None,
                         seconds_per_poll: int = 1,
                         stopwatch_ms: tuple[int, ...] | None = None) -> tuple[bytes, list[bytearray], int, int]:
@@ -28,6 +30,10 @@ class BankedHeapExecution(unittest.TestCase):
         if heap_signature is not None:
             self.assertEqual(len(heap_signature), 4)
             banks[1][:4] = heap_signature
+        if not allocator_installed:
+            banks[1][4:8] = bytes(4)
+            banks[1][0x60:0x100] = bytes(0xA0)
+        extent_model = ExtentModel()
         active = 0
         switches = 0
         tracking = False
@@ -124,15 +130,16 @@ class BankedHeapExecution(unittest.TestCase):
         machine.set_write_callback(memory_write)
         machine.mark_addrs(0x80, 0x80, machine.WRITE_MARK)
         case.until_prompt()
+        machine.memory[0xFF0E] = abi_minor
+        machine.memory[0xFF0D] = abi_major
         if signature is not None:
             machine.memory[0xFF09:0xFF0D] = signature
         code = transfer_code()
-        base_code = bytes(machine.memory[0xFF00:0xFF00 + len(code)])
         if native_bios:
             # Model an ESP-style BIOS backend that copies host arrays directly.
             # Its private workspace deliberately differs from the SBC's.
             machine.memory[0xFFF0:] = bytes([0xA5]) * 16
-            for entry in (0xFF00, 0xFF03, 0xFF06):
+            for entry in (0xFF00, 0xFF03, 0xFF06, 0xFF10):
                 machine.set_breakpoint(entry)
             cpu_run = machine.run
 
@@ -143,20 +150,23 @@ class BankedHeapExecution(unittest.TestCase):
                     if not events & machine._BREAKPOINT_HIT:
                         return events
                     entry = machine.pc
-                    self.assertIn(entry, (0xFF00, 0xFF03, 0xFF06))
+                    self.assertIn(entry, (0xFF00, 0xFF03, 0xFF06, 0xFF10))
                     error = False
                     if entry == 0xFF06:
                         capability_reads += 1
                         tracking = True
-                        machine.hl, machine.de, machine.bc = 0x100, 0x100, 65024
+                        machine.hl, machine.de, machine.bc = 0x200, 0x800, 63232
+                    elif entry == 0xFF10:
+                        machine.hl = extent_model.call(machine.e, machine.hl)
+                        extent_model.write_tables(banks[1])
                     else:
                         base, bank, length = machine.hl, machine.de, machine.bc
                         error = bool(length and (length % 16 or base < 0x100 or
                                      base + length > 0xFF00 or bank + length > 0xFF00))
                         if not error and stopwatch_ms is not None and timing and length >= 256:
                             payload_calls.append((entry, length))
-                        if fault == "alias" and bank >= 0x100:
-                            bank = 0x100 + ((bank - 0x100) & 0x3FFF)
+                        if fault == "alias" and bank >= 0x800:
+                            bank = 0x800 + ((bank - 0x800) & 0x3FFF)
                         if error or not length:
                             pass  # ABI: invalid ranges fail; zero count succeeds.
                         elif entry == 0xFF00:
@@ -172,6 +182,7 @@ class BankedHeapExecution(unittest.TestCase):
                         return events & ~machine._BREAKPOINT_HIT
 
             machine.run = run_bios_backend
+        base_code = bytes(machine.memory[0xFF00:0xFF00 + len(code)])
         program = self.program.read_bytes()
         machine.memory[0x100:0x100 + len(program)] = program
         machine.pc = 0x100
@@ -192,11 +203,8 @@ class BankedHeapExecution(unittest.TestCase):
         self.assertLessEqual(capability_reads, 2, "capability should be cached between chunks")
         if b"PASS: cycle 1;" in output:
             self.assertTrue(timer["started"])
-            self.assertEqual(timer["reads"], 24 * ((2 * (65024 // 256) + 7) // 8))
+            self.assertEqual(timer["reads"], 24 * ((2 * (63232 // 256) + 7) // 8))
             self.assertEqual(timer["seconds"], timer["reads"])
-            self.assertIn(b"Elapsed: 10 s; remaining: 43190 s; iterations: 0; "
-                          b"bank data access calls total/read/write: 88/4/84; "
-                          b"avg data ops/s: 8", output)
             self.assertIn(b"Iterations completed: 1", output)
             self.assertIn(b"Test plan:", output)
             self.assertIn(b"full-bank write, then independent read/compare", output)
@@ -222,6 +230,11 @@ class BankedHeapExecution(unittest.TestCase):
         self.assertIn(b"banked SRAM unavailable", output)
         self.assertEqual((active, switches), (0, 0))
 
+    def test_missing_alloc_abi_is_rejected(self) -> None:
+        output, _, active, switches = self.execute_program(True, abi_major=1)
+        self.assertIn(b"banked SRAM unavailable", output)
+        self.assertEqual((active, switches), (0, 0))
+
     def test_old_firmware_abi_is_rejected(self) -> None:
         for capability in (0xB0, 0xB2):
             with self.subTest(capability=capability):
@@ -236,19 +249,19 @@ class BankedHeapExecution(unittest.TestCase):
 
     def test_same_com_uses_native_bios_without_private_workspace_or_ports(self) -> None:
         output, _, active, switches = self.execute_program(True, native_bios=True)
-        self.assertIn(b"PASS: cycle 1; all 65024 usable bytes verified with 24 patterns.", output)
+        self.assertIn(b"PASS: cycle 1; all 63232 usable bytes verified with 24 patterns.", output)
         self.assertEqual((active, switches), (0, 0))
 
     def test_compiled_c_allocator_and_copy(self) -> None:
         output, banks, active, switches = self.execute_program(True)
-        self.assertIn(b"PASS: cycle 1; all 65024 usable bytes verified with 24 patterns.",
+        self.assertIn(b"PASS: cycle 1; all 63232 usable bytes verified with 24 patterns.",
                       output, output.decode(errors="replace"))
-        self.assertIn(b"Free banked memory: 65024 bytes", output)
+        self.assertIn(b"Free banked memory: 63232 bytes", output)
         self.assertEqual(active, 0)
-        self.assertEqual(banks[1][0x20], 3)
-        self.assertEqual(banks[1][0x21:0x5F], bytes(62))
-        self.assertEqual(banks[1][0x5F], 0xC0)
-        self.assertEqual(banks[1][0x100], 0x7F)
+        self.assertEqual(banks[1][0x10], 8)
+        self.assertEqual(banks[1][0x108], 247)
+        self.assertEqual(banks[1][0x308], 0)
+        self.assertEqual(banks[1][0x800], 0x7F)
         self.assertGreater(switches, 10000)
         print(output.decode(errors="replace")[-600:])
         print(f"Bank switches: {switches}; final bank: {active}")

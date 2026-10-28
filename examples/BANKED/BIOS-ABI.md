@@ -1,79 +1,110 @@
-# Banked-memory BIOS extension ABI 1
+# Banked-memory BIOS extension ABI 2.0
 
-The BIOS exposes three permanent entry points in its reserved top page.
-They are separate from CP/M 2.2's unchanged 17-entry BIOS jump table. The
-addresses and calling convention form the portable interface; callers must
-not access the implementation's workspace or hardware bank-select port.
+Call all entries from bank 0. Check `BMX2` at `FF09h`, major 2 at `FF0Dh`,
+minor 0 at `FF0Eh`, and granularity 16 at `FF0Fh` before calling INFO.
+Require INFO success before READ, WRITE or HEAP. This greenfield extent
+layout requires matching firmware, boot package, drive A system records and
+rebuilt COM files; it does not support the earlier two-bit-map layout.
 
-| Address | Entry | Purpose |
+| Address | Entry | Registers/result |
 | --- | --- | --- |
-| `FF00h` | READ | Copy from bank 1 into a base-bank buffer |
-| `FF03h` | WRITE | Copy from a base-bank buffer into bank 1 |
-| `FF06h` | INFO | Discover version and usable heap geometry; check availability |
+| `FF00h` | READ | HL=base buffer, DE=bank offset, BC=byte count |
+| `FF03h` | WRITE | HL=base buffer, DE=bank offset, BC=byte count |
+| `FF06h` | INFO | Success: A=0, carry clear, HL=`0200h`, DE=`0800h`, BC=`F700h` |
+| `FF10h` | HEAP | E=operation, HL=argument/result; see below |
 
-At `FF09h` the descriptor is four ASCII bytes `BMX1`, followed by ABI major
-at `FF0Dh` (`1`), minor at `FF0Eh` (`0`), and transfer granularity at `FF0Fh`
-(`16`). Check the signature and supported major before calling INFO, so an
-application never executes unknown bytes on a BIOS without this extension.
-Minor revisions preserve the existing calls; incompatible changes require a
-different major version. Never replace the existing slots with other calls.
-
-## INFO
-
-Call `FF06h` while bank 0 is selected. No input registers are required.
-
-| Result | Registers |
-| --- | --- |
-| Available | Carry clear, A=0, HL=`0100h` (version 1.0), DE=`0100h` (heap start), BC=`FE00h` (65,024 heap bytes) |
-| Unavailable | Carry set, A=1, HL=0; BC/DE unspecified |
-
-INFO must succeed before using READ or WRITE. Its result may be cached for
-the lifetime of the running application. Data calls trust that capability
-check and avoid another hardware status I/O on every transfer.
+INFO failure returns A=1, carry set, HL=0. Success reports version 2.0,
+heap start `0800h`, and capacity 63,232 bytes (247 blocks of 256 bytes).
 
 ## READ and WRITE
 
-Both calls take **HL=base buffer, DE=bank-1 byte offset, BC=byte count**.
-For READ, HL is the destination; for WRITE, HL is the source. Pointers are
-ordinary starting addresses, not end addresses.
+Positive lengths must be multiples of 16; addresses need not align. The base
+buffer starts at or above `0100h`, and both ranges end at or below `FF00h`
+without wrapping. Raw bank offsets below `0800h` are accessible for BIOS and
+benchmark tooling, but belong to the allocator and are not application data.
+Zero length succeeds without touching memory or switching banks.
 
-- A positive count must be a multiple of **16 bytes**. Addresses need not be
-  aligned. Both address ranges must end at or below `FF00h`, without 16-bit
-  overflow, and the base buffer must start at or above `0100h`.
-- A zero count succeeds without switching banks or accessing either buffer.
-- Success returns **A=0, carry clear**. Invalid length or bounds return
-  **A=2, carry set**, without switching banks or writing user buffers.
-- IX, IY, SP and maskable interrupt enable are preserved. Main and alternate
-  AF/BC/DE/HL are scratch; other flags are unspecified. Calls start and finish
-  in bank 0.
+Success returns A=0/carry clear; invalid arguments return A=2/carry set without
+switching banks. IX, IY, SP and interrupt enable are preserved. Main and
+alternate AF/BC/DE/HL are scratch. Calls finish in bank 0. The higher-level
+`bread`/`bwrite` support arbitrary lengths with a partial-burst buffer.
 
-Raw bank offsets `0000h–00FFh` are accessible for the allocator's metadata;
-they are not part of the advertised application heap. The top page
-`FF00h–FFFFh` is reserved in both banks. Applications must own their buffers
-and avoid overlapping their active stack or code.
+## HEAP
 
-The extension is not reentrant. Do not call it from interrupt handlers or
-use raw bank selects while a call is active. NMI during the SBC backend's
-register transfers is unsupported. The documented SBC keeps INT#/NMI# pulled
-inactive; the routine masks/restores maskable interrupts during copying.
+| E | Operation | HL input | HL result |
+| --- | --- | --- | --- |
+| 0 | ALLOC | Requested bytes | Aligned handle, or 0 |
+| 1 | FREE | Handle | 1 success, 0 invalid handle |
+| 2 | SIZE | Handle | Rounded allocation capacity, or 0 |
+| 3 | AVAILABLE | Ignored | Total free bytes |
+| 4 | RESET | Ignored | 1; invalidates every allocation |
+
+All operations return A=0/carry clear; HL reports the outcome. Unknown
+operations return HL=0. Null FREE succeeds. SIZE and FREE reject unaligned,
+interior, reserved and freed handles. Handles may be reused after freeing.
+ALLOC rounds up to 256 bytes, rejects zero/oversized requests, and chooses
+the lowest-address free extent that fits. Payload contents are not cleared.
+Free space can be fragmented, so AVAILABLE does not guarantee one allocation
+of that size will succeed. Allocation ownership belongs to the application.
+
+The resident gateway masks interrupts and selects bank 1. The extent code
+saves the caller SP in bank-1 workspace, uses a private bank-1 stack for
+assembly helper calls, and restores SP before jumping through the mirrored
+gateway back to bank 0. IX, IY, SP and interrupt enable are preserved.
+No BDOS, interrupt handler or base-bank C stack access runs in bank 1.
+Calls are non-reentrant; interrupt-handler use and NMI during banking are
+unsupported. The board holds INT#/NMI# inactive.
+
+## Extent layout
+
+| Bank-1 addresses | Purpose |
+| --- | --- |
+| `0000h–0007h` | `BKM3BEX1`: layout and installed-allocator signatures |
+| `0010h` | Address-ordered free-list head (block index; 0=end) |
+| `0012h–0013h` | Saved bank-0 SP |
+| `0014h–0015h` | Cached free-byte count |
+| `0016h–001Fh` | Assembly scratch |
+| `0100h–01FFh` | Extent lengths in blocks, indexed by start block |
+| `0200h–02FFh` | Previous physical extent start |
+| `0300h–03FFh` | Next free extent; FF marks an allocated extent |
+| `0400h–04FFh` | Previous free extent |
+| `0500h–07BFh` | Reserved allocator code area |
+| `07C0h–07FFh` | Private assembly stack |
+| `0800h–FEFFh` | Application heap: 63,232 bytes |
+| `FF00h–FFFFh` | Mirrored resident transfer/gateway page |
+
+Only extent starts have nonzero lengths. Interior table slots have length
+zero; their other fields are unspecified. Physical predecessor links permit
+immediate left-neighbor checks. The next physical extent is start+length.
+Adjacent free extents are merged during FREE, so none remain adjacent.
+The doubly linked free list is address ordered: allocation visits only free
+extents, splits on demand, and unlinks in constant time. FREE unlinks free
+neighbors directly, merges once, and inserts the result in address order.
+Insertion may walk the free list; FREE is not worst-case constant time.
+SIZE and AVAILABLE use direct table/counter reads.
+
+Firmware initializes and verifies the entire reserved region and mirrors the
+boot package's exact resident page. Initially the free head is block 8, its
+length is 247, and free bytes are F700h. RESET restores this state without
+overwriting code or the active stack. Warm boot preserves the banked heap;
+firmware reload initializes it. BANKMEM validates the eight-byte signature
+before making heap calls, preventing execution of a missing allocator image.
 
 ## C interface
 
-`examples/BANKED/BIOSBANK.H` defines the public ABI and `BIOSBANK.C` adapts
-dcc's stack arguments to the register convention. `bmstat()` returns the
-version word or zero; `bmread()` and `bmwrit()` return 1 for success, 0 for
-failure. `BANKMEM.C` calls these functions and knows no private workspace
-addresses or bank-select ports.
+`BIOSBANK.C` adapts dcc stack arguments to the register ABI. `bmaloc`,
+`bmfree`, `bmsize`, `bmavl` and `bmrset` call HEAP; `bmstat` calls INFO;
+`bmread`/`bmwrit` call READ/WRITE. `BANKMEM.C` owns no allocator map or
+allocation-size cache in bank 0. It checks initialization and transfer bounds.
+The dcc runtime and CP/M DMA buffer are unchanged.
 
-The higher-level `bread` and `bwrite` accept arbitrary byte counts. They batch
-full bursts into one BIOS call and use a small read/modify/write buffer for
-partial transfers. `bmalloc`, `bfree`, allocation metadata and ownership remain
-in the C library. The dcc runtime requires no changes.
+Boot logging reports separate `bank 1 SRAM load` and `bank 1 SRAM verify`
+passes from 0/2304 through 2304/2304, after the base-bank load and verification. The count
+covers the 2048-byte reserved runtime plus the 256-byte mirrored resident
+page; application payload RAM is not initialized. A successful readback prints
+`extent allocator and resident page ready`. Probe/readback failures are
+reported explicitly and leave bank 1 disabled.
 
-To reuse this allocator on another platform, initialize bank 1 block zero with
-`BKM2` at offsets 0–3 and a 64-byte two-bit map at offset `20h`. Each map entry
-describes one 256-byte block: 0=free, 1=allocation start, 2=continuation,
-3=reserved. Initial map bytes are `03h`, then 62 zero bytes, then `C0h`,
-reserving metadata block 0 and resident page 255. Other metadata bytes start
-at zero. The BIOS data API does not interpret the map; this is the companion
-C allocator's storage format.
+Bank 0 is fully loaded and verified before bank-1 initialization. The A16
+probe saves, restores and checks bank 0's reset-vector byte, including when
+banks alias. The boot loader checks that byte again before releasing reset.

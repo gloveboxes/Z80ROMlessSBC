@@ -17,6 +17,7 @@ static bool clock_stopped;
 static bool bus_owned;
 static bool trap_enabled;
 static bool loader_ok;
+static bool corrupt_probe_restore;
 static bool core_init_ok;
 static bool release_ok;
 static int bad_read;
@@ -77,6 +78,10 @@ bool z80_cpu_prepare_loader(void) {
 }
 void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
   assert(!cpu_held);
+  assert(boot_status.phase == Z80_BOOT_VERIFY && boot_status.completed == 65536);
+  assert(memcmp(sram, test_flash + FLASH_BOOT_PAYLOAD_OFFSET, 65536) == 0);
+  if (corrupt_probe_restore)
+    sram[0] ^= 1;
   assert(resident_page == test_flash + FLASH_BOOT_PAYLOAD_OFFSET + BANKED_CODE_ADDRESS);
 }
 void z80_io_trap_poll(void) {}
@@ -193,6 +198,7 @@ static void reset_fixture(void) {
   loader_ok = core_init_ok = release_ok = true;
   expect_reboot = cpu_held = clock_stopped = bus_owned = false;
   trap_enabled = true;
+  corrupt_probe_restore = false;
   bad_read = failed_read = failed_write = cancel_phase = -1;
   corrupt_program = target_erases = 0;
   now = 0;
@@ -225,6 +231,10 @@ static void test_boot(void) {
   assert(last_phase == Z80_BOOT_VERIFIED && last_completed == 65536);
   assert(cpu_held && clock_stopped);
   assert(memcmp(sram, test_flash + FLASH_BOOT_PAYLOAD_OFFSET, 65536) == 0);
+  reset_fixture();
+  corrupt_probe_restore = true;
+  assert_boot_error(Z80_BOOT_ERROR_MISMATCH);
+  assert(boot_status.address == 0);
   const uint32_t sizes[] = {0, 1, 65535, 65537};
   for (unsigned index = 0; index < sizeof(sizes) / sizeof(sizes[0]); ++index) {
     reset_fixture();

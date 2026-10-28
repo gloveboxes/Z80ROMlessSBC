@@ -1233,6 +1233,9 @@ static void test_autoboot_progress(void) {
   status.completed = 65536;
   assert(observe_boot(&status, NULL));
   assert(strstr(output, "[boot] verified; RESET held LOW: 65536/65536\n"));
+  assert(!strstr(output, "bank 1 SRAM load complete:"));
+  assert(!strstr(output, "bank 1 SRAM verify complete:"));
+  assert(!strstr(output, "bank 1 ready:"));
 }
 
 static void test_startup_without_usb(void) {

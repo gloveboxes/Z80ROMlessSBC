@@ -6,6 +6,7 @@
 #include "pico/stdlib.h"
 #include "z80sbc/bus.h"
 #include "z80sbc/banked_transfer.h"
+#include "z80sbc/banked_allocator.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
@@ -29,46 +30,103 @@ bool z80_sram_prepare_loader(void) {
   return true;
 }
 
+enum { BANK_RUNTIME_BYTES = Z80_SRAM_BANK_RUNTIME_BYTES,
+       BANK_LOAD_BYTES = Z80_SRAM_BANK_INIT_BYTES };
+
+/* Offsets count initialized bytes, skipping the application heap. */
+static uint16_t bank_load_address(unsigned offset) {
+  return offset < BANK_RUNTIME_BYTES ? (uint16_t)offset :
+      (uint16_t)(BANKED_CODE_ADDRESS + offset - BANK_RUNTIME_BYTES);
+}
+
+static uint8_t bank_load_value(unsigned offset, const uint8_t *resident_page) {
+  if (offset >= BANK_RUNTIME_BYTES)
+    return resident_page[offset - BANK_RUNTIME_BYTES];
+  if (offset < 8)
+    return (const uint8_t[]){'B', 'K', 'M', '3', 'B', 'E', 'X', '1'}[offset];
+  if (offset == 0x10)
+    return 8; /* Initially one free extent, starting at block 8. */
+  if (offset == 0x15 || offset == 0x108)
+    return 247; /* Cached F700h free bytes and 247-block extent. */
+  if (offset >= BANKED_ALLOCATOR_ADDRESS &&
+      offset - BANKED_ALLOCATOR_ADDRESS < sizeof(banked_allocator_code))
+    return banked_allocator_code[offset - BANKED_ALLOCATOR_ADDRESS];
+  return 0;
+}
+
+static void bank_load_progress(const char *phase, unsigned completed) {
+  printf("[boot] bank 1 SRAM %s: %u/%u\n", phase, completed,
+         (unsigned)BANK_LOAD_BYTES);
+}
+
 void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
   z80_memory_bank_set_available(false);
   z80_memory_bank_select(0);
-  if (resident_page == NULL)
+  if (resident_page == NULL) {
+    printf("[boot] bank 1 SRAM skipped: no resident page\n");
     return;
-  /* The base image has not been loaded yet, so address zero is scratch. */
+  }
+  /* Bank 0 is already loaded and verified. Preserve its reset-vector byte
+   * across the A16 probe, including the aliased-bank failure path. */
+  uint8_t original = 0, actual = 0;
+  if (!z80_sram_read_byte(0, &original)) {
+    printf("[boot] bank 1 SRAM unavailable: cannot save bank 0 probe byte\n");
+    return;
+  }
   z80_sram_write_byte(0, 0x5A);
   z80_memory_bank_select(1);
   z80_sram_write_byte(0, 0xA5);
   z80_memory_bank_select(0);
-  uint8_t actual = 0;
-  if (!z80_sram_read_byte(0, &actual) || actual != 0x5A)
-    return; /* Unmodified A16 strap / aliased SRAM: retain 64 KiB operation. */
+  bool isolated = z80_sram_read_byte(0, &actual) && actual == 0x5A;
+  if (!z80_sram_write_byte(0, original) ||
+      !z80_sram_read_byte(0, &actual) || actual != original) {
+    printf("[boot] bank 1 SRAM unavailable: bank 0 probe-byte restore failed\n");
+    return;
+  }
+  if (!isolated) {
+    printf("[boot] bank 1 SRAM unavailable: A16 isolation probe failed\n");
+    return; /* Aliased SRAM: retain 64 KiB operation. */
+  }
   z80_memory_bank_select(1);
-  bool valid = true;
-  for (unsigned address = 0; address < 256; ++address) {
-    uint8_t expected = 0;
-    if (address < 4)
-      expected = (const uint8_t[]){'B', 'K', 'M', '2'}[address];
-    else if (address == 0x20)
-      expected = 3; /* 2-bit map: reserve block zero for metadata and code. */
-    else if (address == 0x5F)
-      expected = 0xC0; /* Reserve block 255 for the resident transfer page. */
-    if (!z80_sram_write_byte((uint16_t)address, expected) ||
-        !z80_sram_read_byte((uint16_t)address, &actual) || actual != expected) {
-      valid = false;
-      break;
+  bool valid = false;
+  /* Write the complete runtime and mirrored resident page before readback,
+   * just as the base-bank loader separates its load and verify passes. */
+  for (unsigned offset = 0; offset < BANK_LOAD_BYTES; ++offset) {
+    if (offset % 1024u == 0)
+      bank_load_progress("load", offset);
+    uint16_t address = bank_load_address(offset);
+    uint8_t expected = bank_load_value(offset, resident_page);
+    if (!z80_sram_write_byte(address, expected)) {
+      printf("[boot] bank 1 SRAM load FAIL: address=%04x expected=%02x\n",
+             address, expected);
+      goto finish_bank;
     }
   }
-  for (unsigned offset = 0; valid && offset < 256; ++offset) {
-    /* Both banks execute this page across OUT (7). Use the boot package's
-     * exact bytes, rather than a separately compiled firmware copy. */
-    uint8_t expected = resident_page[offset];
-    uint16_t address = (uint16_t)(BANKED_CODE_ADDRESS + offset);
-    if (!z80_sram_write_byte(address, expected) ||
-        !z80_sram_read_byte(address, &actual) || actual != expected)
-      valid = false;
+  bank_load_progress("load", BANK_LOAD_BYTES);
+  for (unsigned offset = 0; offset < BANK_LOAD_BYTES; ++offset) {
+    if (offset % 1024u == 0)
+      bank_load_progress("verify", offset);
+    uint16_t address = bank_load_address(offset);
+    uint8_t expected = bank_load_value(offset, resident_page);
+    if (!z80_sram_read_byte(address, &actual)) {
+      printf("[boot] bank 1 SRAM verify FAIL: address=%04x read failed\n", address);
+      goto finish_bank;
+    }
+    if (actual != expected) {
+      printf("[boot] bank 1 SRAM verify FAIL: address=%04x expected=%02x actual=%02x\n",
+             address, expected, actual);
+      goto finish_bank;
+    }
   }
+  bank_load_progress("verify", BANK_LOAD_BYTES);
+  valid = true;
+finish_bank:
   z80_memory_bank_select(0);
   z80_memory_bank_set_available(valid);
+  if (valid)
+    printf("[boot] bank 1 SRAM verified: extent allocator and resident page ready\n");
+  else
+    printf("[boot] bank 1 SRAM disabled: load/verify failed\n");
 }
 
 static void pulse_clock(unsigned cycles) {

@@ -297,9 +297,10 @@ static bool observe_boot(const z80_boot_status_t *status, void *context) {
   };
   if (status->completed % 4096u == 0 &&
       (!Z80_STAGE09_AUTOBOOT ||
-       (__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_CONNECTED)))
+       (__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_CONNECTED))) {
     printf("[boot] %s: %lu/%lu\n", phases[status->phase],
            (unsigned long)status->completed, (unsigned long)status->total);
+  }
   if (Z80_STAGE09_AUTOBOOT)
     return true;
   return !__atomic_load_n(&load_cancelled, __ATOMIC_ACQUIRE) &&

@@ -148,10 +148,34 @@ int main(void) {
   assert(z80_usb_console_log_drops() == 1 && log_count == LOG_BYTES);
   core = 1;
   room = 8192;
+  write_limit = 0;
+  z80_usb_console_service();
+  assert(log_count == LOG_BYTES && z80_usb_console_log_drops() == 1);
+  write_limit = UINT32_MAX;
   while (log_count)
     z80_usb_console_service();
   assert(strstr(output, "FAIL: USB log queue overflow; log_drops=1"));
   assert(reported_drops == 1);
+  /* A short USB write must not lose the prefix/suffix of the last boot line,
+   * nor allow CP/M output to overtake a partially delivered diagnostic. */
+  const char *ready = "[boot] bank 1 ready: extent allocator and resident page\n";
+  unsigned ready_start = written;
+  room = 4096;
+  registered->out_chars(ready, (int)strlen(ready));
+  write_limit = 7;
+  z80_usb_console_service();
+  assert(written == ready_start + 7 && log_count == strlen(ready) + 1 - 7);
+  assert(!z80_usb_console_write((const uint8_t *)"CP/M", 4));
+  write_limit = 0;
+  unsigned stalled = written;
+  z80_usb_console_service();
+  assert(written == stalled && log_count == strlen(ready) + 1 - 7);
+  write_limit = 7;
+  while (log_count)
+    z80_usb_console_service();
+  assert(!strcmp(output + ready_start,
+                 "[boot] bank 1 ready: extent allocator and resident page\r\n"));
+  write_limit = UINT32_MAX;
   char key;
   assert(registered->in_chars(&key, 1) == 1 && key == 'K');
   assert(z80_usb_console_write((const uint8_t *)"Z", 1) == 1);

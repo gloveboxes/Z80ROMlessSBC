@@ -10,6 +10,7 @@ void z80_usb_console_prepare(void);
 /* USB, its alarm pool and all endpoint operations belong to core 1. */
 bool z80_usb_console_init(void);
 void z80_usb_console_service(void);
+/* Returns zero while diagnostics await delivery, preserving log/terminal order. */
 size_t z80_usb_console_write(const uint8_t *data, size_t length);
 uint32_t z80_usb_console_log_drops(void);
 

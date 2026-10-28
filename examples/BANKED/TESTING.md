@@ -1,3 +1,25 @@
+# Current extent allocator (ABI 2.0)
+
+The current heap is 0800h–FEFFh (63,232 bytes). It uses separate extent-length,
+physical-predecessor and doubly linked free-list tables. All heap operations
+execute in bank 1 with a private assembly stack. Earlier sections below record
+historical two-bit-map implementations and their results.
+
+The current resident Z80 tests cover allocation rounding, exhaustion, invalid
+and interior handles, double free, reset, adjacent-extent coalescing, maximum
+fragmentation, and 5,000 deterministic randomized operations against an
+independent interval model. They check table/list invariants, cached free
+bytes, payload/code preservation, caller stack, IX/IY, bank and interrupt
+restoration. An occupied-prefix case has the same Z80 instruction-cycle cost
+for 256-byte and 32 KiB allocation/free requests; this is emulator evidence,
+not a measured physical-board timing result.
+
+ALLOCPRF measures extent allocation/free pairs with empty, occupied-prefix
+and fragmented heaps. It contains no C/map allocator reference. Rebuilt firmware, boot/system images and COM
+files must be deployed together before collecting new hardware results.
+
+---
+
 # Resident banked memory verification
 
 The default dcc BANKED.COM is built with the unmodified local dcc runtime and

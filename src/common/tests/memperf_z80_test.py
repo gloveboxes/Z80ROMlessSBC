@@ -21,9 +21,9 @@ class MemPerfExecution(unittest.TestCase):
             kwargs.pop("available", True), native_bios=native,
             stopwatch_ms=values, **kwargs)
         self.assertEqual(active, 0)
-        self.assertEqual(banks[1][0x20], 3)
-        self.assertEqual(banks[1][0x21:0x5F], bytes(62))
-        self.assertEqual(banks[1][0x5F], 0xC0)
+        self.assertEqual(banks[1][0x10], 8)
+        self.assertEqual(banks[1][0x108], 247)
+        self.assertEqual(banks[1][0x308], 0)
         return output
 
     def test_bulk_and_chunked_transfers_and_rates(self) -> None:
@@ -38,7 +38,7 @@ class MemPerfExecution(unittest.TestCase):
                 self.assertIn(b"Write     | 36 ms; 888.8 KiB/s | 512 ms; 62.5 KiB/s", output)
                 self.assertIn(b"Read      | 37 ms; 864.8 KiB/s | 513 ms; 62.3 KiB/s", output)
                 self.assertEqual(output.count(b"PASS: banked payload and both local RAM"), 2)
-                self.assertIn(b"PASS: MEMPERF complete; 65024 bytes free.", output)
+                self.assertIn(b"PASS: MEMPERF complete; 63232 bytes free.", output)
                 self.assertNotIn(b"FAIL:", output)
                 if not native:
                     print(output.decode(errors="replace"))
@@ -65,6 +65,11 @@ class MemPerfExecution(unittest.TestCase):
         self.assertIn(b"FAIL: local RAM write stopwatch read", output)
         self.assertNotIn(b"PASS:", output)
 
+    def test_new_bios_with_missing_firmware_allocator_exits_cleanly(self) -> None:
+        output = self.execute(native=False, allocator_installed=False)
+        self.assertIn(b"Bank-1 allocator missing; flash matching Phase 10 firmware", output)
+        self.assertNotIn(b"PASS:", output)
+
     def test_missing_bank_exits_cleanly(self) -> None:
         output = self.execute(native=False, available=False)
         self.assertIn(b"FAIL: banked SRAM unavailable", output)
@@ -74,7 +79,7 @@ class MemPerfExecution(unittest.TestCase):
         output = self.execute(signature=b"OLD!")
         self.assertIn(b"BIOS bank extension descriptor missing or incompatible", output)
         output = self.execute(heap_signature=bytes(4))
-        self.assertIn(b"Heap signature: 00 00 00 00; expected 42 4b 4d 32", output)
+        self.assertIn(b"Heap signature: 00 00 00 00; expected 42 4b 4d 33", output)
         self.assertNotIn(b"PASS:", output)
 
 

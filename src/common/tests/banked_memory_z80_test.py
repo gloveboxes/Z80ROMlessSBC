@@ -23,9 +23,14 @@ def transfer_code() -> bytes:
 
 def initialize_bank() -> bytearray:
     bank = bytearray(65536)
-    bank[:4] = b"BKM2"
-    bank[0x20] = 3
-    bank[0x5F] = 0xC0
+    bank[:8] = b"BKM3BEX1"
+    header = (Path(__file__).resolve().parents[1] /
+              "include/z80sbc/banked_allocator.h").read_text()
+    allocator = bytes(int(value, 16) for value in
+                      re.findall(r"0x([0-9A-F]{2})", header.split("= {", 1)[1]))
+    bank[0x500:0x500 + len(allocator)] = allocator
+    bank[0x10] = 8
+    bank[0x15] = bank[0x108] = 247
     code = transfer_code()
     bank[0xFF00:0xFF00 + len(code)] = code
     return bank
@@ -55,10 +60,10 @@ class BankedMemoryExecution(unittest.TestCase):
 
     def test_bios_info_and_descriptor(self) -> None:
         bank = initialize_bank()
-        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX1\x01\x00\x10")
+        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX2\x02\x00\x10")
         self.assertEqual(bytes(bank[0xFF00:0xFF09:3]), b"\xC3" * 3)
         machine = self.call_bios(0xFF06)
-        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x100, 0x100, 65024))
+        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x200, 0x800, 63232))
         self.assertFalse(machine.f & 1)
         for capability in (0, 0xB0, 0xB2):
             with self.subTest(capability=capability):

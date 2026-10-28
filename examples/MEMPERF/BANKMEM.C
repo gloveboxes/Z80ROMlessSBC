@@ -1,7 +1,6 @@
-/* dcc / CP/M Z80 banked heap. All persistent allocation metadata is in bank 1.
- * First 256 bytes: header and 64-byte two-bit map; resident code at FF00h.
- * Blocks are 256 bytes; 254 blocks (65,024 bytes) are available to applications.
- * No BDOS, interrupt handler, or C stack access runs with bank 1 selected.
+/* dcc banked heap, ABI 2.0: extent metadata/code/private stack in 0000..07FF.
+ * All heap operations execute in bank 1; no base C stack or BDOS runs there.
+ * Application payloads occupy 0800..FEFF (63,232 bytes), in 256-byte units.
  */
 #include <string.h>
 #include "BANKMEM.H"
@@ -10,9 +9,6 @@
 /* Capability is stable for this program's lifetime; avoid a trapped IN for
  * every chunk. Heap metadata itself remains entirely in bank 1. */
 static unsigned char bank_ready;
-
-/* Private stack-ABI helper below; the live allocation map stays in bank 1. */
-unsigned int bmcap(const unsigned char *map, bhandle handle);
 
 /* Calls only public BIOS services; workspace layout belongs to the BIOS. */
 static int bursts(unsigned int bank, void *base, unsigned int bytes, int writing)
@@ -69,27 +65,16 @@ static int copy_bank(unsigned int address, void *buffer, unsigned int bytes,
     return 1;
 }
 
-static unsigned int tag(const unsigned char *map, unsigned int block)
-{
-    return (map[block >> 2] >> ((block & 3) * 2)) & 3;
-}
-
-static void set_tag(unsigned char *map, unsigned int block, unsigned int value)
-{
-    unsigned int shift = (block & 3) * 2;
-    map[block >> 2] = (map[block >> 2] & ~(3 << shift)) | (value << shift);
-}
-
 int binit(void)
 {
-    unsigned char header[4];
+    unsigned char header[8];
     bank_ready = 0;
-    if (memcmp((void *)BMBIOS_SIGNATURE, "BMX1", 4) ||
+    if (memcmp((void *)BMBIOS_SIGNATURE, "BMX2", 4) ||
         *(unsigned char *)BMBIOS_VERSION != BMBIOS_ABI_MAJOR ||
         (bmstat() >> 8) != BMBIOS_ABI_MAJOR)
         return 0;
     bank_ready = 1;
-    if (!copy_bank(0, header, sizeof(header), 0) || memcmp(header, "BKM2", 4))
+    if (!copy_bank(0, header, sizeof(header), 0) || memcmp(header, "BKM3BEX1", 8))
     {
         bank_ready = 0;
         return 0;
@@ -99,82 +84,39 @@ int binit(void)
 
 int breset(void)
 {
-    unsigned char map[64];
     if (!binit())
         return 0;
-    memset(map, 0, sizeof(map));
-    map[0] = 3;
-    map[63] = 0xC0;
-    return copy_bank(0x20, map, sizeof(map), 1);
+    return bmrset();
 }
 
 bhandle bmalloc(unsigned int bytes)
 {
-    unsigned char map[64];
-    unsigned int needed, run, block, first, i;
-    if (!bytes || bytes > BMBIOS_HEAP_BYTES || !copy_bank(0x20, map, sizeof(map), 0))
+    if (!bytes || bytes > BMBIOS_HEAP_BYTES || (!bank_ready && !binit()))
         return 0;
-    needed = (bytes - 1) / 256 + 1;
-    run = 0;
-    first = 0;
-    for (block = 1; block < 256; ++block)
-    {
-        if (tag(map, block))
-            run = 0;
-        else
-        {
-            if (!run)
-                first = block;
-            if (++run == needed)
-            {
-                set_tag(map, first, 1);
-                for (i = first + 1; i <= block; ++i)
-                    set_tag(map, i, 2);
-                if (!copy_bank(0x20, map, sizeof(map), 1))
-                    return 0;
-                return first * 256;
-            }
-        }
-    }
-    return 0;
+    return bmaloc(bytes);
 }
 
 unsigned int bsize(bhandle handle)
 {
-    unsigned char map[64];
-    if (!handle || (handle & 255) || (!bank_ready && !binit()) ||
-        !bmread(0x20, map, sizeof(map)))
+    if (!handle || (handle & 255) || (!bank_ready && !binit()))
         return 0;
-    return bmcap(map, handle);
+    return bmsize(handle);
 }
 
 unsigned int bavail(void)
 {
-    unsigned char map[64];
-    unsigned int block, count = 0;
-    if (!copy_bank(0x20, map, sizeof(map), 0))
+    if (!bank_ready && !binit())
         return 0;
-    for (block = 1; block < 256; ++block)
-        if (!tag(map, block))
-            ++count;
-    return count * 256;
+    return bmavl();
 }
 
 int bfree(bhandle handle)
 {
-    unsigned char map[64];
-    unsigned int block, count, i;
     if (!handle)
         return 1;
-    if (!copy_bank(0x20, map, sizeof(map), 0))
+    if (!bank_ready && !binit())
         return 0;
-    count = bmcap(map, handle) / 256;
-    if (!count)
-        return 0;
-    block = handle >> 8;
-    for (i = 0; i < count; ++i)
-        set_tag(map, block + i, 0);
-    return copy_bank(0x20, map, sizeof(map), 1);
+    return bmfree(handle);
 }
 
 static int transfer(bhandle handle, unsigned int offset, void *buffer,
@@ -203,96 +145,3 @@ int bwrite(bhandle handle, unsigned int offset, const void *buffer, unsigned int
 {
     return transfer(handle, offset, (void *)buffer, bytes, 1);
 }
-
-#asm
-; Decode a live 64-byte two-bit map. No bank switch, cache or workspace.
-; D=end block (zero represents 256), C=tag position, E=rotated map byte.
-; Aligned AAh bytes cover four continuation blocks at once.
-; IX/IY and the stack ABI survive; HL returns capacity or zero.
-;@dcc.lto begin _bmcap
-	public _bmcap
-_bmcap:
-	push ix
-	ld ix,0
-	add ix,sp
-	ld a,(ix+6)
-	or a
-	jr nz,BMC_BAD
-	ld a,(ix+7)
-	or a
-	jr z,BMC_BAD
-	and 3
-	ld b,a
-	ld c,a
-	ld a,(ix+7)
-	srl a
-	srl a
-	ld e,a
-	ld d,0
-	ld l,(ix+4)
-	ld h,(ix+5)
-	add hl,de
-	ld a,(hl)
-	inc b
-	dec b
-	jr z,BMC_HEAD
-BMC_ROT:
-	rrca
-	rrca
-	djnz BMC_ROT
-BMC_HEAD:
-	ld e,a
-	and 3
-	cp 1
-	jr nz,BMC_BAD
-	ld d,(ix+7)
-	inc d
-	jr z,BMC_END
-	inc c
-	bit 2,c
-	jr nz,BMC_NEXT
-	ld a,e
-	rrca
-	rrca
-	jr BMC_TAG
-BMC_NEXT:
-	inc hl
-BMC_BYTE:
-	ld a,(hl)
-	cp 0aah
-	jr nz,BMC_MIX
-	ld a,d
-	add a,4
-	ld d,a
-	jr z,BMC_END
-	inc hl
-	jr BMC_BYTE
-BMC_MIX:
-	ld c,0
-BMC_TAG:
-	ld e,a
-	and 3
-	cp 2
-	jr nz,BMC_END
-	inc d
-	jr z,BMC_END
-	inc c
-	bit 2,c
-	jr nz,BMC_NEXT
-	ld a,e
-	rrca
-	rrca
-	jr BMC_TAG
-BMC_END:
-	ld a,d
-	sub (ix+7)
-	ld h,a
-	ld l,0
-	pop ix
-	ret
-BMC_BAD:
-	ld hl,0
-	pop ix
-	ret
-;@dcc.lto end _bmcap
-#endasm

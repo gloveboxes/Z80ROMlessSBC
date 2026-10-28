@@ -24,7 +24,7 @@ static void explain_bank_failure(void)
     unsigned char header[BMBIOS_BURST_BYTES];
     unsigned int version;
 
-    if (memcmp((void *)BMBIOS_SIGNATURE, "BMX1", 4) ||
+    if (memcmp((void *)BMBIOS_SIGNATURE, "BMX2", 4) ||
         *(unsigned char *)BMBIOS_VERSION != BMBIOS_ABI_MAJOR)
     {
         puts("BIOS bank extension descriptor missing or incompatible.");
@@ -42,8 +42,10 @@ static void explain_bank_failure(void)
         puts("BIOS INFO succeeded, but the banked heap-header read failed.");
         return;
     }
-    printf("Heap signature: %02x %02x %02x %02x; expected 42 4b 4d 32 (BKM2).\n",
+    printf("Heap signature: %02x %02x %02x %02x; expected 42 4b 4d 33 (BKM3).\n",
            header[0], header[1], header[2], header[3]);
+    if (memcmp(header + 4, "BEX1", 4))
+        puts("Bank-1 allocator missing; flash matching Phase 10 firmware, then restart.");
     puts("Check that both banks have the same resident BIOS page.");
 }
 

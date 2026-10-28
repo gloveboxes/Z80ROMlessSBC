@@ -22,8 +22,8 @@ BIOS extension. All CCP, BDOS, and BIOS workspace remains inside the resident
 regions above the TPA.
 
 The complete `bios.bin` is 1,024 bytes including padding and the bank extension.
-The standard 17-entry jump table is unchanged; [BIOS bank extension ABI 1](../../docs/docs/en/cpm-dcc/banked-bios.md)
-provides stable READ/WRITE/INFO calls for portable clients. The assembly is
+The standard 17-entry jump table is unchanged; [BIOS bank extension ABI 2](../../docs/docs/en/cpm-dcc/bios.md#implemented-banked-memory-bios-extension-abi-2)
+provides READ/WRITE/INFO/HEAP calls for portable clients. The assembly is
 included directly by `z80_bios.asm`, and generated supervisor bytes are checked
 against that BIOS page during packaging.
 

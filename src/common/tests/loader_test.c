@@ -1,6 +1,8 @@
+#include "z80sbc/banked_allocator.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "pico/stdlib.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/sram.h"
@@ -10,6 +12,9 @@ static unsigned selected_bank;
 static bool bank_wired = true;
 static bool bank_available;
 static bool corrupt_bank_read;
+static uint16_t corrupt_bank_address;
+static bool track_bank_load;
+static unsigned bank_load_writes, bank_verify_reads;
 #define memory banks[bank_wired ? selected_bank : 0]
 void z80_memory_bank_select(unsigned bank) { selected_bank = bank & 1u; }
 void z80_memory_bank_set_available(bool available) { bank_available = available; }
@@ -50,7 +55,13 @@ void z80_data_bus_prepare_input(void) {
 uint8_t z80_data_bus_sample(void) {
   assert(receiving && !driving && !read_disabled);
   assert(opcode == 0x7E && cycle == 6);
-  return memory[address] ^ (selected_bank && corrupt_bank_read ? 1 : 0);
+  if (track_bank_load && selected_bank) {
+    /* Probe writes one byte; all 2304 runtime bytes precede readback. */
+    assert(bank_load_writes == 2305);
+    ++bank_verify_reads;
+  }
+  return memory[address] ^ (selected_bank && corrupt_bank_read &&
+                            address == corrupt_bank_address ? 1 : 0);
 }
 void z80_reset_with_clock_cycles(unsigned count, uint32_t half_period) {
   assert(count >= 3 && half_period > 0);
@@ -87,6 +98,8 @@ void z80_clock_one_cycle(uint32_t half_period) {
     assert(!driving && read_disabled);
     memory[address] = immediate;
     ++writes;
+    if (track_bank_load && selected_bank)
+      ++bank_load_writes;
     cycle = 0;
   }
   if (opcode == 0x7E && cycle == 7) {
@@ -119,25 +132,68 @@ int main(void) {
   for (unsigned i = 0; i < sizeof(resident_page); ++i)
     resident_page[i] = (uint8_t)(i ^ 0xA5);
   resident_page[0] = 0xC3;
+  banks[0][0] = 0xC3; /* A loaded CP/M reset vector must survive the probe. */
+  uint8_t base_before[65536];
+  memcpy(base_before, banks[0], sizeof(base_before));
+  FILE *boot_log = tmpfile();
+  assert(boot_log != NULL);
+  fflush(stdout);
+  int saved_stdout = dup(STDOUT_FILENO);
+  assert(saved_stdout >= 0 && dup2(fileno(boot_log), STDOUT_FILENO) >= 0);
+  track_bank_load = true;
   z80_sram_prepare_banked_memory(resident_page);
+  track_bank_load = false;
+  assert(bank_load_writes == 2305 && bank_verify_reads == 2304);
+  fflush(stdout);
+  assert(dup2(saved_stdout, STDOUT_FILENO) >= 0);
+  close(saved_stdout);
+  rewind(boot_log);
+  char log[2048];
+  size_t length = fread(log, 1, sizeof(log) - 1, boot_log);
+  assert(!ferror(boot_log));
+  log[length] = 0;
+  fclose(boot_log);
+  assert(strstr(log, "[boot] bank 1 SRAM load: 0/2304\n"));
+  assert(strstr(log, "[boot] bank 1 SRAM load: 2048/2304\n"));
+  const char *loaded = strstr(log, "[boot] bank 1 SRAM load: 2304/2304\n");
+  const char *verifying = strstr(log, "[boot] bank 1 SRAM verify: 0/2304\n");
+  const char *verified = strstr(log, "[boot] bank 1 SRAM verify: 2304/2304\n");
+  assert(loaded && verifying && verified && loaded < verifying && verifying < verified);
+  assert(strstr(log, "extent allocator and resident page ready\n"));
   assert(bank_available && selected_bank == 0);
-  assert(banks[0][0] == 0x5A && memcmp(banks[1], "BKM2", 4) == 0);
-  assert(banks[1][0x20] == 3 && banks[1][0xFF00] == 0xC3 && banks[1][0x5F] == 0xC0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
+  assert(banks[0][0] == 0xC3 && memcmp(banks[1], "BKM3BEX1", 8) == 0);
+  assert(banks[1][0x108] == 247 && banks[1][0xFF00] == 0xC3 && banks[1][0x10] == 8);
   assert(memcmp(banks[1] + 0xFF00, resident_page, sizeof(resident_page)) == 0);
+  assert(memcmp(banks[1] + BANKED_ALLOCATOR_ADDRESS, banked_allocator_code,
+                sizeof(banked_allocator_code)) == 0);
+  assert(banks[1][0x14] == 0 && banks[1][0x15] == 247);
   resident_page[19] ^= 0xFF;
   resident_page[255] ^= 0xFF;
   z80_sram_prepare_banked_memory(resident_page);
   assert(bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
   assert(memcmp(banks[1] + 0xFF00, resident_page, sizeof(resident_page)) == 0);
   bank_wired = false;
   z80_sram_prepare_banked_memory(resident_page);
   assert(!bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
   bank_wired = true;
   corrupt_bank_read = true;
   z80_sram_prepare_banked_memory(resident_page);
   assert(!bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
+  corrupt_bank_address = 0xFFFF;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(!bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
+  corrupt_bank_read = false;
+  z80_sram_prepare_banked_memory(resident_page);
+  assert(bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
   z80_sram_prepare_banked_memory(NULL);
   assert(!bank_available && selected_bank == 0);
+  assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
   puts("PASS: injected cycles, CPU-only writes, readback, bounds and SRAM patterns");
   return 0;
 }
