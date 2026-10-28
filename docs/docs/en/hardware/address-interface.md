@@ -15,7 +15,7 @@ and [Phase 6 SRAM loading](../implementation/phase-6-sram.md).
 The AS6C1008 provides two 64 KiB banks. GP8 controls A16 through U4 AHCT244;
 port `0x07` selects the bank. Switching affects all addresses, including code,
 stack, and vectors, so applications must use the
-[BIOS transfer API](../cpm-dcc/bios.md#implemented-banked-memory-bios-extension-abi-1).
+[BIOS transfer API](../cpm-dcc/bios.md#implemented-banked-memory-bios-extension-abi-24).
 
 ### Physical bank-select path
 

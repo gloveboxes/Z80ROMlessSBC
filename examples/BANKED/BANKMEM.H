@@ -8,6 +8,7 @@ bhandle bmalloc(unsigned int bytes);
 int bfree(bhandle handle);
 unsigned int bsize(bhandle handle);
 unsigned int bavail(void);
+unsigned int bmexec(bhandle code_handle, bhandle stack_handle); /* Zero uses private stack. */
 int bread(bhandle handle, unsigned int offset, void *buffer, unsigned int bytes);
 int bwrite(bhandle handle, unsigned int offset, const void *buffer, unsigned int bytes);
 #endif

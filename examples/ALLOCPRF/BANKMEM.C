@@ -1,4 +1,4 @@
-/* dcc banked heap, ABI 2.0: extent metadata/code/private stack in 0000..07FF.
+/* dcc banked heap, ABI 2.3: extent metadata/code/private stack in 0000..07FF.
  * All heap operations execute in bank 1; no base C stack or BDOS runs there.
  * Application payloads occupy 0800..FEFF (63,232 bytes), in 256-byte units.
  */

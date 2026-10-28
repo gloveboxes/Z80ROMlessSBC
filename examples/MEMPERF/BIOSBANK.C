@@ -1,5 +1,5 @@
 /* dcc stack ABI -> public BIOS register ABI. No port or private workspace
- * addresses belong here. IX/IY survive; return HL=1 success or 0 failure.
+ * addresses belong here. IX/IY survive; HL follows each BIOS operation.
  */
 #include "BIOSBANK.H"
 
@@ -28,6 +28,23 @@ _bmrset:
 	ld e,4
 	jp 0ff10h
 ;@dcc.lto end _bmrset
+
+;@dcc.lto begin _bmexec
+	public _bmexec
+_bmexec:
+	ld hl,2
+	add hl,sp
+	ld e,(hl)
+	inc hl
+	ld d,(hl)
+	inc hl
+	ld c,(hl)
+	inc hl
+	ld b,(hl)
+	ex de,hl
+	ld e,5
+	jp 0ff10h
+;@dcc.lto end _bmexec
 
 ;@dcc.lto begin _bmfree
 	public _bmfree

@@ -1,4 +1,4 @@
-# Current extent allocator (ABI 2.0)
+# Current extent allocator (ABI 2.3)
 
 The current heap is 0800h–FEFFh (63,232 bytes). It uses separate extent-length,
 physical-predecessor and doubly linked free-list tables. All heap operations

@@ -28,13 +28,14 @@ Use `include`, not `include-markdown`, for source code so Markdown link and
 heading transformations do not alter it.
 
 Paths are relative to the phase page. From `en/implementation/`, the repository
-source tree is `../../../../src/`. Keep the source path in the section title
+source tree is `../../../../src/`; the BIOS page includes its example from
+`../../../../examples/`. Keep the source path in the section title
 and retain links to related headers and build definitions in the
 [source index](../reference/source-index.md).
 
 Every documentation build reads the current checkout. The MkDocs configuration
-explicitly watches `../../src` during `mkdocs serve`, so source edits continue
-to trigger preview rebuilds even if the include plugin loses its per-file
+explicitly watches `../../src` and `../../examples` during `mkdocs serve`, so
+source edits continue to trigger preview rebuilds even if the include plugin loses its per-file
 watches after a rebuild. A published site reflects its last deployed revision,
 not subsequent local changes. Build from the complete repository so the included
 sources are available; a missing include is a build error.

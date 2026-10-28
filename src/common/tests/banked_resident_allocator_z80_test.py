@@ -38,16 +38,21 @@ class ResidentAllocator(unittest.TestCase):
         self.switches.append(self.active)
         self.m.memory[:] = self.banks[self.active]
 
-    def call(self, op, value=0, enabled=True):
+    def call(self, op, value=0, enabled=True, expected_result=None,
+             stack_handle=0, allow_stack_changes=False,
+             entry_offset=0x4567, argument=0x89AB):
         expected = self.model.call(op, value)
+        if expected_result is not None:
+            expected = expected_result
         m = self.m
         self.banks[0][0x1000:0x1003] = bytes((0xCD, 0x10, 0xFF))
         m.memory[:] = self.banks[0]
-        m.pc, m.sp, m.hl, m.e = 0x1000, 0xE000, value, op
-        m.ix, m.iy = 0x4567, 0x89AB
+        m.pc, m.sp, m.hl, m.e, m.bc = 0x1000, 0xE000, value, op, stack_handle
+        m.ix, m.iy = entry_offset, argument
         m.iff1 = m.iff2 = enabled
         self.switches = []
         base_before = bytes(m.memory)
+        payload_before = bytes(self.banks[1][0x800:0xFF00])
         m.ticks_to_stop = 1000000
         for _ in range(100):
             if m.run() & m._BREAKPOINT_HIT:
@@ -57,13 +62,21 @@ class ResidentAllocator(unittest.TestCase):
         self.last_ticks = 1000000 - m.ticks_to_stop
         self.assertEqual(m.hl, expected, (op, value, self.model.extents))
         self.assertEqual(self.switches, [1, 0])
-        self.assertEqual((self.active, m.sp, m.ix, m.iy), (0, 0xE000, 0x4567, 0x89AB))
+        self.assertEqual((self.active, m.sp, m.ix, m.iy),
+                         (0, 0xE000, entry_offset, argument))
         self.assertEqual((bool(m.iff1), bool(m.iff2)), (enabled, enabled))
         self.assertEqual(bytes(m.memory[:0xDFFC]), base_before[:0xDFFC])
         self.assertEqual(bytes(m.memory[0xE000:]), base_before[0xE000:])
         self.assertEqual(bytes(self.banks[1][:8]), b"BKM3BEX1")
         self.banks[0][:] = m.memory
-        self.assertEqual(self.banks[1][0x800:0xFF00], bytes([0xA5]) * 63232)
+        payload_after = bytes(self.banks[1][0x800:0xFF00])
+        if allow_stack_changes:
+            start = stack_handle - 0x800
+            end = start + self.model.call(2, stack_handle)
+            self.assertEqual(payload_after[:start], payload_before[:start])
+            self.assertEqual(payload_after[end:], payload_before[end:])
+        else:
+            self.assertEqual(payload_after, payload_before)
         self.assertEqual(self.banks[1][0x500:0x500 + len(self.code)], self.code)
         self.invariants()
         return expected
@@ -102,12 +115,13 @@ class ResidentAllocator(unittest.TestCase):
         self.call(4)
 
     def test_coalescing_and_invalid_handles(self):
-        self.call(5, 0x800)
+        self.call(6, 0x800)
         self.call(255, 0x800)
         a, b, c, d = [self.call(0, 4096) for _ in range(4)]
         for value in (1, 0x100, a + 1, a + 256, 0xFF00, 0xFFFF):
             self.call(1, value)
             self.call(2, value)
+            self.call(5, value)
         self.call(1, 0)
         self.call(1, b)
         self.call(1, d)
@@ -115,6 +129,60 @@ class ResidentAllocator(unittest.TestCase):
         self.call(1, c)  # stale handle into merged extent
         self.call(1, a)
         self.assertEqual(self.model.extents, [(8, 247, True)])
+
+    def test_call_uses_private_stack_and_restores_index_registers(self):
+        handle = self.call(0, 256)
+        code = bytes((0xDD, 0x21, 0x34, 0x12,  # LD IX,1234h
+                      0xFD, 0x21, 0x78, 0x56,  # LD IY,5678h
+                      0x21, 0xEF, 0xBE,        # LD HL,BEEFh
+                      0xC9))                    # RET
+        self.banks[1][handle:handle + len(code)] = code
+        self.call(5, handle, expected_result=0xBEEF)
+        self.assertEqual(self.banks[1][0x12:0x14], bytes((0xFC, 0xDF)))
+
+    def test_separate_stack_call_rejects_invalid_or_shared_handles(self):
+        code = self.call(0, 256)
+        self.call(5, code, stack_handle=code)
+        self.call(5, code, stack_handle=code + 256)
+        self.call(5, code + 1, stack_handle=code)
+        self.call(1, code)
+
+    def test_separate_stack_can_end_at_resident_page(self):
+        code = self.call(0, 256)
+        prefix = self.call(0, 245 * 256)
+        stack = self.call(0, 256)
+        self.assertEqual((code, prefix, stack), (0x0800, 0x0900, 0xFE00))
+        self.banks[1][code:code + 4] = bytes((0x21, 0xEF, 0xBE, 0xC9))
+        self.call(5, code, stack_handle=stack, expected_result=0xBEEF,
+                  allow_stack_changes=True)
+        self.assertNotEqual(bytes(self.banks[1][0xFEFE:0xFF00]), bytes((0xA5, 0xA5)))
+        self.call(1, stack)
+        self.call(1, prefix)
+        self.call(1, code)
+
+    def test_direct_offset_uses_dcc_argument_and_rejects_out_of_range_entry(self):
+        code = self.call(0, 256)
+        stack = self.call(0, 256)
+        context = self.call(0, 256)
+        # DCC prologue: PUSH IX; IX=SP; first pointer argument at IX+4.
+        function = bytes((0xDD, 0xE5, 0xDD, 0x21, 0, 0, 0xDD, 0x39,
+                          0xDD, 0x6E, 4, 0xDD, 0x66, 5, 0x7E,
+                          0x6F, 0x26, 0, 0xDD, 0xE1, 0xC9))
+        self.banks[1][code:code + len(function)] = function
+        self.banks[1][code + 0x20:code + 0x20 + len(function) + 1] = (
+            function[:14] + bytes((0x23,)) + function[14:])  # INC HL before LD A,(HL)
+        self.banks[1][context:context + 2] = bytes((42, 73))
+        self.call(6, code, stack_handle=stack, entry_offset=0,
+                  argument=context, expected_result=42, allow_stack_changes=True)
+        self.call(6, code, stack_handle=stack, entry_offset=0x20,
+                  argument=context, expected_result=73, allow_stack_changes=True)
+        for offset, bad_stack in ((0, 0), (0, code), (256, stack),
+                                  (65535, stack)):
+            self.call(6, code, stack_handle=bad_stack, entry_offset=offset,
+                      argument=context)
+        self.call(1, context)
+        self.call(1, stack)
+        self.call(1, code)
 
     def test_maximum_fragmentation(self):
         handles = [self.call(0, 256) for _ in range(247)]

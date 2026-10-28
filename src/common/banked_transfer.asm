@@ -1,10 +1,10 @@
-; BIOS bank extension ABI 2.0: identical page at FF00h in both banks.
+; BIOS bank extension ABI 2.4: identical page at FF00h in both banks.
 ; Public READ=FF00h / WRITE=FF03h: HL=base, DE=bank offset, BC=byte count.
 ; Zero count succeeds. Positive counts must be multiples of 16, base >=0100h,
 ; and both ranges must end <=FF00h without wrapping. INFO=FF06h must succeed
 ; first; data calls trust that capability and avoid a trapped status read.
 ; A=0/carry clear succeeds, A=2/carry set rejects invalid data arguments.
-; INFO: HL=0200h version, DE=0800h first allocation, BC=F700h capacity;
+; INFO: HL=0204h version, DE=0800h first allocation, BC=F700h capacity;
 ; A=0/carry clear ready, A=1/HL=0/carry set unavailable.
 ; PRIVATE base-only workspace (not part of the public ABI):
 ; FFF0h = initial base address, then advancing source address,
@@ -23,8 +23,8 @@
         jp bank_read
         jp bank_write
         jp bank_info
-        db "BMX2",2,0,16
-        jp bank_malloc          ; ABI 2.0 HEAP at FF10h, E=operation, HL=input
+        db "BMX2",2,4,16
+        jp bank_malloc          ; ABI 2.4 HEAP at FF10h, E=operation, HL=input
 heap_return:                    ; Bank-1 allocator jumps here, never CALLs.
         xor a
         out (7),a
@@ -165,9 +165,8 @@ bank_info:
         in a,(7)
         cp 0b4h
         jr nz,unavailable
-        ld hl,0200h             ; ABI 2.0
-        ld d,8
-        ld e,l
+        ld hl,0204h             ; ABI 2.4
+        ld de,0800h
         ld bc,0f700h
         xor a
         ret

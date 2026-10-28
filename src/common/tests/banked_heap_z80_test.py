@@ -16,10 +16,12 @@ class BankedHeapExecution(unittest.TestCase):
         cpm_boot_z80_test.CpmBootExecution.setUpClass()
 
     def execute_program(self, available: bool, capability: int = 0xB4,
-                        native_bios: bool = False, abi_minor: int = 0, abi_major: int = 2,
+                        native_bios: bool = False, abi_minor: int = 4, abi_major: int = 2,
+                        info_minor: int | None = None,
                         signature: bytes | None = None, fault: str | None = None,
                         heap_signature: bytes | None = None,
                         allocator_installed: bool = True,
+                        allocator_revision: int = 4,
                         timer_dirty: str | None = None,
                         seconds_per_poll: int = 1,
                         stopwatch_ms: tuple[int, ...] | None = None) -> tuple[bytes, list[bytearray], int, int]:
@@ -27,6 +29,7 @@ class BankedHeapExecution(unittest.TestCase):
         case.setUp()
         machine = case.machine
         banks = [bytearray(65536), initialize_bank()]
+        banks[1][8] = allocator_revision
         if heap_signature is not None:
             self.assertEqual(len(heap_signature), 4)
             banks[1][:4] = heap_signature
@@ -134,7 +137,15 @@ class BankedHeapExecution(unittest.TestCase):
         machine.memory[0xFF0D] = abi_major
         if signature is not None:
             machine.memory[0xFF09:0xFF0D] = signature
-        code = transfer_code()
+        code = bytearray(transfer_code())
+        if info_minor is not None:
+            code[0x0E] = abi_minor
+            operand = code.index(bytes((0x21, 0x04, 0x02))) + 1  # INFO: LD HL,0204h
+            code[operand] = info_minor
+            machine.memory[0xFF00 + operand] = info_minor
+            banks[1][0xFF00 + operand] = info_minor
+            banks[1][0xFF0E] = abi_minor
+        code = bytes(code)
         if native_bios:
             # Model an ESP-style BIOS backend that copies host arrays directly.
             # Its private workspace deliberately differs from the SBC's.
@@ -155,7 +166,8 @@ class BankedHeapExecution(unittest.TestCase):
                     if entry == 0xFF06:
                         capability_reads += 1
                         tracking = True
-                        machine.hl, machine.de, machine.bc = 0x200, 0x800, 63232
+                        machine.hl, machine.de, machine.bc = (0x200 | (4 if info_minor is None else info_minor),
+                                                               0x800, 63232)
                     elif entry == 0xFF10:
                         machine.hl = extent_model.call(machine.e, machine.hl)
                         extent_model.write_tables(banks[1])
@@ -265,6 +277,54 @@ class BankedHeapExecution(unittest.TestCase):
         self.assertGreater(switches, 10000)
         print(output.decode(errors="replace")[-600:])
         print(f"Bank switches: {switches}; final bank: {active}")
+
+    def test_compiled_direct_offset_primes(self) -> None:
+        self.program = Path(__file__).resolve().parents[3] / "examples/BANKCODE/BANKCODE.COM"
+        output, banks, active, switches = self.execute_program(True)
+        self.assertIn(b"BANKCODE: two bank-1 C-style entry points (128 code bytes).", output)
+        self.assertIn(b"Count <= 30: 10 primes; last=29; HL=10", output)
+        self.assertIn(b"Next after 30: 31; HL=31", output)
+        self.assertIn(b"Count <= 50: 15 primes; last=47; HL=15", output)
+        self.assertIn(b"Next after 50: 53; HL=53", output)
+        self.assertIn(b"Next after 254: 0; HL=0", output)
+        self.assertIn(b"PASS: direct offsets entered two bank-1 functions with DCC stack arguments.", output)
+        self.assertEqual(active, 0)
+        self.assertGreater(switches, 0)
+        self.assertEqual(switches % 2, 0)
+        self.assertEqual(bytes(banks[1][0x800:0x804]), bytes((0xDD, 0xE5, 0xDD, 0x21)))
+        self.assertNotEqual(bytes(banks[1][0xAFE:0xB00]), bytes((0xA5, 0xA5)))
+        self.assertNotEqual(bytes(banks[1][0xCFE:0xD00]), bytes((0xA5, 0xA5)))
+        self.assertEqual(bytes(banks[1][0xD00:0xD03]), bytes((50, 15, 47)))
+        self.assertEqual(bytes(banks[1][0xE00:0xE03]), bytes((254, 0, 0)))
+        self.assertEqual(bytes(banks[1][0x14:0x16]), bytes((0x00, 0xF7)))
+
+    def test_compiled_spreads_two_entries(self) -> None:
+        self.program = Path(__file__).resolve().parents[3] / "examples/SPREADS/SPREADS.COM"
+        output, banks, active, switches = self.execute_program(True)
+        self.assertIn(b"SPREADS: two bank-1 entry points.\r\nVEGEMITE\r\nMARMITE\r\nVEG\r\n", output)
+        self.assertIn(b"PASS: both entry points ran and the bank-1 heap was restored.", output)
+        self.assertEqual(active, 0)
+        self.assertGreater(switches, 0)
+        self.assertEqual(switches % 2, 0)
+        self.assertEqual(bytes(banks[1][0xA00:0xA02]), bytes((3, 3)))
+        self.assertEqual(bytes(banks[1][0xA02:0xA05]), b"VEG")
+        self.assertEqual(bytes(banks[1][0x14:0x16]), bytes((0x00, 0xF7)))
+
+    def test_bank1_code_requires_call_abi(self) -> None:
+        self.program = Path(__file__).resolve().parents[3] / "examples/BANKCODE/BANKCODE.COM"
+        output, banks, active, _ = self.execute_program(True, abi_minor=3, info_minor=3)
+        self.assertIn(b"FAIL: BIOS ABI 2.4 with direct-offset CALL is required.", output)
+        self.assertNotIn(b"PASS:", output)
+        self.assertEqual(active, 0)
+        self.assertEqual(bytes(banks[1][0x14:0x16]), bytes((0x00, 0xF7)))
+
+    def test_bank1_code_rejects_old_firmware_allocator(self) -> None:
+        self.program = Path(__file__).resolve().parents[3] / "examples/BANKCODE/BANKCODE.COM"
+        output, banks, active, _ = self.execute_program(True, allocator_revision=3)
+        self.assertIn(b"FAIL: bank-1 direct CALL revision 3; need 4. Update Phase 10 firmware.", output)
+        self.assertNotIn(b"Count <=", output)
+        self.assertEqual(active, 0)
+        self.assertEqual(bytes(banks[1][0x14:0x16]), bytes((0x00, 0xF7)))
 
     def test_success_without_copying_reads_is_detected(self) -> None:
         for fault, offset in (("no_read", 0), ("partial_read", 255)):

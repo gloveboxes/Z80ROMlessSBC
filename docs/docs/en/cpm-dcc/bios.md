@@ -23,18 +23,18 @@ BDOS handles filenames, FCBs, directories, allocation, and record selection.
 The BIOS handles drives and records, so dcc file APIs need no custom backend.
 See the [I/O port map](../system/io-ports.md) for port decoding and aliases.
 
-## Implemented banked-memory BIOS extension (ABI 2)
+## Implemented banked-memory BIOS extension (ABI 2.4)
 
 The reserved top page supplements CP/M's standard BIOS jump table. Check
-`BMX2` at `FF09h`, major 2 at `FF0Dh`, minor 0 at `FF0Eh`, and granularity
+`BMX2` at `FF09h`, major 2 at `FF0Dh`, minor 4 at `FF0Eh`, and granularity
 16 at `FF0Fh`, then require INFO success before using the other entries.
 
 | Address | Entry | Purpose |
 | --- | --- | --- |
 | `FF00h` | READ | Copy bank 1 to a base-bank buffer |
 | `FF03h` | WRITE | Copy a base-bank buffer to bank 1 |
-| `FF06h` | INFO | HL=0200h version, DE=0800h heap start, BC=F700h capacity |
-| `FF10h` | HEAP | E=0 allocate, 1 free, 2 size, 3 available, 4 reset |
+| `FF06h` | INFO | HL=0204h version, DE=0800h heap start, BC=F700h capacity |
+| `FF10h` | HEAP | E=0 allocate, 1 free, 2 size, 3 available, 4 reset, 5 call bank-1 code, 6 call at an offset with a DCC-style argument |
 
 READ/WRITE take HL=base buffer, DE=bank offset, BC=length. Positive lengths
 are multiples of 16; addresses need not align. The base buffer starts at or
@@ -43,13 +43,66 @@ length succeeds without touching memory. Success returns A=0/carry clear;
 invalid arguments return A=2/carry set. INFO failure returns A=1/carry set,
 HL=0. HEAP takes HL=bytes or handle and returns HL=handle, size, free bytes,
 or 1/0 for free/reset; its A=0/carry clear, including allocation failure.
+For E=5, HL must be a live allocation containing executable Z80 code. BC=0
+uses the private bank-1 stack, leaving 58 bytes for the payload. A distinct
+live stack handle in BC uses that allocation instead. The payload must return
+with `RET` and must not call bank-0 code, re-enter the allocator, or enable
+interrupts. The gateway returns its HL value to bank 0 and restores IX/IY.
+
+With BC nonzero, E=5 validates both handles, sets SP to the exclusive end of
+the stack allocation, places a return address there, and jumps to the code.
+After the payload's `RET`, it restores the private stack and bank-0 state.
+The caller keeps both allocations live until return. The payload receives the
+caller's IY, so an adapter can use IY to pass a bank-1 context handle; the
+gateway does not validate that context handle. `bmexec(code, 0)` uses the
+private stack; `bmexec(code, stack)` uses the allocated stack.
+[PRIMEBK1](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/PRIMEBK1) demonstrates direct
+offset calls into two functions with independent contexts and stacks.
+
+For E=6, HL is a live code handle, BC is a distinct live stack handle, IX is
+the 16-bit byte offset from the code handle, and IY is a bank-1 context
+pointer. The offset must be strictly less than the rounded code capacity;
+zero enters the start of the allocation. The BIOS pushes IY onto the selected
+stack as one 16-bit C argument, then pushes a return address and enters the
+function at `HL+IX`. A DCC function sees the argument at `IX+4` after its
+usual frame prologue and returns a 16-bit result in HL. The context pointer
+and instruction boundary are the caller's responsibility. E=6 requires a
+separate stack allocation, even for offset zero.
+
+### SPREADS: two-entry-point example
+
+The small [SPREADS source](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/SPREADS/DEMO.C)
+shows operation 6 without relocation or a dispatch table. Its first bank-1
+function is at offset 0; the second is at `bmarm - bcode`. Both receive the
+same bank-1 `SpreadParams` pointer through the DCC-style stack argument. The
+bank-0 wrappers expose natural calls, `vegemite(&params)` and
+`marmite(&params)`: each copies the C parameter block to bank 1, invokes its
+entry point, and copies the result back. Requests for 8, 7 and 3 characters produce `VEGEMITE`,
+`MARMITE` and `VEG`. The
+[example build instructions](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/SPREADS/README.md)
+use the shared ABI 2.4 wrappers from PRIMEBK1. The docs link to the maintained
+source and include that same file below, so the displayed code is read from
+the current checkout on every documentation build.
+
+??? example "SPREADS/DEMO.C"
+
+    ```c
+    {% include "../../../../examples/SPREADS/DEMO.C" %}
+    ```
+
+CALL clients should also read bank-1 offset `0008h`: revision 1 supports the
+private-stack call, revision 3 accepts an optional stack handle, and revision
+4 adds E=6 direct-offset C calls. The BIOS
+page comes from the CP/M boot package, while the bank-1 allocator comes from
+Pico firmware. Updating only CP/M can leave the old allocator installed.
 
 The heap uses 256-byte allocation units and address-ordered free extents.
 Lengths and physical/free-list links are stored outside payloads. Allocation
 walks only free extents and splits; free merges neighboring extents. SIZE and
-AVAILABLE read a table/counter directly. All heap operations run in bank 1,
-using its reserved private stack. IX/IY/SP and maskable interrupt enable are
-preserved; calls return to bank 0. Other registers are scratch.
+AVAILABLE read a table/counter directly. Heap operations run in bank 1 on
+its reserved private stack; E=5 with BC nonzero switches to the supplied stack
+for the payload. IX/IY/SP and maskable interrupt enable are preserved; calls return
+to bank 0. Other registers are scratch.
 
 Bank 1 reserves 0000h–07FFh for metadata, code and stack, and FF00h–FFFFh for
 the mirrored gateway. Application data occupies 0800h–FEFFh: **63,232 bytes**.
@@ -139,6 +192,8 @@ occupies.
 | `bsize(handle)` | E=2, SIZE | Rounded capacity from the extent table, or 0 |
 | `bavail()` | E=3, AVAILABLE | Cached total free bytes |
 | `breset()` | E=4, RESET | Discards all allocations and restores one free extent |
+| `bmexec(code, stack)` | E=5, CALL | Calls code on the private stack when stack=0, otherwise on a live stack allocation; returns HL |
+| `bmcall(code, stack, offset, context)` | E=6, CALL AT | Enters code at a validated byte offset with context as one stack argument; returns HL |
 
 SIZE and AVAILABLE do not scan the heap. Every `bread`/`bwrite` validates its
 handle and range through SIZE before transferring data. This removes the

@@ -82,10 +82,10 @@ transfers use a 16-byte bank-0 buffer. CP/M's DMA area is untouched.
 invalidates all allocations without changing code. Warm boot preserves the
 heap; firmware reload initializes it. One application owns the shared heap.
 
-Install matching **ABI 2.0 firmware, boot package, drive A system records and
+Install matching **ABI 2.3 firmware, boot package, drive A system records and
 rebuilt COM files** together. The dcc runtime and A16 wiring are unchanged.
 READ/WRITE/INFO remain at `FF00h`/`FF03h`/`FF06h`; INFO reports version
-`0200h`, heap start `0800h`, and capacity `F700h`. See [BIOS-ABI.md](BIOS-ABI.md)
+`0203h`, heap start `0800h`, and capacity `F700h`. See [BIOS-ABI.md](BIOS-ABI.md)
 for HEAP operations, contracts and the extent table layout.
 
 The same C library and COM pass the local native-copy BIOS backend model

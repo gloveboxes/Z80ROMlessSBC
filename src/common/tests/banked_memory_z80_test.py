@@ -24,6 +24,7 @@ def transfer_code() -> bytes:
 def initialize_bank() -> bytearray:
     bank = bytearray(65536)
     bank[:8] = b"BKM3BEX1"
+    bank[8] = 3  # Optional-stack CALL revision loaded by current firmware
     header = (Path(__file__).resolve().parents[1] /
               "include/z80sbc/banked_allocator.h").read_text()
     allocator = bytes(int(value, 16) for value in
@@ -60,10 +61,10 @@ class BankedMemoryExecution(unittest.TestCase):
 
     def test_bios_info_and_descriptor(self) -> None:
         bank = initialize_bank()
-        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX2\x02\x00\x10")
+        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX2\x02\x04\x10")
         self.assertEqual(bytes(bank[0xFF00:0xFF09:3]), b"\xC3" * 3)
         machine = self.call_bios(0xFF06)
-        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x200, 0x800, 63232))
+        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x204, 0x800, 63232))
         self.assertFalse(machine.f & 1)
         for capability in (0, 0xB0, 0xB2):
             with self.subTest(capability=capability):

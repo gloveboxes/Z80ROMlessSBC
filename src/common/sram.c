@@ -44,6 +44,8 @@ static uint8_t bank_load_value(unsigned offset, const uint8_t *resident_page) {
     return resident_page[offset - BANK_RUNTIME_BYTES];
   if (offset < 8)
     return (const uint8_t[]){'B', 'K', 'M', '3', 'B', 'E', 'X', '1'}[offset];
+  if (offset == 8)
+    return BANKED_ALLOCATOR_CALL_REVISION; /* CALL support follows firmware code. */
   if (offset == 0x10)
     return 8; /* Initially one free extent, starting at block 8. */
   if (offset == 0x15 || offset == 0x108)

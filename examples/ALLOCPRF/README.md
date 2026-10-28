@@ -1,10 +1,10 @@
 # ALLOCPRF: banked allocator performance
 
 Copy `ALLOCPRF.COM` to a CP/M disk and run `ALLOCPRF`. It requires the matching
-BIOS ABI 2.0, bank-1 allocator firmware, and millisecond stopwatch on port
+BIOS ABI 2.3, bank-1 allocator firmware, and millisecond stopwatch on port
 `17h`. Stopwatch 0 is reserved while the benchmark runs.
 
-The program benchmarks only the BIOS ABI 2.0 extent allocator. Each
+The program benchmarks only the BIOS ABI 2.3 extent allocator. Each
 measurement runs **512 allocate/free pairs**, reporting total milliseconds
 and average microseconds per pair. Allocation, free, loop and success-check
 overhead are included. This is not an isolated malloc latency. No payload

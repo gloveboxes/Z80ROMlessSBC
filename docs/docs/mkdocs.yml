@@ -10,6 +10,7 @@ exclude_docs: |
   /pcb/
 watch:
   - ../../src
+  - ../../examples
 
 repo_name: Z80ROMlessSBC
 repo_url: https://github.com/gloveboxes/Z80ROMlessSBC

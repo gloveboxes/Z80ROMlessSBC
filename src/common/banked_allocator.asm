@@ -1,4 +1,5 @@
-; Bank-1 extent heap, ABI 2.0. E=0 alloc,1 free,2 size,3 available,4 reset.
+; Bank-1 extent heap, ABI 2.4. E=0 alloc,1 free,2 size,3 available,4 reset,
+; 5 call as before; 6 call at code+IX on BC stack with IY as a C argument.
 ; HL=input/output. Out-of-band byte tables indexed by 256-byte block:
 ; 0100 length (zero = interior), 0200 physical predecessor,
 ; 0300 next free (FF = allocated), 0400 previous free.
@@ -24,6 +25,10 @@ entry:
         jp z,available
         dec a
         jp z,reset
+        dec a
+        jp z,execute_block
+        dec a
+        jp z,execute_at
 bad:
         ld hl,0
 return:
@@ -237,6 +242,106 @@ insert_merged:
         ld a,(0017h)
         call insert
         jp ok
+; Call a live allocation on this private bank-1 stack. The payload returns
+; with RET to execute_return; only then do we restore bank-0 SP and bank.
+execute_block:
+        ld a,b
+        or c
+        jp nz,execute_with_stack
+        ld (001bh),hl
+        call valid
+        jp c,bad
+        ld hl,(001bh)
+        push ix
+        push iy
+        ld de,execute_return
+        push de
+        push hl
+        ret
+execute_return:
+        pop iy
+        pop ix
+        jp return
+; HL=live code handle, BC=distinct live stack handle. Use the allocation's
+; exclusive end as SP. Keep the private stack for IX/IY and the return path.
+execute_with_stack:
+        ld (001bh),hl          ; code handle
+        ld h,b
+        ld l,c
+        ld (001dh),hl          ; stack handle, later its exclusive end
+        ld de,(001bh)
+        or a
+        sbc hl,de
+        jp z,bad               ; code and stack may not overlap
+        ld hl,(001bh)
+        call valid
+        jp c,bad
+        xor a
+        ld (0020h),a           ; operation 5 has no C argument
+checked_code:
+        ld hl,(001dh)
+        call valid
+        jp c,bad
+        ld h,1
+        ld a,(hl)             ; rounded stack size in 256-byte blocks
+        add a,l               ; exclusive end block, at most FFh
+        ld h,a
+        ld l,0
+        ld (001dh),hl
+        push ix
+        push iy
+        ld (0019h),sp          ; return to the private stack after payload RET
+        ld sp,(001dh)
+        ld a,(0020h)
+        or a
+        jr z,no_argument
+        push iy                ; DCC first argument, after return address
+no_argument:
+        ld de,stack_return
+        push de                ; payload's RET target on its own stack
+        ld hl,(001bh)
+        jp (hl)
+stack_return:
+        ld sp,(0019h)
+        pop iy
+        pop ix
+        jp return
+; E=6: HL=code handle, BC=distinct nonzero stack handle, IX=byte offset,
+; IY=bank-1 context pointer. The entry must be inside the code allocation.
+; Push IY onto the selected stack so an ordinary DCC C function sees it at
+; SP+2 and returns its 16-bit result in HL.
+execute_at:
+        ld (001bh),hl
+        ld a,b
+        or c
+        jp z,bad
+        ld h,b
+        ld l,c
+        ld (001dh),hl
+        ld de,(001bh)
+        or a
+        sbc hl,de
+        jp z,bad
+        ld hl,(001bh)
+        call valid
+        jp c,bad
+        ld l,a
+        ld h,1
+        ld a,(hl)             ; allocated size in 256-byte blocks
+        ld h,a
+        ld l,0
+        push ix
+        pop de                 ; requested byte offset
+        or a
+        sbc hl,de
+        jp c,bad
+        jp z,bad              ; offset must be strictly less than size
+        ld hl,(001bh)
+        add hl,de
+        ld (001bh),hl         ; validated entry address
+        ld a,1
+        ld (0020h),a          ; operation 6 pushes one C argument
+        jp checked_code
 ; Remove free extent A. Does not change its physical extent metadata.
 unlink:
         ld l,a

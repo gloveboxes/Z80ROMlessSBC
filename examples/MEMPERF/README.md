@@ -9,7 +9,7 @@ export DCC_DIR=/Users/dave/GitHub/dcc
 
 Copy `build/MEMPERF.COM` to a CP/M disk and run `MEMPERF`.
 The distributed `MEMPERF.COM` at the folder root is the same release build.
-This requires matching BIOS ABI 2.0, extent-allocator firmware, and timer
+This requires matching BIOS ABI 2.3, extent-allocator firmware, and timer
 port `0x17` already used by BANKED. Stopwatch 0 is reset for
 each measurement and remains reserved for the duration of the program.
 
@@ -143,7 +143,7 @@ measure actual wall time. The remaining bulk-copy cost includes loading data
 into Z80 registers and switching the whole 64 KiB address space for each
 16-byte burst; this scan change does not remove that cost.
 
-The BANKMEM library requires BIOS ABI 2.0 HEAP (`FF10h`). Allocation, free,
+The BANKMEM library requires BIOS ABI 2.3 HEAP (`FF10h`). Allocation, free,
 size queries, available bytes and reset all run in bank 1. Its reserved
 0000h–07FFh region contains extent tables, code and a private stack. The
 application heap is 0800h–FEFFh: 63,232 bytes. Install matching firmware,

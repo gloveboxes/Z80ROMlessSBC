@@ -163,6 +163,7 @@ int main(void) {
   assert(bank_available && selected_bank == 0);
   assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
   assert(banks[0][0] == 0xC3 && memcmp(banks[1], "BKM3BEX1", 8) == 0);
+  assert(banks[1][8] == BANKED_ALLOCATOR_CALL_REVISION);
   assert(banks[1][0x108] == 247 && banks[1][0xFF00] == 0xC3 && banks[1][0x10] == 8);
   assert(memcmp(banks[1] + 0xFF00, resident_page, sizeof(resident_page)) == 0);
   assert(memcmp(banks[1] + BANKED_ALLOCATOR_ADDRESS, banked_allocator_code,
