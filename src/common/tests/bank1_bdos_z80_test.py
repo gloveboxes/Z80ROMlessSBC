@@ -178,7 +178,7 @@ class BankOneBdos(unittest.TestCase):
     def test_native_linker_emits_checked_typed_exports(self) -> None:
         root = Path(__file__).resolve().parents[3]
         dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
-        if not (dcc / "m80c").is_file() or not (root / "l80cc").is_file():
+        if not (dcc / "m80c").is_file() or not (dcc / "l80c").is_file():
             self.skipTest("native library linker and assembler are required")
         with tempfile.TemporaryDirectory(prefix="typed-linker-") as directory:
             folder = Path(directory)
@@ -189,7 +189,7 @@ class BankOneBdos(unittest.TestCase):
             subprocess.run(
                 [str(dcc / "m80c"), "=LIB.MAC", "/X", "/O", "/Z", "/L", "/C"],
                 cwd=folder, check=True, capture_output=True)
-            base = [str(root / "l80cc"), "/P:100,LIB", "--lib",
+            base = [str(dcc / "l80c"), "/P:100,LIB", "--lib",
                     "--export", "VALUE=_b1e00", "-o", "TYPED"]
             subprocess.run(base + ["--signature", "VALUE=_b1s00"],
                            cwd=folder, check=True, capture_output=True)
@@ -225,7 +225,7 @@ class BankOneBdos(unittest.TestCase):
                         base + arguments, cwd=folder,
                         capture_output=True, text=True)
                     self.assertNotEqual(result.returncode, 0)
-                    self.assertIn("l80cc:", result.stderr)
+                    self.assertIn("l80c:", result.stderr)
 
     def test_resident_loader_initializes_heap_for_each_supported_stack(self) -> None:
         # A second record replaces the header DMA buffer before heap setup.
@@ -292,7 +292,7 @@ class BankOneBdos(unittest.TestCase):
                  "-o", "RTLMIN.MAC", "HEAP.MAC"],
                 [str(dcc / "m80c"), "=HEAP.MAC", "/X", "/O", "/Z", "/L"],
                 [str(dcc / "m80c"), "=RTLMIN.MAC", "/X", "/O", "/Z", "/L"],
-                [str(root / "l80cc"), "/P:100,RTLMIN,HEAP", "--lib",
+                [str(dcc / "l80c"), "/P:100,RTLMIN,HEAP", "--lib",
                  "--stack-bytes", "512", "--export", "_HEAP=_CHECK",
                  "-o", "HEAP"],
             ]

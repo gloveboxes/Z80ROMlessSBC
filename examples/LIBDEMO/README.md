@@ -229,18 +229,18 @@ LIBDEMO/
 ```
 
 Use the matching updated DCC compiler, `dccmake` and runtime with `meminfo()`.
-Build the special linker if necessary, from this repository's root:
+Both COM and LIB builds use DCC's native `l80c`. Rebuild it if necessary:
 
 ```sh
-cc -std=c11 -O2 -Wall -Wextra -Werror src/l80cc/l80c.c -o l80cc
 export DCC_DIR=/path/to/dcc
+cc -std=c89 -O2 -Wall -Wextra -Werror "$DCC_DIR/src/l80c/l80c.c" -o "$DCC_DIR/l80c"
 (cd examples/LIBDEMO && "$DCC_DIR/dccmake")
 ```
 
 One root build generates the API from the library, builds the library, then
-builds the host. A failed child stops the unit. LIB children use the special
-linker; COM children use DCC's ordinary linker.
-Override the LIB linker with `dcc-library-linker=/path/to/l80cc` if needed.
+builds the host. A failed child stops the unit. Both children use the same
+DCC linker; LIB children select its `--lib` output mode.
+Override the LIB linker with `dcc-library-linker=/path/to/l80c` if needed.
 
 To obtain the client contract **before writing the client**:
 
@@ -251,7 +251,7 @@ To obtain the client contract **before writing the client**:
 
 Contract-only mode compiles the library for metadata and emits
 `host/generated/API.H` and `host/generated/B1HOST.C`; it skips COM children
-and does not assemble, link or install anything. It needs no special linker
+and does not assemble, link or install anything. It needs no assembler, linker
 or runtime file. Normal builds refresh the same generated contract.
 
 The library configuration selects:

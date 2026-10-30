@@ -34,12 +34,13 @@ below a fixed `B000h` heap base. The loaded image must still end below
 
 ## Library file and linker
 
-`src/l80cc/l80c.c --lib` links a fixed-origin image at `0100h` and emits a
+DCC's native `l80c --lib`, maintained in its `src/l80c/l80c.c`, links a
+fixed-origin image at `0100h` and emits a
 version 3 or 4 `.LIB` header, up to eight named exports, the image, and a
 CRC16-CCITT check over all three. The checksum field is zero while calculating
 the CRC. Its 26-byte header adds the absolute linked heap base at bytes 24–25;
 exports follow at byte 26. The loader rejects versions 1 and 2, which do not
-describe the BSS/heap boundary; rebuild libraries with the matching `l80cc`
+describe the BSS/heap boundary; rebuild libraries with the matching `l80c`
 and update the firmware together.
 The header records the ABI, image length, stack requirement, and offsets of
 the DCC heap limit variables. Manual `--export ALIAS=SYMBOL` libraries retain
@@ -61,7 +62,7 @@ LIBDEMO separates `host/` and `lib/`, each with its own `dccmake.txt`
 and `build/`. Its root configuration contains `dcc-projects=lib,host`;
 one root `dccmake` invocation builds the library first, then its host.
 The library configuration selects `dcc-output-format=lib`,
-automatic exports, and the repository's special `l80cc` through `l80c-tool`.
+automatic exports, and DCC's native `l80c` through `l80c-tool`.
 With `dcc-library-api=auto`, compiler-derived public definitions generate
 `host/generated/API.H`, host wrappers and bank adapters. Buffer rules live in
 the library source; no handwritten API header or JSON interface is needed.

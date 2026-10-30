@@ -262,7 +262,7 @@ header_invalid:
         ret
 magic:  db 'B1LB'
 
-; The optional __brk and __hlimit offsets are supplied by L80CC. An image
+; The optional __brk and __hlimit offsets are supplied by DCC's L80C. An image
 ; without the DCC runtime uses FFFFh for both. With the runtime, the heap
 ; starts at the linked heap base and __hlimit is C800h minus the stack size.
 initialize_runtime:
