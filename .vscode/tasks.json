@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"label": "Build and flash Pico - CP/M system and Drive A",
-			"detail": "Requires matching Phase 10 firmware for the bank-1 allocator. Rebuild CP/M assembly, then replace matching boot package and Drive A. No backups; preserves firmware, B-D, journal and ENV. Force entry with journal and read-back checks.",
+			"detail": "Requires Phase 10 firmware built from the same source revision (bank-1 BDOS, loader and allocator). Flash the Phase 10 firmware task first, then replace the matching CP/M boot package and Drive A. No backups; preserves firmware, B-D, journal and ENV. Force entry with journal and read-back checks.",
 			"type": "shell",
 			"command": "if [ \"${input:picoCpmSystemSafety}\" != \"Replace CP/M and drive A\" ]; then printf '%s\\n' 'CP/M update cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-system-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-system-update/converted --output-dir build/cpm-system-update && python scripts/pico_flash.py system --boot-package build/cpm-system-update/z80boot.pkg --drive-a build/cpm-system-update/drive_a_cpm63k-z80.img --power-confirmed --force",
 			"options": {

@@ -7,8 +7,9 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | Page zero | `0x0000`-`0x00FF` | CP/M vectors, default FCBs, DMA buffer, and command tail |
 | Transient Program Area (TPA) | `0x0100`-`0xE5FF` | `.COM` program, dcc runtime, static data, heap, and stack |
 | CCP | `0xE600`-`0xEDFF` | Console Command Processor, reloaded after a warm boot |
-| BDOS code and tables | `0xEE00`-`0xFB3F` | CP/M console, file, and disk service layer; entry at `0xEE06` |
-| Unused BDOS padding | `0xFB40`-`0xFB7F` | 64 bytes |
+| BDOS shim and tables | `0xEE00`-`0xFB3F` | Bank-0 console and disk/file proxy; entry at `0xEE06` |
+| BDOS shim private stack | `0xF600`-`0xF7FF` | 512-byte stack inside the bank-0 BDOS slot; protects the CCP code below its small stack |
+| Unused BDOS padding | `0xFB40`-`0xFB7F` | Mirrored bank-1 warm-boot return trampoline |
 | Reserved BDOS padding | `0xFB80`-`0xFBFF` | 128-byte BIOS directory buffer |
 | BIOS core | `0xFC00`-`0xFEFD` | 766-byte Z80-optimized boot, console, disk, translation and startup-report routines |
 | Spare padding | `0xFEFE`-`0xFEFF` | 2 bytes |
@@ -31,17 +32,35 @@ the 44 CCP/BDOS system records before returning to the command prompt,
 restoring the resident image. The supported TPA above excludes the CCP.
 
 The complete 1,024-byte `bios.bin` includes the core, two bytes of padding,
-and the extension page. The [public BIOS API](bios.md#implemented-banked-memory-bios-extension-abi-24) is installed in
-both SRAM banks. The alternate bank has this layout:
+and the extension page. The [public BIOS API](bios.md#banked-memory-bios-extension-abi-26)
+is installed in both SRAM banks. Production bank 0 contains a BDOS disk/file
+shim in the `EE00h–FB3Fh` slot; the authoritative BDOS resides in bank 1.
+The Drive A system tracks contain that shim for warm boot.
 
-| Bank 1 offset | Role |
+The bank-0 shim saves the caller's stack pointer and switches to its private
+stack before forwarding disk calls. It restores the caller's stack before
+returning. This keeps nested bank transfers away from the CCP instructions
+immediately below the CCP stack.
+
+| Bank-1 address | Role |
 | --- | --- |
-| `0x0000`-`0x07FF` | Extent tables, allocator code and private stack; eight blocks reserved |
-| `0x0800`-`0xFEFF` | 63,232-byte application heap |
-| `0xFF00`-`0xFFFF` | Mirrored BIOS extension and private workspace; reserved |
+| `0000h–00FFh` | CP/M page zero |
+| `0100h–(heap_base-1)` | Fixed DCC library image, statics and BSS |
+| `heap_base–(C800h-stack-1)` | DCC library `malloc` heap, starting after linked BSS |
+| `(C800h-stack)–C7FFh` | Pinned library stack; size comes from the `.LIB` header |
+| `C800h–DDFFh` | General `bmalloc` pool, 5,632 bytes |
+| `DE00h–E5FFh` | Resident loader, proxy and service workspace |
+| `E600h–EDFFh` | Extent allocator metadata/code |
+| `EE00h–FB3Fh` | Authoritative CP/M BDOS |
+| `FB40h–FB7Fh` | Mirrored warm-boot trampoline |
+| `FB80h–FEFFh` | BIOS buffer and core |
+| `FF00h–FFFFh` | Mirrored bank-switch gateway |
 
-The C banked library calls the BIOS API directly. An application can allocate
-separate code and stack blocks in the heap and execute the code through HEAP
-operation 5 with a stack handle in BC. CP/M’s DMA area and dcc runtime require
-no changes. Deploy matching firmware, boot package and drive A system records
-together when changing this memory layout.
+Boot loads and verifies bank-1 page zero and every byte from `DE00h` through
+`FFFFh`. The `0100h–DDFFh` application, library stack, and shared heap range
+is not cleared at boot; those regions are written by their owners before use.
+
+Bank 0 cannot dereference bank-1 addresses. It uses the BIOS transfer calls
+for parameter blocks and the direct-offset call for exported functions. See
+the [fixed-address library](bank1-library-spec.md). Firmware and the CP/M
+system image must match when the bank-1 resident layout changes.

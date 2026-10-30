@@ -335,7 +335,8 @@ static void load_image(void) {
   image_verified = true;
   if (!Z80_STAGE09_AUTOBOOT)
     printf("[boot] PASS: 65536 bytes loaded and independently read back; "
-           "CPU not running. Ctrl-] g starts CP/M at nominal 20 MHz.\n");
+           "CPU not running. Ctrl-] g starts CP/M at %lu MHz.\n",
+           (unsigned long)(RUN_CLOCK_HZ / 1000000u));
 }
 
 static void start_cpm(void) {
@@ -389,9 +390,10 @@ static void start_disk_diagnostic(void) {
   }
   running = true;
   boot_deadline = make_timeout_time_ms(300000);
-  printf("\n[diag] Read-only Z80 INIR/OTIR disk test at nominal 20 MHz: "
+  printf("\n[diag] Read-only Z80 INIR/OTIR disk test at %lu MHz: "
          "all 4 drives x 4096 records x 128 bytes. No disk writes. "
-         "CP/M SRAM image replaced; reboot afterward.\n");
+         "CP/M SRAM image replaced; reboot afterward.\n",
+         (unsigned long)(RUN_CLOCK_HZ / 1000000u));
 }
 
 static void print_reset_status(void) {

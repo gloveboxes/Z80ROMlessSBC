@@ -3333,7 +3333,7 @@ BDOS_FUNCTION_18:
         ld hl,(A_F8D9)
         ld (A_EE43),hl
         call L_F751
-        call L_F22D
+        call BDOS_RESUME_SEARCH
         jp L_F0E9
 BDOS_FUNCTION_19:
         call L_F751
@@ -3557,24 +3557,16 @@ A_F8EB:
 A_F8EC:
         db 0x00
         db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
-        db 0x00
+
+        defs 0xfb30-$,0
+; Another domain or drive may have replaced the shared directory buffer.
+BDOS_RESUME_SEARCH:
+        call L_F0F5
+        jr z,BDOS_CONTINUE_SEARCH
+        call L_EEC3
+        call L_F0D4
+BDOS_CONTINUE_SEARCH:
+        jp L_F22D
 
 ; The final 128 bytes are reserved for the native BIOS directory buffer.
         defs 0xfb80-$,0

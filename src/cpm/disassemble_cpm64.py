@@ -451,6 +451,8 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
                 f"        org 0x{output_bdos_base:04x}",
                 "",
             ))
+        if optimize and relocate and deep_optimize and address == 0xF8EE:
+            break
         if address in labels:
             lines.append(f"{labels[address]}:")
         if address in pointer_tables:
@@ -586,6 +588,10 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
         elif optimize and deep_optimize and address in THREADED_CONDITIONAL_JUMPS:
             condition = instruction.mnemonic[1:].lower()
             text = f"jp {condition},{labels[THREADED_CONDITIONAL_JUMPS[address]]}"
+        elif optimize and relocate and deep_optimize and address == 0xF7D1:
+            if instruction.mnemonic != "CALL" or instruction.target != 0xF22D:
+                raise ValueError("Search Next continuation call changed at F7D1")
+            text = "call BDOS_RESUME_SEARCH"
         elif optimize and deep_optimize and address == 0xF4FB:
             address += instruction.size
             continue
@@ -611,6 +617,16 @@ def emit_z80_port(image: bytes, instructions: dict[int, Instruction],
         address += instruction.size
     if optimize and relocate and deep_optimize:
         lines.extend((
+            "",
+            "        defs 0xfb30-$,0",
+            "; Another domain or drive may have replaced the shared directory buffer.",
+            "BDOS_RESUME_SEARCH:",
+            f"        call {labels[0xF0F5]}",
+            "        jr z,BDOS_CONTINUE_SEARCH",
+            f"        call {labels[0xEEC3]}",
+            f"        call {labels[0xF0D4]}",
+            "BDOS_CONTINUE_SEARCH:",
+            f"        jp {labels[0xF22D]}",
             "",
             "; The final 128 bytes are reserved for the native BIOS directory buffer.",
             f"        defs 0x{output_bios_base - 128:04x}-$,0",

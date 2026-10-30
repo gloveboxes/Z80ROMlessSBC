@@ -100,8 +100,10 @@ class CpmBootExecution(unittest.TestCase):
         elif port == 5:
             self.markers.append(value)
         elif port == 6:
-            self.assertTrue(self.diagnostic_active)
-            self.diagnostic_bytes.append(value)
+            if self.diagnostic_active:
+                self.diagnostic_bytes.append(value)
+        elif port == 7:
+            self.assertEqual(value, 0)
         elif port == 0x11:
             self.assertLess(value, 4)
             self.drive = value

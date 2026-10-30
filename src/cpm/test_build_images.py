@@ -282,7 +282,7 @@ class BuildImagesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "resident.bin"
             subprocess.run([shutil.which("z80asm"), "-o", str(binary),
-                            str(build_images.REPO_ROOT / "src/common/banked_transfer.asm")],
+                            str(build_images.REPO_ROOT / "src/common/banked_transfer_v2.asm")],
                            check=True)
             self.assertEqual(binary.read_bytes(), code)
         oversized = self.bios + bytes(1)

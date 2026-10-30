@@ -82,7 +82,7 @@ void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
   assert(memcmp(sram, test_flash + FLASH_BOOT_PAYLOAD_OFFSET, 65536) == 0);
   if (corrupt_probe_restore)
     sram[0] ^= 1;
-  assert(resident_page == test_flash + FLASH_BOOT_PAYLOAD_OFFSET + BANKED_CODE_ADDRESS);
+  assert(resident_page == test_flash + FLASH_BOOT_PAYLOAD_OFFSET);
 }
 void z80_io_trap_poll(void) {}
 bool z80_sram_write_byte(uint16_t address, uint8_t value) {

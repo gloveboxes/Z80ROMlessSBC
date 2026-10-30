@@ -12,6 +12,13 @@ from pathlib import Path
 import re
 
 import z80
+from banked_allocator_v2_z80_test import assemble
+from functools import cache
+
+
+@cache
+def shim_code() -> bytes:
+    return assemble("src/cpm/bank0_bdos_shim.asm")[0xA00:]
 
 
 def transfer_code() -> bytes:
@@ -34,6 +41,7 @@ def initialize_bank() -> bytearray:
     bank[0x15] = bank[0x108] = 247
     code = transfer_code()
     bank[0xFF00:0xFF00 + len(code)] = code
+    bank[0xF800:0xFB40] = shim_code()
     return bank
 
 
@@ -61,10 +69,10 @@ class BankedMemoryExecution(unittest.TestCase):
 
     def test_bios_info_and_descriptor(self) -> None:
         bank = initialize_bank()
-        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX2\x02\x04\x10")
+        self.assertEqual(bytes(bank[0xFF09:0xFF10]), b"BMX2\x02\x06\x10")
         self.assertEqual(bytes(bank[0xFF00:0xFF09:3]), b"\xC3" * 3)
         machine = self.call_bios(0xFF06)
-        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x204, 0x800, 63232))
+        self.assertEqual((machine.a, machine.hl, machine.de, machine.bc), (0, 0x206, 0xC800, 5632))
         self.assertFalse(machine.f & 1)
         for capability in (0, 0xB0, 0xB2):
             with self.subTest(capability=capability):
@@ -100,7 +108,8 @@ class BankedMemoryExecution(unittest.TestCase):
     def test_register_bursts_preserve_stack_and_index_registers(self) -> None:
         for writing in (False, True):
             for enabled in (False, True):
-                for length in (0, 16, 32, 256, 4096, 0xFE00):
+                for length in (0, 16, 32, 48, 240, 256, 272, 512,
+                               2032, 2048, 2064, 4080, 4096, 4112, 0x8010, 0xFE00):
                     end_start = 0xFF00 - max(length, 16)
                     ranges = (((0x100, 0x100), (0x100, 0)) if length == 0xFE00 else
                               ((0x2000, 0x100), (0x2001, 0x1235),
@@ -151,6 +160,14 @@ class BankedMemoryExecution(unittest.TestCase):
                             actual = (banks[1][address:address + length] if writing else
                                       m.memory[base:base + length])
                             self.assertEqual(bytes(actual), payload)
+
+    def test_raw_copy_cycle_budget(self) -> None:
+        from banked_transfer_benchmark import measure
+        for length, limit in ((16, 940), (256, 6310), (4096, 93120)):
+            for writing in (False, True):
+                with self.subTest(length=length, writing=writing):
+                    result = measure(transfer_code(), writing, length)
+                    self.assertLessEqual(result["tstates"], limit, result)
 
     def test_two_banks_and_live_z80_execution(self) -> None:
         machine = z80.Z80Machine()

@@ -322,7 +322,7 @@ static bool load_boot_image(z80_boot_observer_t observer, void *context) {
   }
   if (!boot_progress(Z80_BOOT_VERIFY, Z80_BOOT_IMAGE_BYTES, observer, context))
     return false;
-  z80_sram_prepare_banked_memory(source + BANKED_CODE_ADDRESS);
+  z80_sram_prepare_banked_memory(source);
   /* The isolation probe borrows bank 0's reset-vector byte. Confirm it was
    * restored before accepting the already-verified base image. */
   boot_status.address = 0;

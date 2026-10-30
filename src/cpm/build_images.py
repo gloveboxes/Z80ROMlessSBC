@@ -137,6 +137,23 @@ def build_cpm_system(assembler: str) -> bytes:
     )
 
 
+def build_banked_cpm_system(assembler: str) -> bytes:
+    """Keep the CCP and replace the bank-0 BDOS with its bank-1 proxy."""
+    pristine = bytearray(build_cpm_system(assembler))
+    source = REPO_ROOT / "src/cpm/bank0_bdos_shim.asm"
+    with tempfile.TemporaryDirectory(prefix="z80sbc-bdos-shim-") as directory:
+        binary = Path(directory) / "shim.bin"
+        subprocess.run([assembler, "-o", str(binary), str(source)], check=True)
+        shim = binary.read_bytes()
+    if len(shim) != 0xD40 or shim[:6] != bytes((0, 22, 0, 0, 0, 0)):
+        raise ValueError("bank-0 BDOS shim has an invalid size or CCP signature")
+    pristine[0x800:0x1540] = shim
+    # Same bytes are installed in bank 1. After OUT selects bank 0, the JP
+    # continues at this mirrored address and enters the ordinary warm boot.
+    pristine[0x1540:0x1547] = bytes((0xAF, 0xD3, 7, 0xC3, 3, 0xFC, 0))[:7]
+    return bytes(pristine)
+
+
 def assembler_definitions() -> str:
     definitions = {
         "SYSTEM_RECORDS": CPM_SYSTEM_RECORDS,
@@ -394,7 +411,7 @@ def main() -> None:
     if args.cpmcp is None:
         raise SystemExit("cpmcp was not found; install cpmtools or pass --cpmcp")
 
-    cpm_system = build_cpm_system(args.assembler)
+    cpm_system = build_banked_cpm_system(args.assembler)
     bios = build_bios(args.assembler)
     utility = build_autorun(args.assembler)
     z80_image = build_z80_image(cpm_system, bios)

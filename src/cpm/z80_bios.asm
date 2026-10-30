@@ -60,11 +60,15 @@ cold_boot:
                 jr enter_cpm
 
 warm_boot:
+                ; This BIOS is mirrored in both banks. A BDOS exit can enter
+                ; here with bank 1 selected, but the CCP lives only in bank 0.
+                xor a
+                out (7),a
                 ld sp,0080h
                 call flush_disk
                 or a
                 jr nz,warm_boot
-                xor a
+                ; Successful flush already leaves A=0.
                 ld (disk_drive),a
                 ld h,a
                 ld l,a
@@ -390,6 +394,6 @@ allocation_3:
 
 BIOS_CORE_END: equ $
                 defs 0ff00h-$,0
-                include "banked_transfer.asm"
+                include "banked_transfer_v2.asm"
                 defs 10000h-$,0
 BIOS_END:      equ $

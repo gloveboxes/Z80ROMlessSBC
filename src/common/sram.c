@@ -7,6 +7,7 @@
 #include "z80sbc/bus.h"
 #include "z80sbc/banked_transfer.h"
 #include "z80sbc/banked_allocator.h"
+#include "z80sbc/bank1_system.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
@@ -36,24 +37,27 @@ enum { BANK_RUNTIME_BYTES = Z80_SRAM_BANK_RUNTIME_BYTES,
 /* Offsets count initialized bytes, skipping the application heap. */
 static uint16_t bank_load_address(unsigned offset) {
   return offset < BANK_RUNTIME_BYTES ? (uint16_t)offset :
-      (uint16_t)(BANKED_CODE_ADDRESS + offset - BANK_RUNTIME_BYTES);
+      (uint16_t)(0xDE00u + offset - BANK_RUNTIME_BYTES);
 }
 
-static uint8_t bank_load_value(unsigned offset, const uint8_t *resident_page) {
-  if (offset >= BANK_RUNTIME_BYTES)
-    return resident_page[offset - BANK_RUNTIME_BYTES];
-  if (offset < 8)
-    return (const uint8_t[]){'B', 'K', 'M', '3', 'B', 'E', 'X', '1'}[offset];
-  if (offset == 8)
-    return BANKED_ALLOCATOR_CALL_REVISION; /* CALL support follows firmware code. */
-  if (offset == 0x10)
-    return 8; /* Initially one free extent, starting at block 8. */
-  if (offset == 0x15 || offset == 0x108)
-    return 247; /* Cached F700h free bytes and 247-block extent. */
-  if (offset >= BANKED_ALLOCATOR_ADDRESS &&
-      offset - BANKED_ALLOCATOR_ADDRESS < sizeof(banked_allocator_code))
-    return banked_allocator_code[offset - BANKED_ALLOCATOR_ADDRESS];
-  return 0;
+static uint8_t bank_load_value(unsigned offset, const uint8_t *base_image) {
+  if (offset < BANK_RUNTIME_BYTES) {
+    switch (offset) {
+      case 0: case 5: return 0xC3;
+      case 1: return 0x40;
+      case 2: return 0xFB;
+      case 6: return 0x06;
+      case 7: return 0xEE;
+      default: return 0;
+    }
+  }
+  unsigned address = 0xDE00u + offset - BANK_RUNTIME_BYTES;
+  if (address < 0xE600u) return bank1_service_code[address - 0xDE00u];
+  if (address < 0xEE00u) return bank1_resident_code[address - 0xE600u];
+  if (address < 0xFB40u) return bank1_bdos_code[address - 0xEE00u];
+  if (address >= 0xFC03u && address < 0xFC06u)
+    return (const uint8_t[]){0xC3, 0x40, 0xFB}[address - 0xFC03u];
+  return base_image[address];
 }
 
 static void bank_load_progress(const char *phase, unsigned completed) {
@@ -61,11 +65,11 @@ static void bank_load_progress(const char *phase, unsigned completed) {
          (unsigned)BANK_LOAD_BYTES);
 }
 
-void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
+void z80_sram_prepare_banked_memory(const uint8_t *base_image) {
   z80_memory_bank_set_available(false);
   z80_memory_bank_select(0);
-  if (resident_page == NULL) {
-    printf("[boot] bank 1 SRAM skipped: no resident page\n");
+  if (base_image == NULL) {
+    printf("[boot] bank 1 SRAM skipped: no base image\n");
     return;
   }
   /* Bank 0 is already loaded and verified. Preserve its reset-vector byte
@@ -97,7 +101,7 @@ void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
     if (offset % 1024u == 0)
       bank_load_progress("load", offset);
     uint16_t address = bank_load_address(offset);
-    uint8_t expected = bank_load_value(offset, resident_page);
+    uint8_t expected = bank_load_value(offset, base_image);
     if (!z80_sram_write_byte(address, expected)) {
       printf("[boot] bank 1 SRAM load FAIL: address=%04x expected=%02x\n",
              address, expected);
@@ -109,7 +113,7 @@ void z80_sram_prepare_banked_memory(const uint8_t *resident_page) {
     if (offset % 1024u == 0)
       bank_load_progress("verify", offset);
     uint16_t address = bank_load_address(offset);
-    uint8_t expected = bank_load_value(offset, resident_page);
+    uint8_t expected = bank_load_value(offset, base_image);
     if (!z80_sram_read_byte(address, &actual)) {
       printf("[boot] bank 1 SRAM verify FAIL: address=%04x read failed\n", address);
       goto finish_bank;
@@ -126,7 +130,7 @@ finish_bank:
   z80_memory_bank_select(0);
   z80_memory_bank_set_available(valid);
   if (valid)
-    printf("[boot] bank 1 SRAM verified: extent allocator and resident page ready\n");
+    printf("[boot] bank 1 SRAM verified: BDOS, loader and extent allocator ready\n");
   else
     printf("[boot] bank 1 SRAM disabled: load/verify failed\n");
 }
