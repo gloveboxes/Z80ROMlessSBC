@@ -251,7 +251,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 - <input type="checkbox" data-checklist-id="no-client-test" aria-label="USB fallback and headless boot tested"> **Boot:** test USB-only, then no USB/no Wi-Fi. Reconnect USB; confirm BIOS/CCP evidence and no fatal error.
 - <input type="checkbox" data-checklist-id="client-status-test" aria-label="Exclusive browser routing tested"> **Ownership:** run browser `DIR`; no duplicate USB output. USB **Ctrl-] s** still works; a second browser is rejected.
 - <input type="checkbox" data-checklist-id="tx-order-overflow" aria-label="Ordered output and bounded queues tested"> **Traffic:** sustain output and paste over 128 bytes. Check order, zero drops/faults and no duplicate output when ACKs pause.
-- <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="CP/M keys and status tested"> **Keys:** test Ctrl+C, Ctrl+Z, Ctrl+M/Enter, ESC, arrows, Insert/Delete and Page Up/Down. Ctrl+M is carriage return.
+- <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="CP/M keys and status tested"> **Keys:** test Ctrl+C, Ctrl+Z, Ctrl+M/Enter, ESC, arrows, Insert/Delete and Page Up/Down. Ctrl+M is carriage return. On a tablet, test the **Keys** pad: the arrows send the same WordStar cursor codes (Ctrl-E/S/D/X), held keys repeat, taps do not raise the on-screen keyboard, and the floating pad can be dragged by any non-key part of the panel and keeps its position after rotation.
 - <input type="checkbox" data-checklist-id="cpm-storage-acceptance" aria-label="Combined terminal and disk operations tested"> **Disks:** repeat [Phase 9 sentinel, A-D, warm-boot and copy tests](phase-9-flash-storage.md#pass-gate) through the browser.
 - <input type="checkbox" data-checklist-id="reconnect-races" aria-label="USB fallback and Wi-Fi recovery tested"> **Recovery:** disconnect browser/Wi-Fi during output and writes; verify USB fallback and no stale replay. Suspend the browser computer; verify missed-pong counting and fallback after the fifth missed response. Without a browser, Wi-Fi changes must preserve USB queues.
 - **Settings:** reboot and verify persistence. Reject invalid/overlong values, hide secrets and report failed saves.
@@ -361,12 +361,13 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     connection and completed version-4 handshake. Update firmware and any
     separately hosted terminal page together.
 
-    - **Output:** four frames retain at most 2 KiB. ACKs are cumulative, after xterm consumes bytes; duplicates are not rendered twice. Retry after 250 ms; oldest-frame timeout is 15 seconds.
+    - **Output:** four frames retain at most 2 KiB. ACKs are cumulative, after xterm consumes bytes; duplicates are not rendered twice. Retry after 250 ms; oldest-frame timeout is 5 minutes.
     - **Batching:** isolated/full frames send immediately. Later partial frames wait up to a fixed 1 ms deadline, then the next service pass. Flash pauses may delay service. Accepted TCP writes are not duplicated after failed flushes.
     - **Input:** one frame waits for RX space; admission/rejected ACKs retry each pass. ACK means queued, not executed. The browser caps pending input at 64 KiB, rejects an overflowing paste entirely and warns when disconnect discards input.
     - **Bounds:** 69-byte incoming messages; queued payload at most 1,024 bytes/16 messages; dispatch at most eight per connection/pass. Overflow disconnects.
     - **Memory:** maximum build buffer 521 bytes; four frames use 2,084 of 5,840 TCP send-buffer bytes. Core-1 stack is 8 KiB in main RAM. These are not total memory-use measurements.
-    - **Cleanup:** one-second close grace; callback-safe abort also runs offline. Heartbeat pings every 5 minutes. A missing pong is counted at the next heartbeat; the fifth miss releases ownership.
+    - **Latency:** every received segment is ACKed immediately (`TF_ACK_NOW`) rather than on lwIP's 250 ms delayed-ACK timer, so a browser that coalesces small writes never holds a keystroke behind an unacknowledged `OUTPUT_ACK`. Nagle is disabled for sends. The page uses xterm.js 6.0.0 and renders with its WebGL addon and falls back to the DOM renderer if WebGL is unavailable or its context is lost.
+    - **Cleanup:** one-second close grace; callback-safe abort also runs offline. Heartbeat pings every 30 seconds with a 20-second pong timeout; the third consecutive miss without browser activity releases ownership.
 
 ### Terminal performance diagnostics
 

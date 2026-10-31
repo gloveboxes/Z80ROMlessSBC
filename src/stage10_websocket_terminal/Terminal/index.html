@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="utf-8">
-  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.19.0/lib/addon-webgl.js"></script>
 
   <style>
     /* Inlined modern.css */
@@ -86,132 +86,132 @@
       background-color: #000;
     }
 
-    /* Inlined xterm.css 5.3.0 to ensure the terminal renders when the page
-       is embedded into firmware without external assets. */
+    /* Keep xterm's overlay scrollbar in the 12 px strip beside the 80-column
+       canvas. xterm positions it with inline styles, hence !important. */
+    #terminal .xterm .xterm-scrollable-element > .scrollbar.vertical {
+      right: -12px !important;
+      width: 10px !important;
+    }
+
+    #terminal .xterm .xterm-scrollable-element > .scrollbar.vertical > .slider {
+      width: 10px !important;
+    }
+
+    /* Inlined @xterm/xterm 6.0.0 css/xterm.css so the terminal renders when
+       the page is embedded into firmware without external stylesheets.
+       Copyright (c) 2014 The xterm.js authors; (c) 2012-2013 Christopher
+       Jeffrey (MIT License). */
     .xterm {
-      cursor: text;
-      position: relative;
-      user-select: none;
-      -ms-user-select: none;
-      -webkit-user-select: none;
+        cursor: text;
+        position: relative;
+        user-select: none;
+        -ms-user-select: none;
+        -webkit-user-select: none;
     }
 
     .xterm.focus,
     .xterm:focus {
-      outline: none;
+        outline: none;
     }
 
     .xterm .xterm-helpers {
-      position: absolute;
-      top: 0;
-      z-index: 5;
+        position: absolute;
+        top: 0;
+        /**
+         * The z-index of the helpers must be higher than the canvases in order for
+         * IMEs to appear on top.
+         */
+        z-index: 5;
     }
 
     .xterm .xterm-helper-textarea {
-      padding: 0;
-      border: 0;
-      margin: 0;
-      position: absolute;
-      opacity: 0;
-      left: -9999em;
-      top: 0;
-      width: 0;
-      height: 0;
-      z-index: -5;
-      white-space: nowrap;
-      overflow: hidden;
-      resize: none;
+        padding: 0;
+        border: 0;
+        margin: 0;
+        /* Move textarea out of the screen to the far left, so that the cursor is not visible */
+        position: absolute;
+        opacity: 0;
+        left: -9999em;
+        top: 0;
+        width: 0;
+        height: 0;
+        z-index: -5;
+        /** Prevent wrapping so the IME appears against the textarea at the correct position */
+        white-space: nowrap;
+        overflow: hidden;
+        resize: none;
     }
 
     .xterm .composition-view {
-      background: #000;
-      color: #FFF;
-      display: none;
-      position: absolute;
-      white-space: nowrap;
-      z-index: 1;
+        /* TODO: Composition position got messed up somewhere */
+        background: #000;
+        color: #FFF;
+        display: none;
+        position: absolute;
+        white-space: nowrap;
+        z-index: 1;
     }
 
     .xterm .composition-view.active {
-      display: block;
+        display: block;
     }
 
     .xterm .xterm-viewport {
-      background-color: #000;
-      overflow-y: scroll;
-      cursor: default;
-      position: absolute;
-      right: -12px;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      scrollbar-width: thin;
-      scrollbar-color: #555 #000;
-    }
-
-    .xterm .xterm-viewport::-webkit-scrollbar {
-      width: 10px;
-    }
-
-    .xterm .xterm-viewport::-webkit-scrollbar-track {
-      background: #000;
-    }
-
-    .xterm .xterm-viewport::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
-    }
-
-    .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
-      background: #777;
+        /* On OS X this is required in order for the scroll bar to appear fully opaque */
+        background-color: #000;
+        overflow-y: scroll;
+        cursor: default;
+        position: absolute;
+        right: 0;
+        left: 0;
+        top: 0;
+        bottom: 0;
     }
 
     .xterm .xterm-screen {
-      position: relative;
+        position: relative;
     }
 
     .xterm .xterm-screen canvas {
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
-
-    .xterm .xterm-scroll-area {
-      visibility: hidden;
+        position: absolute;
+        left: 0;
+        top: 0;
     }
 
     .xterm-char-measure-element {
-      display: inline-block;
-      visibility: hidden;
-      position: absolute;
-      top: 0;
-      left: -9999em;
-      line-height: normal;
+        display: inline-block;
+        visibility: hidden;
+        position: absolute;
+        top: 0;
+        left: -9999em;
+        line-height: normal;
     }
 
     .xterm.enable-mouse-events {
-      cursor: default;
+        /* When mouse events are enabled (eg. tmux), revert to the standard pointer cursor */
+        cursor: default;
     }
 
     .xterm.xterm-cursor-pointer,
     .xterm .xterm-cursor-pointer {
-      cursor: pointer;
+        cursor: pointer;
     }
 
     .xterm.column-select.focus {
-      cursor: crosshair;
+        /* Column selection mode */
+        cursor: crosshair;
     }
 
     .xterm .xterm-accessibility:not(.debug),
     .xterm .xterm-message {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      right: 0;
-      z-index: 10;
-      color: transparent;
-      pointer-events: none;
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        z-index: 10;
+        color: transparent;
+        pointer-events: none;
     }
 
     .xterm .xterm-accessibility-tree:not(.debug) *::selection {
@@ -219,90 +219,135 @@
     }
 
     .xterm .xterm-accessibility-tree {
+      font-family: monospace;
       user-select: text;
       white-space: pre;
     }
 
+    .xterm .xterm-accessibility-tree > div {
+      transform-origin: left;
+      width: fit-content;
+    }
+
     .xterm .live-region {
-      position: absolute;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
     }
 
     .xterm-dim {
-      opacity: 1 !important;
+        /* Dim should not apply to background, so the opacity of the foreground color is applied
+         * explicitly in the generated class and reset to 1 here */
+        opacity: 1 !important;
     }
 
-    .xterm-underline-1 {
-      text-decoration: underline;
-    }
-
-    .xterm-underline-2 {
-      text-decoration: double underline;
-    }
-
-    .xterm-underline-3 {
-      text-decoration: wavy underline;
-    }
-
-    .xterm-underline-4 {
-      text-decoration: dotted underline;
-    }
-
-    .xterm-underline-5 {
-      text-decoration: dashed underline;
-    }
+    .xterm-underline-1 { text-decoration: underline; }
+    .xterm-underline-2 { text-decoration: double underline; }
+    .xterm-underline-3 { text-decoration: wavy underline; }
+    .xterm-underline-4 { text-decoration: dotted underline; }
+    .xterm-underline-5 { text-decoration: dashed underline; }
 
     .xterm-overline {
-      text-decoration: overline;
+        text-decoration: overline;
     }
 
-    .xterm-overline.xterm-underline-1 {
-      text-decoration: overline underline;
-    }
-
-    .xterm-overline.xterm-underline-2 {
-      text-decoration: overline double underline;
-    }
-
-    .xterm-overline.xterm-underline-3 {
-      text-decoration: overline wavy underline;
-    }
-
-    .xterm-overline.xterm-underline-4 {
-      text-decoration: overline dotted underline;
-    }
-
-    .xterm-overline.xterm-underline-5 {
-      text-decoration: overline dashed underline;
-    }
+    .xterm-overline.xterm-underline-1 { text-decoration: overline underline; }
+    .xterm-overline.xterm-underline-2 { text-decoration: overline double underline; }
+    .xterm-overline.xterm-underline-3 { text-decoration: overline wavy underline; }
+    .xterm-overline.xterm-underline-4 { text-decoration: overline dotted underline; }
+    .xterm-overline.xterm-underline-5 { text-decoration: overline dashed underline; }
 
     .xterm-strikethrough {
-      text-decoration: line-through;
+        text-decoration: line-through;
     }
 
     .xterm-screen .xterm-decoration-container .xterm-decoration {
-      z-index: 6;
-      position: absolute;
+        z-index: 6;
+        position: absolute;
     }
 
     .xterm-screen .xterm-decoration-container .xterm-decoration.xterm-decoration-top-layer {
-      z-index: 7;
+        z-index: 7;
     }
 
     .xterm-decoration-overview-ruler {
-      z-index: 8;
-      position: absolute;
-      top: 0;
-      right: 0;
-      pointer-events: none;
+        z-index: 8;
+        position: absolute;
+        top: 0;
+        right: 0;
+        pointer-events: none;
     }
 
     .xterm-decoration-top {
-      z-index: 2;
-      position: relative;
+        z-index: 2;
+        position: relative;
+    }
+
+
+
+    /* Derived from vs/base/browser/ui/scrollbar/media/scrollbar.css */
+
+    /* xterm.js customization: Override xterm's cursor style */
+    .xterm .xterm-scrollable-element > .scrollbar {
+        cursor: default;
+    }
+
+    /* Arrows */
+    .xterm .xterm-scrollable-element > .scrollbar > .scra {
+        cursor: pointer;
+        font-size: 11px !important;
+    }
+
+    .xterm .xterm-scrollable-element > .visible {
+        opacity: 1;
+
+        /* Background rule added for IE9 - to allow clicks on dom node */
+        background:rgba(0,0,0,0);
+
+        transition: opacity 100ms linear;
+        /* In front of peek view */
+        z-index: 11;
+    }
+    .xterm .xterm-scrollable-element > .invisible {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .xterm .xterm-scrollable-element > .invisible.fade {
+        transition: opacity 800ms linear;
+    }
+
+    /* Scrollable Content Inset Shadow */
+    .xterm .xterm-scrollable-element > .shadow {
+        position: absolute;
+        display: none;
+    }
+    .xterm .xterm-scrollable-element > .shadow.top {
+        display: block;
+        top: 0;
+        left: 3px;
+        height: 3px;
+        width: 100%;
+        box-shadow: var(--vscode-scrollbar-shadow, #000) 0 6px 6px -6px inset;
+    }
+    .xterm .xterm-scrollable-element > .shadow.left {
+        display: block;
+        top: 3px;
+        left: 0;
+        height: 100%;
+        width: 3px;
+        box-shadow: var(--vscode-scrollbar-shadow, #000) 6px 0 6px -6px inset;
+    }
+    .xterm .xterm-scrollable-element > .shadow.top-left-corner {
+        display: block;
+        top: 0;
+        left: 0;
+        height: 3px;
+        width: 3px;
+    }
+    .xterm .xterm-scrollable-element > .shadow.top.left {
+        box-shadow: var(--vscode-scrollbar-shadow, #000) 6px 0 6px -6px inset;
     }
   </style>
 
@@ -324,7 +369,6 @@
         reconnectAttempts: 0,
         pasteHandler: null,
         keyHandler: null,
-        cleanupInterval: null,
         reconnectTimer: null,
         connectTimeout: null,
         userInitiatedDisconnect: false,
@@ -360,9 +404,13 @@
         OUTPUT_FRAME_BYTES: 512,
         OUTPUT_WINDOW: 4,
         STORAGE_THEME_KEY: 'altair_theme',
+        STORAGE_KEYPAD_KEY: 'altair_keypad',
+        STORAGE_KEYPAD_POS_KEY: 'altair_keypad_pos',
+        KEYPAD_MARGIN_PX: 16,
+        KEY_REPEAT_DELAY_MS: 400,
+        KEY_REPEAT_MS: 80,
         DEFAULT_THEME: 'dark',
-        MAX_SCROLLBACK_LINES: 1000,
-        BUFFER_CLEANUP_INTERVAL: 300000, // 5 minutes
+        SCROLLBACK_LINES: 1000,
         RECONNECT_DELAY: 2000,
         MAX_RECONNECT_ATTEMPTS: 5,
         CONNECTION_TIMEOUT: 5000  // 5 second connection timeout
@@ -374,15 +422,26 @@
         hostName: null,
         toggleTheme: null,
         reconnectBtn: null,
-        sendEscBtn: null,
         sendCtrlCBtn: null,
         error: null,
         rebootBtn: null,
         rebootStatus: null,
         rebootBrand: null,
         rebootText: null,
-        monitorBtn: null
+        keypadBtn: null,
+        keypad: null
       };
+
+      // WordStar cursor controls used by CP/M full-screen apps; the physical
+      // arrow keys and the on-screen keypad both send these.
+      const ctrlCode = (letter) => letter.charCodeAt(0) & 0x1F;
+      const CURSOR_CODES = {
+        up: ctrlCode('E'),
+        left: ctrlCode('S'),
+        right: ctrlCode('D'),
+        down: ctrlCode('X')
+      };
+      const KEYPAD_CODES = { ...CURSOR_CODES, esc: 27, space: 32, tab: 9, enter: 13 };
 
       function sendToServer(data) {
         if (!state.connected || !state.online || !state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -606,13 +665,14 @@
           elements.hostName = document.getElementById("host_name");
           elements.toggleTheme = document.getElementById("toggleTheme");
           elements.reconnectBtn = document.getElementById("reconnectBtn");
-          elements.sendEscBtn = document.getElementById("sendEscBtn");
           elements.sendCtrlCBtn = document.getElementById("sendCtrlCBtn");
           elements.error = document.getElementById("terminal_error");
-          elements.monitorBtn = document.getElementById("monitorBtn");
+          elements.keypadBtn = document.getElementById("keypadBtn");
+          elements.keypad = document.getElementById("keypad");
           elements.rebootBtn = document.getElementById("rebootZ80Btn");
           elements.rebootStatus = document.getElementById("reboot_status");
           elements.rebootBrand = document.getElementById("reboot_brand");
+          elements.gpuBadge = document.getElementById("gpu_badge");
           elements.rebootText = document.getElementById("reboot_message");
 
           // Validate critical elements exist
@@ -640,30 +700,125 @@
         };
       }
 
-      // Add sendEsc button click handler
-      function setupSendEscButton() {
-        if (!elements.sendEscBtn) return;
-        elements.sendEscBtn.onclick = function () {
-          if (state.connected && state.ws && state.ws.readyState === WebSocket.OPEN) {
-            sendControlCharacter(27); // ESC key
-          }
-          if (state.term) {
-            state.term.focus();
-          }
-        };
+      // Place the floating keypad at (x, y), clamped so it stays fully on-screen.
+      function placeKeypad(x, y) {
+        const pad = elements.keypad;
+        const maxX = Math.max(0, window.innerWidth - pad.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - pad.offsetHeight);
+        pad.style.left = `${Math.round(Math.min(Math.max(0, x), maxX))}px`;
+        pad.style.top = `${Math.round(Math.min(Math.max(0, y), maxY))}px`;
       }
 
-      // Add monitor button click handler
-      function setupMonitorButton() {
-        if (!elements.monitorBtn) return;
-        elements.monitorBtn.onclick = function () {
-          if (state.connected && state.ws && state.ws.readyState === WebSocket.OPEN) {
-            sendControlCharacter(13);
-          }
-          if (state.term) {
-            state.term.focus();
-          }
+      function restoreKeypadPosition() {
+        let saved = null;
+        try {
+          saved = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYPAD_POS_KEY));
+        } catch (error) {
+          saved = null;
+        }
+        if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+          placeKeypad(saved.x, saved.y);
+        } else {
+          // Default: overlay the terminal's bottom-right corner (or the
+          // window's, if the terminal is unavailable).
+          const margin = CONFIG.KEYPAD_MARGIN_PX;
+          const area = elements.terminal ? elements.terminal.getBoundingClientRect()
+            : { right: window.innerWidth, bottom: window.innerHeight };
+          placeKeypad(area.right - elements.keypad.offsetWidth - margin,
+                      area.bottom - elements.keypad.offsetHeight - margin);
+        }
+      }
+
+      function showKeypad(visible) {
+        if (!elements.keypad || !elements.keypadBtn) return;
+        elements.keypad.hidden = !visible;
+        elements.keypadBtn.setAttribute('aria-pressed', String(visible));
+        localStorage.setItem(CONFIG.STORAGE_KEYPAD_KEY, visible ? 'on' : 'off');
+        // Size is only measurable once shown.
+        if (visible) restoreKeypadPosition();
+      }
+
+      /**
+       * Floating, draggable on-screen cursor pad for touch devices without a
+       * keyboard. Keys act on pointerdown and auto-repeat while held. They
+       * never focus the terminal, so a tablet does not raise its keyboard.
+       * Any part of the panel that is not a key drags it (grip bar, border,
+       * gaps); the position is remembered and kept on-screen.
+       */
+      function setupKeypad() {
+        if (!elements.keypad || !elements.keypadBtn) return;
+        const pad = elements.keypad;
+        const stored = localStorage.getItem(CONFIG.STORAGE_KEYPAD_KEY);
+        const coarse = typeof window.matchMedia === 'function' &&
+          window.matchMedia('(pointer: coarse)').matches;
+        showKeypad(stored ? stored === 'on' : coarse);
+        elements.keypadBtn.onclick = () => showKeypad(pad.hidden);
+
+        // Opaque while touched, translucent otherwise.
+        let touches = 0;
+        const engage = () => { ++touches; pad.classList.add('active'); };
+        const release = () => {
+          touches = Math.max(0, touches - 1);
+          if (!touches) pad.classList.remove('active');
         };
+        pad.addEventListener('pointerdown', engage);
+        for (const type of ['pointerup', 'pointercancel']) pad.addEventListener(type, release);
+
+        let repeatTimer = null;
+        const stop = () => {
+          if (repeatTimer !== null) clearTimeout(repeatTimer);
+          repeatTimer = null;
+        };
+        for (const key of pad.querySelectorAll('button[data-key]')) {
+          const code = KEYPAD_CODES[key.dataset.key];
+          const repeat = (delay) => {
+            repeatTimer = setTimeout(() => {
+              sendControlCharacter(code);
+              repeat(CONFIG.KEY_REPEAT_MS);
+            }, delay);
+          };
+          key.addEventListener('pointerdown', (ev) => {
+            ev.preventDefault();
+            if (key.disabled) return;
+            stop();
+            sendControlCharacter(code);
+            repeat(CONFIG.KEY_REPEAT_DELAY_MS);
+          });
+          for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
+            key.addEventListener(type, stop);
+          }
+          key.addEventListener('contextmenu', (ev) => ev.preventDefault());
+        }
+        window.addEventListener('blur', stop);
+
+        let drag = null;
+        pad.addEventListener('pointerdown', (ev) => {
+          if (drag || (ev.target && ev.target.closest && ev.target.closest('button'))) return;
+          ev.preventDefault();
+          const rect = pad.getBoundingClientRect();
+          drag = { id: ev.pointerId, dx: ev.clientX - rect.left, dy: ev.clientY - rect.top };
+          if (pad.setPointerCapture) pad.setPointerCapture(ev.pointerId);
+          pad.classList.add('dragging');
+        });
+        pad.addEventListener('pointermove', (ev) => {
+          if (drag && ev.pointerId === drag.id) placeKeypad(ev.clientX - drag.dx, ev.clientY - drag.dy);
+        });
+        const endDrag = (ev) => {
+          if (!drag || ev.pointerId !== drag.id) return;
+          drag = null;
+          pad.classList.remove('dragging');
+          localStorage.setItem(CONFIG.STORAGE_KEYPAD_POS_KEY, JSON.stringify({
+            x: parseFloat(pad.style.left), y: parseFloat(pad.style.top)
+          }));
+        };
+        pad.addEventListener('pointerup', endDrag);
+        pad.addEventListener('pointercancel', endDrag);
+        pad.addEventListener('contextmenu', (ev) => ev.preventDefault());
+
+        // Rotation or resize: keep the pad reachable without changing the saved spot.
+        window.addEventListener('resize', () => {
+          if (!pad.hidden) restoreKeypadPosition();
+        });
       }
 
       /**
@@ -719,9 +874,10 @@
         }
 
         // Disable/enable control buttons based on connection state
-        if (elements.sendEscBtn) elements.sendEscBtn.disabled = !isOpen;
         if (elements.sendCtrlCBtn) elements.sendCtrlCBtn.disabled = !isOpen;
-        if (elements.monitorBtn) elements.monitorBtn.disabled = !isOpen;
+        if (elements.keypad) {
+          for (const key of elements.keypad.querySelectorAll('button')) key.disabled = !isOpen;
+        }
         updateRebootButton();
       }
       // Add reconnect button click handler
@@ -769,6 +925,25 @@
       }
 
       /**
+       * Render with WebGL when available; xterm's DOM renderer is far slower
+       * for full-screen ANSI applications. Falls back to DOM on any failure.
+       */
+      function loadGpuRenderer(term) {
+        if (typeof WebglAddon === "undefined") return;
+        try {
+          const addon = new WebglAddon.WebglAddon();
+          addon.onContextLoss(() => {
+            addon.dispose();
+            if (elements.gpuBadge) elements.gpuBadge.hidden = true;
+          });
+          term.loadAddon(addon);
+          if (elements.gpuBadge) elements.gpuBadge.hidden = false;
+        } catch (error) {
+          console.warn("WebGL renderer unavailable; using DOM renderer.", error);
+        }
+      }
+
+      /**
        * Initialize xterm.js terminal with error handling
        */
       function initializeTerminal() {
@@ -800,6 +975,7 @@
             fontSize: CONFIG.XTERM_FONT_SIZE,
             cols: CONFIG.XTERM_COLS,
             rows: CONFIG.XTERM_ROWS,
+            scrollback: CONFIG.SCROLLBACK_LINES,
             theme: themeColors
           });
 
@@ -811,6 +987,7 @@
           }
 
           state.term.open(elements.terminal);
+          loadGpuRenderer(state.term);
 
           // Enforce fixed dimensions after opening
           state.term.resize(CONFIG.XTERM_COLS, CONFIG.XTERM_ROWS);
@@ -866,12 +1043,11 @@
           }
 
           // Special Altair character mappings
-          const ctrlCode = (letter) => letter.charCodeAt(0) & 0x1F;
           const keyMappings = {
-            39: ctrlCode('D'), // cursor right -> ctrl D
-            37: ctrlCode('S'), // cursor left -> ctrl S
-            38: ctrlCode('E'), // cursor up -> ctrl E
-            40: ctrlCode('X'), // cursor down -> ctrl X
+            39: CURSOR_CODES.right,
+            37: CURSOR_CODES.left,
+            38: CURSOR_CODES.up,
+            40: CURSOR_CODES.down,
             45: ctrlCode('O'), // insert -> ctrl O
             46: ctrlCode('G'), // delete -> ctrl G
             33: ctrlCode('R'), // page up -> ctrl R
@@ -1249,56 +1425,10 @@
       }
 
       /**
-       * Start periodic memory cleanup
-       */
-      function startPeriodicCleanup() {
-        // Clear existing interval first
-        if (state.cleanupInterval) {
-          clearInterval(state.cleanupInterval);
-        }
-
-        state.cleanupInterval = setInterval(() => {
-          if (state.term && state.connected) {
-            try {
-              // Log memory usage for monitoring
-              logMemoryUsage();
-
-              // Clear excess scrollback buffer
-              const buffer = state.term.buffer;
-              if (buffer && buffer.lines && buffer.lines.length > CONFIG.MAX_SCROLLBACK_LINES) {
-                console.log("Cleaning up terminal buffer - lines:", buffer.lines.length);
-                // Clear the terminal display but keep connection
-                state.term.clear();
-              }
-            } catch (error) {
-              console.error("Error during periodic cleanup:", error);
-            }
-          }
-        }, CONFIG.BUFFER_CLEANUP_INTERVAL);
-      }
-
-      /**
-       * Log memory usage for monitoring
-       */
-      function logMemoryUsage() {
-        if (performance.memory) {
-          const used = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
-          const total = (performance.memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
-          console.log(`Memory - Used: ${used}MB, Total: ${total}MB`);
-        }
-      }
-
-      /**
        * Cleanup function for page unload
        */
       function cleanup() {
         if (state.rebootTimer !== null) clearTimeout(state.rebootTimer);
-        // Stop periodic cleanup
-        if (state.cleanupInterval) {
-          clearInterval(state.cleanupInterval);
-          state.cleanupInterval = null;
-        }
-
         // Cancel any pending reconnection
         cancelReconnect();
 
@@ -1333,9 +1463,7 @@
 
 
           setupReconnectButton();
-          setupSendEscButton();
           setupSendCtrlCButton();
-          setupMonitorButton();
           setupRebootButton();
           initializeNetworkHandlers();
 
@@ -1343,10 +1471,10 @@
             return false;
           }
 
-          attemptConnection();
+          // After the terminal has its size, so the default position can overlay it.
+          setupKeypad();
 
-          // Start periodic memory cleanup
-          startPeriodicCleanup();
+          attemptConnection();
 
           // Set up cleanup on page unload
           window.addEventListener('beforeunload', cleanup);
@@ -1419,6 +1547,90 @@
         box-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 2px #ffffff inset;
       }
 
+      /* Floating, draggable keypad: translucent so the terminal shows through,
+         opaque while touched. */
+      #keypad {
+        position: fixed;
+        z-index: 20;
+        left: 0;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 4px 14px 14px;
+        cursor: grab;
+        touch-action: none;
+        border-radius: 10px;
+        background: rgba(23, 44, 70, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        opacity: 0.5;
+        transition: opacity 150ms ease;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      #keypad.active {
+        opacity: 0.95;
+      }
+
+      #keypad.dragging {
+        cursor: grabbing;
+      }
+
+      #keypad[hidden] {
+        display: none;
+      }
+
+      .keypad-handle {
+        height: 30px;
+        margin: 0 -8px;
+        border-radius: 6px;
+        /* A row of grip dots. */
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 1.5px, transparent 2px)
+          center / 10px 6px repeat-x;
+      }
+
+      .keypad-body {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      #keypad .altair-btn {
+        margin: 0;
+        cursor: pointer;
+        touch-action: none;
+      }
+
+      .keypad-dpad {
+        display: grid;
+        grid-template-columns: repeat(3, 52px);
+        grid-template-rows: repeat(3, 52px);
+        gap: 6px;
+      }
+
+      .keypad-dpad .altair-btn {
+        padding: 0;
+        font-size: 1.4rem;
+      }
+
+      .keypad-up { grid-area: 1 / 2; }
+      .keypad-left { grid-area: 2 / 1; }
+      .keypad-right { grid-area: 2 / 3; }
+      .keypad-down { grid-area: 3 / 2; }
+
+      .keypad-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 84px);
+        grid-auto-rows: 52px;
+        gap: 6px;
+      }
+
+      #keypadBtn[aria-pressed="true"] {
+        background: #2A5F8F;
+      }
+
       #version {
         font-family: Courier New, Courier, monospace;
         color: #ffffff;
@@ -1429,9 +1641,8 @@
       }
     </style>
     <button id="reconnectBtn" class="altair-btn" disabled>Connected</button>
-    <button id="sendEscBtn" class="altair-btn">Esc</button>
     <button id="sendCtrlCBtn" class="altair-btn">Ctrl+C</button>
-    <button id="monitorBtn" class="altair-btn">Enter</button>
+    <button id="keypadBtn" class="altair-btn" aria-pressed="false" aria-controls="keypad">Keys</button>
     <button id="rebootZ80Btn" class="altair-btn" disabled>Reboot Zeta-80</button>
     <button id="toggleTheme" class="altair-btn" onclick="toggleTheme()">Dark</button>
   </div>
@@ -1446,7 +1657,7 @@
         <text x="80" y="86" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">Z80</text>
         <path d="M44 109h17V97h18v12h18V97h19" fill="none" stroke="#5ce0cd" stroke-width="4" stroke-linejoin="round"/>
       </svg>
-      <span>Zeta-80 <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K</span>
+      <span>Zeta-80 <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K<span id="gpu_badge" hidden> <span style="color: #5ce0cd;">|</span> WebGL accelerated</span></span>
     </span>
     <span id="reboot_message" style="display: none;"></span>
   </div>
@@ -1456,6 +1667,24 @@
 
   <div id="terminal"></div>
 
+  <div id="keypad" role="group" aria-label="On-screen keys" title="Drag the panel to move it" hidden>
+    <div class="keypad-handle" aria-hidden="true"></div>
+    <div class="keypad-body">
+    <div class="keypad-dpad">
+      <button class="altair-btn keypad-up" data-key="up" aria-label="Cursor up">&#9650;</button>
+      <button class="altair-btn keypad-left" data-key="left" aria-label="Cursor left">&#9664;</button>
+      <button class="altair-btn keypad-right" data-key="right" aria-label="Cursor right">&#9654;</button>
+      <button class="altair-btn keypad-down" data-key="down" aria-label="Cursor down">&#9660;</button>
+    </div>
+    <div class="keypad-actions">
+      <button class="altair-btn" data-key="esc">Esc</button>
+      <button class="altair-btn" data-key="tab">Tab</button>
+      <button class="altair-btn" data-key="space">Space</button>
+      <button class="altair-btn" data-key="enter">Enter</button>
+    </div>
+    </div>
+  </div>
+
   <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; width: 100%;">
     <div id="docs" style="display: flex; gap: 8px; align-items: center;">
       <a href="https://github.com/AzureSphereCloudEnabledAltair8800/RetroGames" target="_blank">Games</a>
@@ -1464,7 +1693,7 @@
     </div>
   </div>
 
-  <div id="version">3.2.3</div>
+  <div id="version">3.3.0</div>
 
 </body>
 

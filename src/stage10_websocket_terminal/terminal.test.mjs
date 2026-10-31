@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const html = readFileSync(new URL('./Terminal/index.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1]
-  .replace('        initialize,', '        state, elements, setupTerminalEventHandlers, setupMonitorButton, setupRebootButton, setupWebSocketEventHandlers, getWebSocketUrl, handleProtocolFrame, resetProtocol, closeConnection, scheduleReconnect, initialize,');
+  .replace('        initialize,', '        state, elements, setupTerminalEventHandlers, setupKeypad, setupRebootButton, setupWebSocketEventHandlers, getWebSocketUrl, handleProtocolFrame, resetProtocol, closeConnection, scheduleReconnect, initialize,');
 
 function frame(type, sequence, payload = []) {
   const bytes = new Uint8Array(5 + payload.length);
@@ -48,6 +48,11 @@ function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }
     setTimeout(callback) { const id = nextTimer++; timers.set(id, callback); return id; },
     clearTimeout(id) { timers.delete(id); },
     window: { location, confirm() { return true; } },
+    localStorage: {
+      data: new Map(),
+      getItem(key) { return this.data.has(key) ? this.data.get(key) : null; },
+      setItem(key, value) { this.data.set(key, String(value)); },
+    },
   });
   vm.runInContext(script + ';globalThis.api = AltairTerminal;', context);
   const api = context.api;
@@ -92,10 +97,93 @@ test('CP/M key mappings match the tested USB terminal; Ctrl-M is CR', () => {
   assert.equal(input.press('m', 77, { ctrlKey: true }), false);
   assert.deepEqual(input.sent.at(-1).slice(5), [13]);
   input.acknowledge();
-  input.api.elements.monitorBtn = {};
-  input.api.setupMonitorButton();
-  input.api.elements.monitorBtn.onclick();
-  assert.deepEqual(input.sent.at(-1).slice(5), [13]);
+});
+
+test('on-screen keypad sends CP/M cursor codes, repeats while held and never focuses', () => {
+  const input = terminal();
+  let focused = 0;
+  input.api.state.term.focus = () => { ++focused; };
+  const handlers = new Map();
+  const on = (name, handler) => handlers.set(name, [...(handlers.get(name) || []), handler]);
+  const listeners = { get: (name) => (ev) => (handlers.get(name) || []).forEach(h => h(ev)) };
+  const button = (key) => ({
+    dataset: { key }, disabled: false,
+    addEventListener(type, handler) { on(`${key}:${type}`, handler); },
+  });
+  const keys = ['up', 'left', 'right', 'down', 'esc', 'tab', 'space', 'enter'].map(button);
+  const attrs = {};
+  const classes = new Set();
+  const pad = {
+    hidden: true, style: {}, offsetWidth: 360, offsetHeight: 200,
+    classList: { add(c) { classes.add(c); }, remove(c) { classes.delete(c); } },
+    addEventListener(type, handler) { on(`pad:${type}`, handler); },
+    querySelectorAll: () => keys,
+    getBoundingClientRect() { return { left: parseFloat(this.style.left), top: parseFloat(this.style.top) }; },
+  };
+  input.api.elements.keypad = pad;
+  input.api.elements.keypadBtn = { setAttribute(name, value) { attrs[name] = value; } };
+  Object.assign(input.context.window, {
+    innerWidth: 1180, innerHeight: 820,
+    matchMedia: () => ({ matches: true }),
+    addEventListener(type, handler) { on(`window:${type}`, handler); },
+  });
+  input.api.elements.terminal = { getBoundingClientRect: () => ({ right: 900, bottom: 700 }) };
+  input.api.setupKeypad();
+  assert.equal(pad.hidden, false, 'touch devices default to showing the pad');
+  assert.equal(attrs['aria-pressed'], 'true');
+  assert.deepEqual([pad.style.left, pad.style.top], ['524px', '484px'],
+                   "defaults over the terminal's bottom-right corner");
+
+  // Pressing a key never drags the pad.
+  const keyTarget = { closest: () => keys[0] };
+  listeners.get('pad:pointerdown')({ pointerId: 6, clientX: 530, clientY: 490, target: keyTarget, preventDefault() {} });
+  listeners.get('pad:pointermove')({ pointerId: 6, clientX: 106, clientY: 96 });
+  assert.deepEqual([pad.style.left, pad.style.top], ['524px', '484px']);
+  listeners.get('pad:pointerup')({ pointerId: 6 });
+
+  // Dragging any non-key part of the panel moves it, clamps it on-screen and remembers it.
+  const panelTarget = { closest: () => null };
+  listeners.get('pad:pointerdown')({ pointerId: 7, clientX: 530, clientY: 490, target: panelTarget, preventDefault() {} });
+  listeners.get('pad:pointermove')({ pointerId: 7, clientX: 106, clientY: 96 });
+  assert.deepEqual([pad.style.left, pad.style.top], ['100px', '90px']);
+  listeners.get('pad:pointermove')({ pointerId: 7, clientX: -500, clientY: 5000 });
+  assert.deepEqual([pad.style.left, pad.style.top], ['0px', '620px']);
+  listeners.get('pad:pointerup')({ pointerId: 7 });
+  assert.deepEqual(JSON.parse(input.context.localStorage.getItem('altair_keypad_pos')), { x: 0, y: 620 });
+  input.context.window.innerHeight = 600;
+  listeners.get('window:resize')();
+  assert.deepEqual([pad.style.left, pad.style.top], ['0px', '400px'], 'rotation keeps the pad on-screen');
+
+  listeners.get('pad:pointerdown')({ pointerId: 8, target: keyTarget, preventDefault() {} });
+  assert.ok(classes.has('active'), 'opaque while touched');
+  listeners.get('pad:pointerup')({ pointerId: 8 });
+  assert.ok(!classes.has('active'));
+
+  const press = (key) => listeners.get(`${key}:pointerdown`)({ preventDefault() {} });
+  for (const [key, expected] of [['up', 5], ['left', 19], ['right', 4], ['down', 24],
+                                 ['esc', 27], ['tab', 9], ['space', 32], ['enter', 13]]) {
+    press(key);
+    assert.deepEqual(input.sent.at(-1).slice(5), [expected]);
+    input.acknowledge();
+    listeners.get(`${key}:pointerup`)();
+  }
+
+  // Holding a key repeats it until release; the repeat timer is the only one besides input retry.
+  press('right');
+  input.acknowledge();
+  const repeatId = [...input.timers.keys()].find(id => id !== input.api.state.inputTimer);
+  const fire = input.timers.get(repeatId);
+  input.timers.delete(repeatId);
+  fire();
+  assert.deepEqual(input.sent.at(-1).slice(5), [4]);
+  input.acknowledge();
+  listeners.get('right:pointerup')();
+  assert.equal([...input.timers.keys()].filter(id => id !== input.api.state.inputTimer).length, 0);
+  assert.equal(focused, 0, 'keypad must not raise the tablet keyboard');
+
+  input.api.elements.keypadBtn.onclick();
+  assert.equal(input.api.elements.keypad.hidden, true);
+  assert.equal(input.context.localStorage.getItem('altair_keypad'), 'off');
 });
 
 test('xterm input forwards bytes, CP/M controls and pastes; disconnected input is suppressed', () => {
@@ -130,10 +218,11 @@ test('ESP32 terminal layout keeps 80 columns and a separate scrollbar strip', ()
   assert.match(container, /max-width:\s*calc\(100vw - 40px\)/);
   assert.match(container, /padding:\s*0 12px 0 0/);
   assert.match(container, /overflow:\s*auto/);
-  const viewport = html.match(/\.xterm \.xterm-viewport\s*\{([^}]+)\}/)[1];
-  assert.match(viewport, /right:\s*-12px/);
-  assert.match(viewport, /scrollbar-width:\s*thin/);
-  assert.match(html, /<button id="monitorBtn"[^>]*>Enter<\/button>/);
+  const scrollbar = html.match(/#terminal \.xterm \.xterm-scrollable-element > \.scrollbar\.vertical\s*\{([^}]+)\}/)[1];
+  assert.match(scrollbar, /right:\s*-12px !important/);
+  assert.match(scrollbar, /width:\s*10px !important/);
+  assert.match(html, /<button id="keypadBtn"[^>]*>Keys<\/button>/);
+  assert.doesNotMatch(html, /id="(sendEscBtn|monitorBtn)"/);
   assert.match(html, /id="terminal_error" role="alert"/);
 });
 
