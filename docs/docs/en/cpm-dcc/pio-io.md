@@ -52,10 +52,9 @@ FIFOs:
 | Core 0 → PIO1 (TX) | `pull`, `out pins, 10`, `out pindirs, 10` | The reply for an `IN`: pin levels for GP8-GP17 (A16 unchanged, IO_RELEASE LOW, D0-D7) in bits 0-9, then the pin directions to use while driving (bits 10-19) and when idle (bits 20-29) |
 
 An RX-not-empty interrupt runs core 0's handler, which takes snapshots in bus
-order. Each OUT snapshot becomes a port/value write to the virtual devices
-(console, disks, timers, services, HTTP). An IN snapshot becomes a device read
-whose byte is put in the TX FIFO. The handler and the device code it calls run
-from SRAM.
+order: each OUT becomes a device write and each IN a device read whose byte
+goes back in the TX FIFO (see [Division of work](#division-of-work)). The
+handler and the device code it calls run from SRAM.
 
 ## An OUT cycle
 
@@ -98,6 +97,63 @@ the second (T3) it samples the data. PIO re-asserts the hold at precisely the
 right instruction, so the clock stops in T3's LOW phase. Only after the bus is
 isolated does the clock resume into the next opcode fetch, so the Pico can
 never still be driving the bus when the Z80 reads its next instruction.
+
+## Division of work
+
+| Owner | Responsibility |
+| --- | --- |
+| PIO0 + PIO1 | All Z80 bus timing: the 20 MHz clock, cycle detection, buffer enables, data drive and sampling, WAIT# release and A16 bank select |
+| Core 0 | The Z80's supervisor and the device logic behind its I/O ports |
+| Core 1 | USB, Wi-Fi and network services, the web terminal, flash programming and the disk read-ahead |
+
+### Core 0: PIO1 interrupt
+
+The RX-not-empty interrupt is core 0's only per-cycle work. It takes each
+snapshot in bus order, applies OUT bytes and computes IN replies:
+
+| Ports | Work |
+| --- | --- |
+| `00h-01h` console | Queue output to the shared ring for core 1 (USB or WebSocket), return input bytes, report status without taking the lock |
+| `10h-14h` disk | Latch drive and LBA, run commands, serve reads from the SRAM read-ahead or flash, collect 128-byte write records and hand them to core 1 |
+| `02h-04h` service ABI | Collect requests for core-1 workers and return their replies |
+| `17h` timers | Countdown timers and stopwatches |
+| `15h-16h` HTTP | Filename and chunk handshakes with the core-1 HTTP worker |
+| `05h`, `06h` | Boot markers and disk-diagnostic results |
+| `07h` (IN) | SRAM bank status; `OUT 07h` completes entirely in PIO |
+
+Measured cost is about 1 µs per IN and 1.2-1.3 µs per OUT. Even at about
+266,000 polled INs per second this is roughly a quarter of core 0's time
+(excluding interrupt entry and exit), and most of it answers console-status
+polls. Anything slow is handed to core 1 through bounded queues and
+mailboxes.
+
+### Core 0: main loop
+
+- **Flash grants.** When core 1 must program flash, core 0 parks the Z80 with
+  BUSREQ#, applies queued OUTs and pauses the I/O engine. Afterwards it rearms
+  the engine and returns the bus.
+- **Watchdog.** A cycle that makes no progress for 500 ms holds the CPU in
+  reset.
+- **Supervisor commands** from core 1 (the **Ctrl-]** menu): load and verify,
+  start, status (`[pio]`, `[iolat]`, `[disk]`), stop, reboot, fault arming,
+  and configuration or web reboots.
+- **Run monitoring.** BIOS and CCP boot markers, the boot timeout,
+  disk-diagnostic progress, and holding the CPU on a fatal storage error.
+- **Orderly stop.** Request a flush from core 1, park the Z80, apply queued
+  OUTs and check disk quiescence, then hold RESET# or resume.
+- **State publication** for core 1.
+
+### Core 0: boot
+
+Before CP/M starts, core 0 recovers the flash journal, validates the boot
+image and loads all 64 KiB into SRAM by injecting instructions on a slow,
+software-stepped clock, then reads every byte back. It prepares bank 1 and
+only then arms the I/O engine and starts the 20 MHz PIO clock. This loader is
+the only use of stepped clocking.
+
+Core 0 does no bus timing, clock stopping or stepping during a cycle, and no
+USB, network or flash programming. Between cycles it is idle in its main
+loop.
 
 ## Why it is fast
 
