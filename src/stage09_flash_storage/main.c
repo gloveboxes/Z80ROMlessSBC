@@ -19,9 +19,7 @@
 bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
 #endif
 #include "z80sbc/io_trap.h"
-#if defined(Z80_BANKED_PIO)
 #include "z80sbc/banked_pio.h"
-#endif
 #include "z80sbc/io_ports.h"
 #include "z80sbc/sram.h"
 #include "z80sbc/supervisor.h"
@@ -143,42 +141,48 @@ static uint8_t __not_in_flash_func(virtual_read)(uint8_t port, void *context) {
   }
 }
 
-static void __not_in_flash_func(virtual_write)(uint8_t port, uint8_t value,
-                                              void *context) {
-  (void)context;
-  if (port == 0x00) {
-    z80_terminal_io_write(port, value);
-    return;
-  }
-  if (diagnostic_active && port == 0x06) {
-    uint32_t offset = diagnostic_count;
-    if (offset < DIAGNOSTIC_BYTES) {
-      const uint8_t *source =
-          (const uint8_t *)(XIP_BASE + Z80_FLASH_DISK_OFFSET);
-      if (value != source[offset] && diagnostic_result == 0) {
-        diagnostic_fault_offset = offset;
-        diagnostic_expected = source[offset];
-        diagnostic_actual = value;
-        diagnostic_result = 0xE1;
-      }
-    } else {
+static void __not_in_flash_func(diagnostic_byte)(uint8_t value) {
+  uint32_t offset = diagnostic_count;
+  if (offset < DIAGNOSTIC_BYTES) {
+    const uint8_t *source =
+        (const uint8_t *)(XIP_BASE + Z80_FLASH_DISK_OFFSET);
+    if (value != source[offset] && diagnostic_result == 0) {
+      diagnostic_fault_offset = offset;
+      diagnostic_expected = source[offset];
+      diagnostic_actual = value;
       diagnostic_result = 0xE1;
     }
-    diagnostic_count = offset + 1;
-    return;
+  } else {
+    diagnostic_result = 0xE1;
   }
-  if (diagnostic_active && port == Z80_BOOT_REPORT_PORT) {
+  diagnostic_count = offset + 1;
+}
+
+static void __not_in_flash_func(boot_report)(uint8_t value) {
+  if (diagnostic_active) {
     if (diagnostic_result == 0)
       diagnostic_result = value == 0x5A &&
                           diagnostic_count == DIAGNOSTIC_BYTES ? 0x5A : 0xE1;
-    return;
+  } else if (value == Z80_BOOT_REPORT_BIOS) {
+    __atomic_fetch_or(&boot_markers, 1u, __ATOMIC_RELEASE);
+  } else if (value == Z80_BOOT_REPORT_CCP) {
+    __atomic_fetch_or(&boot_markers, 2u, __ATOMIC_RELEASE);
   }
+}
+
+static void __not_in_flash_func(virtual_write)(uint8_t port, uint8_t value,
+                                              void *context) {
+  (void)context;
   switch (port) {
+  case 0x00:
+    z80_terminal_io_write(port, value);
+    break;
   case Z80_BOOT_REPORT_PORT:
-    if (value == Z80_BOOT_REPORT_BIOS)
-      __atomic_fetch_or(&boot_markers, 1u, __ATOMIC_RELEASE);
-    else if (value == Z80_BOOT_REPORT_CCP)
-      __atomic_fetch_or(&boot_markers, 2u, __ATOMIC_RELEASE);
+    boot_report(value);
+    break;
+  case 0x06:
+    if (diagnostic_active)
+      diagnostic_byte(value);
     break;
   case 0x10:
   case 0x11:
@@ -406,17 +410,35 @@ static void print_reset_status(void) {
          reset_was_watchdog, reason, (unsigned long)reset_fault.gpio);
 }
 
-#if defined(Z80_BANKED_PIO)
 static void print_pio_status(void) {
   z80_banked_pio_status_t p = z80_banked_pio_status();
-  printf("[pio] active=%u running=%u slow=%u requests=%lu reads=%lu writes=%lu "
+  printf("[pio] active=%u running=%u reads=%lu writes=%lu "
          "last=%s:%02x:%02x pc=%u/%u irq=%02x gpio=%08lx\n",
-         p.active, p.running, p.slow, (unsigned long)p.requests,
+         p.active, p.running,
          (unsigned long)p.reads, (unsigned long)p.writes,
          p.read ? "IN" : "OUT", p.port, p.value, p.clock_pc, p.io_pc,
          p.irqs, (unsigned long)p.pins);
 }
-#endif
+
+static void print_io_latency(void) {
+  z80_banked_pio_latency_t l = z80_banked_pio_take_latency();
+  if (!l.available) {
+    printf("[iolat] unavailable (no DWT cycle counter)\n");
+    return;
+  }
+  // Core-0 cost since the previous Ctrl-] s; clk_sys cycles to ns.
+  const uint64_t mhz = SYSTEM_CLOCK_HZ / 1000000u;
+  unsigned long long in_avg =
+      l.in_count ? l.in_cycles * 1000u / mhz / l.in_count : 0;
+  unsigned long long out_avg =
+      l.out_count ? l.out_cycles * 1000u / mhz / l.out_count : 0;
+  printf("[iolat] since last status: IN count=%lu avg=%lluns max=%lluns; "
+         "OUT apply count=%lu avg=%lluns max=%lluns\n",
+         (unsigned long)l.in_count, in_avg,
+         (unsigned long long)l.in_max_cycles * 1000u / mhz,
+         (unsigned long)l.out_count, out_avg,
+         (unsigned long long)l.out_max_cycles * 1000u / mhz);
+}
 
 static void print_status(bool requested) {
   if (requested)
@@ -515,12 +537,13 @@ static void print_status(bool requested) {
          (unsigned long)buffers.rx_peak, (unsigned long)buffers.tx_used,
          (unsigned long)buffers.tx_capacity, (unsigned long)buffers.tx_peak);
 #endif
-#if defined(Z80_BANKED_PIO)
-  printf("[diag] banked_pio=enabled (software fallback possible)\n");
   print_pio_status();
-#else
-  printf("[diag] banked_pio=disabled (software I/O, PWM execution clock)\n");
-#endif
+  if (requested)
+    print_io_latency();
+  uint32_t readahead_hits, readahead_misses;
+  z80_flash_disk_prefetch_counts(&readahead_hits, &readahead_misses);
+  printf("[disk] readahead hits=%lu misses=%lu\n",
+         (unsigned long)readahead_hits, (unsigned long)readahead_misses);
   printf("[diag] banked_sram=%02x (00=unavailable, B4/B5=ready bank 0/1)\n",
          (unsigned int)z80_memory_bank_status());
   const z80_boot_status_t *boot = z80_flash_boot_status();
@@ -889,9 +912,7 @@ static void service_run(void) {
     boot_failure = "BIOS/CCP evidence timeout";
     printf("\n[boot] FAIL: BIOS/CCP evidence timeout; stopping safely. "
            "Rebuild/provision the matching boot package if markers are absent.\n");
-#if defined(Z80_BANKED_PIO)
     print_pio_status();
-#endif
     stop_requested = true;
     boot_timed_out = true;
     __atomic_store_n(&flash_pause_request, 1, __ATOMIC_RELEASE);
@@ -929,12 +950,29 @@ static void service_run(void) {
     return;
   }
   if (__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
-    // Exclude a last I/O IRQ between checking the queue and asserting reset.
+    // PIO completes OUTs ahead of core 0. Park the Z80 between machine cycles,
+    // then apply every completed OUT before deciding, so the disk state seen
+    // here is exactly what the Z80 has issued.
+    if (!z80_cpu_request_bus(500000)) {
+      boot_failure = "stop bus request";
+      hold_cpu();
+      printf("\n[diag] FAIL: Z80 did not release the bus for stop; "
+             "RESET held LOW.\n");
+      return;
+    }
     uint32_t interrupts = save_and_disable_interrupts();
+    z80_io_trap_drain_writes();
     bool quiescent = z80_flash_disk_quiescent();
     if (quiescent)
       hold_cpu();
     restore_interrupts(interrupts);
+    if (!quiescent && !z80_cpu_release_bus(500000)) {
+      boot_failure = "stop bus release";
+      hold_cpu();
+      printf("\n[diag] FAIL: Z80 bus release after stop check; "
+             "RESET held LOW.\n");
+      return;
+    }
     if (quiescent) {
 #ifdef Z80_STAGE10_NETWORK
       if (config_reboot_after_stop) {
@@ -943,12 +981,12 @@ static void service_run(void) {
         config_reboot_deadline = make_timeout_time_ms(1000);
         if (web_reboot_active)
           z80_web_terminal_set_reboot_status(Z80_WEB_REBOOT_RESTARTING);
-        printf("\n[config] Disks flushed; RESET held LOW, PWM stopped. "
+        printf("\n[config] Disks flushed; RESET held LOW, clock stopped. "
                "Rebooting in one second.\n");
       } else
 #endif
       {
-        printf("\n[diag] Disk quiescent; RESET held LOW, PWM stopped. "
+        printf("\n[diag] Disk quiescent; RESET held LOW, clock stopped. "
                "Ctrl-] r reboots/reloads the supervisor.\n");
         print_help();
       }
@@ -956,9 +994,8 @@ static void service_run(void) {
       flash_resuming = true;
       __atomic_store_n(&flash_pause_request, 0, __ATOMIC_RELEASE);
     }
-  } else if (!flush_submitted &&
-             z80_flash_disk_status() == DISK_READY) {
-    z80_flash_disk_io_write(0x10, 5);
+  } else if (!flush_submitted) {
+    z80_flash_disk_request_flush();
     flush_submitted = true;
   }
 }

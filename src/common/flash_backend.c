@@ -355,8 +355,7 @@ void z80_flash_backend_core0_service(void) {
     if (result)
       z80_io_trap_disable();
   } else if (request.operation == FLASH_SERVICE_RELEASE_BUS) {
-    z80_io_trap_rearm();
-    result = z80_cpu_release_bus(500000);
+    result = z80_io_trap_rearm() && z80_cpu_release_bus(500000);
     if (!result)
       z80_io_trap_disable();
   }
@@ -466,26 +465,31 @@ static bool select_disk_cache(unsigned int drive, uint16_t lba) {
   return true;
 }
 
-bool __not_in_flash_func(z80_flash_backend_read_record)(
-    unsigned int drive, uint16_t lba, uint8_t *data, size_t length) {
-  if (drive >= Z80_FLASH_DISK_SLOT_COUNT ||
-      lba >= Z80_FLASH_RECORD_COUNT || data == NULL ||
-      length != Z80_FLASH_RECORD_BYTES)
-    return false;
-
+/* Runs in the core-0 trap. newlib memcpy lives in XIP flash, so copy words
+ * here and stop GCC from turning the loop back into a memcpy call. */
+#if defined(__GNUC__) && !defined(__clang__)
+#define NO_MEMCPY_PATTERN __attribute__((optimize("no-tree-loop-distribute-patterns")))
+#else
+#define NO_MEMCPY_PATTERN
+#endif
+void NO_MEMCPY_PATTERN
+__not_in_flash_func(z80_flash_backend_read_record)(
+    unsigned int drive, uint16_t lba, uint8_t *data) {
   uint32_t sector_offset = (uint32_t)lba * Z80_FLASH_RECORD_BYTES;
   uint32_t block_offset =
       sector_offset & ~(uint32_t)(FLASH_SECTOR_SIZE - 1u);
-  uint32_t within_block = sector_offset - block_offset;
-  if (disk_cache.valid && disk_cache.drive == drive &&
-      disk_cache.block_offset == block_offset) {
-    memcpy(data, disk_cache.data + within_block, length);
-  } else {
-    uint32_t flash_offset = Z80_FLASH_DISK_OFFSET +
-                            drive * Z80_FLASH_DISK_SLOT_BYTES + sector_offset;
-    memcpy(data, (const void *)(XIP_BASE + flash_offset), length);
+  const uint8_t *source =
+      disk_cache.valid && disk_cache.drive == drive &&
+              disk_cache.block_offset == block_offset
+          ? disk_cache.data + (sector_offset - block_offset)
+          : (const uint8_t *)(XIP_BASE + Z80_FLASH_DISK_OFFSET +
+                              drive * Z80_FLASH_DISK_SLOT_BYTES +
+                              sector_offset);
+  for (unsigned int index = 0; index < Z80_FLASH_RECORD_BYTES; index += 4) {
+    uint32_t word;
+    __builtin_memcpy(&word, source + index, sizeof(word));
+    __builtin_memcpy(data + index, &word, sizeof(word));
   }
-  return true;
 }
 
 bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,

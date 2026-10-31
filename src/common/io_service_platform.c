@@ -10,6 +10,7 @@
 #include "pico/rand.h"
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
+#include "z80sbc/ram_timer.h"
 #include "pico/mutex.h"
 #include "../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 
@@ -72,8 +73,12 @@ size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   return length > 0 && (size_t)length < capacity ? (size_t)length : 0;
 }
 
-uint64_t z80_service_millis(void) {
-  return time_us_64() / 1000;
+uint64_t __not_in_flash_func(z80_service_micros)(void) {
+  return z80_time_us_64();
+}
+
+uint64_t __not_in_flash_func(z80_service_millis)(void) {
+  return z80_time_us_64() / 1000;
 }
 
 uint16_t z80_service_random(void) {

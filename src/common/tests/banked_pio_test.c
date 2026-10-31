@@ -1,33 +1,32 @@
-/* Execute the real C ownership/clock driver against an instrumented PIO HAL.
+/* Execute the real PIO0-clock/PIO1-engine driver against an instrumented PIO HAL.
  * The separately registered Python test executes the assembled PIO words. */
 #include <assert.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
 #include "../banked_pio.c"
+#include "pio_fakes/test_pio_blocks.h"
 
-struct test_pio test_pio1;
-io_bank0_hw_t test_io_bank0;
-static bool levels[32], outputs[32], claimed[4], enabled[4];
-static uint pcs[4], pin_latches[4];
-static pio_sm_config configs[4];
-static uint32_t irq_flags, system_hz = 120000000;
+static bool levels[32], outputs[32];
+static uint32_t system_hz = 120000000;
 static uint64_t now;
-static bool space_available = true, irq_enabled, irq_source, bank_available = true;
+static bool bank_available = true;
 static bool interrupts_disabled;
-static uint tokens, calls;
-static irq_handler_t irq_handler;
 static z80_memory_bank_driver_t bank_driver;
+static uint8_t write_ports[16], write_values[16], read_ports[16];
+static uint write_count, read_count;
+static uint32_t fault_controls;
+static jmp_buf fault_exit;
 
-static void fold_irq_force(void) {
-  irq_flags |= test_pio1.irq_force;
-  test_pio1.irq_force = 0;
-}
 uint32_t clock_get_hz(uint clock) { (void)clock; return system_hz; }
 void gpio_put(uint pin, bool value) { levels[pin] = value; }
-bool gpio_get(uint pin) { return levels[pin]; }
+bool gpio_get(uint pin) {
+  int pad = pio_pad_level(pin);
+  return pad >= 0 ? pad : levels[pin];
+}
 uint32_t gpio_get_all(void) {
   uint32_t value = 0;
-  for (uint pin = 0; pin < 32; ++pin) value |= (uint32_t)levels[pin] << pin;
+  for (uint pin = 0; pin < 32; ++pin) value |= (uint32_t)gpio_get(pin) << pin;
   return value;
 }
 void gpio_set_function(uint pin, uint function) { io_bank0_hw->io[pin].ctrl = function; }
@@ -42,7 +41,7 @@ uint32_t save_and_disable_interrupts(void) {
 }
 void restore_interrupts(uint32_t state) { interrupts_disabled = state; }
 void z80_memory_bank_set_driver(z80_memory_bank_driver_t driver) { bank_driver = driver; }
-unsigned z80_memory_bank_status(void) { return bank_available ? 0xB4 | levels[8] : 0; }
+unsigned z80_memory_bank_status(void) { return bank_available ? 0xB4 | gpio_get(8) : 0; }
 void z80_clock_stop(void) { z80_banked_pio_clock_stop(); }
 void z80_clock_prepare_stepping(void) {
   z80_clock_stop();
@@ -50,150 +49,185 @@ void z80_clock_prepare_stepping(void) {
   levels[PIN_CLK] = false;
   io_bank0_hw->io[PIN_CLK].ctrl = GPIO_FUNC_SIO;
 }
-irq_handler_t irq_get_exclusive_handler(uint irq) { assert(irq == PIO1_IRQ_0); return irq_handler; }
-bool irq_has_shared_handler(uint irq) { assert(irq == PIO1_IRQ_0); return false; }
-void irq_set_exclusive_handler(uint irq, irq_handler_t handler) {
-  assert(irq == PIO1_IRQ_0); irq_handler = handler;
+
+static uint8_t record_read(uint8_t port) {
+  assert(read_count < 16);
+  read_ports[read_count++] = port;
+  return (uint8_t)(0xC0 | port);
 }
-void irq_set_enabled(uint irq, bool enable) { assert(irq == PIO1_IRQ_0); irq_enabled = enable; }
-bool pio_can_add_program(PIO pio, const struct pio_program *p) {
-  assert(pio == pio1 && p->length == 31); return space_available;
+static void record_write(uint8_t port, uint8_t value) {
+  assert(write_count < 16);
+  write_ports[write_count] = port;
+  write_values[write_count++] = value;
 }
-int pio_claim_unused_sm(PIO pio, bool required) {
-  assert(pio == pio1 && !required);
-  for (uint sm = 0; sm < 4; ++sm) if (!claimed[sm]) { claimed[sm] = true; return (int)sm; }
-  return -1;
+static void record_fault(uint32_t controls) {
+  fault_controls = controls;
+  longjmp(fault_exit, 1);
 }
-bool pio_sm_is_claimed(PIO pio, uint sm) { assert(pio == pio1); return claimed[sm]; }
-void pio_sm_unclaim(PIO pio, uint sm) { assert(pio == pio1); claimed[sm] = false; }
-uint pio_add_program(PIO pio, const struct pio_program *p) {
-  assert(pio == pio1 && p->length == 31); return 1; /* exercise relocated labels */
-}
-void pio_gpio_init(PIO pio, uint pin) {
-  assert(pio == pio1);
-  io_bank0_hw->io[pin].ctrl = 99;
-  if (pin == PIN_CLK) assert(!(pin_latches[clock_sm] & (1u << pin)));
-  if (pin == PIN_DATA_DOWN_OE_N || pin == PIN_IO_RELEASE)
-    for (uint data = 10; data <= 17; ++data) assert(!outputs[data]);
-}
-uint pio_sm_get_pc(PIO pio, uint sm) { assert(pio == pio1); return pcs[sm]; }
-void pio_sm_init(PIO pio, uint sm, uint pc, const pio_sm_config *config) {
-  assert(pio == pio1 && !enabled[sm]); configs[sm] = *config; pcs[sm] = pc;
-}
-void pio_sm_set_enabled(PIO pio, uint sm, bool enable) {
-  assert(pio == pio1); fold_irq_force(); enabled[sm] = enable;
-}
-void pio_sm_restart(PIO pio, uint sm) { assert(pio == pio1 && !enabled[sm]); }
-void pio_sm_exec(PIO pio, uint sm, uint16_t instruction) {
-  assert(pio == pio1 && !enabled[sm]);
-  if ((instruction >> 13) == 0) {
-    pcs[sm] = instruction & 31;
-  } else if ((instruction >> 13) == 7) {
-    assert((instruction >> 13) == 7 && ((instruction >> 5) & 7) == pio_pins);
-    uint32_t mask = ((1u << configs[sm].set_count) - 1) << configs[sm].set_base;
-    pin_latches[sm] = (pin_latches[sm] & ~mask) |
-                     (((uint32_t)instruction & 31) << configs[sm].set_base);
-  } else {
-    assert((instruction & 0xE0FF) == pio_encode_nop());
-  }
-  if (configs[sm].side_count && (instruction & 0x1000)) {
-    uint32_t side_mask = 1u << configs[sm].side_base;
-    pin_latches[sm] = (pin_latches[sm] & ~side_mask) |
-                     ((instruction & 0x0800) ? side_mask : 0);
-  }
-}
-void pio_sm_set_pins_with_mask(PIO pio, uint sm, uint32_t values, uint32_t mask) {
-  assert(pio == pio1 && !enabled[sm]);
-  pin_latches[sm] = (pin_latches[sm] & ~mask) | (values & mask);
-  if (mask & (1u << PIN_MEMORY_BANK)) levels[PIN_MEMORY_BANK] = values & (1u << PIN_MEMORY_BANK);
-}
-void pio_sm_set_consecutive_pindirs(PIO pio, uint sm, uint first, uint count, bool output) {
-  assert(pio == pio1 && !enabled[sm]); (void)first; (void)count; assert(output);
-}
-void pio_sm_clear_fifos(PIO pio, uint sm) { assert(pio == pio1 && sm == (uint)io_sm); tokens = 0; }
-bool pio_sm_is_rx_fifo_empty(PIO pio, uint sm) { assert(pio == pio1 && sm == (uint)io_sm); return tokens == 0; }
-uint32_t pio_sm_get(PIO pio, uint sm) { assert(!pio_sm_is_rx_fifo_empty(pio, sm)); --tokens; return 0; }
-bool pio_interrupt_get(PIO pio, uint index) {
-  assert(pio == pio1); fold_irq_force(); return (irq_flags >> index) & 1;
-}
-void pio_interrupt_clear(PIO pio, uint index) {
-  assert(pio == pio1); fold_irq_force(); irq_flags &= ~(1u << index);
-}
-void pio_set_irq0_source_enabled(PIO pio, uint source, bool enable) {
-  assert(pio == pio1 && source == pis_interrupt0); irq_source = enable;
+static bool rearm(void) {
+  return z80_banked_pio_rearm(record_read, record_write, record_fault);
 }
 
-static void slow_service(void) {
-  ++calls;
-  assert(in_slow && !clock_running && !enabled[io_sm]);
-  assert(io_bank0_hw->io[7].ctrl == GPIO_FUNC_SIO && io_bank0_hw->io[9].ctrl == GPIO_FUNC_SIO);
-  /* Simulate an IN reply leaving Pico data outputs behind. Completion must
-   * turn them back into inputs before PIO can enable the downward buffer. */
-  for (uint pin = 10; pin <= 17; ++pin) outputs[pin] = true;
-  gpio_put(PIN_DATA_UP_OE_N, 0);
-  gpio_put(PIN_IO_RELEASE, 1);
-  bank_driver(1); /* valid OUT7 can also arrive via conservative slow routing */
-  assert(in_slow && !enabled[io_sm]);
-  gpio_put(PIN_DATA_UP_OE_N, 1);
-  gpio_put(PIN_DATA_DOWN_OE_N, 1);
-  busy_wait_us_32(1);
-  gpio_put(PIN_IO_RELEASE, 0);
-  z80_banked_pio_slow_complete();
-  assert(!pio_interrupt_get(pio1, SLOW_IRQ));
-  assert(enabled[io_sm] && pcs[io_sm] == program_offset + banked_io_offset_io_start);
-  z80_banked_pio_clock_resume();
+static void assert_sio_idle(unsigned bank) {
+  assert(!io_active && !blocks[1].rx_irq && !bank_driver);
+  for (uint pin = PIN_DATA_UP_OE_N; pin <= PIN_DATA_7; ++pin)
+    assert(io_bank0_hw->io[pin].ctrl == GPIO_FUNC_SIO);
+  assert(levels[PIN_DATA_UP_OE_N] && levels[PIN_DATA_DOWN_OE_N]);
+  assert(!levels[PIN_IO_RELEASE] && levels[PIN_MEMORY_BANK] == bank);
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin) assert(!outputs[pin]);
 }
 
-int main(void) {
-  memset(levels, 1, sizeof(levels));
-  for (uint pin = 10; pin <= 17; ++pin) outputs[pin] = true;
-  space_available = false;
-  assert(!z80_banked_pio_rearm(slow_service) && !allocated);
-  space_available = true;
+static void test_allocation(void) {
+  blocks[1].space = false;
+  assert(!rearm() && !allocated);
+  blocks[1].space = true;
   system_hz = 144000000;
-  assert(!z80_banked_pio_rearm(slow_service) && !allocated);
+  assert(!rearm() && !allocated);
   system_hz = 120000000;
-  claimed[3] = true;
-  assert(!z80_banked_pio_rearm(slow_service) && !allocated);
-  claimed[3] = false;
+  blocks[0].space = false; /* no room beside the matrix program */
+  assert(!rearm() && !allocated);
+  blocks[0].space = true;
+  for (uint sm = 0; sm < 4; ++sm) blocks[0].claimed[sm] = true;
+  assert(!rearm() && !allocated);
+  for (uint sm = 0; sm < 3; ++sm) blocks[0].claimed[sm] = false;
+  /* PIO0 SM 3 stays claimed: the matrix display shares PIO0. */
+  blocks[1].claimed[2] = true; /* PIO1 must not be shared */
+  assert(!rearm() && !allocated);
+  blocks[1].claimed[2] = false;
+}
+
+static void test_unbanked_ownership(void) {
+  /* PIO still owns clock and I/O without bank 1, but GP8/A16 stays on SIO
+   * and no bank driver is installed, so OUT 07h cannot switch banks. */
   bank_available = false;
-  assert(!z80_banked_pio_rearm(slow_service));
+  assert(rearm() && allocated && io_active && !bank_driver);
+  for (uint pin = PIN_DATA_UP_OE_N; pin <= PIN_DATA_7; ++pin)
+    if (pin != PIN_MEMORY_BANK)
+      assert(io_bank0_hw->io[pin].ctrl == GPIO_FUNC_PIO1);
+  assert(io_bank0_hw->io[PIN_MEMORY_BANK].ctrl == GPIO_FUNC_SIO);
+  z80_banked_pio_disable();
+  assert_sio_idle(false);
   bank_available = true;
-  assert(z80_banked_pio_rearm(slow_service));
-  assert(allocated && io_active && irq_enabled && irq_source && bank_driver);
-  assert(configs[clock_sm].wrap_bottom == 1 && configs[clock_sm].wrap_top == 4);
-  assert(configs[clock_sm].set_base == PIN_CLK && configs[clock_sm].side_count == 0);
-  assert(configs[io_sm].in_base == 10 && configs[io_sm].out_base == 8);
-  assert(configs[io_sm].set_base == 7 && configs[io_sm].side_base == 9);
-  assert(configs[io_sm].jmp_pin == 0 && configs[io_sm].right_shift);
+}
+
+static void test_configuration(void) {
+  levels[PIN_MEMORY_BANK] = true;
+  assert(rearm() && io_active && io_irq_enabled && blocks[1].rx_irq && bank_driver);
+  const pio_sm_config *clock = &blocks[0].configs[clock_sm];
+  const pio_sm_config *io = &blocks[1].configs[io_sm];
+  assert(clock->wrap_bottom == 1 + banked_clock_wrap_target);
+  assert(clock->wrap_top == 1 + banked_clock_wrap && clock->set_base == PIN_CLK);
+  assert(io->wrap_bottom == 2 + banked_io_wrap_target && io->wrap_top == 2 + banked_io_wrap);
+  assert(io->in_base == PIN_DATA_0 && io->out_base == PIN_MEMORY_BANK && io->out_count == 10);
+  assert(io->set_base == PIN_DATA_UP_OE_N && io->set_count == 2);
+  assert(io->side_base == PIN_IO_RELEASE && io->jmp_pin == PIN_RD_N);
+  assert(io->right_shift && io->autopush && io->push_threshold == 32);
+  assert(io->fifo_join == PIO_FIFO_JOIN_NONE); /* TX carries IN replies */
+  assert(blocks[1].pcs[io_sm] == 2 + banked_io_offset_io_start);
+  /* Idle hand-off: buffers isolated, WAIT armed, A16 kept, D0-D7 inputs. */
+  uint32_t control = (1u << PIN_DATA_UP_OE_N) | (1u << PIN_DATA_DOWN_OE_N) |
+                     (1u << PIN_MEMORY_BANK) | (1u << PIN_IO_RELEASE);
+  assert((blocks[1].pins & control) ==
+         ((1u << PIN_DATA_UP_OE_N) | (1u << PIN_DATA_DOWN_OE_N) | (1u << PIN_MEMORY_BANK)));
+  assert((blocks[1].dirs & (control | 0xFFu << PIN_DATA_0)) == control);
+  assert(io_inits == 11 + 12); /* GP6, GP7, GP9, D0-D7, then also GP8 */
   assert(!z80_banked_pio_clock_start(19000000));
   assert(z80_banked_pio_clock_start(20000000) && clock_running);
-  assert(!pio_interrupt_get(pio1, CPU_HOLD_IRQ));
+  assert(!pio_interrupt_get(pio0, CPU_HOLD_IRQ));
+  assert(io_bank0_hw->io[PIN_CLK].ctrl == GPIO_FUNC_PIO0);
+}
+
+static void test_service_order(void) {
+  /* OUTs PIO already completed, then an IN waiting for its reply. */
+  fake_push(fake_snapshot(false, true, 0x00, 'A'));
+  fake_push(fake_snapshot(false, true, 0x10, 0x01));
+  fake_push(fake_snapshot(true, false, 0x17, 0xEE));
+  io_irq();
+  assert(write_count == 2 && read_count == 1 && read_ports[0] == 0x17);
+  assert(write_ports[0] == 0x00 && write_values[0] == 'A');
+  assert(write_ports[1] == 0x10 && write_values[1] == 0x01);
+  uint32_t reply = fake_take_reply();
+  assert(reply == ((uint32_t)(0xC0 | 0x17) << 2 | 1u | 0x3FFu << 10 | 0x003u << 20));
+  /* A16 in the reply follows the current bank; GP9 bit stays LOW. */
   bank_driver(0);
-  assert(!levels[8] && pcs[io_sm] == 5);
-  irq_flags |= 1u << SLOW_IRQ;
-  irq_handler();
-  assert(calls == 1 && clock_running && levels[8]);
+  assert(!gpio_get(PIN_MEMORY_BANK) && blocks[1].pcs[io_sm] == 2 + banked_io_offset_io_start);
+  fake_push(fake_snapshot(true, false, 0x07, 0));
+  io_irq();
+  reply = fake_take_reply();
+  assert((reply & 3u) == 0 && (reply >> 2 & 0xFF) == (0xC0 | 0x07));
+  assert(clock_running && blocks[1].enabled[io_sm]);
+  z80_banked_pio_status_t status = z80_banked_pio_status();
+  assert(status.io_pc == banked_io_offset_io_start && status.active && status.running);
+  z80_banked_pio_latency_t l = z80_banked_pio_take_latency();
+  assert(l.available && l.in_count == 2 && l.out_count == 2);
+  l = z80_banked_pio_take_latency();
+  assert(l.available && l.in_count == 0 && l.out_count == 0 && l.in_cycles == 0);
+}
+
+static void test_invalid_strobes_fail_closed(void) {
+  for (int both = 0; both < 2; ++both) {
+    uint32_t snapshot = fake_snapshot(both, both, 0x01, 0x55);
+    fake_push(snapshot);
+    if (setjmp(fault_exit) == 0) {
+      io_irq();
+      assert(false);
+    }
+    assert(fault_controls == snapshot << PIN_DATA_0);
+    in_service = false; /* the real handler never returns */
+  }
+}
+
+static void test_poll_timeout(void) {
   assert(z80_banked_pio_poll());
-  levels[9] = true;
+  blocks[0].flags |= 1u << IO_HOLD_IRQ; /* a cycle in progress */
   assert(z80_banked_pio_poll());
   now += 499999;
   assert(z80_banked_pio_poll());
   now += 3;
   assert(!z80_banked_pio_poll());
-  tokens = 4; /* full progress FIFO resets the deadline without stalling PIO */
-  assert(z80_banked_pio_poll() && tokens == 0);
-  levels[9] = false;
+  /* Serviced snapshots are progress: a stalled-but-moving stream never trips. */
+  for (uint i = 0; i < 4; ++i) fake_push(fake_snapshot(false, true, 0, (uint8_t)i));
+  io_irq();
   assert(z80_banked_pio_poll());
+  assert(z80_banked_pio_poll());
+  now += 500001;
+  assert(!z80_banked_pio_poll());
+  blocks[0].flags &= ~(1u << IO_HOLD_IRQ);
+  assert(z80_banked_pio_poll());
+}
+
+static void test_disable(void) {
+  unsigned reads = read_count, writes = write_count;
+  fake_push(fake_snapshot(false, true, 0x05, 0xC0));
+  fake_push(fake_snapshot(true, false, 0x00, 0)); /* never answered */
+  levels[0] = false; /* bus granted */
   z80_banked_pio_disable();
-  assert(!io_active && !irq_source && !bank_driver && clock_running && levels[8]);
-  assert(io_bank0_hw->io[7].ctrl == GPIO_FUNC_SIO && io_bank0_hw->io[8].ctrl == GPIO_FUNC_SIO);
-  levels[0] = false; /* rearm while BUSACK# held, preserving the selected bank */
-  assert(z80_banked_pio_rearm(slow_service) && levels[8]);
+  assert(write_count == writes + 1 && write_ports[writes] == 0x05);
+  assert(read_count == reads && blocks[1].tx_count == 0);
+  assert(!pio_interrupt_get(pio0, IO_HOLD_IRQ) && clock_running);
+  assert_sio_idle(false);
+  /* Rearm after the grant preserves the selected bank. */
+  levels[PIN_MEMORY_BANK] = true;
+  assert(rearm() && gpio_get(PIN_MEMORY_BANK));
   uint32_t previous = save_and_disable_interrupts();
   z80_banked_pio_disable();
   assert(interrupts_disabled);
   restore_interrupts(previous);
   assert(!interrupts_disabled);
-  puts("PASS: PIO allocation/fallback, clock mux, slow-IN input turnaround, bank ownership, timeout and bus-grant rearm");
+}
+
+int main(void) {
+  memset(levels, 1, sizeof(levels));
+  levels[PIN_IO_RELEASE] = levels[PIN_MEMORY_BANK] = levels[PIN_CLK] = false;
+  for (uint pin = 0; pin < 32; ++pin) io_bank0_hw->io[pin].ctrl = GPIO_FUNC_SIO;
+  for (uint pin = PIN_DATA_0; pin <= PIN_DATA_7; ++pin) outputs[pin] = true;
+  test_allocation();
+  test_unbanked_ownership();
+  test_configuration();
+  test_service_order();
+  test_invalid_strobes_fail_closed();
+  test_poll_timeout();
+  test_disable();
+  puts("PASS: PIO0 clock/PIO1 engine allocation, ownership, IN/OUT service order, faults, "
+       "timeout and bus-grant rearm");
 }

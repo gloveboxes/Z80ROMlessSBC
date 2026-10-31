@@ -244,11 +244,8 @@ CP/M boot package, disks and ENV. To build without flashing:
   --target z80_stage10_websocket_terminal
 ```
 
-The helper explicitly enables PIO for Phase 10 even if the build directory
-previously cached it OFF. Other targets retain their software/PWM default in
-the helper. Use the CMake option to enable PIO for a custom target.
-Direct CMake configuration uses `Z80_ENABLE_BANKED_PIO=ON` by default; pass
-`-DZ80_ENABLE_BANKED_PIO=OFF` to disable it.
+Phases 9 and 10 always link the PIO1 20 MHz run-time library
+(`z80_runtime_20mhz`); there is no PWM or software-trap build option for them.
 
 See the [board verification notes](../hardware/address-interface.md#board-verification-and-recovery).
 

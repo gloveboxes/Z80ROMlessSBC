@@ -57,9 +57,9 @@ typedef enum {
   IO_SERVICE_REBOOT_CONFIRMATION = 0x16,
 } io_service_error_t;
 
-/* Initialize on core 0 before launching core 1. Port handlers run on core 0. */
+/* Initialize on core 0 before launching core 1. Port handlers run on core 0
+ * from the I/O trap and take decoded port numbers (A0-A2, A4). */
 void z80_io_ports_init(void);
-bool z80_io_ports_handles(uint8_t port);
 uint8_t z80_io_port_in(uint8_t port);
 void z80_io_port_out(uint8_t port, uint8_t data);
 /* Run after disk service on core 1, including while draining for a pause. */

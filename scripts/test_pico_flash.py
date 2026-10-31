@@ -299,7 +299,7 @@ class SupervisorTests(unittest.TestCase):
         connection = self.connection([
             STATUS.encode(),
             b"[diag] Stop requested; waiting for disk completion/flush.\n",
-            b"[diag] Disk quiescent; RESET held LOW, PWM stopped.\n",
+            b"[diag] Disk quiescent; RESET held LOW, clock stopped.\n",
         ])
         supervisor.stop(connection, 1)
         self.assertEqual([call.args[0] for call in connection.write.call_args_list], [b"\x1ds", b"\x1dx"])

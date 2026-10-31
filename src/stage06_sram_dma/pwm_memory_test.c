@@ -13,30 +13,9 @@
 
 enum {
   RESULT_PORT = 0x06,
-#if defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   MIN_HZ = 20000000,
   SYSTEM_HZ = 120000000,
-#elif defined(Z80_EXPERIMENTAL_19MHZ)
-  MIN_HZ = 19000000,
-  SYSTEM_HZ = 114000000,
-#elif defined(Z80_EXPERIMENTAL_18MHZ)
-  MIN_HZ = 18000000,
-  SYSTEM_HZ = 144000000,
-#elif defined(Z80_EXPERIMENTAL_17MHZ)
-  MIN_HZ = 17000000,
-  SYSTEM_HZ = 136000000,
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  MIN_HZ = 15000000,
-  SYSTEM_HZ = 128000000,
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  MIN_HZ = 14000000,
-  SYSTEM_HZ = 150000000,
-#elif defined(Z80_EXPERIMENTAL_14MHZ)
-  MIN_HZ = 12000000,
-  SYSTEM_HZ = 140000000,
-#elif defined(Z80_EXPERIMENTAL_12MHZ)
-  MIN_HZ = 8000000,
-  SYSTEM_HZ = 144000000,
 #else
   MIN_HZ = 1000000,
   SYSTEM_HZ = 144000000,
@@ -85,22 +64,9 @@ static unsigned command_length;
 static bool discard_line;
 
 static void configure_system_clock(void) {
-#if defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   // RESET remains asserted; USB and Z80 execution have not started.
   set_sys_clock_pll(1200000000, 5, 2);
-#elif defined(Z80_EXPERIMENTAL_19MHZ)
-  set_sys_clock_pll(1140000000, 5, 2);
-#elif defined(Z80_EXPERIMENTAL_17MHZ)
-  set_sys_clock_pll(816000000, 3, 2);
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  // RESET remains asserted; USB and Z80 execution have not started.
-  set_sys_clock_pll(1536000000, 6, 2);
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  // RESET remains asserted; USB and Z80 execution have not started.
-  set_sys_clock_pll(1500000000, 5, 2);
-#elif defined(Z80_EXPERIMENTAL_14MHZ)
-  // RESET remains asserted; USB and Z80 execution have not started.
-  set_sys_clock_pll(840000000, 3, 2);
 #endif
 }
 

@@ -7,7 +7,7 @@ target_include_directories(z80_flash_disk_20mhz PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
 target_compile_options(z80_flash_disk_20mhz PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(z80_flash_disk_20mhz PUBLIC
-  z80_pwm_20mhz pico_flash pico_multicore pico_util hardware_flash
+  z80_runtime_20mhz pico_flash pico_multicore pico_util hardware_flash
   hardware_watchdog)
 
 set_source_files_properties(ansi_input.c PROPERTIES

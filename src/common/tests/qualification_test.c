@@ -76,7 +76,7 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
   (void)read_handler; (void)write_handler; (void)context; return true;
 }
 void z80_io_trap_disable(void) {}
-void z80_io_trap_rearm(void) {}
+bool z80_io_trap_rearm(void) { return true; }
 uint32_t z80_io_trap_timeout_count(void) { return 0; }
 uint32_t z80_io_trap_control_error_count(void) { return 0; }
 bool z80_flash_storage_init(void) { return true; }

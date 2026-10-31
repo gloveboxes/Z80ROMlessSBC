@@ -131,18 +131,8 @@ bool time_reached(absolute_time_t deadline) { return now_us >= deadline; }
 void tight_loop_contents(void) { now_us += 100000; }
 uint32_t clock_get_hz(uint clock) {
   assert(clock == clk_sys);
-#if defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   return 120000000;
-#elif defined(Z80_EXPERIMENTAL_19MHZ)
-  return 114000000;
-#elif defined(Z80_EXPERIMENTAL_17MHZ)
-  return 136000000;
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  return 128000000;
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  return 150000000;
-#elif defined(Z80_EXPERIMENTAL_14MHZ)
-  return 140000000;
 #else
   return 144000000;
 #endif

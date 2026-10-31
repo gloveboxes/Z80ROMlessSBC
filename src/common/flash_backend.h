@@ -11,8 +11,9 @@ bool z80_flash_backend_init(void);
 bool z80_flash_backend_init_observed(z80_boot_observer_t observer,
                                      void *context);
 void z80_flash_backend_core0_service(void);
-bool z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
-                                   uint8_t *data, size_t length);
+/* Core 0 trap: the caller has validated drive and lba; copies one record. */
+void z80_flash_backend_read_record(unsigned int drive, uint16_t lba,
+                                   uint8_t *data);
 bool z80_flash_backend_write_record(unsigned int drive, uint16_t lba,
                                     const uint8_t *data, size_t length,
                                     uint8_t write_type);

@@ -11,8 +11,7 @@ _Static_assert(PIN_PORT_A1 == PIN_PORT_A0 + 1 &&
                "port GPIO snapshot mapping changed");
 
 uint8_t __not_in_flash_func(z80_port_bus_sample)(void) {
-  uint32_t pins = gpio_get_all() >> PIN_PORT_A0;
-  return (uint8_t)((pins & 7u) | ((pins & 8u) << 1));
+  return z80_port_decode(gpio_get_all() >> PIN_PORT_A0);
 }
 
 void __not_in_flash_func(z80_data_bus_isolate)(void) {

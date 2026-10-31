@@ -4,6 +4,7 @@
 
 #include "io_service.h"
 #include "http_io.h"
+#include "z80sbc/ram_func.h"
 
 static struct {
   io_service_status_t status;
@@ -20,8 +21,10 @@ static struct {
   const uint8_t *response;
 } transport;
 
+/* Deadlines are whole milliseconds stored as microseconds, so status polls
+ * compare against the raw timer without a 64-bit software division. */
 static struct {
-  uint64_t deadlines[4];
+  uint64_t deadlines_us[4];
   uint64_t stopwatches[3];
   uint32_t latched;
   uint16_t duration;
@@ -30,7 +33,7 @@ static struct {
   uint8_t response_bytes;
 } timers;
 
-static void reset_transport(void) {
+static void __not_in_flash_func(reset_transport)(void) {
   ++transport.generation;
   transport.status = IO_SERVICE_READY;
   transport.length_bytes = 0;
@@ -42,7 +45,7 @@ static void reset_transport(void) {
   transport.reset_required = false;
 }
 
-static void fail(io_service_error_t error, bool reset_required) {
+static void __not_in_flash_func(fail)(io_service_error_t error, bool reset_required) {
   ++transport.generation;
   transport.local_response[0] = (uint8_t)error;
   transport.response = transport.local_response;
@@ -52,22 +55,22 @@ static void fail(io_service_error_t error, bool reset_required) {
   transport.status = IO_SERVICE_ERROR;
 }
 
-static void start_timer(uint8_t id, uint16_t duration) {
+static void __not_in_flash_func(start_timer)(uint8_t id, uint16_t duration) {
   uint64_t now = z80_service_millis();
-  timers.deadlines[id] =
-      id == 3 ? (now / 1000 + duration) * 1000 : now + duration;
+  uint64_t deadline = id == 3 ? (now / 1000 + duration) * 1000 : now + duration;
+  timers.deadlines_us[id] = deadline * 1000;
 }
 
-static uint8_t timer_running(uint8_t id, uint64_t now) {
-  return now < timers.deadlines[id];
+static uint8_t __not_in_flash_func(timer_running)(uint8_t id, uint64_t now_us) {
+  return now_us < timers.deadlines_us[id];
 }
 
-static uint32_t stopwatch_value(uint8_t id, bool milliseconds) {
+static uint32_t __not_in_flash_func(stopwatch_value)(uint8_t id, bool milliseconds) {
   uint64_t elapsed = z80_service_millis() - timers.stopwatches[id];
   return (uint32_t)(milliseconds ? elapsed : elapsed / 1000);
 }
 
-static void timer_out(uint8_t data) {
+static void __not_in_flash_func(timer_out)(uint8_t data) {
   if (timers.parameter_bytes) {
     uint8_t id = timers.command - 0x10;
     if (id != 3 && timers.parameter_bytes == 2)
@@ -106,16 +109,16 @@ static void timer_out(uint8_t data) {
   }
 }
 
-static uint8_t timer_in(void) {
+static uint8_t __not_in_flash_func(timer_in)(void) {
   if (timers.parameter_bytes) {
     timers.parameter_bytes = 0;
     timers.command = 0xff;
   }
   if (timers.command >= 0x20 && timers.command <= 0x23)
-    return timer_running(timers.command - 0x20, z80_service_millis());
+    return timer_running(timers.command - 0x20, z80_service_micros());
   if (timers.command == 0x30) {
     uint8_t mask = 0;
-    uint64_t now = z80_service_millis();
+    uint64_t now = z80_service_micros();
     for (uint8_t id = 0; id < 4; ++id)
       mask |= timer_running(id, now) << id;
     return mask;
@@ -130,7 +133,7 @@ static uint8_t timer_in(void) {
   return 0xff;
 }
 
-static void timer_service(void) {
+static void __not_in_flash_func(timer_service)(void) {
   const uint8_t *request = transport.request;
   uint8_t operation = request[0];
   bool countdown = transport.command == IO_SERVICE_TIMERS;
@@ -157,7 +160,7 @@ static void timer_service(void) {
     }
     start_timer(id, (uint16_t)request[2] | ((uint16_t)request[3] << 8));
   } else if (countdown) {
-    transport.local_response[0] = timer_running(id, z80_service_millis());
+    transport.local_response[0] = timer_running(id, z80_service_micros());
     transport.response_length = 1;
   } else if (operation == 0) {
     timers.stopwatches[id] = z80_service_millis();
@@ -171,7 +174,7 @@ static void timer_service(void) {
                                               : IO_SERVICE_COMPLETE;
 }
 
-static void poll_service(void) {
+static void __not_in_flash_func(poll_service)(void) {
   const io_service_result_t *result = z80_io_service_poll();
   if (result == NULL || result->generation != transport.generation ||
       transport.status != IO_SERVICE_BUSY)
@@ -200,13 +203,7 @@ void z80_io_ports_init(void) {
   z80_http_io_init();
 }
 
-bool z80_io_ports_handles(uint8_t port) {
-  port &= 0x17;
-  return (port >= 0x02 && port <= 0x04) || port == IO_TIMER_PORT ||
-         port == HTTP_COMMAND_PORT || port == HTTP_DATA_PORT;
-}
-
-static void command_out(uint8_t command) {
+static void __not_in_flash_func(command_out)(uint8_t command) {
   if (command == IO_SERVICE_RESET) {
     reset_transport();
     return;
@@ -255,7 +252,7 @@ static void command_out(uint8_t command) {
   }
 }
 
-static void request_out(uint8_t data) {
+static void __not_in_flash_func(request_out)(uint8_t data) {
   if (transport.status != IO_SERVICE_COLLECTING) {
     fail(IO_SERVICE_INVALID_STATE, transport.status == IO_SERVICE_BUSY);
     return;
@@ -287,11 +284,11 @@ static void request_out(uint8_t data) {
     fail(error, error == IO_SERVICE_BUSY_ERROR);
 }
 
-void z80_io_port_out(uint8_t port, uint8_t data) {
-  switch (port & 0x17) {
+void __not_in_flash_func(z80_io_port_out)(uint8_t port, uint8_t data) {
+  switch (port) {
   case HTTP_COMMAND_PORT:
   case HTTP_DATA_PORT:
-    z80_http_io_out(port & 0x17, data);
+    z80_http_io_out(port, data);
     break;
   case IO_TIMER_PORT:
     timer_out(data);
@@ -308,11 +305,11 @@ void z80_io_port_out(uint8_t port, uint8_t data) {
   }
 }
 
-uint8_t z80_io_port_in(uint8_t port) {
-  switch (port & 0x17) {
+uint8_t __not_in_flash_func(z80_io_port_in)(uint8_t port) {
+  switch (port) {
   case HTTP_COMMAND_PORT:
   case HTTP_DATA_PORT:
-    return z80_http_io_in(port & 0x17);
+    return z80_http_io_in(port);
   case IO_TIMER_PORT:
     return timer_in();
   case IO_SERVICE_COMMAND_PORT:

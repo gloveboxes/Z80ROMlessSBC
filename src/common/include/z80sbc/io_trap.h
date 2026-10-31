@@ -20,11 +20,18 @@ typedef struct {
 } z80_io_trap_reset_fault_t;
 
 z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void);
+/* Z80_BANKED_PIO builds route every cycle through PIO1 and fail (returning
+ * false) when PIO1 cannot be allocated; other builds use the IORQ GPIO IRQ. */
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         z80_io_write_handler_t write_handler,
                         void *context);
-void z80_io_trap_rearm(void);
+bool z80_io_trap_rearm(void);
+/* Stops servicing and applies every OUT the trap has already completed. */
 void z80_io_trap_disable(void);
+/* Applies completed OUTs without stopping service. PIO builds complete OUTs
+ * ahead of core 0; call with the Z80 parked (BUSACK) before relying on all
+ * prior OUTs having taken effect. Other builds apply OUTs synchronously. */
+void z80_io_trap_drain_writes(void);
 /* Core 0 service loop: retains a 500 ms fail-closed timeout for PIO cycles. */
 void z80_io_trap_poll(void);
 uint32_t z80_io_trap_timeout_count(void);

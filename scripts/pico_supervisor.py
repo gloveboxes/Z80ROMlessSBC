@@ -212,7 +212,7 @@ def stop(connection: serial.Serial, timeout: float) -> None:
     send_command(connection, "x")
     read_until(
         connection,
-        lambda text: "Disk quiescent; RESET held LOW, PWM stopped." in text,
+        lambda text: "Disk quiescent; RESET held LOW" in text,
         timeout,
     )
     print("\nPASS: clean stop/flush confirmed")

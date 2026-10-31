@@ -159,8 +159,12 @@ remains authoritative for the complete address bus.
 
 Use threshold **1.6 V**. Repeat for IN with RD# on CH10 and OUT with WR#
 on CH10. Data-path exclusion is a firmware rule, not a hardware interlock.
-Port `0x07` bank-select OUTs use PIO; capture A16 separately when checking
-bank switching, following the [PIO reference](address-interface.md#pio-acceleration).
+In Phases 9-10 every cycle completes in PIO: OUTs with a free-running clock,
+INs with exactly two clocks after WAIT release and CLK held LOW until U9 is
+isolated. Capture them as separate categories and confirm on raw captures that
+U9 disables before CLK resumes into the next opcode fetch. Capture
+A16 separately when checking `OUT 07h` bank switching, following the
+[PIO reference](address-interface.md#pio-acceleration).
 
 | DSLogic channel | Signal | Physical probe point |
 | --- | --- | --- |

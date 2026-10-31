@@ -54,12 +54,14 @@ static _Noreturn void trap_fail_closed(z80_io_trap_reset_reason_t reason,
     tight_loop_contents();
 }
 
+#if !defined(Z80_BANKED_PIO)
 static void __not_in_flash_func(resume_and_wait_for_release)(uint control_pin) {
-  absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
   uint32_t released_mask = (1u << PIN_IORQ_N) | (1u << control_pin);
   gpio_put(PIN_IO_RELEASE, 1);
   uint32_t controls = gpio_get_all();
   if ((controls & released_mask) != released_mask) {
+    /* Rare: the cycle needs stepping. Only this path reads the timer. */
+    absolute_time_t deadline = make_timeout_time_us(TRAP_RELEASE_TIMEOUT_US);
     z80_clock_prepare_stepping();
     do {
       if (time_reached(deadline)) {
@@ -73,22 +75,16 @@ static void __not_in_flash_func(resume_and_wait_for_release)(uint control_pin) {
   z80_data_bus_isolate();
   busy_wait_us_32(1);
   gpio_put(PIN_IO_RELEASE, 0);
-#if defined(Z80_BANKED_PIO)
-  z80_banked_pio_slow_complete();
-#endif
   z80_clock_resume();
 }
 
-/* Both entry paths stop CLK and retain the HIGH guard before dispatch. */
+/* The entry path stops CLK and retains the HIGH guard before dispatch. */
 static void __not_in_flash_func(service_stopped_io)(void) {
   uint32_t controls = gpio_get_all();
   if (controls & (1u << PIN_IORQ_N)) {
     // A latched edge is not an active I/O cycle once IORQ# has released.
     __atomic_fetch_add(&inactive_irqs, 1, __ATOMIC_RELAXED);
     __atomic_fetch_add(&control_errors, 1, __ATOMIC_RELAXED);
-#if defined(Z80_BANKED_PIO)
-    z80_banked_pio_slow_complete();
-#endif
     z80_clock_resume();
     return;
   }
@@ -103,34 +99,68 @@ static void __not_in_flash_func(service_stopped_io)(void) {
   if (is_write) {
     z80_data_bus_prepare_input();
     uint8_t value = z80_data_bus_sample();
-#if defined(Z80_BANKED_PIO)
-    z80_banked_pio_note_io(port, false, value);
-#endif
-    /* Bank-select writes are PIO-only; never switch banks in the trap. */
+    /* Runtime banking requires the PIO backend; never switch banks here. */
     if (port != 0x07 && application_write != NULL)
       application_write(port, value, application_context);
     resume_and_wait_for_release(PIN_WR_N);
     return;
   }
 
-  uint8_t value;
-  if (port == 0x07) {
-    value = 0; /* No runtime banking without an active PIO backend. */
-#if defined(Z80_BANKED_PIO)
-    if (z80_banked_pio_active())
-      value = (uint8_t)z80_memory_bank_status();
-#endif
-  } else {
+  uint8_t value = 0; /* Runtime banking requires the PIO backend. */
+  if (port != 0x07)
     value = application_read == NULL ? 0xFF
               : application_read(port, application_context);
-  }
-#if defined(Z80_BANKED_PIO)
-  z80_banked_pio_note_io(port, true, value);
-#endif
   z80_data_bus_drive(value);
   resume_and_wait_for_release(PIN_RD_N);
 }
+#endif
 
+#if defined(Z80_BANKED_PIO)
+/* PIO2 completes every cycle; these run from its IRQ in bus order. */
+static void __not_in_flash_func(apply_pio_write)(uint8_t port, uint8_t value) {
+  z80_banked_pio_note_io(port, false, value);
+  if (application_write != NULL)
+    application_write(port, value, application_context);
+}
+
+static uint8_t __not_in_flash_func(apply_pio_read)(uint8_t port) {
+  uint8_t value;
+  if (port == 0x07)
+    value = (uint8_t)z80_memory_bank_status();
+  else
+    value = application_read == NULL ? 0xFF
+              : application_read(port, application_context);
+  z80_banked_pio_note_io(port, true, value);
+  return value;
+}
+
+static void apply_pio_fault(uint32_t controls) {
+  __atomic_fetch_add(&control_errors, 1, __ATOMIC_RELAXED);
+  trap_fail_closed(Z80_IO_TRAP_RESET_INVALID_CONTROLS, controls);
+}
+
+bool z80_io_trap_rearm(void) {
+  gpio_init(PIN_IORQ_N);
+  gpio_set_dir(PIN_IORQ_N, GPIO_IN);
+  gpio_disable_pulls(PIN_IORQ_N);
+  return z80_banked_pio_rearm(apply_pio_read, apply_pio_write, apply_pio_fault);
+}
+
+void z80_io_trap_drain_writes(void) {
+  z80_banked_pio_drain();
+}
+
+void z80_io_trap_disable(void) {
+  z80_banked_pio_disable();
+}
+
+void z80_io_trap_poll(void) {
+  if (!z80_banked_pio_poll()) {
+    __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
+    trap_fail_closed(Z80_IO_TRAP_RESET_RELEASE_TIMEOUT, gpio_get_all());
+  }
+}
+#else
 static void __not_in_flash_func(io_trap_handler)(uint gpio, uint32_t events) {
   (void)events;
   if (gpio != PIN_IORQ_N)
@@ -144,12 +174,24 @@ static void __not_in_flash_func(io_trap_handler)(uint gpio, uint32_t events) {
   service_stopped_io();
 }
 
-#if defined(Z80_BANKED_PIO)
-static void __not_in_flash_func(pio_slow_handler)(void) {
-  /* slow_irq_handler has already checked BUSACK, stopped CLK and guarded
-   * its final HIGH phase before handing the control pins to SIO. */
-  service_stopped_io();
+bool z80_io_trap_rearm(void) {
+  gpio_init(PIN_IORQ_N);
+  gpio_set_dir(PIN_IORQ_N, GPIO_IN);
+  gpio_disable_pulls(PIN_IORQ_N);
+  gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+  gpio_set_irq_enabled_with_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, true,
+                                     io_trap_handler);
+  return true;
 }
+
+void z80_io_trap_disable(void) {
+  gpio_set_irq_enabled(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, false);
+  gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
+}
+
+void z80_io_trap_poll(void) {}
+
+void z80_io_trap_drain_writes(void) {}
 #endif
 
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
@@ -158,39 +200,7 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
   application_read = read_handler;
   application_write = write_handler;
   application_context = context;
-  z80_io_trap_rearm();
-  return true;
-}
-
-void z80_io_trap_rearm(void) {
-  gpio_init(PIN_IORQ_N);
-  gpio_set_dir(PIN_IORQ_N, GPIO_IN);
-  gpio_disable_pulls(PIN_IORQ_N);
-  gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
-#if defined(Z80_BANKED_PIO)
-  gpio_set_irq_enabled(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, false);
-  if (z80_banked_pio_rearm(pio_slow_handler))
-    return;
-#endif
-  gpio_set_irq_enabled_with_callback(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, true,
-                                     io_trap_handler);
-}
-
-void z80_io_trap_disable(void) {
-#if defined(Z80_BANKED_PIO)
-  z80_banked_pio_disable();
-#endif
-  gpio_set_irq_enabled(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL, false);
-  gpio_acknowledge_irq(PIN_IORQ_N, GPIO_IRQ_EDGE_FALL);
-}
-
-void z80_io_trap_poll(void) {
-#if defined(Z80_BANKED_PIO)
-  if (!z80_banked_pio_poll()) {
-    __atomic_fetch_add(&trap_timeouts, 1, __ATOMIC_RELAXED);
-    trap_fail_closed(Z80_IO_TRAP_RESET_RELEASE_TIMEOUT, gpio_get_all());
-  }
-#endif
+  return z80_io_trap_rearm();
 }
 
 uint32_t z80_io_trap_timeout_count(void) {

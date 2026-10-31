@@ -6,63 +6,19 @@ set_source_files_properties(full_memory_test.c
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 add_z80_stage(z80_stage06_pwm_memory pwm_memory_test.c z80_io_trap)
 
-# Compile the entire clock/CPU/trap chain separately; normal stages stay at 8 MHz.
-add_library(z80_pwm_experimental STATIC
+# Compile the clock/CPU/trap chain separately; normal stages stay at 8 MHz.
+# This PWM/GPIO-trap variant screens the 20 MHz rate without PIO1.
+add_library(z80_pwm_20mhz STATIC
   ../common/clock.c
   ../common/sram.c
   ../common/cpu.c
   ../common/io_trap.c
 )
-target_compile_definitions(z80_pwm_experimental PUBLIC Z80_EXPERIMENTAL_12MHZ=1)
-target_compile_options(z80_pwm_experimental PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_pwm_experimental PUBLIC
+target_compile_definitions(z80_pwm_20mhz PUBLIC Z80_CLOCK_20MHZ=1)
+target_compile_options(z80_pwm_20mhz PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(z80_pwm_20mhz PUBLIC
   z80_bus hardware_pwm hardware_clocks hardware_watchdog)
-add_z80_stage(z80_stage06_pwm_memory_experimental pwm_memory_test.c
-  z80_pwm_experimental)
-
-get_target_property(pwm_experimental_sources z80_pwm_experimental SOURCES)
-add_library(z80_pwm_14mhz STATIC ${pwm_experimental_sources})
-target_compile_definitions(z80_pwm_14mhz PUBLIC Z80_EXPERIMENTAL_14MHZ=1)
-target_compile_options(z80_pwm_14mhz PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_pwm_14mhz PUBLIC
-  z80_bus hardware_pwm hardware_clocks hardware_watchdog)
-add_z80_stage(z80_stage06_pwm_memory_14mhz pwm_memory_test.c z80_pwm_14mhz)
-
-add_library(z80_pwm_15mhz STATIC ${pwm_experimental_sources})
-target_compile_definitions(z80_pwm_15mhz PUBLIC Z80_EXPERIMENTAL_15MHZ=1)
-target_compile_options(z80_pwm_15mhz PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_pwm_15mhz PUBLIC
-  z80_bus hardware_pwm hardware_clocks hardware_watchdog)
-add_z80_stage(z80_stage06_pwm_memory_15mhz pwm_memory_test.c z80_pwm_15mhz)
-
-add_library(z80_pwm_16mhz STATIC ${pwm_experimental_sources})
-target_compile_definitions(z80_pwm_16mhz PUBLIC Z80_EXPERIMENTAL_16MHZ=1)
-target_compile_options(z80_pwm_16mhz PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_pwm_16mhz PUBLIC
-  z80_bus hardware_pwm hardware_clocks hardware_watchdog)
-add_z80_stage(z80_stage06_pwm_memory_16mhz pwm_memory_test.c z80_pwm_16mhz)
-
-foreach(screen_mhz IN ITEMS 17 18 19 20)
-  add_library(z80_pwm_${screen_mhz}mhz STATIC ${pwm_experimental_sources})
-  target_compile_definitions(z80_pwm_${screen_mhz}mhz PUBLIC
-    Z80_EXPERIMENTAL_${screen_mhz}MHZ=1)
-  target_compile_options(z80_pwm_${screen_mhz}mhz PRIVATE -Wall -Wextra -Werror)
-  target_link_libraries(z80_pwm_${screen_mhz}mhz PUBLIC
-    z80_bus hardware_pwm hardware_clocks hardware_watchdog)
-  add_z80_stage(z80_stage06_pwm_memory_${screen_mhz}mhz pwm_memory_test.c
-    z80_pwm_${screen_mhz}mhz)
-endforeach()
-
-# Validated on the 20 MHz board through cold/warm boots and BANKED.COM.
-# Runtime banking requires PIO; other I/O can use the software trap.
-option(Z80_ENABLE_BANKED_PIO "Enable PIO bank-select/clock backend" ON)
-if(Z80_ENABLE_BANKED_PIO)
-  target_sources(z80_pwm_20mhz PRIVATE ../common/banked_pio.c)
-  pico_generate_pio_header(z80_pwm_20mhz
-    ${CMAKE_CURRENT_LIST_DIR}/../common/banked_io.pio)
-  target_compile_definitions(z80_pwm_20mhz PUBLIC Z80_BANKED_PIO=1)
-  target_link_libraries(z80_pwm_20mhz PUBLIC hardware_pio hardware_irq hardware_sync)
-endif()
+add_z80_stage(z80_stage06_pwm_memory_20mhz pwm_memory_test.c z80_pwm_20mhz)
 
 find_program(SOAK_Z80ASM z80asm)
 if(SOAK_Z80ASM)

@@ -36,16 +36,34 @@ static bool usb_connected;
 static uint32_t rx_drops;
 static uint32_t tx_drops;
 
+/* Counts change only under terminal_lock, but are stored atomically so the
+ * core-0 status poll can read them without the cross-core lock. */
+static inline void ring_set_count(terminal_ring_t *ring, size_t count) {
+  __atomic_store_n(&ring->count, count, __ATOMIC_RELAXED);
+}
+
+static inline size_t ring_count(const terminal_ring_t *ring) {
+  return __atomic_load_n(&ring->count, __ATOMIC_RELAXED);
+}
+
 static void clear_queues(void) {
-  rx_queue.head = rx_queue.count = 0;
-  tx_queue.head = tx_queue.count = 0;
+  rx_queue.head = tx_queue.head = 0;
+  ring_set_count(&rx_queue, 0);
+  ring_set_count(&tx_queue, 0);
   __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
 }
 
 static void __not_in_flash_func(ring_add)(terminal_ring_t *ring, uint8_t value) {
-  ring->data[(ring->head + ring->count++) & (ring->capacity - 1)] = value;
-  if (ring->count > ring->peak)
-    ring->peak = ring->count;
+  size_t count = ring->count;
+  ring->data[(ring->head + count) & (ring->capacity - 1)] = value;
+  ring_set_count(ring, ++count);
+  if (count > ring->peak)
+    ring->peak = count;
+}
+
+static void __not_in_flash_func(ring_drop_oldest)(terminal_ring_t *ring) {
+  ring->head = (ring->head + 1) & (ring->capacity - 1);
+  ring_set_count(ring, ring->count - 1);
 }
 
 static size_t ring_peek(const terminal_ring_t *ring, uint8_t *data,
@@ -63,7 +81,7 @@ static size_t ring_remove(terminal_ring_t *ring, uint8_t *data,
                           size_t capacity) {
   size_t count = ring_peek(ring, data, capacity);
   ring->head = (ring->head + count) & (ring->capacity - 1);
-  ring->count -= count;
+  ring_set_count(ring, ring->count - count);
   return count;
 }
 
@@ -80,24 +98,26 @@ void z80_terminal_queue_init(void) {
 }
 
 uint8_t __not_in_flash_func(z80_terminal_io_read)(uint8_t port) {
-  if (port != TERM_DATA_PORT && port != TERM_STATUS_PORT)
-    return 0xFF;
-  critical_section_enter_blocking(&terminal_lock);
-  uint8_t value = 0;
-  if (port == TERM_DATA_PORT) {
-    if (rx_queue.count) {
-      value = rx_queue.data[rx_queue.head];
-      rx_queue.head = (rx_queue.head + 1) & (TERM_RX_DEPTH - 1);
-      --rx_queue.count;
-    }
-  } else {
+  if (port == TERM_STATUS_PORT) {
+    /* Lock-free: core 0 is the only RX consumer and TX producer, so a racing
+     * core 1 update can only make this poll conservative for one cycle. */
     bool connected = z80_terminal_client_connected();
-    if (rx_queue.count)
+    uint8_t value = 0;
+    if (ring_count(&rx_queue))
       value |= TERM_STATUS_RX_READY;
-    if (!connected || tx_queue.count < TERM_TX_DEPTH)
+    if (!connected || ring_count(&tx_queue) < TERM_TX_DEPTH)
       value |= TERM_STATUS_TX_ROOM;
     if (connected)
       value |= TERM_STATUS_CLIENT;
+    return value;
+  }
+  if (!ring_count(&rx_queue))
+    return 0;
+  critical_section_enter_blocking(&terminal_lock);
+  uint8_t value = 0;
+  if (rx_queue.count) {
+    value = rx_queue.data[rx_queue.head];
+    ring_drop_oldest(&rx_queue);
   }
   critical_section_exit(&terminal_lock);
   return value;
@@ -125,8 +145,7 @@ void z80_terminal_receive(const uint8_t *data, size_t length) {
   for (size_t index = 0; index < length; ++index) {
     critical_section_enter_blocking(&terminal_lock);
     if (rx_queue.count == TERM_RX_DEPTH) {
-      rx_queue.head = (rx_queue.head + 1) & (TERM_RX_DEPTH - 1);
-      --rx_queue.count;
+      ring_drop_oldest(&rx_queue);
       __atomic_fetch_add(&rx_drops, 1, __ATOMIC_RELAXED);
     }
     ring_add(&rx_queue, data[index] == '\n' ? '\r' : data[index]);
@@ -185,7 +204,8 @@ void z80_terminal_set_connected(bool connected) {
   critical_section_enter_blocking(&terminal_lock);
   __atomic_store_n(&client_connected, connected, __ATOMIC_RELEASE);
   if (!connected) {
-    tx_queue.head = tx_queue.count = 0;
+    tx_queue.head = 0;
+    ring_set_count(&tx_queue, 0);
     __atomic_store_n(&tx_pending, 0, __ATOMIC_RELEASE);
   }
   critical_section_exit(&terminal_lock);
@@ -220,8 +240,7 @@ void z80_terminal_usb_receive(uint8_t value) {
   critical_section_enter_blocking(&terminal_lock);
   if (usb_connected && !z80_terminal_browser_connected()) {
     if (rx_queue.count == TERM_RX_DEPTH) {
-      rx_queue.head = (rx_queue.head + 1) & (TERM_RX_DEPTH - 1);
-      --rx_queue.count;
+      ring_drop_oldest(&rx_queue);
       __atomic_fetch_add(&rx_drops, 1, __ATOMIC_RELAXED);
     }
     ring_add(&rx_queue, value == '\n' ? '\r' : value);

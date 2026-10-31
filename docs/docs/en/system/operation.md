@@ -16,18 +16,19 @@ even during a bus grant. The detailed rules below protect that boundary.
 ## 6.1 Hardware-WAIT-Assisted Clock-Stop Trap Protocol
 
 IORQ# LOW reaches HCT32 pin 4 and makes WAIT# pin 6 LOW while Pico GP9
-IO_RELEASE is LOW. The buffered falling edge interrupts core 0, which stops
-PWM. The fully static CMOS Z80 tolerates the stopped clock. After settling,
+IO_RELEASE is LOW. In Phases 6-8 the buffered IORQ# GPIO edge interrupts
+core 0, which stops the PWM clock (Phases 9-10 complete every cycle in PIO; see
+[PIO I/O service](#pio-io-service)). The fully static CMOS Z80 tolerates the stopped clock. After settling,
 firmware first checks that IORQ# remains LOW, then requires exactly one of
 RD#/WR# active and samples A0/A1/A2/A4 before servicing data. If IORQ# is
-already HIGH, it counts an inactive interrupt and resumes PWM without
+already HIGH, it counts an inactive interrupt and resumes the clock without
 touching the data paths or IO_RELEASE. These events remain included in
 `control_errors` so they cannot silently pass timing qualification.
 
 For OUT, U10 receives the CPU byte; for IN, U9 supplies a preloaded reply.
 Only after the path is configured does GP9 rise. Firmware completes the I/O
 cycle with slow single clocks, observes IORQ/strobe release, disables both
-paths, waits at least 1 us for isolation, lowers GP9, then restores PWM.
+paths, waits at least 1 us for isolation, lowers GP9, then restores the clock.
 Every slow step includes a fixed 1 us LOW settling interval before the control
 sample, preventing an extra clock caused by propagation or input-synchronizer
 delay. This prevents a later memory read from
@@ -35,7 +36,7 @@ re-enabling the Pico output. RD#-qualified U9 OE provides additional strobe
 gating, not software-independent ownership arbitration.
 
 WAIT assertion is fixed logic, not IRQ/PIO dependent. HCT32 propagation,
-WAIT setup/hold, PWM-to-SIO transitions, and data setup still require captures.
+WAIT setup/hold, run-clock-to-SIO transitions, and data setup still require captures.
 The 500 ms release timeout fails closed through RESET and watchdog recovery.
 
 ## 6.2 Terminal I/O over Pico WebSocket
@@ -96,12 +97,13 @@ queue. It may only enqueue Z80 output bytes, dequeue already-buffered
 browser input bytes, and report terminal status. Core 1 may drop, drain,
 or back-pressure network data; it must not hold terminal critical sections
 across network or flash work or touch any Z80 bus GPIO.
-Pico SDK `queue_try_add()`/`queue_try_remove()` do
-not wait for space or data, but they do use brief internal spinlock critical
-sections for multicore safety. Include that bounded contention in measured
-trap-latency qualification rather than describing these queues as lock-free.
-A short SDK critical section also serializes transmit status, enqueueing and
+The trap path uses no SDK queues. Terminal status is read lock-free from
+atomically stored ring counts; because core 0 is the only receive consumer and
+transmit producer, a racing core-1 update can only make one poll conservative.
+A short SDK critical section serializes terminal data dequeue/enqueue and
 disconnect cleanup so output cannot race with a disconnect on the other core.
+Include that bounded spinlock contention in measured trap-latency
+qualification.
 
 The initial terminal decode is intentionally small:
 
@@ -261,15 +263,19 @@ wear-levelled storage.
     It provides no qualification evidence or manufacturing package for this
     assisted-loader revision.
 
-### PIO bank-select service
+### PIO I/O service
 
-On the main Phase 10 20 MHz build (`Z80_ENABLE_BANKED_PIO=ON`), a verified
-second SRAM bank enables the
-[PIO1 clock and bank-select backend](../hardware/address-interface.md#pio-acceleration).
-Valid OUTs to port 7 complete in PIO while CLK is briefly held LOW. The
-software I/O sequence above remains in use for other ports and all reads,
-with PIO clock stop/resume replacing PWM. If PIO1 cannot be allocated, the
-PWM/software trap continues serving other I/O, but runtime banking is unavailable. No extra wiring is
-required beyond the A16 modification. PIO is the Phase 10 default after
-repeated board boots and BANKED passes. If banking hardware or PIO resources
-are unavailable, firmware retains PWM/software I/O at 20 MHz with runtime banking unavailable.
+Phases 9 and 10 use the
+[PIO clock and I/O engine](../hardware/address-interface.md#pio-acceleration)
+as their only 20 MHz run clock and I/O entry: every IN and OUT completes in
+PIO, and the stepped software sequence above is used only by the Phase 6-8
+GPIO trap. `OUT 07h` drives A16 in PIO; other OUTs are queued for core 0, and
+an IN waits, with WAIT and CLK held, for core 0's reply byte. Core 0 services
+them in bus order, so an IN always observes every earlier OUT. The supervisor
+stop parks the Z80 with BUSREQ#, applies queued OUTs and only then checks disk
+quiescence; its flush is a separate core-1 request, never a command injected
+into the Z80 disk port. If the PIO resources cannot be allocated, CP/M start
+fails closed with RESET held LOW. Without a verified second SRAM bank, the
+engine still runs the clock and I/O but leaves GP8/A16 on SIO, so runtime
+banking reports unavailable and `OUT 07h` cannot switch banks. No extra wiring
+is required beyond the A16 modification.

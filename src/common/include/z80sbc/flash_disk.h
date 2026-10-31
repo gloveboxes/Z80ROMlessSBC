@@ -65,8 +65,12 @@ void z80_flash_core1_service(void);
 uint8_t z80_flash_disk_io_read(uint8_t port);
 void z80_flash_disk_io_write(uint8_t port, uint8_t value);
 uint32_t z80_flash_disk_status(void);
+/* READ commands served from the SRAM read-ahead vs. read from flash. */
+void z80_flash_disk_prefetch_counts(uint32_t *hits, uint32_t *misses);
 bool z80_flash_disk_has_fatal_error(void);
 bool z80_flash_disk_quiescent(void);
+/* Core 0 supervisor: ask core 1 to flush after any pending Z80 command. */
+void z80_flash_disk_request_flush(void);
 /* Core 0 closes this gate before publishing a confirmed reboot request. */
 void z80_flash_disk_set_write_enabled(bool enabled);
 void z80_flash_disk_arm_fault(z80_flash_fault_point_t point);

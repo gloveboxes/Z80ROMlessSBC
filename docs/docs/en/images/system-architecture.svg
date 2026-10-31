@@ -51,11 +51,11 @@
   <text x="372" y="356" class="body">Assisted SRAM load + read-back</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/sram.c"><text x="372" y="382" class="source">sram.c / cpu.c / bus.c</text></a>
   <path d="M372 401H708" stroke="#b5cef2"/>
-  <text x="372" y="432" class="subheading blue">I/O trap + virtual port adapters</text>
+  <text x="372" y="432" class="subheading blue">PIO I/O engine + virtual ports</text>
   <text x="372" y="462" class="body">00-01h console; 10-14h disk</text>
   <text x="372" y="491" class="body">02-04h service ABI; 17h timers</text>
-  <text x="372" y="520" class="body">Standard I/O: stop PWM, service, resume</text>
-  <text x="372" y="548" class="body">PIO1 fast path: OUT 07h bank select</text>
+  <text x="372" y="520" class="body">PIO1 completes every IN/OUT cycle</text>
+  <text x="372" y="548" class="body">Core 0 FIFO IRQ: OUT apply / IN reply</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c"><text x="372" y="565" class="source">io_trap.c / banked_io.pio / disk_device.c</text></a>
   <path d="M372 580H708" stroke="#b5cef2"/>
   <text x="372" y="597" class="subheading blue">Z80 supervisor + flash handshakes</text>
@@ -63,8 +63,8 @@
   <text x="372" y="656" class="body">State publication + bounded diagnostics</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c"><text x="372" y="682" class="source">Shared main.c; stdout queued to USB core</text></a>
   <rect x="370" y="707" width="340" height="62" rx="9" fill="#fff0dc" stroke="#e5b77c"/>
-  <text x="540" y="733" class="subheading orange" text-anchor="middle">PWM / PIO1 clock generator</text>
-  <text x="540" y="757" class="body orange" text-anchor="middle">20 MHz; slow boot / trapped-I/O steps</text>
+  <text x="540" y="733" class="subheading orange" text-anchor="middle">PIO0 clock generator</text>
+  <text x="540" y="757" class="body orange" text-anchor="middle">20 MHz; held by PIO1 per I/O cycle</text>
 
   <rect x="770" y="210" width="310" height="435" rx="14" fill="#f2f4fa" stroke="#cbd3e3"/>
   <text x="790" y="243" class="section">SHARED RAM BOUNDARY</text>
@@ -75,7 +75,7 @@
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/terminal_queue.c"><text x="790" y="397" class="source">terminal_queue.c</text></a>
   <path d="M790 415H1060" stroke="#cbd3e3"/>
   <text x="790" y="447" class="subheading">Disk + control requests</text>
-  <text x="790" y="477" class="small">Immutable disk write/flush queue</text>
+  <text x="790" y="477" class="small">Single-slot disk write mailbox</text>
   <text x="790" y="504" class="small">Atomic service request/result mailbox</text>
   <text x="790" y="531" class="small">Flash grant request/result queues</text>
   <text x="790" y="558" class="small">Supervisor queue + diagnostic ring</text>
@@ -109,7 +109,7 @@
   <text x="790" y="711" class="subheading orange">Onboard QSPI flash | 4 MiB persistent storage</text>
   <text x="790" y="741" class="body">Pico firmware | recovery journal | 64 KiB Z80 boot payload | ENV</text>
   <text x="790" y="770" class="body">CP/M A:-D: = 4 x 320 KiB; 128-byte records; no SD card</text>
-  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c"><text x="790" y="793" class="source">Core 0: fast reads from flash/cache. Core 1: runtime commits. Source: flash_backend.c</text></a>
+  <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c"><text x="790" y="793" class="source">Core 0: SRAM read-ahead hits. Core 1: read-ahead + commits. Source: flash_backend.c</text></a>
 
   <!-- External transports terminate at their owning core, not at the Z80. -->
   <rect x="40" y="250" width="240" height="230" rx="14" fill="#ffffff" stroke="#b9c8dc"/>
@@ -138,7 +138,7 @@
   <!-- Core 1 feeds PIO FIFOs; the PIO state machine generates the I2C signals. -->
   <path d="M1530 620H1545V834H1530" class="network" marker-end="url(#teal-arrow)"/>
   <rect x="1120" y="817" width="410" height="33" rx="8" fill="#eaf8f4" stroke="#aad8cd"/>
-  <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0 state machine: I²C signal generation</text>
+  <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0: I²C display SM + Z80 clock SM</text>
   <path d="M1530 834H1580V745H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
   <rect x="1600" y="680" width="280" height="170" rx="14" fill="#ffffff" stroke="#aad8cd"/>
   <text x="1620" y="710" class="section teal">MATRIX DISPLAY</text>
@@ -221,7 +221,7 @@
   <text x="1031" y="1278" class="subheading">Initialize runtime</text>
   <text x="993" y="1320" class="body">Initialize service transport;</text>
   <text x="993" y="1350" class="body">core 1 already owns USB.</text>
-  <text x="993" y="1380" class="body">Enable core-0 I/O trap.</text>
+  <text x="993" y="1380" class="body">Arm the PIO1 I/O engine.</text>
   <text x="993" y="1410" class="body">No Wi-Fi/browser prerequisite.</text>
   <text x="993" y="1450" class="source">main.c: start_cpm()</text>
 
@@ -231,7 +231,7 @@
   <text x="1304" y="1320" class="body">Reset Z80 PC to 0000h.</text>
   <text x="1304" y="1350" class="body">Enable SRAM reads.</text>
   <text x="1304" y="1380" class="body">Release reset; start Pico's</text>
-  <text x="1304" y="1410" class="body">20 MHz PWM / PIO clock.</text>
+  <text x="1304" y="1410" class="body">20 MHz PIO0 clock.</text>
   <text x="1304" y="1450" class="source">cpu.c / clock.c</text>
 
   <rect x="1595" y="1240" width="285" height="230" rx="14" fill="#f3eefb" stroke="#cdbbe7"/>

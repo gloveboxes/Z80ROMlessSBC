@@ -1,10 +1,26 @@
-; PIO1: two state machines share this 31-word program and IRQ flags 0..2.
-; Clock SM: SET=GP2; wrap clock_start..clock_end; sysclk=120 MHz, divider=1.
-; I/O SM: IN=GP10, OUT=GP8 (1), SET=GP7 (1), side-set=GP9, JMP_PIN=GP0.
-; IRQ0 = slow-service request, IRQ1 = fast clock hold, IRQ2 = CPU clock hold.
-.program banked_io
-.side_set 1 opt
+; Phase 9/10 Z80 clock and I/O engine; sysclk = 120 MHz, divider 1.
+;
+; PIO0 banked_clock: SET = GP2 (CLK); wrap clock_start..clock_end gives
+; 20 MHz (3 HIGH + 3 LOW ticks). It stops in a LOW phase while PIO0 IRQ 1
+; (I/O hold, raised by PIO1 with IRQ PREV) or IRQ 2 (core-0 CPU hold) is set.
+; It shares PIO0 with the matrix display, which uses no IRQ flags.
+;
+; PIO1 banked_io (exclusive; the CYW43 SPI driver takes PIO2): IN = GP10, OUT = GP8..GP17 (A16, IO_RELEASE, D0-D7),
+; SET = GP6..GP7 (UP_OE#, DOWN_OE#), side-set = GP9 (IO_RELEASE),
+; JMP_PIN = GP27 (RD#). IN autopushes 32-bit snapshots (data bits 0-7,
+; A0/A1/A2/A4 bits 8-11, RD# bit 17, WR# bit 18) to core 0; TX carries IN
+; replies: OUT pins [9:0], drive pindirs [19:10], idle pindirs [29:20].
+; The board's 10 kOhm IORQ#/RD#/WR# pull-ups keep a granted bus inactive.
+;
+; Every cycle holds CLK LOW, then completes entirely in PIO:
+; - OUT 07h drives D0 onto A16; other OUTs push a snapshot. WAIT is released
+;   and CLK free-runs: U10 only drives the Pico side.
+; - IN pushes a request and stalls on the reply. U9 drives the bus, WAIT is
+;   released and exactly two clocks run (TW sees WAIT HIGH, T3's falling edge
+;   samples the data). CLK stays LOW until U9 is isolated, so the next opcode
+;   fetch can never see the Pico driving D0-D7.
 
+.program banked_clock
 public clock_start:
     set pins, 1 [2]
     set pins, 0
@@ -12,35 +28,41 @@ public clock_start:
 public clock_end:
     wait 0 irq 2
 
-.wrap_target
-public io_start:
-    wait 1 gpio 0             ; ignore floating bus while BUSACK# is LOW
-    wait 0 gpio 1             ; hardware HCT32 has already asserted WAIT#
-    jmp pin decode
-    jmp io_start
-decode:
+.program banked_io
+.pio_version 1
+.side_set 1 opt
+public out_cycle:
+    set pins, 1 [7]          ; U10 receives (DOWN_OE# LOW); let the LVC path settle
     mov osr, pins
     out null, 8
     out x, 4                 ; A0,A1,A2,A4: decoded 07h is nibble 7
     set y, 7
-    jmp x!=y slow
-    out null, 5
-    out x, 2                 ; RD#,WR#: only 01b is a valid OUT
-    set y, 1
-    jmp x!=y slow
-    irq 1                    ; clock SM stops only at the LOW phase
-    set pins, 0 [7]          ; receive data; allow clock and LVC path to settle
+    jmp x!=y generic
     mov osr, pins
-    out pins, 1              ; GP8/A16 = D0; only while SRAM is deselected
-    nop side 1 [7]           ; release WAIT, with CLK still LOW for >=8 ticks
-    irq clear 1
+    out pins, 1              ; GP8/A16 = D0 while SRAM is deselected; GP9 stays LOW
+    jmp release
+generic:
+    in pins, 32              ; autopush; a full RX FIFO stalls here with WAIT held
+release:
+    nop side 1 [7]           ; release WAIT with CLK still LOW for >= 8 ticks
+    irq prev clear 1
     wait 1 gpio 1
-    wait 1 gpio 28
-    set pins, 1 side 0        ; isolate receive path, rearm hardware WAIT
-    push noblock             ; progress token: never stall on a full FIFO
-    jmp io_start
-public slow:
-    irq wait 0               ; ARM parks SM, owns GP7/GP9, then restarts at io_start
-    wait 1 gpio 1
-    jmp io_start
+    set pins, 3 side 0       ; isolate U10, rearm WAIT
+.wrap_target
+public io_start:
+    wait 1 gpio 0            ; no cycles while the bus is granted
+    wait 0 gpio 1            ; the HCT32 has already asserted WAIT#
+    irq prev set 1           ; hold CLK at its next LOW phase
+    jmp pin out_cycle        ; RD# HIGH: OUT
+    in pins, 32              ; IN request
+    pull block               ; core-0 reply
+    out pins, 10             ; D0-D7 on GP10-GP17, A16 unchanged, GP9 LOW
+    out pindirs, 10
+    set pins, 2 side 1 [7]   ; U9 drives D0-D7; release WAIT, CLK LOW >= 8 ticks
+    irq prev clear 1 [7]     ; two clocks: the hold is clear at TW's LOW check...
+    irq prev set 1           ; ...and set by T3's, independent of IRQ latency
+    wait 1 gpio 1            ; IORQ# HIGH: data sampled, CLK held LOW after T3
+    set pins, 3 side 0       ; isolate U9, rearm WAIT
+    out pindirs, 10          ; D0-D7 GPIOs back to inputs
+    irq prev clear 1         ; resume CLK into the next T1
 .wrap

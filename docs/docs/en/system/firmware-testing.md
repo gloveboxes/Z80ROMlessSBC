@@ -81,7 +81,7 @@ scheduling, or electrical timing.
 | `stage09_usb_cpm` | Actual Phase 9 application functions and shared `terminal_queue.c` | Boot/storage and SDK calls are substituted; command/stop interleavings are driven by the harness |
 | `usb_core1_console` | Actual `usb_console.c` routing and bounded diagnostic ring | Modeled SDK endpoints assert core-1 affinity; checks concurrent producer/drain, CRLF vs raw console bytes, backpressure, wrap, overflow, disconnect and init failure, not physical IRQ delivery |
 | `stage09_autoboot_cpm` | The same application compiled with automatic startup, including its actual `main` initialization path | SDK/storage calls are substituted; tests cover boot before USB connection, retained CP/M output, late failure reporting and no automatic retries |
-| `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, queues, BUSY publication and fatal error latch | The flash backend is stubbed; this is not the journal test |
+| `disk_protocol` | Actual `disk_device.c`: Z80-facing commands, single-slot mailbox, BUSY ownership, reads, read-ahead hits/misses, seqlock fallback, write invalidation and fatal error latch | The flash backend is stubbed; this is not the journal test |
 | `assisted_loader`, `control_faults` | Shared injected-loader and control code | Cycle/pin models do not establish physical setup/hold timing |
 
 Fault cases include invalid packages, cancelled loads, SRAM mismatches,

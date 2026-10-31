@@ -91,7 +91,6 @@ def main() -> int:
     parser.add_argument("--build-dir", required=True, type=Path)
     parser.add_argument("--target", required=True)
     args = parser.parse_args()
-    banked_pio = args.target == "z80_stage10_websocket_terminal"
     build_dir = args.build_dir
     if not build_dir.is_absolute():
         build_dir = REPO_ROOT / build_dir
@@ -103,8 +102,7 @@ def main() -> int:
         env["PICO_TOOLCHAIN_PATH"] = str(toolchain_bin.parent)
         subprocess.run(
             ["cmake", "-S", str(REPO_ROOT), "-B", str(build_dir),
-             "-G", "Ninja", "-DPICO_BOARD=pico2_w",
-             "-DZ80_ENABLE_BANKED_PIO=" + ("ON" if banked_pio else "OFF")],
+             "-G", "Ninja", "-DPICO_BOARD=pico2_w"],
             cwd=REPO_ROOT, env=env, check=True,
         )
         subprocess.run(

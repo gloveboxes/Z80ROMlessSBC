@@ -24,6 +24,7 @@ void z80_io_service_init(void) {
 }
 
 uint64_t z80_service_millis(void) { return 0; }
+uint64_t z80_service_micros(void) { return 0; }
 
 io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
                                         size_t length, uint32_t generation) {

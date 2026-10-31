@@ -205,61 +205,14 @@ int main(void) {
     test_rate(requested[i]);
     assert(divider == 1 && count == counts[i]);
   }
-#if defined(Z80_EXPERIMENTAL_17MHZ) || defined(Z80_EXPERIMENTAL_18MHZ) || \
-    defined(Z80_EXPERIMENTAL_19MHZ) || defined(Z80_EXPERIMENTAL_20MHZ)
-#if defined(Z80_EXPERIMENTAL_17MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 17000000, "17 MHz ceiling");
-  sys_hz = 136000000;
-#elif defined(Z80_EXPERIMENTAL_18MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 18000000, "18 MHz ceiling");
-  sys_hz = 144000000;
-#elif defined(Z80_EXPERIMENTAL_19MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 19000000, "19 MHz ceiling");
-  sys_hz = 114000000;
-#else
+#if defined(Z80_CLOCK_20MHZ)
   _Static_assert(Z80_CLOCK_MAX_HZ == 20000000, "20 MHz ceiling");
   sys_hz = 120000000;
-#endif
   test_rate(Z80_CLOCK_MAX_HZ);
   assert(divider == 1 && count == (Z80_CLOCK_MAX_HZ <= 18000000 ? 8u : 6u));
   assert(z80_clock_get_hz() == Z80_CLOCK_MAX_HZ);
   test_rate(Z80_CLOCK_MAX_HZ - 1);
   assert(z80_clock_get_hz() < Z80_CLOCK_MAX_HZ);
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 16000000, "16 MHz experimental ceiling");
-  sys_hz = 128000000;
-  const uint extended_counts[] = {10, 10, 8};
-  for (size_t i = 0; i < sizeof(extended_counts) / sizeof(extended_counts[0]); ++i) {
-    test_rate(15000000u + (uint32_t)i * 500000u);
-    assert(divider == 1 && count == extended_counts[i]);
-  }
-  assert(z80_clock_get_hz() == 16000000);
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 15000000, "15 MHz experimental ceiling");
-  sys_hz = 150000000;
-  const uint extended_counts[] = {12, 12, 10};
-  for (size_t i = 0; i < sizeof(extended_counts) / sizeof(extended_counts[0]); ++i) {
-    test_rate(14000000u + (uint32_t)i * 500000u);
-    assert(divider == 1 && count == extended_counts[i]);
-  }
-  assert(z80_clock_get_hz() == 15000000);
-#elif defined(Z80_EXPERIMENTAL_14MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 14000000, "14 MHz experimental ceiling");
-  sys_hz = 140000000;
-  const uint extended_counts[] = {12, 12, 12, 12, 10};
-  for (size_t i = 0; i < sizeof(extended_counts) / sizeof(extended_counts[0]); ++i) {
-    test_rate(12000000u + (uint32_t)i * 500000u);
-    assert(divider == 1 && count == extended_counts[i]);
-  }
-  assert(z80_clock_get_hz() == 14000000);
-#elif defined(Z80_EXPERIMENTAL_12MHZ)
-  _Static_assert(Z80_CLOCK_MAX_HZ == 12000000, "experimental ceiling");
-  const uint extended_counts[] = {18, 18, 16, 16, 16, 14, 14, 14, 12};
-  for (size_t i = 0; i < sizeof(extended_counts) / sizeof(extended_counts[0]); ++i) {
-    test_rate(8000000u + (uint32_t)i * 500000u);
-    assert(divider == 1 && count == extended_counts[i]);
-  }
-  assert(z80_clock_get_hz() == 12000000);
 #else
   _Static_assert(Z80_CLOCK_MAX_HZ == 8000000, "normal ceiling must remain 8 MHz");
 #endif

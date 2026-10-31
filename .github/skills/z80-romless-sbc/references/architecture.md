@@ -125,7 +125,7 @@ design decision and validation of every affected caller.
 
 | Owner | Responsibilities | Boundary |
 | --- | --- | --- |
-| Core 0 | Z80 bus GPIO, PWM/stepped clocks, assisted SRAM loading, trap/IRQ completion, queued Z80 supervisor requests, flash-quiescence participation | No USB endpoint calls; no Wi-Fi, sockets, TLS/JSON, or runtime flash programming in the trap |
+| Core 0 | Z80 bus GPIO, stepped loader clock and the PIO 20 MHz run clock (PIO0 clock SM, PIO1 I/O engine; PIO2 is CYW43's; PWM only in Phase 6-8 bring-up), assisted SRAM loading, PIO FIFO/IRQ servicing, queued Z80 supervisor requests, flash-quiescence participation | No USB endpoint calls; no Wi-Fi, sockets, TLS/JSON, SDK queues or runtime flash programming in the trap; trap-reachable code is SRAM-resident (`__not_in_flash_func`); Phase 9/10 bus timing is entirely in PIO; Phase 6-8 trap settling guards must stay SDK `busy_wait_us_32` calls (qualified minimum) |
 | Core 1 | USB initialization, IRQ/background tasks, terminal and supervisor framing, CYW43/lwIP, HTTP/WebSocket, asynchronous services, ENV, runtime disk/service writes | No direct takeover of Z80 bus pins; request Z80 actions and quiescence through queues |
 | Shared console router | Bounded RX/TX storage and exclusive USB/browser console ownership | Transport-neutral API; no Wi-Fi lifecycle or socket ownership |
 | Service orchestration | Service ordering, connectivity-generation propagation, and bounded scheduling | Disk first, then network progress; do not merge independent service state machines |

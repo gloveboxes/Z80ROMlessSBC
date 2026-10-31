@@ -38,21 +38,24 @@ target_include_directories(z80_io_trap PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/i
 target_link_libraries(z80_io_trap PUBLIC z80_cpu hardware_watchdog)
 target_compile_options(z80_io_trap PRIVATE -Wall -Wextra -Werror)
 
-add_library(z80_flash_disk STATIC
-  common/disk_device.c
-  common/flash_backend.c
-  common/environment_store.c
+# Stage 9/10 run-time chain: PIO1 is the only 20 MHz clock and I/O entry.
+# SIO stepping remains for reset and the assisted SRAM loader.
+add_library(z80_runtime_20mhz STATIC
+  common/clock.c
+  common/sram.c
+  common/cpu.c
+  common/io_trap.c
+  common/banked_pio.c
 )
-target_include_directories(z80_flash_disk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_link_libraries(z80_flash_disk PUBLIC
-  z80_io_trap
-  pico_flash
-  pico_multicore
-  pico_util
-  hardware_flash
-  hardware_watchdog
-)
-target_compile_options(z80_flash_disk PRIVATE -Wall -Wextra -Werror)
+pico_generate_pio_header(z80_runtime_20mhz
+  ${CMAKE_CURRENT_LIST_DIR}/common/banked_io.pio)
+target_include_directories(z80_runtime_20mhz PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/common/include)
+target_compile_definitions(z80_runtime_20mhz PUBLIC Z80_BANKED_PIO=1)
+target_compile_options(z80_runtime_20mhz PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(z80_runtime_20mhz PUBLIC
+  z80_bus hardware_pio hardware_irq hardware_sync hardware_clocks
+  hardware_watchdog)
 
 add_library(z80_io_services STATIC
   common/io_ports.c

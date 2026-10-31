@@ -83,16 +83,8 @@ uint32_t clock_get_hz(uint clock) {
 }
 void set_sys_clock_pll(uint32_t vco_freq, uint post_div1, uint post_div2) {
   assert(reset_held && !trap_enabled && starts == 0 && writes == 0);
-#if defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   assert(vco_freq == 1200000000 && post_div1 == 5 && post_div2 == 2);
-#elif defined(Z80_EXPERIMENTAL_19MHZ)
-  assert(vco_freq == 1140000000 && post_div1 == 5 && post_div2 == 2);
-#elif defined(Z80_EXPERIMENTAL_17MHZ)
-  assert(vco_freq == 816000000 && post_div1 == 3 && post_div2 == 2);
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  assert(vco_freq == 1536000000 && post_div1 == 6 && post_div2 == 2);
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  assert(vco_freq == 1500000000 && post_div1 == 5 && post_div2 == 2);
 #else
   assert(vco_freq == 840000000 && post_div1 == 3 && post_div2 == 2);
 #endif
@@ -143,9 +135,7 @@ static void fixture(void) {
   pll_configurations = 0;
   configure_system_clock();
   assert(system_hz == SYSTEM_HZ);
-#if defined(Z80_EXPERIMENTAL_14MHZ) || defined(Z80_EXPERIMENTAL_15MHZ) || \
-    defined(Z80_EXPERIMENTAL_16MHZ) || defined(Z80_EXPERIMENTAL_17MHZ) || \
-    defined(Z80_EXPERIMENTAL_19MHZ) || defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   assert(pll_configurations == 1);
 #else
   assert(pll_configurations == 0);
@@ -340,42 +330,12 @@ int main(void) {
     assert(halves < 60);
     simulated_bank();
   }
-#if defined(Z80_EXPERIMENTAL_17MHZ) || defined(Z80_EXPERIMENTAL_18MHZ) || \
-    defined(Z80_EXPERIMENTAL_19MHZ) || defined(Z80_EXPERIMENTAL_20MHZ)
+#if defined(Z80_CLOCK_20MHZ)
   const unsigned expected_speeds = 1;
   assert(MIN_HZ == MAX_HZ && MIN_HZ >= 17000000 && MAX_HZ <= 20000000);
   assert(selections == 1 && strstr(output, "SKIP:") == NULL);
   assert(selected_hz == MAX_HZ);
   assert(strstr(output, "completed_check_successes=524288 failures=0"));
-#elif defined(Z80_EXPERIMENTAL_16MHZ)
-  const unsigned expected_speeds = 2;
-  assert(MIN_HZ == 15000000 && MAX_HZ == 16000000);
-  assert(selections == 3 && strstr(output, "SKIP: requested=15500000Hz"));
-  assert(strstr(output, "actual=12800000Hz") &&
-         strstr(output, "actual=16000000Hz"));
-  assert(strstr(output, "completed_check_successes=1048576 failures=0"));
-#elif defined(Z80_EXPERIMENTAL_15MHZ)
-  const unsigned expected_speeds = 2;
-  assert(MIN_HZ == 14000000 && MAX_HZ == 15000000);
-  assert(selections == 3 && strstr(output, "SKIP: requested=14500000Hz"));
-  assert(strstr(output, "actual=12500000Hz") &&
-         strstr(output, "actual=15000000Hz"));
-  assert(strstr(output, "completed_check_successes=1048576 failures=0"));
-#elif defined(Z80_EXPERIMENTAL_14MHZ)
-  const unsigned expected_speeds = 2;
-  assert(MIN_HZ == 12000000 && MAX_HZ == 14000000);
-  assert(selections == 5 && strstr(output, "SKIP: requested=12500000Hz"));
-  assert(strstr(output, "actual=11666667Hz") &&
-         strstr(output, "actual=14000000Hz"));
-  assert(strstr(output, "completed_check_successes=1048576 failures=0"));
-#elif defined(Z80_EXPERIMENTAL_12MHZ)
-  const unsigned expected_speeds = 4;
-  assert(MIN_HZ == 8000000 && MAX_HZ == 12000000);
-  assert(selections == 9 && strstr(output, "SKIP: requested=8500000Hz"));
-  assert(strstr(output, "actual=9000000Hz") &&
-         strstr(output, "actual=10285714Hz") &&
-         strstr(output, "actual=12000000Hz"));
-  assert(strstr(output, "completed_check_successes=2097152 failures=0"));
 #else
   const unsigned expected_speeds = 14;
   assert(MIN_HZ == 1000000 && MAX_HZ == 8000000);

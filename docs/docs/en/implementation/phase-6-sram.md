@@ -218,204 +218,34 @@ corruption and 256-byte aliases, and exercise duration, sweep, USB gating,
 abort, loader failures, protocol errors and timeouts. These tests do not
 prove physical timing.
 
-#### Experimental 8-12 MHz Screening
+#### 20 MHz Screening
 
-Only after the 1-8 MHz screening passes, the explicitly separate
-`z80_stage06_pwm_memory_experimental` target extends the same **self-validating
-write/read/compare** test to requests from 8 through 12 MHz:
-
-```sh
-cmake --build build --target z80_stage06_pwm_memory_experimental
-```
-
-Flash
-`build/src/stage06_sram_dma/z80_stage06_pwm_memory_experimental.uf2`.
-Connect the serial console and send `f` + Enter. The same four patterns,
-complete 64 KiB coverage, minimum 60-second execution phases, progress
-timeouts, immediate `x` abort, and first-failure stop apply. The Z80
-performs the comparisons while executing from SRAM at the selected rate;
-these are not clock-output-only tests or slow-loader readback results.
-
-The target compiles its clock, CPU, SRAM and I/O-trap chain separately with
-`Z80_EXPERIMENTAL_12MHZ`. Normal phases and the original PWM diagnostic
-retain their **8 MHz maximum**. The Pico system clock remains 144 MHz,
-with no fractional PWM divider or PLL retuning.
-
-| Requested MHz | Actual MHz (rounded) | PWM period count | Action after prior rate passes |
-| ---: | ---: | ---: | --- |
-| 8.0 | 8.000000 | 18 | Test |
-| 8.5 | 8.000000 | 18 | Skip duplicate |
-| 9.0 | 9.000000 | 16 | Test |
-| 9.5 | 9.000000 | 16 | Skip duplicate |
-| 10.0 | 9.000000 | 16 | Skip duplicate |
-| 10.5 | 10.285714 | 14 | Test |
-| 11.0 | 10.285714 | 14 | Skip duplicate |
-| 11.5 | 10.285714 | 14 | Skip duplicate |
-| 12.0 | 12.000000 | 12 | Test |
-
-There are **four distinct actual rates**, not nine independent speed tests.
-All are experimental, and the actual-rate gaps grow near the upper end.
-A functional PASS does not establish safe analogue margins or extend the
-normal system rating. Do not continue to a higher rate after any failure.
-
-#### Exact 14 MHz Experimental Screening
-
-At the usual 144 MHz Pico system clock, stable integer-divider, even-period
-PWM jumps from 12 to 14.4 MHz. A request capped at 14 MHz still produces
-12 MHz. To test **nominally exact 14 MHz without exceeding the request**,
-use the separately compiled `z80_stage06_pwm_memory_14mhz` application:
+After the 1-8 MHz screening passes, the separate
+`z80_stage06_pwm_memory_20mhz` target runs the same **self-validating
+write/read/compare** test at nominally exact 20 MHz:
 
 ```sh
-cmake -S . -B build/pwm14 -G Ninja -DPICO_BOARD=pico2_w
-cmake --build build/pwm14 --target z80_stage06_pwm_memory_14mhz
+cmake --build build --target z80_stage06_pwm_memory_20mhz
 ```
 
-UF2:
-`build/pwm14/src/stage06_sram_dma/z80_stage06_pwm_memory_14mhz.uf2`.
-Only this target opts into `Z80_EXPERIMENTAL_14MHZ`. After safe GPIO startup,
-with Z80 RESET asserted and before USB initialization or any Z80 clocks,
-it sets PLL_SYS to an 840 MHz VCO with post-dividers 3 and 2, giving
-**140 MHz clk_sys**. PLL_USB remains independently at 48 MHz. The system
-clock is not changed during an active test. Normal firmware and the
-8-12 MHz experimental application retain their 144 MHz system clock and
-respective 8/12 MHz Z80 limits. A separate build directory keeps the
-14 MHz artifact distinct from the earlier firmware.
+Flash `build/src/stage06_sram_dma/z80_stage06_pwm_memory_20mhz.uf2`, connect
+USB serial with DTR, check the clock banner and send `f` + Enter. The target
+compiles its clock, CPU, SRAM and I/O-trap chain separately with
+`Z80_CLOCK_20MHZ`; normal Phase 6 targets retain their **8 MHz maximum**.
+With RESET asserted and before USB initialization or Z80 clocks, it selects a
+1200 MHz PLL_SYS VCO with post-dividers 5 and 2, giving **120 MHz clk_sys**.
+USB retains its independent 48 MHz PLL. Integer PWM division with a period
+count of 6 and 50% duty produces 20 MHz.
 
-The banner reports the configured Pico system clock. A new run refuses
-to start if it does not match the application's expected clock.
-Serial DTR and `f` + Enter are still required; `x`, disconnect, timeouts
-and detected errors stop safely as before.
-
-| Requested MHz | Actual MHz (rounded) | PWM period count | Action |
-| ---: | ---: | ---: | --- |
-| 12.0 | 11.666667 | 12 | Test baseline at new system clock |
-| 12.5 | 11.666667 | 12 | Skip duplicate |
-| 13.0 | 11.666667 | 12 | Skip duplicate |
-| 13.5 | 11.666667 | 12 | Skip duplicate |
-| 14.0 | 14.000000 | 10 | Test |
-
-Both distinct rates run the same **full 64 KiB, four-pattern
-write/read/compare workload** for at least 60 seconds of execution-phase
-time, finishing a complete two-half cycle. Stop at the first failure.
-These rates are nominal configured values, not scope measurements; the
-changed supervisor clock must be recorded with the result. A successful
-run is functional screening evidence only, not a new normal system rating.
-
-#### Exact 15 MHz Experimental Screening
-
-After the 14 MHz screen passes, build the separate
-`z80_stage06_pwm_memory_15mhz` target:
-
-```sh
-cmake -S . -B build/pwm15 -G Ninja -DPICO_BOARD=pico2_w
-cmake --build build/pwm15 --target z80_stage06_pwm_memory_15mhz
-```
-
-UF2:
-`build/pwm15/src/stage06_sram_dma/z80_stage06_pwm_memory_15mhz.uf2`.
-Only this target opts into `Z80_EXPERIMENTAL_15MHZ`. With the Z80 held in
-reset, before USB initialization or Z80 execution, it selects a 1500 MHz
-PLL_SYS VCO with post-dividers 5 and 2, giving **150 MHz clk_sys**.
-The independent USB PLL remains 48 MHz. No system-clock change occurs
-during testing; normal and earlier experimental targets keep their
-existing clocks and limits.
-
-| Requested MHz | Actual MHz | PWM period count | Action |
-| ---: | ---: | ---: | --- |
-| 14.0 | 12.5 | 12 | Test baseline at new system clock |
-| 14.5 | 12.5 | 12 | Skip duplicate |
-| 15.0 | 15.0 | 10 | Test |
-
-Connect serial with DTR and send `f` + Enter. Both distinct rates run the
-same four-pattern write/read/compare test across all 64 KiB for at least
-60 seconds of execution-phase time, ending on a complete cycle. Memory
-accesses have no added wait states; only I/O progress/error reports use
-the existing WAIT trap and stepped completion. All failures, timeouts,
-disconnects and the immediate `x` command stop safely. The displayed values
-are PWM targets. The project prototype's 20 MHz clock has been independently
-scope-measured; other rates in this screening remain unmeasured. This remains
-functional screening, not full timing qualification or a long-term reliability
-rating.
-
-#### Exact 16 MHz Experimental Screening
-
-After the 15 MHz screen passes, use the isolated
-`z80_stage06_pwm_memory_16mhz` target:
-
-```sh
-cmake -S . -B build/pwm16 -G Ninja -DPICO_BOARD=pico2_w
-cmake --build build/pwm16 --target z80_stage06_pwm_memory_16mhz
-```
-
-UF2:
-`build/pwm16/src/stage06_sram_dma/z80_stage06_pwm_memory_16mhz.uf2`.
-Its `Z80_EXPERIMENTAL_16MHZ` opt-in selects **128 MHz clk_sys** from a
-1536 MHz PLL_SYS VCO and post-dividers 6 and 2. This happens with Z80
-RESET asserted, before USB initialization or Z80 clocks. USB retains its
-independent 48 MHz PLL; no system-clock retuning occurs during the test.
-All prior targets retain their clocks and limits.
-
-| Requested MHz | Actual MHz | PWM period count | Action |
-| ---: | ---: | ---: | --- |
-| 15.0 | 12.8 | 10 | Test baseline at new system clock |
-| 15.5 | 12.8 | 10 | Skip duplicate |
-| 16.0 | 16.0 | 8 | Test |
-
-Send `f` + Enter after connecting USB serial with DTR. Each distinct
-rate must complete at least 60 seconds of the same four-pattern,
-full-64-KiB write/read/compare workload and end on a complete two-half
-cycle. There are no added SRAM wait states; only progress/error I/O
-reports use the existing WAIT trap. First-error stops, timeouts,
-disconnect protection and immediate `x` abort remain unchanged.
-Record the 128 MHz supervisor clock with these nominal PWM rates.
-A pass is functional screening evidence, not timing qualification.
-
-#### Exact 17, 18, 19 and 20 MHz Screening
-
-After 16 MHz passes, test the next rates **in order, stopping at the first
-failure**. Each of these isolated targets tests one nominally exact rate;
-there is no automatic advance inside the firmware:
-
-```sh
-cmake -S . -B build/pwm17-20 -G Ninja -DPICO_BOARD=pico2_w
-cmake --build build/pwm17-20 --target \
-  z80_stage06_pwm_memory_17mhz z80_stage06_pwm_memory_18mhz \
-  z80_stage06_pwm_memory_19mhz z80_stage06_pwm_memory_20mhz
-```
-
-UF2s are under `build/pwm17-20/src/stage06_sram_dma/`, named after their
-targets. Each target uses its own `Z80_EXPERIMENTAL_17MHZ`,
-`Z80_EXPERIMENTAL_18MHZ`, `Z80_EXPERIMENTAL_19MHZ` or
-`Z80_EXPERIMENTAL_20MHZ` clock-limit opt-in. Normal firmware and previous
-experimental targets remain unchanged.
-
-| Z80 MHz | Pico clk_sys MHz | PLL_SYS VCO MHz | Post-dividers | PWM period count |
-| ---: | ---: | ---: | --- | ---: |
-| 17 | 136 | 816 | 3, 2 | 8 |
-| 18 | 144 | 1440 | 5, 2 (SDK startup unchanged) | 8 |
-| 19 | 114 | 1140 | 5, 2 | 6 |
-| 20 | 120 | 1200 | 5, 2 | 6 |
-
-All use integer PWM division and 50% duty. The supervisor clock is
-selected before USB initialization or Z80 execution, with RESET asserted;
-USB retains its independent 48 MHz PLL. No supervisor clock change occurs
-during an active test. These are nominal configured frequencies, not
-scope-measured values, and the changed supervisor clock must be recorded.
-
-For each rate, keep external 5 V on with every IC powered, flash/verify
-the matching image, connect USB serial with DTR, check the clock banner,
-and send `f` + Enter. Require a complete PASS and zero failures before
-flashing the next rate. Each point must complete at least 60 seconds of
-the same full-64-KiB, four-pattern write/read/compare workload, finishing
-on a complete two-half cycle. SRAM accesses have no added wait states;
-only short I/O reports use the existing WAIT trap.
-
-A mismatch, timeout, unexpected control, loader error, aborted run,
-disconnect or watchdog reboot invalidates the point: **do not proceed
-to the next rate**. Immediate `x` abort and fail-closed reset/isolation
-remain available. The CPU's 20 MHz grade is not a complete-system rating;
-even four passing points are functional screening evidence, not analogue
-timing qualification or a long-term reliability guarantee.
+The rate must complete at least 60 seconds of the same full-64-KiB,
+four-pattern workload, finishing on a complete two-half cycle. SRAM accesses
+have no added wait states; only short I/O reports use the existing WAIT trap.
+A mismatch, timeout, unexpected control, loader error, aborted run, disconnect
+or watchdog reboot fails the run. Immediate `x` abort and fail-closed
+reset/isolation remain available. The CPU's 20 MHz grade is not a
+complete-system rating; a pass is functional screening evidence, not analogue
+timing qualification. Phases 9 and 10 run at 20 MHz from the PIO1 clock, not
+this PWM chain.
 
 #### One-Hour 20 MHz Arithmetic and SRAM Soak
 
@@ -435,10 +265,10 @@ Z80 assembly program and independently calculated reference vectors, then
 executes continuously without reloading/resetting between cycles.
 
 ```sh
-cmake --build build/pwm17-20 --target z80_stage06_math_soak_20mhz
+cmake --build build --target z80_stage06_math_soak_20mhz
 ```
 
-UF2: `build/pwm17-20/src/stage06_sram_dma/z80_stage06_math_soak_20mhz.uf2`.
+UF2: `build/src/stage06_sram_dma/z80_stage06_math_soak_20mhz.uf2`.
 The existing build directory must first be configured as above. `z80asm`
 is required; the build assembles `math_soak.asm` and embeds its exact bytes.
 The isolated 20 MHz clock/CPU/trap chain selects **120 MHz Pico clk_sys**

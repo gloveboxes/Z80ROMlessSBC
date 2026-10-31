@@ -4,6 +4,7 @@
 #include <string.h>
 #include <strings.h>
 #include "../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
+#include "z80sbc/ram_func.h"
 
 /* A single mailbox has exclusive ownership: core 0 writes IDLE, core 1 writes
  * PENDING, core 0 reads DONE. Release/acquire publishes metadata and bytes.
@@ -47,7 +48,7 @@ void z80_http_io_init(void) {
   __atomic_add_fetch(&session, 1, __ATOMIC_RELEASE);
 }
 
-static void pump(void) {
+static void __not_in_flash_func(pump)(void) {
   uint32_t state = __atomic_load_n(&slot_state, __ATOMIC_ACQUIRE);
   if (state == SLOT_DONE) {
     if (slot.session == __atomic_load_n(&session, __ATOMIC_ACQUIRE) && port.want_chunk) {
@@ -69,7 +70,7 @@ static void pump(void) {
   }
 }
 
-void z80_http_io_out(uint8_t address, uint8_t data) {
+void __not_in_flash_func(z80_http_io_out)(uint8_t address, uint8_t data) {
   if (address == HTTP_COMMAND_PORT) {
     if (data == HTTP_SET_FILENAME || data == HTTP_CLOSE) {
       __atomic_add_fetch(&session, 1, __ATOMIC_RELEASE);
@@ -101,7 +102,7 @@ void z80_http_io_out(uint8_t address, uint8_t data) {
   }
 }
 
-uint8_t z80_http_io_in(uint8_t address) {
+uint8_t __not_in_flash_func(z80_http_io_in)(uint8_t address) {
   /* Do not recycle DONE while core 0 is still reading its data. */
   if (port.position >= port.length) pump();
   if (address == HTTP_COMMAND_PORT) return port.status;

@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "z80sbc/flash_disk.h"
+#include "z80sbc/ram_func.h"
 #include "flash_backend.h"
 #include "../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 
@@ -27,7 +28,7 @@ void z80_io_service_init(void) {
   __atomic_store_n(&reboot_requested, 0, __ATOMIC_RELEASE);
 }
 
-io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
+io_service_error_t __not_in_flash_func(z80_io_service_submit)(uint8_t command, const uint8_t *data,
                                         size_t length, uint32_t generation) {
   if (__atomic_load_n(&work_state, __ATOMIC_ACQUIRE) != WORK_IDLE)
     return IO_SERVICE_BUSY_ERROR;
@@ -42,7 +43,7 @@ io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
   return IO_SERVICE_OK;
 }
 
-const io_service_result_t *z80_io_service_poll(void) {
+const io_service_result_t *__not_in_flash_func(z80_io_service_poll)(void) {
   if (__atomic_load_n(&work_state, __ATOMIC_ACQUIRE) != WORK_DONE)
     return NULL;
   /* Only core 0 submits the next job, after consuming/discarding this result. */

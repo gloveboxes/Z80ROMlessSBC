@@ -25,22 +25,45 @@ bank selection.
 
 ### PIO acceleration
 
-Phase 10 enables PIO-controlled SRAM bank switching after the second-bank probe
-succeeds. PIO1 uses
-two state machines and 31 instruction words with a 120 MHz supervisor clock:
-one generates the 20 MHz Z80 clock; the other handles bank-select OUTs without
-an ARM interrupt. PIO0 remains available for the matrix display.
+Phases 9 and 10 complete every Z80 I/O cycle in PIO with a 120 MHz
+supervisor clock. A PIO0 state machine (4 words, beside the matrix display)
+generates the 20 MHz Z80 clock. PIO1 is claimed exclusively for the I/O engine
+(29 words) and holds that clock through PIO0 IRQ 1 with the RP2350's
+`IRQ PREV`. PIO2 is left to the CYW43 SPI driver, which takes the highest free
+block. PIO1 owns GP6-GP17 while CP/M runs: `SET` drives UP_OE#/DOWN_OE#, `OUT`
+drives A16, IO_RELEASE and D0-D7 (with their pin directions), side-set drives
+IO_RELEASE and `JMP PIN` tests RD#. The board's 10 kOhm IORQ#/RD#/WR#
+pull-ups keep a granted bus inactive, so the engine needs no BUSACK# recheck
+after IORQ#.
 
-During a bank write, PIO holds CLK LOW, samples D0 onto A16 while SRAM is
-deselected, releases WAIT, and rearms after IORQ#/WR# release. The fixed HCT32
-WAIT circuit remains required. CLK stays LOW for at least eight system ticks
-(66.7 ns) after WAIT release. Reads and other ports use firmware handlers.
+Every cycle holds CLK LOW at its next LOW phase, then:
 
-Runtime banking requires active PIO. If bank hardware or PIO resources are
-unavailable, other I/O continues through PWM/software handling, but banking
-reports unavailable. Once allocated, the backend requires 20 MHz Z80 /
-120 MHz supervisor clocks. Stuck transactions trigger fail-closed recovery
-after 500 ms.
+- **OUT:** PIO enables U10, samples after at least eight system ticks,
+  releases WAIT and lets CLK free-run; U10 only drives the Pico side. `OUT 07h`
+  drives D0 onto A16 while SRAM is deselected. Other ports autopush a 32-bit
+  snapshot (data bits 0-7, A0/A1/A2/A4 bits 8-11, RD# bit 17, WR# bit 18) into
+  the 4-entry RX FIFO; when it is full, PIO stalls before WAIT release.
+- **IN:** PIO pushes a request snapshot and waits on its TX FIFO. Core 0
+  replies with the OUT pin word (A16 unchanged, IO_RELEASE LOW, D0-D7) and the
+  driving and idle pin directions. PIO drives D0-D7, enables U9 and releases
+  WAIT with CLK still LOW for at least eight ticks, then runs exactly two
+  clocks: TW samples WAIT inactive and T3's falling edge samples the data. It
+  clears the hold, sets it again eight ticks later, and the clock SM sees it
+  at T3's LOW-phase check, never TW's, whatever the IRQ PREV latency. After
+  IORQ# rises, PIO isolates U9, rearms WAIT, returns D0-D7 to inputs and only
+  then resumes CLK. The next opcode fetch therefore never sees the Pico
+  driving the bus; there is no race against the 50 ns T3-to-T1 window.
+
+Core 0 services both FIFOs from the PIO1 RX-not-empty IRQ in bus order, so an
+IN always observes every earlier OUT; it also drains them before granting the
+bus or deciding a stop. Snapshots with neither or both strobes fail closed.
+The fixed HCT32 WAIT circuit remains required.
+
+If either PIO resource cannot be allocated, CP/M start fails closed. Without
+verified bank hardware, PIO1 keeps GP8/A16 on SIO, so other I/O continues but
+banking reports unavailable. The backend requires 20 MHz Z80 / 120 MHz
+supervisor clocks. Stuck transactions trigger fail-closed recovery after
+500 ms.
 
 ### Firmware and port contract
 

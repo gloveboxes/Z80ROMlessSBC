@@ -75,7 +75,6 @@ static uint64_t now;
 uint64_t z80_service_millis(void) { return now / 1000; }
 static unsigned service_reads;
 static unsigned service_writes;
-static unsigned service_probes;
 static uint8_t service_read_port, service_write_port, service_write_value;
 static unsigned usb_room;
 static unsigned disconnect_after_usb_writes;
@@ -165,11 +164,6 @@ z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
 #endif
 
 void z80_io_ports_init(void) {}
-bool z80_io_ports_handles(uint8_t port) {
-  ++service_probes;
-  port &= 0x17;
-  return (port >= 2 && port <= 4) || (port >= 0x15 && port <= 0x17);
-}
 uint8_t z80_io_port_in(uint8_t port) {
   assert(fake_core == 0);
   service_read_port = port;
@@ -225,6 +219,15 @@ bool queue_try_remove(queue_t *queue, void *item) {
 }
 unsigned queue_get_level(queue_t *queue) { return queue->count; }
 unsigned z80_memory_bank_status(void) { return 0xB4; }
+z80_banked_pio_latency_t z80_banked_pio_take_latency(void) {
+  /* 3 INs totalling 3600 cycles (10 us each at 120 MHz), max 1440. */
+  return (z80_banked_pio_latency_t){
+      .available = true, .in_count = 3, .in_cycles = 3600, .in_max_cycles = 1440,
+      .out_count = 4, .out_cycles = 480, .out_max_cycles = 240};
+}
+z80_banked_pio_status_t z80_banked_pio_status(void) {
+  return (z80_banked_pio_status_t){.active = true, .running = true};
+}
 void z80_safe_startup(void) { assert(fake_core == 0); held = true; }
 void z80_cpu_fail_closed(void) { assert(fake_core == 0); held = true; }
 void stdio_init_all(void) {}
@@ -374,6 +377,31 @@ void z80_flash_disk_io_write(uint8_t port, uint8_t value) {
     ++flushes;
 }
 uint32_t z80_flash_disk_status(void) { return fake_disk_status; }
+void z80_flash_disk_request_flush(void) {
+  assert(fake_core == 0);
+  ++flushes;
+}
+static bool bus_parked, bus_ok = true;
+static unsigned write_drains;
+bool z80_cpu_request_bus(uint32_t timeout_us) {
+  assert(fake_core == 0 && timeout_us == 500000 && !bus_parked);
+  assert(!interrupts_disabled); /* the trap must still drain a full FIFO */
+  bus_parked = bus_ok;
+  return bus_ok;
+}
+bool z80_cpu_release_bus(uint32_t timeout_us) {
+  assert(fake_core == 0 && timeout_us == 500000 && bus_parked);
+  bus_parked = false;
+  return true;
+}
+void z80_io_trap_drain_writes(void) {
+  assert(fake_core == 0 && interrupts_disabled && bus_parked);
+  ++write_drains;
+}
+void z80_flash_disk_prefetch_counts(uint32_t *hits, uint32_t *misses) {
+  *hits = 7;
+  *misses = 2;
+}
 bool z80_flash_disk_has_fatal_error(void) { return fatal; }
 bool z80_flash_disk_quiescent(void) { return quiescent; }
 void z80_flash_disk_arm_fault(z80_flash_fault_point_t point) {
@@ -405,6 +433,9 @@ static void reset_fixture(void) {
   boot_markers = flash_pause_request = flash_paused = 0;
   reported_rx_drops = reported_tx_drops = 0;
   load_calls = start_calls = core_launches = disk_writes = flushes = reboots = 0;
+  bus_parked = false;
+  bus_ok = true;
+  write_drains = 0;
   requested_clock = 0;
   connected = held = quiescent = load_ok = trap_ok = run_ok = true;
   fatal = interrupts_disabled = exit_main = false;
@@ -464,6 +495,9 @@ static void test_control_and_terminal(void) {
   fake_inactive_irqs = 3;
   command('s');
   assert(strstr(output, "control_errors=3 inactive_irqs=3"));
+  assert(strstr(output, "[disk] readahead hits=7 misses=2"));
+  assert(strstr(output, "[iolat] since last status: IN count=3 avg=10000ns "
+                        "max=12000ns; OUT apply count=4 avg=1000ns max=2000ns"));
   assert(!(virtual_read(1, NULL) & 1u));
   for (uint8_t port = 0x10; port <= 0x14; ++port) {
     assert(virtual_read(port, NULL) == 0x5A && disk_last_port == port);
@@ -513,7 +547,6 @@ static void test_status_uptime(void) {
 
 static void test_direct_port_dispatch(void) {
   reset_fixture();
-  unsigned probes = service_probes;
   for (unsigned repeat = 0; repeat < 4096; ++repeat) {
     unsigned reads = service_reads, writes = service_writes;
     const uint8_t input_byte = 'I';
@@ -530,7 +563,6 @@ static void test_direct_port_dispatch(void) {
     }
     assert(service_reads == reads && service_writes == writes);
   }
-  assert(service_probes == probes);
   const uint8_t spare_ports[] = {5, 6, 7};
   unsigned reads = service_reads, writes = service_writes;
   unsigned disk_count = disk_writes;
@@ -909,7 +941,10 @@ static void test_stop_and_failure(void) {
   assert(running && flushes == 1);
   flash_paused = 1;
   service_run();
+  /* Not quiescent: completed OUTs were applied with the Z80 parked, then
+   * the bus was returned and the stop retries. */
   assert(running && flash_resuming && !flash_pause_request);
+  assert(write_drains == 1 && !bus_parked);
   flash_paused = 0;
   service_run();
   assert(!flash_resuming && flash_pause_request);
@@ -917,6 +952,7 @@ static void test_stop_and_failure(void) {
   flash_paused = 1;
   service_run();
   assert(held && !running && !interrupts_disabled && !image_verified);
+  assert(write_drains == 2);
   const char *stopped = strstr(output, "Disk quiescent; RESET held LOW");
   assert(stopped != NULL);
   assert(strstr(stopped, "l=load/verify only, g=run verified CP/M, s=status"));
@@ -936,6 +972,17 @@ static void test_stop_and_failure(void) {
   assert(start_calls == 1);
   command('r');
   assert(reboots == 1);
+
+  /* A Z80 that never grants the bus is stopped fail-closed. */
+  reset_fixture();
+  command('l');
+  command('g');
+  command('x');
+  bus_ok = false;
+  flash_paused = 1;
+  service_run();
+  assert(held && !running && write_drains == 0);
+  assert(strstr(output, "did not release the bus for stop"));
 
   reset_fixture();
   load_ok = false;
@@ -1074,7 +1121,7 @@ static void test_config_orderly_reboot(void) {
   flash_paused = 1;
   service_run();
   assert(held && !running && config_reboot_ready && !reboots);
-  assert(strstr(output, "Disks flushed; RESET held LOW, PWM stopped"));
+  assert(strstr(output, "Disks flushed; RESET held LOW, clock stopped"));
   command('g');
   assert(!running && start_calls == 1);
   now += 999999;
@@ -1437,7 +1484,7 @@ static void test_supervisor_queue_ownership(void) {
 
 static void test_http_port_dispatch(void) {
   reset_fixture();
-  unsigned disks = disk_writes, probes = service_probes;
+  unsigned disks = disk_writes;
   /* Use FT.ASM's actual ABI, independently of the mock's handles predicate.
    * The previous emulator test called the driver directly and skipped these
    * firmware callbacks, leaving both registers mapped to the default FFh. */
@@ -1454,7 +1501,7 @@ static void test_http_port_dispatch(void) {
     assert(virtual_read(ports[i], NULL) == 0x42);
     assert(service_reads == reads + 1 && service_read_port == ports[i]);
   }
-  assert(disk_writes == disks && service_probes == probes);
+  assert(disk_writes == disks);
   assert(!io_services && !network_services);
 }
 
@@ -1466,16 +1513,18 @@ int main(void) {
   test_web_orderly_reboot();
 #endif
   test_direct_port_dispatch();
-  for (unsigned address = 0; address < 256; ++address) {
-    uint8_t port = (uint8_t)(address & 0x17);
-    if (z80_io_ports_handles(port)) {
-      unsigned old_writes = service_writes;
-      unsigned old_reads = service_reads;
-      virtual_write(port, 0xa5, NULL);
-      assert(service_writes == old_writes + 1);
-      assert(virtual_read(port, NULL) == 0x42);
-      assert(service_reads == old_reads + 1);
-    }
+  static const uint8_t service_ports[] = {
+    IO_SERVICE_COMMAND_PORT, IO_SERVICE_REQUEST_PORT, IO_SERVICE_RESPONSE_PORT,
+    HTTP_COMMAND_PORT, HTTP_DATA_PORT, IO_TIMER_PORT,
+  };
+  for (size_t i = 0; i < sizeof(service_ports); ++i) {
+    uint8_t port = service_ports[i];
+    unsigned old_writes = service_writes;
+    unsigned old_reads = service_reads;
+    virtual_write(port, 0xa5, NULL);
+    assert(service_writes == old_writes + 1 && service_write_port == port);
+    assert(virtual_read(port, NULL) == 0x42 && service_read_port == port);
+    assert(service_reads == old_reads + 1);
   }
   test_startup_without_usb();
   test_autoboot_progress();

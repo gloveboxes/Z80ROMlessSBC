@@ -131,7 +131,7 @@ does not replace firmware or boot data.
   SIGKILL, or disconnecting unknown owners. `--no-disconnect` opts out.
 - The maintained tool asserts DTR and uses raw 115200 8N1 without flow control.
   It sends **Ctrl+] then `s`**, then **Ctrl+] then `x`** if running, and waits
-  for `Disk quiescent; RESET held LOW, PWM stopped` before forcing BOOTSEL.
+  for `Disk quiescent; RESET held LOW, clock stopped` before forcing BOOTSEL.
   An already-stopped status must report ready storage without a fatal error.
   A disconnected terminal alone is not evidence of a clean stop.
 - If serial gives no output, do not repeat blind probes. Report that clean

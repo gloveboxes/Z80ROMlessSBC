@@ -126,71 +126,100 @@ USB remains serviced while stopped or draining for a stop. Flash programming
 can temporarily suspend it through SDK lockout. Real enumeration, concurrent
 network traffic and timing still require bench acceptance.
 
-### SRAM-resident terminal and disk register path
+### SRAM-resident Z80 I/O path
 
-The local performance hypothesis is that SRAM instruction placement reduces
-flash-cache-dependent latency in the core-0 I/O trap. It is not a claim that
-flash instruction fetches are the dominant cost. The SDK
-`__not_in_flash_func` attribute places the following routines in SRAM:
+Phases 9 and 10 have one run-time I/O entry: the
+[PIO engine](../hardware/address-interface.md#pio-acceleration) completes every
+IN and OUT. `OUT 07h` drives A16; other OUTs are queued in the PIO1 RX FIFO and
+an IN waits, with WAIT and CLK held, for core 0's reply. There is no PWM clock,
+GPIO-IRQ trap, clock stop or stepped completion on core 0 in these builds. If
+the PIO resources cannot be allocated, CP/M start fails closed with RESET held
+LOW. Without a verified bank 1, the engine still owns the clock and I/O, but
+GP8/A16 stays on SIO, so an `OUT 07h` cannot select an unloaded bank and
+`IN 07h` reports `00h`.
 
-- The shared Phase 9/10 application's `virtual_read` and `virtual_write`.
-- `z80_terminal_io_read`, `z80_terminal_io_write`, and their ring-add and
-  connection-state helpers.
-- `z80_flash_disk_io_read`, `z80_flash_disk_io_write`, their command/status/address
-  helpers, and `z80_flash_backend_read_record`.
+Core 0 services the FIFO from the PIO1 IRQ, linked into SRAM with
+`__not_in_flash_func` so XIP cache misses caused by core-1 networking cannot
+stretch a Z80 wait:
 
-Small helpers may be inlined into these SRAM-resident handlers and have no
-separate linked symbol. The application still runs on core 0; USB, networking,
-and runtime flash programming remain on core 1. Locks, queue bounds, register
-semantics, and all hardware-settling waits are unchanged.
+- The FIFO service, `apply_pio_read`/`apply_pio_write` and the shared
+  Phase 9/10 `virtual_read`/`virtual_write` dispatch.
+- Terminal, disk, extended service/timer and HTTP port handlers, the
+  service mailbox submit/poll and `z80_flash_backend_read_record`.
+- Timer polls use an inlined copy of the SDK `timer_time_us_64` loop from
+  `z80sbc/ram_timer.h`.
 
-This is **not a completely flash-independent call chain**. SDK timing/mux
-helpers, failure handling, extended service/timer ports, `queue_try_add`, and
-`memcpy` can still execute from flash. Uncached disk records and diagnostic
-comparison bytes are still read from flash. SRAM placement does not permit
-trapping during flash programming or relax BUSACK/IRQ/multicore lockout.
+Bus timing is entirely in PIO. Do not reintroduce core-0 settling waits or
+stepped completion for Phase 9/10 cycles; the Phase 6-8 GPIO trap keeps its
+SDK `busy_wait_us_32` guards, whose call overhead is part of that trap's
+qualified minimum (an inlined copy made CP/M hang at its first disk read).
+
+The fast paths also avoid avoidable work in the handlers:
+
+- **OUTs:** core 0 only applies the queued port/value pair. A full RX FIFO
+  holds the Z80 in WAIT. The fail-closed poll treats serviced cycles as
+  progress.
+- **INs:** core 0 only computes the reply byte and queues it; PIO drives and
+  turns the bus around.
+- **Disk writes:** the Z80 fills the shared 128-byte record directly. A
+  single-slot mailbox publishes it to core 1; BUSY blocks every further disk
+  port write, so the record crosses cores without copies or a queue lock.
+  The core-0 stop/flush request masks interrupts while submitting through the
+  same slot.
+- **Disk reads:** CP/M reads are LBA-sequential (no sector skew), so core 1
+  reads ahead. After each READ, core 0 publishes a hint and core 1 copies the
+  next eight records into direct-mapped SRAM slots (`lba & 7`, at most eight
+  copies per service pass). A hit is a 128-byte SRAM word copy with no
+  flash access in the trap. Each slot is a seqlock with core 1 as the only
+  writer; if core 0 sees a slot mid-rewrite it reads flash as before, so a
+  race costs time but never returns wrong data. Core 1 invalidates the slot
+  for every record it writes before publishing READY, and fills through the
+  backend read, which checks the write sector first. Misses use a word copy
+  in SRAM, not newlib `memcpy`. **Ctrl-] s** reports
+  `[disk] readahead hits=... misses=...`.
+- **Terminal status:** ring counts are stored atomically under the lock and
+  read lock-free by the status poll. Core 0 is the only RX consumer and TX
+  producer, so a racing core-1 update can only make one poll conservative.
+  Data reads and writes still take the short terminal critical section.
+- **Timers:** countdown deadlines are whole milliseconds stored as
+  microseconds, so status polls compare against the raw timer without a
+  64-bit software division.
+
+Remaining XIP calls are rare or fatal paths: fail-closed reset, ARM-side bank
+selection during loading, once-per-request service payload copies and HTTP
+session changes.
+Read-ahead misses (the first record of a run, random access) and diagnostic
+comparison bytes are still read from flash in the trap. SRAM placement does not permit trapping during flash programming or
+relax BUSACK/IRQ/multicore lockout.
 
 #### Build verification
 
-The 2026-10-23 comparison used the same local SDK, toolchain, build configuration,
-and working-tree sources before and after adding placement attributes. Each
-The Phase 9/10 linker map and ELF place the seven top-level routines above in
-`.data` at SRAM addresses beginning `0x2000...`; disassembly also places callback
-switch tables there. Terminal ring/connection helpers and disk command/status/
-address helpers are inlined into their handlers in this build.
-
-| Target | Initialized SRAM `.data`, before | After | Additional SRAM |
-| --- | ---: | ---: | ---: |
-| Phase 9 diagnostic | 9,256 bytes | 10,472 bytes | 1,216 bytes |
-| Phase 9 automatic loader | 9,256 bytes | 10,472 bytes | 1,216 bytes |
-| Phase 10 WebSocket terminal | 13,936 bytes | 15,152 bytes | 1,216 bytes |
-
-BSS and stack reservations are unchanged. Total loadable ELF content grows
-by 32 bytes for each Phase 9 variant and 40 bytes for Phase 10, including
-linker alignment and veneers. SRAM code is included in `.data`; the plain
-`size` summary's `data` column alone does not measure its RAM cost. Inspect
-ELF sections and the linker map:
+Initialized SRAM `.data` (including SRAM code) is 19,440 bytes for Phase 10;
+the read-ahead slots add about 1.1 KiB of BSS. Check placement and audit
+SRAM-to-flash veneers rather than relying on addresses alone:
 
 ```sh
 elf=build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.elf
-arm-none-eabi-objdump -h "$elf"
-arm-none-eabi-nm -S -n "$elf" |
-  grep -E ' (virtual_read|virtual_write|z80_terminal_io_read|z80_terminal_io_write|z80_flash_disk_io_read|z80_flash_disk_io_write|z80_flash_backend_read_record)$'
-arm-none-eabi-objdump -d --disassemble=virtual_read "$elf"
-arm-none-eabi-objdump -d --disassemble=z80_flash_disk_io_write "$elf"
+arm-none-eabi-nm -n "$elf" |
+  grep -E ' (io_irq_handler|service_fifo|virtual_read|virtual_write|z80_terminal_io_read|z80_flash_disk_io_write|z80_io_port_in|z80_flash_backend_read_record)$'
+arm-none-eabi-objdump -d --no-show-raw-insn "$elf" |
+  awk '/^2[0-9a-f]+ <[^_].*>:/{f=$2;next} /^$/{f=""} f!="" && /veneer>/{print f, $NF}'
 ```
 
-Repeat for both Phase 9 ELFs. Check that the selected functions have SRAM
-execution addresses, not merely flash load addresses. Inspect each handler's
-disassembly for outlined helpers and veneers: a veneer in SRAM can still jump
-to flash. In this build terminal register handlers need no out-of-line calls;
-disk record copies and queue submission still reach flash-resident routines.
+Functions must have `0x2000...` execution addresses. Only the rare paths
+listed above may call a flash veneer.
 
 #### Hardware comparison still required
 
-No before/after trap-latency result was recorded for this change; hardware
-deployment and measurement were explicitly deferred. Successful builds,
+No before/after trap-latency result has been recorded for these changes;
+hardware deployment and measurement are still required. Successful builds,
 placement checks and host tests do not establish a measured speedup.
+
+**Ctrl-] s** prints `[iolat]`: core-0 cost per IN (taking the request to
+queuing the reply) and per queued OUT applied, as count, average and maximum
+in ns from the core-0 DWT cycle counter. The window resets at each **Ctrl-] s**, so press it once, run a
+workload, then press it again. It excludes PIO-to-IRQ entry latency and the
+Z80's own wait states; use Group C captures for the bus-level interval.
 
 For a comparison, preserve both firmware builds and use identical clock settings,
 CP/M images, workload, USB/browser ownership and network load. With the safe
@@ -205,7 +234,7 @@ Z80 clock pause, including stepped completion. Neither is an exact IRQ-entry/
 exit timestamp. Record sample count, sample resolution, median, tail percentile,
 maximum, and workload/capture length for each category, both idle and with
 concurrent network traffic. Check control errors, drops and trap timeouts before
-and after; review the original data setup/hold, isolation, PWM handover and
+and after; review the original data setup/hold, isolation, PIO handover and
 settling guards on raw captures. The acceptance gate is a repeatable reduction
 in the selected latency metric with no correctness/timing regression, not an
 assumed improvement based on SRAM addresses alone.
@@ -243,7 +272,7 @@ unverified image or retries endlessly. A later terminal connection reports
 the stopped state and retained failure details. Optional **Ctrl+] then `s`**
 still shows status, and **Ctrl+] then `h`** prints supervisor help.
 For a safe software restart, use **Ctrl+] then `x`**, wait for
-**Disk quiescent; RESET held LOW, PWM stopped**, then use **Ctrl+] then `r`**.
+**Disk quiescent; RESET held LOW, clock stopped**, then use **Ctrl+] then `r`**.
 The Pico reboots and automatically reloads CP/M.
 The stop confirmation also prints the full **Ctrl+]** command menu and marks
 `r` (reboot), `s` (status), and `h` (help) as available while stopped.
@@ -304,7 +333,7 @@ are terminal input, not diagnostic commands.
 | Ctrl+] then `g` | Start the verified image from a fresh reset at 20 MHz |
 | Ctrl+] then `t` | After loading, replace the SRAM entry code with a read-only Z80 disk diagnostic; compare every byte of all four drives; reboot afterward |
 | Ctrl+] then `s` | Print run state, configured clock, BIOS evidence, disk/fatal state, queue drops and trap error counts |
-| Ctrl+] then `x` | While running CP/M, complete/flush disk work, pause the flash worker, then hold RESET LOW and stop PWM; during the read-only diagnostic, stop directly |
+| Ctrl+] then `x` | While running CP/M, complete/flush disk work, pause the flash worker, then hold RESET LOW and stop the clock; during the read-only diagnostic, stop directly |
 | Ctrl+] then `r` | Reboot the Pico only while stopped; journal recovery runs on the next `l` |
 | Ctrl+] then `0` | Disarm a fault while running |
 | Ctrl+] then `1`-`8` | Arm a one-shot journal/flash-safe watchdog fault while running; disposable disks only |
@@ -350,7 +379,7 @@ Type **Ctrl+] then `l`**. Loading reports recovery, manifest validation,
 load and verify progress every 4 KiB. Cancellation is checked every 256 bytes:
 type `x` (plain or after Ctrl+]) to cancel; loss of the USB connection also
 cancels at the next checkpoint. Failure/cancellation asserts reset, inhibits
-SRAM reads, isolates the data paths and stops PWM. The first fault includes
+SRAM reads, isolates the data paths and stops the clock. The first fault includes
 phase, address, expected/actual bytes and error category.
 
 Success says **65,536 bytes loaded and independently read back; CPU not
@@ -413,7 +442,7 @@ CRLF input becomes one CP/M carriage return. Actual queue overflow is counted
 and printed as FAIL; reduce paste rate and repeat any affected acceptance test.
 
 To stop, use **Ctrl+] then `x`** and wait for **Disk quiescent; RESET held
-LOW, PWM stopped**. Do not remove power or request reboot before that
+LOW, clock stopped**. Do not remove power or request reboot before that
 confirmation. A fatal storage error instead holds reset and requires reboot
 recovery; preserve the error log first.
 
