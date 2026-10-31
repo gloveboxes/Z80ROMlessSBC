@@ -1,4 +1,4 @@
-; E=7 service at DE00h. The bank-0 shim stages request at E4B0h, a 36-byte
+; E=6 service at DE00h. The bank-0 shim stages request at E4B0h, a 36-byte
 ; FCB at E480h and DMA at E400h. BDOS and allocation vectors live only in
 ; bank 1. This proxy preserves the caller's DMA setting across each request.
         org 0de00h

@@ -1,4 +1,4 @@
-; ABI 2.6. E=9 returns a size/version-tagged descriptor; E=10 accepts the
+; E=7 returns a size/version-tagged descriptor; E=8 accepts the
 ; discovered 32-byte request. Status is independent of function results.
         org 0ec00h
 capabilities:
@@ -20,7 +20,7 @@ unavailable:
         ld hl,0
         jp 0ff13h
 signature:
-        db "BKM3BEX1",6
+        db "BKM1BEX1",1
         defs 0ec30h-$,0
 control:
         ld de,0df20h
@@ -91,11 +91,7 @@ load:
         cp 2
         ld a,7
         jp z,finish
-        ld a,l
-        cp 3
         ld a,8
-        jp z,finish
-        ld a,9
         jp finish
 invoke:
         ld a,(0de9fh)
@@ -127,9 +123,6 @@ invoke:
         or a
         sbc hl,de
         jp c,bad_argument
-        ld a,(0e4d3h)
-        cp 12
-        jr nz,bad_format
         ld hl,(0df2ah)
         ld a,h
         or a
@@ -159,23 +152,20 @@ invoke:
         ld (0dfa5h),a
         ld hl,0100h
         ld bc,0c000h
-        ld e,6
+        ld e,5
         call 0e800h
         ld a,(0df26h)
         ld l,a
         ld h,0
         ret
-bad_format:
-        ld a,7
-        jr finish
 bad_handle:
         ld a,3
         jr finish
 stale:
-        ld a,10
+        ld a,9
         jr finish
 exhausted:
-        ld a,11
+        ld a,10
 finish:
         ld (0dfa2h),a
         ld (0df26h),a

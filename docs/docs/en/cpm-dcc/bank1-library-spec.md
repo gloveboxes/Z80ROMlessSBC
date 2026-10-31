@@ -22,30 +22,132 @@ vector. Bank-0 console calls remain local. One DCC library can be loaded at
 | `FF00h–FFFFh` | Mirrored bank-switch gateway |
 
 The library image, C stack, and allocator are pinned. `breset` resets only the
-general pool. The linker records `heap_base` from DCC's `__hstart`, after
-the image and BSS. The loader clears the BSS between the loaded image and
-that base, initializes the linked DCC `__brk` to `heap_base`, and
-sets `__hlimit` to `C800h` minus the stack requirement, bounding C `malloc`
-below the stack. The LIBDEMO sample requests 512 bytes, producing a heap
-from its linked BSS end through `C5FFh` (the exact total follows the build)
-and a `C600h–C7FFh` stack. It no longer reserves unused library growth space
-below a fixed `B000h` heap base. The loaded image must still end below
-`B000h`. The loader accepts 256-byte-aligned requirements up to 2 KiB.
+general pool; it does not unload the library or reset its DCC heap.
+
+## Library memory layout
+
+A library owns the fixed region `0100h–C7FFh` (50,944 bytes). Its image,
+BSS, DCC `malloc` heap and call stack share that region; only the stack size
+is chosen explicitly. Everything from `C800h` up is outside the library: the
+shared `bmalloc` pool, then pinned resident code loaded and verified by the
+firmware at boot.
+
+```text
+0000h  +-----------------------------+
+       | CP/M page zero              |  0005h = bank-1 BDOS vector
+0100h  +-----------------------------+  ---- library region ----
+       | Image: code and data        |  .LIB image length, loaded verbatim
+       +-----------------------------+  0100h + image length
+       | BSS                         |  zeroed by the loader
+       +-----------------------------+  heap_base (linked __hstart)
+       | DCC malloc heap             |  __brk = heap_base at load
+       |            ...              |
+       +-----------------------------+  __hlimit = C800h - stack
+       | Call stack                  |  256..2048 bytes, grows down
+C800h  +-----------------------------+  ---- shared pool ----
+       | bmalloc pool                |  5,632 bytes, 22 x 256-byte extents
+DE00h  +-----------------------------+  ---- pinned resident services ----
+       | BDOS proxy                  |  E=6, used by the bank-0 BDOS shim
+DE8Eh  | Loader, search, request and |  library request record at DF20h,
+       | library context state       |  library DMA/search context at DF80h
+E000h  | Library loader              |  validates the header, copies image
+E300h  | Export table, capability    |  capability record at E360h,
+       | record, descriptor helpers  |  descriptor helpers at E390h
+E400h  | DMA buffer, FCB staging,    |  call token at E4D6h, library FCB
+       | mailboxes, service stacks   |  at E500h, private stacks to E5FFh
+E600h  | Dispatcher, allocator       |  dispatcher at E640h, tables at
+       | tables, context hooks       |  E700h, context hooks at E780h
+E800h  | Extent allocator            |  E=0..5
+EC00h  | Capabilities and library    |  E=7 query, E=8 LOAD/INVALIDATE/
+       | control                     |  QUERY/CALL
+EE00h  +-----------------------------+  ---- CP/M ----
+       | CP/M 2.2 BDOS               |  authoritative disk and allocation state
+FB40h  | Warm-boot trampoline        |  mirrored; returns to bank-0 warm boot
+FB80h  | BIOS buffer and core        |
+FF00h  +-----------------------------+  ---- mirrored in both banks ----
+       | Bank-switch gateway         |  READ/WRITE/INFO/service entries;
+FFFFh  +-----------------------------+  FFF0h-FFFFh private workspace
+```
+
+The library may call its own BDOS through `0005h`. It accesses pool memory
+only through what the host passes it: the copied call frame, or a pool
+extent the host leases to it and validates, such as ISAM's bulk buffer. It
+must not call the gateway or touch resident service memory; `DE00h–FFFFh`
+is reserved for system code. Growth of the resident services never reduces
+the library region.
+
+| Region | Start | End (exclusive) | Set by |
+| --- | --- | --- | --- |
+| Image | `0100h` | `0100h` + image length | Linked by `l80c`; copied by the loader |
+| BSS | Image end | `heap_base` | Linked by `l80c`; zeroed by the loader |
+| DCC heap | `heap_base` | `C800h` − stack | `__brk` and `__hlimit` initialized by the loader |
+| Call stack | `C800h` − stack | `C800h` | `dcc-stack-bytes`, recorded in the `.LIB` header |
+
+### Size rules
+
+The image, BSS and at least one heap byte must fit below the stack:
+`heap_base < C800h − stack`, with `heap_base` at or above the end of both
+the image and the BSS. There is no separate image-size cap; a larger image
+leaves less heap. The stack must be 256–2,048 bytes in 256-byte units.
+
+These rules are enforced at every stage:
+
+- `dccmake` rejects an invalid `dcc-stack-bytes`, or one smaller than the
+  compiler's computed stack requirement.
+- `l80c --lib` fails with "bank-1 heap overlaps the configured stack" if the
+  image, BSS and heap do not fit, and records `heap_base` and the stack size
+  in the header.
+- The loader rejects a header that breaks the same rules with FORMAT status
+  before copying the image.
+
+| Stack | Heap limit | Image + BSS + heap | Largest image (no BSS, 1-byte heap) |
+| ---: | --- | ---: | ---: |
+| 256 | `C700h` | 50,688 | 50,687 bytes, through `C6FEh` |
+| 512 | `C600h` | 50,432 | 50,431 bytes, through `C5FEh` |
+| 1,024 | `C400h` | 49,920 | 49,919 bytes, through `C3FEh` |
+| 2,048 | `C000h` | 48,896 | 48,895 bytes, through `BFFEh` |
+
+### Loader initialization
+
+After validating the header and copying the image, the loader zeroes the BSS
+from the image end up to `heap_base`, sets the linked DCC `__brk` to
+`heap_base` and `__hlimit` to `C800h` minus the stack. The heap is not
+cleared. A library linked without the DCC runtime records `FFFFh` for both
+variable offsets and uses its image end as `heap_base`.
+
+### Examples
+
+| Library | Image | BSS | Heap | Stack |
+| --- | --- | --- | --- | --- |
+| LIBDEMO `DATA.LIB` | 8,863 bytes, `0100h–239Eh` | 4 bytes | 41,565 bytes, `23A3h–C5FFh` | 512 bytes, `C600h–C7FFh` |
+| ISAM `ISAM.LIB` | 43,006 bytes, `0100h–A8FDh` | 1,104 bytes | 5,810 bytes, `AD4Eh–C3FFh` | 1,024 bytes, `C400h–C7FFh` |
+
+Exact figures follow each build. Use DCC's `meminfo()` inside the library
+to report heap capacity, committed bytes and remaining growth at run time.
 
 ## Library file and linker
 
 DCC's native `l80c --lib`, maintained in its `src/l80c/l80c.c`, links a
-fixed-origin image at `0100h` and emits a
-version 3 or 4 `.LIB` header, up to eight named exports, the image, and a
-CRC16-CCITT check over all three. The checksum field is zero while calculating
-the CRC. Its 26-byte header adds the absolute linked heap base at bytes 24–25;
-exports follow at byte 26. The loader rejects versions 1 and 2, which do not
-describe the BSS/heap boundary; rebuild libraries with the matching `l80c`
-and update the firmware together.
-The header records the ABI, image length, stack requirement, and offsets of
-the DCC heap limit variables. Manual `--export ALIAS=SYMBOL` libraries retain
-version 3's ten-byte entries. Typed libraries supply one
-`--signature NAME=SYMBOL` per export and use version 4:
+fixed-origin image at `0100h` and emits one library format: a 26-byte
+header, up to eight 12-byte export entries, then the image. Every export has
+a canonical signature. Like a CP/M `.COM`, the image is loaded verbatim
+without a checksum.
+
+| Byte offset | Bytes | Meaning |
+| --- | --- | --- |
+| 0 | 4 | `B1LB` |
+| 4 | 1 | Format version 1 |
+| 5, 6, 7 | 3 | ABI major 1, minor 0, call revision 1 |
+| 8 | 2 | Origin `0100h` |
+| 10 | 2 | Image length |
+| 12 | 2 | Export count, 1–8 |
+| 14 | 2 | Reserved, zero |
+| 16 | 2 | Stack bytes, 256–2,048 in 256-byte units |
+| 18 | 2 | Header length, 26 + 12 × exports |
+| 20, 22 | 4 | `__brk` and `__hlimit` image offsets, or `FFFFh` without the DCC runtime |
+| 24 | 2 | Absolute heap base (`__hstart`) after the image and BSS |
+
+Each export entry is:
 
 | Entry offset | Bytes | Meaning |
 | --- | --- | --- |
@@ -53,9 +155,9 @@ version 3's ten-byte entries. Typed libraries supply one
 | 8 | 2 | Adapter offset relative to image origin |
 | 10 | 2 | Canonical signature string offset relative to image origin |
 
-Both versions fit all eight entries in the first 128-byte disk record.
+All eight entries fit in the first 128-byte disk record.
 Signature strings are nonempty, NUL-terminated ASCII, at most 255 characters,
-inside the checksummed image. The full string is compared, not a short hash
+inside the image. The full string is compared, not a short hash
 that could collide. The loader validates both offsets against the image.
 
 LIBDEMO separates `host/` and `lib/`, each with its own `dccmake.txt`
@@ -70,18 +172,17 @@ Run `dccmake dcc-contract-only=true` in the root to generate the client
 contract without assembly or linking; COM children are skipped. Normal builds
 refresh it automatically. Clients include the generated header and compile
 the generated wrappers with BANKLIB/BIOSBANK. `dccmake -help` describes the
-workflow. A header path instead of `auto` retains handwritten-contract validation.
-M80 public symbols remain limited to six characters; generated adapter names
-are unique within that limit. Normal `.COM` and manual version 3 builds are
-unchanged.
+workflow. A header path instead of `auto` validates a handwritten contract
+against the same discovered, signed exports. M80 public symbols are limited
+to six characters; generated adapter names are unique within that limit.
 
-ABI 2.6 clients discover the versioned library service through BIOS operation 9
-and submit LOAD/INVALIDATE/QUERY/CALL requests through operation 10. They do
+ABI 1.0 clients discover the versioned library service through BIOS operation 7
+and submit LOAD/INVALIDATE/QUERY/CALL requests through operation 8. They do
 not inspect loader-private mailboxes or allocator tables. See the exact
 [capability/control records](bios.md#capability-and-library-control-records).
-The linker and loader require ABI minor/call revision 6 in rebuilt libraries.
-A failed CRC or invalid header leaves the module uncallable, with distinct
-CHECKSUM/FORMAT/IO status. The SDK runs `onload`/`onunload` automatically;
+The linker writes, and the loader requires, format 1, ABI 1.0 and call
+revision 1. An invalid header or read failure leaves the module uncallable,
+with distinct FORMAT/IO status. The SDK runs `onload`/`onunload` automatically;
 these C lifecycle hooks are SDK policy, not CP/M BDOS functions.
 
 The resident dispatcher publishes a per-call two-byte token at the public
@@ -110,9 +211,8 @@ is the maintained example.
 The SDK's preferred C names are descriptive: `bank_library_open`,
 `bank_library_call`, `bank_library_last_error`, `bank_memory_allocate` and
 the other `bank_library_*`, `bank_memory_*` and `bank_bios_*` operations.
-Header aliases retain the short M80/L80 symbols and existing source clients;
-the shorter names below remain supported, including generated wrappers.
-No firmware ABI change or extra wrapper call is introduced.
+Header aliases map them to six-character M80/L80 public symbols, which the
+text below and generated wrappers also use; aliases add no wrapper call.
 
 Shared client-side support lives in
 [`examples/BANKSDK`](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/BANKSDK),
@@ -211,5 +311,5 @@ paths are outside the supported runtime subset. The host must call its
 unload export before invalidating a library with open files. Direct bank-0
 BIOS disk calls bypass the BDOS shim; ordinary CP/M applications use BDOS.
 The emulator covers cold/warm boot, bank-0 directory and file reads, a bank-1
-file read, interrupted directory search, CRC rejection, and restoration of
+file read, interrupted directory search, header rejection, and restoration of
 bank 0 after calls. Physical board validation remains necessary.

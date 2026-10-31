@@ -1,4 +1,4 @@
-; ABI 2.6 context hooks. DMA/search are per domain; drive/user stay shared.
+; Context hooks. DMA/search are per domain; drive/user stay shared.
 ; Private snapshots pack DMA (2 bytes) and actual search state (1+3+3).
         org 0e780h
         jp enter_context

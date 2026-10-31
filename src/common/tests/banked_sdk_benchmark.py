@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from banked_allocator_v2_z80_test import HighResidentAllocator, ROOT
+from banked_allocator_z80_test import HighResidentAllocator, ROOT
 
 
 def measure(image: Path, writing: bool, chunk: int, interrupts: bool = False) -> dict:
@@ -77,7 +77,7 @@ def measure_services() -> list[dict]:
             ("size", 2, 0xC800, 0, 256),
             ("pinned_size", 2, 0x0100, 0, 0xBF00),
             ("available", 3, 0, 0, 0x1500),
-            ("call", 6, 0x0100, 0xC000, 0xBEEF),
+            ("call", 5, 0x0100, 0xC000, 0xBEEF),
             ("free", 1, 0xC800, 0, 1)):
         result = fixture.call(operation, argument, stack)
         assert result == expected

@@ -32,7 +32,7 @@ the 44 CCP/BDOS system records before returning to the command prompt,
 restoring the resident image. The supported TPA above excludes the CCP.
 
 The complete 1,024-byte `bios.bin` includes the core, two bytes of padding,
-and the extension page. The [public BIOS API](bios.md#banked-memory-bios-extension-abi-26)
+and the extension page. The [public BIOS API](bios.md#banked-memory-bios-extension-abi-10)
 is installed in both SRAM banks. Production bank 0 contains a BDOS disk/file
 shim in the `EE00h–FB3Fh` slot; the authoritative BDOS resides in bank 1.
 The Drive A system tracks contain that shim for warm boot.
@@ -61,6 +61,7 @@ Boot loads and verifies bank-1 page zero and every byte from `DE00h` through
 is not cleared at boot; those regions are written by their owners before use.
 
 Bank 0 cannot dereference bank-1 addresses. It uses the BIOS transfer calls
-for parameter blocks and the direct-offset call for exported functions. See
-the [fixed-address library](bank1-library-spec.md). Firmware and the CP/M
+for parameter blocks and the library-control request for exported functions.
+See the [library memory layout](bank1-library-spec.md#library-memory-layout)
+for the image, BSS, heap and stack rules. Firmware and the CP/M
 system image must match when the bank-1 resident layout changes.

@@ -1,9 +1,9 @@
-; Bank-1 .LIB loader at E000h. E=8 enters through the resident service stack.
-; Bank 0 stages a 36-byte CP/M FCB at E500h, sets action at E4D0h (0 load,
-; 1 invalidate), then reads status E4D1h and exports at E300h.
-; E4D3h is entry size (10 legacy, 12 typed); E4D4h is image length.
+; Bank-1 .LIB loader at E000h, called by the E=8 library LOAD action.
+; The request stages a 36-byte CP/M FCB at E500h and sets action E4D0h
+; (0 load, 1 invalidate); status is E4D1h and exports are copied to E300h.
 ; A successful load installs one image at 0100h. E4D1h: 0 ready, 1 I/O,
-; 2 incompatible header, 3 checksum mismatch. E4D2h is export count.
+; 2 invalid header. E4D2h is export count, E4D4h image length. Like a CP/M
+; .COM load, the image is copied verbatim; header bytes 14..15 are reserved.
 ; The fixed image/heap and stack extents are pinned by the allocator.
         org 0e000h
 loader:
@@ -48,9 +48,6 @@ bdos_ready:
         call validate_header
         jr c,bad_header
         ; Header and at most eight exports fit entirely in first record.
-        ; Preserve its running CRC before later BDOS reads replace E400h.
-        call header_crc
-        ld (0de8eh),hl
         ld hl,(0de94h)
         ld de,26
         or a
@@ -71,7 +68,7 @@ read_more:
         ld hl,(0de98h)
         ld a,h
         or l
-        jr z,check_crc
+        jr z,image_loaded
         ld de,0e500h
         ld c,20
         call 0005h
@@ -81,25 +78,13 @@ read_more:
         ld (0de9ah),hl
         call copy_chunk
         jr read_more
-check_crc:
-        ld hl,(0de8eh)
-        ld de,0100h
-        ld bc,(0de92h)
-        call crc_span
-        ld de,(0de90h)
-        or a
-        sbc hl,de
-        jr nz,bad_crc
+image_loaded:
         call initialize_runtime
         jr c,bad_header
         xor a
         ld (0e4d1h),a
         inc a
         ld (0de9fh),a
-        jr close_file
-bad_crc:
-        ld a,3
-        ld (0e4d1h),a
         jr close_file
 bad_header:
         ld a,2
@@ -119,81 +104,52 @@ restore_dma:
         ld h,0
         ret
 
-; Carry on any incompatible metadata. The image must leave at least one
+reject:
+        scf
+        ret
+; Carry on any invalid metadata. The image must leave at least one
 ; byte of DCC heap before the configured stack.
 validate_header:
         ld hl,0e400h
         ld de,magic
-        ld b,4
-magic_loop:
-        ld a,(de)
-        cp (hl)
-        jp nz,header_invalid
-        inc de
-        inc hl
-        djnz magic_loop
-        ld a,(0e404h)
-        sub 3
-        cp 2
-        jp nc,header_invalid
-        add a,a
-        add a,10
-        ld (0e4d3h),a
-        ld a,(0e405h)
-        cp 2
-        jp nz,header_invalid
-        ld a,(0e406h)
-        cp 6
-        jp nz,header_invalid
-        ld a,(0e407h)
-        cp 6
-        jp nz,header_invalid
-        ld hl,(0e408h)
-        ld a,h
-        cp 1
-        jp nz,header_invalid
-        ld a,l
-        or a
-        jp nz,header_invalid
+        ld b,10                ; magic, versions and 0100h origin
+        call match
+        jr nz,reject
         ld hl,(0e40ah)
         ld a,h
         or l
-        jp z,header_invalid
-        ld de,0af00h          ; maximum fixed image size, excluding 0100h
+        jr z,reject
+        ld de,0c600h          ; excludes wrap; heap/stack check is exact
         or a
         sbc hl,de
-        jp nc,header_invalid
+        jr nc,reject
         ld hl,(0e40ah)
         ld (0de92h),hl
         ld (0e4d4h),hl
         ld (0de98h),hl
-        ld hl,(0e40eh)
-        ld (0de90h),hl
         ld a,(0e40dh)
         or a
-        jp nz,header_invalid
+        jr nz,reject
         ld a,(0e40ch)
         or a
-        jp z,header_invalid
+        jr z,reject
         cp 9
-        jp nc,header_invalid
+        jr nc,reject
         ld (0e4d2h),a
-        ld b,a
-        ld a,(0e4d3h)
+        add a,a
+        add a,a
         ld c,a
-        xor a
-export_size:
-        add a,c
-        djnz export_size
+        add a,a
+        add a,c                ; twelve bytes per export
         add a,26
         ld b,a
         ld hl,(0e412h)
         ld a,h
         or a
-        jp nz,header_invalid
+        jr nz,header_invalid
         ld a,l
         cp b
-        jp nz,header_invalid
+        jr nz,header_invalid
         ld (0de94h),hl
         ld hl,(0e414h)
         ld (0dea4h),hl
@@ -202,12 +158,12 @@ export_size:
         ld hl,(0e410h)        ; required stack: 256-byte units, max 2 KiB
         ld a,l
         or a
-        jp nz,header_invalid
+        jr nz,header_invalid
         ld a,h
         or a
-        jp z,header_invalid
+        jr z,header_invalid
         cp 9
-        jp nc,header_invalid
+        jr nc,header_invalid
         ld (0deabh),hl         ; preserve before later records replace E400h
         ld hl,(0de92h)
         ld de,0100h
@@ -216,7 +172,7 @@ export_size:
         ld hl,(0e418h)         ; linked heap base, after image and BSS
         or a
         sbc hl,de
-        jp c,header_invalid
+        jr c,header_invalid
         ld hl,(0e418h)
         ld (0deadh),hl
         ld hl,0c800h
@@ -226,20 +182,16 @@ export_size:
         ld de,(0deadh)
         or a
         sbc hl,de
-        jp c,header_invalid
-        jp z,header_invalid
+        jr c,header_invalid
+        jr z,header_invalid
         ld a,(0e40ch)
         ld b,a
         ld hl,0e422h          ; first export's two-byte entry offset
 validate_exports:
-        call validate_offset
-        jp c,header_invalid
-        ld a,(0e4d3h)
-        cp 12
-        jr nz,next_export
-        call validate_offset
-        jp c,header_invalid
-next_export:
+        call validate_offset   ; adapter
+        jr c,header_invalid
+        call validate_offset   ; canonical signature
+        jr c,header_invalid
         ld de,8
         add hl,de
         djnz validate_exports
@@ -255,12 +207,22 @@ validate_offset:
         or a
         sbc hl,de
         pop hl
-        jp z,header_invalid   ; entry must be inside loaded image
+        jr z,header_invalid   ; entry must be inside loaded image
         ret
 header_invalid:
         scf
         ret
-magic:  db 'B1LB'
+; Z when B bytes at HL match DE; HL and DE advance past the compared bytes.
+match:
+        ld a,(de)
+        cp (hl)
+        ret nz
+        inc de
+        inc hl
+        djnz match
+        ret
+; Magic, format 1, ABI 1.0, call revision 1 and origin 0100h.
+magic:  db 'B1LB',1,1,0,1,0,1
 
 ; The optional __brk and __hlimit offsets are supplied by DCC's L80C. An image
 ; without the DCC runtime uses FFFFh for both. With the runtime, the heap
@@ -369,39 +331,4 @@ copy_count_ready:
         or a
         sbc hl,bc
         ld (0de98h),hl
-        ret
-
-header_crc:
-        ; The stored CRC is at E40Eh..E40Fh. It was copied to DE90h by
-        ; validate_header, so zeroing it here does not lose the expected value.
-        xor a
-        ld (0e40eh),a
-        ld (0e40fh),a
-        ld hl,0ffffh
-        ld de,0e400h
-        ld bc,(0de94h)
-crc_span:
-crc_byte:
-        ld a,(de)
-        xor h
-        ld h,a
-        push bc
-        ld b,8
-crc_bit:
-        add hl,hl
-        jr nc,crc_next_bit
-        ld a,l
-        xor 021h
-        ld l,a
-        ld a,h
-        xor 010h
-        ld h,a
-crc_next_bit:
-        djnz crc_bit
-        pop bc
-        inc de
-        dec bc
-        ld a,b
-        or c
-        jr nz,crc_byte
         ret

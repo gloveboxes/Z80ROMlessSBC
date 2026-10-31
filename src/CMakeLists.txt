@@ -153,6 +153,7 @@ if(Z80ASM_EXECUTABLE)
       cpm/build_images.py
       common/include/z80sbc/banked_transfer.h
       common/banked_transfer.asm
+      cpm/bank0_bdos_shim.asm
       cpm/cpm64_system.bin
       disks/geometry.py
       ${cpm_converted_dir}/manifest.json

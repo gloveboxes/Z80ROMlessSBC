@@ -162,7 +162,7 @@ int main(void) {
   assert(strstr(log, "BDOS, loader and extent allocator ready\n"));
   assert(bank_available && selected_bank == 0);
   assert(memcmp(banks[0], base_before, sizeof(base_before)) == 0);
-  assert(banks[0][0] == 0xC3 && memcmp(banks[1] + 0xE600, "BKM3BEX1", 8) == 0);
+  assert(banks[0][0] == 0xC3 && memcmp(banks[1] + 0xE600, "BKM1BEX1", 8) == 0);
   assert(banks[1][0xE608] == BANKED_ALLOCATOR_CALL_REVISION);
   assert(banks[1][0xE708] == 22 && banks[1][0xFF00] == 0xC3 && banks[1][0xE610] == 8);
   assert(memcmp(banks[1] + 0xFF00, base_image + 0xFF00, 256) == 0);

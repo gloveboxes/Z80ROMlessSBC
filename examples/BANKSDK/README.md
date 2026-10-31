@@ -1,8 +1,8 @@
 # BANKSDK: shared banked-memory and library support
 
-This folder contains reusable DCC C support for the CP/M banked BIOS ABI 2.6
-and allocator revision 6. Rebuild applications and libraries and update firmware,
-boot package and drive A system records together. It is not a runnable example or part of DCC's
+This folder contains reusable DCC C support for the CP/M banked BIOS ABI 1.0,
+call revision 1. Build applications and libraries against it and deploy matching
+firmware, boot package and drive A system records together. It is not a runnable example or part of DCC's
 platform-independent standard runtime.
 
 | Component | Responsibility |
@@ -16,20 +16,20 @@ through their build configurations instead of keeping private copies.
 The Altair application's bulk builder excludes `BANKSDK` and its descendants
 from application discovery.
 
-## Readable C API and compatibility
+## Readable C API
 
-Use the descriptive names below in new code. The headers provide ordinary
-C identifier aliases to the existing short linker symbols. This adds no
-wrapper calls, code or runtime cost, and function pointers work normally.
-Existing short-name source clients and DCC-generated wrappers still compile.
-DCC accepts long C identifiers, but M80/L80 retain only six significant
-external-symbol characters (including DCC's leading underscore); directly
-exporting several `bank_library_*` symbols would otherwise collide.
+Use the descriptive names below. The headers alias them to six-character
+linker symbols with preprocessor macros, which adds no wrapper calls, code or
+runtime cost, and function pointers work normally. DCC accepts long C
+identifiers, but M80/L80 retain only six significant external-symbol characters
+(including DCC's leading underscore); directly exporting several
+`bank_library_*` symbols would otherwise collide.
 
-| Library API | Compatible short name |
+| Library API | Linker symbol |
 | --- | --- |
 | `bank_library_open` | `blopen` |
 | `bank_library_close` | `blclos` |
+| `bank_library_check` | `blchk` |
 | `bank_library_export_count` | `blcnt` |
 | `bank_library_export_name` | `blname` |
 | `bank_library_export_signature` | `blsig` |
@@ -38,7 +38,7 @@ exporting several `bank_library_*` symbols would otherwise collide.
 | `bank_library_last_error` | `blerr` |
 | `bank_library_set_error` | `blfail` |
 
-| Memory API | Compatible short name |
+| Memory API | Linker symbol |
 | --- | --- |
 | `bank_memory_initialize` | `binit` |
 | `bank_memory_allocate` | `bmalloc` |
@@ -49,11 +49,16 @@ exporting several `bank_library_*` symbols would otherwise collide.
 | `bank_memory_read` | `bread` |
 | `bank_memory_write` | `bwrite` |
 | `bank_memory_reset` | `breset` |
-| `bank_memory_execute` | `bmexec` |
 | `bank_memory_call` | `bmcall` |
 
-`bank_memory_handle_t` names the bank-offset handle type; `bhandle` remains
-available. Raw BIOS operations use the `bank_bios_*` names declared in
+`bank_library_check()` returns nonzero while the library is open and its pool
+epoch is current; otherwise it returns 0 with `BL_ARGUMENT` (not open) or
+`BL_STALE`. A client that holds its own `bank_memory_*` lease from the same pool
+calls it before *writing* to the lease, since the epoch proves the address still
+belongs to this owner. Reads need no separate check when a library call that
+validates the epoch follows them.
+
+`bank_memory_handle_t` names the bank-offset handle type. Raw BIOS operations use the `bank_bios_*` names declared in
 [BIOSBANK.H](BIOSBANK.H). Prefer the checked `bank_memory_*` operations for
 allocation-backed buffers. Raw BIOS calls require a successful
 `bank_bios_version()` capability check first.
@@ -70,8 +75,8 @@ allocation-backed buffers. Raw BIOS calls require a successful
 - Export-name buffers need at least nine bytes. Signature buffers have an
   explicit capacity, at most 256 bytes. Raw call bodies are at most 256 bytes;
   prefer the generated typed wrappers over constructing frames manually.
-- Memory initialization validates INFO version 2.6 and a versioned capability
-  query. Applications no longer inspect private resident signatures or tables.
+- Memory initialization validates INFO version 1.0 and a versioned capability
+  query. Applications do not inspect private resident signatures or tables.
   `bank_bios_query()` discovers pool geometry, byte-copy entries and the
   structured library service. `bank_bios_library_control()` submits its
   versioned 32-byte request without exposing loader-private mailboxes.
@@ -126,7 +131,6 @@ epoch. Resident dispatch checks both again. Invalidation/reload makes old bindin
 stale; pool RESET makes old frame ownership stale. The runtime never writes or
 frees an old frame after its epoch changes, because another owner may now hold
 the same address. `BL_STALE` reports this explicitly; close and reopen to recover.
-Checksum errors have their own `BL_CHECKSUM` result rather than `BL_IO`.
 
 Host and library DMA/search continuations are separate. Search Next reloads the
 shared directory sector before resuming, so interleaved searches across drives

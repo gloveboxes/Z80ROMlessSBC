@@ -61,7 +61,7 @@ nav:
       - Image provenance: en/cpm-dcc/image-provenance.md
       - Memory map: en/cpm-dcc/memory-map.md
       - Custom BIOS: en/cpm-dcc/bios.md
-      - Proposed bank-1 C library: en/cpm-dcc/bank1-library-spec.md
+      - Bank-1 C library: en/cpm-dcc/bank1-library-spec.md
       - Compatibility boundaries: en/cpm-dcc/boundaries.md
       - Validation requirements: en/cpm-dcc/validation.md
       - End-to-end test: en/cpm-dcc/end-to-end.md

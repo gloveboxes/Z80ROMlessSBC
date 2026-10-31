@@ -20,7 +20,7 @@ static void set_word(unsigned char *p, unsigned int offset, unsigned int value)
     p[offset + 1] = (unsigned char)(value >> 8);
 }
 
-unsigned int bmstat(void) { return 0x0206; }
+unsigned int bmstat(void) { return BMBIOS_ABI; }
 unsigned int bmerr(void) { return mock_status; }
 
 int bmqury(bank_bios_info_t *info)
@@ -28,9 +28,9 @@ int bmqury(bank_bios_info_t *info)
     memset(info, 0, sizeof(*info));
     info->bytes = 48;
     info->revision = 1;
-    info->abi = 0x0206;
+    info->abi = BMBIOS_ABI;
     info->features = BANK_BIOS_FEATURES;
-    info->allocator_revision = 6;
+    info->allocator_revision = BMBIOS_CALL_REVISION;
     info->library_request = 0xDF20;
     info->library_request_bytes = 32;
     info->image_origin = TEST_ORIGIN;
@@ -176,14 +176,14 @@ int main(void)
     char name[9], signature[256];
     unsigned int before, before_reads, before_allocations, before_frees, i;
     bank_library_binding_t binding = {0, 0};
-    unsigned int statuses[] = {BANK_BIOS_FORMAT, BANK_BIOS_CHECKSUM, BANK_BIOS_IO};
-    unsigned int errors[] = {BL_FORMAT, BL_CHECKSUM, BL_IO};
+    unsigned int statuses[] = {BANK_BIOS_FORMAT, BANK_BIOS_IO};
+    unsigned int errors[] = {BL_FORMAT, BL_IO};
 
     fail_load_reply = 1;
     assert(!blopen("DATA.LIB") && blerr() == BL_IO &&
            !module_loaded && !extent_live);
     fail_load_reply = 0;
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < 2; ++i)
     {
         load_status = statuses[i];
         assert(!blopen("DATA.LIB") && blerr() == errors[i] &&

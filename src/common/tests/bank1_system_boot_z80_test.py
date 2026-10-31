@@ -127,7 +127,7 @@ class BankOneSystemBoot(unittest.TestCase):
         stack_bytes = int.from_bytes(library[16:18], "little")
         self.assertEqual(stack_bytes, stack)
         heap_size = 0xC800 - stack_bytes - heap_start
-        self.assertEqual(library[4], 4)
+        self.assertEqual(library[4:8], b"\x01\x01\x00\x01")
         self.assertEqual(int.from_bytes(library[12:14], "little"), 8)
         self.assertGreater(heap_size, 40000)
         with tempfile.TemporaryDirectory() as directory:
@@ -171,8 +171,6 @@ class BankOneSystemBoot(unittest.TestCase):
             self.fail(f"{exc} pc={self.case.machine.pc:04x} sp={self.case.machine.sp:04x} bank={self.active} reads={self.case.reads} req={self.case.machine.memory[0xE4B0:0xE4C0].hex()} stack={self.case.machine.memory[0xE5B0:0xE5C0].hex()}")
         self.assertIn(b"PASS: load and lifecycle.", output,
                       f"loader_status={self.banks[1][0xE4D1]:02x} "
-                      f"stored_crc={self.banks[1][0xDE90:0xDE92].hex()} "
-                      f"header_crc={self.banks[1][0xDE8E:0xDE90].hex()} "
                       f"image_len={self.banks[1][0xDE92:0xDE94].hex()} "
                       f"header={self.banks[1][0xE400:0xE420].hex()}")
         self.assertNotIn(b"FAIL:", output)
@@ -220,6 +218,13 @@ class BankOneSystemBoot(unittest.TestCase):
         self.assertIn(b"PASS: flat record in/out/inout, 32-bit values, arrays and guards.", output)
         self.assertEqual(output.count(b"PASS:"), 10)
         self.assertIn(b"PASS: all 8 bank-1 library checks.", output)
+        # The CCP proxies a BDOS call right after printing its prompt; let a
+        # call in progress at the slice boundary finish before sampling.
+        for _ in range(100):
+            if not self.active:
+                break
+            self.case.machine.ticks_to_stop = 1000
+            self.case.machine.run()
         self.assertEqual(self.active, 0)
 
 

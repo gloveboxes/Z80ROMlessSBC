@@ -23,17 +23,17 @@ BDOS handles filenames, FCBs, directories, allocation, and record selection.
 The BIOS handles drives and records, so dcc file APIs need no custom backend.
 See the [I/O port map](../system/io-ports.md) for port decoding and aliases.
 
-## Banked-memory BIOS extension (ABI 2.6)
+## Banked-memory BIOS extension (ABI 1.0)
 
-The mirrored `FF00h` page is present in both banks. Check `BMX2` at `FF09h`,
-major 2 at `FF0Dh`, minor 6 at `FF0Eh`, and INFO success before calling it.
+The mirrored `FF00h` page is present in both banks. Check `BMX1` at `FF09h`,
+major 1 at `FF0Dh`, minor 0 at `FF0Eh`, and INFO success before calling it.
 Firmware and the CP/M system image must be updated together.
 
 | Address | Entry | Contract |
 | --- | --- | --- |
 | `FF00h` | READ | HL=bank-0 buffer, DE=bank-1 address, BC=length |
 | `FF03h` | WRITE | HL=bank-0 buffer, DE=bank-1 address, BC=length |
-| `FF06h` | INFO | HL=`0206h`, DE=`C800h`, BC=`1600h` on success |
+| `FF06h` | INFO | HL=`0100h`, DE=`C800h`, BC=`1600h` on success |
 | `FF10h` | Service | E selects the operation below |
 
 READ and WRITE use multiples of 16 bytes; both ranges must end at or below
@@ -59,8 +59,7 @@ contain the counter. Group bookkeeping happens once per 256 bytes, while each
 16-byte burst still performs exactly two bank-select OUTs. The main carry flag
 survives the register payload and avoids a second direction test. No allocation
 metadata is cached. `FF06h` delegates to a bank-0-only INFO helper at `FA00h` inside the
-BDOS shim; the public ABI and register/status contracts are unchanged.
-Deploy matching firmware, boot package and drive A system records together.
+BDOS shim. Deploy matching firmware, boot package and drive A system records together.
 See [MEMPERF](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/MEMPERF) for the repeated-workload
 methodology and emulator cycle measurements, which exclude hardware wait time.
 
@@ -70,7 +69,7 @@ the current extent length and allocated marker on every call. Private host and
 library context snapshots store nine bytes: the DMA word plus the actual search
 state at `FB14h`, `FB18h–FB1Ah` and `FB29h–FB2Bh`. The host search proxy uses the
 same packed seven-byte search layout. Adjacent shared disk-geometry scratch is
-never copied as per-domain state. Public entry points and ABI 2.6 are unchanged.
+never copied as per-domain state.
 
 ### Allocation and direct entry calls
 
@@ -81,13 +80,11 @@ never copied as per-domain state. Public entry points and ABI 2.6 are unchanged.
 | 2 | SIZE | HL=handle; returns rounded size or zero |
 | 3 | AVAILABLE | Returns free bytes, initially 5,632 |
 | 4 | RESET | Invalidates general-pool handles and restores the free extent |
-| 5 | CALL | HL=live code handle, BC=optional distinct stack handle; returns code's HL |
-| 6 | CALL AT | HL=live code handle, BC=distinct live stack handle, IX=entry offset, IY=context; returns code's HL |
-| 7 | BDOS proxy | Resident bank-0 BDOS shim service |
-| 8 | LIB loader | Action 0 loads a fixed-address `.LIB`; action 1 invalidates it |
-| 9 | CAPABILITIES | Returns bank-1 address of a 48-byte versioned descriptor, or zero |
-| 10 | LIB CONTROL | HL=discovered request address; returns status independently of results |
-| 11 | LAST STATUS | Returns last resident-service status without clearing it |
+| 5 | CALL | HL=live code handle, BC=distinct live stack handle, IX=entry offset, IY=context; returns code's HL |
+| 6 | BDOS proxy | Resident bank-0 BDOS shim service |
+| 7 | CAPABILITIES | Returns bank-1 address of a 48-byte versioned descriptor, or zero |
+| 8 | LIB CONTROL | HL=discovered request address; returns status independently of results |
+| 9 | LAST STATUS | Returns last resident-service status without clearing it |
 
 ### Capability and library control records
 
@@ -96,17 +93,17 @@ signatures or private tables. The descriptor contains 24 little-endian words:
 
 | Word | Meaning |
 | --- | --- |
-| 0-3 | Size (48), descriptor revision (1), ABI (`0206h`), feature mask (`001Fh`) |
+| 0-3 | Size (48), descriptor revision (1), ABI (`0100h`), feature mask (`001Fh`) |
 | 4-7 | Pool start, capacity, allocation unit, raw burst size |
 | 8-11 | Byte READ/WRITE entries, library request address and size |
 | 12-15 | Export table address, image origin, pinned code and stack handles |
 | 16-19 | Call-token address, maximum body bytes, exports and signature characters |
-| 20-23 | Allocator revision (6), three reserved zero words |
+| 20-23 | Call revision (1), three reserved zero words |
 
 Feature bits 0-4 advertise byte transfers, library control, detailed status,
 DMA/search contexts and generation/epoch validation, respectively.
 `bank_bios_library_control()` copies the request to its discovered address,
-dispatches operation 10 and retrieves the response. All fields are 16-bit words:
+dispatches operation 8 and retrieves the response. All fields are 16-bit words:
 
 | Byte offset | Meaning |
 | --- | --- |
@@ -123,32 +120,30 @@ authoritative descriptors without changing ownership. CALL requires a live
 512-byte extent, a body length prefix in 1..256, a typed export and matching
 module generation/pool epoch. INVALIDATE makes the module uncallable even at
 generation exhaustion. Generations and epochs never wrap: further LOAD/RESET
-fails with EXHAUSTED rather than reviving stale state. Legacy operation 8 also
-advances generation and preserves the host context; new clients use operation 10.
+fails with EXHAUSTED rather than reviving stale state.
 
 BIOS status codes are:
 
 | Code | Status | Meaning |
 | --- | --- | --- |
 | 0 | OK | The BIOS operation succeeded; an invoked function's result is separate. |
-| 1 | UNAVAILABLE | The required banked-memory capability or compatible resident service is unavailable. |
+| 1 | UNAVAILABLE | The banked-memory capability or matching resident service is unavailable. |
 | 2 | ARGUMENT | An argument, range, length, request field or operation is invalid. |
 | 3 | HANDLE | A required allocation handle is not live or does not meet the operation's requirements. |
 | 4 | MEMORY | No free extent can satisfy the allocation request. |
 | 5 | PINNED | An attempt was made to free a pinned library or stack extent. |
 | 6 | DISPATCH | A typed library adapter did not return its required success value of 1. |
-| 7 | FORMAT | The library format is invalid or incompatible with the requested operation. |
-| 8 | CHECKSUM | The loaded library's checksum does not match. |
-| 9 | IO | A library load encountered a file open or read failure. |
-| 10 | STALE | The module is not ready, or the expected module generation or pool epoch no longer matches. |
-| 11 | EXHAUSTED | A non-wrapping module-generation or pool-epoch counter cannot advance. |
+| 7 | FORMAT | The library header is invalid. |
+| 8 | IO | A library load encountered a file open or read failure. |
+| 9 | STALE | The module is not ready, or the expected module generation or pool epoch does not match. |
+| 10 | EXHAUSTED | A non-wrapping module-generation or pool-epoch counter cannot advance. |
 
-Raw CALL/CALL AT still return arbitrary function HL, including valid zero;
+Raw CALL returns arbitrary function HL, including valid zero;
 status is separate. `bank_memory_last_error()` and `bank_bios_last_error()`
 use the BIOS codes above. `bank_library_last_error()` uses the separate `BL_*`
 codes defined in
 [BANKLIB.H](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/BANKSDK/BANKLIB.H);
-for example, `BL_IO` is 2, `BL_CHECKSUM` is 12 and `BL_STALE` is 13.
+for example, `BL_IO` is 2 and `BL_STALE` is 12.
 
 `bmalloc` and `bfree` run in the bank-1 extent allocator. Free-list and
 physical-extent tables occupy the pinned `E600h–EDFFh` region; returned
@@ -158,10 +153,10 @@ one; free coalesces adjacent extents. SIZE and AVAILABLE read tables directly.
 Four compact 32-byte metadata tables preserve the entire 5,632-byte pool;
 service growth does not reduce the library's DCC heap or stack.
 
-The `0100h` library image and `C000h` stack are pinned handles for CALL AT.
+The `0100h` library image and `C000h` stack are pinned handles for CALL.
 For an ordinary allocated code block, the caller supplies its entry offset.
 The BIOS validates the code and stack handles and offset; it cannot verify
-that the offset is an instruction boundary. CALL AT places IY on the bank-1
+that the offset is an instruction boundary. CALL places IY on the bank-1
 stack as one 16-bit DCC C argument. A function using the normal DCC frame
 prologue reads it at `IX+4` and returns a 16-bit value in HL.
 
@@ -169,9 +164,8 @@ prologue reads it at `IX+4` and returns a 16-bit value in HL.
 
 1. The mirrored gateway saves the bank-0 interrupt state and selects bank 1.
 2. Resident code saves the bank-0 SP in bank-1 workspace and uses its private
-   service stack. CALL with `BC=0` also executes the function on that small
-   private stack. CALL with nonzero BC and CALL AT switch to the exclusive
-   end of the supplied, distinct live stack allocation; CALL AT rejects `BC=0`.
+   service stack. CALL then switches to the exclusive end of the supplied,
+   distinct live stack allocation and rejects `BC=0`.
 3. The function returns with `RET`. Resident code restores SP, and the
    gateway selects bank 0, restores interrupt state and returns to C.
 
@@ -192,7 +186,7 @@ BDOS disk/file shim forwards calls and marshals FCBs and DMA records. A bank-1
 library may call its own BDOS for console and file I/O. Its DCC `malloc` heap
 starts at the linked end of its image and BSS (`__hstart`); its upper limit
 is `C800h` minus the configured stack size. The loader clears BSS and obtains
-the heap base from the version 3 or 4 library header.
+the heap base from the library header.
 The fixed linked image begins at `0100h`; the separate general `bmalloc` pool
 begins at `C800h`.
 
@@ -200,15 +194,15 @@ The bank-0 shim saves its caller's stack pointer, uses a private stack at
 `F600h–F7FFh` while forwarding a call, then restores the caller's stack.
 The CCP's own stack is too close to its code for nested bank transfers.
 
-The resident LIB loader reads a versioned, checked `.LIB` file into `0100h`,
+The resident LIB loader validates a `.LIB` header, reads the image into `0100h`,
 initializes DCC heap bounds, and exposes export offsets. The bank-0 BANKLIB
 runtime copies the length-prefixed call frame with `bank_bios_write()`, then
-invokes LIB CONTROL (operation 10, action 3 CALL). The resident service
+invokes LIB CONTROL (operation 8, action 3 CALL). The resident service
 validates the module generation, pool epoch, frame allocation and typed export
-before invoking CALL AT internally. After successful dispatch, BANKLIB reads
+before invoking CALL internally. After successful dispatch, BANKLIB reads
 the result frame with `bank_bios_read()` and publishes it to the caller.
-Direct CALL/CALL AT remain available for lower-level code but do not replace
-the typed library-control checks. The [bank-1 library design](bank1-library-spec.md) describes
+Direct CALL is available for lower-level code but does not replace the
+typed library-control checks. The [bank-1 library design](bank1-library-spec.md) describes
 ownership and limits. [LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO)
 is the maintained C example; [SPREADS](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SPREADS)
 shows the smaller hand-written-code path.
@@ -239,4 +233,4 @@ bytes, including the loader, allocator, BDOS, BIOS and mirrored gateway.
 Bank-1 warm boot switches back to bank 0. Drive A's system tracks contain
 the bank-0 BDOS shim, so warm boot restores the same gateway. Deploy matching
 firmware, CP/M system image, and rebuilt `.COM` and `.LIB` files together.
-ABI 2.6 libraries require minor/call revision 6 in their file header.
+Libraries carry format 1, ABI 1.0 and call revision 1 in their header.

@@ -258,7 +258,7 @@ if(SOAK_Z80ASM)
     add_test(NAME banked_memory_z80_execution COMMAND "${SOAK_EMULATOR_PYTHON}"
       "${CMAKE_CURRENT_SOURCE_DIR}/banked_memory_z80_test.py")
     set_tests_properties(banked_memory_z80_execution PROPERTIES TIMEOUT 10)
-    foreach(bank_test IN ITEMS banked_allocator_v2_z80_test bank1_bdos_z80_test bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test)
+    foreach(bank_test IN ITEMS banked_allocator_z80_test bank1_bdos_z80_test bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test)
       add_test(NAME ${bank_test} COMMAND "${SOAK_EMULATOR_PYTHON}"
         "${CMAKE_CURRENT_SOURCE_DIR}/${bank_test}.py")
       set_tests_properties(${bank_test} PROPERTIES TIMEOUT 60)

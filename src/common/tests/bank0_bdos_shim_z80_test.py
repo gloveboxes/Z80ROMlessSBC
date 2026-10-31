@@ -4,14 +4,14 @@ import unittest
 
 import cpm_boot_z80_test
 import bank1_system_boot_z80_test
-from banked_allocator_v2_z80_test import assemble
+from banked_allocator_z80_test import assemble
 
 
 class ShimFileRead(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cpm_boot_z80_test.CpmBootExecution.setUpClass()
-        cls.transfer = assemble("src/common/banked_transfer_v2.asm")
+        cls.transfer = assemble("src/common/banked_transfer.asm")
         cls.shim = assemble("src/cpm/bank0_bdos_shim.asm")
         cls.payload = assemble("src/common/tests/bank0_bdos_shim_file.asm")
 

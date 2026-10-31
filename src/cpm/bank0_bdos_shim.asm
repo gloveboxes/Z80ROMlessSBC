@@ -81,7 +81,7 @@ forward_request:
         ld bc,16
         call 0ff03h
         ret c
-        ld e,7
+        ld e,6
         ld hl,0e4b0h
         call 0ff10h
         ld hl,response
@@ -390,13 +390,13 @@ alloc_vector_mirror: defs 32,0
 disk_params_mirror: defs 16,0
         defs 0f600h-$,0
 private_stack: defs 512,0
-; Public ABI 2.6 byte transfers. Keep the 16-byte gateway as the bulk path;
+; Public ABI 1.0 byte transfers. Keep the 16-byte gateway as the bulk path;
 ; a stack-local tail buffer preserves neighbouring bytes at either boundary.
 byte_read_entry:
         jp byte_read
 byte_write_entry:
         jp byte_write
-        db "BXT6"
+        db "BXT1"
 byte_read:
         ld a,c
         and 15
@@ -562,12 +562,12 @@ byte_interrupts_off:
         ret
         defs 0fa00h-$,0
 ; FF06h delegates here so the mirrored page can spend its budget on copying.
-; INFO never switches banks; its public register/status contract is unchanged.
+; INFO never switches banks.
 bank_info:
         in a,(7)
         cp 0b4h
         jr nz,bank_unavailable
-        ld hl,0206h
+        ld hl,0100h
         ld de,0c800h
         ld bc,01600h
         xor a

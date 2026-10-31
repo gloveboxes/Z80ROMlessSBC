@@ -14,7 +14,7 @@ describe_library:
         ld (0df30h),a
         ld a,(0e4d2h)
         ld (0df32h),a
-        ld a,(0e4d3h)
+        ld a,12                ; export entry bytes
         ld (0df34h),a
         ld hl,(0e4d4h)
         ld (0df36h),hl

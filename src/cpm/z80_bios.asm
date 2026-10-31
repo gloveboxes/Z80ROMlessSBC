@@ -394,6 +394,6 @@ allocation_3:
 
 BIOS_CORE_END: equ $
                 defs 0ff00h-$,0
-                include "banked_transfer_v2.asm"
+                include "banked_transfer.asm"
                 defs 10000h-$,0
 BIOS_END:      equ $

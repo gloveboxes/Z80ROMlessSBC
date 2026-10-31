@@ -88,13 +88,13 @@ static int check_context(void)
 
 int main(void)
 {
-    unsigned char header[16], data[258], guard[16], revision, minor;
+    unsigned char header[16], data[258], guard[16], revision, major;
     unsigned int first, second, available, i;
-    CHECK(bank_bios_version() == 0x0206, "BIOS version");
-    minor = *(unsigned char *)BMBIOS_MINOR;
-    *(unsigned char *)BMBIOS_MINOR = 4;
-    CHECK(!bank_memory_initialize(), "reject old BIOS minor version");
-    *(unsigned char *)BMBIOS_MINOR = minor;
+    CHECK(bank_bios_version() == BMBIOS_ABI, "BIOS version");
+    major = *(unsigned char *)BMBIOS_VERSION;
+    *(unsigned char *)BMBIOS_VERSION = BMBIOS_ABI_MAJOR + 1;
+    CHECK(!bank_memory_initialize(), "reject other BIOS major version");
+    *(unsigned char *)BMBIOS_VERSION = major;
     CHECK(bank_bios_read(0xE600, header, sizeof(header)), "read allocator descriptor");
     revision = header[8];
     header[8] = 4;
@@ -146,10 +146,10 @@ int main(void)
     CHECK(!bank_memory_read(first, 0, data, 1) &&
           !bank_memory_free(first), "stale handle and double free");
     CHECK(bank_memory_free(second) && bfree(0) &&
-          bank_memory_available() == available, "full heap recovery and legacy API");
+          bank_memory_available() == available, "full heap recovery and short symbol alias");
     CHECK(bank_memory_reset() && !bank_memory_write(first, 0, data, 16) &&
           bank_memory_last_error() == BANK_BIOS_HANDLE, "reset invalidates copy bounds");
-    CHECK(bank_bios_version() == 0x0206, "SDK returns to caller bank");
+    CHECK(bank_bios_version() == BMBIOS_ABI, "SDK returns to caller bank");
     CHECK(!check_context() && bank_memory_available() == available, "BDOS contexts and cleanup");
     puts("PASS: BANKSDK version checks, memory bounds and cleanup.");
     return 0;
