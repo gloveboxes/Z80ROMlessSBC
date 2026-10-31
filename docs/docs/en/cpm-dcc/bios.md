@@ -51,6 +51,18 @@ memory available to applications. Full-range validation precedes copying;
 partial writes preserve neighbouring bytes.
 IX/IY, stack and interrupt state are preserved.
 
+`bread` and `bwrite` call the checked entries `F806h` READ and `F809h` WRITE.
+They take A=handle page (a handle's high byte; handles are 256-byte aligned),
+DE=bank-1 address, HL=bank-0 buffer and BC=byte count. The bank-0 shim maps
+the page to its allocator extent: pool pages `C8h–DDh`, the pinned library at
+page `01h` and its stack at `C0h`. With interrupts masked, the shim calls a
+mirrored helper at `FB48h` that selects bank 1, reads the live extent length
+and allocated marker, and reselects bank 0 without touching the stack. A
+free, unused or unknown page returns A=3/carry set. A range starting below
+the handle or ending beyond the extent returns A=2/carry set. Otherwise the
+call continues as `F800h`/`F803h`. Every call checks the live tables, so a
+handle freed or invalidated by RESET is rejected; no bounds are cached.
+
 Counts divisible by 16 dispatch directly to the raw gateway, without setting up
 tail storage. The gateway's 237-byte mirrored code retains the low count and
 direction in A and saves the advancing source SP in that source bank's private
@@ -93,15 +105,16 @@ signatures or private tables. The descriptor contains 24 little-endian words:
 
 | Word | Meaning |
 | --- | --- |
-| 0-3 | Size (48), descriptor revision (1), ABI (`0100h`), feature mask (`001Fh`) |
+| 0-3 | Size (48), descriptor revision (1), ABI (`0100h`), feature mask (`003Fh`) |
 | 4-7 | Pool start, capacity, allocation unit, raw burst size |
 | 8-11 | Byte READ/WRITE entries, library request address and size |
 | 12-15 | Export table address, image origin, pinned code and stack handles |
 | 16-19 | Call-token address, maximum body bytes, exports and signature characters |
-| 20-23 | Call revision (1), three reserved zero words |
+| 20-23 | Call revision (1), checked READ/WRITE entries, one reserved zero word |
 
-Feature bits 0-4 advertise byte transfers, library control, detailed status,
-DMA/search contexts and generation/epoch validation, respectively.
+Feature bits 0-5 advertise byte transfers, library control, detailed status,
+DMA/search contexts, generation/epoch validation and checked handle transfers,
+respectively.
 `bank_bios_library_control()` copies the request to its discovered address,
 dispatches operation 8 and retrieves the response. All fields are 16-bit words:
 

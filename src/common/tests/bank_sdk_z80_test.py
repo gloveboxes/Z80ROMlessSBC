@@ -142,6 +142,21 @@ int main(void)
           bank_memory_last_error() == BANK_BIOS_ARGUMENT, "zero-length object bounds");
     CHECK(!bank_memory_size(first + 1), "interior handle");
     CHECK(bank_memory_last_error() == BANK_BIOS_HANDLE, "handle status");
+    CHECK(!bank_memory_read(first + 1, 0, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_HANDLE, "interior copy handle");
+    CHECK(!bank_memory_read(0, 0, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_HANDLE, "null copy handle");
+    CHECK(!bank_memory_read(0xDD00, 0, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_HANDLE, "unallocated pool page");
+    CHECK(!bank_memory_read(0xB000, 0, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_HANDLE, "page outside any extent");
+    CHECK(!bank_memory_read(first, 0x2000, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_ARGUMENT, "offset reaches next extent");
+    CHECK(bank_memory_read(0xC000, 0x07F0, data, 16) &&
+          !bank_memory_read(0xC000, 0x07F1, data, 16) &&
+          bank_memory_last_error() == BANK_BIOS_ARGUMENT, "pinned stack extent bounds");
+    CHECK(bank_memory_read(0x0100, 0xBEF0, data, 16) &&
+          !bank_memory_read(0x0100, 0xBF00, data, 1), "pinned library extent bounds");
     CHECK(bank_memory_free(first), "free");
     CHECK(!bank_memory_read(first, 0, data, 1) &&
           !bank_memory_free(first), "stale handle and double free");
@@ -222,10 +237,10 @@ class BankSdkExecution(unittest.TestCase):
         from banked_sdk_benchmark import HighResidentAllocator, measure
         HighResidentAllocator.setUpClass()
         image = self.folder / "build/SDKCHECK.COM"
-        for chunk, limits in ((4096, (95500, 95500)),
-                              (256, (130000, 130000)),
-                              (16, (700000, 695000)),
-                              (1, (14900000, 18950000))):
+        for chunk, limits in ((4096, (94500, 94500)),
+                              (256, (114000, 113500)),
+                              (16, (440000, 435000)),
+                              (1, (10800000, 14850000))):
             for writing in (False, True):
                 for interrupts in (False, True):
                     with self.subTest(chunk=chunk, writing=writing, interrupts=interrupts):

@@ -17,7 +17,7 @@ vector. Bank-0 console calls remain local. One DCC library can be loaded at
 | `DE00h–E5FFh` | BDOS proxy, loader, exports and service stack |
 | `E600h–EDFFh` | Pinned extent allocator and metadata |
 | `EE00h–FB3Fh` | Authoritative CP/M 2.2 BDOS |
-| `FB40h–FB7Fh` | Mirrored warm-boot return trampoline |
+| `FB40h–FB7Fh` | Mirrored warm-boot return and extent lookup |
 | `FB80h–FEFFh` | BIOS buffer and core |
 | `FF00h–FFFFh` | Mirrored bank-switch gateway |
 
@@ -62,7 +62,8 @@ EC00h  | Capabilities and library    |  E=7 query, E=8 LOAD/INVALIDATE/
        | control                     |  QUERY/CALL
 EE00h  +-----------------------------+  ---- CP/M ----
        | CP/M 2.2 BDOS               |  authoritative disk and allocation state
-FB40h  | Warm-boot trampoline        |  mirrored; returns to bank-0 warm boot
+FB40h  | Warm-boot trampoline,       |  mirrored; warm-boot return and
+       | extent lookup               |  checked-transfer lookup at FB48h
 FB80h  | BIOS buffer and core        |
 FF00h  +-----------------------------+  ---- mirrored in both banks ----
        | Bank-switch gateway         |  READ/WRITE/INFO/service entries;
@@ -298,7 +299,8 @@ masks interrupts during a bank switch. Library code must not re-enter the
 bank-switch allocator, call bank-0 addresses, or use a bank-0 pointer directly.
 
 The bank-1 BIOS warm-boot vector enters the mirrored `FB40h` trampoline and
-returns to bank-0 warm boot. Drive A's system tracks contain the bank-0 BDOS
+returns to bank-0 warm boot. The same slot holds the extent lookup used by
+checked `bread`/`bwrite` transfers. Drive A's system tracks contain the bank-0 BDOS
 shim so warm boot restores the same arrangement. The firmware holds the
 bank-1 BDOS/loader image; the CP/M boot image supplies the bank-0 shim and
 matching gateway. Flash both firmware and CP/M system image for this ABI.

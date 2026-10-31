@@ -9,7 +9,7 @@ The reset-ready SRAM image uses the following upper-memory layout:
 | CCP | `0xE600`-`0xEDFF` | Console Command Processor, reloaded after a warm boot |
 | BDOS shim and tables | `0xEE00`-`0xFB3F` | Bank-0 console and disk/file proxy; entry at `0xEE06` |
 | BDOS shim private stack | `0xF600`-`0xF7FF` | 512-byte stack inside the bank-0 BDOS slot; protects the CCP code below its small stack |
-| Unused BDOS padding | `0xFB40`-`0xFB7F` | Mirrored bank-1 warm-boot return trampoline |
+| Mirrored trampoline | `0xFB40`-`0xFB7F` | Bank-1 warm-boot return and checked-transfer extent lookup (`0xFB48`) |
 | Reserved BDOS padding | `0xFB80`-`0xFBFF` | 128-byte BIOS directory buffer |
 | BIOS core | `0xFC00`-`0xFEFD` | 766-byte Z80-optimized boot, console, disk, translation and startup-report routines |
 | Spare padding | `0xFEFE`-`0xFEFF` | 2 bytes |
@@ -52,7 +52,7 @@ immediately below the CCP stack.
 | `DE00h–E5FFh` | Resident loader, proxy and service workspace |
 | `E600h–EDFFh` | Extent allocator metadata/code |
 | `EE00h–FB3Fh` | Authoritative CP/M BDOS |
-| `FB40h–FB7Fh` | Mirrored warm-boot trampoline |
+| `FB40h–FB7Fh` | Mirrored warm-boot return and extent lookup |
 | `FB80h–FEFFh` | BIOS buffer and core |
 | `FF00h–FFFFh` | Mirrored bank-switch gateway |
 

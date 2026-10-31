@@ -148,10 +148,21 @@ def build_banked_cpm_system(assembler: str) -> bytes:
     if len(shim) != 0xD40 or shim[:6] != bytes((0, 22, 0, 0, 0, 0)):
         raise ValueError("bank-0 BDOS shim has an invalid size or CCP signature")
     pristine[0x800:0x1540] = shim
-    # Same bytes are installed in bank 1. After OUT selects bank 0, the JP
-    # continues at this mirrored address and enters the ordinary warm boot.
-    pristine[0x1540:0x1547] = bytes((0xAF, 0xD3, 7, 0xC3, 3, 0xFC, 0))[:7]
+    # Firmware copies base-image FB40h+ into bank 1, so the warm-boot return
+    # and extent lookup in this slot execute across bank-select OUTs.
+    pristine[0x1540:0x1580] = build_bank_trampoline(assembler)
     return bytes(pristine)
+
+
+def build_bank_trampoline(assembler: str) -> bytes:
+    source = REPO_ROOT / "src/cpm/bank_trampoline.asm"
+    with tempfile.TemporaryDirectory(prefix="z80sbc-trampoline-") as directory:
+        binary = Path(directory) / "trampoline.bin"
+        subprocess.run([assembler, "-o", str(binary), str(source)], check=True)
+        trampoline = binary.read_bytes()
+    if len(trampoline) != 0x40 or trampoline[:3] != bytes((0xAF, 0xD3, 7)):
+        raise ValueError("mirrored bank trampoline must fill FB40h..FB7Fh")
+    return trampoline
 
 
 def assembler_definitions() -> str:

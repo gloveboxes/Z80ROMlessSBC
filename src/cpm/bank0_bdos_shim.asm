@@ -5,6 +5,7 @@
 ; for the BIOS directory buffer.
 ; CCP's stack starts at ED3Eh, just above executable CCP bytes. Use a private
 ; bank-0 stack for every shim call before any PUSH or nested bank transfer.
+EXTENT_PAGES: equ 0fb48h    ; mirrored helper in bank_trampoline.asm
         org 0ee00h
         db 0,22,0,0,0,0     ; CCP validates this BDOS signature after DIR
 bdos_entry:
@@ -396,7 +397,86 @@ byte_read_entry:
         jp byte_read
 byte_write_entry:
         jp byte_write
+; Checked transfers: A=handle page, DE=bank-1 address inside that live
+; allocation, HL=bank-0 buffer, BC=byte count. The extent is looked up in
+; the allocator tables on every call; nothing is cached.
+checked_read_entry:
+        jp checked_read
+checked_write_entry:
+        jp checked_write
         db "BXT1"
+checked_read:
+        call checked_extent
+        ret c
+        jp byte_read
+checked_write:
+        call checked_extent
+        ret c
+        jp byte_write
+; Carry clear with HL/DE/BC preserved when DE..DE+BC lies inside the live
+; extent at page A; otherwise carry set with A=3 (handle) or 2 (range).
+checked_extent:
+        push hl
+        ld l,a
+        ld a,i
+        di
+        push af
+        ld a,l
+        sub 0c8h
+        cp 22
+        jr c,checked_pool       ; general pool C800h..DDFFh, index 8..29
+        ld a,l
+        cp 1
+        jr z,checked_lookup     ; pinned library image, index 1
+        cp 0c0h
+        jr nz,checked_handle
+        ld a,2                  ; pinned library stack, index 2
+        jr checked_lookup
+checked_pool:
+        add a,8
+checked_lookup:
+        push hl
+        call EXTENT_PAGES
+        pop hl
+        or a
+        jr z,checked_handle
+        add a,l
+        ld h,a                  ; exclusive limit page
+        ld a,d
+        cp l
+        jr c,checked_range
+        ld a,e
+        add a,c
+        ld l,a
+        ld a,d
+        adc a,b
+        jr c,checked_range
+        cp h
+        jr c,checked_valid
+        jr nz,checked_range
+        ld a,l
+        or a
+        jr nz,checked_range
+checked_valid:
+        xor a
+        jr checked_finish
+checked_handle:
+        ld a,3
+        jr checked_finish
+checked_range:
+        ld a,2
+checked_finish:
+        ld l,a
+        pop af
+        jp po,checked_interrupts_off
+        ei
+checked_interrupts_off:
+        ld a,l
+        pop hl
+        or a
+        ret z
+        scf
+        ret
 byte_read:
         ld a,c
         and 15

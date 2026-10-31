@@ -31,12 +31,14 @@ class HighResidentAllocator(unittest.TestCase):
         cls.descriptor = assemble("src/common/banked_descriptor.asm")
         cls.capabilities = assemble("src/common/banked_capabilities.asm")
         cls.shim = assemble("src/cpm/bank0_bdos_shim.asm")
+        cls.trampoline = assemble("src/cpm/bank_trampoline.asm")
 
     def setUp(self) -> None:
         self.machine = z80.Z80Machine()
         self.banks = [bytearray(65536), bytearray(65536)]
         for bank in self.banks:
             bank[0xFF00:0xFF00 + len(self.transfer)] = self.transfer
+            bank[0xFB40:0xFB80] = self.trampoline
         self.banks[0][0xF800:0xFB40] = self.shim[0xA00:]
         bank = self.banks[1]
         bank[0xE600:0xE609] = b"BKM1BEX1\x01"
