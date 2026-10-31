@@ -1,0 +1,2811 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Electrical design, firmware architecture, and staged bring-up plan for a Pico 2 W-supervised ROMless Z80 computer.">
+      
+      
+        <meta name="author" content="David Lee">
+      
+      
+      
+        <link rel="prev" href="../bios/">
+      
+      
+        <link rel="next" href="../boundaries/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo-icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Bank-1 C library - Z80 ROMless SBC Engineering Specification</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#d5-bank-1-fixed-address-dcc-library" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-header__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  <img src="../../images/logo-icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Z80 ROMless SBC Engineering Specification
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Bank-1 C library
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="cyan" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Z80 ROMless SBC Engineering Specification" class="md-nav__button md-logo" aria-label="Z80 ROMless SBC Engineering Specification" data-md-component="logo">
+      
+  <img src="../../images/logo-icon.svg" alt="logo">
+
+    </a>
+    Z80 ROMless SBC Engineering Specification
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gloveboxes/Z80ROMlessSBC" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    Z80ROMlessSBC
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../toolchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Toolchain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../related-projects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Related projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0 - Inventory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/pin-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1 - Pin mapping and SRAM wiring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/address-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2 - Address interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3 - Construction and breadboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/output-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4 - Output buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/bus-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5 - Bus translation and isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8">
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test instruments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Test instruments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/multimeter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multimeter (essential)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/oscilloscope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RIGOL DHO814 oscilloscope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/logic-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSLogic Plus logic analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/io-ports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O ports and services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware build and provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system/firmware-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building and testing Pico C
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breadboard implementation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Breadboard implementation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan and prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-0-power/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 0 - Power distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-1-supervisor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 1 - Pico supervisor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-2-buffer-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 2 - Fixed logic and clock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-3-address-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 3 - Control and port monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-4-address-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 4 - Address bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-5-data-bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 5 - Data bus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_8">
+        
+          
+          <label class="md-nav__link" for="__nav_6_8" id="__nav_6_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Phase 6 - Z80-assisted SRAM loading
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-sram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SRAM loading and tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-6-bus-grants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPU reset, fetch and bus grants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/20mhz-soak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20 MHz arithmetic and SRAM soak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/20mhz-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    No-I/O 20 MHz scope test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-8-virtual-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 8 - Bidirectional I/O and USB terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-9-flash-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 9 - USB CP/M and flash storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/phase-10-websocket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase 10 - WebSocket terminal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implementation/frequency-qualification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequency qualification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CP/M and dcc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CP/M and dcc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pio-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PIO I/O engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom BIOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bank-1 C library
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bank-1 C library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#implemented-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implemented layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#library-memory-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library memory layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Library memory layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#size-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loader-initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loader initialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#library-file-and-linker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library file and linker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-calls-and-object-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed calls and object ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bdos-and-bank-switching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BDOS and bank switching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-end test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interactive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8">
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms and abbreviations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/datasheets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/source-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building these docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#implemented-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implemented layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#library-memory-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library memory layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Library memory layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#size-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loader-initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loader initialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#library-file-and-linker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library file and linker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-calls-and-object-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed calls and object ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bdos-and-bank-switching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BDOS and bank switching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="d5-bank-1-fixed-address-dcc-library">D.5 Bank-1 Fixed-Address DCC Library<a class="headerlink" href="#d5-bank-1-fixed-address-dcc-library" title="Permanent link">¶</a></h1>
+<h2 id="implemented-layout">Implemented layout<a class="headerlink" href="#implemented-layout" title="Permanent link">¶</a></h2>
+<p>Bank 1 owns CP/M disk allocation and directory state. Bank-0 BDOS calls enter
+bank 1 through the shim at <code>EE00h</code>; bank-1 C code calls its own <code>0005h</code> BDOS
+vector. Bank-0 console calls remain local. One DCC library can be loaded at
+<code>0100h</code> at a time.</p>
+<table>
+<thead>
+<tr>
+<th>Bank-1 address</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0000h–00FFh</code></td>
+<td>CP/M vectors and page zero</td>
+</tr>
+<tr>
+<td><code>0100h–(heap_base-1)</code></td>
+<td>Fixed library image, static data and BSS</td>
+</tr>
+<tr>
+<td><code>heap_base–(C800h-stack-1)</code></td>
+<td>Library DCC <code>malloc</code> heap</td>
+</tr>
+<tr>
+<td><code>(C800h-stack)–C7FFh</code></td>
+<td>Library call stack, configured by the <code>.LIB</code> header</td>
+</tr>
+<tr>
+<td><code>C800h–DDFFh</code></td>
+<td>General <code>bmalloc</code> pool, 5,632 bytes</td>
+</tr>
+<tr>
+<td><code>DE00h–E5FFh</code></td>
+<td>BDOS proxy, loader, exports and service stack</td>
+</tr>
+<tr>
+<td><code>E600h–EDFFh</code></td>
+<td>Pinned extent allocator and metadata</td>
+</tr>
+<tr>
+<td><code>EE00h–FB3Fh</code></td>
+<td>Authoritative CP/M 2.2 BDOS</td>
+</tr>
+<tr>
+<td><code>FB40h–FB7Fh</code></td>
+<td>Mirrored warm-boot return and extent lookup</td>
+</tr>
+<tr>
+<td><code>FB80h–FEFFh</code></td>
+<td>BIOS buffer and core</td>
+</tr>
+<tr>
+<td><code>FF00h–FFFFh</code></td>
+<td>Mirrored bank-switch gateway</td>
+</tr>
+</tbody>
+</table>
+<p>The library image, C stack, and allocator are pinned. <code>breset</code> resets only the
+general pool; it does not unload the library or reset its DCC heap.</p>
+<h2 id="library-memory-layout">Library memory layout<a class="headerlink" href="#library-memory-layout" title="Permanent link">¶</a></h2>
+<p>A library owns the fixed region <code>0100h–C7FFh</code> (50,944 bytes). Its image,
+BSS, DCC <code>malloc</code> heap and call stack share that region; only the stack size
+is chosen explicitly. Everything from <code>C800h</code> up is outside the library: the
+shared <code>bmalloc</code> pool, then pinned resident code loaded and verified by the
+firmware at boot.</p>
+<div class="highlight"><pre><span></span><code>0000h  +-----------------------------+
+       | CP/M page zero              |  0005h = bank-1 BDOS vector
+0100h  +-----------------------------+  ---- library region ----
+       | Image: code and data        |  .LIB image length, loaded verbatim
+       +-----------------------------+  0100h + image length
+       | BSS                         |  zeroed by the loader
+       +-----------------------------+  heap_base (linked __hstart)
+       | DCC malloc heap             |  __brk = heap_base at load
+       |            ...              |
+       +-----------------------------+  __hlimit = C800h - stack
+       | Call stack                  |  256..2048 bytes, grows down
+C800h  +-----------------------------+  ---- shared pool ----
+       | bmalloc pool                |  5,632 bytes, 22 x 256-byte extents
+DE00h  +-----------------------------+  ---- pinned resident services ----
+       | BDOS proxy                  |  E=6, used by the bank-0 BDOS shim
+DE8Eh  | Loader, search, request and |  library request record at DF20h,
+       | library context state       |  library DMA/search context at DF80h
+E000h  | Library loader              |  validates the header, copies image
+E300h  | Export table, capability    |  capability record at E360h,
+       | record, descriptor helpers  |  descriptor helpers at E390h
+E400h  | DMA buffer, FCB staging,    |  call token at E4D6h, library FCB
+       | mailboxes, service stacks   |  at E500h, private stacks to E5FFh
+E600h  | Dispatcher, allocator       |  dispatcher at E640h, tables at
+       | tables, context hooks       |  E700h, context hooks at E780h
+E800h  | Extent allocator            |  E=0..5
+EC00h  | Capabilities and library    |  E=7 query, E=8 LOAD/INVALIDATE/
+       | control                     |  QUERY/CALL
+EE00h  +-----------------------------+  ---- CP/M ----
+       | CP/M 2.2 BDOS               |  authoritative disk and allocation state
+FB40h  | Warm-boot trampoline,       |  mirrored; warm-boot return and
+       | extent lookup               |  checked-transfer lookup at FB48h
+FB80h  | BIOS buffer and core        |
+FF00h  +-----------------------------+  ---- mirrored in both banks ----
+       | Bank-switch gateway         |  READ/WRITE/INFO/service entries;
+FFFFh  +-----------------------------+  FFF0h-FFFFh private workspace
+</code></pre></div>
+<p>The library may call its own BDOS through <code>0005h</code>. It accesses pool memory
+only through what the host passes it: the copied call frame, or a pool
+extent the host leases to it and validates, such as ISAM's bulk buffer. It
+must not call the gateway or touch resident service memory; <code>DE00h–FFFFh</code>
+is reserved for system code. Growth of the resident services never reduces
+the library region.</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Start</th>
+<th>End (exclusive)</th>
+<th>Set by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Image</td>
+<td><code>0100h</code></td>
+<td><code>0100h</code> + image length</td>
+<td>Linked by <code>l80c</code>; copied by the loader</td>
+</tr>
+<tr>
+<td>BSS</td>
+<td>Image end</td>
+<td><code>heap_base</code></td>
+<td>Linked by <code>l80c</code>; zeroed by the loader</td>
+</tr>
+<tr>
+<td>DCC heap</td>
+<td><code>heap_base</code></td>
+<td><code>C800h</code> − stack</td>
+<td><code>__brk</code> and <code>__hlimit</code> initialized by the loader</td>
+</tr>
+<tr>
+<td>Call stack</td>
+<td><code>C800h</code> − stack</td>
+<td><code>C800h</code></td>
+<td><code>dcc-stack-bytes</code>, recorded in the <code>.LIB</code> header</td>
+</tr>
+</tbody>
+</table>
+<h3 id="size-rules">Size rules<a class="headerlink" href="#size-rules" title="Permanent link">¶</a></h3>
+<p>The image, BSS and at least one heap byte must fit below the stack:
+<code>heap_base &lt; C800h − stack</code>, with <code>heap_base</code> at or above the end of both
+the image and the BSS. There is no separate image-size cap; a larger image
+leaves less heap. The stack must be 256–2,048 bytes in 256-byte units.</p>
+<p>These rules are enforced at every stage:</p>
+<ul>
+<li><code>dccmake</code> rejects an invalid <code>dcc-stack-bytes</code>, or one smaller than the
+  compiler's computed stack requirement.</li>
+<li><code>l80c --lib</code> fails with "bank-1 heap overlaps the configured stack" if the
+  image, BSS and heap do not fit, and records <code>heap_base</code> and the stack size
+  in the header.</li>
+<li>The loader rejects a header that breaks the same rules with FORMAT status
+  before copying the image.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Stack</th>
+<th>Heap limit</th>
+<th style="text-align: right;">Image + BSS + heap</th>
+<th style="text-align: right;">Largest image (no BSS, 1-byte heap)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">256</td>
+<td><code>C700h</code></td>
+<td style="text-align: right;">50,688</td>
+<td style="text-align: right;">50,687 bytes, through <code>C6FEh</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">512</td>
+<td><code>C600h</code></td>
+<td style="text-align: right;">50,432</td>
+<td style="text-align: right;">50,431 bytes, through <code>C5FEh</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">1,024</td>
+<td><code>C400h</code></td>
+<td style="text-align: right;">49,920</td>
+<td style="text-align: right;">49,919 bytes, through <code>C3FEh</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">2,048</td>
+<td><code>C000h</code></td>
+<td style="text-align: right;">48,896</td>
+<td style="text-align: right;">48,895 bytes, through <code>BFFEh</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="loader-initialization">Loader initialization<a class="headerlink" href="#loader-initialization" title="Permanent link">¶</a></h3>
+<p>After validating the header and copying the image, the loader zeroes the BSS
+from the image end up to <code>heap_base</code>, sets the linked DCC <code>__brk</code> to
+<code>heap_base</code> and <code>__hlimit</code> to <code>C800h</code> minus the stack. The heap is not
+cleared. A library linked without the DCC runtime records <code>FFFFh</code> for both
+variable offsets and uses its image end as <code>heap_base</code>.</p>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Image</th>
+<th>BSS</th>
+<th>Heap</th>
+<th>Stack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LIBDEMO <code>DATA.LIB</code></td>
+<td>8,863 bytes, <code>0100h–239Eh</code></td>
+<td>4 bytes</td>
+<td>41,565 bytes, <code>23A3h–C5FFh</code></td>
+<td>512 bytes, <code>C600h–C7FFh</code></td>
+</tr>
+<tr>
+<td>ISAM <code>ISAM.LIB</code></td>
+<td>43,006 bytes, <code>0100h–A8FDh</code></td>
+<td>1,104 bytes</td>
+<td>5,810 bytes, <code>AD4Eh–C3FFh</code></td>
+<td>1,024 bytes, <code>C400h–C7FFh</code></td>
+</tr>
+</tbody>
+</table>
+<p>Exact figures follow each build. Use DCC's <code>meminfo()</code> inside the library
+to report heap capacity, committed bytes and remaining growth at run time.</p>
+<h2 id="library-file-and-linker">Library file and linker<a class="headerlink" href="#library-file-and-linker" title="Permanent link">¶</a></h2>
+<p>DCC's native <code>l80c --lib</code>, maintained in its <code>src/l80c/l80c.c</code>, links a
+fixed-origin image at <code>0100h</code> and emits one library format: a 26-byte
+header, up to eight 12-byte export entries, then the image. Every export has
+a canonical signature. Like a CP/M <code>.COM</code>, the image is loaded verbatim
+without a checksum.</p>
+<table>
+<thead>
+<tr>
+<th>Byte offset</th>
+<th>Bytes</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>4</td>
+<td><code>B1LB</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>1</td>
+<td>Format version 1</td>
+</tr>
+<tr>
+<td>5, 6, 7</td>
+<td>3</td>
+<td>ABI major 1, minor 0, call revision 1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2</td>
+<td>Origin <code>0100h</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>2</td>
+<td>Image length</td>
+</tr>
+<tr>
+<td>12</td>
+<td>2</td>
+<td>Export count, 1–8</td>
+</tr>
+<tr>
+<td>14</td>
+<td>2</td>
+<td>Reserved, zero</td>
+</tr>
+<tr>
+<td>16</td>
+<td>2</td>
+<td>Stack bytes, 256–2,048 in 256-byte units</td>
+</tr>
+<tr>
+<td>18</td>
+<td>2</td>
+<td>Header length, 26 + 12 × exports</td>
+</tr>
+<tr>
+<td>20, 22</td>
+<td>4</td>
+<td><code>__brk</code> and <code>__hlimit</code> image offsets, or <code>FFFFh</code> without the DCC runtime</td>
+</tr>
+<tr>
+<td>24</td>
+<td>2</td>
+<td>Absolute heap base (<code>__hstart</code>) after the image and BSS</td>
+</tr>
+</tbody>
+</table>
+<p>Each export entry is:</p>
+<table>
+<thead>
+<tr>
+<th>Entry offset</th>
+<th>Bytes</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>8</td>
+<td>Zero-padded export name</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2</td>
+<td>Adapter offset relative to image origin</td>
+</tr>
+<tr>
+<td>10</td>
+<td>2</td>
+<td>Canonical signature string offset relative to image origin</td>
+</tr>
+</tbody>
+</table>
+<p>All eight entries fit in the first 128-byte disk record.
+Signature strings are nonempty, NUL-terminated ASCII, at most 255 characters,
+inside the image. The full string is compared, not a short hash
+that could collide. The loader validates both offsets against the image.</p>
+<p>LIBDEMO separates <code>host/</code> and <code>lib/</code>, each with its own <code>dccmake.txt</code>
+and <code>build/</code>. Its root configuration contains <code>dcc-projects=lib,host</code>;
+one root <code>dccmake</code> invocation builds the library first, then its host.
+The library configuration selects <code>dcc-output-format=lib</code>,
+automatic exports, and DCC's native <code>l80c</code> through <code>l80c-tool</code>.
+With <code>dcc-library-api=auto</code>, compiler-derived public definitions generate
+<code>host/generated/API.H</code>, host wrappers and bank adapters. Buffer rules live in
+the library source; no handwritten API header or JSON interface is needed.
+Run <code>dccmake dcc-contract-only=true</code> in the root to generate the client
+contract without assembly or linking; COM children are skipped. Normal builds
+refresh it automatically. Clients include the generated header and compile
+the generated wrappers with BANKLIB/BIOSBANK. <code>dccmake -help</code> describes the
+workflow. A header path instead of <code>auto</code> validates a handwritten contract
+against the same discovered, signed exports. M80 public symbols are limited
+to six characters; generated adapter names are unique within that limit.</p>
+<p>ABI 1.0 clients discover the versioned library service through BIOS operation 7
+and submit LOAD/INVALIDATE/QUERY/CALL requests through operation 8. They do
+not inspect loader-private mailboxes or allocator tables. See the exact
+<a href="../bios/#capability-and-library-control-records">capability/control records</a>.
+The linker writes, and the loader requires, format 1, ABI 1.0 and call
+revision 1. An invalid header or read failure leaves the module uncallable,
+with distinct FORMAT/IO status. The SDK runs <code>onload</code>/<code>onunload</code> automatically;
+these C lifecycle hooks are SDK policy, not CP/M BDOS functions.</p>
+<p>The resident dispatcher publishes a per-call two-byte token at the public
+<code>E4D6h</code> ABI data address. The runtime never reuses a token within its
+lifetime: after 65,534 invocations it returns <code>BL_EXHAUSTED</code> rather than
+wrapping, reserving the last token for unload cleanup.
+Bank-1 object constructors may use the token as an opaque handle.</p>
+<p>The <a href="https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO">LIBDEMO example</a>
+builds <code>DATA.LIB</code>, an ordinary DCC C data service, and <code>DATATEST.COM</code>, its
+bank-0 client. The host runs eight numbered end-to-end checks with explicit
+PASS/FAIL results. Ordinary-looking <code>add16</code>, <code>upper</code>, <code>filerd</code>, <code>blknew</code>,
+<code>blkread</code> and <code>blkfree</code> calls demonstrate scalar values, copied in/out text,
+file open/read/close, flat record IN/OUT/INOUT transfers, and chunked reads
+from a 4 KiB bank-owned block.
+The two lifecycle hooks complete the eight exports. The tests also cover
+export/signature enumeration, malformed calls, buffer bounds, stale handles,
+reload invalidation, directory-search preservation, transfer-pool recovery,
+and unloading an open block with no committed DCC heap left behind.
+The emulator also executes a DCC library with a 32 KiB <code>malloc</code>/<code>free</code>
+and a zero-initialized 2 KiB BSS. Its <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/LIBDEMO/lib/DATA.C">library source</a>
+is the maintained example.</p>
+<h2 id="typed-calls-and-object-ownership">Typed calls and object ownership<a class="headerlink" href="#typed-calls-and-object-ownership" title="Permanent link">¶</a></h2>
+<p>The SDK's preferred C names are descriptive: <code>bank_library_open</code>,
+<code>bank_library_call</code>, <code>bank_library_last_error</code>, <code>bank_memory_allocate</code> and
+the other <code>bank_library_*</code>, <code>bank_memory_*</code> and <code>bank_bios_*</code> operations.
+Header aliases map them to six-character M80/L80 public symbols, which the
+text below and generated wrappers also use; aliases add no wrapper call.</p>
+<p>Shared client-side support lives in
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/BANKSDK"><code>examples/BANKSDK</code></a>,
+separate from runnable examples. The reusable host runtime lives in
+<a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/BANKSDK/BANKLIB.H"><code>BANKLIB.H</code></a>
+and its matching C implementation; BANKMEM and BIOSBANK provide checked memory
+access and the BIOS calling-convention adapter. <code>blname</code> and <code>blsig</code> enumerate loaded
+exports without a manifest. <code>blcall</code> checks the expected complete signature
+before executing anything. <code>blerr</code> reports transport, format,
+signature, allocation, bounds, lifecycle, and cleanup failures separately
+from an exported function's ordinary result.</p>
+<p>Open reserves one 512-byte bank-1 extent, first for FCB staging and then reused
+for bounded call frames; close and failed open release it. Successful
+steady-state calls perform no allocations/frees. Generated wrappers retain one
+four-byte binding per export, checking its complete canonical signature once
+per module generation. Raw <code>blcall</code> still validates the signature every time.
+Invalidation/reload advances generation; RESET advances pool epoch. The SDK
+queries both before writing a cached frame, and resident CALL validates them
+again. Stale ownership returns <code>BL_STALE</code> and never frees or overwrites a
+possibly reassigned extent. Metadata is immutable while loaded: raw debug
+writes require invalidate/reload.</p>
+<p>A two-byte frame-length prefix lets the generated adapter reject malformed
+or truncated requests before accessing arguments. The body is at most 256
+bytes; allocations and transfers are rounded to 16-byte BIOS bursts.
+On successful dispatch the result frame is read back before outputs are
+published. Failed calls retain the workspace for retry/close and do not
+publish modified outputs.
+Calls are synchronous and non-reentrant.</p>
+<p>Host/library DMA and directory-search continuation are independent. Search
+Next rereads its directory sector because the directory buffer is shared.
+Current drive/user and allocation state remain shared. Tests interleave
+searches across drives and check drive/user changes in both directions.</p>
+<p>The typed ABI supports integer values, declared counted byte buffers and
+single named, pointer-free flat structs through annotated pointers.
+<code>#pragma dcc bank_record FUNCTION ARG in|out|inout</code> uses a 1-based argument
+index and requires a complete struct of unqualified 8/16/32-bit integers or
+fixed one-dimensional integer arrays. The compiler emits resolved field
+metadata; <code>dccmake</code> generates complete struct definitions and compile-time
+size, offset and integer-width checks in the client contract. Typedef
+aliases resolve to the underlying named struct; generated prototypes use
+its tag. Anonymous/nested structs, pointer members, const/volatile members,
+unions, bitfields and by-value aggregate arguments/results are rejected.</p>
+<p>Records use the DCC packed, little-endian layout and bounded bulk copies,
+not per-field serialization. Fixed-size wrappers use exact-size local
+frames, constant offsets and one adapter length check. The canonical
+<code>DIRECTION:rec1le:TAG[SIZE]{FIELD:TYPE@OFFSET;ARRAY:TYPE[COUNT]@OFFSET}</code>
+signature includes full field names, order, widths/signedness, array lengths,
+offsets and size; comparing just a tag or size is insufficient. Records and
+buffers share the 256-byte body limit and 255-character signature limit.
+No loader, linker format or firmware ABI change is needed.</p>
+<p>Record pointers cannot be NULL; <code>const</code> pointers support only IN. OUT
+records start zero-filled. Outputs are copied back only after successful
+dispatch, even when the ordinary C result reports an operation failure.
+Transport rejection leaves caller outputs unchanged. Copied arguments are
+independent snapshots; overlap involving a record is rejected if either
+argument is writable. A library must not retain a frame-local pointer after returning.</p>
+<p>Buffer direction and bounds must be explicit. Caller addresses never appear in the bank-1 frame;
+adapters form bank-1-local pointers into copied bytes. Pointer graphs,
+callbacks, varargs, and implicit deep serialization are not supported.</p>
+<p>Large objects stay in the bank that owns them. The sample exposes a
+validated opaque handle to a 4 KiB allocation and reads at most 128 bytes
+per call. Closing an object invalidates its handle; opening another object
+uses a fresh token. Unload closes outstanding objects and files. Handles
+are meaningful only to the owning library and host runtime, not persistent
+identifiers, memory addresses, or a security boundary.</p>
+<h2 id="bdos-and-bank-switching">BDOS and bank switching<a class="headerlink" href="#bdos-and-bank-switching" title="Permanent link">¶</a></h2>
+<p>The bank-0 shim copies FCBs and DMA records through resident staging buffers,
+returns CP/M results, and mirrors pointer-returned disk tables in bank 0.
+Bank 1 retains the authoritative allocation vectors. A bank-0 directory
+search can continue after a bank-1 library file operation; the proxy keeps a
+separate search continuation snapshot. Calls are sequential; the gateway
+masks interrupts during a bank switch. Library code must not re-enter the
+bank-switch allocator, call bank-0 addresses, or use a bank-0 pointer directly.</p>
+<p>The bank-1 BIOS warm-boot vector enters the mirrored <code>FB40h</code> trampoline and
+returns to bank-0 warm boot. The same slot holds the extent lookup used by
+checked <code>bread</code>/<code>bwrite</code> transfers. Drive A's system tracks contain the bank-0 BDOS
+shim so warm boot restores the same arrangement. The firmware holds the
+bank-1 BDOS/loader image; the CP/M boot image supplies the bank-0 shim and
+matching gateway. Flash both firmware and CP/M system image for this ABI.</p>
+<h2 id="current-limits">Current limits<a class="headerlink" href="#current-limits" title="Permanent link">¶</a></h2>
+<p>There is one library slot, no runtime relocation, and no nested bank calls.
+Library <code>exit</code>, <code>abort</code>, program chaining, and transient-program startup
+paths are outside the supported runtime subset. The host must call its
+unload export before invalidating a library with open files. Direct bank-0
+BIOS disk calls bypass the BDOS shim; ordinary CP/M applications use BDOS.
+The emulator covers cold/warm boot, bank-0 directory and file reads, a bank-1
+file read, interrupted directory search, header rejection, and restoration of
+bank 0 after calls. Physical board validation remains necessary.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../bios/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Custom BIOS">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Custom BIOS
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../boundaries/" class="md-footer__link md-footer__link--next" aria-label="Next: Compatibility boundaries">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Compatibility boundaries
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 David Lee
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.tabs.sticky", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mermaid.mjs" type="module"></script>
+      
+        <script src="../../javascripts/checklist.mjs" type="module"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

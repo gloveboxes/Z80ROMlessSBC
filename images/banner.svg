@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="400" viewBox="0 0 1440 400" role="img" aria-labelledby="title description">
+  <title id="title">Zeta-80 · Z80 ROMless SBC</title>
+  <desc id="description">Zeta-80 is a 20 MHz Z80 ROMless single-board computer. A Pico 2 W supervises boot, clock and I/O. CP/M runs in a 64 KiB SRAM bank, with a second 64 KiB bank for data.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#102237"/>
+      <stop offset="1" stop-color="#183c4c"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="16" cy="16" r="1" fill="#75bdb9" opacity=".13"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="400" rx="24" fill="url(#background)"/>
+  <rect width="1440" height="400" rx="24" fill="url(#grid)"/>
+  <path d="M0 376h1440" stroke="#41cfbd" stroke-width="3" opacity=".55"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="64" y="83" fill="#68ddcf" font-size="17" font-weight="700" letter-spacing="4">A CLASSIC CPU. A MODERN CONTROLLER.</text>
+    <text x="60" y="163" fill="#ffffff" font-size="74" font-weight="700" letter-spacing="-2">Zeta<tspan fill="#68ddcf">-80</tspan></text>
+    <text x="64" y="207" fill="#d2e3ed" font-size="27">Real Z80 20MHz 64K ROMLess SBC</text>
+    <text x="64" y="241" fill="#b8d0df" font-size="22">Pico 2W Supervised</text>
+    <path d="M64 263h626" stroke="#557d8d"/>
+    <text x="64" y="302" fill="#b8d0df" font-size="22">CP/M 2.2</text>
+    <text x="64" y="347" fill="#8cacbe" font-size="17">USB + Wi-Fi terminal · Four persistent drives</text>
+    <!-- Circuit motif: CPU, controller and directly connected SRAM. -->
+    <g fill="none" stroke="#41cfbd" stroke-width="3" stroke-linejoin="round">
+      <path d="M1010 146h47v-54h77M1010 166h65v-54h59M1010 252h47v55h77M1010 272h65v55h59"/>
+      <circle cx="1134" cy="92" r="4" fill="#41cfbd"/>
+      <circle cx="1134" cy="112" r="4" fill="#41cfbd"/>
+      <circle cx="1134" cy="307" r="4" fill="#41cfbd"/>
+      <circle cx="1134" cy="327" r="4" fill="#41cfbd"/>
+    </g>
+    <g fill="#68ddcf">
+      <path d="M825 145h30v8h-30zM825 173h30v8h-30zM825 201h30v8h-30zM825 229h30v8h-30zM825 257h30v8h-30zM1000 145h30v8h-30zM1000 173h30v8h-30zM1000 201h30v8h-30zM1000 229h30v8h-30zM1000 257h30v8h-30z"/>
+    </g>
+    <rect x="850" y="118" width="160" height="174" rx="18" fill="#102237" stroke="#68ddcf" stroke-width="3"/>
+    <text x="930" y="201" fill="#fff" text-anchor="middle" font-size="51" font-weight="700">Z80</text>
+    <path d="M879 245h23v-18h27v18h27v-18h25" fill="none" stroke="#68ddcf" stroke-width="4"/>
+    <rect x="1138" y="57" width="230" height="94" rx="12" fill="#153342" stroke="#5a929d" stroke-width="2"/>
+    <text x="1253" y="95" fill="#68ddcf" text-anchor="middle" font-size="23" font-weight="700">PICO 2 W</text>
+    <text x="1253" y="126" fill="#b8d0df" text-anchor="middle" font-size="17">Boot, clock + I/O</text>
+    <rect x="1138" y="260" width="230" height="94" rx="12" fill="#153342" stroke="#5a929d" stroke-width="2"/>
+    <text x="1253" y="298" fill="#fff" text-anchor="middle" font-size="23" font-weight="700">128 KiB SRAM</text>
+    <text x="1253" y="329" fill="#b8d0df" text-anchor="middle" font-size="17">Two 64 KiB banks</text>
+  </g>
+</svg>
