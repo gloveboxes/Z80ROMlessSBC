@@ -59,8 +59,8 @@ void __not_in_flash_func(z80_banked_pio_clock_stop)(void) {
   clock_engine->irq_force = 1u << CPU_HOLD_IRQ;
   pio_sm_set_enabled(clock_engine, (uint)clock_sm, false);
   clock_running = false;
-  /* The caller retains the normal 1 us HIGH guard before switching to SIO.
-   * Do not force a falling edge here: PWM and PIO have the same stop contract. */
+  /* Do not force a falling edge: z80_clock_prepare_stepping extends a frozen
+   * HIGH by 1 us before handing CLK to SIO. */
   restore_interrupts(interrupts);
 }
 

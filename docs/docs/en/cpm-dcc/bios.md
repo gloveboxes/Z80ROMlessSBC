@@ -1,4 +1,4 @@
-# D.3 Custom BIOS Responsibilities
+# D.4 Custom BIOS Responsibilities
 
 The BIOS implements CP/M 2.2’s standard 17-entry jump table for BDOS and
 dcc’s direct-BIOS functions.

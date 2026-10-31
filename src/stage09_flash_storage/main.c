@@ -47,8 +47,6 @@ enum {
   USB_COMMAND_ESCAPE = 0x1D,
   USB_REPORT_CONNECTION = 0x100,
   USB_CONFIG_REBOOT = 0x101,
-  DISK_READY = 1,
-  DISK_BUSY = 8,
   DIAGNOSTIC_BYTES = Z80_FLASH_DISK_SLOT_COUNT * Z80_FLASH_DISK_SLOT_BYTES,
   CPU_RUNNING = 1u << 0,
   CPU_STOPPING = 1u << 1,
@@ -549,7 +547,7 @@ static void print_status(bool requested) {
   const z80_boot_status_t *boot = z80_flash_boot_status();
   printf("\n[diag] running=%u verified=%u clock=%lu BIOS=%u CCP_handoff=%u "
          "disk=%02lx fatal=%u rx_drops=%lu tx_drops=%lu "
-         "trap_timeouts=%lu control_errors=%lu inactive_irqs=%lu boot_error=%s "
+         "trap_timeouts=%lu control_errors=%lu boot_error=%s "
          "failure=%s log_drops=%lu\n",
          running, image_verified, (unsigned long)z80_clock_get_hz(),
          bios_announced, ccp_announced,
@@ -559,7 +557,6 @@ static void print_status(bool requested) {
          (unsigned long)z80_terminal_tx_drop_count(),
          (unsigned long)z80_io_trap_timeout_count(),
          (unsigned long)z80_io_trap_control_error_count(),
-         (unsigned long)z80_io_trap_inactive_irq_count(),
          boot_error_name(boot->error),
          boot_failure != NULL ? boot_failure : "none",
          (unsigned long)z80_usb_console_log_drops());

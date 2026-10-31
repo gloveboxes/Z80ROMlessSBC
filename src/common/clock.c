@@ -33,24 +33,14 @@ uint32_t z80_clock_get_hz(void) {
 
 #if defined(Z80_BANKED_PIO)
 bool z80_clock_set_hz(uint32_t hz) {
-  /* Publish before enabling CLK: the first Z80 OUT can interrupt inside
-   * clock_start. Its trap must see a configured clock so resume restarts it. */
-  uint32_t previous_hz = actual_clock_hz;
-  actual_clock_hz = hz;
-  if (!z80_banked_pio_clock_start(hz)) {
-    actual_clock_hz = previous_hz;
+  if (!z80_banked_pio_clock_start(hz))
     return false;
-  }
+  actual_clock_hz = hz;
   return true;
 }
 
 void __not_in_flash_func(z80_clock_stop)(void) {
   z80_banked_pio_clock_stop();
-}
-
-void __not_in_flash_func(z80_clock_resume)(void) {
-  if (actual_clock_hz)
-    z80_banked_pio_clock_resume();
 }
 #else
 bool z80_clock_set_hz(uint32_t hz) {

@@ -36,6 +36,9 @@ void z80_io_trap_drain_writes(void);
 void z80_io_trap_poll(void);
 uint32_t z80_io_trap_timeout_count(void);
 uint32_t z80_io_trap_control_error_count(void);
+#if !defined(Z80_BANKED_PIO)
+/* GPIO trap only: IORQ# edges that had already released when serviced. */
 uint32_t z80_io_trap_inactive_irq_count(void);
+#endif
 
 #endif

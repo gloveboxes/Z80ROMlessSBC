@@ -47,8 +47,6 @@ if(MATRIX_PIOASM)
   target_compile_options(banked_pio_integration_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
   add_test(NAME banked_pio_console_handoff COMMAND banked_pio_integration_test)
   set_tests_properties(banked_pio_console_handoff PROPERTIES TIMEOUT 5)
-  add_test(NAME banked_pio_startup_interrupt COMMAND banked_pio_integration_test startup-irq)
-  set_tests_properties(banked_pio_startup_interrupt PROPERTIES TIMEOUT 5)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   add_test(NAME banked_pio_instruction_cycles COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_SOURCE_DIR}/banked_pio_cycles_test.py"

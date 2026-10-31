@@ -1,4 +1,4 @@
-# CP/M Image Provenance
+# D.1 CP/M Image Provenance
 
 The system boots **`64K CP/M 2.2`**: a Z80-optimised
 port of Burcon CP/M 2.2 with a custom BIOS for this board.

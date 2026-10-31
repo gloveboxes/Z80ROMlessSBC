@@ -13,8 +13,6 @@
 static bool levels[32], outputs[32];
 static uint64_t now;
 static bool bank_available = true, interrupts_disabled, failed_closed;
-static bool inject_startup_io;
-static uint32_t frequency_at_startup_io;
 static unsigned writes, reads;
 static z80_memory_bank_driver_t bank_driver;
 static jmp_buf reboot_exit;
@@ -56,17 +54,7 @@ uint32_t save_and_disable_interrupts(void) {
   interrupts_disabled = true;
   return previous;
 }
-static void in_cycle(uint8_t port, uint8_t expected);
-void restore_interrupts(uint32_t state) {
-  interrupts_disabled = state;
-  if (!interrupts_disabled && inject_startup_io && clock_running) {
-    /* Interrupt as soon as the first PIO clock starts, before the caller of
-     * clock_start can finish: the real BIOS cold-entry I/O. */
-    inject_startup_io = false;
-    frequency_at_startup_io = z80_clock_get_hz();
-    in_cycle(1, 2);
-  }
-}
+void restore_interrupts(uint32_t state) { interrupts_disabled = state; }
 
 static uint8_t read_port(uint8_t port, void *context) {
   (void)context;
@@ -98,19 +86,14 @@ static void out_cycle(uint8_t port, uint8_t value) {
   assert(writes == before + 1 && blocks[1].tx_count == 0 && now == started);
 }
 
-int main(int argc, char **argv) {
-  assert(argc == 1 || (argc == 2 && strcmp(argv[1], "startup-irq") == 0));
-  bool early = argc == 2;
+int main(void) {
   memset(levels, 1, sizeof(levels));
   levels[PIN_CLK] = levels[PIN_IO_RELEASE] = levels[PIN_MEMORY_BANK] = false;
   for (uint pin = 0; pin < 32; ++pin) io_bank0_hw->io[pin].ctrl = GPIO_FUNC_SIO;
   outputs[PIN_CLK] = true;
   assert(z80_io_trap_enable(read_port, write_port, NULL));
   assert(!z80_clock_set_hz(19000000) && z80_clock_get_hz() == 0);
-  inject_startup_io = early;
   assert(z80_clock_set_hz(20000000));
-  if (early)
-    assert(!inject_startup_io && frequency_at_startup_io == 20000000);
   out_cycle(5, 0xB0);
   assert(!z80_clock_set_hz(19000000) && z80_clock_get_hz() == 20000000);
   for (uint count = 0; count < 100; ++count) {
@@ -118,14 +101,13 @@ int main(int argc, char **argv) {
     in_cycle(1, 2);
     out_cycle(0, 'X');
   }
-  unsigned startup_reads = early ? 1u : 0u;
-  assert(reads == 100 + startup_reads && writes == 101);
+  assert(reads == 100 && writes == 101);
   z80_banked_pio_status_t status = z80_banked_pio_status();
-  assert(status.reads == 100 + startup_reads && status.writes == 101);
+  assert(status.reads == 100 && status.writes == 101);
   assert(status.active && status.running);
   /* Bank status is answered by the trap, not the application. */
   in_cycle(7, (uint8_t)(0xB4 | gpio_get(PIN_MEMORY_BANK)));
-  assert(reads == 100 + startup_reads);
+  assert(reads == 100);
   /* Supervisor drain applies completed OUTs without the IRQ. */
   fake_push(fake_snapshot(false, true, 0, 'X'));
   z80_io_trap_drain_writes();

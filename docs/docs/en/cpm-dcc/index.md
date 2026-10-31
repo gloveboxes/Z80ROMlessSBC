@@ -20,7 +20,9 @@ For the compiler, C library, and CP/M APIs, see the
 
 - [Image provenance and machine boundary](image-provenance.md)
 - [CP/M memory map and entry points](memory-map.md)
+- [Z80 I/O with the PIO engine](pio-io.md)
 - [Custom BIOS responsibilities](bios.md)
+- [Bank-1 fixed-address DCC library](bank1-library-spec.md)
 - [Compatibility boundaries](boundaries.md)
 - [Validation requirements](validation.md)
 - [Automated end-to-end test](end-to-end.md)

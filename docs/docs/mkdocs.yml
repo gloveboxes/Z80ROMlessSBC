@@ -60,6 +60,7 @@ nav:
       - Compatibility overview: en/cpm-dcc/index.md
       - Image provenance: en/cpm-dcc/image-provenance.md
       - Memory map: en/cpm-dcc/memory-map.md
+      - PIO I/O engine: en/cpm-dcc/pio-io.md
       - Custom BIOS: en/cpm-dcc/bios.md
       - Bank-1 C library: en/cpm-dcc/bank1-library-spec.md
       - Compatibility boundaries: en/cpm-dcc/boundaries.md

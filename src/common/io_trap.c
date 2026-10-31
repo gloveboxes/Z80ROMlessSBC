@@ -2,16 +2,16 @@
 
 #include "hardware/watchdog.h"
 #include "pico/stdlib.h"
-#include "z80sbc/bus.h"
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
 #if defined(Z80_BANKED_PIO)
 #include "z80sbc/banked_pio.h"
+#else
+#include "z80sbc/bus.h"
 #endif
 
-enum { TRAP_RELEASE_TIMEOUT_US = 500000 };
 static const uint32_t RESET_FAULT_MAGIC = 0x5A384954;
 
 static z80_io_read_handler_t application_read;
@@ -19,7 +19,9 @@ static z80_io_write_handler_t application_write;
 static void *application_context;
 static uint32_t trap_timeouts;
 static uint32_t control_errors;
+#if !defined(Z80_BANKED_PIO)
 static uint32_t inactive_irqs;
+#endif
 
 z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void) {
   uint32_t magic = watchdog_hw->scratch[0];
@@ -55,6 +57,8 @@ static _Noreturn void trap_fail_closed(z80_io_trap_reset_reason_t reason,
 }
 
 #if !defined(Z80_BANKED_PIO)
+enum { TRAP_RELEASE_TIMEOUT_US = 500000 };
+
 static void __not_in_flash_func(resume_and_wait_for_release)(uint control_pin) {
   uint32_t released_mask = (1u << PIN_IORQ_N) | (1u << control_pin);
   gpio_put(PIN_IO_RELEASE, 1);
@@ -211,6 +215,8 @@ uint32_t z80_io_trap_control_error_count(void) {
   return __atomic_load_n(&control_errors, __ATOMIC_RELAXED);
 }
 
+#if !defined(Z80_BANKED_PIO)
 uint32_t z80_io_trap_inactive_irq_count(void) {
   return __atomic_load_n(&inactive_irqs, __ATOMIC_RELAXED);
 }
+#endif

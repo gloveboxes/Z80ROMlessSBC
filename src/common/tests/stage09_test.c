@@ -81,7 +81,7 @@ static unsigned disconnect_after_usb_writes;
 static unsigned usb_write_calls, usb_write_limit;
 static bool watchdog_reset;
 static z80_io_trap_reset_fault_t retained_reset_fault;
-static uint32_t fake_inactive_irqs;
+static uint32_t fake_control_errors;
 static char output[16384];
 static size_t output_length;
 static uint8_t input[64];
@@ -318,8 +318,7 @@ bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
 }
 void z80_io_trap_disable(void) {}
 uint32_t z80_io_trap_timeout_count(void) { return 0; }
-uint32_t z80_io_trap_control_error_count(void) { return fake_inactive_irqs; }
-uint32_t z80_io_trap_inactive_irq_count(void) { return fake_inactive_irqs; }
+uint32_t z80_io_trap_control_error_count(void) { return fake_control_errors; }
 uint32_t save_and_disable_interrupts(void) {
   assert(!interrupts_disabled);
   interrupts_disabled = true;
@@ -427,7 +426,7 @@ static void reset_fixture(void) {
   disconnect_after_usb_writes = 0;
   usb_write_calls = 0;
   usb_write_limit = 32;
-  fake_inactive_irqs = 0;
+  fake_control_errors = 0;
   boot_failure = NULL;
   diagnostic_active = false;
   boot_markers = flash_pause_request = flash_paused = 0;
@@ -442,7 +441,7 @@ static void reset_fixture(void) {
   load_error = Z80_BOOT_ERROR_MISMATCH;
   now = 0;
   usb_room = 1024;
-  fake_disk_status = DISK_READY;
+  fake_disk_status = 1; /* READY */
   output_length = input_index = input_length = 0;
   output[0] = '\0';
   memset(&status, 0, sizeof(status));
@@ -492,9 +491,9 @@ static void test_control_and_terminal(void) {
   assert(virtual_read(0, NULL) == '\r');
   assert(virtual_read(0, NULL) == USB_COMMAND_ESCAPE);
   assert(!(virtual_read(1, NULL) & 1u));
-  fake_inactive_irqs = 3;
+  fake_control_errors = 3;
   command('s');
-  assert(strstr(output, "control_errors=3 inactive_irqs=3"));
+  assert(strstr(output, "control_errors=3 boot_error="));
   assert(strstr(output, "[disk] readahead hits=7 misses=2"));
   assert(strstr(output, "[iolat] since last status: IN count=3 avg=10000ns "
                         "max=12000ns; OUT apply count=4 avg=1000ns max=2000ns"));

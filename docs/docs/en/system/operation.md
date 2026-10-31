@@ -226,8 +226,9 @@ wear-levelled storage.
 - **Trap Latency Profile:** HCT32-generated WAIT# covers the interval from
   IORQ# falling until IO_RELEASE reports a configured data path. The
   Pico stops the static CPU clock while servicing the cycle.
-  Measure IORQ#-to-WAIT#, WAIT# setup/hold, the final PWM edge, and
-  IO_RELEASE-to-WAIT# release and stepped completion at every claimed rate. The design remains
+  Measure IORQ#-to-WAIT#, WAIT# setup/hold, the final run-clock edge, and
+  IO_RELEASE-to-WAIT# release and completion (stepped in Phases 6-8; PIO in
+  Phases 9-10) at every claimed rate. The design remains
   suitable for low-rate virtual peripherals, not high-speed line tracing.
 
 - **Clock Validation Targets:**

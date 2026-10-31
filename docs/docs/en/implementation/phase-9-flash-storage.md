@@ -230,7 +230,8 @@ write-record submission rather than mixing their latency distributions.
 
 Measure IORQ falling to IO_RELEASE rising as the service-response interval,
 and the end of free-running CLK to its resumed free-running edges as the total
-Z80 clock pause, including stepped completion. Neither is an exact IRQ-entry/
+Z80 clock pause; for an IN this includes the two PIO completion clocks and the
+held-LOW isolation interval. Neither is an exact IRQ-entry/
 exit timestamp. Record sample count, sample resolution, median, tail percentile,
 maximum, and workload/capture length for each category, both idle and with
 concurrent network traffic. Check control errors, drops and trap timeouts before
