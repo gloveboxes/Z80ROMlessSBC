@@ -7,15 +7,16 @@ and horizontal terminal scrolling on narrow screens rather than clipping columns
 The xterm.js UI uses the page's host (or `?altair=<pico-ip>`) and fixed Pico
 port **8088** for a root-path WebSocket, not the ESP32 `/ws` endpoint.
 This also works when the HTML is opened locally or served on another port.
-The **Keys** toolbar button toggles an on-screen cursor pad (arrows, Esc, Tab,
-Space, Enter) for tablets without a keyboard. Arrows send the same WordStar
+The **Keys** toolbar button toggles an on-screen cursor pad (arrows, Esc, Ctrl+C,
+Ctrl+O, Space, Enter) for tablets without a keyboard. Arrows send the same WordStar
 codes as the physical keys (Ctrl-E/S/D/X), held keys auto-repeat, and taps never
 focus the terminal, so the tablet keyboard stays hidden. It defaults on for touch
 devices and the choice is remembered. The pad floats semi-transparently over the
 page, including the terminal, and turns opaque while touched. It starts over the terminal's bottom-right corner;
 drag any part of the panel other than a key (grip bar, border or gaps) to move
-it. Its position is remembered and kept on-screen after rotation. Esc and Enter live on the pad rather than
-the toolbar. Ctrl-M sends carriage
+it. Its position is remembered and kept on-screen after rotation. Esc, Enter and Ctrl+C live on the pad rather than
+the toolbar. Ctrl+C sends byte 3 and Ctrl+O sends byte 15. Tab is available from
+a physical keyboard, not the pad. Ctrl-M sends carriage
 return, and Page Up/Down match Phase 9's CP/M mappings.
 
 The page speaks the version-4 acknowledged binary terminal protocol described

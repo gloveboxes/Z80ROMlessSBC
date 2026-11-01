@@ -422,7 +422,6 @@
         hostName: null,
         toggleTheme: null,
         reconnectBtn: null,
-        sendCtrlCBtn: null,
         error: null,
         rebootBtn: null,
         rebootStatus: null,
@@ -441,7 +440,9 @@
         right: ctrlCode('D'),
         down: ctrlCode('X')
       };
-      const KEYPAD_CODES = { ...CURSOR_CODES, esc: 27, space: 32, tab: 9, enter: 13 };
+      const KEYPAD_CODES = {
+        ...CURSOR_CODES, esc: 27, ctrlc: ctrlCode('C'), ctrlo: ctrlCode('O'), space: 32, enter: 13
+      };
 
       function sendToServer(data) {
         if (!state.connected || !state.online || !state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -665,7 +666,6 @@
           elements.hostName = document.getElementById("host_name");
           elements.toggleTheme = document.getElementById("toggleTheme");
           elements.reconnectBtn = document.getElementById("reconnectBtn");
-          elements.sendCtrlCBtn = document.getElementById("sendCtrlCBtn");
           elements.error = document.getElementById("terminal_error");
           elements.keypadBtn = document.getElementById("keypadBtn");
           elements.keypad = document.getElementById("keypad");
@@ -685,19 +685,6 @@
           return false;
         }
         return true;
-      }
-
-      // Add sendCtrlC button click handler
-      function setupSendCtrlCButton() {
-        if (!elements.sendCtrlCBtn) return;
-        elements.sendCtrlCBtn.onclick = function () {
-          if (state.connected && state.ws && state.ws.readyState === WebSocket.OPEN) {
-            sendControlCharacter(3); // Ctrl+C
-          }
-          if (state.term) {
-            state.term.focus();
-          }
-        };
       }
 
       // Place the floating keypad at (x, y), clamped so it stays fully on-screen.
@@ -874,7 +861,6 @@
         }
 
         // Disable/enable control buttons based on connection state
-        if (elements.sendCtrlCBtn) elements.sendCtrlCBtn.disabled = !isOpen;
         if (elements.keypad) {
           for (const key of elements.keypad.querySelectorAll('button')) key.disabled = !isOpen;
         }
@@ -1463,7 +1449,6 @@
 
 
           setupReconnectButton();
-          setupSendCtrlCButton();
           setupRebootButton();
           initializeNetworkHandlers();
 
@@ -1605,14 +1590,14 @@
 
       .keypad-dpad {
         display: grid;
-        grid-template-columns: repeat(3, 52px);
-        grid-template-rows: repeat(3, 52px);
+        grid-template-columns: repeat(3, 68px);
+        grid-template-rows: repeat(3, 68px);
         gap: 6px;
       }
 
       .keypad-dpad .altair-btn {
         padding: 0;
-        font-size: 1.4rem;
+        font-size: 1.8rem;
       }
 
       .keypad-up { grid-area: 1 / 2; }
@@ -1622,9 +1607,18 @@
 
       .keypad-actions {
         display: grid;
-        grid-template-columns: repeat(2, 84px);
-        grid-auto-rows: 52px;
+        grid-template-columns: repeat(2, 96px);
+        grid-auto-rows: 60px;
         gap: 6px;
+      }
+
+      .keypad-actions .altair-btn {
+        padding: 2px 6px;
+        font-size: 1.2rem;
+      }
+
+      .keypad-actions [data-key="enter"] {
+        grid-column: 1 / -1;
       }
 
       #keypadBtn[aria-pressed="true"] {
@@ -1641,7 +1635,6 @@
       }
     </style>
     <button id="reconnectBtn" class="altair-btn" disabled>Connected</button>
-    <button id="sendCtrlCBtn" class="altair-btn">Ctrl+C</button>
     <button id="keypadBtn" class="altair-btn" aria-pressed="false" aria-controls="keypad">Keys</button>
     <button id="rebootZ80Btn" class="altair-btn" disabled>Reboot Zeta-80</button>
     <button id="toggleTheme" class="altair-btn" onclick="toggleTheme()">Dark</button>
@@ -1657,7 +1650,7 @@
         <text x="80" y="86" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">Z80</text>
         <path d="M44 109h17V97h18v12h18V97h19" fill="none" stroke="#5ce0cd" stroke-width="4" stroke-linejoin="round"/>
       </svg>
-      <span>Zeta-80 <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K<span id="gpu_badge" hidden> <span style="color: #5ce0cd;">|</span> WebGL accelerated</span></span>
+      <span>Zeta-80 <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K<span id="gpu_badge" hidden> <span style="color: #5ce0cd;">|</span> WebGL accelerated terminal</span></span>
     </span>
     <span id="reboot_message" style="display: none;"></span>
   </div>
@@ -1677,8 +1670,9 @@
       <button class="altair-btn keypad-down" data-key="down" aria-label="Cursor down">&#9660;</button>
     </div>
     <div class="keypad-actions">
+      <button class="altair-btn" data-key="ctrlc">Ctrl+C</button>
+      <button class="altair-btn" data-key="ctrlo">Ctrl+O</button>
       <button class="altair-btn" data-key="esc">Esc</button>
-      <button class="altair-btn" data-key="tab">Tab</button>
       <button class="altair-btn" data-key="space">Space</button>
       <button class="altair-btn" data-key="enter">Enter</button>
     </div>

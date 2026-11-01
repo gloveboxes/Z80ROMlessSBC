@@ -110,7 +110,9 @@ test('on-screen keypad sends CP/M cursor codes, repeats while held and never foc
     dataset: { key }, disabled: false,
     addEventListener(type, handler) { on(`${key}:${type}`, handler); },
   });
-  const keys = ['up', 'left', 'right', 'down', 'esc', 'tab', 'space', 'enter'].map(button);
+  const keys = [...html.matchAll(/<button[^>]*data-key="([^"]+)"/g)].map(match => button(match[1]));
+  assert.deepEqual(keys.map(key => key.dataset.key),
+                   ['up', 'left', 'right', 'down', 'ctrlc', 'ctrlo', 'esc', 'space', 'enter']);
   const attrs = {};
   const classes = new Set();
   const pad = {
@@ -161,7 +163,7 @@ test('on-screen keypad sends CP/M cursor codes, repeats while held and never foc
 
   const press = (key) => listeners.get(`${key}:pointerdown`)({ preventDefault() {} });
   for (const [key, expected] of [['up', 5], ['left', 19], ['right', 4], ['down', 24],
-                                 ['esc', 27], ['tab', 9], ['space', 32], ['enter', 13]]) {
+                                 ['esc', 27], ['ctrlc', 3], ['ctrlo', 15], ['space', 32], ['enter', 13]]) {
     press(key);
     assert.deepEqual(input.sent.at(-1).slice(5), [expected]);
     input.acknowledge();
@@ -222,7 +224,11 @@ test('ESP32 terminal layout keeps 80 columns and a separate scrollbar strip', ()
   assert.match(scrollbar, /right:\s*-12px !important/);
   assert.match(scrollbar, /width:\s*10px !important/);
   assert.match(html, /<button id="keypadBtn"[^>]*>Keys<\/button>/);
-  assert.doesNotMatch(html, /id="(sendEscBtn|monitorBtn)"/);
+  assert.doesNotMatch(html, /id="(sendCtrlCBtn|sendEscBtn|monitorBtn)"/);
+  const keypad = html.slice(html.indexOf('<div id="keypad"'));
+  assert.match(keypad, /<button[^>]*data-key="ctrlc">Ctrl\+C<\/button>/);
+  assert.match(keypad, /<button[^>]*data-key="ctrlo">Ctrl\+O<\/button>/);
+  assert.doesNotMatch(keypad, /data-key="tab"/);
   assert.match(html, /id="terminal_error" role="alert"/);
 });
 
