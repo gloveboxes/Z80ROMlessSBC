@@ -2,7 +2,7 @@
 
 The deployed image assembles `cpm64_z80.asm` (CCP/BDOS) and `z80_bios.asm`
 (board BIOS). The immutable Burcon binary remains the audit reference.
-See [image provenance](image-provenance.md) and the [memory map](memory-map.md).
+See [image provenance](image-provenance.md) and the [memory map](../system/cpm-execution.md#cpm-memory-map-reference).
 
 ## Build images
 

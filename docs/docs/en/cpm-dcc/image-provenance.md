@@ -31,11 +31,11 @@ relocated entry vectors.
   at build time. Optimisations and removed features leave 246 bytes of padding
   (54 in CCP, 192 in BDOS) after adding `CLEAR`. Section sizes are unchanged;
   CCP and BDOS move upward by `0x0300`.
-  See the [memory map](memory-map.md) for the running system's layout.
+  See the [memory map](../system/cpm-execution.md#cpm-memory-map-reference) for the running system's layout.
 - **Custom BIOS:** `src/cpm/z80_bios.asm` replaces the Altair BIOS and cold
   loader. It uses the board's Pico-serviced terminal and flash-disk ports,
   rather than the Altair controller's ports `0x08`–`0x0A`.
-  See [Custom BIOS](bios.md).
+  See [Custom BIOS](../system/cpm-execution.md#custom-bios-reference).
 - **Validation:** The port's unoptimised mode reproduces the reference
   byte-for-byte. Host tests check relocation and Z80 instructions, plus
   cold boot, `DIR`, program loading, and warm boot.

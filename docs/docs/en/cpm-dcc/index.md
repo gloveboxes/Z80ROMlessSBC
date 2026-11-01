@@ -19,9 +19,7 @@ For the compiler, C library, and CP/M APIs, see the
 [DCC documentation](https://davidly.github.io/dcc/).
 
 - [Image provenance and machine boundary](image-provenance.md)
-- [CP/M memory map and entry points](memory-map.md)
-- [Z80 I/O with the PIO engine](pio-io.md)
-- [Custom BIOS responsibilities](bios.md)
+- [CP/M execution, memory map, PIO engine and BIOS](../system/cpm-execution.md)
 - [Bank-1 fixed-address DCC library](bank1-library-spec.md)
 - [Compatibility boundaries](boundaries.md)
 - [Validation requirements](validation.md)

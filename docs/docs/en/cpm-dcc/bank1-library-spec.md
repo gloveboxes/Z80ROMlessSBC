@@ -180,7 +180,7 @@ to six characters; generated adapter names are unique within that limit.
 ABI 1.0 clients discover the versioned library service through BIOS operation 7
 and submit LOAD/INVALIDATE/QUERY/CALL requests through operation 8. They do
 not inspect loader-private mailboxes or allocator tables. See the exact
-[capability/control records](bios.md#capability-and-library-control-records).
+[capability/control records](../system/cpm-execution.md#capability-and-library-control-records).
 The linker writes, and the loader requires, format 1, ABI 1.0 and call
 revision 1. An invalid header or read failure leaves the module uncallable,
 with distinct FORMAT/IO status. The SDK runs `onload`/`onunload` automatically;

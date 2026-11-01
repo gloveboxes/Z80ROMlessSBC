@@ -15,7 +15,7 @@ and [Phase 6 SRAM loading](../implementation/phase-6-sram.md).
 The AS6C1008 provides two 64 KiB banks. GP8 controls A16 through U4 AHCT244;
 port `0x07` selects the bank. Switching affects all addresses, including code,
 stack, and vectors, so applications must use the
-[BIOS transfer API](../cpm-dcc/bios.md#banked-memory-bios-extension-abi-10).
+[BIOS transfer API](../system/cpm-execution.md#banked-memory-bios-extension-abi-10).
 
 ### Physical bank-select path
 
@@ -90,7 +90,7 @@ Handles are not C pointers. Capacity is 65,024 bytes in 256-byte allocations;
 the metadata block and top BIOS page are reserved.
 
 The BIOS copies 16-byte bursts; the C library buffers partial transfers.
-See the [memory map](../cpm-dcc/memory-map.md) and [BIOS ABI](../cpm-dcc/bios.md)
+See the [memory map](../system/cpm-execution.md#cpm-memory-map-reference) and [BIOS ABI](../system/cpm-execution.md#banked-memory-bios-extension-abi-10)
 for bounds and register conventions. Deploy matching firmware, boot package,
 and Drive A system records. Changes to `src/common/banked_transfer.asm`
 require regenerating its supervisor header with `scripts/build-banked-transfer.py`.

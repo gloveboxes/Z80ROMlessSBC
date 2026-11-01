@@ -1,5 +1,8 @@
 # 6. Architectural Operational Boundaries
 
+For a visual walkthrough of how CP/M memory, the BIOS and PIO fit together,
+see [CP/M execution and banked memory](cpm-execution.md).
+
 ## The three operating states
 
 | State | Who controls the buses? | What you should expect |

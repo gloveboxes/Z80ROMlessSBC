@@ -25,7 +25,7 @@ Paths in commands are relative to the repository root unless stated otherwise.
   [BANKMEM.H](../../../examples/BANKSDK/BANKMEM.H), and
   [BIOSBANK.H](../../../examples/BANKSDK/BIOSBANK.H):
   supported operations, status codes, and calling conventions.
-- [BIOS ABI](../../../docs/docs/en/cpm-dcc/bios.md):
+- [BIOS ABI](../../../docs/docs/en/system/cpm-execution.md#banked-memory-bios-extension-abi-10):
   capability discovery and versioned library control records.
 - [Banked CP/M emulator test](../../../src/common/tests/bank1_system_boot_z80_test.py):
   runs the built LIBDEMO client and library under the CP/M/BIOS bank-switching
