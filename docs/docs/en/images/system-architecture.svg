@@ -108,7 +108,7 @@
   <rect x="770" y="680" width="760" height="125" rx="12" fill="#fff6e8" stroke="#e5c38c"/>
   <text x="790" y="711" class="subheading orange">Onboard QSPI flash | 4 MiB persistent storage</text>
   <text x="790" y="741" class="body">Pico firmware | recovery journal | 64 KiB Z80 boot payload | ENV</text>
-  <text x="790" y="770" class="body">CP/M A:-D: = 4 x 320 KiB; 128-byte records; no SD card</text>
+  <text x="790" y="770" class="body">CP/M A:-D: = 4 x 512 KiB; 128-byte records; no SD card</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/flash_backend.c"><text x="790" y="793" class="source">Core 0: SRAM read-ahead hits. Core 1: read-ahead + commits. Source: flash_backend.c</text></a>
 
   <!-- External transports terminate at their owning core, not at the Z80. -->
