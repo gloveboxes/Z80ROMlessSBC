@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-11-01T19:13:25")
+		(date "2026-11-01T19:44:07")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")

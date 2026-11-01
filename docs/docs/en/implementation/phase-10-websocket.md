@@ -157,6 +157,12 @@ one pixel column, so the longest address, `IP: 255.255.255.255`, fits the
 - **Heartbeat:** a 2x2 dot in the bottom-right corner toggles once per second
   while the Z80 runs. It shows display-service activity, not CP/M application
   health or a latency measurement.
+- **Web terminal:** while a browser owns the web terminal, a second 2x2 dot
+  two pixels to the left blinks with the heartbeat. The display reads the
+  console router's connected flag, one atomic load, only on lit ticks, so a
+  connect or disconnect shows within two seconds. Without a browser, the
+  heartbeat write is unchanged at two pixel bytes; with one, both dots share
+  a single six-byte write.
 
 Contrast is reduced to `0x40` from the controller's `0x7f` reset level to slow
 burn-in of the static layout. The display holds its last image while the
@@ -196,8 +202,9 @@ each dirty page sends only its first-to-last changed column span. Each page is
 column, then a `0x40` control byte starts the pixel data. A tick with no change
 reads only the address-change counter, taking no lock and copying no text, and
 sends only the heartbeat: one 9-byte transaction
-carrying **two pixel-data bytes**. The heartbeat sits in rows 30-31, below the
-uptime field, and changes only its own two pixel bits. When a page completes, the next page
+carrying **two pixel-data bytes** (13 bytes carrying six when the web-terminal
+dot also changes). The dots sit in rows 30-31, below the
+uptime field, and change only their own pixel bits. When a page completes, the next page
 starts in the same core-1 pass. All display work runs on core 1; nothing is
 added to core 0 or the Z80 bus path.
 
@@ -246,7 +253,9 @@ and failures without periodic terminal logging.
     display-on, single-transaction page writes, same-pass chaining, cached IP
     rendering, the idle fast path (one timer read, no lock, no status
     re-publish), counter-gated address reads, exact two-byte heartbeat writes that preserve neighbouring
-    pixels and survive uptime redraws, minute-only uptime writes limited to
+    pixels and survive uptime redraws, the web-terminal dot (one-write
+    blinking, lit-tick-only browser reads, disconnect clearing and pause),
+    the compile-time port bitmap, minute-only uptime writes limited to
     pages 2-3, the longest IPv4 address, pause gating, NACKs on every byte
     of a maximum-length write, and transport timeout/resource failures with
     cleanup.

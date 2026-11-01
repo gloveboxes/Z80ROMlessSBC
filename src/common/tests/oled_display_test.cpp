@@ -263,6 +263,12 @@ static void set_ip(const char *text) {
   ++address_generation;
 }
 uint32_t z80_io_ports_network_address_generation(void) { return address_generation; }
+static bool browser_connected;
+static unsigned browser_reads;
+bool z80_terminal_browser_connected(void) {
+  ++browser_reads;
+  return browser_connected;
+}
 uint64_t z80_service_millis(void) { return now / 1000; }
 uint64_t z80_service_micros(void) { return now; }
 size_t z80_io_ports_get_network_address(char *text, size_t capacity) {
@@ -291,7 +297,9 @@ static void reset() {
   oled_display::page = oled_display::first_column = oled_display::column_count = 0;
   oled_display::next_tick_us = 0;
   oled_display::uptime_minute = UINT64_MAX;
-  oled_display::ip_valid = oled_display::heartbeat = false;
+  oled_display::ip_valid = oled_display::heartbeat = oled_display::web_dot = false;
+  browser_connected = false;
+  browser_reads = 0;
   oled_display::seen_address_generation = 0;
   oled_display::last_published_status = UINT32_MAX;
   address_generation = 0;
@@ -558,6 +566,67 @@ static void test_port_label_is_static() {
   assert(memcmp(port.data(), oled_display::confirmed + 2 * 128, port.size()) == 0);
 }
 
+static void test_web_terminal_dot() {
+  constexpr unsigned web = 3 * 128 + 122, beat = 3 * 128 + 126;
+  reset(); settle();
+  // No browser: only the heartbeat's two bytes are sent, exactly as before.
+  auto writes = machine.transactions.size();
+  now = 1'000'000; settle();
+  assert(machine.transactions.size() == writes + 1);
+  assert((machine.transactions.back() == std::vector<uint8_t>{
+      0x78, 0x80, 0xb3, 0x80, 0x0e, 0x80, 0x17, 0x40, 0xc0, 0xc0}));
+  assert(oled_display::confirmed[web] == 0 && oled_display::confirmed[web + 1] == 0);
+
+  // Connected: both dots blink together, in one transaction per second.
+  oled_display::framebuffer[web] |= 0x01;  // A neighbouring pixel survives.
+  oled_display::confirmed[web] |= 0x01;
+  browser_connected = true;
+  for (uint64_t second = 2; second <= 5; ++second) {
+    writes = machine.transactions.size();
+    unsigned reads = browser_reads;
+    now = second * 1'000'000; settle();
+    // Read only on lit seconds: dark seconds clear both dots regardless.
+    assert(browser_reads == reads + (second & 1));
+    uint8_t dot = second & 1 ? 0xc0 : 0;
+    assert(machine.transactions.size() == writes + 1);
+    if (second == 2)  // Web dot already dark: only the heartbeat span is sent.
+      assert((machine.transactions.back() == std::vector<uint8_t>{
+          0x78, 0x80, 0xb3, 0x80, 0x0e, 0x80, 0x17, 0x40, 0, 0}));
+    else
+      assert((machine.transactions.back() == std::vector<uint8_t>{
+          0x78, 0x80, 0xb3, 0x80, 0x0a, 0x80, 0x17, 0x40,
+          static_cast<uint8_t>(dot | 0x01), dot, 0, 0, dot, dot}));
+    assert((oled_display::confirmed[web] & 0xc0) == dot);
+    assert((oled_display::confirmed[web + 1] & 0xc0) == dot);
+    assert((oled_display::confirmed[beat] & 0xc0) == dot);
+    assert(oled_display::confirmed[web] & 0x01);
+  }
+
+  // Idle passes between ticks do not read the browser state.
+  unsigned reads = browser_reads;
+  for (unsigned i = 0; i < 100; ++i) service_once();
+  assert(browser_reads == reads);
+
+  // Disconnect while lit: the next tick clears the web dot and the heartbeat.
+  now = 7'000'000; settle();
+  assert(oled_display::web_dot);
+  browser_connected = false;
+  now = 8'000'000; settle();
+  assert(!oled_display::web_dot && (oled_display::confirmed[web] & 0xc0) == 0);
+  writes = machine.transactions.size();
+  now = 9'000'000; settle();
+  assert((machine.transactions.back() == std::vector<uint8_t>{
+      0x78, 0x80, 0xb3, 0x80, 0x0e, 0x80, 0x17, 0x40, 0xc0, 0xc0}));
+  assert(machine.transactions.size() == writes + 1);
+  assert((oled_display::confirmed[web] & 0xc0) == 0);
+
+  // Paused: both dots freeze and nothing is sent.
+  browser_connected = true;
+  writes = machine.transactions.size();
+  now = 10'000'000; service_once(false); service_once(false);
+  assert(machine.transactions.size() == writes);
+}
+
 static void test_chaining_and_pause() {
   // Completed pages chain into the next page in the same service pass.
   reset(); settle();
@@ -684,10 +753,11 @@ int main() {
   test_uptime_format();
   test_port_label_is_static();
   test_heartbeat_bits();
+  test_web_terminal_dot();
   test_chaining_and_pause();
   test_device_failures();
   test_transport_failures();
   puts("PASS: SSD1315 128x32 PIO/DMA transport, merged page writes, same-pass chaining, "
        "cached IP, compile-time port label, minute-only uptime with days format, "
-       "bit-safe heartbeat, idle fast path, pause gating and failures");
+       "bit-safe heartbeat and web-terminal dot, idle fast path, pause gating and failures");
 }

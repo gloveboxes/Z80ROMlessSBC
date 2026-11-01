@@ -4,6 +4,7 @@
 #include "../common/io_service.h"
 #include "pico/stdlib.h"
 #include "z80sbc/ram_timer.h"
+#include "z80sbc/terminal.h"
 
 #include <cassert>
 #include <cstdio>
@@ -23,6 +24,9 @@ constexpr unsigned UPTIME_Y = 20;  // Pages 2-3.
 constexpr unsigned FIELD_ROWS = 10;  // Scale-2 glyphs are 10 pixels tall.
 // 2x2 dot in the bottom-right corner: rows 30-31 of page 3, below the uptime field.
 constexpr unsigned HEARTBEAT_COLUMN = WIDTH - 2;
+// A second 2x2 dot, two pixels to its left, blinks with it while a browser
+// owns the web terminal.
+constexpr unsigned WEB_DOT_COLUMN = HEARTBEAT_COLUMN - 4;
 constexpr uint8_t HEARTBEAT_BITS = 0xc0;
 // Reduced from the 0x7f reset level to slow burn-in of the static status layout.
 constexpr uint8_t CONTRAST = 0x40;
@@ -44,6 +48,7 @@ char cached_ip[16];
 bool ip_valid;
 uint32_t seen_address_generation;
 bool heartbeat;
+bool web_dot;
 uint32_t published_status;
 uint32_t last_published_status = UINT32_MAX;
 bool address_error;
@@ -166,6 +171,16 @@ void draw_port() {
            PORT_BITMAP.pixels + p * PORT_COLUMNS, PORT_COLUMNS);
 }
 
+// Sets or clears one 2x2 dot in rows 30-31 without touching other bits.
+void set_dot(unsigned column, bool on) {
+  for (unsigned x = column; x < column + 2; ++x) {
+    if (on)
+      framebuffer[3 * WIDTH + x] |= HEARTBEAT_BITS;
+    else
+      framebuffer[3 * WIDTH + x] &= static_cast<uint8_t>(~HEARTBEAT_BITS);
+  }
+}
+
 // Redraws only fields whose text changed; unchanged pages are not compared.
 void render(uint64_t now_us) {
   uint8_t changed_pages = valid_pages == ALL_PAGES ? 0 : ALL_PAGES;
@@ -214,16 +229,16 @@ void render(uint64_t now_us) {
     changed_pages |= 0x0c;
   }
   bool dot = (seconds & 1u) != 0;
-  if (dot != heartbeat) {
+  // One atomic load on lit ticks only; a connect or disconnect shows within
+  // two seconds.
+  bool web = dot && z80_terminal_browser_connected();
+  if (dot != heartbeat || web != web_dot) {
     heartbeat = dot;
+    web_dot = web;
     changed_pages |= 0x08;
   }
-  for (unsigned x = HEARTBEAT_COLUMN; x < HEARTBEAT_COLUMN + 2; ++x) {
-    if (heartbeat)
-      framebuffer[3 * WIDTH + x] |= HEARTBEAT_BITS;
-    else
-      framebuffer[3 * WIDTH + x] &= static_cast<uint8_t>(~HEARTBEAT_BITS);
-  }
+  set_dot(HEARTBEAT_COLUMN, heartbeat);
+  set_dot(WEB_DOT_COLUMN, web_dot);
   dirty_pages = 0;
   for (unsigned p = 0; p < PAGES; ++p)
     if ((changed_pages & (1u << p)) &&

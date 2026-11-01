@@ -859,7 +859,7 @@ schematic.texts.extend([
         uuid=uid("text:bank-select-note"),
     ),
     Text(
-        text="A2: external Stage 10 0.91in SSD1315 128x32 status OLED, no PCB footprint.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader order GND, VCC, SCK, SDA: not VCC first.\\nSDA = J2.2 / GP22; SCK (I2C SCL) = J2.3 / GP26.\\nVCC = J2.4 / 3V3; GND = J2.5 / GND.\\nI2C pull-ups to 3.3V only, never 5V.\\nDMA-fed PIO I2C on core 1; address 0x3C.\\nShows IP, port 8088, uptime, heartbeat.",
+        text="A2: external Stage 10 0.91in SSD1315 128x32 status OLED, no PCB footprint.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader order GND, VCC, SCK, SDA: not VCC first.\\nSDA = J2.2 / GP22; SCK (I2C SCL) = J2.3 / GP26.\\nVCC = J2.4 / 3V3; GND = J2.5 / GND.\\nI2C pull-ups to 3.3V only, never 5V.\\nDMA-fed PIO I2C on core 1; address 0x3C.\\nShows IP, port 8088, uptime, heartbeat, web dot.",
         position=pos(1016.0, 292.1, 0),
         effects=effects(1.27),
         uuid=uid("text:oled-note"),
