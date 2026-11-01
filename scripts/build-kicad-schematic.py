@@ -276,8 +276,17 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
     "DIODE": (
         "D", "1N5819", [pin(1, "K", "passive", "right"), pin(2, "A", "passive", "left")]
     ),
-    "SUPPLY": (
-        "J", "5V INPUT", [pin(1, "+5V", "power_out", "right"), pin(2, "GND", "power_out", "right")]
+    "USB_C_POWER": (
+        "J",
+        "USB-C 5V POWER BREAKOUT",
+        [
+            pin("CC2", "CC2", "passive", "left"),
+            pin("D+", "D+", "passive", "left"),
+            pin("D-", "D-", "passive", "left"),
+            pin("CC1", "CC1", "passive", "left"),
+            pin("GND", "GND", "power_out", "right"),
+            pin("VBUS", "VBUS", "power_out", "right"),
+        ],
     ),
     "EXPANSION": (
         "J",
@@ -374,7 +383,7 @@ def build_symbol_geometry(symbol_name: str, *, embedded: bool) -> SymbolGeometry
         pinNames=True,
         pinNamesOffset=1.0,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED"),
+        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED", "USB_C_POWER"),
         properties=[
             property_value("Reference", reference_prefix, 0, -half_height - 5.08),
             property_value("Value", default_value, 0, half_height + 5.08),
@@ -464,7 +473,7 @@ def add_component(
         position=pos(x, y, 0),
         unit=1,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED"),
+        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED", "USB_C_POWER"),
         uuid=symbol_uuid,
         properties=instance_properties(
             reference, value,
@@ -639,9 +648,9 @@ pico_nets = {
 add_component("A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets, footprint="Module:RaspberryPi_Pico_Common_THT")
 
 add_component(
-    "J1", "SUPPLY", "REGULATED 5V INPUT", 50.8, 50.8,
-    {1: "+5V", 2: "GND"},
-    footprint="TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm",
+    "J1", "USB_C_POWER", "USB-C 5V POWER BREAKOUT", 50.8, 50.8,
+    {"CC2": None, "D+": None, "D-": None, "CC1": None, "GND": "GND", "VBUS": "+5V"},
+    description="External TYPE-C USB to pin DIP female adapter module; PCB body 21.6 x 12.7 mm from product image; 6-pin single-row header at user-confirmed standard breadboard pitch 2.54 mm, first-to-last hole-centre span 12.7 mm; photographed pad order CC2, D+, D-, CC1, GND, VBUS; VBUS supplies +5V from a regulated 5V USB source, not an onboard regulator or PD trigger; unused breakout pads NC; verify CC1/CC2 sink resistors before USB-C use; header offset/drill diameter, mounting-hole geometry, connector overhang and assembled height unverified, no PCB footprint",
 )
 add_component(
     "J2", "EXPANSION", "PICO GPIO EXPANSION", 1016.0, 152.4,
@@ -835,6 +844,12 @@ for text, x in (("MEMORY BOARD", 152.4), ("CORE BOARD", 508.0), ("PERIPHERAL BOA
     ))
 schematic.texts.extend([
     Text(
+        text="J1: external USB-C 5V power breakout, not a regulator.\\nPCB body 21.6 x 12.7 mm; USB overhang not dimensioned.\\n6-pin header: 2.54 mm pitch; hole-centre span 12.7 mm.\\nPhoto pad order: CC2, D+, D-, CC1, GND, VBUS.\\nVBUS -> +5V; GND -> common GND; other pads NC.\\nUse regulated 5V USB source; verify CC1/CC2 sink resistors.\\nKeep D1 isolation to Pico VSYS; never join Pico VBUS.\\nHeader offset/drill, mounting holes, height unverified.",
+        position=pos(127.0, 76.2, 0),
+        effects=effects(1.27),
+        uuid=uid("text:usb-c-power-note"),
+    ),
+    Text(
         text="Z80 is the sole SRAM address/write master. Pico injects instructions with SRAM reads inhibited. RESET_N directly joins Pico and Z80 at 3.3V.",
         position=pos(508.0, 38.1, 0),
         effects=effects(1.27),
@@ -868,8 +883,9 @@ schematic.texts.extend([
 
 
 required_endpoints = {
+    "+5V": {"J1.VBUS", "D1.2"},
     "VSYS": {"D1.1", "A1.39"},
-    "GND": {"A1.38", "J2.5", "A2.GND", "R24.2"},
+    "GND": {"J1.GND", "A1.38", "J2.5", "A2.GND", "R24.2"},
     "+3V3": {"A1.36", "J2.4", "A2.VCC"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},

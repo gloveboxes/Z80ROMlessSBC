@@ -32,6 +32,7 @@ FIXED_ENDPOINT_NETS = {
     "U7.17": "A4", "U7.19": "GND", "U7.20": "+3V3",
     "U9.1": "+5V", "U9.10": "GND", "U9.19": "DATA_UP_OE_N", "U9.20": "+5V",
     "U10.1": "GND", "U10.10": "GND", "U10.19": "DATA_DOWN_OE_N", "U10.20": "+3V3",
+    "J1.VBUS": "+5V", "J1.GND": "GND",
     "D1.1": "VSYS", "D1.2": "+5V",
     "A1.38": "GND", "A1.39": "VSYS",
     "A1.11": "PICO_GP8", "A1.29": "PICO_GP22", "A1.31": "PICO_GP26",
@@ -41,6 +42,7 @@ FIXED_ENDPOINT_NETS = {
     "A2.SCK": "PICO_GP26", "A2.SDA": "PICO_GP22",
 }
 DOCUMENTED_NO_CONNECTS = {
+    "J1.CC2", "J1.D+", "J1.D-", "J1.CC1",
     "U1.18", "U1.28", "U2.1", "U3.11", "U4.5",
     "A1.30", "A1.35", "A1.37", "A1.40",
 }
@@ -72,7 +74,7 @@ PART_SENTENCE_RE = re.compile(r"\b(R\d+)\b.*?\bconnects\s+(.+?)\s+to\s+(.+?)\.?$
 def endpoint_for(label: str) -> str | None:
     text = label.replace("<br/>", " ")
     if text == "External regulated +5 V":
-        return "J1.1"
+        return "J1.VBUS"
     if text.startswith("1N5819"):
         return "D1"
     if text.startswith("Q1 base"):

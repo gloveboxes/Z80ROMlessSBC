@@ -16,6 +16,37 @@ Wire supply contacts from the [fixed-pin table](../hardware/pin-mapping.md#power
 External +5 V goes to the 1N5819 anode; its banded cathode goes to VSYS header
 39. Leave VBUS header 40 open. Do not bypass the diode.
 
+### USB-C supply-entry module J1
+
+The selected TYPE-C USB-to-pin female adapter is a **USB-C breakout, not a
+5 V regulator**. Its product image specifies a **21.6 x 12.7 mm PCB body**.
+The six header holes use confirmed standard breadboard **2.54 mm pitch**,
+with **12.7 mm between the first and last hole centres** (five gaps).
+Header offset from the board edges/drill diameter, the two larger mounting
+holes' spacing/diameters, USB connector overhang and assembled height remain
+unspecified; measure those before assigning a PCB footprint. The schematic
+records the module and dimensions without changing the deferred PCB.
+
+With the USB connector at the top, as in the product photo, the bottom
+pads read **CC2, D+, D-, CC1, GND, VBUS** from left to right. Wire by these
+printed labels, not assumed pin numbers:
+
+| J1 pad | Project connection |
+| --- | --- |
+| VBUS | External +5 V supply entry and D1 anode |
+| GND | Common circuit GND |
+| CC2, D+, D-, CC1 | Leave breakout pads externally unconnected |
+
+Use a regulated **5 V** USB source. The breakout does not regulate the rail,
+negotiate a higher USB Power Delivery voltage, or provide adjustable current
+limiting. Verify that CC1 and CC2 each have the required 5.1 kOhm sink
+resistor to GND on the purchased module for USB-C-to-USB-C power; the photo
+alone is not an electrical specification. Do not count those onboard
+resistors as project startup pulls. Use a current-limited bench source or
+an external adjustable current limiter for the Phase 0 test below.
+J1 VBUS is **not** Pico VBUS: retain D1 to Pico VSYS and leave Pico header
+40 open. The existing external-power-before-Pico-USB sequence still applies.
+
 ## Passive-Component Installation
 
 <div data-checklist="phase-0-passives" data-checklist-label="Phase 0 installation" markdown="1">

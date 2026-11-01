@@ -94,6 +94,7 @@ No 4.7 kOhm or 47 kOhm reset-transistor parts remain.
 | <input type="checkbox" data-checklist-id="breadboards" aria-label="Three BB830 breadboards available"> | 3 | BB830 breadboards | 830-point boards |
 | <input type="checkbox" data-checklist-id="wire" aria-label="22 AWG solid-core hookup wire available"> | As needed | Hookup wire | Short 22 AWG solid-core connections |
 | <input type="checkbox" data-checklist-id="power-supply" aria-label="Regulated 5 V current-limited supply available"> | 1 | Regulated +5 V supply | Rated at least 1 A, with adjustable current limiting |
+| <input type="checkbox" data-checklist-id="j1-usb-c" aria-label="USB-C 5 V power breakout module available"> | 1 | J1, TYPE-C USB-to-pin female breakout module | 21.6 x 12.7 mm PCB body; 6-pin single-row 2.54 mm header, 12.7 mm hole-centre span; pads CC2, D+, D-, CC1, GND, VBUS; [5 V supply-entry wiring](../implementation/phase-0-power.md#usb-c-supply-entry-module-j1); not a regulator |
 | <input type="checkbox" data-checklist-id="usb-cable" aria-label="USB data cable available"> | 1 | USB data cable | Pico programming and diagnostics; not a charge-only cable |
 | <input type="checkbox" data-checklist-id="supply-disconnect" aria-label="Emergency supply disconnect available"> | 1 | Emergency supply disconnect | Accessible means to disconnect external power |
 | <input type="checkbox" data-checklist-id="multimeter" aria-label="Multimeter available"> | 1 | Multimeter | Continuity, resistance and rail-voltage checks |

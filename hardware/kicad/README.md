@@ -7,6 +7,22 @@ Their migration is deferred. Do not manufacture them for the new schematic
 or use the new firmware on the old board. No PLD programmer is needed for the
 new breadboard build.
 
+The schematic's **J1** is the selected TYPE-C USB-to-pin female breakout
+module. Its PCB body is **21.6 x 12.7 mm**, as dimensioned in the product
+image; the USB connector protrusion is not included in that measurement.
+With the connector at the top as photographed, the bottom pads read
+**CC2, D+, D-, CC1, GND, VBUS** from left to right. Symbol pin identifiers
+use these printed labels. The six header holes have confirmed standard
+breadboard **2.54 mm pitch**, giving a **12.7 mm first-to-last hole-centre
+span**. VBUS feeds +5 V, GND joins common GND, and the
+four other breakout pads are marked unconnected. This is a power adapter,
+not a regulator or USB Power Delivery voltage trigger; use a regulated
+5 V USB source and verify the module's CC1/CC2 sink resistors before use.
+The existing 1N5819 path to Pico VSYS remains; never join this VBUS to
+Pico VBUS. J1 is external and has no PCB footprint because header offset/drill diameter,
+mounting-hole positions/diameters, connector overhang and assembled height
+are not specified by the image. PCB/routing/fabrication files remain unchanged.
+
 The current schematic includes **J2**, a 1x5, 2.54 mm through-hole peripheral
 expansion header: pin 1 GP8, pin 2 GP22, pin 3 GP26/ADC0, pin 4 Pico 3.3 V
 output, pin 5 GND. Its footprint is assigned for future PCB migration, but

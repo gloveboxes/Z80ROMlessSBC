@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-11-01T19:44:07")
+		(date "2026-11-02T09:42:08")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -752,52 +752,6 @@
 				(tstamps "/")
 			)
 			(tstamps "81d30684-ca39-5cf3-8329-396f1296431a")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "2")
-						)
-						(pin
-							(num "1")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "J1")
-			(value "REGULATED 5V INPUT")
-			(footprint "TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm")
-			(description "Z80ROMlessSBC REGULATED 5V INPUT")
-			(fields
-				(field
-					(name "Footprint") "TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC REGULATED 5V INPUT")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "SUPPLY")
-				(description "Z80ROMlessSBC project symbol: 5V INPUT")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "0d49d022-f741-5a3c-9698-cb92a98d26ea")
 			(units
 				(unit
 					(name "A")
@@ -3811,37 +3765,6 @@
 		)
 		(libpart
 			(lib "Z80SBC")
-			(part "SUPPLY")
-			(description "Z80ROMlessSBC project symbol: 5V INPUT")
-			(fields
-				(field
-					(name "Reference") "J")
-				(field
-					(name "Value") "5V INPUT")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: 5V INPUT")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "+5V")
-					(type "power_out")
-				)
-				(pin
-					(num "2")
-					(name "GND")
-					(type "power_out")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
 			(part "TESTPOINT")
 			(description "Z80ROMlessSBC project symbol: M1# TEST")
 			(fields
@@ -3863,6 +3786,57 @@
 					(num "1")
 					(name "TP")
 					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "USB_C_POWER")
+			(description "Z80ROMlessSBC project symbol: USB-C 5V POWER BREAKOUT")
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "USB-C 5V POWER BREAKOUT")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: USB-C 5V POWER BREAKOUT")
+			)
+			(pins
+				(pin
+					(num "CC1")
+					(name "CC1")
+					(type "passive")
+				)
+				(pin
+					(num "CC2")
+					(name "CC2")
+					(type "passive")
+				)
+				(pin
+					(num "D+")
+					(name "D+")
+					(type "passive")
+				)
+				(pin
+					(num "D-")
+					(name "D-")
+					(type "passive")
+				)
+				(pin
+					(num "GND")
+					(name "GND")
+					(type "power_out")
+				)
+				(pin
+					(num "VBUS")
+					(name "VBUS")
+					(type "power_out")
 				)
 			)
 		)
@@ -4223,12 +4197,6 @@
 				(pin "2")
 				(pinfunction "A_2")
 				(pintype "passive")
-			)
-			(node
-				(ref "J1")
-				(pin "1")
-				(pinfunction "+5V_1")
-				(pintype "power_out")
 			)
 			(node
 				(ref "RN1")
@@ -5170,12 +5138,6 @@
 				(pin "2")
 				(pinfunction "-_2")
 				(pintype "passive")
-			)
-			(node
-				(ref "J1")
-				(pin "2")
-				(pinfunction "GND_2")
-				(pintype "power_out")
 			)
 			(node
 				(ref "J2")
@@ -6222,7 +6184,7 @@
 			)
 		)
 		(net
-			(code "90")
+			(code "94")
 			(name "unconnected-(U1-HALT#-Pad18)")
 			(class "Default")
 			(node
@@ -6233,7 +6195,7 @@
 			)
 		)
 		(net
-			(code "91")
+			(code "95")
 			(name "unconnected-(U1-RFSH#-Pad28)")
 			(class "Default")
 			(node
@@ -6244,7 +6206,7 @@
 			)
 		)
 		(net
-			(code "92")
+			(code "96")
 			(name "unconnected-(U2-NC-Pad1)")
 			(class "Default")
 			(node
@@ -6255,7 +6217,7 @@
 			)
 		)
 		(net
-			(code "93")
+			(code "97")
 			(name "unconnected-(U3-4Y-Pad11)")
 			(class "Default")
 			(node
@@ -6266,7 +6228,7 @@
 			)
 		)
 		(net
-			(code "94")
+			(code "98")
 			(name "unconnected-(U4-2Y3-Pad5)")
 			(class "Default")
 			(node
