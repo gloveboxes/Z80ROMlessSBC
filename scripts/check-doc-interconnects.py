@@ -13,9 +13,9 @@ MANIFEST_PATH = REPO_ROOT / "hardware/kicad/reports/net_manifest.json"
 DOC_PATHS = [
     REPO_ROOT / "docs/docs/en/hardware/pin-mapping.md",
     REPO_ROOT / "docs/docs/en/hardware/address-interface.md",
-    REPO_ROOT / "docs/docs/en/hardware/banked-memory-wiring.md",
     REPO_ROOT / "docs/docs/en/hardware/output-buffer.md",
     REPO_ROOT / "docs/docs/en/hardware/bus-isolation.md",
+    REPO_ROOT / "docs/docs/en/implementation/phase-4-address-bus.md",
 ]
 AGGREGATE_HEADINGS = {"Memory Control", "Power and Fixed Pins"}
 FIXED_ENDPOINT_NETS = {
@@ -37,8 +37,8 @@ FIXED_ENDPOINT_NETS = {
     "A1.11": "PICO_GP8", "A1.29": "PICO_GP22", "A1.31": "PICO_GP26",
     "J2.1": "PICO_GP8", "J2.2": "PICO_GP22", "J2.3": "PICO_GP26",
     "J2.4": "+3V3", "J2.5": "GND",
-    "A2.+": "+3V3", "A2.-": "GND",
-    "A2.C": "PICO_GP26", "A2.D": "PICO_GP22",
+    "A2.VCC": "+3V3", "A2.GND": "GND",
+    "A2.SCK": "PICO_GP26", "A2.SDA": "PICO_GP22",
 }
 DOCUMENTED_NO_CONNECTS = {
     "U1.18", "U1.28", "U2.1", "U3.11", "U4.5",
@@ -61,6 +61,12 @@ PICO_HEADER_BY_GP = {
 NODE_RE = re.compile(r'([A-Za-z][A-Za-z0-9_]*)\["(.*?)"\]')
 EDGE_RE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*(?:-->|<-->)\s*([A-Za-z][A-Za-z0-9_]*)\s*$")
 HEADING_RE = re.compile(r"^#{2,3}\s+(.+?)\s*$")
+CHECKLIST_ID_RE = re.compile(r'data-checklist-id="([^"]+)"')
+REFERENCE_RE = re.compile(r"\b([ADJRU]\d+)\b")
+# Three-column checklist rows state a wire as "A connects to B" and a
+# two-terminal part as "... R24 ... connects A to B".
+WIRE_SENTENCE_RE = re.compile(r"^(.+?)\s+connects to\s+(.+?)\.?$")
+PART_SENTENCE_RE = re.compile(r"\b(R\d+)\b.*?\bconnects\s+(.+?)\s+to\s+(.+?)\.?$")
 
 
 def endpoint_for(label: str) -> str | None:
@@ -76,7 +82,10 @@ def endpoint_for(label: str) -> str | None:
 
     reference = next((ref for name, ref in DEVICE_REFS if name in text), None)
     if reference is None:
-        return None
+        reference_match = REFERENCE_RE.search(text)
+        if reference_match is None:
+            return None
+        reference = reference_match.group(1)
 
     header_match = re.search(r"header pin\s+(\d+)", text)
     if reference == "A1" and header_match:
@@ -93,6 +102,14 @@ def endpoint_for(label: str) -> str | None:
     if pin_match:
         return f"{reference}.{pin_match.group(1)}"
     return None
+
+
+def net_for(label: str, endpoint_net: dict[str, str]) -> str | None:
+    """Resolves a documented endpoint, or a ground reference, to its net."""
+    if re.fullmatch(r"(common\s+)?GND", label.strip()):
+        return "GND"
+    endpoint = endpoint_for(label)
+    return endpoint_net.get(endpoint) if endpoint else None
 
 
 def mermaid_blocks(path: Path) -> list[tuple[str, int, str]]:
@@ -130,6 +147,7 @@ def main() -> None:
     checked_edges = 0
     checked_blocks = 0
     checked_table_edges = 0
+    checked_part_rows = 0
     aggregate_blocks: list[str] = []
 
     for endpoint, expected_net in FIXED_ENDPOINT_NETS.items():
@@ -146,20 +164,50 @@ def main() -> None:
 
     for path in DOC_PATHS:
         for line, text in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if 'data-checklist-id="wire-' not in text:
+            id_match = CHECKLIST_ID_RE.search(text)
+            if id_match is None or not text.lstrip().startswith("|"):
                 continue
             cells = [cell.strip() for cell in text.split("|")[1:-1]]
             location = f"{path.relative_to(REPO_ROOT)}:{line} (wiring table)"
-            if len(cells) != 4:
-                errors.append(f"{location}: expected four wiring-table columns")
+            is_wire = id_match.group(1).startswith("wire-")
+            part_match = (PART_SENTENCE_RE.search(cells[2])
+                          if not is_wire and len(cells) == 3 else None)
+            if part_match:
+                part, first, second = part_match.groups()
+                try:
+                    expected = {net_for(first, endpoint_net), net_for(second, endpoint_net)}
+                except ValueError as error:
+                    errors.append(f"{location}: {error}")
+                    continue
+                actual = {endpoint_net.get(f"{part}.1"), endpoint_net.get(f"{part}.2")}
+                if None in expected or None in actual:
+                    errors.append(f"{location}: unresolved part or endpoint: {cells[2]!r}")
+                elif expected != actual:
+                    errors.append(f"{location}: {part} joins {sorted(actual)}, "
+                                  f"documented {sorted(expected)}")
+                else:
+                    checked_part_rows += 1
+                continue
+            if not is_wire:
+                continue
+            if len(cells) == 3:
+                sentence = WIRE_SENTENCE_RE.match(cells[2])
+                if sentence is None:
+                    errors.append(f"{location}: expected 'A connects to B'")
+                    continue
+                labels = sentence.groups()
+            elif len(cells) == 4:
+                labels = tuple(cells[2:])
+            else:
+                errors.append(f"{location}: expected three or four wiring-table columns")
                 continue
             try:
-                left, right = (endpoint_for(label) for label in cells[2:])
+                left, right = (endpoint_for(label) for label in labels)
             except ValueError as error:
                 errors.append(f"{location}: {error}")
                 continue
             if left not in endpoint_net or right not in endpoint_net:
-                errors.append(f"{location}: unresolved or absent endpoint: {cells[2:]}")
+                errors.append(f"{location}: unresolved or absent endpoint: {list(labels)}")
             elif endpoint_net[left] != endpoint_net[right]:
                 errors.append(f"{location}: {left} and {right} do not share a net")
             else:
@@ -236,6 +284,7 @@ def main() -> None:
         "match KiCad net membership"
     )
     print(f"PASS: {checked_table_edges} wiring-table edges match KiCad net membership")
+    print(f"PASS: {checked_part_rows} documented series parts match KiCad net membership")
     print(
         f"PASS: {len(FIXED_ENDPOINT_NETS)} fixed endpoints and "
         f"{len(DOCUMENTED_NO_CONNECTS)} no-connects match KiCad"

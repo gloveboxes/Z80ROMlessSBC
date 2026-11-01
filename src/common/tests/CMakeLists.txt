@@ -1,31 +1,31 @@
 cmake_minimum_required(VERSION 3.20)
 project(z80_control_tests C CXX)
 enable_testing()
-find_program(MATRIX_PIOASM pioasm HINTS
+find_program(PIOASM pioasm HINTS
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../build/pioasm-install/pioasm")
-if(MATRIX_PIOASM)
-  set(matrix_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/matrix")
-  file(MAKE_DIRECTORY "${matrix_generated_dir}")
+if(PIOASM)
+  set(display_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/display")
+  file(MAKE_DIRECTORY "${display_generated_dir}")
   add_custom_command(
-    OUTPUT "${matrix_generated_dir}/matrix_i2c.pio.h"
-    COMMAND "${MATRIX_PIOASM}" -o c-sdk -v 1
-      "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/matrix_i2c.pio"
-      "${matrix_generated_dir}/matrix_i2c.pio.h"
-    DEPENDS ../../stage10_websocket_terminal/matrix_i2c.pio
+    OUTPUT "${display_generated_dir}/display_i2c.pio.h"
+    COMMAND "${PIOASM}" -o c-sdk -v 1
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../stage10_websocket_terminal/display_i2c.pio"
+      "${display_generated_dir}/display_i2c.pio.h"
+    DEPENDS ../../stage10_websocket_terminal/display_i2c.pio
     VERBATIM)
-  add_executable(matrix_display_test matrix_display_test.cpp
-    "${matrix_generated_dir}/matrix_i2c.pio.h")
-  target_include_directories(matrix_display_test PRIVATE
-    matrix_fakes "${matrix_generated_dir}" fakes ../include)
-  target_compile_features(matrix_display_test PRIVATE cxx_std_17)
-  target_compile_options(matrix_display_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
-  add_test(NAME matrix_pio_HT16K33 COMMAND matrix_display_test)
-  set_tests_properties(matrix_pio_HT16K33 PROPERTIES TIMEOUT 5)
+  add_executable(oled_display_test oled_display_test.cpp
+    "${display_generated_dir}/display_i2c.pio.h")
+  target_include_directories(oled_display_test PRIVATE
+    display_fakes "${display_generated_dir}" fakes ../include)
+  target_compile_features(oled_display_test PRIVATE cxx_std_17)
+  target_compile_options(oled_display_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+  add_test(NAME oled_pio_SSD1315 COMMAND oled_display_test)
+  set_tests_properties(oled_pio_SSD1315 PROPERTIES TIMEOUT 5)
   set(banked_pio_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/banked-pio")
   file(MAKE_DIRECTORY "${banked_pio_generated_dir}")
   add_custom_command(
     OUTPUT "${banked_pio_generated_dir}/banked_io.pio.h"
-    COMMAND "${MATRIX_PIOASM}" -o c-sdk
+    COMMAND "${PIOASM}" -o c-sdk
       "${CMAKE_CURRENT_SOURCE_DIR}/../banked_io.pio"
       "${banked_pio_generated_dir}/banked_io.pio.h"
     DEPENDS ../banked_io.pio VERBATIM)
@@ -53,7 +53,7 @@ if(MATRIX_PIOASM)
     --program "${banked_pio_generated_dir}/banked_io.pio.h")
   set_tests_properties(banked_pio_instruction_cycles PROPERTIES TIMEOUT 120)
 else()
-  message(STATUS "Set MATRIX_PIOASM to enable the assembled matrix PIO regression")
+  message(STATUS "Set PIOASM to enable the assembled PIO regressions")
 endif()
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
   ../http_io.c ../http_stream.c

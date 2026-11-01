@@ -26,7 +26,7 @@ bank selection.
 ### PIO acceleration
 
 Phases 9 and 10 complete every Z80 I/O cycle in PIO with a 120 MHz
-supervisor clock. A PIO0 state machine (4 words, beside the matrix display)
+supervisor clock. A PIO0 state machine (4 words, beside the status OLED's I2C)
 generates the 20 MHz Z80 clock. PIO1 is claimed exclusively for the I/O engine
 (29 words) and holds that clock through PIO0 IRQ 1 with the RP2350's
 `IRQ PREV`. PIO2 is left to the CYW43 SPI driver, which takes the highest free

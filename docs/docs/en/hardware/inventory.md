@@ -33,6 +33,21 @@ Do not interchange AHCT, AHC, HCT, HC, or LVC parts. Pico headers must be
 soldered, not merely pushed through unsoldered holes. U5/U6/U8 are not fitted;
 reference gaps retain continuity with existing project labels.
 
+## Status Display Module
+
+The Phase 10 status display is an external module, not one of the eight active
+packages. It connects to J2's 3.3 V I2C pins.
+
+| Done | Qty | Reference | Part | Size / connector | Role |
+| --- | ---: | --- | --- | --- | --- |
+| <input type="checkbox" data-checklist-id="a2-oled" aria-label="0.91-inch SSD1315 OLED module available"> | 1 | A2 | 0.91-inch 128x32 I2C OLED module, SSD1315 controller, white or blue | 38.00 x 12.00 mm board; 30.00 mm panel; 22.38 x 5.58 mm active area; 4-pin 2.54 mm header | [Status display](../implementation/phase-10-websocket.md#ssd1315-status-oled): IP address, uptime and heartbeat |
+
+The header order is **GND, VCC, SCK, SDA**, with GND first. Many similar
+modules put VCC first, so wire by the printed labels. The module prints `SCK`
+for the I2C clock (SCL); some product drawings label the same pin `SCL`. The
+module carries its own 3.3 V regulator and 4.7 kOhm I2C pull-ups and answers
+at I2C address `0x3C`. Supply it from the Pico's 3.3 V on J2.
+
 ## Passive Components
 
 | Done | Qty | Item | Purpose |
@@ -158,6 +173,18 @@ sockets, headers, and USB cable. The subtotals exclude
 bench equipment, temporary test parts, spares, optional
 J2, shipping, tax, and tariffs.
 
+### Phase 10 status display
+
+| Qty | Component / use | Supplier / ordering option | Unit (USD) | Line total (USD) |
+| ---: | --- | --- | ---: | ---: |
+| 1 | A2 0.91-inch 128x32 I2C OLED module, SSD1315, white or blue, 38 x 12 mm | AliExpress (HNX DIY); AU$4.54 | ~$3.19 | ~$3.19 |
+
+The AU$4.54 single-unit price was supplied by the project owner and could not
+be independently checked; it converts at the same 24 October 2026 rate as the
+other AUD prices above. The status display is listed separately from the base
+subtotals: adding it brings the base build to **approximately $88.34 USD**, or
+**approximately $91.60 USD** with the full Z80 two-pack.
+
 ## PCB Status
 
 The revised schematic also includes J2, an optional 1x5, 2.54 mm expansion
@@ -165,6 +192,11 @@ header for GP8, GP22, GP26, 3.3 V, and GND. Reserve one five-pin header for
 the future PCB; it adds no active packages and is not required for the
 Phase 0-10 breadboard build. No peripheral pull-ups or LED resistors are
 included. See the [expansion pin map](pin-mapping.md#j2-peripheral-expansion).
+
+The [Phase 10 SSD1315 status OLED](../implementation/phase-10-websocket.md#ssd1315-status-oled)
+is schematic A2, an external module on J2's 3.3 V I2C connections. It has no
+PCB footprint and is not included in the core package count; see the
+[status display module](#status-display-module) inventory and pricing.
 
 The existing PCB BOM, routing, and fabrication package are for the previous
 design and **must not be used to manufacture this circuit**. PCB updates are

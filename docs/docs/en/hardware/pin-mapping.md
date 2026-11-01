@@ -26,8 +26,8 @@ are not 5 V-tolerant pads. Do not rely on GP0-GP25 FT tolerance during power-off
 | GP19 | 25 | A1 input | U7 pin 7 | Input |
 | GP20 | 26 | A2 input | U7 pin 5 | Input |
 | GP21 | 27 | A4 input | U7 pin 3 | Input |
-| GP22 | 29 | Expansion GPIO / Phase 10 matrix SDA | J2 pin 2 | Unconfigured until matrix service |
-| GP26 | 31 | Expansion GPIO / ADC0 / Phase 10 matrix SCL | J2 pin 3 | Unconfigured until matrix service |
+| GP22 | 29 | Expansion GPIO / Phase 10 OLED SDA | J2 pin 2 | Unconfigured until OLED service |
+| GP26 | 31 | Expansion GPIO / ADC0 / Phase 10 OLED SCL | J2 pin 3 | Unconfigured until OLED service |
 | GP27 | 32 | RD# input | U7 pin 14 | Input |
 | GP28 | 34 | WR# input | U7 pin 12 | Input |
 
@@ -47,8 +47,8 @@ future PCB migration. The existing PCB does not yet include this header.
 | J2 pin | Net | Pico physical header pin | Use |
 | ---: | --- | ---: | --- |
 | 1 | `PICO_GP8` | 11 | SRAM bank-select output; reserved by supervisor |
-| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Phase 10 matrix SDA |
-| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Phase 10 matrix SCL |
+| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Phase 10 OLED SDA |
+| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Phase 10 OLED SCL |
 | 4 | `+3V3` | 36 | Pico 3.3 V output; not an external supply input |
 | 5 | `GND` | 3,8,13,18,23,28,33,38 | Common ground |
 
@@ -62,7 +62,8 @@ current-limiting resistor for each LED. External I2C pull-ups must go to
 remaining current budget with Wi-Fi, the LVC devices, and existing pulls;
 do not back-feed pin 4 or assume a dedicated peripheral power allowance.
 
-Matrix wiring is documented in [Phase 10](../implementation/phase-10-websocket.md#ht16k33-8x8-matrix);
+[SSD1315 status OLED](../implementation/phase-10-websocket.md#ssd1315-status-oled)
+wiring is documented in Phase 10 and requires a verified 3.3 V-compatible module.
 GP8 bank-select wiring is documented in [Phase 4](../implementation/phase-4-address-bus.md#sram-bank-select).
 GP3 is RESET#, not a fourth spare pin. As defined in the
 [RP2350 GPIO function table](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf),

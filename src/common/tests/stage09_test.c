@@ -103,9 +103,9 @@ void z80_web_terminal_set_reboot_status(z80_web_reboot_status_t value) {
 static unsigned terminal_network_services;
 static unsigned setup_requests;
 static bool setup_reboot_request;
-static unsigned matrix_status_requests;
-static unsigned matrix_services;
-static bool matrix_updates_allowed;
+static unsigned oled_services;
+static unsigned oled_status_requests;
+static bool oled_updates_allowed;
 static const char *network_address = "";
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   int length = snprintf(address, capacity, "%s", network_address);
@@ -140,15 +140,15 @@ void z80_network_core1_service(void) {
   assert(fake_core == 1 && disk_services && io_services);
   ++network_services;
 }
-void z80_matrix_print_status(void) {
-  assert(fake_core == 0);
-  ++matrix_status_requests;
-  firmware_printf("[matrix] test status\n");
-}
-void z80_matrix_core1_service(bool updates_allowed) {
+void z80_oled_core1_service(bool updates_allowed) {
   assert(fake_core == 1 && disk_services && io_services);
-  ++matrix_services;
-  matrix_updates_allowed = updates_allowed;
+  ++oled_services;
+  oled_updates_allowed = updates_allowed;
+}
+void z80_oled_print_status(void) {
+  assert(fake_core == 0);
+  ++oled_status_requests;
+  firmware_printf("[oled] test status\n");
 }
 static bool web_rx_active = true;
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
@@ -457,9 +457,8 @@ static void reset_fixture(void) {
   setup_requests = 0;
   setup_reboot_request = false;
   config_reboot_after_stop = config_reboot_ready = config_reboot_queue_full = false;
-  matrix_status_requests = 0;
-  matrix_services = 0;
-  matrix_updates_allowed = false;
+  oled_services = oled_status_requests = 0;
+  oled_updates_allowed = false;
   network_address = "";
 #endif
 }
@@ -740,10 +739,10 @@ static void test_browser_usb_routing(void) {
   service_usb();
   assert(output_length == old_length);
   assert(z80_terminal_supply(&value, 1) == 1 && value == 'B');
-  assert(matrix_status_requests == 0);
+  assert(oled_status_requests == 0);
   command('s');
-  assert(matrix_status_requests == 1);
-  assert(strstr(output, "[matrix] test status"));
+  assert(oled_status_requests == 1);
+  assert(strstr(output, "[oled] test status"));
   assert(strstr(output, "browser=1"));
   assert(strstr(output, "ip=unavailable"));
   assert(strstr(output, "[network] Terminal:") == NULL);
@@ -1017,11 +1016,11 @@ static void test_stop_and_failure(void) {
 }
 
 #ifdef Z80_STAGE10_NETWORK
-static void test_matrix_running_gate(void) {
+static void test_oled_running_gate(void) {
   reset_fixture();
   fake_core = 1;
   core1_service();
-  assert(!matrix_services && !network_services);
+  assert(!oled_services && !network_services);
   workers_ready = 1;
   const uint32_t states[] = {
       0, CPU_RUNNING, CPU_RUNNING | CPU_STOPPING, CPU_STOPPING,
@@ -1030,18 +1029,18 @@ static void test_matrix_running_gate(void) {
   for (unsigned i = 0; i < sizeof(states) / sizeof(states[0]); ++i) {
     cpu_state = states[i];
     core1_service();
-    assert(matrix_services == i + 1 && network_services == i + 1);
-    assert(matrix_updates_allowed == (states[i] == CPU_RUNNING));
+    assert(oled_services == i + 1 && network_services == i + 1);
+    assert(oled_updates_allowed == (states[i] == CPU_RUNNING));
   }
   unsigned polls = network_services;
-  unsigned display_calls = matrix_services;
+  unsigned display_calls = oled_services;
   flash_pause_request = 1;
   core1_service();
-  assert(network_services == polls && matrix_services == display_calls + 1);
-  assert(!matrix_updates_allowed && terminal_network_services == 1);
+  assert(network_services == polls && oled_services == display_calls + 1);
+  assert(!oled_updates_allowed && terminal_network_services == 1);
   core1_service();
-  assert(network_services == polls && matrix_services == display_calls + 2);
-  assert(!matrix_updates_allowed && terminal_network_services == 2);
+  assert(network_services == polls && oled_services == display_calls + 2);
+  assert(!oled_updates_allowed && terminal_network_services == 2);
   fake_core = 0;
 }
 
@@ -1507,7 +1506,7 @@ static void test_http_port_dispatch(void) {
 int main(void) {
   test_http_port_dispatch();
 #ifdef Z80_STAGE10_NETWORK
-  test_matrix_running_gate();
+  test_oled_running_gate();
   test_config_orderly_reboot();
   test_web_orderly_reboot();
 #endif

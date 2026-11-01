@@ -84,13 +84,13 @@ static void test_allocation(void) {
   system_hz = 144000000;
   assert(!rearm() && !allocated);
   system_hz = 120000000;
-  blocks[0].space = false; /* no room beside the matrix program */
+  blocks[0].space = false; /* no room beside the OLED I2C program */
   assert(!rearm() && !allocated);
   blocks[0].space = true;
   for (uint sm = 0; sm < 4; ++sm) blocks[0].claimed[sm] = true;
   assert(!rearm() && !allocated);
   for (uint sm = 0; sm < 3; ++sm) blocks[0].claimed[sm] = false;
-  /* PIO0 SM 3 stays claimed: the matrix display shares PIO0. */
+  /* PIO0 SM 3 stays claimed: the status OLED's I2C shares PIO0. */
   blocks[1].claimed[2] = true; /* PIO1 must not be shared */
   assert(!rearm() && !allocated);
   blocks[1].claimed[2] = false;

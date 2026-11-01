@@ -16,6 +16,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "cpm"))
 import build_images
 
 
+# A transient that always exits through warm boot: print "WARM" with BDOS 9,
+# then JP 0000h. Disk utilities may return to the CCP with RET instead, which
+# skips the warm boot these tests exercise.
+WARM_EXIT_PROGRAM = bytes((
+    0x11, 0x0B, 0x01,  # LD DE,010Bh
+    0x0E, 0x09,        # LD C,9
+    0xCD, 0x05, 0x00,  # CALL 0005h
+    0xC3, 0x00, 0x00,  # JP 0000h
+)) + b"WARM$"
+
+
+def install_program(disk: bytes, name: str, program: bytes) -> bytes:
+    with tempfile.TemporaryDirectory(prefix="z80-test-program-") as path:
+        directory = Path(path)
+        (directory / "diskdefs").write_text(build_images.cpm_diskdefs(), encoding="ascii")
+        image = directory / "drive.img"
+        image.write_bytes(disk)
+        (directory / name).write_bytes(program)
+        subprocess.run(
+            ["cpmcp", "-f", "z80sbc", str(image), name, f"0:{name}"],
+            cwd=directory, check=True, timeout=15,
+        )
+        return image.read_bytes()
+
+
 class CpmBootExecution(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -38,6 +63,7 @@ class CpmBootExecution(unittest.TestCase):
         cls.disks[0] = build_images.install_autorun(
             cls.disks[0], cls.autorun, cpmcp
         )
+        cls.disks[0] = install_program(cls.disks[0], "WARMEXIT.COM", WARM_EXIT_PROGRAM)
         with tempfile.TemporaryDirectory(prefix="z80-disk-diagnostic-") as path:
             binary = Path(path) / "diagnostic.bin"
             subprocess.run(
@@ -189,6 +215,12 @@ class CpmBootExecution(unittest.TestCase):
         result = self.command("LS -S")
         self.assertIn(b"502K total capacity", result)
         self.assertNotIn(b"LS?", result)
+        # LS returns to the resident CCP with RET: the CCP must call transients
+        # with a valid return address and survive them, with no warm boot.
+        self.assertEqual(self.flushes, 0)
+        self.assertEqual(self.markers, [0xB0, 0xC0])
+        result = self.command("WARMEXIT")
+        self.assertIn(b"WARM", result)
         self.assertGreater(self.flushes, 0)
         self.assertGreaterEqual(self.markers.count(0xC0), 2)
         self.assertEqual(self.machine.memory[5], 0xC3)
@@ -216,9 +248,10 @@ class CpmBootExecution(unittest.TestCase):
                 self.assertEqual(self.writes, [])
 
     def test_cold_only_transient_does_not_repeat(self) -> None:
-        self.configure(1, "LS")
+        self.configure(1, "WARMEXIT")
         output = self.until_prompt()
-        self.assertNotIn(b"LS?", output)
+        self.assertNotIn(b"WARMEXIT?", output)
+        self.assertEqual(output.count(b"WARM"), 1)
         self.assertEqual(self.markers.count(0xB0), 1)
         self.assertEqual(self.markers.count(0xC0), 2)
 
@@ -235,7 +268,7 @@ class CpmBootExecution(unittest.TestCase):
         self.assertIn(b"CC2", self.until_prompt())
 
     def test_repeating_transient_can_be_bypassed(self) -> None:
-        self.configure(3, "LS")
+        self.configure(3, "WARMEXIT")
         for _ in range(1000):
             self.machine.ticks_to_stop = 10000
             self.machine.run()

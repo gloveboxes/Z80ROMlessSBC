@@ -72,6 +72,8 @@ void z80_io_ports_set_unix_time(uint32_t seconds);
 void z80_io_ports_set_network_address(const char *address);
 /* Thread-safe snapshot for supervisor diagnostics; no network-stack access. */
 size_t z80_io_ports_get_network_address(char *address, size_t capacity);
+/* Lock-free counter that changes whenever the published address is set. */
+uint32_t z80_io_ports_network_address_generation(void);
 
 #ifdef __cplusplus
 }

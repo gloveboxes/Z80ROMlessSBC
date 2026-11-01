@@ -3,7 +3,7 @@
 ; PIO0 banked_clock: SET = GP2 (CLK); wrap clock_start..clock_end gives
 ; 20 MHz (3 HIGH + 3 LOW ticks). It stops in a LOW phase while PIO0 IRQ 1
 ; (I/O hold, raised by PIO1 with IRQ PREV) or IRQ 2 (core-0 CPU hold) is set.
-; It shares PIO0 with the matrix display, which uses no IRQ flags.
+; It shares PIO0 with the status OLED's I2C program, which uses no IRQ flags.
 ;
 ; PIO1 banked_io (exclusive; the CYW43 SPI driver takes PIO2): IN = GP10, OUT = GP8..GP17 (A16, IO_RELEASE, D0-D7),
 ; SET = GP6..GP7 (UP_OE#, DOWN_OE#), side-set = GP9 (IO_RELEASE),

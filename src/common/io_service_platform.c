@@ -17,6 +17,7 @@
 static uint32_t unix_seconds;
 static uint64_t sync_millis;
 static char network_address[16];
+static uint32_t network_address_generation;
 auto_init_mutex(network_address_mutex);
 static char cached_hostname[sizeof("zeta-80-000000")];
 static bool hostname_initialized;
@@ -63,7 +64,12 @@ void z80_io_ports_set_unix_time(uint32_t seconds) {
 void z80_io_ports_set_network_address(const char *address) {
   mutex_enter_blocking(&network_address_mutex);
   snprintf(network_address, sizeof(network_address), "%s", address);
+  __atomic_fetch_add(&network_address_generation, 1, __ATOMIC_RELEASE);
   mutex_exit(&network_address_mutex);
+}
+
+uint32_t z80_io_ports_network_address_generation(void) {
+  return __atomic_load_n(&network_address_generation, __ATOMIC_ACQUIRE);
 }
 
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {

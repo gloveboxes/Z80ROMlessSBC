@@ -23,13 +23,14 @@ removed. The existing AHCT244 provides the 5 V address level; no extra IC
 is required. R24 is drawn beside the Pico and marked with its attachment
 point. The net manifest, schematic exports and BOM include these changes.
 
-The schematic also shows **A2**, the external Adafruit HT16K33 8x8 matrix
-operating in Stage 10: `D`/SDA joins GP22 (J2 pin 2), `C`/SCL joins GP26
-(J2 pin 3), `+` joins Pico 3.3 V (J2 pin 4), and `-` joins common GND
-(J2 pin 5). Symbol pin identifiers are the backpack's printed markings, not
-connector positions. A2 is excluded from the PCB and has no footprint;
-backpack pull-ups must connect to 3.3 V, never 5 V. See the
-[Stage 10 wiring and bench results](../../docs/docs/en/implementation/phase-10-websocket.md#ht16k33-8x8-matrix).
+The schematic also shows **A2**, the external 0.91-inch SSD1315 128x32 I2C
+status OLED operating in Stage 10: `SDA` joins GP22 (J2 pin 2), `SCK` (the
+module's I2C clock, SCL) joins GP26 (J2 pin 3), `VCC` joins Pico 3.3 V
+(J2 pin 4), and `GND` joins common GND (J2 pin 5). Symbol pin identifiers are
+the module's printed markings, not connector positions. A2 is excluded from
+the PCB and has no footprint; its I2C pull-ups must go to 3.3 V, never 5 V.
+See the
+[Stage 10 wiring and bench results](../../docs/docs/en/implementation/phase-10-websocket.md#ssd1315-status-oled).
 
 This directory contains the KiCad 10 schematic and the routed four-layer PCB.
 The board is 160 x 135 mm and uses socket-compatible through-hole footprints.

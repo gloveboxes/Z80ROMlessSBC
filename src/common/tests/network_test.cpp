@@ -31,6 +31,8 @@ struct netif *netif_default;
 static unsigned time_client_starts;
 static char service_address[16];
 static const char *assigned_address = "192.0.2.1";
+static unsigned address_formats;
+static unsigned address_publishes;
 static int init_result = PICO_OK;
 static unsigned init_calls;
 static unsigned led_writes;
@@ -69,9 +71,26 @@ void sntp_setservername(unsigned char index, const char *name) {
   assert(lock_depth && index == 0 && std::string(name) == "pool.ntp.org");
 }
 void sntp_init() { assert(lock_depth); ++time_client_starts; }
-char *ip4addr_ntoa_r(const struct ip4_addr *, char *buffer, int capacity) {
-  assert(lock_depth && capacity >= 10);
-  snprintf(buffer, (size_t)capacity, "%s", assigned_address);
+// Like lwIP, the binary address holds the octets in memory (network) order.
+static uint32_t ipv4_from_text(const char *text) {
+  unsigned octets[4];
+  assert(sscanf(text, "%u.%u.%u.%u", &octets[0], &octets[1], &octets[2], &octets[3]) == 4);
+  uint8_t bytes[4] = {(uint8_t)octets[0], (uint8_t)octets[1],
+                      (uint8_t)octets[2], (uint8_t)octets[3]};
+  uint32_t value;
+  memcpy(&value, bytes, sizeof(value));
+  return value;
+}
+static void assign_address(struct netif &interface, const char *text) {
+  assigned_address = text;
+  interface.address.address = ipv4_from_text(text);
+}
+char *ip4addr_ntoa_r(const struct ip4_addr *address, char *buffer, int capacity) {
+  assert(lock_depth && capacity >= 16);
+  ++address_formats;
+  uint8_t bytes[4];
+  memcpy(bytes, &address->address, sizeof(bytes));
+  snprintf(buffer, (size_t)capacity, "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
   return buffer;
 }
 void netif_set_hostname(struct netif *interface, const char *hostname) {
@@ -79,6 +98,7 @@ void netif_set_hostname(struct netif *interface, const char *hostname) {
   interface->hostname = hostname;
 }
 void z80_io_ports_set_network_address(const char *address) {
+  ++address_publishes;
   snprintf(service_address, sizeof(service_address), "%s", address);
 }
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
@@ -505,6 +525,7 @@ static void test_disconnect_diagnostics() {
 int main() {
   struct netif interface = {};
   netif_default = &interface;
+  assign_address(interface, "192.0.2.1");
   bool led = true;
   init_result = -1;
   assert(z80_service_led(true, &led) == IO_SERVICE_UNAVAILABLE);
@@ -545,17 +566,27 @@ int main() {
   assert(power_mode_calls == 2 &&
          power_mode_setting == CYW43_NO_POWERSAVE_MODE);
   assert(time_client_starts == 1 && std::string(service_address) == "192.0.2.1");
-  assigned_address = "198.51.100.42";
+  // An unchanged binary address is neither re-formatted nor re-published.
+  unsigned formats = address_formats, publishes = address_publishes;
+  for (unsigned i = 0; i < 3; ++i) {
+    advance(1000);
+    assert(poll_network());
+  }
+  assert(address_formats == formats && address_publishes == publishes);
+  assign_address(interface, "198.51.100.42");
   unsigned unchanged_polls = polls;
   assert(poll_network() && polls == unchanged_polls + 1);
   assert(std::string(service_address) == "192.0.2.1");
   advance(1000);
   assert(poll_network());
   assert(std::string(service_address) == assigned_address);
-  assigned_address = "0.0.0.0";
+  assign_address(interface, "0.0.0.0");
   advance(1000);
   assert(poll_network() && service_address[0] == '\0');
-  assigned_address = "192.0.2.1";
+  formats = address_formats;
+  advance(1000);  // No address: nothing to format.
+  assert(poll_network() && address_formats == formats);
+  assign_address(interface, "192.0.2.1");
   advance(1000);
   assert(poll_network());
   assert(std::string(service_address) == assigned_address);

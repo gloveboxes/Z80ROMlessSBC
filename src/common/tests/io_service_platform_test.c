@@ -55,7 +55,9 @@ int main(void) {
   assert(strcmp(text, "192.0.2.42") == 0);
   assert(z80_io_ports_get_network_address(text, 4) == 0);
   assert(strcmp(text, "192") == 0);
+  uint32_t generation = z80_io_ports_network_address_generation();
   z80_io_ports_set_network_address("198.51.100.123");
+  assert(z80_io_ports_network_address_generation() == generation + 1);
   assert(z80_io_ports_get_network_address(text, sizeof(text)) == 14);
   assert(strcmp(text, "198.51.100.123") == 0);
   assert(z80_service_info(2, text, sizeof(text)) == 16);

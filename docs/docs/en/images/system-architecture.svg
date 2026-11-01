@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1640" viewBox="0 0 1920 1640" role="img" aria-labelledby="title description">
   <title id="title">Z80 ROMless SBC: hardware and software architecture</title>
-  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the HT16K33 matrix service. A PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the matrix. The 20 MHz Z80 clock comes from PWM or PIO1, depending on the active fast-path configuration. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives A0-A15 and writes SRAM, including during assisted loading. The 128 KiB SRAM is two 64 KiB banks selected on A16 by GP8 through U4. PIO1 accelerates OUT 07h bank-select cycles while preserving the 20 MHz Z80 clock. After verification, the Z80 executes CP/M directly from the 64 KiB window.</desc>
+  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the SSD1315 status OLED service. A DMA-fed PIO0 state machine generates 100 kHz I2C on GP26 SCL and GP22 SDA for the OLED. The 20 MHz Z80 clock comes from PWM or PIO1, depending on the active fast-path configuration. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives A0-A15 and writes SRAM, including during assisted loading. The 128 KiB SRAM is two 64 KiB banks selected on A16 by GP8 through U4. PIO1 accelerates OUT 07h bank-select cycles while preserving the 20 MHz Z80 clock. After verification, the Z80 executes CP/M directly from the 64 KiB window.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -141,12 +141,12 @@
   <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0: I²C display SM + Z80 clock SM</text>
   <path d="M1530 834H1580V745H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
   <rect x="1600" y="680" width="280" height="170" rx="14" fill="#ffffff" stroke="#aad8cd"/>
-  <text x="1620" y="710" class="section teal">MATRIX DISPLAY</text>
-  <text x="1620" y="740" class="subheading">HT16K33 over 100 kHz I²C</text>
+  <text x="1620" y="710" class="section teal">STATUS OLED</text>
+  <text x="1620" y="740" class="subheading">SSD1315 over 100 kHz I²C</text>
   <text x="1620" y="768" class="small">GP26: SCL; GP22: SDA</text>
-  <text x="1620" y="793" class="small">Core 1: bounded FIFO service</text>
-  <text x="1620" y="816" class="small">Moving row every 500 ms</text>
-  <text x="1620" y="839" class="source">matrix_display.cpp / matrix_i2c.pio</text>
+  <text x="1620" y="793" class="small">Core 1: DMA-fed, non-blocking</text>
+  <text x="1620" y="816" class="small">IP, uptime; 1 s heartbeat</text>
+  <text x="1620" y="839" class="source">oled_display.cpp / display_i2c.pio</text>
 
   <text x="350" y="885" class="section">HARDWARE DATA PLANE</text>
   <text x="1880" y="885" class="small muted" text-anchor="end">Current breadboard circuit | 5 V CPU / SRAM; buffered 3.3 V Pico interface | # = active LOW</text>

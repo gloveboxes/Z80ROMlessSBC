@@ -33,7 +33,7 @@ _Static_assert(PIN_DATA_DOWN_OE_N == PIN_DATA_UP_OE_N + 1 &&
                    PIN_DATA_0 == PIN_MEMORY_BANK + 2,
                "PIO2 SET/OUT pin windows changed");
 
-/* PIO0 runs the Z80 clock beside the matrix display; PIO1 runs the whole I/O
+/* PIO0 runs the Z80 clock beside the status OLED's I2C; PIO1 runs the whole I/O
  * engine and holds the clock through PIO0 IRQ 1 with IRQ PREV. The CYW43 SPI
  * driver claims PIO2. Core 0 owns the clock SM and all of PIO1. */
 static PIO const clock_engine = pio0;
@@ -215,7 +215,7 @@ static bool block_free(PIO pio) {
 static bool allocate_engine(void) {
   if (allocated)
     return true;
-  /* The clock owns PIO0 IRQ flags 1..2 (the matrix display uses none) and
+  /* The clock owns PIO0 IRQ flags 1..2 (the status OLED's I2C uses none) and
    * the engine fills PIO1's instruction store, so PIO1 is not shared. */
   if (clock_get_hz(clk_sys) != 120000000u || !block_free(io_engine) ||
       !pio_can_add_program(clock_engine, &banked_clock_program) ||

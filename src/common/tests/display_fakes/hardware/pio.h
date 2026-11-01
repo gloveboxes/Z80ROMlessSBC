@@ -1,5 +1,5 @@
-#ifndef TEST_MATRIX_PIO_H
-#define TEST_MATRIX_PIO_H
+#ifndef TEST_DISPLAY_PIO_H
+#define TEST_DISPLAY_PIO_H
 
 #include <cstdint>
 #include "pico/types.h"

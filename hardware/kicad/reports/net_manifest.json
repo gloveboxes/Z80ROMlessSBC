@@ -54,10 +54,10 @@
       "description": "Z80ROMlessSBC Raspberry Pi Pico 2 W"
     },
     "A2": {
-      "symbol": "HT16K33_MATRIX",
-      "value": "Adafruit HT16K33 8x8 MATRIX",
+      "symbol": "SSD1315_OLED",
+      "value": "0.91in SSD1315 128X32 I2C OLED",
       "footprint": "",
-      "description": "External Stage 10 matrix; pins use printed backpack markings, not connector positions; 3.3V supply and I2C pull-ups"
+      "description": "External Stage 10 status OLED module, 38.00 x 12.00 mm board, 22.38 x 5.58 mm active area; 4-pin 2.54 mm header in order GND, VCC, SCK (I2C SCL), SDA; I2C address 0x3C; onboard regulator and I2C pull-ups to its 3.3V rail; supply from Pico 3V3"
     },
     "C1": {
       "symbol": "CAPACITOR",
@@ -306,7 +306,7 @@
   "nets": {
     "+3V3": [
       "A1.36",
-      "A2.+",
+      "A2.VCC",
       "C5.1",
       "C7.1",
       "J2.4",
@@ -511,7 +511,7 @@
       "A1.33",
       "A1.38",
       "A1.8",
-      "A2.-",
+      "A2.GND",
       "C1.2",
       "C10.2",
       "C11.2",
@@ -660,12 +660,12 @@
     ],
     "PICO_GP22": [
       "A1.29",
-      "A2.D",
+      "A2.SDA",
       "J2.2"
     ],
     "PICO_GP26": [
       "A1.31",
-      "A2.C",
+      "A2.SCK",
       "J2.3"
     ],
     "PICO_GP8": [

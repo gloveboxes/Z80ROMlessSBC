@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-10-26T21:17:27")
+		(date "2026-11-01T17:55:24")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -3029,47 +3029,6 @@
 		)
 		(libpart
 			(lib "Z80SBC")
-			(part "HT16K33_MATRIX")
-			(description "Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX")
-			(fields
-				(field
-					(name "Reference") "A")
-				(field
-					(name "Value") "HT16K33 8x8 MATRIX")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: HT16K33 8x8 MATRIX")
-			)
-			(pins
-				(pin
-					(num "+")
-					(name "VCC")
-					(type "power_in")
-				)
-				(pin
-					(num "-")
-					(name "GND")
-					(type "power_in")
-				)
-				(pin
-					(num "C")
-					(name "SCL")
-					(type "input")
-				)
-				(pin
-					(num "D")
-					(name "SDA")
-					(type "bidirectional")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
 			(part "LVC244")
 			(description "Z80ROMlessSBC project symbol: SN74LVC244AN")
 			(fields
@@ -3804,6 +3763,47 @@
 				)
 				(pin
 					(num "32")
+					(name "VCC")
+					(type "power_in")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "SSD1315_OLED")
+			(description "Z80ROMlessSBC project symbol: SSD1315 128X32 OLED")
+			(fields
+				(field
+					(name "Reference") "A")
+				(field
+					(name "Value") "SSD1315 128X32 OLED")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: SSD1315 128X32 OLED")
+			)
+			(pins
+				(pin
+					(num "GND")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "SCK")
+					(name "SCK")
+					(type "input")
+				)
+				(pin
+					(num "SDA")
+					(name "SDA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "VCC")
 					(name "VCC")
 					(type "power_in")
 				)

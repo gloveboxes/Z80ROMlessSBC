@@ -34,7 +34,7 @@ bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
 #include "network_runtime.h"
 #include "network_setup.h"
 #include "web_terminal.h"
-#include "matrix_display.h"
+#include "oled_display.h"
 #endif
 
 #ifndef Z80_STAGE09_AUTOBOOT
@@ -239,7 +239,7 @@ static void core1_service(void) {
   }
   if (active) {
     uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
-    z80_matrix_core1_service(
+    z80_oled_core1_service(
         (state & (CPU_RUNNING | CPU_STOPPING | CPU_LOADING)) == CPU_RUNNING &&
         !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE));
   }
@@ -456,7 +456,7 @@ static void print_status(bool requested) {
            has_address ? address : "unavailable");
     if (has_address)
       printf("[network] Terminal: http://%s:%u/\n", address, Z80_WEB_TERMINAL_PORT);
-    z80_matrix_print_status();
+    z80_oled_print_status();
   }
   z80_web_terminal_stats_t web = z80_web_terminal_get_stats();
   printf("[web] retransmits=%lu flush_failures=%lu ack_timeouts=%lu "

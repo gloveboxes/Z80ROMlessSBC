@@ -249,8 +249,12 @@ static void test_receive() {
   auto input = frame(2, payload);
   append(input, frame(2));
   append(input, frame(1, {'h', 'i'}));
+  f.first.flags = 0;
   for (size_t i = 0; i < input.size(); ++i)
     assert(f.feed(f.first, {input[i]}) == ERR_OK);
+  // Received data requests an immediate ACK instead of waiting for the lwIP
+  // fast timer, so interactive keystrokes are not held behind a delayed ACK.
+  assert(f.first.flags & TF_ACK_NOW);
   assert(f.messages.empty());
   f.server.popMessages();
   assert(f.messages.size() == 3 && f.messages[0] == payload &&

@@ -23,10 +23,13 @@ bool time_client_started;
 z80_network_config_t active_config = {};
 uint32_t network_generation;
 char active_hostname[32];
+// Binary IPv4 behind the published address text; 0 means none is published.
+uint32_t published_ipv4;
 
 void clear_address() {
   ++network_generation;
   z80_io_ports_set_network_address("");
+  published_ipv4 = 0;
   address_deadline = nil_time;
 }
 
@@ -57,21 +60,28 @@ void refresh_network_address() {
   if (!time_reached(address_deadline))
     return;
   address_deadline = make_timeout_time_ms(1000);
+  // Compare the binary address; format text only when it changes.
+  uint32_t ipv4 = 0;
   char address[16] = {};
+  bool formatted = true;
   cyw43_arch_lwip_begin();
-  if (netif_default != nullptr &&
-      ip4addr_ntoa_r(netif_ip4_addr(netif_default), address,
-                     sizeof(address)) == nullptr) {
-    address[0] = '\0';
-    printf("[network] FAIL: IPv4 address formatting.\n");
+  if (netif_default != nullptr) {
+    ipv4 = ip4_addr_get_u32(netif_ip4_addr(netif_default));
+    if (ipv4 != published_ipv4 && ipv4 != 0)
+      formatted = ip4addr_ntoa_r(netif_ip4_addr(netif_default), address,
+                                 sizeof(address)) != nullptr;
   }
   cyw43_arch_lwip_end();
-  if (strcmp(address, "0.0.0.0") == 0)
-    address[0] = '\0';
-  char previous[16];
-  z80_io_ports_get_network_address(previous, sizeof(previous));
-  if (strcmp(previous, address) != 0)
-    z80_io_ports_set_network_address(address);
+  if (ipv4 == published_ipv4)
+    return;
+  if (!formatted) {
+    printf("[network] FAIL: IPv4 address formatting.\n");
+    ipv4 = 0;
+    if (published_ipv4 == 0)
+      return;
+  }
+  published_ipv4 = ipv4;
+  z80_io_ports_set_network_address(ipv4 != 0 ? address : "");
 }
 }  // namespace
 

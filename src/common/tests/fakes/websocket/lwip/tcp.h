@@ -11,6 +11,7 @@ constexpr err_t ERR_OK = 0, ERR_MEM = -1, ERR_BUF = -2, ERR_RTE = -4,
                 ERR_ABRT = -13, ERR_ARG = -16;
 constexpr unsigned TCP_SND_BUF = 4 * 1460;
 constexpr unsigned TCP_WRITE_FLAG_COPY = 1;
+constexpr unsigned TF_ACK_NOW = 0x02U;  // Same value as lwIP: immediate ACK.
 constexpr int IPADDR_TYPE_ANY = 0;
 constexpr const void* IP_ADDR_ANY = nullptr;
 struct tcp_pcb {
@@ -23,6 +24,7 @@ struct tcp_pcb {
   err_t write_result = ERR_OK, output_result = ERR_OK, close_result = ERR_OK;
   unsigned outputs = 0, recved = 0, available = TCP_SND_BUF, poll_interval = 0;
   bool aborted = false, closed = false, nodelay = false;
+  unsigned flags = 0;
   std::vector<std::vector<uint8_t>> writes;
 };
 inline tcp_pcb test_listener;
@@ -38,6 +40,7 @@ inline void tcp_poll(tcp_pcb* p, decltype(p->poll) cb, unsigned interval) {
 inline tcp_pcb* tcp_new_ip_type(int) { test_listener = {}; return &test_listener; }
 inline err_t tcp_bind(tcp_pcb*, const void*, uint16_t) { return ERR_OK; }
 inline tcp_pcb* tcp_listen(tcp_pcb* p) { return p; }
+inline void tcp_set_flags(tcp_pcb* p, unsigned set_flags) { p->flags |= set_flags; }
 inline void tcp_nagle_disable(tcp_pcb* p) { p->nodelay = true; }
 inline void tcp_nagle_enable(tcp_pcb* p) { p->nodelay = false; }
 inline void tcp_recved(tcp_pcb* p, u16_t bytes) { p->recved += bytes; }

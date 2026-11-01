@@ -50,21 +50,22 @@ target_link_libraries(z80_pico_ws_server PUBLIC
 
 add_library(z80_terminal STATIC
   network_services.c network_runtime.cpp
-  matrix_display.cpp
+  display_i2c.cpp
+  oled_display.cpp
   web_terminal.cpp
   ../common/weather_http.c
   weather_network.cpp
   chat_network.cpp
   http_network.cpp
   network_setup.c)
-pico_generate_pio_header(z80_terminal ${CMAKE_CURRENT_LIST_DIR}/matrix_i2c.pio)
+pico_generate_pio_header(z80_terminal ${CMAKE_CURRENT_LIST_DIR}/display_i2c.pio)
 target_include_directories(z80_terminal PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}
   ${stage10_generated_dir}
   ${CMAKE_CURRENT_LIST_DIR}/../common
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
 set_source_files_properties(
-  network_services.c network_runtime.cpp matrix_display.cpp web_terminal.cpp
+  network_services.c network_runtime.cpp display_i2c.cpp oled_display.cpp web_terminal.cpp
   ../common/weather_http.c weather_network.cpp chat_network.cpp http_network.cpp network_setup.c
   PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 target_link_libraries(z80_terminal PUBLIC

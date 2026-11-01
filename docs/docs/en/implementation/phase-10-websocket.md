@@ -9,7 +9,7 @@
 
 - <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 9 passed"> **Start here:** complete the [Phase 9 automatic CP/M loader](phase-9-flash-storage.md).
 - **Unchanged:** 120 MHz Pico clock, 20 MHz scope-measured Z80 clock, BIOS and disk layout.
-- **Hardware:** onboard Wi-Fi plus the [3.3 V matrix display](#ht16k33-8x8-matrix). PCB changes remain deferred.
+- **Hardware:** onboard Wi-Fi plus the [3.3 V SSD1315 status OLED](#ssd1315-status-oled). PCB changes remain deferred.
 
 ## First connection and USB provisioning
 
@@ -132,63 +132,124 @@ Passwords and API keys are hidden during entry and masked on display.
 
 <input type="checkbox" data-checklist-id="conditional-boot-diagnosis" aria-label="Boot and network failures distinguished"> Confirm boot and network faults separately.
 
-**Ctrl-] s** also shows uptime, reset causes and matrix status without injecting
+**Ctrl-] s** also shows uptime, reset causes and OLED status without injecting
 periodic diagnostics into CP/M output.
 
-## HT16K33 8x8 matrix
+## SSD1315 status OLED
 
-**Expected display while the Z80 is running:** a horizontal row moves every
-500 ms without Wi-Fi; a vertical column moves every 250 ms when Wi-Fi is
-connected. The display holds its last pattern while the supervisor stops the
-Z80 or pauses storage work. It is a supervisor diagnostic, not proof that a
-CP/M application is responsive.
+The 0.91-inch, monochrome 128x32 I2C OLED shows two lines and a heartbeat:
 
-| Backpack marking | Pico connection | J2 pin |
+- **IP address:** `IP: 192.168.1.10`, checked once per second through a lock-free change counter;
+  the rendered bitmap is cached and redrawn only when the address changes. With
+  no address it shows `IP: OFFLINE`.
+- **Uptime:** `UP: HH:MM` for the first day (up to `UP: 23:59`), then days,
+  for example `UP: 1d 00:00` or `UP: 4d 05:23`; redrawn once per uptime
+  minute. Seven day digits still fit the display width.
+
+Text uses 3x5 glyphs at double size with proportional spacing: `.` and `:` take
+one pixel column, so the longest address, `IP: 255.255.255.255`, fits the
+128-pixel width exactly.
+- **Heartbeat:** a 2x2 dot in the bottom-right corner toggles once per second
+  while the Z80 runs. It shows display-service activity, not CP/M application
+  health or a latency measurement.
+
+Contrast is reduced to `0x40` from the controller's `0x7f` reset level to slow
+burn-in of the static layout. The display holds its last image while the
+supervisor stops the Z80, loads SRAM or pauses storage work.
+
+| OLED marking | Pico connection | J2 pin |
 | --- | --- | --- |
-| `+` / VCC | 3V3, physical pin 36 | 4 |
-| `-` / GND | Common GND | 5 |
-| `C` / SCL | GP26, physical pin 31 | 3 |
-| `D` / SDA | GP22, physical pin 29 | 2 |
-| Vi2c / IO, if fitted | 3V3 | 4 |
+| VCC | 3V3, physical pin 36 | 4 |
+| GND | Common GND | 5 |
+| SCK (I2C SCL) | GP26, physical pin 31 | 3 |
+| SDA | GP22, physical pin 29 | 2 |
 
-- **Power and both pull-ups must be 3.3 V, never 5 V.** Disconnect power safely before rewiring.
-- Follow the printed markings, not an assumed connector order. The external module is schematic **A2**, with no PCB footprint.
-- Keep other devices off this diagnostic bus. The driver scans `0x70`-`0x77`; the tested board uses `0x72`.
-- Check **Ctrl-] s** for address, state and errors. The module shares the Pico's 3.3 V budget and runs at reduced brightness ([wiring guide](https://learn.adafruit.com/led-backpack-displays-on-raspberry-pi-and-beaglebone-black/wiring)).
+Follow the module's printed labels, not connector order; the module prints
+`SCK` for the I2C clock. **Small I2C OLED modules do not share a pin order:**
+this module starts `GND, VCC`, while many others start `VCC, GND`. Swapping
+them reverses the supply and the display does not answer its address. The
+external module is schematic **A2**, with no PCB
+footprint. The module carries its own 3.3 V regulator and 4.7 kOhm I2C
+pull-ups, which must go to 3.3 V, never 5 V: with the module powered, check
+that SDA and SCK idle no higher than 3.3 V before connecting them to the Pico.
+Powered from J2's 3.3 V, the module shares the Pico regulator's remaining
+current budget. Disconnect power safely before rewiring. PCB migration remains
+deferred.
 
-??? info "Display implementation and host test"
+[oled_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/oled_display.cpp)
+runs on core 1 after network work and scans only `0x3c` and `0x3d`; this
+module answers at `0x3c`. Do not attach another device at either address. The
+SSD1315 uses the SSD1306 command set: initialization selects a 32-row
+multiplex, sequential COM pins and the internal charge pump. The panel stays
+off until all four initial RAM pages have been acknowledged.
 
-    [matrix_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_display.cpp)
-    runs on core 1 after network work. Scanning and initialization perform at
-    most one non-blocking FIFO operation per pass. Normal frames use one I2C
-    transaction: RAM pointer `0x00` followed by all 16 display RAM bytes.
-    One DMA channel feeds 20 encoded command words to PIO; a second collects
-    18 byte ACKs and the final STOP result. No per-byte CPU service or DMA
-    interrupt is needed. Persistent buffers remain unchanged until completion.
-    Each frame uses one connectivity state. USB status reports the last
-    confirmed pattern and its interval.
+Two persistent 512-byte bitmaps hold desired and confirmed pixels. The IP
+address occupies pages 0-1 and the uptime pages 2-3. The cached IP field is
+not rasterized on every tick, and only a changed field's pages are compared;
+each dirty page sends only its first-to-last changed column span. Each page is
+**one I2C transaction**: three `Co=1` control/command pairs set the page and
+column, then a `0x40` control byte starts the pixel data. A tick with no change
+reads only the address-change counter, taking no lock and copying no text, and
+sends only the heartbeat: one 9-byte transaction
+carrying **two pixel-data bytes**. The heartbeat sits in rows 30-31, below the
+uptime field, and changes only its own two pixel bits. When a page completes, the next page
+starts in the same core-1 pass. All display work runs on core 1; nothing is
+added to core 0 or the Z80 bus path.
 
-    New transactions require a running CPU and no flash pause. If permission
-    changes, an in-flight transaction finishes through STOP before holding the
-    pattern. DMA results are checked when the next update is due (250 ms online,
-    500 ms offline), including while new updates are paused. TX completion alone
-    does not confirm STOP; RX must also finish and contain the STOP result.
-    A missing completion, transfer NACK, unavailable DMA channels, or a 5 ms
-    scan/initialization FIFO timeout disables the display, releases resources
-    and records the error. No Z80 bus GPIO or new core-0 handshake is used.
+Every display write, from the address scan through page data, is asynchronous:
+it starts the transmit and receive DMA channels and returns, and a later pass
+collects the result without waiting. The CPU never writes the PIO FIFO. On the
+idle passes between ticks, which are almost every core-1 pass, the service
+reads the RAM-resident timer once and returns; it makes no transport call,
+takes no lock and publishes no status. The network side likewise compares the
+binary IPv4 address each second and formats text only when it changes.
 
-    [matrix_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/matrix_i2c.pio)
+New transactions require a running CPU and no flash pause. An in-flight
+transfer is drained through STOP while paused, but further pages wait until
+updates are allowed. Missed ticks coalesce to the current status; the service
+does not queue a catch-up burst. **Ctrl-] s** reports the OLED address, state
+and failures without periodic terminal logging.
+
+??? info "PIO/DMA I2C transport and host test"
+
+    [display_i2c.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.cpp)
+    owns one PIO0 state machine and one TX/RX DMA pair. One DMA channel feeds
+    encoded command words to PIO; the second collects each byte ACK and the
+    final STOP result. No heap allocation, DMA interrupt, per-byte CPU service
+    or busy-wait is used. A new transaction cannot start, and the persistent
+    command/result buffers cannot be reused, until the display consumes the
+    completion result. TX completion alone does not confirm STOP; RX must also
+    finish and contain the STOP result.
+
+    A display NACK disables the OLED and records the error. Unavailable PIO/DMA
+    resources, missing ACK/STOP results, or a DMA timeout also release the
+    state machine, DMA channels and pins. The timeout is 5 ms plus 120 us per
+    transmitted byte, allowing a full 135-byte page transaction at 100 kHz.
+    No Z80 bus GPIO or core-0 handshake is used.
+
+    [display_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.pio)
     uses open-drain pins at nominal 100 kHz without clock stretching.
 
     ```sh
-    cmake --build build/host-control --target matrix_display_test -j
-    ctest --test-dir build/host-control --output-on-failure -R '^matrix_pio_HT16K33$'
+    cmake --build build/host-control --target oled_display_test -j
+    ctest --test-dir build/host-control --output-on-failure -R '^oled_pio_SSD1315$'
     ```
 
-    The original moving row was bench-tested with CP/M and networking. Host tests
-    check row/column RAM writes and connectivity changes between chunks; the new
-    column pattern still needs checking on hardware. Host tests do not qualify
-    physical waveform margins or core-0 latency.
+    Native tests execute the assembled PIO program and verify both scanned
+    addresses, standard-mode SCL HIGH time, the 128x32 initialization
+    (multiplex, COM pins, charge pump, contrast), initial RAM writes before
+    display-on, single-transaction page writes, same-pass chaining, cached IP
+    rendering, the idle fast path (one timer read, no lock, no status
+    re-publish), counter-gated address reads, exact two-byte heartbeat writes that preserve neighbouring
+    pixels and survive uptime redraws, minute-only uptime writes limited to
+    pages 2-3, the longest IPv4 address, pause gating, NACKs on every byte
+    of a maximum-length write, and transport timeout/resource failures with
+    cleanup.
+
+    On the bench, this SSD1315 module answered at `0x3c`, completed
+    initialization and every page write, and displayed the IP address and
+    uptime. Host tests do not qualify physical waveform margins, module
+    electrical compatibility, or core-0 latency.
 
 ## Network time and CLOCK services
 
