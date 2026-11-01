@@ -1,5 +1,6 @@
 #include "oled_display.h"
 #include "display_i2c.h"
+#include "web_terminal.h"
 #include "../common/io_service.h"
 #include "pico/stdlib.h"
 #include "z80sbc/ram_timer.h"
@@ -51,7 +52,7 @@ constexpr uint16_t glyph(unsigned a, unsigned b, unsigned c, unsigned d, unsigne
   return (a << 12) | (b << 9) | (c << 6) | (d << 3) | e;
 }
 
-uint16_t character(char c) {
+constexpr uint16_t character(char c) {
   switch (c) {
   case '0': return glyph(7, 5, 5, 5, 7);
   case '1': return glyph(2, 6, 2, 2, 7);
@@ -80,39 +81,89 @@ uint16_t character(char c) {
   }
 }
 
-// Draws scale-2 text from 3x5 glyphs into the framebuffer. Spacing is
-// proportional: '.' and ':' use only their one-pixel middle column and ' ' is a
-// one-column gap, so "IP: 255.255.255.255" fits the 128-pixel width exactly.
-void text(unsigned y, const char *value) {
-  constexpr unsigned scale = 2;
+constexpr unsigned SCALE = 2;
+
+// Spacing is proportional: '.' and ':' use only their one-pixel middle column
+// and ' ' is a one-column gap, so "IP: 255.255.255.255" fits 128 pixels exactly.
+constexpr unsigned glyph_columns(char c) {
+  return c == '.' || c == ':' ? 1 : c == ' ' ? 0 : 3;
+}
+
+// Pixels from the first column to the last ink column, without a trailing gap.
+constexpr unsigned text_width(const char *value) {
   unsigned x = 0;
+  for (; *value; ++value)
+    x += (glyph_columns(*value) + 1) * SCALE;
+  return x ? x - SCALE : 0;
+}
+
+// Draws scale-2 3x5 glyphs into a page-organized bitmap `stride` columns wide.
+constexpr void draw_text(uint8_t *pixels, unsigned stride, [[maybe_unused]] unsigned rows,
+                         unsigned x, unsigned y, const char *value) {
   for (; *value; ++value) {
     char c = *value;
-    unsigned first = 0, columns = 3;
-    if (c == '.' || c == ':') {
-      first = 1;
-      columns = 1;
-    } else if (c == ' ') {
-      columns = 0;
-    }
-    assert(x + columns * scale <= WIDTH && y + 5 * scale <= PAGES * 8);
-    uint16_t pixels = character(c);
+    unsigned columns = glyph_columns(c);
+    unsigned first = columns == 1 ? 1 : 0;
+    assert(x + columns * SCALE <= stride && y + 5 * SCALE <= rows);
+    uint16_t glyph_pixels = character(c);
     for (unsigned row = 0; row < 5; ++row)
       for (unsigned col = 0; col < columns; ++col)
-        if (pixels & (1u << (14 - row * 3 - first - col)))
-          for (unsigned dy = 0; dy < scale; ++dy)
-            for (unsigned dx = 0; dx < scale; ++dx) {
-              unsigned py = y + row * scale + dy;
-              framebuffer[(py / 8) * WIDTH + x + col * scale + dx] |= 1u << (py % 8);
+        if (glyph_pixels & (1u << (14 - row * 3 - first - col)))
+          for (unsigned dy = 0; dy < SCALE; ++dy)
+            for (unsigned dx = 0; dx < SCALE; ++dx) {
+              unsigned py = y + row * SCALE + dy;
+              pixels[(py / 8) * stride + x + col * SCALE + dx] |=
+                  static_cast<uint8_t>(1u << (py % 8));
             }
-    x += (columns + 1) * scale;
+    x += (columns + 1) * SCALE;
   }
 }
 
-void clear_field(unsigned y) {
+void text(unsigned y, const char *value, unsigned x = 0) {
+  draw_text(framebuffer, WIDTH, PAGES * 8, x, y, value);
+}
+
+void clear_field(unsigned y, unsigned first_x = 0) {
   for (unsigned row = y; row < y + FIELD_ROWS; ++row)
-    for (unsigned x = 0; x < WIDTH; ++x)
+    for (unsigned x = first_x; x < WIDTH; ++x)
       framebuffer[(row / 8) * WIDTH + x] &= ~(1u << (row % 8));
+}
+
+// "P:<port>" is fixed at build time, so its bitmap is a compile-time constant
+// blitted once; uptime redraws only touch the columns to its right.
+struct PortLabel { char text[8]; };
+constexpr PortLabel port_label() {
+  PortLabel label{{'P', ':'}};
+  unsigned digits = 1;
+  for (unsigned value = Z80_WEB_TERMINAL_PORT; value >= 10; value /= 10)
+    ++digits;
+  for (unsigned i = 0, value = Z80_WEB_TERMINAL_PORT; i < digits; ++i, value /= 10)
+    label.text[1 + digits - i] = static_cast<char>('0' + value % 10);
+  return label;
+}
+constexpr PortLabel PORT_LABEL = port_label();
+constexpr unsigned PORT_COLUMNS = text_width(PORT_LABEL.text);
+// One glyph gap plus one space gap separate the port from the uptime.
+constexpr unsigned UPTIME_X = PORT_COLUMNS + 2 * SCALE;
+constexpr unsigned UPTIME_PAGE = UPTIME_Y / 8;
+static_assert(UPTIME_Y + FIELD_ROWS <= (UPTIME_PAGE + 2) * 8);
+struct PortBitmap { uint8_t pixels[2 * PORT_COLUMNS]; };
+constexpr PortBitmap port_bitmap() {
+  PortBitmap bitmap{};
+  draw_text(bitmap.pixels, PORT_COLUMNS, 16, 0, UPTIME_Y - UPTIME_PAGE * 8,
+            PORT_LABEL.text);
+  return bitmap;
+}
+constexpr PortBitmap PORT_BITMAP = port_bitmap();
+// The widest uptime that keeps the label and clock: "U: 999d 23:59". The
+// days-only fallback fits every 64-bit microsecond uptime (nine day digits).
+static_assert(UPTIME_X + text_width("U: 999d 23:59") <= WIDTH);
+static_assert(UPTIME_X + text_width("999999999d") <= WIDTH);
+
+void draw_port() {
+  for (unsigned p = 0; p < 2; ++p)
+    memcpy(framebuffer + (UPTIME_PAGE + p) * WIDTH,
+           PORT_BITMAP.pixels + p * PORT_COLUMNS, PORT_COLUMNS);
 }
 
 // Redraws only fields whose text changed; unchanged pages are not compared.
@@ -138,19 +189,27 @@ void render(uint64_t now_us) {
   }
   uint64_t seconds = now_us / 1'000'000;
   if (seconds / 60 != uptime_minute) {
-    char uptime[24];
+    if (uptime_minute == UINT64_MAX)
+      draw_port();
+    char uptime[32];
     uint64_t hours = seconds / 3600;
     unsigned minutes = static_cast<unsigned>((seconds / 60) % 60);
-    // HH:MM for the first day, then days: "UP: 4d 05:23".
-    if (hours < 24)
-      snprintf(uptime, sizeof(uptime), "UP: %02u:%02u",
+    // HH:MM for the first day, then days: "U: 4d 05:23". From 1000 days the
+    // label, then the clock, are dropped so the line never passes the edge.
+    if (hours < 24) {
+      snprintf(uptime, sizeof(uptime), "U: %02u:%02u",
                static_cast<unsigned>(hours), minutes);
-    else
-      snprintf(uptime, sizeof(uptime), "UP: %llud %02u:%02u",
-               static_cast<unsigned long long>(hours / 24),
-               static_cast<unsigned>(hours % 24), minutes);
-    clear_field(UPTIME_Y);
-    text(UPTIME_Y, uptime);
+    } else {
+      auto days = static_cast<unsigned long long>(hours / 24);
+      auto hour = static_cast<unsigned>(hours % 24);
+      snprintf(uptime, sizeof(uptime), "U: %llud %02u:%02u", days, hour, minutes);
+      if (UPTIME_X + text_width(uptime) > WIDTH)
+        snprintf(uptime, sizeof(uptime), "%llud %02u:%02u", days, hour, minutes);
+      if (UPTIME_X + text_width(uptime) > WIDTH)
+        snprintf(uptime, sizeof(uptime), "%llud", days);
+    }
+    clear_field(UPTIME_Y, UPTIME_X);
+    text(UPTIME_Y, uptime, UPTIME_X);
     uptime_minute = seconds / 60;
     changed_pages |= 0x0c;
   }

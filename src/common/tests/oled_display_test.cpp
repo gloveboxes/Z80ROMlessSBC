@@ -510,7 +510,8 @@ static void test_heartbeat_bits() {
   assert(machine.transactions.size() == writes);
 }
 
-// Renders the expected uptime line over the drawn one and checks they match.
+// Renders the expected uptime row from column 0 with the runtime glyph renderer
+// and checks it matches the compile-time port bitmap plus the drawn uptime.
 static void assert_uptime_line(const char *expected) {
   std::vector<uint8_t> drawn(oled_display::framebuffer + 2 * 128,
                              oled_display::framebuffer + 4 * 128);
@@ -523,16 +524,38 @@ static void test_uptime_format() {
   constexpr uint64_t hour_us = 3600ull * 1'000'000;
   constexpr uint64_t minute_us = 60ull * 1'000'000;
   reset(); settle();
-  assert_uptime_line("UP: 00:00");
+  assert_uptime_line("P:8088 U: 00:00");
   now = 23 * hour_us + 59 * minute_us; settle();
-  assert_uptime_line("UP: 23:59");
+  assert_uptime_line("P:8088 U: 23:59");
   now = 24 * hour_us; settle();
-  assert_uptime_line("UP: 1d 00:00");
+  assert_uptime_line("P:8088 U: 1d 00:00");
   now = (4 * 24 + 5) * hour_us + 23 * minute_us; settle();
-  assert_uptime_line("UP: 4d 05:23");
-  // Widest supported: seven day digits still fit the 128-pixel width.
-  now = (9'999'999ull * 24 + 23) * hour_us + 59 * minute_us; settle();
-  assert_uptime_line("UP: 9999999d 23:59");
+  assert_uptime_line("P:8088 U: 4d 05:23");
+  // Widest full line ends exactly at the right edge.
+  now = (999ull * 24 + 23) * hour_us + 59 * minute_us; settle();
+  assert_uptime_line("P:8088 U: 999d 23:59");
+  assert((oled_display::framebuffer[2 * 128 + 127] | oled_display::framebuffer[3 * 128 + 127]) & 0x3f);
+  // From 1000 days the label, then the clock, are dropped to stay in bounds.
+  now = (1000ull * 24 + 1) * hour_us + 2 * minute_us; settle();
+  assert_uptime_line("P:8088 1000d 01:02");
+  now = 123'456'789ull * 24 * hour_us; settle();
+  assert_uptime_line("P:8088 123456789d");
+}
+
+static void test_port_label_is_static() {
+  // The port bitmap is drawn once; uptime redraws never send its columns again.
+  reset(); settle();
+  std::vector<uint8_t> port(oled_display::confirmed + 2 * 128,
+                            oled_display::confirmed + 2 * 128 + oled_display::PORT_COLUMNS);
+  assert(oled_display::PORT_COLUMNS == 42 && oled_display::UPTIME_X == 46);
+  auto writes = machine.transactions.size();
+  now = 60'000'000; settle();
+  for (size_t i = writes; i < machine.transactions.size(); ++i) {
+    const auto &transaction = machine.transactions[i];
+    unsigned column = (transaction[4] & 0xf) | ((transaction[6] & 0xf) << 4);
+    assert(column >= oled_display::UPTIME_X);
+  }
+  assert(memcmp(port.data(), oled_display::confirmed + 2 * 128, port.size()) == 0);
 }
 
 static void test_chaining_and_pause() {
@@ -659,10 +682,12 @@ int main() {
   test_minute_uptime_and_cached_ip();
   test_idle_fast_path();
   test_uptime_format();
+  test_port_label_is_static();
   test_heartbeat_bits();
   test_chaining_and_pause();
   test_device_failures();
   test_transport_failures();
   puts("PASS: SSD1315 128x32 PIO/DMA transport, merged page writes, same-pass chaining, "
-       "cached IP, minute-only uptime with days format, bit-safe heartbeat, idle fast path, pause gating and failures");
+       "cached IP, compile-time port label, minute-only uptime with days format, "
+       "bit-safe heartbeat, idle fast path, pause gating and failures");
 }
