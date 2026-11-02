@@ -269,6 +269,21 @@ def assembly_labels() -> list[tuple[str, float, float, float]]:
     ]
 
 
+IC_LABELS = {
+    "U1": "Z80 CPU",
+    "U2": "AS6C1008 SRAM",
+    "U3": "74HCT32",
+    "U4": "74AHCT244",
+    "U7": "74LVC244",
+    "U9": "74AHCT245",
+    "U10": "74LVC245",
+}
+
+
+def ic_label_text(reference: str) -> str:
+    return f"{IC_LABELS[reference]}\n{reference}"
+
+
 REFERENCE_POSITIONS = {
     "RN2": (80.2, 81.9), "RN4": (8.6, 55.0), "RN6": (26.1, 42.5),
 }
@@ -320,12 +335,14 @@ def add_text(
     x: float,
     y: float,
     size: float,
+    angle: float = 0,
 ) -> None:
     item = pcbnew.PCB_TEXT(board)
     item.SetText(text)
     item.SetLayer(pcbnew.F_SilkS)
     item.SetPosition(vec(x, y))
     item.SetTextSize(vec(size, size))
+    item.SetTextAngle(pcbnew.EDA_ANGLE(angle, pcbnew.DEGREES_T))
     item.SetTextThickness(mm(min(0.25, max(0.12, size * 0.12))))
     board.Add(item)
 
@@ -527,6 +544,7 @@ def build_board(
         if reference.startswith("U"):
             center = footprint.GetBoundingBox(False, False).GetCenter()
             footprint.Reference().SetPosition(center)
+            footprint.Reference().SetLayer(pcbnew.F_Fab)
         if reference.startswith("RN"):
             footprint.Reference().SetPosition(vec(x + 4, y - 2.5))
         if reference in REFERENCE_POSITIONS:
@@ -569,6 +587,19 @@ def build_board(
     for text, x, y, size in assembly_labels():
         add_text(board, text, x, y, size)
     add_text(board, "20MHz target  REV B 4L", 50.5, 10.5, 0.8)
+    for reference in IC_LABELS:
+        footprint = board.FindFootprintByReference(reference)
+        center = footprint.GetBoundingBox(False, False).GetCenter()
+        # Vertical DIP bodies read along their length.
+        angle = 90 if placements[reference][2] == 0 else 0
+        add_text(
+            board,
+            ic_label_text(reference),
+            pcbnew.ToMM(center.x),
+            pcbnew.ToMM(center.y),
+            0.8,
+            angle,
+        )
     board.BuildConnectivity()
     return board
 
@@ -1028,6 +1059,17 @@ def check_board(
         ))
     if actual_labels != expected_labels:
         raise SystemExit("PCB assembly silkscreen labels are stale")
+    silk_texts = {
+        str(pcbnew.Cast_to_PCB_TEXT(drawing).GetText())
+        for drawing in board.GetDrawings()
+        if drawing.Type() == pcbnew.PCB_TEXT_T
+        and drawing.GetLayer() == pcbnew.F_SilkS
+    }
+    for reference in IC_LABELS:
+        if ic_label_text(reference) not in silk_texts:
+            raise SystemExit(f"{reference} silkscreen part-name label is missing")
+        if footprints[reference].Reference().GetLayer() != pcbnew.F_Fab:
+            raise SystemExit(f"{reference} reference must stay on F.Fab")
     for reference in [f"C{index}" for index in range(1, 8)] + ["A1"]:
         if any(
             item.GetLayer() == pcbnew.F_SilkS

@@ -8,6 +8,9 @@
 - Preserve polarized-capacitor and diode polarity marks on F.Silkscreen,
   and label J3's power rails. Moving nonpolar bypass outlines to
   F.Fab must not also remove C8-C11 polarity information.
+- Label each DIP IC on F.Silkscreen with its part name and reference
+  inside the body outline (`IC_LABELS` in `scripts/build-kicad-pcb.py`);
+  the bare U reference stays on F.Fab.
 - Place every 100 nF bypass within a few millimetres of its target supply pin
   and provide a local GND return.
 - Put supply-entry bulk capacitance beside the input; distribute other bulk

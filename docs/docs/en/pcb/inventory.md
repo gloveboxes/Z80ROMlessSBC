@@ -25,6 +25,10 @@ display. Buy four DIP-20 sockets, one DIP-14, one DIP-32 and one DIP-40.
 Do not interchange AHCT, HCT and LVC families. Verify actual socket-body
 dimensions and extraction access, not just pin-row spacing.
 
+The silkscreen inside each DIP outline names the chip with its reference
+underneath, for example **74AHCT245 / U9** and **Z80 CPU / U1**. Check the
+label before fitting the socket and chip, because the fitted part covers it.
+
 ## Resistor arrays
 
 All **40 pull branches** use **six bussed arrays**, with no discrete
