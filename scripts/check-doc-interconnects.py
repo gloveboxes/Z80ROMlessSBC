@@ -36,8 +36,8 @@ FIXED_ENDPOINT_NETS = {
     "D1.1": "VSYS", "D1.2": "+5V",
     "A1.38": "GND", "A1.39": "VSYS",
     "A1.11": "PICO_GP8", "A1.29": "PICO_GP22", "A1.31": "PICO_GP26",
-    "J2.1": "PICO_GP8", "J2.2": "PICO_GP22", "J2.3": "PICO_GP26",
-    "J2.4": "+3V3", "J2.5": "GND",
+    "J2.1": "PICO_GP22", "J2.2": "PICO_GP26",
+    "J2.3": "+3V3", "J2.4": "GND",
     "A2.VCC": "+3V3", "A2.GND": "GND",
     "A2.SCK": "PICO_GP26", "A2.SDA": "PICO_GP22",
 }

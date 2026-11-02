@@ -188,8 +188,8 @@ subtotals: adding it brings the base build to **approximately $88.34 USD**, or
 
 ## PCB Status
 
-The revised schematic also includes J2, an optional 1x5, 2.54 mm expansion
-header for GP8, GP22, GP26, 3.3 V, and GND. Reserve one five-pin header for
+The revised schematic also includes J2, an optional 1x4, 2.54 mm expansion
+header for GP22, GP26, 3.3 V, and GND. Reserve one four-pin header for
 the PCB; it adds no active packages and is not required for the
 Phase 0-10 breadboard build. No peripheral pull-ups or LED resistors are
 included. See the [expansion pin map](pin-mapping.md#j2-peripheral-expansion).

@@ -170,10 +170,10 @@ supervisor stops the Z80, loads SRAM or pauses storage work.
 
 | OLED marking | Pico connection | J2 pin |
 | --- | --- | --- |
-| VCC | 3V3, physical pin 36 | 4 |
-| GND | Common GND | 5 |
-| SCK (I2C SCL) | GP26, physical pin 31 | 3 |
-| SDA | GP22, physical pin 29 | 2 |
+| VCC | 3V3, physical pin 36 | 3 |
+| GND | Common GND | 4 |
+| SCK (I2C SCL) | GP26, physical pin 31 | 2 |
+| SDA | GP22, physical pin 29 | 1 |
 
 Follow the module's printed labels, not connector order; the module prints
 `SCK` for the I2C clock. **Small I2C OLED modules do not share a pin order:**

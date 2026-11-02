@@ -39,7 +39,8 @@ project's bench-proven IC set; this PCB still requires its own qualification.
   **pin 1 +5 V / pin 2 GND**. It shares J1's rail without source isolation:
   **connect only one supply at a time**. D1 supplies Pico VSYS; never join
   the main +5 V rail to Pico VBUS.
-- J2 remains the 1x5 expansion header: GP8, GP22/SDA, GP26/SCL, 3.3 V, GND.
+- J2 is the 1x4 expansion header: GP22/SDA, GP26/SCL, 3.3 V, GND. GP8 is
+  dedicated to SRAM bank select and is not exposed.
   GP8 is reserved for bank select. Do not connect a second display with
   conflicting address/pull-ups while A2 is fitted.
 

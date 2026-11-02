@@ -19,15 +19,15 @@ are not 5 V-tolerant pads. Do not rely on GP0-GP25 FT tolerance during power-off
 | GP5 | 7 | BOOT_READ_DISABLE | U4 pin 6 | HIGH |
 | GP6 | 9 | PICO_DATA_UP_OE# | U3 pin 10 | HIGH |
 | GP7 | 10 | DATA_DOWN_OE# | U10 pin 19 | HIGH |
-| GP8 | 11 | SRAM bank select | U4 pin 17 -> pin 3 -> SRAM A16; R24 10 kOhm to GND at Pico pin 11; J2 pin 1 | LOW (bank 0) |
+| GP8 | 11 | SRAM bank select | U4 pin 17 -> pin 3 -> SRAM A16; R24 10 kOhm to GND at Pico pin 11; dedicated, not on J2 | LOW (bank 0) |
 | GP9 | 12 | IO_RELEASE | U3 pin 5 | LOW |
 | GP10-GP17 | 14,15,16,17,19,20,21,22 | D0-D7 | U9 and U10 pins 2-9 | Inputs |
 | GP18 | 24 | A0 input | U7 pin 9 | Input |
 | GP19 | 25 | A1 input | U7 pin 7 | Input |
 | GP20 | 26 | A2 input | U7 pin 5 | Input |
 | GP21 | 27 | A4 input | U7 pin 3 | Input |
-| GP22 | 29 | Expansion GPIO / Phase 10 OLED SDA | J2 pin 2 | Unconfigured until OLED service |
-| GP26 | 31 | Expansion GPIO / ADC0 / Phase 10 OLED SCL | J2 pin 3 | Unconfigured until OLED service |
+| GP22 | 29 | Expansion GPIO / Phase 10 OLED SDA | J2 pin 1 | Unconfigured until OLED service |
+| GP26 | 31 | Expansion GPIO / ADC0 / Phase 10 OLED SCL | J2 pin 2 | Unconfigured until OLED service |
 | GP27 | 32 | RD# input | U7 pin 14 | Input |
 | GP28 | 34 | WR# input | U7 pin 12 | Input |
 
@@ -39,39 +39,36 @@ GP23/24/25/29 are reserved by Pico 2 W wireless hardware.
 
 ### J2 Peripheral Expansion
 
-The schematic exposes the **three expansion GPIOs**, plus Pico 3.3 V and common
-GND, on a **1x5, 2.54 mm through-hole header**. Its assigned KiCad footprint is
-`Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical`, fitted on the
-current PCB. A2's OLED socket shares the GP22/GP26/3.3 V/GND connections.
+The schematic exposes the **two expansion GPIOs**, plus Pico 3.3 V and common
+GND, on a **1x4, 2.54 mm through-hole header**. Its assigned KiCad footprint is
+`Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical`, fitted on the
+current PCB. GP8 is dedicated to SRAM bank selection and is not exposed. A2's OLED socket shares the GP22/GP26/3.3 V/GND connections.
 
 | J2 pin | Net | Pico physical header pin | Use |
 | ---: | --- | ---: | --- |
-| 1 | `PICO_GP8` | 11 | SRAM bank-select output; reserved by supervisor |
-| 2 | `PICO_GP22` | 29 | GP22 digital GPIO / Phase 10 OLED SDA |
-| 3 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Phase 10 OLED SCL |
-| 4 | `+3V3` | 36 | Pico 3.3 V output; not an external supply input |
-| 5 | `GND` | 3,8,13,18,23,28,33,38 | Common ground |
+| 1 | `PICO_GP22` | 29 | GP22 digital GPIO / Phase 10 OLED SDA |
+| 2 | `PICO_GP26` | 31 | GP26 digital GPIO or ADC0 / Phase 10 OLED SCL |
+| 3 | `+3V3` | 36 | Pico 3.3 V output; not an external supply input |
+| 4 | `GND` | 3,8,13,18,23,28,33,38 | Common ground |
 
 These are **3.3 V-only peripheral connections**, with no level shifting,
-protection, or LED series resistors fitted. GP8 has R24, a 10 kOhm pull-down
-at Pico physical pin 11, and is reserved for bank selection. GP22/GP26 have
-no fixed pulls on the board. Do not
+protection, or LED series resistors fitted. GP22/GP26 have no fixed pulls
+on the board. Do not
 apply 5 V or drive them while the Pico is unpowered. Use an external
 current-limiting resistor for each LED. External I2C pull-ups must go to
 3.3 V, not 5 V. Any peripheral powered from J2 shares the Pico regulator's
 remaining current budget with Wi-Fi, the LVC devices, and existing pulls;
-do not back-feed pin 4 or assume a dedicated peripheral power allowance.
+do not back-feed pin 3 or assume a dedicated peripheral power allowance.
 
 [SSD1315 status OLED](../implementation/phase-10-websocket.md#ssd1315-status-oled)
 wiring is documented in Phase 10 and requires a verified 3.3 V-compatible module.
 GP8 bank-select wiring is documented in [Phase 4](../implementation/phase-4-address-bus.md#sram-bank-select).
 GP3 is RESET#, not a fourth spare pin. As defined in the
 [RP2350 GPIO function table](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf),
-GP8, GP22, and GP26 offer SDA functions but no hardware I2C SCL, and do not
-form a full-duplex hardware SPI pin set. Use software or PIO implementations
-for I2C or SPI on this header, within the three-signal limit. A conventional
-four-signal SPI peripheral with separate clock, MOSI, MISO, and chip select
-needs another GPIO or a separate design change; do not borrow supervisor
+GP22 and GP26 offer SDA functions but no hardware I2C SCL, and do not
+form a hardware SPI pin set. Use software or PIO implementations
+for I2C on this header, within the two-signal limit. An SPI peripheral
+needs more GPIOs or a separate design change; do not borrow supervisor
 bus/control pins. Keep future peripheral handling outside timing-critical
 supervisor paths and qualify it separately.
 

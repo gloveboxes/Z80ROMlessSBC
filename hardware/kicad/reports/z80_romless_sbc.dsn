@@ -89,7 +89,7 @@
     (component PinHeader_1x02_P2.54mm_Vertical
       (place J3 82000 -78200 front 90 (PN "EXTERNAL 5V"))
     )
-    (component PinHeader_1x05_P2.54mm_Vertical
+    (component PinHeader_1x04_P2.54mm_Vertical
       (place J2 40000 -8500 front -90 (PN "PICO GPIO EXPANSION"))
     )
     (component USB_C_Breakout_6Pin_P2.54mm_Solder
@@ -108,7 +108,7 @@
       (place C6 53975 -54610 front 180 (PN 100n))
       (place C5 25400 -37465 front 180 (PN 100n))
       (place C4 41275 -76200 front 180 (PN 100n))
-      (place C1 47625 -53975 front 180 (PN 100n))
+      (place C1 47625 -55245 front 180 (PN 100n))
     )
     (component C_Disc_D5.0mm_W2.5mm_P2.50mm::1
       (place C3 22225 -72390 front 90 (PN 100n))
@@ -470,24 +470,23 @@
       (pin Rect[A]Pad_1700.000000x1700.000000_um 1 0 0)
       (pin Round[A]Pad_1700.000000_um 2 0 -2540)
     )
-    (image PinHeader_1x05_P2.54mm_Vertical
-      (outline (polygon signal 0  1765 1765  1765 -11925  -1765 -11925  -1765 1765))
+    (image PinHeader_1x04_P2.54mm_Vertical
+      (outline (polygon signal 0  1765 1765  1765 -9385  -1765 -9385  -1765 1765))
       (outline (path signal 120  -1380 1380  0 1380))
       (outline (path signal 120  -1380 0  -1380 1380))
-      (outline (path signal 120  -1380 -1270  -1380 -11540))
+      (outline (path signal 120  -1380 -1270  -1380 -9000))
       (outline (path signal 120  -1380 -1270  1380 -1270))
-      (outline (path signal 120  -1380 -11540  1380 -11540))
-      (outline (path signal 120  1380 -1270  1380 -11540))
+      (outline (path signal 120  -1380 -9000  1380 -9000))
+      (outline (path signal 120  1380 -1270  1380 -9000))
       (outline (path signal 100  -1270 635  -635 1270))
-      (outline (path signal 100  -1270 -11430  -1270 635))
+      (outline (path signal 100  -1270 -8890  -1270 635))
       (outline (path signal 100  -635 1270  1270 1270))
-      (outline (path signal 100  1270 1270  1270 -11430))
-      (outline (path signal 100  1270 -11430  -1270 -11430))
+      (outline (path signal 100  1270 1270  1270 -8890))
+      (outline (path signal 100  1270 -8890  -1270 -8890))
       (pin Rect[A]Pad_1700.000000x1700.000000_um 1 0 0)
       (pin Round[A]Pad_1700.000000_um 2 0 -2540)
       (pin Round[A]Pad_1700.000000_um 3 0 -5080)
       (pin Round[A]Pad_1700.000000_um 4 0 -7620)
-      (pin Round[A]Pad_1700.000000_um 5 0 -10160)
     )
     (image USB_C_Breakout_6Pin_P2.54mm_Solder
       (outline (polygon signal 0  17795 -1895  -4795 -1895  -4795 11595  17795 11595))
@@ -1474,7 +1473,7 @@
   )
   (network
     (net +3V3
-      (pins U7-20 U10-20 RN5-1 J2-4 C7-1 C5-1 A2-VCC A1-36)
+      (pins U7-20 U10-20 RN5-1 J2-3 C7-1 C5-1 A2-VCC A1-36)
     )
     (net +5V
       (pins U9-1 U9-20 U4-20 U3-14 U2-30 U2-32 U1-11 RN4-1 RN2-1 RN1-1 J3-1 J1-VBUS
@@ -1572,7 +1571,7 @@
     )
     (net GND
       (pins U9-10 U7-1 U7-10 U7-19 U4-1 U4-10 U4-15 U4-19 U3-7 U3-12 U3-13 U2-16 U10-1
-        U10-10 U1-29 RN6-1 RN3-1 J3-2 J2-5 J1-GND C9-2 C8-2 C7-2 C6-2 C5-2 C4-2 C3-2
+        U10-10 U1-29 RN6-1 RN3-1 J3-2 J2-4 J1-GND C9-2 C8-2 C7-2 C6-2 C5-2 C4-2 C3-2
         C2-2 C11-2 C10-2 C1-2 A2-GND A1-3 A1-8 A1-13 A1-18 A1-23 A1-28 A1-33 A1-38)
     )
     (net INT_N
@@ -1639,13 +1638,13 @@
       (pins U3-10 RN5-4 A1-9)
     )
     (net PICO_GP22
-      (pins J2-2 A2-SDA A1-29)
+      (pins J2-1 A2-SDA A1-29)
     )
     (net PICO_GP26
-      (pins J2-3 A2-SCK A1-31)
+      (pins J2-2 A2-SCK A1-31)
     )
     (net PICO_GP8
-      (pins U4-17 RN6-5 J2-1 A1-11)
+      (pins U4-17 RN6-5 A1-11)
     )
     (net PICO_IORQ_N
       (pins U7-16 A1-2)

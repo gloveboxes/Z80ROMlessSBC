@@ -62,8 +62,8 @@ of these surfaces.
 ## Non-negotiable checks
 
 - Schematic: zero ERC violations.
-- Net parity: all 71 real nets and 279 schematic endpoints match the manifest;
-  PCB checks cover all 30 fitted footprints and 279 connected endpoints.
+- Net parity: all 71 real nets and 278 schematic endpoints match the manifest;
+  PCB checks cover all 30 fitted footprints and 278 connected endpoints.
   The board has no test points; do not reintroduce them without a request.
 - J1 retains six 1.0 mm plated solder holes at 2.54 mm pitch. Only VBUS/+5V
   and GND are wired; CC2, D+, D- and CC1 remain isolated. Preserve its

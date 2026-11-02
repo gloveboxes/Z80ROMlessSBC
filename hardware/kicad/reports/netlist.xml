@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-11-02T13:44:40</date>
+    <date>2026-11-02T14:05:59</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -417,12 +417,12 @@
     </comp>
     <comp ref="J2">
       <value>PICO GPIO EXPANSION</value>
-      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</footprint>
-      <description>3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND</description>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</footprint>
+      <description>3.3V header: GP22/SDA, GP26/SCL/ADC0, Pico 3V3 output, GND; GP8 is dedicated to SRAM bank select and not exposed</description>
       <fields>
-        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND</field>
+        <field name="Description">3.3V header: GP22/SDA, GP26/SCL/ADC0, Pico 3V3 output, GND; GP8 is dedicated to SRAM bank select and not exposed</field>
       </fields>
       <libsource lib="Z80SBC" part="EXPANSION" description="Z80ROMlessSBC project symbol: PICO GPIO EXPANSION"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
@@ -432,7 +432,6 @@
       <units>
         <unit name="A">
           <pins>
-            <pin num="5"/>
             <pin num="4"/>
             <pin num="3"/>
             <pin num="2"/>
@@ -1053,11 +1052,10 @@
         <field name="Description">Z80ROMlessSBC project symbol: PICO GPIO EXPANSION</field>
       </fields>
       <pins>
-        <pin num="1" name="GP8" type="passive"/>
-        <pin num="2" name="GP22" type="passive"/>
-        <pin num="3" name="GP26_ADC0" type="passive"/>
-        <pin num="4" name="3V3_OUT" type="passive"/>
-        <pin num="5" name="GND" type="passive"/>
+        <pin num="1" name="GP22" type="passive"/>
+        <pin num="2" name="GP26_ADC0" type="passive"/>
+        <pin num="3" name="3V3_OUT" type="passive"/>
+        <pin num="4" name="GND" type="passive"/>
       </pins>
     </libpart>
     <libpart lib="Z80SBC" part="HCT32">
@@ -1396,7 +1394,7 @@
       <node ref="A2" pin="VCC" pinfunction="VCC_VCC" pintype="power_in"/>
       <node ref="C5" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="C7" pin="1" pinfunction="+_1" pintype="passive"/>
-      <node ref="J2" pin="4" pinfunction="3V3_OUT_4" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="3V3_OUT_3" pintype="passive"/>
       <node ref="RN5" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="U10" pin="20" pinfunction="VCC_20" pintype="power_in"/>
       <node ref="U7" pin="20" pinfunction="VCC_20" pintype="power_in"/>
@@ -1607,7 +1605,7 @@
       <node ref="C8" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="C9" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="J1" pin="GND" pinfunction="GND_GND" pintype="power_out"/>
-      <node ref="J2" pin="5" pinfunction="GND_5" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="GND_4" pintype="passive"/>
       <node ref="J3" pin="2" pinfunction="GND_2" pintype="passive"/>
       <node ref="RN3" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="RN6" pin="1" pinfunction="COMMON_1" pintype="passive"/>
@@ -1736,19 +1734,18 @@
     </net>
     <net code="58" name="/PICO_GP8" class="Default">
       <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional"/>
-      <node ref="J2" pin="1" pinfunction="GP8_1" pintype="passive"/>
       <node ref="RN6" pin="5" pinfunction="R4_5" pintype="passive"/>
       <node ref="U4" pin="17" pinfunction="2A4_17" pintype="input"/>
     </net>
     <net code="59" name="/PICO_GP22" class="Default">
       <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional"/>
       <node ref="A2" pin="SDA" pinfunction="SDA_SDA" pintype="bidirectional"/>
-      <node ref="J2" pin="2" pinfunction="GP22_2" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="GP22_1" pintype="passive"/>
     </net>
     <net code="60" name="/PICO_GP26" class="Default">
       <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional"/>
       <node ref="A2" pin="SCK" pinfunction="SCK_SCK" pintype="input"/>
-      <node ref="J2" pin="3" pinfunction="GP26_ADC0_3" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="GP26_ADC0_2" pintype="passive"/>
     </net>
     <net code="61" name="/PICO_IORQ_N" class="Default">
       <node ref="A1" pin="2" pinfunction="GP1_2" pintype="bidirectional"/>

@@ -50,9 +50,9 @@ The Pico lies horizontally at the upper left. The Z80 (U1) and SRAM (U2)
 are parallel horizontal packages in the lower half. U4 (AHCT244) and U3
 (HCT32) stand vertically at their left ends, keeping the Z80 clock, CE#,
 WAIT# and RD# paths short. U9/U10 share the data bus beside the Pico. RN5/RN6 are local
-to the startup GPIOs. The +5V bypass capacitors are **3.9-5.9 mm** from
+to the startup GPIOs. The +5V bypass capacitors are **2.9-5.9 mm** from
 their supply pins across the +5V plane. The +3V3 bypass tracks for U7 and
-U10 are 6.3 and 5.0 mm, via-free. Each capacitor's other pad joins the GND
+U10 are 6.1 and 5.0 mm, via-free. Each capacitor's other pad joins the GND
 plane.
 
 Four **2.7 mm non-plated holes** accept **M2.5 standoffs**, one in each
@@ -148,14 +148,14 @@ flight times; layer changes include transitions through plated component pads.
 | Source/receiver group | Path range | Spread |
 | --- | ---: | ---: |
 | Z80 to SRAM address | 11.46-54.81 mm | 43.36 mm |
-| Z80 to SRAM data | 27.50-72.14 mm | 44.64 mm |
-| Pico-write transceiver to SRAM | 43.07-74.88 mm | 31.81 mm |
-| SRAM to Pico-read transceiver | 55.87-88.13 mm | 32.26 mm |
-| Pico to U9 | 10.56-64.89 mm | 54.34 mm |
-| Pico to U10 | 21.51-51.15 mm | 29.64 mm |
+| Z80 to SRAM data | 27.50-61.02 mm | 33.51 mm |
+| Pico-write transceiver to SRAM | 38.58-75.17 mm | 36.59 mm |
+| SRAM to Pico-read transceiver | 52.57-81.35 mm | 28.79 mm |
+| Pico to U9 | 10.56-73.73 mm | 63.18 mm |
+| Pico to U10 | 21.68-70.97 mm | 49.29 mm |
 
 Using an illustrative FR-4 delay of 6-7 ps/mm, the address spread corresponds
-to about **0.26-0.30 ns**, and the CPU/SRAM data spread to **0.27-0.31 ns**.
+to about **0.26-0.30 ns**, and the CPU/SRAM data spread to **0.20-0.23 ns**.
 These estimates are small compared with the **50 ns period at 20 MHz**,
 but do not establish setup/hold margin. Do not add serpentine copper simply
 to match bus totals: each shared branch affects multiple source/receiver paths.
@@ -165,23 +165,23 @@ A0-A7 are short direct Z80-to-SRAM runs.
 | --- | ---: | ---: |
 | Pico clock to U4 | 53.20 mm | 0 |
 | U4 to Z80 clock | 36.55 mm | 0 |
-| U4 to SRAM CE# | 23.36 mm | 0 |
-| U3 to SRAM OE# | 50.40 mm | 0 |
-| U4 to SRAM WE# | 44.27 mm | 0 |
-| U3 to Z80 WAIT# | 25.49 mm | 1 |
-| Z80 IORQ# to U3 | 69.99 mm | 1 |
-| Z80 RD# to U4 | 29.86 mm | 1 |
+| U4 to SRAM CE# | 18.38 mm | 0 |
+| U3 to SRAM OE# | 50.38 mm | 0 |
+| U4 to SRAM WE# | 44.26 mm | 0 |
+| U3 to Z80 WAIT# | 39.03 mm | 1 |
+| Z80 IORQ# to U3 | 34.78 mm | 1 |
+| Z80 RD# to U4 | 30.46 mm | 0 |
 | Buffered RD# U4 to U3 | 24.17 mm | 0 |
-| U4 to SRAM A16 | 58.05 mm | 1 |
+| U4 to SRAM A16 | 48.55 mm | 0 |
 
 Both clock nets are locked, via-free F.Cu preroutes. The Pico clock
 daisy-chains through its RN6 pull-down to U4 with no stub. The Z80 clock is
 a direct U4-to-CPU route. The board has no test points; the circuit is proven
 on the prototype, so probe IC pins or socket leads directly.
 
-SRAM CE#, OE# and WE# are via-free. D4 (four layer changes, 88 mm from SRAM
-to the Pico read transceiver) and IORQ# (70 mm) are the remaining outliers;
-check them at their receive pins before accepting 20 MHz operation. No route is claimed to be
+SRAM CE#, OE# and WE# are via-free. The SRAM-to-Pico-read-transceiver paths
+are the remaining outliers (D3 at 81 mm; D1 with four layer changes);
+check them at the U10 receive pins before accepting 20 MHz operation. No route is claimed to be
 length matched.
 
 ## Timing and hardware qualification

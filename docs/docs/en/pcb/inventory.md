@@ -62,7 +62,7 @@ silkscreen. Confirm purchased body diameters and lead pitches.
 | J1 USB-C power breakout | 1 | Pictured 21.6 x 12.7 mm module; all six pins soldered, only VBUS/+5 V and GND connected |
 | J1 male pin strip | 1 | 1x6, 2.54 mm; solder to module and carrier, 1.0 mm carrier drills; verify pin fit and underside insulation |
 | J3 auxiliary power/probe header | 1 | 1x2, 2.54 mm: pin 1 +5 V, pin 2 GND; use only one source, J1 or J3 |
-| J2 expansion header | 1 | 1x5, 2.54 mm: GP8, GP22, GP26, 3.3 V, GND |
+| J2 expansion header | 1 | 1x4, 2.54 mm: GP22/SDA, GP26/SCL, 3.3 V, GND |
 | OLED female socket | 1 | 1x4, 2.54 mm; 1.0 mm carrier drills, verify pin fit |
 | OLED insulating support | 1 | Support module's far end; determine height with the purchased socket/module |
 | PCB | 1 | Four-layer, 1.6 mm FR-4 (GND and +5V inner planes), 85 x 96 mm, internal antenna cutout |

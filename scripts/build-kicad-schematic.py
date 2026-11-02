@@ -301,11 +301,10 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
         "J",
         "PICO GPIO EXPANSION",
         [
-            pin(1, "GP8", "passive", "left"),
-            pin(2, "GP22", "passive", "left"),
-            pin(3, "GP26_ADC0", "passive", "left"),
-            pin(4, "3V3_OUT", "passive", "left"),
-            pin(5, "GND", "passive", "left"),
+            pin(1, "GP22", "passive", "left"),
+            pin(2, "GP26_ADC0", "passive", "left"),
+            pin(3, "3V3_OUT", "passive", "left"),
+            pin(4, "GND", "passive", "left"),
         ],
     ),
     "SSD1315_OLED": (
@@ -662,9 +661,9 @@ add_component(
 )
 add_component(
     "J2", "EXPANSION", "PICO GPIO EXPANSION", 1016.0, 152.4,
-    {1: "PICO_GP8", 2: "PICO_GP22", 3: "PICO_GP26", 4: "+3V3", 5: "GND"},
-    footprint="Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
-    description="3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND",
+    {1: "PICO_GP22", 2: "PICO_GP26", 3: "+3V3", 4: "GND"},
+    footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+    description="3.3V header: GP22/SDA, GP26/SCL/ADC0, Pico 3V3 output, GND; GP8 is dedicated to SRAM bank select and not exposed",
 )
 add_component(
     "J3", "POWER_HEADER", "EXTERNAL 5V", 50.8, 101.6,
@@ -855,7 +854,7 @@ schematic.texts.extend([
         uuid=uid("text:pull-note"),
     ),
     Text(
-        text="J2: 3.3V expansion/probe header, not a 5V input.\\n1: GP8 reserved for SRAM bank select.\\n2: GP22/SDA; 3: GP26/SCL, shared with A2.\\n4: Pico 3V3 output; 5: GND.",
+        text="J2: 3.3V expansion/probe header, not a 5V input.\\n1: GP22/SDA; 2: GP26/SCL, shared with A2.\\n3: Pico 3V3 output; 4: GND.\\nGP8 is dedicated to SRAM bank select.",
         position=pos(1016.0, 190.5, 0),
         effects=effects(1.27),
         uuid=uid("text:expansion-note"),
@@ -867,7 +866,7 @@ schematic.texts.extend([
         uuid=uid("text:bank-select-note"),
     ),
     Text(
-        text="A2: socketed Stage 10 0.91in SSD1315 128x32 status OLED.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader centres 1.50mm from left; SDA 2.19mm from top.\\nHeader order GND, VCC, SCK, SDA bottom-to-top.\\nSDA = J2.2 / GP22; SCK = J2.3 / GP26.\\nVCC = J2.4 / 3V3; GND = J2.5 / GND.\\nI2C pull-ups to 3.3V only; address 0x3C.\\nVerify socket height, pin fit and insulated module support.",
+        text="A2: socketed Stage 10 0.91in SSD1315 128x32 status OLED.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader centres 1.50mm from left; SDA 2.19mm from top.\\nHeader order GND, VCC, SCK, SDA bottom-to-top.\\nSDA = J2.1 / GP22; SCK = J2.2 / GP26.\\nVCC = J2.3 / 3V3; GND = J2.4 / GND.\\nI2C pull-ups to 3.3V only; address 0x3C.\\nVerify socket height, pin fit and insulated module support.",
         position=pos(1016.0, 292.1, 0),
         effects=effects(1.27),
         uuid=uid("text:oled-note"),
@@ -878,8 +877,8 @@ schematic.texts.extend([
 required_endpoints = {
     "+5V": {"J1.VBUS", "D1.2"},
     "VSYS": {"D1.1", "A1.39"},
-    "GND": {"J1.GND", "A1.38", "J2.5", "A2.GND", "RN6.1"},
-    "+3V3": {"A1.36", "J2.4", "A2.VCC"},
+    "GND": {"J1.GND", "A1.38", "J2.4", "A2.GND", "RN6.1"},
+    "+3V3": {"A1.36", "J2.3", "A2.VCC"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},
     "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},
@@ -897,10 +896,10 @@ for net, required in required_endpoints.items():
         raise AssertionError(f"{net} missing endpoints: {sorted(required - actual)}")
 
 for net, required in {
-    "PICO_GP8": {"A1.11", "J2.1", "U4.17", "RN6.5"},
+    "PICO_GP8": {"A1.11", "U4.17", "RN6.5"},
     "SRAM_A16": {"U4.3", "U2.2"},
-    "PICO_GP22": {"A1.29", "J2.2", "A2.SDA"},
-    "PICO_GP26": {"A1.31", "J2.3", "A2.SCK"},
+    "PICO_GP22": {"A1.29", "J2.1", "A2.SDA"},
+    "PICO_GP26": {"A1.31", "J2.2", "A2.SCK"},
 }.items():
     actual = set(net_endpoints.get(net, []))
     if actual != required:

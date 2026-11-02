@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-11-02T13:44:40")
+		(date "2026-11-02T14:05:59")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -879,16 +879,16 @@
 		(comp
 			(ref "J2")
 			(value "PICO GPIO EXPANSION")
-			(footprint "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
-			(description "3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND")
+			(footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
+			(description "3.3V header: GP22/SDA, GP26/SCL/ADC0, Pico 3V3 output, GND; GP8 is dedicated to SRAM bank select and not exposed")
 			(fields
 				(field
-					(name "Footprint") "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
+					(name "Footprint") "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND")
+					(name "Description") "3.3V header: GP22/SDA, GP26/SCL/ADC0, Pico 3V3 output, GND; GP8 is dedicated to SRAM bank select and not exposed")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -912,9 +912,6 @@
 				(unit
 					(name "A")
 					(pins
-						(pin
-							(num "5")
-						)
 						(pin
 							(num "4")
 						)
@@ -2462,26 +2459,21 @@
 			(pins
 				(pin
 					(num "1")
-					(name "GP8")
-					(type "passive")
-				)
-				(pin
-					(num "2")
 					(name "GP22")
 					(type "passive")
 				)
 				(pin
-					(num "3")
+					(num "2")
 					(name "GP26_ADC0")
 					(type "passive")
 				)
 				(pin
-					(num "4")
+					(num "3")
 					(name "3V3_OUT")
 					(type "passive")
 				)
 				(pin
-					(num "5")
+					(num "4")
 					(name "GND")
 					(type "passive")
 				)
@@ -3716,8 +3708,8 @@
 			)
 			(node
 				(ref "J2")
-				(pin "4")
-				(pinfunction "3V3_OUT_4")
+				(pin "3")
+				(pinfunction "3V3_OUT_3")
 				(pintype "passive")
 			)
 			(node
@@ -4758,8 +4750,8 @@
 			)
 			(node
 				(ref "J2")
-				(pin "5")
-				(pinfunction "GND_5")
+				(pin "4")
+				(pinfunction "GND_4")
 				(pintype "passive")
 			)
 			(node
@@ -5377,12 +5369,6 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "J2")
-				(pin "1")
-				(pinfunction "GP8_1")
-				(pintype "passive")
-			)
-			(node
 				(ref "RN6")
 				(pin "5")
 				(pinfunction "R4_5")
@@ -5413,8 +5399,8 @@
 			)
 			(node
 				(ref "J2")
-				(pin "2")
-				(pinfunction "GP22_2")
+				(pin "1")
+				(pinfunction "GP22_1")
 				(pintype "passive")
 			)
 		)
@@ -5436,8 +5422,8 @@
 			)
 			(node
 				(ref "J2")
-				(pin "3")
-				(pinfunction "GP26_ADC0_3")
+				(pin "2")
+				(pinfunction "GP26_ADC0_2")
 				(pintype "passive")
 			)
 		)

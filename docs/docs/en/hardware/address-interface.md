@@ -20,8 +20,8 @@ stack, and vectors, so applications must use the
 ### Physical bank-select path
 
 The [Phase 4 checklist](../implementation/phase-4-address-bus.md#sram-bank-select)
-owns the GP8–U4–A16 wiring and R24 pull-down. GP8/J2 pin 1 is reserved for
-bank selection.
+owns the GP8–U4–A16 wiring and R24 pull-down. GP8 is dedicated to bank
+selection and is not exposed on J2.
 
 ### PIO acceleration
 

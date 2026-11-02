@@ -6,7 +6,7 @@
 "C11","100u","Capacitor_THT:CP_Radial_D10.0mm_P5.00mm","1",""
 "D1","1N5819","Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal","1",""
 "J1","USB-C 5V POWER BREAKOUT","Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder","1",""
-"J2","PICO GPIO EXPANSION","Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical","1",""
+"J2","PICO GPIO EXPANSION","Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical","1",""
 "J3","EXTERNAL 5V","Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical","1",""
 "RN1-RN4","8x10k bussed","Resistor_THT:R_Array_SIP9","4",""
 "RN5,RN6","4x10k bussed","Resistor_THT:R_Array_SIP5","2",""

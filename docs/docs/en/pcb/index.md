@@ -33,9 +33,9 @@ clearance.*
 
 ## Design status and boundaries
 
-The schematic has **30 components, 71 real nets and 279 connected pin
+The schematic has **30 components, 71 real nets and 278 connected pin
 endpoints**, excluding the ERC-only power marker. All **30 schematic
-footprints and 279 connected endpoints** are on the PCB, including the
+footprints and 278 connected endpoints** are on the PCB, including the
 onboard J1 USB-C power breakout. Its other four pins have isolated solder
 pads, not signal connections. Revision B has no test points: the circuit is
 proven on the prototype, so probe IC pins or socket leads directly. Four 2.7 mm NPTH mounting footprints are additional mechanical
