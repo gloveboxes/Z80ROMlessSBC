@@ -1,31 +1,25 @@
 # CP/M execution, banked memory and PIO I/O
 
-In Phases 9 and 10, the Z80 runs CP/M directly from SRAM; the Pico supervises
-boot and I/O, rather than emulating the CPU. The diagrams show the architecture;
-the [memory](#cpm-memory-map-reference), [PIO](#pio-io-engine-reference) and
-[BIOS](#custom-bios-reference) sections provide the implementation reference.
+In Phases 9 and 10, the Z80 runs CP/M directly from SRAM; the Pico supervises boot and I/O, rather than emulating the CPU. The diagrams show the architecture; the [memory](#cpm-memory-map-reference), [PIO](#pio-io-engine-reference) and [BIOS](#custom-bios-reference) sections provide the implementation reference.
+
+## Building applications across two banks
+
+Applications can use any compiler targeting the Z80 instruction set, provided its output and runtime are compatible with CP/M. Using both banks also requires the banked-memory interface: generating Z80 code alone does not provide cross-bank calls. DCC has specific compiler and linker support for [building fixed-address bank-1 libraries](https://davidly.github.io/dcc/02-build-and-link/#fixed-address-bank-1-libraries), including generated typed APIs and host wrappers.
+
+Split the application into a bank-0 `.COM` host for startup and user interaction, and a bank-1 `.LIB` service for processing and large, service-owned data. Build the library first, then the host with its generated wrappers and BANKSDK. Calls are synchronous and copy bounded arguments rather than sharing pointers; each bank has its own code, data, heap and stack budget. See [LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO) for a working example and the [library specification](../cpm-dcc/bank1-library-spec.md) for limits.
 
 ## Two banks, one address window
 
 [![Bank-0 and bank-1 memory regions and the mirrored bank-switch gateway](../images/cpm-banked-memory.svg)](../images/cpm-banked-memory.svg)
 
-[Open or download the full-size memory-map SVG](../images/cpm-banked-memory.svg).
-Region heights are schematic. Addresses are hexadecimal and ranges inclusive
-unless labelled otherwise; `#` means active LOW.
+[Open or download the full-size memory-map SVG](../images/cpm-banked-memory.svg). Region heights are schematic. Addresses are hexadecimal and ranges inclusive unless labelled otherwise; `#` means active LOW.
 
-The 128 KiB SRAM has two 64 KiB banks, each mapped to `0000h`-`FFFFh`.
-PIO1 completes `OUT 07h` by sending D0 to A16: 0 selects bank 0, 1 selects
-bank 1. This switches code, data, stack and vectors together.
+The 128 KiB SRAM has two 64 KiB banks, each mapped to `0000h`-`FFFFh`. PIO1 completes `OUT 07h` by sending D0 to A16: 0 selects bank 0, 1 selects bank 1. This switches code, data, stack and vectors together.
 
 - **Bank 0:** `.COM` programs start at `0100h`; the TPA holds 58,624 bytes.
 - **Bank 1:** one fixed-address `.LIB` uses `0100h`-`C7FFh`, 50,944 bytes.
 
-Both budgets include image (code, DCC runtime and initialized data), BSS,
-`malloc` heap and call stack—not just free heap. **BSS (Block Started by
-Symbol)** holds zero-initialized globals/statics. For example,
-`static unsigned char buffer[1024];` reserves 1,024 bytes; the library loader
-zeros them without storing those zeros in `.LIB`. `heap_base` follows the
-image and BSS.
+Both budgets include image (code, DCC runtime and initialized data), BSS, `malloc` heap and call stack—not just free heap. **BSS (Block Started by Symbol)** holds zero-initialized globals/statics. For example, `static unsigned char buffer[1024];` reserves 1,024 bytes; the library loader zeros them without storing those zeros in `.LIB`. `heap_base` follows the image and BSS.
 
 The diagram uses **512-byte call stack examples**:
 
@@ -35,65 +29,37 @@ The diagram uses **512-byte call stack examples**:
 | `malloc` heap | `heap_base` to `E3FFh` | `heap_base` to `C5FFh` |
 | Call stack (512 bytes) | `E400h` to `E5FFh` | `C600h` to `C7FFh` |
 
-Bank-0 placement is illustrative and application-specific. Bank 1's `.LIB`
-header sets a 256-2,048-byte stack in 256-byte units below `C800h`; its last
-heap byte is `C800h - stack size - 1`. Each program/library's linked image
-and BSS determine its own `heap_base`.
-The separate 5,632-byte pool at `C800h`-`DDFFh` uses checked handles;
-RESET does not unload the library or reset its `malloc` heap.
+Bank-0 placement is illustrative and application-specific. Bank 1's `.LIB` header sets a 256-2,048-byte stack in 256-byte units below `C800h`; its last heap byte is `C800h - stack size - 1`. Each program/library's linked image and BSS determine its own `heap_base`. The separate 5,632-byte pool at `C800h`-`DDFFh` uses checked handles; RESET does not unload the library or reset its `malloc` heap.
 
 ### Why switching banks does not lose execution
 
-The `FF00h` gateway and `FB40h` trampoline have matching code in both banks,
-so instruction fetching survives an A16 switch. Applications use checked
-BANKSDK transfers and generated wrappers, not cross-bank pointers or arbitrary
-bank toggles. See [stack switch and return](#stack-switch-and-return) for
-saved state and [library layout](../cpm-dcc/bank1-library-spec.md#library-memory-layout)
-for image, BSS and stack budgets.
+The `FF00h` gateway and `FB40h` trampoline have matching code in both banks, so instruction fetching survives an A16 switch. Applications use checked BANKSDK transfers and generated wrappers, not cross-bank pointers or arbitrary bank toggles. See [stack switch and return](#stack-switch-and-return) for saved state and [library layout](../cpm-dcc/bank1-library-spec.md#library-memory-layout) for image, BSS and stack budgets.
 
 ## From a CP/M call to physical I/O
 
 [![CP/M software path, PIO and core ownership, and the IN and OUT cycle sequences](../images/cpm-pio-execution.svg)](../images/cpm-pio-execution.svg)
 
-[Open or download the full-size execution-flow SVG](../images/cpm-pio-execution.svg).
-Arrows show logical call/data flow, not PCB wires.
+[Open or download the full-size execution-flow SVG](../images/cpm-pio-execution.svg). Arrows show logical call/data flow, not PCB wires.
 
 ### BDOS selects files; BIOS transfers records
 
 1. Bank-0 `CALL 0005h` enters the BDOS shim at `EE06h`.
-2. Console calls stay local; disk/file calls copy File Control Blocks (FCBs)
-   and software DMA buffers to bank 1 using the private `F600h`-`F7FFh` stack.
-3. Bank-1 BDOS selects files and records, then calls BIOS at `FC00h`.
-   Libraries reach it through their own `0005h` vector.
-4. BIOS emits port I/O; PIO1 completes the bus cycle, core 0 supplies device
-   data, and core 1 handles queued storage/transport work.
+2. Console calls stay local; disk/file calls copy File Control Blocks (FCBs) and software DMA buffers to bank 1 using the private `F600h`-`F7FFh` stack.
+3. Bank-1 BDOS selects files and records, then calls BIOS at `FC00h`. Libraries reach it through their own `0005h` vector.
+4. BIOS emits port I/O; PIO1 completes the bus cycle, core 0 supplies device data, and core 1 handles queued storage/transport work.
 
-Disk BIOS uses ports `10h`-`14h`, computes `track * 32 + sector`, polls status
-and transfers 128 bytes with `INIR`/`OTIR`. Normal, directory and
-unallocated-write commands remain distinct; `SETDMA` sets a software buffer,
-not hardware DMA. Console I/O uses ports `00h`-`01h`.
+Disk BIOS uses ports `10h`-`14h`, computes `track * 32 + sector`, polls status and transfers 128 bytes with `INIR`/`OTIR`. Normal, directory and unallocated-write commands remain distinct; `SETDMA` sets a software buffer, not hardware DMA. Console I/O uses ports `00h`-`01h`.
 
-A-D are **four 512 KiB onboard-flash images**:
-128 tracks x 32 records x 128 bytes each. System records and filesystem
-metadata reduce file capacity; no SD card is used.
+A-D are **four 512 KiB onboard-flash images**: 128 tracks x 32 records x 128 bytes each. System records and filesystem metadata reduce file capacity; no SD card is used.
 
 ## Boot, warm boot and flash commits
 
-- **Cold boot:** core 0 recovers the journal, validates the image, then injects
-  instructions under slow clocks so the Z80 loads/verifies 64 KiB in bank 0
-  and 8,960 bytes in bank 1 (page zero plus `DE00h`-`FFFFh`). Owners initialize
-  `0100h`-`DDFFh` before use. PIO starts only after verification.
-- **CP/M entry:** BIOS installs `0000h` (warm boot) and `0005h` (BDOS) vectors,
-  then enters CCP at `E600h`; programs start at `0100h`.
-- **Warm boot:** selects bank 0, flushes writes and reloads 44 system records
-  from Drive A, restoring CCP and the bank-0 shim before the prompt.
-- **Flash commit:** core 0 parks the Z80 with `BUSREQ#`/`BUSACK#`, drains I/O
-  and pauses the engine for core-1 programming, then rearms and returns the bus.
-  The Pico never drives SRAM addresses or write strobes.
+- **Cold boot:** core 0 recovers the journal, validates the image, then injects instructions under slow clocks so the Z80 loads/verifies 64 KiB in bank 0 and 8,960 bytes in bank 1 (page zero plus `DE00h`-`FFFFh`). Owners initialize `0100h`-`DDFFh` before use. PIO starts only after verification.
+- **CP/M entry:** BIOS installs `0000h` (warm boot) and `0005h` (BDOS) vectors, then enters CCP at `E600h`; programs start at `0100h`.
+- **Warm boot:** selects bank 0, flushes writes and reloads 44 system records from Drive A, restoring CCP and the bank-0 shim before the prompt.
+- **Flash commit:** core 0 parks the Z80 with `BUSREQ#`/`BUSACK#`, drains I/O and pauses the engine for core-1 programming, then rearms and returns the bus. The Pico never drives SRAM addresses or write strobes.
 
-Deploy matching firmware, boot package and Drive A system records; rebuild
-`.COM`/`.LIB` clients when their ABI changes. Diagrams and host tests are not
-[hardware timing qualification](../implementation/frequency-qualification.md).
+Deploy matching firmware, boot package and Drive A system records; rebuild `.COM`/`.LIB` clients when their ABI changes. Diagrams and host tests are not [hardware timing qualification](../implementation/frequency-qualification.md).
 
 ## Maintained implementation
 
@@ -122,10 +88,7 @@ Bank 0 (TPA excludes CCP; all resident workspace stays above it):
 | Spare padding | `0xFEFE`-`0xFEFF` | 2 bytes |
 | BIOS bank extension | `0xFF00`-`0xFFFF` | READ/WRITE/INFO/HEAP entry points, mirrored code and private workspace |
 
-CCP occupies `0800h` bytes; the BDOS slot occupies `0E00h`, including the final
-128-byte directory buffer. `bios.bin` is 1,024 bytes: core, padding and mirrored
-extension. DCC locates BDOS through `JP EE06h` at `0005h` but must stay below
-`E600h`. The shim's private stack protects CCP code during nested transfers.
+CCP occupies `0800h` bytes; the BDOS slot occupies `0E00h`, including the final 128-byte directory buffer. `bios.bin` is 1,024 bytes: core, padding and mirrored extension. DCC locates BDOS through `JP EE06h` at `0005h` but must stay below `E600h`. The shim's private stack protects CCP code during nested transfers.
 
 Bank 1 (`DE00h` and above is reserved for system code):
 
@@ -145,8 +108,7 @@ Bank 1 (`DE00h` and above is reserved for system code):
 
 ## PIO I/O engine reference
 
-Only `IN`/`OUT` reach the Pico; normal memory cycles access SRAM directly
-with the Pico data paths isolated. PIO owns all runtime bus timing.
+Only `IN`/`OUT` reach the Pico; normal memory cycles access SRAM directly with the Pico data paths isolated. PIO owns all runtime bus timing.
 
 ### PIO terminology
 
@@ -167,8 +129,7 @@ with the Pico data paths isolated. PIO owns all runtime bus timing.
 | PIO1 | `banked_io`, 29 words | The I/O engine. Claimed exclusively; it recognises, completes and times every Z80 `IN` and `OUT`, and drives the data bus, buffer enables, WAIT release and SRAM bank select (A16). |
 | PIO2 | (not used by the Z80) | Left for the CYW43 Wi-Fi driver, whose SPI bus claims the highest free PIO block. |
 
-PIO1 holds PIO0's clock with `IRQ PREV`, without ARM timing. The DMA-fed OLED
-I2C state machine shares PIO0 but uses no IRQ flags.
+PIO1 holds PIO0's clock with `IRQ PREV`, without ARM timing. The DMA-fed OLED I2C state machine shares PIO0 but uses no IRQ flags.
 
 #### PIO1 pin windows
 
@@ -191,22 +152,16 @@ PIO1 uses 32-bit FIFO words (bank-select OUTs bypass the FIFOs):
 | PIO1 → core 0 (RX) | `in pins, 32` with autopush | A snapshot of the pins: data in bits 0-7, A0/A1/A2/A4 in bits 8-11, RD# in bit 17, WR# in bit 18 |
 | Core 0 → PIO1 (TX) | `pull`, `out pins, 10`, `out pindirs, 10` | The reply for an `IN`: pin levels for GP8-GP17 (A16 unchanged, IO_RELEASE LOW, D0-D7) in bits 0-9, then the pin directions to use while driving (bits 10-19) and when idle (bits 20-29) |
 
-The RX-not-empty IRQ runs core 0's SRAM-resident handler: apply OUTs in bus
-order, then reply to IN. Thus each IN observes all earlier OUTs.
+The RX-not-empty IRQ runs core 0's SRAM-resident handler: apply OUTs in bus order, then reply to IN. Thus each IN observes all earlier OUTs.
 
 ### An OUT cycle
 
-1. IORQ# falls; PIO sets the I/O hold so the clock stops at its next LOW
-   phase, and `JMP PIN` sees RD# HIGH.
-2. PIO enables the receive buffer (DOWN_OE#) and lets it settle for eight
-   ticks.
-3. For port `07h` it drives D0 onto A16, switching the SRAM bank. For any
-   other port it autopushes the snapshot to core 0.
-4. It releases WAIT# while CLK is still LOW, clears the hold so the clock runs
-   freely, waits for IORQ# to rise, then isolates the buffer and rearms WAIT#.
+1. IORQ# falls; PIO sets the I/O hold so the clock stops at its next LOW phase, and `JMP PIN` sees RD# HIGH.
+2. PIO enables the receive buffer (DOWN_OE#) and lets it settle for eight ticks.
+3. For port `07h` it drives D0 onto A16, switching the SRAM bank. For any other port it autopushes the snapshot to core 0.
+4. It releases WAIT# while CLK is still LOW, clears the hold so the clock runs freely, waits for IORQ# to rise, then isolates the buffer and rearms WAIT#.
 
-Core 0 applies ordinary writes afterwards. A full four-word RX FIFO holds
-WAIT# rather than dropping a snapshot.
+Core 0 applies ordinary writes afterwards. A full four-word RX FIFO holds WAIT# rather than dropping a snapshot.
 
 ### An IN cycle
 
@@ -227,9 +182,7 @@ sequenceDiagram
     P1->>P0: Release hold: next instruction fetch
 ```
 
-After the reply, PIO runs exactly two clocks: wait release, then T3's falling-edge
-data sample. It holds CLK LOW and isolates the output buffer before resuming
-opcode fetching, preventing the Pico from driving the next SRAM read.
+After the reply, PIO runs exactly two clocks: wait release, then T3's falling-edge data sample. It holds CLK LOW and isolates the output buffer before resuming opcode fetching, preventing the Pico from driving the next SRAM read.
 
 ### Division of work
 
@@ -255,38 +208,26 @@ Per-port device work (no USB, network or flash programming in the handler):
 
 #### Core 0: main loop
 
-- Services flash grants and bounded core-1 supervisor commands: load/verify,
-  start, status, stop, reboot, fault arming and configuration/web reboots.
+- Services flash grants and bounded core-1 supervisor commands: load/verify, start, status, stop, reboot, fault arming and configuration/web reboots.
 - Monitors boot markers, boot timeout and disk diagnostics; publishes CPU state.
-- For orderly stop: flush, park, drain OUTs, check disk quiescence, then reset
-  or resume.
+- For orderly stop: flush, park, drain OUTs, check disk quiescence, then reset or resume.
 
 #### Core 0: boot
 
-See [boot and flash sequencing](#boot-warm-boot-and-flash-commits).
-Slow stepped clocks are used for loading, not runtime I/O.
+See [boot and flash sequencing](#boot-warm-boot-and-flash-commits). Slow stepped clocks are used for loading, not runtime I/O.
 
 ### Why it is fast
 
-PIO steps resolve at 8.33 ns with no software timing delays. Reported core-0
-device work costs about 1 µs per IN and 1.2-1.3 µs per OUT, excluding IRQ
-entry/exit; the measured 20 MHz workload polls 225,000-266,000 INs/s.
-Queued OUTs and PIO-only bank switching avoid waiting for ARM work when
-FIFO space is available. Core-1 workers use bounded queues/mailboxes.
+PIO steps resolve at 8.33 ns with no software timing delays. Reported core-0 device work costs about 1 µs per IN and 1.2-1.3 µs per OUT, excluding IRQ entry/exit; the measured 20 MHz workload polls 225,000-266,000 INs/s. Queued OUTs and PIO-only bank switching avoid waiting for ARM work when FIFO space is available. Core-1 workers use bounded queues/mailboxes.
 
-**Ctrl-] s** reports `[pio]` engine state, `[iolat]` handler cost and `[disk]`
-read-ahead hits. These measurements are workload-specific, not qualification
-of every network/storage combination.
+**Ctrl-] s** reports `[pio]` engine state, `[iolat]` handler cost and `[disk]` read-ahead hits. These measurements are workload-specific, not qualification of every network/storage combination.
 
 ### Safety
 
-- Invalid RD#/WR# combinations, a 500 ms stalled cycle or fatal storage error
-  hold the CPU in reset.
-- Bus-grant pull-ups keep IORQ#, RD# and WR# inactive; grant/stop paths drain
-  queued I/O before relying on device state.
+- Invalid RD#/WR# combinations, a 500 ms stalled cycle or fatal storage error hold the CPU in reset.
+- Bus-grant pull-ups keep IORQ#, RD# and WR# inactive; grant/stop paths drain queued I/O before relying on device state.
 
-Device dispatch: [io_trap.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c).
-Wiring: [PIO acceleration](../hardware/address-interface.md#pio-acceleration).
+Device dispatch: [io_trap.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/io_trap.c). Wiring: [PIO acceleration](../hardware/address-interface.md#pio-acceleration).
 
 ## Custom BIOS reference
 
@@ -312,8 +253,7 @@ See the [I/O port map](io-ports.md) for decoding and aliases.
 
 ### Banked-memory BIOS extension (ABI 1.0)
 
-Check `BMX1` at `FF09h`, major 1 at `FF0Dh`, minor 0 at `FF0Eh`, and INFO
-success before using the mirrored extension:
+Check `BMX1` at `FF09h`, major 1 at `FF0Dh`, minor 0 at `FF0Eh`, and INFO success before using the mirrored extension:
 
 | Address | Entry | Contract |
 | --- | --- | --- |
@@ -322,29 +262,12 @@ success before using the mirrored extension:
 | `FF06h` | INFO | HL=`0100h`, DE=`C800h`, BC=`1600h` on success |
 | `FF10h` | Service | E selects the operation below |
 
-- **Raw READ/WRITE:** length must be a multiple of 16; both exclusive range
-  ends must be at or below `FF00h`, without wrapping.
-- **Byte helpers:** `F800h` READ / `F803h` WRITE accept arbitrary lengths with
-  the same HL/DE/BC convention and `FF00h` exclusive range limit, without
-  wrapping. Positive transfers require a bank-0 address
-  at least `0100h`; raw bank-1 addresses may include page zero. Zero count
-  succeeds without dereferencing. Full-range checks precede copying;
-  neighbouring bytes, IX/IY, SP and interrupt state are preserved.
-- **Checked SDK transfers:** `bread`/`bwrite` use `F806h`/`F809h`, adding
-  A=handle page. Live pages are `C8h–DDh` (pool), `01h` (library) and `C0h`
-  (stack). The mirrored `FB48h` lookup masks interrupts, inspects live extent
-  length/allocation state in bank 1, and returns to bank 0 without stack access.
-  No bounds are cached: invalid/freed handles return A=3/carry set; out-of-extent
-  ranges return A=2/carry set. Valid requests continue to the byte helpers.
-- **Status:** copying succeeds with A=0/carry clear; invalid raw ranges return
-  A=2/carry set. Raw resident-memory access is for system code, not applications.
+- **Raw READ/WRITE:** length must be a multiple of 16; both exclusive range ends must be at or below `FF00h`, without wrapping.
+- **Byte helpers:** `F800h` READ / `F803h` WRITE accept arbitrary lengths with the same HL/DE/BC convention and `FF00h` exclusive range limit, without wrapping. Positive transfers require a bank-0 address at least `0100h`; raw bank-1 addresses may include page zero. Zero count succeeds without dereferencing. Full-range checks precede copying; neighbouring bytes, IX/IY, SP and interrupt state are preserved.
+- **Checked SDK transfers:** `bread`/`bwrite` use `F806h`/`F809h`, adding A=handle page. Live pages are `C8h–DDh` (pool), `01h` (library) and `C0h` (stack). The mirrored `FB48h` lookup masks interrupts, inspects live extent length/allocation state in bank 1, and returns to bank 0 without stack access. No bounds are cached: invalid/freed handles return A=3/carry set; out-of-extent ranges return A=2/carry set. Valid requests continue to the byte helpers.
+- **Status:** copying succeeds with A=0/carry clear; invalid raw ranges return A=2/carry set. Raw resident-memory access is for system code, not applications.
 
-The 237-byte gateway uses two bank-select OUTs per 16-byte burst and bookkeeping
-per 256 bytes; aligned counts bypass tail storage. A retains low count/direction
-(only OUT D0 selects the bank), source SP advances through private `FFF0h`,
-and carry preserves direction across the payload. INFO delegates to bank-0
-`FA00h`. [MEMPERF](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/MEMPERF)
-reports emulator cycles excluding hardware wait time.
+The 237-byte gateway uses two bank-select OUTs per 16-byte burst and bookkeeping per 256 bytes; aligned counts bypass tail storage. A retains low count/direction (only OUT D0 selects the bank), source SP advances through private `FFF0h`, and carry preserves direction across the payload. INFO delegates to bank-0 `FA00h`. [MEMPERF](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/MEMPERF) reports emulator cycles excluding hardware wait time.
 
 #### Allocation and direct entry calls
 
@@ -363,8 +286,7 @@ reports emulator cycles excluding hardware wait time.
 
 #### Capability and library control records
 
-After INFO, `bank_bios_query()` discovers this 24-word little-endian descriptor;
-clients must not inspect private tables:
+After INFO, `bank_bios_query()` discovers this 24-word little-endian descriptor; clients must not inspect private tables:
 
 | Word | Meaning |
 | --- | --- |
@@ -375,10 +297,7 @@ clients must not inspect private tables:
 | 16-19 | Call-token address, maximum body bytes, exports and signature characters |
 | 20-23 | Call revision (1), checked READ/WRITE entries, one reserved zero word |
 
-Feature bits 0-5 advertise byte transfers, library control, detailed status,
-DMA/search contexts, generation/epoch validation and checked transfers.
-`bank_bios_library_control()` copies this request to the discovered address,
-dispatches operation 8 and retrieves the response (16-bit words):
+Feature bits 0-5 advertise byte transfers, library control, detailed status, DMA/search contexts, generation/epoch validation and checked transfers. `bank_bios_library_control()` copies this request to the discovered address, dispatches operation 8 and retrieves the response (16-bit words):
 
 | Byte offset | Meaning |
 | --- | --- |
@@ -392,11 +311,8 @@ dispatches operation 8 and retrieves the response (16-bit words):
 
 - **LOAD:** copies a padded 48-byte FCB from a live pool allocation.
 - **QUERY:** returns descriptors without changing ownership.
-- **CALL:** requires a live 512-byte frame extent, a body-length prefix in
-  1..256, a typed export and matching module generation/pool epoch.
-- **INVALIDATE:** makes the module uncallable even at generation exhaustion.
-  Generations/epochs never wrap; LOAD/RESET returns EXHAUSTED rather than
-  reviving stale state.
+- **CALL:** requires a live 512-byte frame extent, a body-length prefix in 1..256, a typed export and matching module generation/pool epoch.
+- **INVALIDATE:** makes the module uncallable even at generation exhaustion. Generations/epochs never wrap; LOAD/RESET returns EXHAUSTED rather than reviving stale state.
 
 BIOS status codes are:
 
@@ -414,58 +330,27 @@ BIOS status codes are:
 | 9 | STALE | The module is not ready, or the expected module generation or pool epoch does not match. |
 | 10 | EXHAUSTED | A non-wrapping module-generation or pool-epoch counter cannot advance. |
 
-Function results (including HL=0) are separate from transport status.
-`bank_memory_last_error()` and `bank_bios_last_error()` use the codes above;
-`bank_library_last_error()` uses separate `BL_*` codes in
-[BANKLIB.H](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/BANKSDK/BANKLIB.H);
-for example, `BL_IO` is 2 and `BL_STALE` is 12.
+Function results (including HL=0) are separate from transport status. `bank_memory_last_error()` and `bank_bios_last_error()` use the codes above; `bank_library_last_error()` uses separate `BL_*` codes in [BANKLIB.H](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/BANKSDK/BANKLIB.H); for example, `BL_IO` is 2 and `BL_STALE` is 12.
 
-`bmalloc` splits free extents; `bfree` coalesces adjacent ones. Four 32-byte
-metadata tables in pinned `E600h–EDFFh` leave the full 5,632-byte pool available;
-handles never point at metadata. SIZE/AVAILABLE inspect live tables, with
-SIZE validating allocation and length on every call. RESET preserves pinned
-library, stack, loader and allocator, without reducing the library budget.
+`bmalloc` splits free extents; `bfree` coalesces adjacent ones. Four 32-byte metadata tables in pinned `E600h–EDFFh` leave the full 5,632-byte pool available; handles never point at metadata. SIZE/AVAILABLE inspect live tables, with SIZE validating allocation and length on every call. RESET preserves pinned library, stack, loader and allocator, without reducing the library budget.
 
 #### Stack switch and return
 
-1. Gateway saves bank-0 interrupt state, selects bank 1, and resident code
-   saves caller SP before using its private service stack.
-2. CALL validates distinct live code/stack handles and entry offset, rejects
-   `BC=0`, then switches SP to the stack's exclusive end. Pinned library/stack
-   handles are `0100h`/`C000h`; an entry offset is not checked as an instruction
-   boundary. IY becomes a 16-bit DCC argument at `IX+4` after the usual prologue.
+1. Gateway saves bank-0 interrupt state, selects bank 1, and resident code saves caller SP before using its private service stack.
+2. CALL validates distinct live code/stack handles and entry offset, rejects `BC=0`, then switches SP to the stack's exclusive end. Pinned library/stack handles are `0100h`/`C000h`; an entry offset is not checked as an instruction boundary. IY becomes a 16-bit DCC argument at `IX+4` after the usual prologue.
 3. `RET` restores caller SP, bank 0, IX/IY and interrupt state; HL is the result.
 
-Bank-1 code never dereferences the bank-0 stack. Calls are synchronous and
-non-reentrant; nested gateway calls, interrupt handlers and NMI during switching
-are unsupported.
+Bank-1 code never dereferences the bank-0 stack. Calls are synchronous and non-reentrant; nested gateway calls, interrupt handlers and NMI during switching are unsupported.
 
-Host/library DMA and search continuations are separate; drive/user and disk
-allocation state are shared. Each private snapshot is nine bytes: DMA plus
-seven search bytes (`FB14h`, `FB18h–FB1Ah`, `FB29h–FB2Bh`), matching the host
-proxy layout. Shared geometry scratch is not restored; Search Next refreshes
-the shared directory buffer with an extra read.
+Host/library DMA and search continuations are separate; drive/user and disk allocation state are shared. Each private snapshot is nine bytes: DMA plus seven search bytes (`FB14h`, `FB18h–FB1Ah`, `FB29h–FB2Bh`), matching the host proxy layout. Shared geometry scratch is not restored; Search Next refreshes the shared directory buffer with an extra read.
 
 #### Bank-1 CP/M and C library
 
-The loader validates the `.LIB` header, loads at `0100h`, clears BSS, initializes
-heap bounds from linked `__hstart` and the stack budget, then exposes exports.
-Libraries use their local BDOS vector for console/file I/O.
+The loader validates the `.LIB` header, loads at `0100h`, clears BSS, initializes heap bounds from linked `__hstart` and the stack budget, then exposes exports. Libraries use their local BDOS vector for console/file I/O.
 
-Generated BANKLIB wrappers copy bounded arguments into a length-prefixed frame
-with `bank_bios_write()`, invoke LIB CONTROL CALL (E=8, action 3), then retrieve
-results with `bank_bios_read()`. Copied pointers are local to the frame, never
-bank-0 pointers. Typed-export, live-frame and generation/epoch checks precede
-dispatch; direct CALL does not replace them.
+Generated BANKLIB wrappers copy bounded arguments into a length-prefixed frame with `bank_bios_write()`, invoke LIB CONTROL CALL (E=8, action 3), then retrieve results with `bank_bios_read()`. Copied pointers are local to the frame, never bank-0 pointers. Typed-export, live-frame and generation/epoch checks precede dispatch; direct CALL does not replace them.
 
-[LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO)
-builds `DATATEST.COM` and `DATA.LIB`, with DCC-generated API/wrappers. It tests
-scalars, buffers, records, files, bank-owned blocks and lifecycle;
-[HOSTCHK.C](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/LIBDEMO/host/HOSTCHK.C)
-provides setup/reporting/cleanup. See the
-[library specification](../cpm-dcc/bank1-library-spec.md) for limits and
-[SPREADS](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SPREADS)
-for hand-written code.
+[LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO) builds `DATATEST.COM` and `DATA.LIB`, with DCC-generated API/wrappers. It tests scalars, buffers, records, files, bank-owned blocks and lifecycle; [HOSTCHK.C](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/LIBDEMO/host/HOSTCHK.C) provides setup/reporting/cleanup. See the [library specification](../cpm-dcc/bank1-library-spec.md) for limits and [SPREADS](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SPREADS) for hand-written code.
 
 ??? example "Bank-0 host: LIBDEMO/host/DATATEST.C"
 
@@ -481,6 +366,4 @@ for hand-written code.
 
 #### Boot and deployment
 
-Libraries use format 1, ABI 1.0 and call revision 1. Follow the
-[boot/deployment rules](#boot-warm-boot-and-flash-commits) when updating
-resident code or clients.
+Libraries use format 1, ABI 1.0 and call revision 1. Follow the [boot/deployment rules](#boot-warm-boot-and-flash-commits) when updating resident code or clients.
