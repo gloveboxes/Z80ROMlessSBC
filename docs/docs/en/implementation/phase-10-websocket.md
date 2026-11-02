@@ -399,7 +399,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     | 7 REBOOT | Browser to Pico | Zero / none |
     | 8 REBOOT_STATUS | Pico to browser | Status code / none |
 
-    **Reboot Zeta-80:** the toolbar button asks for confirmation, then sends a control
+    **Reboot Z80-Nexus:** the toolbar button asks for confirmation, then sends a control
     frame directly to the Pico supervisor, independently of CP/M input and its
     queue. The supervisor drains outstanding disk/service work, flushes storage,
     holds RESET and stops the clock, then reboots the Pico after one second.

@@ -477,7 +477,7 @@
       function updateRebootButton() {
         if (elements.rebootBtn) {
           elements.rebootBtn.disabled = !state.connected || !state.protocolReady || state.rebootPending || state.rebootTimedOut;
-          elements.rebootBtn.textContent = state.rebootPending ? 'Rebooting Zeta-80...' : 'Reboot Zeta-80';
+          elements.rebootBtn.textContent = state.rebootPending ? 'Rebooting Z80-Nexus...' : 'Reboot Z80-Nexus';
         }
       }
 
@@ -521,7 +521,7 @@
         updateRebootButton();
         elements.rebootBtn.onclick = () => {
           if (!state.connected || !state.protocolReady || state.rebootPending || state.rebootTimedOut) return;
-          if (!window.confirm('Reboot Zeta-80? Unsaved application work will be lost. Disks will be flushed before restarting.')) return;
+          if (!window.confirm('Reboot Z80-Nexus? Unsaved application work will be lost. Disks will be flushed before restarting.')) return;
           state.rebootPending = true;
           state.rebootDisconnected = false;
           state.rebootSteps = [];
@@ -1493,7 +1493,7 @@
       AltairTerminal.initialize();
     }
   </script>
-  <title>Zeta-80</title>
+  <title>Z80-Nexus</title>
 </head>
 
 <body onload="initTerminal();">
@@ -1636,7 +1636,7 @@
     </style>
     <button id="reconnectBtn" class="altair-btn" disabled>Connected</button>
     <button id="keypadBtn" class="altair-btn" aria-pressed="false" aria-controls="keypad">Keys</button>
-    <button id="rebootZ80Btn" class="altair-btn" disabled>Reboot Zeta-80</button>
+    <button id="rebootZ80Btn" class="altair-btn" disabled>Reboot Z80-Nexus</button>
     <button id="toggleTheme" class="altair-btn" onclick="toggleTheme()">Dark</button>
   </div>
 
@@ -1650,7 +1650,7 @@
         <text x="80" y="86" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">Z80</text>
         <path d="M44 109h17V97h18v12h18V97h19" fill="none" stroke="#5ce0cd" stroke-width="4" stroke-linejoin="round"/>
       </svg>
-      <span>Zeta-80 <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K<span id="gpu_badge" hidden> <span style="color: #5ce0cd;">|</span> WebGL accelerated terminal</span></span>
+      <span>Z80-Nexus <span style="color: #5ce0cd;">|</span> Z80 <span style="color: #5ce0cd;">|</span> 20 MHz <span style="color: #5ce0cd;">|</span> 64K<span id="gpu_badge" hidden> <span style="color: #5ce0cd;">|</span> WebGL accelerated terminal</span></span>
     </span>
     <span id="reboot_message" style="display: none;"></span>
   </div>

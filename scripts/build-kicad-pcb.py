@@ -345,10 +345,12 @@ def add_text(
     y: float,
     size: float,
     angle: float = 0,
+    layer: int = pcbnew.F_SilkS,
 ) -> None:
     item = pcbnew.PCB_TEXT(board)
     item.SetText(text)
-    item.SetLayer(pcbnew.F_SilkS)
+    item.SetLayer(layer)
+    item.SetMirrored(layer == pcbnew.B_SilkS)
     item.SetPosition(vec(x, y))
     item.SetTextSize(vec(size, size))
     item.SetTextAngle(pcbnew.EDA_ANGLE(angle, pcbnew.DEGREES_T))
@@ -592,12 +594,18 @@ def build_board(
     add_mounting_holes(board, footprint_root)
     add_outline(board)
     add_plane_zones(board)
-    add_text(board, "Z80 ROMless SBC", 50.5, 8.0, 1.0)
+    # The 5 V support board covers the top-edge title area.
+    add_text(
+        board, "Z80-Nexus | Z80 | 20 MHz | 2 x 64K Banks", 64.2, 8.0, 1.0,
+        layer=pcbnew.B_SilkS,
+    )
     for text, x, y, size in assembly_labels():
         add_text(board, text, x, y, size)
     for text, x, y in J2_PIN_LABELS:
         add_text(board, text, x, y, 0.8, 90)
-    add_text(board, "20MHz target  REV B 4L", 50.5, 10.5, 0.8)
+    add_text(board, "REV B", 64.2, 11.8, 0.8, layer=pcbnew.B_SilkS)
+    # Front name stays visible with the USB, Pico and OLED modules fitted.
+    add_text(board, "Z80-Nexus", 51.4, 8.0, 1.3)
     for reference in IC_LABELS:
         footprint = board.FindFootprintByReference(reference)
         center = footprint.GetBoundingBox(False, False).GetCenter()

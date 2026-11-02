@@ -1,6 +1,6 @@
-# Zeta-80 a Z80 ROMless SBC
+# Z80-Nexus a Z80 ROMless SBC
 
-![Zeta-80: Z80 ROMless SBC project banner](images/banner.svg)
+![Z80-Nexus: Z80 ROMless SBC project banner](images/banner.svg)
 
 **Repository:** [github.com/gloveboxes/Z80ROMlessSBC](https://github.com/gloveboxes/Z80ROMlessSBC)
 

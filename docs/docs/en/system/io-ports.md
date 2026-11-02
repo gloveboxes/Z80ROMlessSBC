@@ -409,7 +409,7 @@ or compressed bodies fail. TLS/parsing run on core 1, outside Z80 traps.
 
 ### System information and reboot
 
-System-info selectors are 0 = hostname `zeta-80-xxxxxx` (the final six
+System-info selectors are 0 = hostname `z80-nexus-xxxxxx` (the final six
 hexadecimal characters of the board ID, in lowercase), 1 = current Wi-Fi
 IPv4 address, and 2 = Pico unique board ID. The IPv4 selector returns
 UNAVAILABLE without a connection, including Phase 9. Reboot requires the

@@ -39,12 +39,12 @@ int main(void) {
   assert(z80_service_millis() == 0);
   assert(z80_service_random() == 0xba98);
   strcpy(text, "unchanged");
-  assert(z80_service_info(0, text, 14) == 0);
+  assert(z80_service_info(0, text, 16) == 0);
   assert(strcmp(text, "unchanged") == 0 && board_id_reads == 0);
-  assert(z80_service_info(0, text, sizeof(text)) == 14);
-  assert(strcmp(text, "zeta-80-abcdef") == 0 && board_id_reads == 1);
-  assert(z80_service_info(0, text, 15) == 14);
-  assert(strcmp(text, "zeta-80-abcdef") == 0 && board_id_reads == 1);
+  assert(z80_service_info(0, text, sizeof(text)) == 16);
+  assert(strcmp(text, "z80-nexus-abcdef") == 0 && board_id_reads == 1);
+  assert(z80_service_info(0, text, 17) == 16);
+  assert(strcmp(text, "z80-nexus-abcdef") == 0 && board_id_reads == 1);
   assert(z80_service_info(1, text, sizeof(text)) == 0);
   assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);
   assert(text[0] == '\0');

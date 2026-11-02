@@ -19,7 +19,7 @@ static uint64_t sync_millis;
 static char network_address[16];
 static uint32_t network_address_generation;
 auto_init_mutex(network_address_mutex);
-static char cached_hostname[sizeof("zeta-80-000000")];
+static char cached_hostname[sizeof("z80-nexus-000000")];
 static bool hostname_initialized;
 auto_init_mutex(hostname_mutex);
 
@@ -38,7 +38,7 @@ static size_t get_cached_hostname(char *text, size_t capacity) {
           suffix[i] = (char)(suffix[i] - 'A' + 'a');
       }
       int length = snprintf(cached_hostname, sizeof(cached_hostname),
-                            "zeta-80-%s", suffix);
+                            "z80-nexus-%s", suffix);
       hostname_initialized = length > 0 &&
                              (size_t)length < sizeof(cached_hostname);
     }
