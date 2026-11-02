@@ -117,6 +117,17 @@ placement CSV, IPC-D-356, drill maps/reports, PDF/SVG drawings and 3D preview
 are adjacent outputs. Inspect the archive and confirm the fabricator's
 actual stack-up and internal-cutout process before ordering.
 
+The generator enforces silkscreen strokes of at least **0.16 mm** (JLCDFM flags exactly 0.15 mm as a warning) and
+clearance of at least **0.20 mm from every drill**, including vias, and
+**0.20 mm from same-side pad copper** (plus any solder-mask expansion).
+Labels are positioned clear of holes and pads; straight body-outline and
+polarity-hatch strokes receive small generated gaps around holes and pads
+without changing copper or removing polarity marks.
+The full pipeline checks these dimensions as well as KiCad ERC/DRC.
+Run `scripts/test_kicad_silkscreen.py` with KiCad's bundled Python for the
+focused geometry regression tests. Re-run the manufacturer's DFM check on
+each new upload; local checks are not a substitute for its production review.
+
 Both clock paths are via-free. Current paths are 49.56 mm Pico-to-U4 and
 62.16 mm U4-to-Z80. Bus matching is assessed by source/receiver path, not
 total tree copper. See the [design review](../../docs/docs/en/pcb/design-considerations.md)

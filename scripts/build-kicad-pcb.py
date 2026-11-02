@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -57,6 +58,9 @@ MIN_VIA_ANNULAR = 0.15
 MIN_MICROVIA_DIAMETER = 0.30
 MIN_MICROVIA_DRILL = 0.10
 COPPER_EDGE_CLEARANCE = 0.20
+SILK_MIN_STROKE = 0.16
+SILK_HOLE_CLEARANCE = 0.20
+SILK_PAD_CLEARANCE = 0.20
 
 
 def mm(value: float) -> int:
@@ -122,7 +126,11 @@ def sync_project_rules() -> None:
         "min_track_width": MIN_TRACK_WIDTH,
         "min_via_annular_width": MIN_VIA_ANNULAR,
         "min_via_diameter": MIN_VIA_DIAMETER,
+        "min_text_thickness": SILK_MIN_STROKE,
     })
+    defaults = project["board"]["design_settings"]["defaults"]
+    defaults["silk_line_width"] = SILK_MIN_STROKE
+    defaults["silk_text_thickness"] = SILK_MIN_STROKE
     project["net_settings"]["classes"] = [
         project_netclass(
             "Default", SIGNAL_CLEARANCE, SIGNAL_TRACK_WIDTH,
@@ -160,6 +168,7 @@ def check_project_rules() -> None:
         "min_track_width": MIN_TRACK_WIDTH,
         "min_via_annular_width": MIN_VIA_ANNULAR,
         "min_via_diameter": MIN_VIA_DIAMETER,
+        "min_text_thickness": SILK_MIN_STROKE,
     }
     for name, expected in expected_rules.items():
         if abs(float(rules.get(name, -1)) - expected) > 0.001:
@@ -265,8 +274,8 @@ J2_PIN_LABELS = (
 def assembly_labels() -> list[tuple[str, float, float, float]]:
     return [
         ("C1", 46.4, 53.57, 0.8), ("C2", 82.2, 96.35, 0.8),
-        ("C3", 20.4, 71.6, 0.8), ("C4", 40.0, 77.9, 0.8),
-        ("C5", 24.15, 35.8, 0.8), ("C6", 52.7, 52.3, 0.8),
+        ("C3", 20.4, 71.6, 0.8), ("C4", 43.4, 76.2, 0.8),
+        ("C5", 24.15, 35.8, 0.8), ("C6", 52.7, 52.4, 0.8),
         ("C7", 66.7, 29.0, 0.8), ("C8\n22u", 9.6, 83.4, 0.8),
         ("C9\n22u", 87.6, 62.6, 0.8), ("C10\n22u", 87.6, 71.4, 0.8),
         ("C11\n100u", 87.6, 87.7, 0.8), ("D1", 19.1, 10.6, 0.8),
@@ -294,8 +303,12 @@ def ic_label_text(reference: str) -> str:
 
 
 REFERENCE_POSITIONS = {
-    "RN2": (80.2, 81.9), "RN4": (8.6, 55.0), "RN6": (26.1, 42.5),
+    "RN1": (51.625, 76.64),
+    "RN2": (80.2, 81.9), "RN4": (8.6, 55.0),
+    "RN5": (32.945, 45.125), "RN6": (26.1, 42.5),
 }
+
+IC_LABEL_OFFSETS = {"U4": (0.0, -0.8)}
 
 
 def add_segment(
@@ -354,8 +367,206 @@ def add_text(
     item.SetPosition(vec(x, y))
     item.SetTextSize(vec(size, size))
     item.SetTextAngle(pcbnew.EDA_ANGLE(angle, pcbnew.DEGREES_T))
-    item.SetTextThickness(mm(min(0.25, max(0.12, size * 0.12))))
+    item.SetTextThickness(mm(min(0.25, max(SILK_MIN_STROKE, size * 0.12))))
     board.Add(item)
+
+
+def silkscreen_items(board: pcbnew.BOARD) -> list[pcbnew.BOARD_ITEM]:
+    items = list(board.GetDrawings())
+    for footprint in board.GetFootprints():
+        items.extend(footprint.GraphicalItems())
+        items.extend(footprint.GetFields())
+    return [
+        item for item in items
+        if item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)
+        and (
+            item.Type() not in (pcbnew.PCB_TEXT_T, pcbnew.PCB_FIELD_T)
+            or item.IsVisible()
+        )
+    ]
+
+
+def silkscreen_holes(
+    board: pcbnew.BOARD,
+) -> list[tuple[str, pcbnew.SHAPE_SEGMENT]]:
+    holes = [
+        (f"{footprint.GetReference()}.{pad.GetNumber()}",
+         pad.GetEffectiveHoleShape())
+        for footprint in board.GetFootprints()
+        for pad in footprint.Pads()
+        if pad.GetDrillSize().x > 0
+    ]
+    for track in board.GetTracks():
+        if track.Type() == pcbnew.PCB_VIA_T:
+            via = pcbnew.Cast_to_PCB_VIA(track)
+            position = via.GetPosition()
+            # Imported vias can inherit their drill; the raw hole shape uses -1.
+            drill = via.GetDrillValue()
+            if drill <= 0:
+                raise SystemExit("via has no resolved drill diameter")
+            holes.append((
+                f"via at {pcbnew.ToMM(position.x):.3f},"
+                f"{pcbnew.ToMM(position.y):.3f}",
+                pcbnew.SHAPE_SEGMENT(position, position, drill),
+            ))
+    return holes
+
+
+def silkscreen_pads(
+    board: pcbnew.BOARD,
+) -> list[tuple[str, int, pcbnew.SHAPE, int]]:
+    """Return (name, silk layer, copper shape, mask expansion) per pad side."""
+    pads = []
+    for footprint in board.GetFootprints():
+        for pad in footprint.Pads():
+            for silk, copper, mask in (
+                (pcbnew.F_SilkS, pcbnew.F_Cu, pcbnew.F_Mask),
+                (pcbnew.B_SilkS, pcbnew.B_Cu, pcbnew.B_Mask),
+            ):
+                if not pad.IsOnLayer(copper):
+                    continue
+                expansion = max(0, pad.GetSolderMaskExpansion(mask)) \
+                    if pad.IsOnLayer(mask) else 0
+                pads.append((
+                    f"{footprint.GetReference()}.{pad.GetNumber()}",
+                    silk, pad.GetEffectiveShape(copper), expansion,
+                ))
+    return pads
+
+
+def silkscreen_obstacles(
+    board: pcbnew.BOARD, layer: int,
+) -> list[tuple[str, pcbnew.SHAPE, int]]:
+    """Return (name, shape, required clearance) for one silkscreen layer."""
+    obstacles = [
+        (name, hole, mm(SILK_HOLE_CLEARANCE))
+        for name, hole in silkscreen_holes(board)
+    ]
+    obstacles.extend(
+        (f"pad {name}", shape, mm(SILK_PAD_CLEARANCE) + expansion)
+        for name, silk, shape, expansion in silkscreen_pads(board)
+        if silk == layer
+    )
+    return obstacles
+
+
+def gap_silkscreen_lines(board: pcbnew.BOARD) -> None:
+    obstacles = {
+        layer: silkscreen_obstacles(board, layer)
+        for layer in (pcbnew.F_SilkS, pcbnew.B_SilkS)
+    }
+    step = mm(0.005)
+    for item in silkscreen_items(board):
+        if item.Type() != pcbnew.PCB_SHAPE_T or \
+                item.GetShape() != pcbnew.SHAPE_T_SEGMENT:
+            continue
+        start, end = item.GetStart(), item.GetEnd()
+        dx, dy = end.x - start.x, end.y - start.y
+        length = math.hypot(dx, dy)
+        if length == 0:
+            continue
+        shape = item.GetEffectiveShape()
+        nearby = [
+            (obstacle, clearance + mm(0.01))
+            for _, obstacle, clearance in obstacles[item.GetLayer()]
+            if shape.Collide(obstacle, clearance)
+        ]
+        if not nearby:
+            continue
+        # Sample the stroke centreline so any pad or drill shape can be gapped.
+        samples = max(2, math.ceil(length / step) + 1)
+        blocked = []
+        for index in range(samples):
+            t = index / (samples - 1)
+            point = pcbnew.VECTOR2I(
+                round(start.x + t * dx), round(start.y + t * dy)
+            )
+            dot = pcbnew.SHAPE_SEGMENT(point, point, item.GetWidth())
+            blocked.append(any(
+                dot.Collide(obstacle, clearance)
+                for obstacle, clearance in nearby
+            ))
+        pad_t = 1 / (samples - 1)
+        gaps = []
+        index = 0
+        while index < samples:
+            if not blocked[index]:
+                index += 1
+                continue
+            first = index
+            while index < samples and blocked[index]:
+                index += 1
+            gaps.append((
+                max(0.0, (first - 1) * pad_t),
+                min(1.0, index * pad_t),
+            ))
+        spans = []
+        cursor = 0.0
+        for left, right in sorted(gaps):
+            if left > cursor:
+                spans.append((cursor, left))
+            cursor = max(cursor, right)
+        if cursor < 1.0:
+            spans.append((cursor, 1.0))
+        owner = item.GetParentFootprint() or board
+        for left, right in spans:
+            if (right - left) * length < mm(0.05):
+                continue
+            segment = pcbnew.PCB_SHAPE(owner)
+            segment.SetShape(pcbnew.SHAPE_T_SEGMENT)
+            segment.SetLayer(item.GetLayer())
+            segment.SetWidth(item.GetWidth())
+            segment.SetStart(pcbnew.VECTOR2I(
+                round(start.x + left * dx), round(start.y + left * dy)
+            ))
+            segment.SetEnd(pcbnew.VECTOR2I(
+                round(start.x + right * dx), round(start.y + right * dy)
+            ))
+            owner.Add(segment)
+        owner.Remove(item)
+
+
+def check_silkscreen(board: pcbnew.BOARD) -> None:
+    obstacles = {
+        layer: silkscreen_obstacles(board, layer)
+        for layer in (pcbnew.F_SilkS, pcbnew.B_SilkS)
+    }
+    violations = []
+    items = silkscreen_items(board)
+    for item in items:
+        position = item.GetPosition()
+        description = (
+            f"{board.GetLayerName(item.GetLayer())} at "
+            f"{pcbnew.ToMM(position.x):.3f},{pcbnew.ToMM(position.y):.3f}"
+        )
+        if item.Type() in (pcbnew.PCB_TEXT_T, pcbnew.PCB_FIELD_T):
+            description += f" text {item.GetText()!r}"
+            width = item.GetTextThickness()
+            shape = item.GetEffectiveTextShape()
+        elif item.Type() == pcbnew.PCB_SHAPE_T:
+            width = item.GetWidth()
+            shape = item.GetEffectiveShape()
+        else:
+            raise SystemExit(f"unsupported silkscreen item: {description}")
+        if width < mm(SILK_MIN_STROKE):
+            violations.append(
+                f"{description}: stroke {pcbnew.ToMM(width):.3f} mm "
+                f"is below {SILK_MIN_STROKE:.2f} mm"
+            )
+        for name, obstacle, clearance in obstacles[item.GetLayer()]:
+            if shape.Collide(obstacle, clearance):
+                violations.append(
+                    f"{description}: less than "
+                    f"{pcbnew.ToMM(clearance):.2f} mm from {name}"
+                )
+    if violations:
+        raise SystemExit("Silkscreen DFM failed:\n" + "\n".join(violations))
+    print(
+        f"PASS: {len(items)} silkscreen items have >= "
+        f"{SILK_MIN_STROKE:.2f} mm strokes, >= "
+        f"{SILK_HOLE_CLEARANCE:.2f} mm drill clearance and >= "
+        f"{SILK_PAD_CLEARANCE:.2f} mm same-side pad clearance"
+    )
 
 
 def pad_position(
@@ -550,7 +761,7 @@ def build_board(
         footprint.SetOrientationDegrees(rotation)
         footprint.Value().SetVisible(False)
         footprint.Reference().SetTextSize(vec(0.8, 0.8))
-        footprint.Reference().SetTextThickness(mm(0.12))
+        footprint.Reference().SetTextThickness(mm(SILK_MIN_STROKE))
         footprint.Reference().SetTextAngle(pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T))
         if reference.startswith("U"):
             center = footprint.GetBoundingBox(False, False).GetCenter()
@@ -614,11 +825,18 @@ def build_board(
         add_text(
             board,
             ic_label_text(reference),
-            pcbnew.ToMM(center.x),
-            pcbnew.ToMM(center.y),
+            pcbnew.ToMM(center.x) + IC_LABEL_OFFSETS.get(reference, (0, 0))[0],
+            pcbnew.ToMM(center.y) + IC_LABEL_OFFSETS.get(reference, (0, 0))[1],
             0.8,
             angle,
         )
+    for item in silkscreen_items(board):
+        if item.Type() in (pcbnew.PCB_TEXT_T, pcbnew.PCB_FIELD_T):
+            item.SetTextThickness(max(
+                item.GetTextThickness(), mm(SILK_MIN_STROKE)
+            ))
+        elif item.Type() == pcbnew.PCB_SHAPE_T:
+            item.SetWidth(max(item.GetWidth(), mm(SILK_MIN_STROKE)))
     board.BuildConnectivity()
     return board
 
@@ -1124,6 +1342,7 @@ def check_board(
         raise SystemExit(f"could not import routing session {SESSION_PATH}")
     if track_signatures(session_board) != track_signatures(board):
         raise SystemExit("committed routing session does not reproduce PCB copper")
+    check_silkscreen(board)
     print(
         f"PASS: PCB has {len(footprints)} schematic footprints, "
         f"{len(actual)} checked endpoints, and four copper layers"
@@ -1194,6 +1413,7 @@ def main() -> int:
             raise SystemExit(f"could not import routing session {args.session}")
         board.BuildConnectivity()
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    gap_silkscreen_lines(board)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if not pcbnew.SaveBoard(str(args.output), board):
         raise SystemExit(f"could not write {args.output}")

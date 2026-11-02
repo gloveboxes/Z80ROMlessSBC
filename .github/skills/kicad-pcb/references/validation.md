@@ -30,6 +30,9 @@ The build must prove:
 - committed SES reproduces the routed track/via set
 - regenerated DSN matches the committed unrouted DSN
 - DRC after zone refill has zero violations and zero unconnected items
+- silkscreen strokes are at least 0.16 mm, with at least 0.20 mm clearance
+  from every pad/via drill and from same-side pad copper plus mask
+  expansion; labels and polarity marks remain readable
 - `.kicad_pro` remains stable after validation
 
 Artifacts are generated under a temporary directory and swapped into
