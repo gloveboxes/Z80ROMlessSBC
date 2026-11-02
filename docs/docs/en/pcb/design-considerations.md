@@ -72,8 +72,11 @@ and standoff height before assembly. Package courtyards are not a guarantee
 of purchased socket-body fit.
 
 The Pico USB faces outward at the left edge. Its official antenna keepout
-is inside a chamfered FR-4/copper cutout. Keep antenna space clear of metal,
-wiring and enclosure walls; geometry alone does not qualify Wi-Fi.
+is inside a chamfered FR-4/copper cutout that clears the keepout by about
+0.3 mm on the long sides and 1.3-1.5 mm at the ends. The Pico header pads
+beside the cutout keep about 0.7 mm of copper-to-edge clearance for
+milling tolerance. Keep antenna space clear of metal, wiring and enclosure
+walls; geometry alone does not qualify Wi-Fi.
 
 ### OLED mounting
 

@@ -38,9 +38,11 @@ BOARD_RIGHT = 90.0
 BOARD_BOTTOM = 101.0
 ANTENNA_LEFT = 47.60
 ANTENNA_RIGHT = 59.45
-ANTENNA_TOP = 16.00
-ANTENNA_BOTTOM = 31.60
+ANTENNA_TOP = 16.40
+ANTENNA_BOTTOM = 31.20
 ANTENNA_CORNER_CHAMFER = 1.00
+ANTENNA_KEEPOUT_MARGIN = 0.25
+ANTENNA_PAD_EDGE_CLEARANCE = 0.60
 SIGNAL_CLEARANCE = 0.20
 SIGNAL_TRACK_WIDTH = 0.30
 SIGNAL_VIA_DIAMETER = 0.80
@@ -1033,12 +1035,25 @@ def check_board(
         raise SystemExit("Pico USB connector is not flush with the left edge")
     antenna_box = antenna_zones[0].GetBoundingBox()
     if (
-        pcbnew.ToMM(antenna_box.GetLeft()) < ANTENNA_LEFT
-        or pcbnew.ToMM(antenna_box.GetRight()) > ANTENNA_RIGHT
-        or pcbnew.ToMM(antenna_box.GetTop()) < ANTENNA_TOP
-        or pcbnew.ToMM(antenna_box.GetBottom()) > ANTENNA_BOTTOM
+        pcbnew.ToMM(antenna_box.GetLeft()) < ANTENNA_LEFT + ANTENNA_KEEPOUT_MARGIN
+        or pcbnew.ToMM(antenna_box.GetRight()) > ANTENNA_RIGHT - ANTENNA_KEEPOUT_MARGIN
+        or pcbnew.ToMM(antenna_box.GetTop()) < ANTENNA_TOP + ANTENNA_KEEPOUT_MARGIN
+        or pcbnew.ToMM(antenna_box.GetBottom()) > ANTENNA_BOTTOM - ANTENNA_KEEPOUT_MARGIN
     ):
         raise SystemExit("Pico antenna keepout is not contained by cutout")
+    for pad in pico.Pads():
+        pad_box = pad.GetBoundingBox()
+        left, right = pcbnew.ToMM(pad_box.GetLeft()), pcbnew.ToMM(pad_box.GetRight())
+        top, bottom = pcbnew.ToMM(pad_box.GetTop()), pcbnew.ToMM(pad_box.GetBottom())
+        if right <= ANTENNA_LEFT or left >= ANTENNA_RIGHT:
+            continue
+        if not (
+            bottom <= ANTENNA_TOP - ANTENNA_PAD_EDGE_CLEARANCE
+            or top >= ANTENNA_BOTTOM + ANTENNA_PAD_EDGE_CLEARANCE
+        ):
+            raise SystemExit(
+                f"A1.{pad.GetNumber()} copper is too close to the antenna cutout"
+            )
     expected_labels = {
         (text, round(x, 2), round(y, 2))
         for text, x, y, _ in assembly_labels()

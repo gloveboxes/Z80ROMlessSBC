@@ -74,9 +74,10 @@ Do not confuse a connector cable envelope with the connector shell. Validate
 the official footprint geometry against Edge.Cuts. For the Pico:
 
 - USB must face outward at the left edge.
-- The antenna keepout must be contained by the physical cutout, including
-  profile tolerance and corner treatment.
-- Header pads must retain copper-to-edge clearance around the cutout.
+- The antenna keepout must be contained by the physical cutout with at least
+  0.25 mm margin per side, including profile tolerance and corner treatment.
+- Pico header pads must keep at least 0.6 mm copper-to-edge clearance
+  around the cutout (currently 0.68 mm); the generator enforces both.
 - Route congestion beside the cutout must not be "fixed" by weakening global
   rules; use local geometry or narrowly justified pad overrides.
 
