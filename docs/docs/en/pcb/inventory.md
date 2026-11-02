@@ -52,9 +52,9 @@ individual resistors for breadboard construction.
 
 | References | Qty | Value | Footprint/rating |
 | --- | ---: | --- | --- |
-| C1-C7 | 7 | 100 nF | 5 mm ceramic disc, 2.50 mm pitch, at least 10 V |
-| C8-C10 | 3 | 22 uF | 8 mm radial, 3.50 mm pitch, at least 10 V |
-| C11 | 1 | 100 uF | 10 mm radial, 5.00 mm pitch, at least 10 V |
+| C1-C7 | 7 | 100 nF | Ceramic disc or monolithic, 2.50-2.54 mm pitch, body up to 5 mm, at least 10 V |
+| C8-C10 | 3 | 22 uF | 4 mm radial electrolytic, 2.00 mm pitch, at least 10 V (16 V recommended) |
+| C11 | 1 | 100 uF | 6.3 mm radial electrolytic, 2.50 mm pitch, at least 10 V (16 V recommended) |
 
 C8-C11 positive pad 1 is +5 V and negative pad 2 is GND. Retain polarity
 silkscreen. Confirm purchased body diameters and lead pitches.

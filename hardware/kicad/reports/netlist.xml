@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-11-02T14:39:08</date>
+    <date>2026-11-02T18:25:16</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -274,10 +274,10 @@
     </comp>
     <comp ref="C8">
       <value>22u</value>
-      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <footprint>Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</footprint>
       <description>Memory cluster bulk</description>
       <fields>
-        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</field>
         <field name="Datasheet"/>
         <field name="Description">Memory cluster bulk</field>
       </fields>
@@ -297,10 +297,10 @@
     </comp>
     <comp ref="C9">
       <value>22u</value>
-      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <footprint>Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</footprint>
       <description>Core cluster bulk</description>
       <fields>
-        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</field>
         <field name="Datasheet"/>
         <field name="Description">Core cluster bulk</field>
       </fields>
@@ -320,10 +320,10 @@
     </comp>
     <comp ref="C10">
       <value>22u</value>
-      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <footprint>Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</footprint>
       <description>Peripheral cluster bulk</description>
       <fields>
-        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D4.0mm_P2.00mm</field>
         <field name="Datasheet"/>
         <field name="Description">Peripheral cluster bulk</field>
       </fields>
@@ -343,10 +343,10 @@
     </comp>
     <comp ref="C11">
       <value>100u</value>
-      <footprint>Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</footprint>
+      <footprint>Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</footprint>
       <description>Supply-entry bulk</description>
       <fields>
-        <field name="Footprint">Capacitor_THT:CP_Radial_D10.0mm_P5.00mm</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</field>
         <field name="Datasheet"/>
         <field name="Description">Supply-entry bulk</field>
       </fields>

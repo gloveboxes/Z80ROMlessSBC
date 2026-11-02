@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "date": "2026-11-02T14:39:15",
+    "date": "2026-11-02T18:25:23",
     "generator": "KiCad 10.0.7",
     "project": "z80_romless_sbc",
     "board_name": "z80_romless_sbc"
@@ -10,18 +10,18 @@
     "width": "85.0000 mm",
     "height": "96.0000 mm",
     "area": "8160.00 mm²",
-    "front_component_density": "70.78",
-    "back_component_density": "11.69",
-    "front_copper_area": "1218.939 mm²",
-    "back_copper_area": "1234.451 mm²",
+    "front_component_density": "68.66",
+    "back_component_density": "11.56",
+    "front_copper_area": "1210.465 mm²",
+    "back_copper_area": "1225.977 mm²",
     "min_track_clearance": "0.2116 mm",
     "min_track_width": "0.3000 mm",
     "min_drill_diameter": "0.4000 mm",
     "board_thickness": "1.6062 mm",
-    "front_footprint_area": "5775.342 mm²",
-    "back_footprint_area": "954.216 mm²",
-    "front_footprint_density": "70.78",
-    "back_footprint_density": "11.69"
+    "front_footprint_area": "5602.833 mm²",
+    "back_footprint_area": "943.419 mm²",
+    "front_footprint_density": "68.66",
+    "back_footprint_density": "11.56"
   },
   "pads": {
     "through_hole": 292,
@@ -61,7 +61,7 @@
   },
   "drill_holes": [
     {
-      "count": 232,
+      "count": 228,
       "shape": "Round",
       "x_size": "0.8000 mm",
       "y_size": "0.8000 mm",
@@ -71,7 +71,7 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 58,
+      "count": 56,
       "shape": "Round",
       "x_size": "1.0000 mm",
       "y_size": "1.0000 mm",
@@ -87,6 +87,16 @@
       "y_size": "0.4000 mm",
       "plated": true,
       "source": "Via",
+      "start_layer": "F.Cu",
+      "stop_layer": "B.Cu"
+    },
+    {
+      "count": 6,
+      "shape": "Round",
+      "x_size": "0.6000 mm",
+      "y_size": "0.6000 mm",
+      "plated": true,
+      "source": "Pad",
       "start_layer": "F.Cu",
       "stop_layer": "B.Cu"
     },

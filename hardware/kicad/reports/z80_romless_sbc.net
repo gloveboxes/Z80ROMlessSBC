@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-11-02T14:39:08")
+		(date "2026-11-02T18:25:16")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -591,11 +591,11 @@
 		(comp
 			(ref "C8")
 			(value "22u")
-			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(footprint "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 			(description "Memory cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 				(field
 					(name "Datasheet")
 				)
@@ -637,11 +637,11 @@
 		(comp
 			(ref "C9")
 			(value "22u")
-			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(footprint "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 			(description "Core cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 				(field
 					(name "Datasheet")
 				)
@@ -683,11 +683,11 @@
 		(comp
 			(ref "C10")
 			(value "22u")
-			(footprint "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+			(footprint "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 			(description "Peripheral cluster bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm")
 				(field
 					(name "Datasheet")
 				)
@@ -729,11 +729,11 @@
 		(comp
 			(ref "C11")
 			(value "100u")
-			(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
+			(footprint "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm")
 			(description "Supply-entry bulk")
 			(fields
 				(field
-					(name "Footprint") "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
+					(name "Footprint") "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm")
 				(field
 					(name "Datasheet")
 				)

@@ -56,13 +56,13 @@
     "C10": {
       "symbol": "CAPACITOR",
       "value": "22u",
-      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "footprint": "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm",
       "description": "Peripheral cluster bulk"
     },
     "C11": {
       "symbol": "CAPACITOR",
       "value": "100u",
-      "footprint": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
+      "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
       "description": "Supply-entry bulk"
     },
     "C2": {
@@ -104,13 +104,13 @@
     "C8": {
       "symbol": "CAPACITOR",
       "value": "22u",
-      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "footprint": "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm",
       "description": "Memory cluster bulk"
     },
     "C9": {
       "symbol": "CAPACITOR",
       "value": "22u",
-      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "footprint": "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm",
       "description": "Core cluster bulk"
     },
     "D1": {

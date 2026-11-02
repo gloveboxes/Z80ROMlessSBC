@@ -716,9 +716,9 @@ for index, (value, role, rail) in enumerate(CAPACITORS, start=1):
     if value == "100n":
         footprint = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm"
     elif value.startswith("22u"):
-        footprint = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+        footprint = "Capacitor_THT:CP_Radial_D4.0mm_P2.00mm"
     else:
-        footprint = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
+        footprint = "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm"
     add_component(
         f"C{index}", "CAPACITOR", value,
         50.8 + (index - 1) * 76.2, 787.4,
