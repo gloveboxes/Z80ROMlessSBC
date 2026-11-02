@@ -44,7 +44,8 @@ of these surfaces.
    [tooling and formats](references/tooling.md). Import the session through
    `build-kicad-pcb.py --session`; never edit routed copper without also
    updating the authoritative session or an explicit generated fixup.
-   Keep In1.Cu disabled in Freerouting so it remains a continuous GND plane.
+   Keep In1.Cu and In2.Cu disabled in Freerouting so they remain continuous
+   GND and +5V planes; signals route on F.Cu and B.Cu only.
 6. Run the canonical build:
 
    ```sh
@@ -61,7 +62,14 @@ of these surfaces.
 ## Non-negotiable checks
 
 - Schematic: zero ERC violations.
-- Net parity: all 79 real nets and 341 physical endpoints match the manifest.
+- Net parity: all 71 real nets and 279 schematic endpoints match the manifest;
+  PCB checks cover all 30 fitted footprints and 279 connected endpoints.
+  The board has no test points; do not reintroduce them without a request.
+- J1 retains six 1.0 mm plated solder holes at 2.54 mm pitch. Only VBUS/+5V
+  and GND are wired; CC2, D+, D- and CC1 remain isolated. Preserve its
+  photo-scaled outline, top-edge flush courtyard and outward-facing USB
+  access; require a dry-fit before fabrication. J3 is an
+  optional auxiliary input/probe header; never connect two supplies.
 - PCB footprint values and packages must match the schematic manifest; net
   parity alone cannot detect stale resistor values.
 - PCB: zero DRC violations and zero unconnected items, including after zone
@@ -70,7 +78,8 @@ of these surfaces.
 - `.kicad_pro` must retain Default, Power, and Clock netclasses and their
   pattern assignments.
 - Placement, rotation, mounting holes, outline, antenna cutout, USB alignment,
-  assembly labels, four-layer stack, and filled In1.Cu GND plane must match
+  assembly labels, four-layer stack-up, and filled In1.Cu GND / In2.Cu +5V
+  planes must match
   generator invariants.
 - Fabrication outputs are generated in a staging directory and replace the
   committed package only after all validation succeeds.
@@ -93,9 +102,9 @@ changes, and outliers. A bus does not need serpentine equality at this clock
 rate, but long branches, stars, unnecessary vias, and one-bit outliers require
 inspection.
 
-For multi-master buses, report source-specific path groups separately:
-Z80-to-SRAM and MCP23S17-to-SRAM for address, and Z80-to-SRAM,
-Pico-write-transceiver-to-SRAM, and SRAM-to-Pico-read-transceiver for data.
+Report source-specific path groups separately: Z80-to-SRAM address/data,
+Pico-write-transceiver-to-SRAM, SRAM-to-Pico-read-transceiver, and
+Pico-to-each-transceiver data. Only the Z80 drives the address bus.
 Do not claim a bus is length matched from total net copper or from only one
 source/receiver pair.
 
@@ -110,8 +119,9 @@ rating as a board qualification.
 
 The Pico 2 W uses RP2350, whose cores/system clock support up to **150 MHz**.
 That is not the Z80 clock: firmware intentionally generates a much slower
-external Z80 clock. The four-layer PCB targets qualification through at least
-8 MHz, starting at 1 MHz; do not claim that rate until measured. Pico GPIO
+external Z80 clock. The four-layer PCB targets qualification through
+20 MHz with the prototype-tested IC set, starting at 1 MHz; do not claim PCB
+qualification until measured. Pico GPIO
 edges and peripheral activity are fast, so route quality is governed by edge
 rate, return path, stubs, and coupling—not only the external bus frequency.
 Query `clock_get_hz(clk_sys)` when a firmware-specific system-clock value

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Z80SBC")(type "KiCad")(uri "${KIPRJMOD}/Z80SBC.pretty")(options "")(descr "Project OLED module socket"))
+)

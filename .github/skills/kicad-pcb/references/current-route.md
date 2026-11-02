@@ -6,82 +6,76 @@ Measured from `hardware/kicad/z80_romless_sbc.kicad_pcb` with
 These are review baselines, not timing qualification. Re-run the report after
 any placement, routing, netclass, or footprint change.
 
-The RP2350 supervisor may run at up to 150 MHz while generating a deliberately
-slower Z80 clock. The lengths below therefore matter for fast edge quality and
-coupling even though the four-layer PCB's Z80 clock target is 8 MHz.
+The 85 x 96 mm board has six pull arrays, a socketed OLED, four corner
+M2.5 holes and a six-pin soldered USB-C power breakout on the top edge.
+Its Z80 qualification target is 20 MHz. RP2350 supports up to 150 MHz; that
+is not the Z80 clock. Fast edge rates, return paths and coupling still
+govern routing quality.
 
-## Bus ranges
+Stack-up: F.Cu signals / In1.Cu solid GND plane / In2.Cu solid +5V plane /
+B.Cu signals. All signal copper is on the outer layers, each adjacent to a
+plane. +3V3 and VSYS are routed tracks.
 
-| Group | Total copper range | Longest pad-to-pad range | Current outlier |
-| --- | ---: | ---: | --- |
-| Address `A0-A15` | 98.4–129.7 mm | 72.8–129.7 mm | A5: 129.7 mm |
-| Z80 data `D0-D7` | 125.0–217.9 mm | 125.0–170.7 mm | D4: 170.7 mm |
-| Pico data `PICO_D0-D7` | 132.4–155.6 mm | 132.4–155.6 mm | PICO_D0: 155.6 mm |
+Lengths below are planar copper, excluding vertical barrel length. Layer
+changes include transitions through plated component pads as well as vias.
 
-The broad total-copper spread is expected because each net includes different
-multi-device branches. D4 has the largest tree total, but its longest endpoint
-path fell from 194.7 mm to 170.7 mm and it now uses no vias. Do not equalize
-these nets with serpentine routing.
-
-## Timing/control totals
-
-| Net | Total copper | Longest current pad path | Vias |
-| --- | ---: | ---: | ---: |
-| `PICO_CLK` | 144.8 mm | 129.0 mm | 0 |
-| `Z80_CLK` | 97.2 mm | 97.2 mm | 0 |
-| `WAIT_N` | 146.1 mm | 146.1 mm | 0 |
-| `SRAM_CE_N` | 80.1 mm | 80.1 mm | 2 |
-| `SRAM_OE_N` | 114.0 mm | 101.2 mm | 2 |
-| `SRAM_WE_N` | 139.4 mm | 132.5 mm | 1 |
-
-Both complete clock nets are via-free. U1 moved 2 mm left and U4 moved 1 mm
-right, increasing the socket pin-row spacing from 2.76 mm to 5.76 mm while
-keeping the AHCT244 local to the CPU. `PICO_CLK` includes the Pico-to-U4 path
-plus its startup-bias branch; use the report's critical endpoint section to
-distinguish the driven path from total tree copper.
-
-| Critical driven path | Length |
-| --- | ---: |
-| Pico clock A1.4 → U4.2 | 129.0 mm |
-| Z80 clock U4.18 → U1.6 | 73.0 mm |
-| Z80 clock U4.18 → TP2.1 | 24.2 mm |
-| SRAM CE U4.3 → U2.22 | 54.7 mm |
-| SRAM OE U4.5 → U2.24 | 99.0 mm |
-| SRAM WE U4.7 → U2.29 | 122.7 mm |
-
-## Source-to-SRAM path groups
-
-The address and data nets are multi-drop trees, so there is no single
-electrically meaningful "length" for a bus bit. The relevant source/receiver
-groups currently measure:
+## Source-specific bus paths
 
 | Group | Path range | Spread |
 | --- | ---: | ---: |
-| Z80 → SRAM address | 13.9–54.1 mm | 40.2 mm |
-| MCP23S17 → SRAM address | 60.5–87.5 mm | 27.0 mm |
-| Z80 ↔ SRAM data | 13.8–94.9 mm | 81.1 mm |
-| Pico write transceiver → SRAM data | 105.0–150.3 mm | 45.3 mm |
-| SRAM → Pico read transceiver data | 125.0–158.1 mm | 33.1 mm |
+| Z80 to SRAM address | 11.456-54.813 mm | 43.357 mm |
+| Z80 to SRAM data | 27.504-72.143 mm | 44.639 mm |
+| U9 write transceiver to SRAM | 43.074-74.881 mm | 31.807 mm |
+| SRAM to U10 read transceiver | 55.869-88.132 mm | 32.263 mm |
+| Pico to U9 data | 10.555-64.894 mm | 54.339 mm |
+| Pico to U10 data | 21.510-51.147 mm | 29.637 mm |
 
-At typical FR-4 propagation velocity, even the largest spread is below about
-0.5 ns, compared with a 125 ns period at 8 MHz. Matching these paths to 2 mm
-would require independent tuning at each source branch; a single meander on a
-shared trunk changes several groups at once. The required added copper would
-increase capacitance, coupling, and routing density without materially
-improving the timing budget. Keep these source-specific measurements in the
-report, but prefer short, low-via paths and measured receive-pin timing over
-decorative length equality.
+Only the Z80 drives A0-A15. Multi-drop net totals are not source-to-receiver
+delays. Do not add serpentine matching to equalize total tree copper.
+Illustrative FR-4 propagation of 6-7 ps/mm gives 0.26-0.30 ns address spread;
+this is not setup/hold evidence. D4 is the data-bus outlier: 72.1 mm Z80 to
+SRAM and 88.1 mm SRAM to U10, each with four layer changes.
 
-## Review thresholds
+## Critical paths
 
-These are engineering prompts, not automatic acceptance limits:
+| Driven path | Length | Layer changes |
+| --- | ---: | ---: |
+| Pico clock A1.4 to U4.2 | 53.195 mm | 0 |
+| Z80 clock U4.18 to U1.6 | 36.549 mm | 0 |
+| SRAM CE U4.12 to U2.22 | 23.362 mm | 0 |
+| SRAM OE U3.3 to U2.24 | 50.401 mm | 0 |
+| SRAM WE U4.9 to U2.29 | 44.269 mm | 0 |
+| WAIT U3.6 to U1.24 | 25.492 mm | 1 |
+| IORQ U1.20 to U3.4 | 69.987 mm | 1 |
+| Raw RD U1.21 to U4.13 | 29.861 mm | 1 |
+| Buffered RD U4.7 to U3.1 | 24.170 mm | 0 |
+| SRAM A16 U4.3 to U2.2 | 58.046 mm | 1 |
 
-- Investigate any address/data bit whose longest path grows by more than about
-  20 mm relative to its group neighbors.
-- Investigate new vias on `Z80_CLK`.
-- Investigate clock/control routes that leave their local component cluster or
-  run parallel at minimum clearance for long distances.
-- Keep SRAM control-source paths and their return geometry grouped.
-- Keep In1.Cu free of signal tracks so it remains a continuous GND reference.
-- Dynamic qualification still requires the documented scope and logic-analyzer
-  captures at 1 MHz first, then stepped testing through the 8 MHz target.
+Both clock nets are locked, via-free F.Cu preroutes generated by
+`add_critical_preroutes`. PICO_CLK daisy-chains A1.4 -> RN6.2 -> U4.2 with
+no stub. Z80_CLK is a direct point-to-point U4.18 to U1.6 route. The board
+has no test points.
+
+The +5V bypass paths (C1, C2, C3, C4, C6) are measured as straight
+pad-to-pin distances across the filled In2.Cu plane: 3.9-5.9 mm. The +3V3
+bypass tracks (C5, C7) are 6.3 and 5.0 mm, via-free.
+
+D4 (four layer changes) and IORQ# (70.0 mm) are the remaining outliers.
+SRAM CE#/OE#/WE# are now via-free. Check D4 at the SRAM and U10 receive
+pins during bring-up. Do not claim length matching or physical timing
+qualification.
+
+## Executable layout review budgets
+
+Run the reporter with `--check`. Its limits are layout-regression gates,
+not electrical timing thresholds:
+
+- Pico-to-U4 clock <=60 mm; U4-to-Z80 clock <=70 mm.
+- SRAM CE/OE/WE, WAIT and raw RD source paths <=60 mm.
+- Each bypass supply-pin path <=8 mm (plane nets: pad-to-pin distance).
+- Every source-specific bus group maximum <=100 mm.
+- Both complete clock nets must have zero vias.
+
+Keep In1.Cu and In2.Cu free of signal tracks. Physical qualification begins
+at 1 MHz and progresses through the 20 MHz target using scope/logic-analyzer
+timing and functional tests.

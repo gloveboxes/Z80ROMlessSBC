@@ -2,14 +2,14 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch</source>
-    <date>2026-11-02T09:42:06</date>
+    <date>2026-11-02T13:44:40</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
-        <title>Z80ROMlessSBC - Exact Breadboard Electrical Schematic</title>
+        <title>Z80ROMlessSBC - Assisted Loader and Four-Layer PCB</title>
         <company>Z80ROMlessSBC</company>
-        <rev>2</rev>
-        <date>2026-10-26</date>
+        <rev>3</rev>
+        <date>2026-11-02</date>
         <source>z80_romless_sbc.kicad_sch</source>
         <comment number="1" value="Native KiCad 10 schematic generated from the verified README pin map"/>
         <comment number="2" value=""/>
@@ -87,17 +87,17 @@
     </comp>
     <comp ref="A2">
       <value>0.91in SSD1315 128X32 I2C OLED</value>
+      <footprint>Z80SBC:OLED_SSD1315_38x12mm_Socket</footprint>
       <datasheet>https://www.solomon-systech.com/product/ssd1315</datasheet>
-      <description>External Stage 10 status OLED module, 38.00 x 12.00 mm board, 22.38 x 5.58 mm active area; 4-pin 2.54 mm header in order GND, VCC, SCK (I2C SCL), SDA; I2C address 0x3C; onboard regulator and I2C pull-ups to its 3.3V rail; supply from Pico 3V3</description>
+      <description>Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit</description>
       <fields>
-        <field name="Footprint"/>
+        <field name="Footprint">Z80SBC:OLED_SSD1315_38x12mm_Socket</field>
         <field name="Datasheet">https://www.solomon-systech.com/product/ssd1315</field>
-        <field name="Description">External Stage 10 status OLED module, 38.00 x 12.00 mm board, 22.38 x 5.58 mm active area; 4-pin 2.54 mm header in order GND, VCC, SCK (I2C SCL), SDA; I2C address 0x3C; onboard regulator and I2C pull-ups to its 3.3V rail; supply from Pico 3V3</field>
+        <field name="Description">Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit</field>
       </fields>
       <libsource lib="Z80SBC" part="SSD1315_OLED" description="Z80ROMlessSBC project symbol: SSD1315 128X32 OLED"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <property name="exclude_from_board"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>1709f962-84c3-5791-9e1c-8d50e359bd38</tstamps>
       <units>
@@ -389,16 +389,17 @@
     </comp>
     <comp ref="J1">
       <value>USB-C 5V POWER BREAKOUT</value>
-      <description>External TYPE-C USB to pin DIP female adapter module; PCB body 21.6 x 12.7 mm from product image; 6-pin single-row header at user-confirmed standard breadboard pitch 2.54 mm, first-to-last hole-centre span 12.7 mm; photographed pad order CC2, D+, D-, CC1, GND, VBUS; VBUS supplies +5V from a regulated 5V USB source, not an onboard regulator or PD trigger; unused breakout pads NC; verify CC1/CC2 sink resistors before USB-C use; header offset/drill diameter, mounting-hole geometry, connector overhang and assembled height unverified, no PCB footprint</description>
+      <footprint>Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder</footprint>
+      <datasheet>https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg</datasheet>
+      <description>Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS</description>
       <fields>
-        <field name="Footprint"/>
-        <field name="Datasheet"/>
-        <field name="Description">External TYPE-C USB to pin DIP female adapter module; PCB body 21.6 x 12.7 mm from product image; 6-pin single-row header at user-confirmed standard breadboard pitch 2.54 mm, first-to-last hole-centre span 12.7 mm; photographed pad order CC2, D+, D-, CC1, GND, VBUS; VBUS supplies +5V from a regulated 5V USB source, not an onboard regulator or PD trigger; unused breakout pads NC; verify CC1/CC2 sink resistors before USB-C use; header offset/drill diameter, mounting-hole geometry, connector overhang and assembled height unverified, no PCB footprint</field>
+        <field name="Footprint">Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder</field>
+        <field name="Datasheet">https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg</field>
+        <field name="Description">Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS</field>
       </fields>
       <libsource lib="Z80SBC" part="USB_C_POWER" description="Z80ROMlessSBC project symbol: USB-C 5V POWER BREAKOUT"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <property name="exclude_from_board"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>0d49d022-f741-5a3c-9698-cb92a98d26ea</tstamps>
       <units>
@@ -440,186 +441,25 @@
         </unit>
       </units>
     </comp>
-    <comp ref="R17">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for PICO_BUSREQ_N</description>
+    <comp ref="J3">
+      <value>EXTERNAL 5V</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS</description>
       <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">10k startup bias for PICO_BUSREQ_N</field>
+        <field name="Description">Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS</field>
       </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
+      <libsource lib="Z80SBC" part="POWER_HEADER" description="Z80ROMlessSBC project symbol: EXTERNAL 5V"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
-      <tstamps>87b025ad-09d5-5bd9-a88b-2aebe0dd45e7</tstamps>
+      <tstamps>cc59a135-b3d1-5db9-884c-5364c4e785d1</tstamps>
       <units>
         <unit name="A">
           <pins>
-            <pin num="1"/>
             <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R18">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for BOOT_READ_DISABLE</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for BOOT_READ_DISABLE</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>0909fa2f-eaaa-5247-abc3-3d6aa6ad206f</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
             <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R19">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for PICO_DATA_UP_OE_N</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for PICO_DATA_UP_OE_N</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>a67987ff-1e4f-5234-a665-109ec6bb4871</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R20">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for DATA_DOWN_OE_N</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for DATA_DOWN_OE_N</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>65f53010-4d41-55d6-bba0-9bcad863f161</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R21">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for PICO_CLK</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for PICO_CLK</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>e1049847-de89-5351-8c1d-e4f166bd8e37</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R22">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for RESET_N</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for RESET_N</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>e1a1e3c0-1bd3-5d71-bfe1-4166e16779f9</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R23">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k startup bias for IO_RELEASE</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k startup bias for IO_RELEASE</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>89c84417-7f0e-5870-af2f-68c4d6cf3ad9</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R24">
-      <value>10k</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <description>10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4</description>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description">10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4</field>
-      </fields>
-      <libsource lib="Z80SBC" part="RESISTOR" description="Z80ROMlessSBC project symbol: 10k"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>c59bdc4d-06a9-5de7-9590-95da23d5497d</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
           </pins>
         </unit>
       </units>
@@ -744,156 +584,54 @@
         </unit>
       </units>
     </comp>
-    <comp ref="TP1">
-      <value>M1# TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC M1# TEST</description>
+    <comp ref="RN5">
+      <value>4x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP5</footprint>
+      <description>PCB startup pull-ups; electrically replaces breadboard R17-R20</description>
       <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Footprint">Resistor_THT:R_Array_SIP5</field>
         <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC M1# TEST</field>
+        <field name="Description">PCB startup pull-ups; electrically replaces breadboard R17-R20</field>
       </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <libsource lib="Z80SBC" part="RN4_BIAS" description="Z80ROMlessSBC project symbol: 4x10k bussed"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
-      <tstamps>9cd720dd-dd82-50cc-924d-232daebbcb1f</tstamps>
+      <tstamps>9696e8c0-de50-50b8-93e2-9166833b4299</tstamps>
       <units>
         <unit name="A">
           <pins>
             <pin num="1"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
           </pins>
         </unit>
       </units>
     </comp>
-    <comp ref="TP2">
-      <value>CLK TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC CLK TEST</description>
+    <comp ref="RN6">
+      <value>4x10k bussed</value>
+      <footprint>Resistor_THT:R_Array_SIP5</footprint>
+      <description>PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side</description>
       <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
+        <field name="Footprint">Resistor_THT:R_Array_SIP5</field>
         <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC CLK TEST</field>
+        <field name="Description">PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side</field>
       </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
+      <libsource lib="Z80SBC" part="RN4_BIAS" description="Z80ROMlessSBC project symbol: 4x10k bussed"/>
       <property name="Sheetname" value="z80_romless_sbc"/>
       <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
-      <tstamps>313234fa-9a09-5925-928a-ffde1f65c7ef</tstamps>
+      <tstamps>2a306929-9a39-5af0-9dbc-420a7552c855</tstamps>
       <units>
         <unit name="A">
           <pins>
             <pin num="1"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="TP3">
-      <value>RESET# TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC RESET# TEST</description>
-      <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC RESET# TEST</field>
-      </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>acd828d8-32e3-53da-a5af-e3494b354ba5</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="TP4">
-      <value>WAIT# TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC WAIT# TEST</description>
-      <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC WAIT# TEST</field>
-      </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>73c86315-8a9c-5588-a806-77026b21b200</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="TP5">
-      <value>BUSREQ# TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC BUSREQ# TEST</description>
-      <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC BUSREQ# TEST</field>
-      </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>bc767725-3959-5fdc-adcf-18afa2e68ff8</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="TP6">
-      <value>BUSACK# TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC BUSACK# TEST</description>
-      <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC BUSACK# TEST</field>
-      </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>ee10098b-3242-58dc-a55c-9ff663759803</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="TP7">
-      <value>GND TEST</value>
-      <footprint>TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</footprint>
-      <description>Z80ROMlessSBC GND TEST</description>
-      <fields>
-        <field name="Footprint">TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded</field>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC GND TEST</field>
-      </fields>
-      <libsource lib="Z80SBC" part="TESTPOINT" description="Z80ROMlessSBC project symbol: M1# TEST"/>
-      <property name="Sheetname" value="z80_romless_sbc"/>
-      <property name="Sheetfile" value="z80_romless_sbc.kicad_sch"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>a8206f66-d9d0-5a6e-a33f-19a843f0dbb1</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
           </pins>
         </unit>
       </units>
@@ -1464,18 +1202,35 @@
         <pin num="40" name="VBUS" type="power_in"/>
       </pins>
     </libpart>
-    <libpart lib="Z80SBC" part="RESISTOR">
-      <description>Z80ROMlessSBC project symbol: 10k</description>
+    <libpart lib="Z80SBC" part="POWER_HEADER">
+      <description>Z80ROMlessSBC project symbol: EXTERNAL 5V</description>
       <fields>
-        <field name="Reference">R</field>
-        <field name="Value">10k</field>
+        <field name="Reference">J</field>
+        <field name="Value">EXTERNAL 5V</field>
         <field name="Footprint"/>
         <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC project symbol: 10k</field>
+        <field name="Description">Z80ROMlessSBC project symbol: EXTERNAL 5V</field>
       </fields>
       <pins>
-        <pin num="1" name="1" type="passive"/>
-        <pin num="2" name="2" type="passive"/>
+        <pin num="1" name="+5V" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Z80SBC" part="RN4_BIAS">
+      <description>Z80ROMlessSBC project symbol: 4x10k bussed</description>
+      <fields>
+        <field name="Reference">RN</field>
+        <field name="Value">4x10k bussed</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Z80ROMlessSBC project symbol: 4x10k bussed</field>
+      </fields>
+      <pins>
+        <pin num="1" name="COMMON" type="passive"/>
+        <pin num="2" name="R1" type="passive"/>
+        <pin num="3" name="R2" type="passive"/>
+        <pin num="4" name="R3" type="passive"/>
+        <pin num="5" name="R4" type="passive"/>
       </pins>
     </libpart>
     <libpart lib="Z80SBC" part="RN8">
@@ -1557,19 +1312,6 @@
         <pin num="SCK" name="SCK" type="input"/>
         <pin num="SDA" name="SDA" type="bidirectional"/>
         <pin num="VCC" name="VCC" type="power_in"/>
-      </pins>
-    </libpart>
-    <libpart lib="Z80SBC" part="TESTPOINT">
-      <description>Z80ROMlessSBC project symbol: M1# TEST</description>
-      <fields>
-        <field name="Reference">TP</field>
-        <field name="Value">M1# TEST</field>
-        <field name="Footprint"/>
-        <field name="Datasheet"/>
-        <field name="Description">Z80ROMlessSBC project symbol: M1# TEST</field>
-      </fields>
-      <pins>
-        <pin num="1" name="TP" type="passive"/>
       </pins>
     </libpart>
     <libpart lib="Z80SBC" part="USB_C_POWER">
@@ -1655,10 +1397,7 @@
       <node ref="C5" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="C7" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="J2" pin="4" pinfunction="3V3_OUT_4" pintype="passive"/>
-      <node ref="R17" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R18" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R19" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R20" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="RN5" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="U10" pin="20" pinfunction="VCC_20" pintype="power_in"/>
       <node ref="U7" pin="20" pinfunction="VCC_20" pintype="power_in"/>
     </net>
@@ -1674,6 +1413,7 @@
       <node ref="C9" pin="1" pinfunction="+_1" pintype="passive"/>
       <node ref="D1" pin="2" pinfunction="A_2" pintype="passive"/>
       <node ref="J1" pin="VBUS" pinfunction="VBUS_VBUS" pintype="power_out"/>
+      <node ref="J3" pin="1" pinfunction="+5V_1" pintype="passive"/>
       <node ref="RN1" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="RN2" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="RN4" pin="1" pinfunction="COMMON_1" pintype="passive"/>
@@ -1771,7 +1511,7 @@
     </net>
     <net code="20" name="/BOOT_READ_DISABLE" class="Default">
       <node ref="A1" pin="7" pinfunction="GP5_7" pintype="bidirectional"/>
-      <node ref="R18" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN5" pin="3" pinfunction="R2_3" pintype="passive"/>
       <node ref="U4" pin="6" pinfunction="1A3_6" pintype="input"/>
     </net>
     <net code="21" name="/BOOT_READ_DISABLE_5V" class="Default">
@@ -1780,13 +1520,11 @@
     </net>
     <net code="22" name="/BUSACK_N" class="Default">
       <node ref="RN4" pin="3" pinfunction="R2_3" pintype="passive"/>
-      <node ref="TP6" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="23" pinfunction="BUSACK#_23" pintype="tri_state"/>
       <node ref="U7" pin="2" pinfunction="1A1_2" pintype="input"/>
     </net>
     <net code="23" name="/BUSREQ_N" class="Default">
       <node ref="RN4" pin="2" pinfunction="R1_2" pintype="passive"/>
-      <node ref="TP5" pin="1" pinfunction="TP_1" pintype="passive"/>
       <node ref="U1" pin="25" pinfunction="BUSREQ#_25" pintype="input"/>
       <node ref="U4" pin="16" pinfunction="1Y2_16" pintype="tri_state"/>
     </net>
@@ -1840,7 +1578,7 @@
     </net>
     <net code="32" name="/DATA_DOWN_OE_N" class="Default">
       <node ref="A1" pin="10" pinfunction="GP7_10" pintype="bidirectional"/>
-      <node ref="R20" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN5" pin="5" pinfunction="R4_5" pintype="passive"/>
       <node ref="U10" pin="19" pinfunction="OE#_19" pintype="input"/>
     </net>
     <net code="33" name="/DATA_UP_OE_N" class="Default">
@@ -1870,12 +1608,9 @@
       <node ref="C9" pin="2" pinfunction="-_2" pintype="passive"/>
       <node ref="J1" pin="GND" pinfunction="GND_GND" pintype="power_out"/>
       <node ref="J2" pin="5" pinfunction="GND_5" pintype="passive"/>
-      <node ref="R21" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R22" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R23" pin="2" pinfunction="2_2" pintype="passive"/>
-      <node ref="R24" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="J3" pin="2" pinfunction="GND_2" pintype="passive"/>
       <node ref="RN3" pin="1" pinfunction="COMMON_1" pintype="passive"/>
-      <node ref="TP7" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="RN6" pin="1" pinfunction="COMMON_1" pintype="passive"/>
       <node ref="U1" pin="29" pinfunction="GND_29" pintype="power_in"/>
       <node ref="U10" pin="1" pinfunction="DIR_1" pintype="input"/>
       <node ref="U10" pin="10" pinfunction="GND_10" pintype="power_in"/>
@@ -1904,212 +1639,208 @@
     </net>
     <net code="38" name="/IO_RELEASE" class="Default">
       <node ref="A1" pin="12" pinfunction="GP9_12" pintype="bidirectional"/>
-      <node ref="R23" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN6" pin="4" pinfunction="R3_4" pintype="passive"/>
       <node ref="U3" pin="5" pinfunction="2B_5" pintype="input"/>
     </net>
-    <net code="39" name="/M1_N" class="Default">
-      <node ref="TP1" pin="1" pinfunction="TP_1" pintype="passive"/>
-      <node ref="U1" pin="27" pinfunction="M1#_27" pintype="tri_state"/>
-    </net>
-    <net code="40" name="/MREQ_N" class="Default">
+    <net code="39" name="/MREQ_N" class="Default">
       <node ref="RN4" pin="4" pinfunction="R3_4" pintype="passive"/>
       <node ref="U1" pin="19" pinfunction="MREQ#_19" pintype="tri_state"/>
       <node ref="U4" pin="8" pinfunction="1A4_8" pintype="input"/>
     </net>
-    <net code="41" name="/NMI_N" class="Default">
+    <net code="40" name="/NMI_N" class="Default">
       <node ref="RN4" pin="9" pinfunction="R8_9" pintype="passive"/>
       <node ref="U1" pin="17" pinfunction="NMI#_17" pintype="input"/>
     </net>
-    <net code="42" name="/PICO_A0" class="Default">
+    <net code="41" name="/PICO_A0" class="Default">
       <node ref="A1" pin="24" pinfunction="GP18_24" pintype="bidirectional"/>
       <node ref="U7" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
     </net>
-    <net code="43" name="/PICO_A1" class="Default">
+    <net code="42" name="/PICO_A1" class="Default">
       <node ref="A1" pin="25" pinfunction="GP19_25" pintype="bidirectional"/>
       <node ref="U7" pin="7" pinfunction="2Y2_7" pintype="tri_state"/>
     </net>
-    <net code="44" name="/PICO_A2" class="Default">
+    <net code="43" name="/PICO_A2" class="Default">
       <node ref="A1" pin="26" pinfunction="GP20_26" pintype="bidirectional"/>
       <node ref="U7" pin="5" pinfunction="2Y3_5" pintype="tri_state"/>
     </net>
-    <net code="45" name="/PICO_A4" class="Default">
+    <net code="44" name="/PICO_A4" class="Default">
       <node ref="A1" pin="27" pinfunction="GP21_27" pintype="bidirectional"/>
       <node ref="U7" pin="3" pinfunction="2Y4_3" pintype="tri_state"/>
     </net>
-    <net code="46" name="/PICO_BUSACK_N" class="Default">
+    <net code="45" name="/PICO_BUSACK_N" class="Default">
       <node ref="A1" pin="1" pinfunction="GP0_1" pintype="bidirectional"/>
       <node ref="U7" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
     </net>
-    <net code="47" name="/PICO_BUSREQ_N" class="Default">
+    <net code="46" name="/PICO_BUSREQ_N" class="Default">
       <node ref="A1" pin="6" pinfunction="GP4_6" pintype="bidirectional"/>
-      <node ref="R17" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN5" pin="2" pinfunction="R1_2" pintype="passive"/>
       <node ref="U4" pin="4" pinfunction="1A2_4" pintype="input"/>
     </net>
-    <net code="48" name="/PICO_CLK" class="Default">
+    <net code="47" name="/PICO_CLK" class="Default">
       <node ref="A1" pin="4" pinfunction="GP2_4" pintype="bidirectional"/>
-      <node ref="R21" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN6" pin="2" pinfunction="R1_2" pintype="passive"/>
       <node ref="U4" pin="2" pinfunction="1A1_2" pintype="input"/>
     </net>
-    <net code="49" name="/PICO_D0" class="Default">
+    <net code="48" name="/PICO_D0" class="Default">
       <node ref="A1" pin="14" pinfunction="GP10_14" pintype="bidirectional"/>
       <node ref="RN3" pin="2" pinfunction="R1_2" pintype="passive"/>
       <node ref="U10" pin="2" pinfunction="A1_2" pintype="bidirectional"/>
       <node ref="U9" pin="2" pinfunction="A1_2" pintype="bidirectional"/>
     </net>
-    <net code="50" name="/PICO_D1" class="Default">
+    <net code="49" name="/PICO_D1" class="Default">
       <node ref="A1" pin="15" pinfunction="GP11_15" pintype="bidirectional"/>
       <node ref="RN3" pin="3" pinfunction="R2_3" pintype="passive"/>
       <node ref="U10" pin="3" pinfunction="A2_3" pintype="bidirectional"/>
       <node ref="U9" pin="3" pinfunction="A2_3" pintype="bidirectional"/>
     </net>
-    <net code="51" name="/PICO_D2" class="Default">
+    <net code="50" name="/PICO_D2" class="Default">
       <node ref="A1" pin="16" pinfunction="GP12_16" pintype="bidirectional"/>
       <node ref="RN3" pin="4" pinfunction="R3_4" pintype="passive"/>
       <node ref="U10" pin="4" pinfunction="A3_4" pintype="bidirectional"/>
       <node ref="U9" pin="4" pinfunction="A3_4" pintype="bidirectional"/>
     </net>
-    <net code="52" name="/PICO_D3" class="Default">
+    <net code="51" name="/PICO_D3" class="Default">
       <node ref="A1" pin="17" pinfunction="GP13_17" pintype="bidirectional"/>
       <node ref="RN3" pin="5" pinfunction="R4_5" pintype="passive"/>
       <node ref="U10" pin="5" pinfunction="A4_5" pintype="bidirectional"/>
       <node ref="U9" pin="5" pinfunction="A4_5" pintype="bidirectional"/>
     </net>
-    <net code="53" name="/PICO_D4" class="Default">
+    <net code="52" name="/PICO_D4" class="Default">
       <node ref="A1" pin="19" pinfunction="GP14_19" pintype="bidirectional"/>
       <node ref="RN3" pin="6" pinfunction="R5_6" pintype="passive"/>
       <node ref="U10" pin="6" pinfunction="A5_6" pintype="bidirectional"/>
       <node ref="U9" pin="6" pinfunction="A5_6" pintype="bidirectional"/>
     </net>
-    <net code="54" name="/PICO_D5" class="Default">
+    <net code="53" name="/PICO_D5" class="Default">
       <node ref="A1" pin="20" pinfunction="GP15_20" pintype="bidirectional"/>
       <node ref="RN3" pin="7" pinfunction="R6_7" pintype="passive"/>
       <node ref="U10" pin="7" pinfunction="A6_7" pintype="bidirectional"/>
       <node ref="U9" pin="7" pinfunction="A6_7" pintype="bidirectional"/>
     </net>
-    <net code="55" name="/PICO_D6" class="Default">
+    <net code="54" name="/PICO_D6" class="Default">
       <node ref="A1" pin="21" pinfunction="GP16_21" pintype="bidirectional"/>
       <node ref="RN3" pin="8" pinfunction="R7_8" pintype="passive"/>
       <node ref="U10" pin="8" pinfunction="A7_8" pintype="bidirectional"/>
       <node ref="U9" pin="8" pinfunction="A7_8" pintype="bidirectional"/>
     </net>
-    <net code="56" name="/PICO_D7" class="Default">
+    <net code="55" name="/PICO_D7" class="Default">
       <node ref="A1" pin="22" pinfunction="GP17_22" pintype="bidirectional"/>
       <node ref="RN3" pin="9" pinfunction="R8_9" pintype="passive"/>
       <node ref="U10" pin="9" pinfunction="A8_9" pintype="bidirectional"/>
       <node ref="U9" pin="9" pinfunction="A8_9" pintype="bidirectional"/>
     </net>
-    <net code="57" name="/PICO_DATA_UP_OE_N" class="Default">
+    <net code="56" name="/PICO_DATA_UP_OE_N" class="Default">
       <node ref="A1" pin="9" pinfunction="GP6_9" pintype="bidirectional"/>
-      <node ref="R19" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN5" pin="4" pinfunction="R3_4" pintype="passive"/>
       <node ref="U3" pin="10" pinfunction="3B_10" pintype="input"/>
     </net>
-    <net code="59" name="/PICO_GP8" class="Default">
+    <net code="58" name="/PICO_GP8" class="Default">
       <node ref="A1" pin="11" pinfunction="GP8_11" pintype="bidirectional"/>
       <node ref="J2" pin="1" pinfunction="GP8_1" pintype="passive"/>
-      <node ref="R24" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="RN6" pin="5" pinfunction="R4_5" pintype="passive"/>
       <node ref="U4" pin="17" pinfunction="2A4_17" pintype="input"/>
     </net>
-    <net code="60" name="/PICO_GP22" class="Default">
+    <net code="59" name="/PICO_GP22" class="Default">
       <node ref="A1" pin="29" pinfunction="GP22_29" pintype="bidirectional"/>
       <node ref="A2" pin="SDA" pinfunction="SDA_SDA" pintype="bidirectional"/>
       <node ref="J2" pin="2" pinfunction="GP22_2" pintype="passive"/>
     </net>
-    <net code="61" name="/PICO_GP26" class="Default">
+    <net code="60" name="/PICO_GP26" class="Default">
       <node ref="A1" pin="31" pinfunction="GP26_31" pintype="bidirectional"/>
       <node ref="A2" pin="SCK" pinfunction="SCK_SCK" pintype="input"/>
       <node ref="J2" pin="3" pinfunction="GP26_ADC0_3" pintype="passive"/>
     </net>
-    <net code="62" name="/PICO_IORQ_N" class="Default">
+    <net code="61" name="/PICO_IORQ_N" class="Default">
       <node ref="A1" pin="2" pinfunction="GP1_2" pintype="bidirectional"/>
       <node ref="U7" pin="16" pinfunction="1Y2_16" pintype="tri_state"/>
     </net>
-    <net code="63" name="/PICO_RD_N" class="Default">
+    <net code="62" name="/PICO_RD_N" class="Default">
       <node ref="A1" pin="32" pinfunction="GP27_32" pintype="bidirectional"/>
       <node ref="U7" pin="14" pinfunction="1Y3_14" pintype="tri_state"/>
     </net>
-    <net code="64" name="/PICO_WR_N" class="Default">
+    <net code="63" name="/PICO_WR_N" class="Default">
       <node ref="A1" pin="34" pinfunction="GP28_34" pintype="bidirectional"/>
       <node ref="U7" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
     </net>
-    <net code="65" name="/RD_5V_N" class="Default">
+    <net code="64" name="/RD_5V_N" class="Default">
       <node ref="U3" pin="1" pinfunction="1A_1" pintype="input"/>
       <node ref="U4" pin="7" pinfunction="2Y2_7" pintype="tri_state"/>
     </net>
-    <net code="66" name="/RD_N" class="Default">
+    <net code="65" name="/RD_N" class="Default">
       <node ref="RN4" pin="6" pinfunction="R5_6" pintype="passive"/>
       <node ref="U1" pin="21" pinfunction="RD#_21" pintype="tri_state"/>
       <node ref="U3" pin="9" pinfunction="3A_9" pintype="input"/>
       <node ref="U4" pin="13" pinfunction="2A2_13" pintype="input"/>
       <node ref="U7" pin="6" pinfunction="1A3_6" pintype="input"/>
     </net>
-    <net code="67" name="/RESET_N" class="Default">
+    <net code="66" name="/RESET_N" class="Default">
       <node ref="A1" pin="5" pinfunction="GP3_5" pintype="bidirectional"/>
-      <node ref="R22" pin="1" pinfunction="1_1" pintype="passive"/>
-      <node ref="TP3" pin="1" pinfunction="TP_1" pintype="passive"/>
+      <node ref="RN6" pin="3" pinfunction="R2_3" pintype="passive"/>
       <node ref="U1" pin="26" pinfunction="RESET#_26" pintype="input"/>
     </net>
-    <net code="68" name="/SRAM_A16" class="Default">
+    <net code="67" name="/SRAM_A16" class="Default">
       <node ref="U2" pin="2" pinfunction="A16_2" pintype="input"/>
       <node ref="U4" pin="3" pinfunction="2Y4_3" pintype="tri_state"/>
     </net>
-    <net code="69" name="/SRAM_CE_N" class="Default">
+    <net code="68" name="/SRAM_CE_N" class="Default">
       <node ref="U2" pin="22" pinfunction="CE#_22" pintype="input"/>
       <node ref="U4" pin="12" pinfunction="1Y4_12" pintype="tri_state"/>
     </net>
-    <net code="70" name="/SRAM_OE_N" class="Default">
+    <net code="69" name="/SRAM_OE_N" class="Default">
       <node ref="U2" pin="24" pinfunction="OE#_24" pintype="input"/>
       <node ref="U3" pin="3" pinfunction="1Y_3" pintype="output"/>
     </net>
-    <net code="71" name="/SRAM_WE_N" class="Default">
+    <net code="70" name="/SRAM_WE_N" class="Default">
       <node ref="U2" pin="29" pinfunction="WE#_29" pintype="input"/>
       <node ref="U4" pin="9" pinfunction="2Y1_9" pintype="tri_state"/>
     </net>
-    <net code="72" name="/VSYS" class="Default">
+    <net code="71" name="/VSYS" class="Default">
       <node ref="A1" pin="39" pinfunction="VSYS_39" pintype="power_in"/>
       <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
     </net>
-    <net code="73" name="/WAIT_N" class="Default">
-      <node ref="TP4" pin="1" pinfunction="TP_1" pintype="passive"/>
+    <net code="72" name="/WAIT_N" class="Default">
       <node ref="U1" pin="24" pinfunction="WAIT#_24" pintype="input"/>
       <node ref="U3" pin="6" pinfunction="2Y_6" pintype="output"/>
     </net>
-    <net code="74" name="/WR_N" class="Default">
+    <net code="73" name="/WR_N" class="Default">
       <node ref="RN4" pin="7" pinfunction="R6_7" pintype="passive"/>
       <node ref="U1" pin="22" pinfunction="WR#_22" pintype="tri_state"/>
       <node ref="U4" pin="11" pinfunction="2A1_11" pintype="input"/>
       <node ref="U7" pin="8" pinfunction="1A4_8" pintype="input"/>
     </net>
-    <net code="75" name="/Z80_CLK" class="Default">
-      <node ref="TP2" pin="1" pinfunction="TP_1" pintype="passive"/>
+    <net code="74" name="/Z80_CLK" class="Default">
       <node ref="U1" pin="6" pinfunction="CLK_6" pintype="input"/>
       <node ref="U4" pin="18" pinfunction="1Y1_18" pintype="tri_state"/>
     </net>
-    <net code="86" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
+    <net code="85" name="unconnected-(A1-3V3_EN-Pad37)" class="Default">
       <node ref="A1" pin="37" pinfunction="3V3_EN_37" pintype="input+no_connect"/>
     </net>
-    <net code="87" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
+    <net code="86" name="unconnected-(A1-ADC_VREF-Pad35)" class="Default">
       <node ref="A1" pin="35" pinfunction="ADC_VREF_35" pintype="power_in+no_connect"/>
     </net>
-    <net code="88" name="unconnected-(A1-RUN-Pad30)" class="Default">
+    <net code="87" name="unconnected-(A1-RUN-Pad30)" class="Default">
       <node ref="A1" pin="30" pinfunction="RUN_30" pintype="input+no_connect"/>
     </net>
-    <net code="89" name="unconnected-(A1-VBUS-Pad40)" class="Default">
+    <net code="88" name="unconnected-(A1-VBUS-Pad40)" class="Default">
       <node ref="A1" pin="40" pinfunction="VBUS_40" pintype="power_in+no_connect"/>
     </net>
-    <net code="90" name="unconnected-(J1-PadCC1)" class="Default">
+    <net code="89" name="unconnected-(J1-PadCC1)" class="Default">
       <node ref="J1" pin="CC1" pinfunction="CC1_CC1" pintype="passive+no_connect"/>
     </net>
-    <net code="91" name="unconnected-(J1-PadCC2)" class="Default">
+    <net code="90" name="unconnected-(J1-PadCC2)" class="Default">
       <node ref="J1" pin="CC2" pinfunction="CC2_CC2" pintype="passive+no_connect"/>
     </net>
-    <net code="92" name="unconnected-(J1-PadD+)" class="Default">
+    <net code="91" name="unconnected-(J1-PadD+)" class="Default">
       <node ref="J1" pin="D+" pinfunction="D+_D+" pintype="passive+no_connect"/>
     </net>
-    <net code="93" name="unconnected-(J1-PadD-)" class="Default">
+    <net code="92" name="unconnected-(J1-PadD-)" class="Default">
       <node ref="J1" pin="D-" pinfunction="D-_D-" pintype="passive+no_connect"/>
     </net>
-    <net code="94" name="unconnected-(U1-HALT#-Pad18)" class="Default">
+    <net code="93" name="unconnected-(U1-HALT#-Pad18)" class="Default">
       <node ref="U1" pin="18" pinfunction="HALT#_18" pintype="tri_state+no_connect"/>
+    </net>
+    <net code="94" name="unconnected-(U1-M1#-Pad27)" class="Default">
+      <node ref="U1" pin="27" pinfunction="M1#_27" pintype="tri_state+no_connect"/>
     </net>
     <net code="95" name="unconnected-(U1-RFSH#-Pad28)" class="Default">
       <node ref="U1" pin="28" pinfunction="RFSH#_28" pintype="tri_state+no_connect"/>

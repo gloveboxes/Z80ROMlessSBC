@@ -1,32 +1,28 @@
 Drill report for z80_romless_sbc.kicad_pcb
-Created on 2026-09-13T00:02:15
+Created on 2026-11-02T13:44:49
 
 Copper Layer Stackup:
     =============================================================
     L1 :  F.Cu                      front
     L2 :  GND Plane                 in1
-    L3 :  Inner Signal              in2
+    L3 :  +5V Plane                 in2
     L4 :  B.Cu                      back
 
 
 Drill file 'z80_romless_sbc-PTH.drl' contains
     plated through holes:
     =============================================================
-    T1  0.400mm  0.0157"  (79 holes))
-    T2  0.500mm  0.0197"  (1 hole)
-    T3  0.750mm  0.0295"  (3 holes))
-    T4  0.800mm  0.0315"  (301 holes))
-    T5  0.900mm  0.0354"  (7 holes))
-    T6  1.000mm  0.0394"  (42 holes))
-    T7  1.100mm  0.0433"  (2 holes))
-    T8  1.300mm  0.0512"  (2 holes))
+    T1  0.400mm  0.0157"  (35 holes))
+    T2  0.800mm  0.0315"  (232 holes))
+    T3  1.000mm  0.0394"  (59 holes))
+    T4  1.100mm  0.0433"  (2 holes))
 
-    Total plated holes count 437
+    Total plated holes count 328
 
 
 Drill file 'z80_romless_sbc-NPTH.drl' contains
     unplated through holes:
     =============================================================
-    T1  3.200mm  0.1260"  (4 holes))
+    T1  2.700mm  0.1063"  (4 holes))
 
     Total unplated holes count 4

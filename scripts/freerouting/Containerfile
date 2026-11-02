@@ -1,0 +1,18 @@
+FROM eclipse-temurin:25-jre-noble@sha256:d120abd9d8d7dec94520ce974ece62d0e4eed8576eb00bbc84e6128307ab48ef
+
+ARG FREEROUTING_VERSION=2.4.1
+ARG FREEROUTING_SHA256=251101c3eeac22d7e7dfcf6796603279e5d1000283eb82d8f093780f7afc6aa9
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/freerouting \
+    && curl --fail --location --silent --show-error \
+       "https://github.com/freerouting/freerouting/releases/download/v${FREEROUTING_VERSION}/freerouting-${FREEROUTING_VERSION}.jar" \
+       --output /opt/freerouting/freerouting.jar \
+    && echo "${FREEROUTING_SHA256}  /opt/freerouting/freerouting.jar" \
+       | sha256sum --check -
+
+ENV HOME=/tmp
+WORKDIR /work
+ENTRYPOINT ["java", "-XX:ActiveProcessorCount=4", "-Xmx4g", "-jar", "/opt/freerouting/freerouting.jar"]

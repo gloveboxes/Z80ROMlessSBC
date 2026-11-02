@@ -21,10 +21,11 @@ DHO814/DSLogic Plus measurements, and the complete phase-by-phase bring-up
 procedure.
 
 Phases 0-10 build the three-BB830 breadboard prototype. The PCB is a separate
-physical implementation of the **previous circuit**, left unchanged for now.
-Do not manufacture its existing Gerbers for this redesign. The current
-eight-package breadboard circuit uses fixed HCT32 logic and Z80-executed RAM
-loading, with no PLD programmer or address expander.
+physical implementation of the same eight-package assisted-loader circuit:
+85 x 96 mm, four layers, resistor arrays, an OLED socket and four corner
+M2.5 standoff holes. Its 20 MHz design target requires separate PCB
+qualification. Both builds use fixed HCT32 logic and Z80-executed RAM loading,
+with no PLD programmer or address expander.
 
 ## Related projects
 

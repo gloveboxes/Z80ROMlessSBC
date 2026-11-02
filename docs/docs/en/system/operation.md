@@ -256,16 +256,16 @@ wear-levelled storage.
     qualification at the preceding passing step.
 
   - *20 MHz CPU Rating:* The `Z84C0020PEC` rating applies to the CPU,
-    not this breadboard system with no memory wait states. At 20 MHz a clock period
-    is 50 ns, shorter than the SRAM's 55 ns rated access time even before
-    AHCT244/HCT32 propagation, Z80 setup, and breadboard delay. Reaching 20 MHz requires a
-    redesigned control path, hardware-generated memory and I/O wait
-    states (or deterministic clock gating), and a PCB-level signal-
-    integrity review; changing the Pico PWM frequency is insufficient.
+    not automatically to every assembled board. The project IC set has been
+    tested at 20 MHz, but PCB receiving-pin margins require separate evidence.
+    A 50 ns clock period is not the complete Z80 memory-access window:
+    compare the actual read/write edges, 55 ns SRAM access, AHCT244/HCT32
+    propagation and setup/hold requirements. Changing a clock setting alone
+    does not establish these margins.
 
-  - *PCB Deferred:* The existing layout implements the previous circuit.
-    It provides no qualification evidence or manufacturing package for this
-    assisted-loader revision.
+  - *PCB Target:* The [four-layer board](../pcb/index.md) implements this
+    circuit with a 20 MHz qualification target, measured route lengths and
+    its own manufacturing package. Start PCB bring-up at 1 MHz.
 
 ### PIO I/O service
 

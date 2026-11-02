@@ -190,15 +190,19 @@ subtotals: adding it brings the base build to **approximately $88.34 USD**, or
 
 The revised schematic also includes J2, an optional 1x5, 2.54 mm expansion
 header for GP8, GP22, GP26, 3.3 V, and GND. Reserve one five-pin header for
-the future PCB; it adds no active packages and is not required for the
+the PCB; it adds no active packages and is not required for the
 Phase 0-10 breadboard build. No peripheral pull-ups or LED resistors are
 included. See the [expansion pin map](pin-mapping.md#j2-peripheral-expansion).
 
 The [Phase 10 SSD1315 status OLED](../implementation/phase-10-websocket.md#ssd1315-status-oled)
-is schematic A2, an external module on J2's 3.3 V I2C connections. It has no
-PCB footprint and is not included in the core package count; see the
+is schematic A2, wired through J2 on the breadboard and socketed in a
+38 x 12 mm reservation on the PCB. It is not included in the core package count; see the
 [status display module](#status-display-module) inventory and pricing.
 
-The existing PCB BOM, routing, and fabrication package are for the previous
-design and **must not be used to manufacture this circuit**. PCB updates are
-deferred. Use the revised native schematic and these breadboard instructions.
+The [PCB inventory](../pcb/inventory.md) owns the compact four-layer assembly:
+six bussed resistor arrays replace all 40 discrete pull resistors, J1 mounts
+the USB-C breakout on six soldered pins with only +5 V/GND wired, and four
+corner 2.7 mm holes accept
+M2.5 standoffs. The PCB's 20 MHz target requires its own qualification.
+J3 is an optional auxiliary power/probe header; use only one supply at a time.
+Keep the discrete-resistor inventory above for the breadboard build.

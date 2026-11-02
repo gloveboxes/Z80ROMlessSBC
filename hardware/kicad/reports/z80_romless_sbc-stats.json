@@ -1,30 +1,30 @@
 {
   "metadata": {
-    "date": "2026-09-13T00:02:14",
-    "generator": "KiCad 10.0.6-10.0.6~ubuntu24.04.1",
+    "date": "2026-11-02T13:44:48",
+    "generator": "KiCad 10.0.7",
     "project": "z80_romless_sbc",
     "board_name": "z80_romless_sbc"
   },
   "board": {
     "has_outline": true,
-    "width": "160.0000 mm",
-    "height": "135.0000 mm",
-    "area": "21600.00 mm²",
-    "front_component_density": "28.69",
-    "back_component_density": "5.41",
-    "front_copper_area": "1373.833 mm²",
-    "back_copper_area": "1959.254 mm²",
-    "min_track_clearance": "0.2016 mm",
+    "width": "85.0000 mm",
+    "height": "96.0000 mm",
+    "area": "8160.00 mm²",
+    "front_component_density": "70.89",
+    "back_component_density": "11.74",
+    "front_copper_area": "1252.616 mm²",
+    "back_copper_area": "1243.976 mm²",
+    "min_track_clearance": "0.2116 mm",
     "min_track_width": "0.3000 mm",
     "min_drill_diameter": "0.4000 mm",
-    "board_thickness": "1.6000 mm",
-    "front_footprint_area": "6196.217 mm²",
-    "back_footprint_area": "1167.583 mm²",
-    "front_footprint_density": "28.69",
-    "back_footprint_density": "5.41"
+    "board_thickness": "1.6062 mm",
+    "front_footprint_area": "5784.308 mm²",
+    "back_footprint_area": "957.592 mm²",
+    "front_footprint_density": "70.89",
+    "back_footprint_density": "11.74"
   },
   "pads": {
-    "through_hole": 357,
+    "through_hole": 293,
     "smd": 0,
     "connector": 0,
     "npth": 4,
@@ -32,16 +32,16 @@
     "press_fit": 0
   },
   "vias": {
-    "through": 80,
+    "through": 35,
     "blind": 0,
     "buried": 0,
     "micro": 0
   },
   "components": {
     "tht": {
-      "front": 51,
+      "front": 30,
       "back": 0,
-      "total": 51
+      "total": 30
     },
     "smd": {
       "front": 0,
@@ -54,14 +54,14 @@
       "total": 4
     },
     "total": {
-      "front": 55,
+      "front": 34,
       "back": 0,
-      "total": 55
+      "total": 34
     }
   },
   "drill_holes": [
     {
-      "count": 301,
+      "count": 232,
       "shape": "Round",
       "x_size": "0.8000 mm",
       "y_size": "0.8000 mm",
@@ -71,17 +71,7 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 79,
-      "shape": "Round",
-      "x_size": "0.4000 mm",
-      "y_size": "0.4000 mm",
-      "plated": true,
-      "source": "Via",
-      "start_layer": "F.Cu",
-      "stop_layer": "B.Cu"
-    },
-    {
-      "count": 42,
+      "count": 59,
       "shape": "Round",
       "x_size": "1.0000 mm",
       "y_size": "1.0000 mm",
@@ -91,31 +81,21 @@
       "stop_layer": "B.Cu"
     },
     {
-      "count": 7,
+      "count": 35,
       "shape": "Round",
-      "x_size": "0.9000 mm",
-      "y_size": "0.9000 mm",
+      "x_size": "0.4000 mm",
+      "y_size": "0.4000 mm",
       "plated": true,
-      "source": "Pad",
+      "source": "Via",
       "start_layer": "F.Cu",
       "stop_layer": "B.Cu"
     },
     {
       "count": 4,
       "shape": "Round",
-      "x_size": "3.2000 mm",
-      "y_size": "3.2000 mm",
+      "x_size": "2.7000 mm",
+      "y_size": "2.7000 mm",
       "plated": false,
-      "source": "Pad",
-      "start_layer": "F.Cu",
-      "stop_layer": "B.Cu"
-    },
-    {
-      "count": 3,
-      "shape": "Round",
-      "x_size": "0.7500 mm",
-      "y_size": "0.7500 mm",
-      "plated": true,
       "source": "Pad",
       "start_layer": "F.Cu",
       "stop_layer": "B.Cu"
@@ -127,26 +107,6 @@
       "y_size": "1.1000 mm",
       "plated": true,
       "source": "Pad",
-      "start_layer": "F.Cu",
-      "stop_layer": "B.Cu"
-    },
-    {
-      "count": 2,
-      "shape": "Round",
-      "x_size": "1.3000 mm",
-      "y_size": "1.3000 mm",
-      "plated": true,
-      "source": "Pad",
-      "start_layer": "F.Cu",
-      "stop_layer": "B.Cu"
-    },
-    {
-      "count": 1,
-      "shape": "Round",
-      "x_size": "0.5000 mm",
-      "y_size": "0.5000 mm",
-      "plated": true,
-      "source": "Via",
       "start_layer": "F.Cu",
       "stop_layer": "B.Cu"
     }

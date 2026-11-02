@@ -97,7 +97,7 @@ the detailed contracts.
 - Do not connect a 5 V output directly to a Pico GPIO.
 - Do not bypass the AHCT244 on Z80-to-SRAM controls; Z80 TTL HIGH is not sufficient for SRAM CMOS inputs.
 - Do not revive the retired address expander/PLD or add Pico memory bus mastering without an explicit redesign request.
-- The existing PCB is the previous circuit. Keep PCB/project/routing/fabrication files unchanged until migration is separately authorized; the default KiCad build is schematic-only.
+- The current four-layer PCB implements assisted loading, six pull arrays, a socketed OLED and four corner M2.5 holes. The default KiCad build validates the full PCB/fabrication package; PCB 20 MHz qualification remains separate.
 - Do not treat a physically installed but unpowered 5 V IC as equivalent to an absent socketed device.
 - Bond the DHO814 chassis to protective earth before connecting any input or
    output lead; ordinary passive probes are not isolated.

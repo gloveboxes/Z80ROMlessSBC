@@ -180,10 +180,11 @@ For any pin, part, package, resistor, capacitor, or layout change, also verify:
 ## Fixed Logic and Assisted Loader
 
 - No PLD/JEDEC/programmer is used. Check the exact HCT32 OR-gate pinout.
-- Run `PYTHON=.venv-kicad/bin/python npm run kicad`: schematic-only ERC,
-  netlist parity, documented connections and schematic exports.
-- Do not run the historical `--full` pipeline or regenerate PCB/project,
-  DSN/SES, routing, fabrication, or PCB renders while migration is deferred.
+- Run `PYTHON=.venv-kicad/bin/python npm run kicad` for full ERC, netlist and
+  documented-connection parity, exact PCB/DSN/SES reproduction, post-refill
+  DRC, route-length budgets and transactional fabrication exports.
+- Use `npm run kicad -- --schematic-only` for schematic-only work; it does not
+  validate or update the PCB. Follow the PCB skill for routing changes.
 - Run `npm run test:control` for injection, data-path and trap regression tests.
 - Physically measure reset-exit phase, injected-read data setup, SRAM inhibit,
   stepped I/O completion, both actual OEs, and resumed PWM before qualification.

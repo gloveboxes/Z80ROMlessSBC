@@ -40,13 +40,13 @@ watches after a rebuild. A published site reflects its last deployed revision,
 not subsequent local changes. Build from the complete repository so the included
 sources are available; a missing include is a build error.
 
-## Deferred PCB documentation
+## PCB documentation
 
-The historical PCB pages remain in `docs/docs/en/pcb/`, but `exclude_docs`
-in the MkDocs configuration excludes them from generated pages and search.
-They are also absent from navigation. Keep them hidden until PCB migration
-is separately reviewed; do not regenerate the historical PCB or fabrication
-artifacts as part of a documentation build.
+The current PCB pages in `docs/docs/en/pcb/` are included in navigation and
+search. They describe the compact four-layer assisted-loader board, OLED
+mounting, resistor arrays, corner M2.5 standoffs and its 20 MHz target.
+Regenerate KiCad artifacts with the separate full KiCad pipeline before
+updating route measurements or the board preview; MkDocs never routes a PCB.
 
 ## Serve locally
 

@@ -1,18 +1,15 @@
 # PCB Design
 
-!!! warning "Historical PCB; migration deferred"
-	This section, its renders, BOM, routing, and fabrication outputs describe
-	the previous circuit. The current schematic and firmware use eight-package
-	Z80-assisted loading and are **not compatible** with this PCB. Do not order
-	these Gerbers for the redesign. The PCB design remains unchanged.
-
 The PCB is a **separate physical implementation** of the Z80 ROMless SBC:
-a 160 x 135 mm, four-layer, through-hole board with socket-compatible active
-devices. The following historical details must not be interpreted as current
-pin-map or firmware compatibility claims.
+a **85 x 96 mm**, four-layer, through-hole board implementing the current
+eight-package assisted-loader circuit. It includes a socket and full body
+reservation for the **38 x 12 mm OLED**, six resistor arrays for all 40 pull
+branches, and **four corner M2.5 standoff holes**.
+The USB-C power breakout mounts directly on the PCB using six soldered pins.
 
-Current Pico firmware is [breadboard-first](../system/firmware-build.md#breadboard-first-shared-pico-firmware).
-PCB integration is outside this revision.
+The IC set is shared with the 20 MHz prototype. The PCB targets **20 MHz**
+and has its own routing measurements and qualification requirements.
+Matching electrical connectivity does not establish physical operation.
 
 The [Phase 0-10 implementation plan](../implementation/index.md) remains the
 three-BB830 breadboard build. Do not use its socket-row positions or
@@ -23,28 +20,33 @@ incremental jumper-wiring instructions as PCB assembly instructions.
 | [PCB inventory](inventory.md) | PCB-specific fitted parts, sockets, connectors, mechanical items, and differences from the breadboard BOM |
 | [Design considerations](design-considerations.md) | Layer stack, component placement, power sequencing, routing, timing, and assembly constraints |
 | [Shared electrical reference](../hardware/pin-mapping.md) | Exact IC pin assignments and SRAM-control logic |
-| [Current breadboard firmware](../system/firmware-build.md) | Phase programs, CP/M images, Pico provisioning; not compatible with this previous PCB |
+| [Shared Pico firmware](../system/firmware-build.md) | Phase programs, CP/M images and Pico provisioning; PCB qualification is separate |
 
 ## Board preview
 
 ![KiCad-rendered Z80 ROMless SBC PCB showing pads, silkscreen, mounting holes, and the Pico antenna cutout](../images/z80-romless-sbc-pcb.png)
 
-*Bare-board preview exported from the current KiCad layout. Click the image
-to enlarge it. Component and socket models are not included, so the preview
-does not establish physical assembly clearance.*
+*Preview exported from the current KiCad layout. Click to enlarge it.
+IC and Pico models are shown, but socket, OLED, USB-C breakout and standoff
+models are not included. The render does not establish physical assembly
+clearance.*
 
 ## Design status and boundaries
 
-The current generated design has 51 physical schematic components, 79 real
-nets, and 341 component pin endpoints. Four mounting-hole footprints are
-additional mechanical features. The ERC-only power marker is not a fitted
-part.
+The schematic has **30 components, 71 real nets and 279 connected pin
+endpoints**, excluding the ERC-only power marker. All **30 schematic
+footprints and 279 connected endpoints** are on the PCB, including the
+onboard J1 USB-C power breakout. Its other four pins have isolated solder
+pads, not signal connections. Revision B has no test points: the circuit is
+proven on the prototype, so probe IC pins or socket leads directly. Four 2.7 mm NPTH mounting footprints are additional mechanical
+features. The corner holes are 4 mm from both adjacent edges, with
+**102 x 104 mm** centre spacing for four M2.5 standoffs.
 
 The routed PCB and its fabrication files have passed the repository's
 connectivity, layout, and generation checks. **This is not a
 hardware-qualified design.** Start physical bring-up at 1 MHz. Qualification
-through at least 8 MHz is a PCB design target, not a demonstrated operating
-speed or a change to the breadboard's target.
+through **20 MHz** is the PCB design target, not a demonstrated operating
+speed for this board.
 
 Electrical requirements and applicable firmware tests are shared, but PCB
 assembly and qualification records must be separate. A passing breadboard
@@ -71,7 +73,7 @@ Paths below are relative to the repository root.
 The schematic generator, `scripts/build-kicad-schematic.py`, owns component
 values, exact pin/net assignments, symbols, and the net manifest.
 `scripts/build-kicad-pcb.py` owns placement, board geometry, netclasses,
-silkscreen, ground-plane setup, and PCB invariants.
+silkscreen, GND/+5V plane and stack-up setup, and PCB invariants.
 
 The normalized unrouted input is
 `hardware/kicad/reports/z80_romless_sbc.dsn`; the accepted routing session is
@@ -81,8 +83,9 @@ session's exact copper, not silently substitute an independently edited route.
 Follow the checkout's
 [KiCad generation instructions](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/README.md).
 Keep the project closed while generating or replacing its files. The separate
-local container checkout, `pcb-z80`, has its own `scripts/container-run`
-workflow; it is not a step in the breadboard firmware build.
+router image is built from `scripts/freerouting/Containerfile`; it uses
+checksum-pinned Freerouting and Java with network access disabled during
+routing. No separate checkout is needed.
 
 Before accepting regenerated outputs, require zero ERC violations, zero DRC
 violations and unconnected items, matching pin/net and component-value

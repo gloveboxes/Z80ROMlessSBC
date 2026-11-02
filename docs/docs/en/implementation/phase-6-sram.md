@@ -34,7 +34,7 @@ The CPU is now required for RAM access; RESET is released during injection.
 <input type="checkbox" data-checklist-id="sram-wiring" aria-label="Every SRAM address data and control pin wired and checked"> Confirm the Phase 4 [address trunk and A16 bank-select wiring](phase-4-address-bus.md#sram-bank-select), then complete the SRAM [address/data/fixed pin wiring](../hardware/pin-mapping.md), including CE# U2.22 from U4.12, WE# U2.29 from U4.9, OE# U2.24 from U3.3 and CE2 to +5 V.
 
 <input type="checkbox" data-checklist-id="cpu-wiring" aria-label="Every Z80 control and monitor connection checked"> Complete Z80 CLK/RESET/BUSREQ/WAIT and all control monitor taps.
-INT/NMI have pulls to +5 V; M1 goes to TP1; HALT/RFSH outputs remain open.
+INT/NMI have pulls to +5 V; M1/HALT/RFSH outputs remain open.
 <input type="checkbox" data-checklist-id="cpu-sram-install" aria-label="CPU and SRAM orientation power and bypasses checked before installation"> Verify pin-1 orientation, power pins, and local bypasses before insertion.
 
 ## Firmware and Loader Qualification

@@ -43,7 +43,7 @@ FIXED_ENDPOINT_NETS = {
 }
 DOCUMENTED_NO_CONNECTS = {
     "J1.CC2", "J1.D+", "J1.D-", "J1.CC1",
-    "U1.18", "U1.28", "U2.1", "U3.11", "U4.5",
+    "U1.18", "U1.27", "U1.28", "U2.1", "U3.11", "U4.5",
     "A1.30", "A1.35", "A1.37", "A1.40",
 }
 DEVICE_REFS = [
@@ -138,13 +138,17 @@ def mermaid_blocks(path: Path) -> list[tuple[str, int, str]]:
 
 
 def main() -> None:
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["nets"]
+    document = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    manifest = document["nets"]
     endpoint_net = {
         endpoint: net
         for net, endpoints in manifest.items()
         for endpoint in endpoints
         if not endpoint.startswith("#FLG")
     }
+    for reference, pins in document.get("breadboard_resistor_equivalents", {}).items():
+        for number, endpoint in pins.items():
+            endpoint_net[f"{reference}.{number}"] = endpoint_net[endpoint]
     errors: list[str] = []
     checked_edges = 0
     checked_blocks = 0

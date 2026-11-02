@@ -1,169 +1,204 @@
 # PCB Design Considerations
 
-!!! warning "Historical routing, not the current circuit"
-  The PCB has not been migrated to Z80-assisted loading. Its layout and
-  manufacturing artifacts are unchanged and incompatible with the new
-  schematic and firmware. The considerations below describe the previous board.
-
-The PCB preserves the shared electrical architecture, but has its own
-placement, return paths, manufacturing constraints, and qualification
-requirements. The considerations below apply to this routed board, not to
-the breadboard's socket rows or jumper lengths.
+Revision B is a compact **85 x 96 mm** implementation of the current
+eight-package assisted-loader circuit. It retains the IC set already tested
+at 20 MHz on the project prototype. **20 MHz is this layout's qualification
+target, not a measured result for an assembled PCB.**
 
 ## Layer stack and routing rules
 
 | Layer | Role |
 | --- | --- |
-| F.Cu | Signals and local locked routes |
-| In1.Cu | GND reference plane; no autorouted signal tracks |
-| In2.Cu | Signals, including the locked D4 route |
+| F.Cu | Signals, locked via-free clock preroutes |
+| In1.Cu | Solid GND plane; no signal tracks |
+| In2.Cu | Solid +5V power plane; no signal tracks |
 | B.Cu | Signals |
 
-Signal tracks are 0.30 mm and power tracks are 0.60 mm. The `PICO_CLK` and
-`Z80_CLK` nets use a dedicated 0.40 mm clearance rule. The autorouter is
-restricted to F.Cu, In2.Cu, and B.Cu; In1.Cu remains the GND reference.
-Inspect plane continuity and return paths after every routing or cutout
-change. Four layers alone do not guarantee a useful return path.
+The generator writes this 1.6 mm stack-up into the board file:
 
-The ground pour uses thermal reliefs except at explicitly generated pads
-where the routed geometry would otherwise starve the thermal spokes.
-Do not weaken clearance rules or suppress warnings to make a route pass.
+| Layer | Material | Thickness |
+| --- | --- | ---: |
+| F.Cu | Copper | 0.035 mm |
+| Prepreg | 7628, Er 4.4 | 0.2104 mm |
+| In1.Cu | Copper (GND) | 0.0152 mm |
+| Core | FR-4, Er 4.4 | 1.065 mm |
+| In2.Cu | Copper (+5V) | 0.0152 mm |
+| Prepreg | 7628, Er 4.4 | 0.2104 mm |
+| B.Cu | Copper | 0.035 mm |
+
+This is a common 1.6 mm JLC-style four-layer stack; confirm the fabricator's
+actual stack before ordering. Every signal layer sits about 0.21 mm from a
+solid plane: F.Cu references GND and B.Cu references +5V. The planes are
+separated by the 1.065 mm core. 100 nF bypass capacitors and the through-hole
+pins on both planes tie the +5V plane to GND, so it acts as an AC reference
+for B.Cu. Through-hole GND and +5V pads connect to their planes with thermal
+reliefs. Both planes are voided around the antenna cutout; do not route
+signals across that void.
+
+Signals are 0.30 mm, power 0.60 mm, with 0.20 mm default clearance.
+Clock clearance is **0.30 mm**. That is 50% above the default, and it still
+lets a 0.30 mm clock track pass between adjacent DIP pins: the 1.6 mm pads
+leave 0.94 mm, and 0.30 + 2 x 0.30 = 0.90 mm. A 0.40 mm clearance would block
+those channels and force much longer clock detours around package ends.
+The router uses an additional 0.01 mm signal clearance margin to avoid
+rounding failures on imported diagonals. No DRC warning is waived to accept
+the route.
 
 ## Placement and mechanical clearance
 
-U2 SRAM, U1 Z80, U4 AHCT244, U8 MCP23S17, and U3 ATF22V10 form the main
-address/control cluster. U4 remains local to U1's clock input. U9/U10 and U7
-sit between the shared buses and the Pico.
+The Pico lies horizontally at the upper left. The Z80 (U1) and SRAM (U2)
+are parallel horizontal packages in the lower half. U4 (AHCT244) and U3
+(HCT32) stand vertically at their left ends, keeping the Z80 clock, CE#,
+WAIT# and RD# paths short. U9/U10 share the data bus beside the Pico. RN5/RN6 are local
+to the startup GPIOs. The +5V bypass capacitors are **3.9-5.9 mm** from
+their supply pins across the +5V plane. The +3V3 bypass tracks for U7 and
+U10 are 6.3 and 5.0 mm, via-free. Each capacitor's other pad joins the GND
+plane.
 
-The nearest U1/U4 pin-row centers are **5.76 mm apart**. This is not a
-socket-body gap. Check the overhang, tolerances, and extraction clearance of
-the actual purchased sockets; DIP courtyards and missing 3D socket models
-cannot prove physical fit.
+Four **2.7 mm non-plated holes** accept **M2.5 standoffs**, one in each
+corner, with centres **4 mm from both adjacent edges**:
 
-The horizontal Pico is in the bottom-left corner. USB faces outward at the
-left board edge. Its antenna sits above an internal FR-4/copper cutout,
-approximately 11.9 x 15.6 mm overall, with chamfered corners. Preserve the
-official antenna keepout and router-radius margin, and keep the USB cable,
-BOOTSEL access, and SWD access unobstructed. Review nearby enclosure material
-and metal rather than assuming the board cutout alone qualifies radio
-performance.
+| Corner | Centre relative to the upper-left board edge |
+| --- | --- |
+| Upper left | 4, 4 mm |
+| Upper right | 81, 4 mm |
+| Lower right | 81, 92 mm |
+| Lower left | 4, 92 mm |
 
-There are four 3.2 mm non-plated mounting holes. Verify standoffs, screws,
-terminal-block access, electrolytic diameters, and component heights against
-the planned enclosure and purchased parts.
+Hole spacing is **77 x 88 mm**. The mounting footprints reserve a
+5.9 mm courtyard around a nominal 5.4 mm hardware envelope; use hardware
+no wider than 5.4 mm overall. Check enclosure bosses, underside lead lengths
+and standoff height before assembly. Package courtyards are not a guarantee
+of purchased socket-body fit.
+
+The Pico USB faces outward at the left edge. Its official antenna keepout
+is inside a chamfered FR-4/copper cutout. Keep antenna space clear of metal,
+wiring and enclosure walls; geometry alone does not qualify Wi-Fi.
+
+### OLED mounting
+
+A2 reserves the complete **38 x 12 mm** OLED body at the upper right, with
+0.5 mm assembly courtyard around it. The
+[module drawing](https://ae-pic-a1.aliexpress-media.com/kf/Sdca8c02df9d7460298598704a34813faS.jpg)
+locates the header 1.50 mm from the left edge and SDA 2.19 mm from the top,
+with 2.54 mm pitch. The socket order, bottom-to-top viewed from above, is
+**GND, VCC, SCK/SCL, SDA**. VCC is 3.3 V, SCL is GP26 and SDA is GP22.
+
+Use a 1x4 female socket and an insulating support at the far end. The
+carrier drills are 1.0 mm: verify the selected socket tail diameter.
+The drawing does not dimension module mounting holes or assembled height;
+do not drill invented holes or assume the display is supported by its pins
+alone. The 3D preview does not include an OLED or socket model.
+
+### USB-C power module mounting
+
+J1 uses the [pictured 21.6 x 12.7 mm breakout](https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg),
+mounted at the top edge with USB-C facing outward. Solder all six 2.54 mm header
+pins to the module and to the carrier's 1.0 mm plated holes. The pad order
+in the photograph is **CC2, D+, D-, CC1, GND, VBUS**. Only VBUS and GND
+connect to main-board nets; all four other pads remain isolated.
+
+The six soldered pins secure the module without screw holes. The fabrication
+outline is scaled from the vendor dimension photograph. The pin row is
+centred on the module's long edge, 1.36 mm from its rear edge. The body
+ends at the board's top edge, and the USB-C shell overhangs it by about
+1.5 mm. The courtyard is flush with the top edge.
+**Dry-fit the purchased module before fabrication:** the outline comes from
+a photo, not a mechanical drawing. Check pin fit, cable access and
+insulating underside clearance. Avoid cable
+loads on the six joints; no insertion-force qualification is claimed.
+The 3D preview does not include this breakout.
 
 ## Power and startup safety
 
-The main power path is:
+J1 supplies +5 V directly from a regulated 5 V USB source; it is not a
+regulator or a USB-PD trigger. Verify the breakout's two 5.1 kOhm CC sink
+resistors before USB-C-to-USB-C use. J3 remains an optional auxiliary
+input/probe header: **pin 1 +5 V, pin 2 GND**. J1 and J3 share the same rail
+without source isolation: **use only one supply at a time**.
+D1 feeds Pico VSYS, never Pico VBUS.
+The +5V input has no reverse-polarity diode or polyfuse; the prototype-proven
+circuit is kept unchanged. Use a regulated, current-limited 5 V source.
+Pico's 3.3 V output is the only source for U7/U10 and the OLED.
 
-`J1 +5 V -> D1 (1N5819) -> Pico VSYS -> Pico onboard 3.3 V regulator`
+!!! warning "Power sequencing"
+    Apply J1 power (or J3 power, not both) before connecting Pico USB.
+    Disconnect Pico USB before removing main power.
+    AHCT245 data pins lack power-off isolation. USB-only operation/programming
+    of the populated board is unsupported; the VSYS diode does not isolate
+    GPIOs. All installed 5 V ICs must be powered together.
 
-The main 5 V supply powers the computer, including the Pico, without USB.
-The 5 V logic shares that supply; the Pico's 3.3 V output supplies the LVC
-devices and 3.3 V bias resistors. Do not connect external 5 V to Pico VBUS,
-the 3.3 V rail, or GPIOs, and do not add a competing external 3.3 V supply.
+Six bussed resistor arrays implement all 40 independent 10 kOhm pull branches.
+Their common pins connect only to their specified rails. RN5 replaces
+breadboard R17-R20; RN6 replaces R21-R24. No resistor joins two signal
+branches together. Both data paths default disabled, boot-read inhibit
+defaults HIGH, and clock/reset/bank-select/I/O-release default LOW.
 
-!!! warning "USB is not a substitute for the populated board's 5 V supply"
-    Apply external +5 V before connecting USB. Disconnect USB before removing
-    external +5 V. U9's AHCT245 data ports lack power-off isolation: Pico
-    outputs can inject current into an unpowered U9 even when OE is inactive.
-    USB-only programming or operation of the populated board is unsupported.
-    Unexpected external-supply loss with USB attached needs additional
-    hardware protection; the VSYS diode does not isolate signal pins.
+Retain the polarized C8-C11 markings and D1's cathode band toward VSYS.
+Supply-entry capacitance does not replace the seven local bypass capacitors.
 
-Power every installed 5 V device whenever the 5 V rail is energized.
-Pull-ups protect absent socketed drivers, not an installed IC with a missing
-supply connection.
+## Trace lengths and signal synchronisation
 
-R23-R26 are 4.7 kOhm pull-downs on RESET#, DATA_ENABLE, DATA_DIR, and
-ADDR_ENABLE. The supported ATF22V10B can source 100 uA at LOW inputs; a
-10 kOhm pull-down cannot guarantee its 0.8 V maximum LOW. RN4/RN5 consolidate
-sixteen 5 V control pull-ups without changing their nets.
+The machine-readable
+[route report](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/reports/route-lengths.json)
+records total copper, longest pad path, vias, source-specific paths and
+layer changes. These are planar copper lengths, not measured electrical
+flight times; layer changes include transitions through plated component pads.
 
-Keep each 100 nF bypass close to its associated IC supply and provide a
-short ground return. Distributed bulk capacitors do not replace local
-bypassing. J1 must retain its `+5V`/`GND` labels, and C9-C12 must retain their
-positive marks and negative-side shading. D1's banded cathode faces VSYS;
-verify Q1's purchased E/B/C pin order before assembly.
+| Source/receiver group | Path range | Spread |
+| --- | ---: | ---: |
+| Z80 to SRAM address | 11.46-54.81 mm | 43.36 mm |
+| Z80 to SRAM data | 27.50-72.14 mm | 44.64 mm |
+| Pico-write transceiver to SRAM | 43.07-74.88 mm | 31.81 mm |
+| SRAM to Pico-read transceiver | 55.87-88.13 mm | 32.26 mm |
+| Pico to U9 | 10.56-64.89 mm | 54.34 mm |
+| Pico to U10 | 21.51-51.15 mm | 29.64 mm |
 
-## Shared bus-control requirements
+Using an illustrative FR-4 delay of 6-7 ps/mm, the address spread corresponds
+to about **0.26-0.30 ns**, and the CPU/SRAM data spread to **0.27-0.31 ns**.
+These estimates are small compared with the **50 ns period at 20 MHz**,
+but do not establish setup/hold margin. Do not add serpentine copper simply
+to match bus totals: each shared branch affects multiple source/receiver paths.
+A0-A7 are short direct Z80-to-SRAM runs.
 
-Use the [shared pin mapping](../hardware/pin-mapping.md) and
-[bus-isolation reference](../hardware/bus-isolation.md) for full connections.
-PCB routing does not relax these electrical requirements:
+| Critical driven path | Length | Layer changes |
+| --- | ---: | ---: |
+| Pico clock to U4 | 53.20 mm | 0 |
+| U4 to Z80 clock | 36.55 mm | 0 |
+| U4 to SRAM CE# | 23.36 mm | 0 |
+| U3 to SRAM OE# | 50.40 mm | 0 |
+| U4 to SRAM WE# | 44.27 mm | 0 |
+| U3 to Z80 WAIT# | 25.49 mm | 1 |
+| Z80 IORQ# to U3 | 69.99 mm | 1 |
+| Z80 RD# to U4 | 29.86 mm | 1 |
+| Buffered RD# U4 to U3 | 24.17 mm | 0 |
+| U4 to SRAM A16 | 58.05 mm | 1 |
 
-- `CPU_OWNS_SRAM = RESET# AND BUSACK#`; reset or a granted bus selects the
-  Pico's SRAM controls.
-- ATF22V10 SRAM-control outputs pass through the AHCT244 because the ATF22V10's
-  guaranteed 2.4 V HIGH is insufficient for direct SRAM CMOS inputs.
-- DATA_ENABLE LOW disables both data paths. Firmware changes DATA_DIR only
-  while disabled and initializes GP10-GP17 as SIO inputs before the first
-  data write.
-- The MCP23S17 preloads OLAT before enabling address outputs and is reset
-  to isolate the address bus.
-- Incoming 5 V signals reach Pico GPIOs through the specified LVC buffers.
+Both clock nets are locked, via-free F.Cu preroutes. The Pico clock
+daisy-chains through its RN6 pull-down to U4 with no stub. The Z80 clock is
+a direct U4-to-CPU route. The board has no test points; the circuit is proven
+on the prototype, so probe IC pins or socket leads directly.
 
-The ATF22V10 equations require their consensus terms to remain effective in the
-fitted device. Source-level truth tables do not prove the programmed fuse
-map's hazard behavior or actual ownership-transition timing.
-
-## Trace lengths and multidrop buses
-
-Address and data nets are shared trees with multiple drivers and receivers.
-Total copper length is not the same as the path between a particular source
-and the SRAM. Report these groups separately after any placement or route
-change:
-
-| Source/receiver group | Current path range |
-| --- | ---: |
-| Z80 to SRAM address | 13.9-54.1 mm |
-| MCP23S17 to SRAM address | 60.5-87.5 mm |
-| Z80 to/from SRAM data | 13.8-94.9 mm |
-| Pico-write transceiver to SRAM data | 105.0-150.3 mm |
-| SRAM to Pico-read transceiver data | 125.0-158.1 mm |
-
-The reviewed baseline also has these driven paths:
-
-| Path | Length |
-| --- | ---: |
-| Pico clock to U4 | 129.0 mm |
-| U4 to Z80 clock input | 73.0 mm |
-| U4 clock branch to TP2 | 24.2 mm |
-| U4 to SRAM CE# | 54.7 mm |
-| U4 to SRAM OE# | 99.0 mm |
-| U4 to SRAM WE# | 122.7 mm |
-
-Both complete clock nets are via-free. D4 uses a locked, via-free In2.Cu
-route. These are route measurements, not propagation-delay measurements or
-proof of operating frequency.
-
-Prefer short shared trunks, short taps, few layer changes, and nearby return
-paths. Do not add meanders merely to make total bus copper equal. A meander
-on a shared trunk changes several source/receiver paths and adds capacitance
-and coupling. The MCP23S17-to-SRAM paths matter during Pico loading/readback,
-but need their own timing assessment rather than cosmetic matching to the
-Z80 address paths.
-
-The Pico/RP2350 can operate at up to 150 MHz while generating a much slower
-Z80 clock. Edge rate, ringing, coupling, and receiver setup/hold margins
-matter even when the Z80 clock is low. Re-run the repository's route-length
-report after layout changes; the ranges above describe the reviewed layout,
-not future edits.
+SRAM CE#, OE# and WE# are via-free. D4 (four layer changes, 88 mm from SRAM
+to the Pico read transceiver) and IORQ# (70 mm) are the remaining outliers;
+check them at their receive pins before accepting 20 MHz operation. No route is claimed to be
+length matched.
 
 ## Timing and hardware qualification
 
-Start at 1 MHz and establish a reliable baseline. The PCB targets
-qualification through at least 8 MHz; the Z80's 20 MHz part rating does
-not qualify the board, and faster SRAM alone would not establish that rate.
+Do not equate 55 ns SRAM access time with a complete memory transaction, or
+assume one 50 ns clock period is the entire Z80 read window. Check the actual
+M1/memory-read sampling edges against address-valid time, AHCT244/HCT32
+propagation, SRAM CE#/OE#/access times, CPU setup/hold, and PCB delay.
+Check write pulse width and address/data setup/hold independently.
 
-Reuse applicable functional checks and receiving-pin measurements from the
-[frequency procedure](../implementation/frequency-qualification.md), but
-keep a separate PCB record. Include repeated cold boots, SRAM pattern tests,
-DMA readback, ownership transitions, and I/O WAIT/clock-stop behavior.
-Measure SRAM setup/hold and write-pulse margins as well as clock levels,
-ringing, overshoot, and supply behavior.
+Start at 1 MHz on the PCB, then qualify increasing rates through **20 MHz**.
+Reuse applicable [frequency tests](../implementation/frequency-qualification.md)
+and record results separately from the prototype: cold boots, SRAM patterns
+in both banks, bank switching, reset/load/recovery, I/O WAIT and clock stop/
+resume, CP/M disk traffic, and sustained network/USB operation.
 
-Use the [DHO814](../hardware/oscilloscope.md) for analogue quality and close
-timing and the [DSLogic Plus capture groups](../hardware/logic-analyzer.md)
-for digital ordering. Neither a clean DRC result, a 3D rendering, nor a
-successful terminal session establishes all of these properties.
+Use the [DHO814](../hardware/oscilloscope.md) for receive-pin levels, edge
+quality, clock duty/pulse width, overshoot, ringing and timing margin.
+Use the [DSLogic Plus groups](../hardware/logic-analyzer.md) for bus ordering.
+Neither DRC, a render nor a terminal session establishes these properties.

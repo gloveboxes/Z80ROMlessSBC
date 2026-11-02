@@ -6,8 +6,6 @@ site_description: >-
 
 docs_dir: en
 site_dir: ../site
-exclude_docs: |
-  /pcb/
 watch:
   - ../../src
   - ../../examples
@@ -34,6 +32,10 @@ nav:
       - Multimeter (essential): en/hardware/multimeter.md
       - RIGOL DHO814 oscilloscope: en/hardware/oscilloscope.md
       - DSLogic Plus logic analyzer: en/hardware/logic-analyzer.md
+  - PCB design:
+      - Overview and fabrication: en/pcb/index.md
+      - Inventory: en/pcb/inventory.md
+      - Design considerations: en/pcb/design-considerations.md
   - System architecture:
       - Operational boundaries: en/system/operation.md
       - CP/M execution and banked memory: en/system/cpm-execution.md

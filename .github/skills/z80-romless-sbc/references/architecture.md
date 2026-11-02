@@ -6,7 +6,7 @@ The current assisted-loader design has eight active through-hole packages:
 
 - Raspberry Pi Pico 2 W / RP2350 supervisor
 - Z84C0020PEC Z80
-- AS6C1008-55PCN SRAM, lower 64 KiB selected with A16 LOW
+- AS6C1008-55PCN SRAM, A16 driven from GP8 through AHCT244 (LOW selects bank 0)
 - SN74HCT32N fixed quad OR logic (not HC32)
 - SN74AHCT244N 5 V output buffer
 - SN74AHCT245N fixed Pico-to-5 V data path
@@ -15,8 +15,9 @@ The current assisted-loader design has eight active through-hole packages:
 
 The address expander and programmed PLD are retired. No external programmer
 is required. The older LVC8T245 carrier, SD, PSRAM, three AHCT125 packages,
-and HCT157/HCT08 arbitration are not current. The PCB remains the previous
-circuit and must not be manufactured or used with this firmware.
+and HCT157/HCT08 arbitration are not current. Revision B PCB implements the
+same assisted-loader circuit with resistor arrays and a socketed OLED.
+Its 20 MHz design target requires separate physical qualification.
 
 ## Bench Instruments
 
@@ -50,7 +51,7 @@ circuit and must not be manufactured or used with this firmware.
 ## Assisted Loading and Buses
 
 - Z80 alone drives A0-A15 and writes SRAM, including during loading. Pico injects LD HL,nn / LD (HL),n / LD A,(HL) under slow clocks; it never masters memory buses.
-- AHCT244 translates GP2 CLK (2->18), GP4 BUSREQ (4->16), GP5 inhibit (6->14), MREQ (8->12), WR (11->9), RD (13->7). Unused inputs15/17 GND; outputs5/3 NC. Both OEs LOW. Keep the buffer beside CPU.
+- AHCT244 translates GP2 CLK (2->18), GP4 BUSREQ (4->16), GP5 inhibit (6->14), MREQ (8->12), WR (11->9), RD (13->7), GP8 bank select (17->3, SRAM A16). Unused input15 GND; output5 NC. Both OEs LOW. Keep the buffer beside CPU.
 - HCT32 pins1/2->3 compute buffered RD OR buffered inhibit to SRAM OE; pins4/5->6 compute raw IORQ OR GP9 to WAIT; pins9/10->8 compute raw RD OR GP6 to U9 OE. Inputs12/13 GND, output11 NC.
 - GP6 up-OE request and GP7 down-OE default HIGH. Both paths must be disabled before preload/direction changes. U9 DIR +5V, U10 DIR GND. RD gating is not an all-state hardware mutual exclusion guarantee.
 - GP5 boot inhibit defaults HIGH; GP9 IO_RELEASE defaults LOW. Trap stops PWM, configures one data path, raises GP9, completes I/O with single clocks, isolates both paths, lowers GP9, then resumes PWM. Polling after free-running resume is unsafe.
@@ -68,17 +69,19 @@ circuit and must not be manufactured or used with this firmware.
 Pico source remains breadboard-first. The replacement Stage 10 inherits the
 tested Stage 9 automatic loader's 120 MHz supervisor and nominal 20 MHz Z80
 settings; this does not qualify combined network operation. The existing
-PCB is not electrically equivalent and migration is deferred. Do not modify
-PCB/project/routing/fabrication files or claim its compatibility. Preserve
+PCB uses the same electrical nets, with startup pulls in RN5/RN6 rather than
+breadboard R17-R24. Validate the full PCB pipeline for board changes. Preserve
 specified populations: CPU/SRAM absent through Phase 5, both fitted in Phase 6.
 The Phase 4 active address diagnostic is deferred until Phase 6.
 
 ## Physical Placement
 
 The Phase 0-10 implementation plan is for the three-BB830 breadboard
-prototype. PCB documentation is historical and explicitly marked deferred.
-The current breadboard uses four bussed 8x10k networks and seven discrete
-10k startup pulls (39 branches), seven bypass capacitors, three22uF and one100uF.
+prototype. PCB documentation describes a separate 85 x 96 mm, four-layer
+implementation with four corner M2.5 standoffs and a 38 x 12 mm OLED socket.
+The breadboard uses 40 discrete 10k pulls; the PCB implements the same 40
+branches in four SIP-9 and two SIP-5 bussed arrays. Both use seven bypass
+capacitors, three 22uF and one 100uF.
 
 With BB830 row 1 at top and row 63 at bottom:
 

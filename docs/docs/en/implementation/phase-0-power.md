@@ -22,10 +22,11 @@ The selected TYPE-C USB-to-pin female adapter is a **USB-C breakout, not a
 5 V regulator**. Its product image specifies a **21.6 x 12.7 mm PCB body**.
 The six header holes use confirmed standard breadboard **2.54 mm pitch**,
 with **12.7 mm between the first and last hole centres** (five gaps).
-Header offset from the board edges/drill diameter, the two larger mounting
-holes' spacing/diameters, USB connector overhang and assembled height remain
-unspecified; measure those before assigning a PCB footprint. The schematic
-records the module and dimensions without changing the deferred PCB.
+Header offsets, mounting-hole geometry, USB connector overhang and assembled
+height remain unspecified. The separate [PCB implementation](../pcb/design-considerations.md#usb-c-power-module-mounting)
+uses six soldered header pins, no module screw holes, and a photo-scaled
+outline that must be dry-fitted before fabrication. This Phase 0 procedure is
+for the breadboard; it uses the same VBUS/GND connections.
 
 With the USB connector at the top, as in the product photo, the bottom
 pads read **CC2, D+, D-, CC1, GND, VBUS** from left to right. Wire by these

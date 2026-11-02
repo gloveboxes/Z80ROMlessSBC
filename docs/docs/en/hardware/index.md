@@ -16,10 +16,10 @@ chapter order is not the chip-installation order.
 | [4. Output buffer](output-buffer.md) | AHCT244 channel allocation and enable behavior |
 | [5. Bus isolation](bus-isolation.md) | Address, data, and control transceiver operating modes |
 
-The historical PCB documentation is hidden while migration is deferred.
-The existing PCB, BOM, and fabrication files are unchanged and incompatible
-with this assisted-loader revision. Do not manufacture that package for this
-build.
+The [PCB design](../pcb/index.md) is a compact four-layer implementation of
+this circuit, with resistor arrays, an OLED socket and corner M2.5 mounting.
+Its mechanical assembly and 20 MHz qualification are separate from the
+breadboard implementation sequence.
 
 The instrument procedures are cross-cutting qualification references rather
 than additional hardware chapters. Use the

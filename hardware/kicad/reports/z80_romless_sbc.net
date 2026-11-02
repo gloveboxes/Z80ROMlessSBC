@@ -2,17 +2,17 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad/z80_romless_sbc.kicad_sch")
-		(date "2026-11-02T09:42:08")
+		(date "2026-11-02T13:44:40")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
 			(name "/")
 			(tstamps "/")
 			(title_block
-				(title "Z80ROMlessSBC - Exact Breadboard Electrical Schematic")
+				(title "Z80ROMlessSBC - Assisted Loader and Four-Layer PCB")
 				(company "Z80ROMlessSBC")
-				(rev "2")
-				(date "2026-10-26")
+				(rev "3")
+				(date "2026-11-02")
 				(source "z80_romless_sbc.kicad_sch")
 				(comment
 					(number "1")
@@ -209,6 +209,58 @@
 						)
 						(pin
 							(num "21")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "A2")
+			(value "0.91in SSD1315 128X32 I2C OLED")
+			(footprint "Z80SBC:OLED_SSD1315_38x12mm_Socket")
+			(datasheet "https://www.solomon-systech.com/product/ssd1315")
+			(description "Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit")
+			(fields
+				(field
+					(name "Footprint") "Z80SBC:OLED_SSD1315_38x12mm_Socket")
+				(field
+					(name "Datasheet") "https://www.solomon-systech.com/product/ssd1315")
+				(field
+					(name "Description") "Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "SSD1315_OLED")
+				(description "Z80ROMlessSBC project symbol: SSD1315 128X32 OLED")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "1709f962-84c3-5791-9e1c-8d50e359bd38")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "SDA")
+						)
+						(pin
+							(num "SCK")
+						)
+						(pin
+							(num "VCC")
+						)
+						(pin
+							(num "GND")
 						)
 					)
 				)
@@ -767,6 +819,64 @@
 			)
 		)
 		(comp
+			(ref "J1")
+			(value "USB-C 5V POWER BREAKOUT")
+			(footprint "Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder")
+			(datasheet "https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg")
+			(description "Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS")
+			(fields
+				(field
+					(name "Footprint") "Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder")
+				(field
+					(name "Datasheet") "https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg")
+				(field
+					(name "Description") "Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS")
+			)
+			(libsource
+				(lib "Z80SBC")
+				(part "USB_C_POWER")
+				(description "Z80ROMlessSBC project symbol: USB-C 5V POWER BREAKOUT")
+			)
+			(property
+				(name "Sheetname")
+				(value "z80_romless_sbc")
+			)
+			(property
+				(name "Sheetfile")
+				(value "z80_romless_sbc.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "0d49d022-f741-5a3c-9698-cb92a98d26ea")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "CC1")
+						)
+						(pin
+							(num "D-")
+						)
+						(pin
+							(num "D+")
+						)
+						(pin
+							(num "CC2")
+						)
+						(pin
+							(num "VBUS")
+						)
+						(pin
+							(num "GND")
+						)
+					)
+				)
+			)
+		)
+		(comp
 			(ref "J2")
 			(value "PICO GPIO EXPANSION")
 			(footprint "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
@@ -822,23 +932,23 @@
 			)
 		)
 		(comp
-			(ref "R17")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for PICO_BUSREQ_N")
+			(ref "J3")
+			(value "EXTERNAL 5V")
+			(footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+			(description "Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS")
 			(fields
 				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+					(name "Footprint") "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "10k startup bias for PICO_BUSREQ_N")
+					(name "Description") "Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS")
 			)
 			(libsource
 				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
+				(part "POWER_HEADER")
+				(description "Z80ROMlessSBC project symbol: EXTERNAL 5V")
 			)
 			(property
 				(name "Sheetname")
@@ -852,338 +962,16 @@
 				(names "/")
 				(tstamps "/")
 			)
-			(tstamps "87b025ad-09d5-5bd9-a88b-2aebe0dd45e7")
+			(tstamps "cc59a135-b3d1-5db9-884c-5364c4e785d1")
 			(units
 				(unit
 					(name "A")
 					(pins
 						(pin
-							(num "1")
-						)
-						(pin
 							(num "2")
 						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R18")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for BOOT_READ_DISABLE")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for BOOT_READ_DISABLE")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "0909fa2f-eaaa-5247-abc3-3d6aa6ad206f")
-			(units
-				(unit
-					(name "A")
-					(pins
 						(pin
 							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R19")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for PICO_DATA_UP_OE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for PICO_DATA_UP_OE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "a67987ff-1e4f-5234-a665-109ec6bb4871")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R20")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for DATA_DOWN_OE_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for DATA_DOWN_OE_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "65f53010-4d41-55d6-bba0-9bcad863f161")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R21")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for PICO_CLK")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for PICO_CLK")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "e1049847-de89-5351-8c1d-e4f166bd8e37")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R22")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for RESET_N")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for RESET_N")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "e1a1e3c0-1bd3-5d71-bfe1-4166e16779f9")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R23")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k startup bias for IO_RELEASE")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k startup bias for IO_RELEASE")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "89c84417-7f0e-5870-af2f-68c4d6cf3ad9")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "R24")
-			(value "10k")
-			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-			(description "10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4")
-			(fields
-				(field
-					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "RESISTOR")
-				(description "Z80ROMlessSBC project symbol: 10k")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "c59bdc4d-06a9-5de7-9590-95da23d5497d")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
-						)
-						(pin
-							(num "2")
 						)
 					)
 				)
@@ -1458,23 +1246,23 @@
 			)
 		)
 		(comp
-			(ref "TP1")
-			(value "M1# TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC M1# TEST")
+			(ref "RN5")
+			(value "4x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP5")
+			(description "PCB startup pull-ups; electrically replaces breadboard R17-R20")
 			(fields
 				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+					(name "Footprint") "Resistor_THT:R_Array_SIP5")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC M1# TEST")
+					(name "Description") "PCB startup pull-ups; electrically replaces breadboard R17-R20")
 			)
 			(libsource
 				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
+				(part "RN4_BIAS")
+				(description "Z80ROMlessSBC project symbol: 4x10k bussed")
 			)
 			(property
 				(name "Sheetname")
@@ -1488,7 +1276,7 @@
 				(names "/")
 				(tstamps "/")
 			)
-			(tstamps "9cd720dd-dd82-50cc-924d-232daebbcb1f")
+			(tstamps "9696e8c0-de50-50b8-93e2-9166833b4299")
 			(units
 				(unit
 					(name "A")
@@ -1496,28 +1284,40 @@
 						(pin
 							(num "1")
 						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "2")
+						)
 					)
 				)
 			)
 		)
 		(comp
-			(ref "TP2")
-			(value "CLK TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC CLK TEST")
+			(ref "RN6")
+			(value "4x10k bussed")
+			(footprint "Resistor_THT:R_Array_SIP5")
+			(description "PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side")
 			(fields
 				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
+					(name "Footprint") "Resistor_THT:R_Array_SIP5")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC CLK TEST")
+					(name "Description") "PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side")
 			)
 			(libsource
 				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
+				(part "RN4_BIAS")
+				(description "Z80ROMlessSBC project symbol: 4x10k bussed")
 			)
 			(property
 				(name "Sheetname")
@@ -1531,7 +1331,7 @@
 				(names "/")
 				(tstamps "/")
 			)
-			(tstamps "313234fa-9a09-5925-928a-ffde1f65c7ef")
+			(tstamps "2a306929-9a39-5af0-9dbc-420a7552c855")
 			(units
 				(unit
 					(name "A")
@@ -1539,220 +1339,17 @@
 						(pin
 							(num "1")
 						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "TP3")
-			(value "RESET# TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC RESET# TEST")
-			(fields
-				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC RESET# TEST")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "acd828d8-32e3-53da-a5af-e3494b354ba5")
-			(units
-				(unit
-					(name "A")
-					(pins
 						(pin
-							(num "1")
+							(num "5")
 						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "TP4")
-			(value "WAIT# TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC WAIT# TEST")
-			(fields
-				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC WAIT# TEST")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "73c86315-8a9c-5588-a806-77026b21b200")
-			(units
-				(unit
-					(name "A")
-					(pins
 						(pin
-							(num "1")
+							(num "4")
 						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "TP5")
-			(value "BUSREQ# TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC BUSREQ# TEST")
-			(fields
-				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC BUSREQ# TEST")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "bc767725-3959-5fdc-adcf-18afa2e68ff8")
-			(units
-				(unit
-					(name "A")
-					(pins
 						(pin
-							(num "1")
+							(num "3")
 						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "TP6")
-			(value "BUSACK# TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC BUSACK# TEST")
-			(fields
-				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC BUSACK# TEST")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "ee10098b-3242-58dc-a55c-9ff663759803")
-			(units
-				(unit
-					(name "A")
-					(pins
 						(pin
-							(num "1")
-						)
-					)
-				)
-			)
-		)
-		(comp
-			(ref "TP7")
-			(value "GND TEST")
-			(footprint "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-			(description "Z80ROMlessSBC GND TEST")
-			(fields
-				(field
-					(name "Footprint") "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC GND TEST")
-			)
-			(libsource
-				(lib "Z80SBC")
-				(part "TESTPOINT")
-				(description "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(property
-				(name "Sheetname")
-				(value "z80_romless_sbc")
-			)
-			(property
-				(name "Sheetfile")
-				(value "z80_romless_sbc.kicad_sch")
-			)
-			(sheetpath
-				(names "/")
-				(tstamps "/")
-			)
-			(tstamps "a8206f66-d9d0-5a6e-a33f-19a843f0dbb1")
-			(units
-				(unit
-					(name "A")
-					(pins
-						(pin
-							(num "1")
+							(num "2")
 						)
 					)
 				)
@@ -3446,13 +3043,13 @@
 		)
 		(libpart
 			(lib "Z80SBC")
-			(part "RESISTOR")
-			(description "Z80ROMlessSBC project symbol: 10k")
+			(part "POWER_HEADER")
+			(description "Z80ROMlessSBC project symbol: EXTERNAL 5V")
 			(fields
 				(field
-					(name "Reference") "R")
+					(name "Reference") "J")
 				(field
-					(name "Value") "10k")
+					(name "Value") "EXTERNAL 5V")
 				(field
 					(name "Footprint")
 				)
@@ -3460,17 +3057,63 @@
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Z80ROMlessSBC project symbol: 10k")
+					(name "Description") "Z80ROMlessSBC project symbol: EXTERNAL 5V")
 			)
 			(pins
 				(pin
 					(num "1")
-					(name "1")
+					(name "+5V")
 					(type "passive")
 				)
 				(pin
 					(num "2")
-					(name "2")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Z80SBC")
+			(part "RN4_BIAS")
+			(description "Z80ROMlessSBC project symbol: 4x10k bussed")
+			(fields
+				(field
+					(name "Reference") "RN")
+				(field
+					(name "Value") "4x10k bussed")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Z80ROMlessSBC project symbol: 4x10k bussed")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "COMMON")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "R1")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "R2")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "R3")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "R4")
 					(type "passive")
 				)
 			)
@@ -3765,32 +3408,6 @@
 		)
 		(libpart
 			(lib "Z80SBC")
-			(part "TESTPOINT")
-			(description "Z80ROMlessSBC project symbol: M1# TEST")
-			(fields
-				(field
-					(name "Reference") "TP")
-				(field
-					(name "Value") "M1# TEST")
-				(field
-					(name "Footprint")
-				)
-				(field
-					(name "Datasheet")
-				)
-				(field
-					(name "Description") "Z80ROMlessSBC project symbol: M1# TEST")
-			)
-			(pins
-				(pin
-					(num "1")
-					(name "TP")
-					(type "passive")
-				)
-			)
-		)
-		(libpart
-			(lib "Z80SBC")
 			(part "USB_C_POWER")
 			(description "Z80ROMlessSBC project symbol: USB-C 5V POWER BREAKOUT")
 			(fields
@@ -4080,6 +3697,12 @@
 				(pintype "power_out")
 			)
 			(node
+				(ref "A2")
+				(pin "VCC")
+				(pinfunction "VCC_VCC")
+				(pintype "power_in")
+			)
+			(node
 				(ref "C5")
 				(pin "1")
 				(pinfunction "+_1")
@@ -4098,27 +3721,9 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "R17")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R18")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R19")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R20")
-				(pin "2")
-				(pinfunction "2_2")
+				(ref "RN5")
+				(pin "1")
+				(pinfunction "COMMON_1")
 				(pintype "passive")
 			)
 			(node
@@ -4196,6 +3801,18 @@
 				(ref "D1")
 				(pin "2")
 				(pinfunction "A_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "VBUS")
+				(pinfunction "VBUS_VBUS")
+				(pintype "power_out")
+			)
+			(node
+				(ref "J3")
+				(pin "1")
+				(pinfunction "+5V_1")
 				(pintype "passive")
 			)
 			(node
@@ -4662,9 +4279,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R18")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "3")
+				(pinfunction "R2_3")
 				(pintype "passive")
 			)
 			(node
@@ -4702,12 +4319,6 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "TP6")
-				(pin "1")
-				(pinfunction "TP_1")
-				(pintype "passive")
-			)
-			(node
 				(ref "U1")
 				(pin "23")
 				(pinfunction "BUSACK#_23")
@@ -4728,12 +4339,6 @@
 				(ref "RN4")
 				(pin "2")
 				(pinfunction "R1_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "TP5")
-				(pin "1")
-				(pinfunction "TP_1")
 				(pintype "passive")
 			)
 			(node
@@ -4992,9 +4597,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R20")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "5")
+				(pinfunction "R4_5")
 				(pintype "passive")
 			)
 			(node
@@ -5074,6 +4679,12 @@
 				(pintype "power_in")
 			)
 			(node
+				(ref "A2")
+				(pin "GND")
+				(pinfunction "GND_GND")
+				(pintype "power_in")
+			)
+			(node
 				(ref "C1")
 				(pin "2")
 				(pinfunction "-_2")
@@ -5140,33 +4751,21 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "J1")
+				(pin "GND")
+				(pinfunction "GND_GND")
+				(pintype "power_out")
+			)
+			(node
 				(ref "J2")
 				(pin "5")
 				(pinfunction "GND_5")
 				(pintype "passive")
 			)
 			(node
-				(ref "R21")
+				(ref "J3")
 				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R22")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R23")
-				(pin "2")
-				(pinfunction "2_2")
-				(pintype "passive")
-			)
-			(node
-				(ref "R24")
-				(pin "2")
-				(pinfunction "2_2")
+				(pinfunction "GND_2")
 				(pintype "passive")
 			)
 			(node
@@ -5176,9 +4775,9 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "TP7")
+				(ref "RN6")
 				(pin "1")
-				(pinfunction "TP_1")
+				(pinfunction "COMMON_1")
 				(pintype "passive")
 			)
 			(node
@@ -5329,9 +4928,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R23")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN6")
+				(pin "4")
+				(pinfunction "R3_4")
 				(pintype "passive")
 			)
 			(node
@@ -5343,23 +4942,6 @@
 		)
 		(net
 			(code "39")
-			(name "/M1_N")
-			(class "Default")
-			(node
-				(ref "TP1")
-				(pin "1")
-				(pinfunction "TP_1")
-				(pintype "passive")
-			)
-			(node
-				(ref "U1")
-				(pin "27")
-				(pinfunction "M1#_27")
-				(pintype "tri_state")
-			)
-		)
-		(net
-			(code "40")
 			(name "/MREQ_N")
 			(class "Default")
 			(node
@@ -5382,7 +4964,7 @@
 			)
 		)
 		(net
-			(code "41")
+			(code "40")
 			(name "/NMI_N")
 			(class "Default")
 			(node
@@ -5399,7 +4981,7 @@
 			)
 		)
 		(net
-			(code "42")
+			(code "41")
 			(name "/PICO_A0")
 			(class "Default")
 			(node
@@ -5416,7 +4998,7 @@
 			)
 		)
 		(net
-			(code "43")
+			(code "42")
 			(name "/PICO_A1")
 			(class "Default")
 			(node
@@ -5433,7 +5015,7 @@
 			)
 		)
 		(net
-			(code "44")
+			(code "43")
 			(name "/PICO_A2")
 			(class "Default")
 			(node
@@ -5450,7 +5032,7 @@
 			)
 		)
 		(net
-			(code "45")
+			(code "44")
 			(name "/PICO_A4")
 			(class "Default")
 			(node
@@ -5467,7 +5049,7 @@
 			)
 		)
 		(net
-			(code "46")
+			(code "45")
 			(name "/PICO_BUSACK_N")
 			(class "Default")
 			(node
@@ -5484,7 +5066,7 @@
 			)
 		)
 		(net
-			(code "47")
+			(code "46")
 			(name "/PICO_BUSREQ_N")
 			(class "Default")
 			(node
@@ -5494,9 +5076,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R17")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "2")
+				(pinfunction "R1_2")
 				(pintype "passive")
 			)
 			(node
@@ -5507,7 +5089,7 @@
 			)
 		)
 		(net
-			(code "48")
+			(code "47")
 			(name "/PICO_CLK")
 			(class "Default")
 			(node
@@ -5517,9 +5099,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R21")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN6")
+				(pin "2")
+				(pinfunction "R1_2")
 				(pintype "passive")
 			)
 			(node
@@ -5530,7 +5112,7 @@
 			)
 		)
 		(net
-			(code "49")
+			(code "48")
 			(name "/PICO_D0")
 			(class "Default")
 			(node
@@ -5559,7 +5141,7 @@
 			)
 		)
 		(net
-			(code "50")
+			(code "49")
 			(name "/PICO_D1")
 			(class "Default")
 			(node
@@ -5588,7 +5170,7 @@
 			)
 		)
 		(net
-			(code "51")
+			(code "50")
 			(name "/PICO_D2")
 			(class "Default")
 			(node
@@ -5617,7 +5199,7 @@
 			)
 		)
 		(net
-			(code "52")
+			(code "51")
 			(name "/PICO_D3")
 			(class "Default")
 			(node
@@ -5646,7 +5228,7 @@
 			)
 		)
 		(net
-			(code "53")
+			(code "52")
 			(name "/PICO_D4")
 			(class "Default")
 			(node
@@ -5675,7 +5257,7 @@
 			)
 		)
 		(net
-			(code "54")
+			(code "53")
 			(name "/PICO_D5")
 			(class "Default")
 			(node
@@ -5704,7 +5286,7 @@
 			)
 		)
 		(net
-			(code "55")
+			(code "54")
 			(name "/PICO_D6")
 			(class "Default")
 			(node
@@ -5733,7 +5315,7 @@
 			)
 		)
 		(net
-			(code "56")
+			(code "55")
 			(name "/PICO_D7")
 			(class "Default")
 			(node
@@ -5762,7 +5344,7 @@
 			)
 		)
 		(net
-			(code "57")
+			(code "56")
 			(name "/PICO_DATA_UP_OE_N")
 			(class "Default")
 			(node
@@ -5772,9 +5354,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R19")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN5")
+				(pin "4")
+				(pinfunction "R3_4")
 				(pintype "passive")
 			)
 			(node
@@ -5785,7 +5367,7 @@
 			)
 		)
 		(net
-			(code "59")
+			(code "58")
 			(name "/PICO_GP8")
 			(class "Default")
 			(node
@@ -5801,9 +5383,9 @@
 				(pintype "passive")
 			)
 			(node
-				(ref "R24")
-				(pin "1")
-				(pinfunction "1_1")
+				(ref "RN6")
+				(pin "5")
+				(pinfunction "R4_5")
 				(pintype "passive")
 			)
 			(node
@@ -5814,13 +5396,19 @@
 			)
 		)
 		(net
-			(code "60")
+			(code "59")
 			(name "/PICO_GP22")
 			(class "Default")
 			(node
 				(ref "A1")
 				(pin "29")
 				(pinfunction "GP22_29")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "A2")
+				(pin "SDA")
+				(pinfunction "SDA_SDA")
 				(pintype "bidirectional")
 			)
 			(node
@@ -5831,7 +5419,7 @@
 			)
 		)
 		(net
-			(code "61")
+			(code "60")
 			(name "/PICO_GP26")
 			(class "Default")
 			(node
@@ -5841,6 +5429,12 @@
 				(pintype "bidirectional")
 			)
 			(node
+				(ref "A2")
+				(pin "SCK")
+				(pinfunction "SCK_SCK")
+				(pintype "input")
+			)
+			(node
 				(ref "J2")
 				(pin "3")
 				(pinfunction "GP26_ADC0_3")
@@ -5848,7 +5442,7 @@
 			)
 		)
 		(net
-			(code "62")
+			(code "61")
 			(name "/PICO_IORQ_N")
 			(class "Default")
 			(node
@@ -5865,7 +5459,7 @@
 			)
 		)
 		(net
-			(code "63")
+			(code "62")
 			(name "/PICO_RD_N")
 			(class "Default")
 			(node
@@ -5882,7 +5476,7 @@
 			)
 		)
 		(net
-			(code "64")
+			(code "63")
 			(name "/PICO_WR_N")
 			(class "Default")
 			(node
@@ -5899,7 +5493,7 @@
 			)
 		)
 		(net
-			(code "65")
+			(code "64")
 			(name "/RD_5V_N")
 			(class "Default")
 			(node
@@ -5916,7 +5510,7 @@
 			)
 		)
 		(net
-			(code "66")
+			(code "65")
 			(name "/RD_N")
 			(class "Default")
 			(node
@@ -5951,7 +5545,7 @@
 			)
 		)
 		(net
-			(code "67")
+			(code "66")
 			(name "/RESET_N")
 			(class "Default")
 			(node
@@ -5961,15 +5555,9 @@
 				(pintype "bidirectional")
 			)
 			(node
-				(ref "R22")
-				(pin "1")
-				(pinfunction "1_1")
-				(pintype "passive")
-			)
-			(node
-				(ref "TP3")
-				(pin "1")
-				(pinfunction "TP_1")
+				(ref "RN6")
+				(pin "3")
+				(pinfunction "R2_3")
 				(pintype "passive")
 			)
 			(node
@@ -5980,7 +5568,7 @@
 			)
 		)
 		(net
-			(code "68")
+			(code "67")
 			(name "/SRAM_A16")
 			(class "Default")
 			(node
@@ -5997,7 +5585,7 @@
 			)
 		)
 		(net
-			(code "69")
+			(code "68")
 			(name "/SRAM_CE_N")
 			(class "Default")
 			(node
@@ -6014,7 +5602,7 @@
 			)
 		)
 		(net
-			(code "70")
+			(code "69")
 			(name "/SRAM_OE_N")
 			(class "Default")
 			(node
@@ -6031,7 +5619,7 @@
 			)
 		)
 		(net
-			(code "71")
+			(code "70")
 			(name "/SRAM_WE_N")
 			(class "Default")
 			(node
@@ -6048,7 +5636,7 @@
 			)
 		)
 		(net
-			(code "72")
+			(code "71")
 			(name "/VSYS")
 			(class "Default")
 			(node
@@ -6065,15 +5653,9 @@
 			)
 		)
 		(net
-			(code "73")
+			(code "72")
 			(name "/WAIT_N")
 			(class "Default")
-			(node
-				(ref "TP4")
-				(pin "1")
-				(pinfunction "TP_1")
-				(pintype "passive")
-			)
 			(node
 				(ref "U1")
 				(pin "24")
@@ -6088,7 +5670,7 @@
 			)
 		)
 		(net
-			(code "74")
+			(code "73")
 			(name "/WR_N")
 			(class "Default")
 			(node
@@ -6117,15 +5699,9 @@
 			)
 		)
 		(net
-			(code "75")
+			(code "74")
 			(name "/Z80_CLK")
 			(class "Default")
-			(node
-				(ref "TP2")
-				(pin "1")
-				(pinfunction "TP_1")
-				(pintype "passive")
-			)
 			(node
 				(ref "U1")
 				(pin "6")
@@ -6140,7 +5716,7 @@
 			)
 		)
 		(net
-			(code "86")
+			(code "85")
 			(name "unconnected-(A1-3V3_EN-Pad37)")
 			(class "Default")
 			(node
@@ -6151,7 +5727,7 @@
 			)
 		)
 		(net
-			(code "87")
+			(code "86")
 			(name "unconnected-(A1-ADC_VREF-Pad35)")
 			(class "Default")
 			(node
@@ -6162,7 +5738,7 @@
 			)
 		)
 		(net
-			(code "88")
+			(code "87")
 			(name "unconnected-(A1-RUN-Pad30)")
 			(class "Default")
 			(node
@@ -6173,7 +5749,7 @@
 			)
 		)
 		(net
-			(code "89")
+			(code "88")
 			(name "unconnected-(A1-VBUS-Pad40)")
 			(class "Default")
 			(node
@@ -6184,13 +5760,68 @@
 			)
 		)
 		(net
-			(code "94")
+			(code "89")
+			(name "unconnected-(J1-PadCC1)")
+			(class "Default")
+			(node
+				(ref "J1")
+				(pin "CC1")
+				(pinfunction "CC1_CC1")
+				(pintype "passive+no_connect")
+			)
+		)
+		(net
+			(code "90")
+			(name "unconnected-(J1-PadCC2)")
+			(class "Default")
+			(node
+				(ref "J1")
+				(pin "CC2")
+				(pinfunction "CC2_CC2")
+				(pintype "passive+no_connect")
+			)
+		)
+		(net
+			(code "91")
+			(name "unconnected-(J1-PadD+)")
+			(class "Default")
+			(node
+				(ref "J1")
+				(pin "D+")
+				(pinfunction "D+_D+")
+				(pintype "passive+no_connect")
+			)
+		)
+		(net
+			(code "92")
+			(name "unconnected-(J1-PadD-)")
+			(class "Default")
+			(node
+				(ref "J1")
+				(pin "D-")
+				(pinfunction "D-_D-")
+				(pintype "passive+no_connect")
+			)
+		)
+		(net
+			(code "93")
 			(name "unconnected-(U1-HALT#-Pad18)")
 			(class "Default")
 			(node
 				(ref "U1")
 				(pin "18")
 				(pinfunction "HALT#_18")
+				(pintype "tri_state+no_connect")
+			)
+		)
+		(net
+			(code "94")
+			(name "unconnected-(U1-M1#-Pad27)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "27")
+				(pinfunction "M1#_27")
 				(pintype "tri_state+no_connect")
 			)
 		)

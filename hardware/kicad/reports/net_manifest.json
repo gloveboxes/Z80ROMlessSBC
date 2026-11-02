@@ -1,7 +1,7 @@
 {
   "generated_by": "scripts/build-kicad-schematic.py",
   "schematic": "hardware/kicad/z80_romless_sbc.kicad_sch",
-  "component_count": 42,
+  "component_count": 30,
   "components": [
     "A1",
     "A2",
@@ -19,25 +19,13 @@
     "D1",
     "J1",
     "J2",
-    "R17",
-    "R18",
-    "R19",
-    "R20",
-    "R21",
-    "R22",
-    "R23",
-    "R24",
+    "J3",
     "RN1",
     "RN2",
     "RN3",
     "RN4",
-    "TP1",
-    "TP2",
-    "TP3",
-    "TP4",
-    "TP5",
-    "TP6",
-    "TP7",
+    "RN5",
+    "RN6",
     "U1",
     "U10",
     "U2",
@@ -56,8 +44,8 @@
     "A2": {
       "symbol": "SSD1315_OLED",
       "value": "0.91in SSD1315 128X32 I2C OLED",
-      "footprint": "",
-      "description": "External Stage 10 status OLED module, 38.00 x 12.00 mm board, 22.38 x 5.58 mm active area; 4-pin 2.54 mm header in order GND, VCC, SCK (I2C SCL), SDA; I2C address 0x3C; onboard regulator and I2C pull-ups to its 3.3V rail; supply from Pico 3V3"
+      "footprint": "Z80SBC:OLED_SSD1315_38x12mm_Socket",
+      "description": "Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit"
     },
     "C1": {
       "symbol": "CAPACITOR",
@@ -134,8 +122,8 @@
     "J1": {
       "symbol": "USB_C_POWER",
       "value": "USB-C 5V POWER BREAKOUT",
-      "footprint": "",
-      "description": "External TYPE-C USB to pin DIP female adapter module; PCB body 21.6 x 12.7 mm from product image; 6-pin single-row header at user-confirmed standard breadboard pitch 2.54 mm, first-to-last hole-centre span 12.7 mm; photographed pad order CC2, D+, D-, CC1, GND, VBUS; VBUS supplies +5V from a regulated 5V USB source, not an onboard regulator or PD trigger; unused breakout pads NC; verify CC1/CC2 sink resistors before USB-C use; header offset/drill diameter, mounting-hole geometry, connector overhang and assembled height unverified, no PCB footprint"
+      "footprint": "Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder",
+      "description": "Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS"
     },
     "J2": {
       "symbol": "EXPANSION",
@@ -143,53 +131,11 @@
       "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
       "description": "3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND"
     },
-    "R17": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for PICO_BUSREQ_N"
-    },
-    "R18": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for BOOT_READ_DISABLE"
-    },
-    "R19": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for PICO_DATA_UP_OE_N"
-    },
-    "R20": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for DATA_DOWN_OE_N"
-    },
-    "R21": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for PICO_CLK"
-    },
-    "R22": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for RESET_N"
-    },
-    "R23": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k startup bias for IO_RELEASE"
-    },
-    "R24": {
-      "symbol": "RESISTOR",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "description": "10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4"
+    "J3": {
+      "symbol": "POWER_HEADER",
+      "value": "EXTERNAL 5V",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+      "description": "Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS"
     },
     "RN1": {
       "symbol": "RN8",
@@ -215,47 +161,17 @@
       "footprint": "Resistor_THT:R_Array_SIP9",
       "description": "Z80 control pull-up network"
     },
-    "TP1": {
-      "symbol": "TESTPOINT",
-      "value": "M1# TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC M1# TEST"
+    "RN5": {
+      "symbol": "RN4_BIAS",
+      "value": "4x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP5",
+      "description": "PCB startup pull-ups; electrically replaces breadboard R17-R20"
     },
-    "TP2": {
-      "symbol": "TESTPOINT",
-      "value": "CLK TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC CLK TEST"
-    },
-    "TP3": {
-      "symbol": "TESTPOINT",
-      "value": "RESET# TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC RESET# TEST"
-    },
-    "TP4": {
-      "symbol": "TESTPOINT",
-      "value": "WAIT# TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC WAIT# TEST"
-    },
-    "TP5": {
-      "symbol": "TESTPOINT",
-      "value": "BUSREQ# TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC BUSREQ# TEST"
-    },
-    "TP6": {
-      "symbol": "TESTPOINT",
-      "value": "BUSACK# TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC BUSACK# TEST"
-    },
-    "TP7": {
-      "symbol": "TESTPOINT",
-      "value": "GND TEST",
-      "footprint": "TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-      "description": "Z80ROMlessSBC GND TEST"
+    "RN6": {
+      "symbol": "RN4_BIAS",
+      "value": "4x10k bussed",
+      "footprint": "Resistor_THT:R_Array_SIP5",
+      "description": "PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side"
     },
     "U1": {
       "symbol": "Z80_CPU",
@@ -303,6 +219,40 @@
   "erc_symbols": [
     "#FLG01"
   ],
+  "breadboard_resistor_equivalents": {
+    "R17": {
+      "1": "RN5.2",
+      "2": "RN5.1"
+    },
+    "R18": {
+      "1": "RN5.3",
+      "2": "RN5.1"
+    },
+    "R19": {
+      "1": "RN5.4",
+      "2": "RN5.1"
+    },
+    "R20": {
+      "1": "RN5.5",
+      "2": "RN5.1"
+    },
+    "R21": {
+      "1": "RN6.2",
+      "2": "RN6.1"
+    },
+    "R22": {
+      "1": "RN6.3",
+      "2": "RN6.1"
+    },
+    "R23": {
+      "1": "RN6.4",
+      "2": "RN6.1"
+    },
+    "R24": {
+      "1": "RN6.5",
+      "2": "RN6.1"
+    }
+  },
   "nets": {
     "+3V3": [
       "A1.36",
@@ -310,10 +260,7 @@
       "C5.1",
       "C7.1",
       "J2.4",
-      "R17.2",
-      "R18.2",
-      "R19.2",
-      "R20.2",
+      "RN5.1",
       "U10.20",
       "U7.20"
     ],
@@ -329,6 +276,7 @@
       "C9.1",
       "D1.2",
       "J1.VBUS",
+      "J3.1",
       "RN1.1",
       "RN2.1",
       "RN4.1",
@@ -426,7 +374,7 @@
     ],
     "BOOT_READ_DISABLE": [
       "A1.7",
-      "R18.1",
+      "RN5.3",
       "U4.6"
     ],
     "BOOT_READ_DISABLE_5V": [
@@ -435,13 +383,11 @@
     ],
     "BUSACK_N": [
       "RN4.3",
-      "TP6.1",
       "U1.23",
       "U7.2"
     ],
     "BUSREQ_N": [
       "RN4.2",
-      "TP5.1",
       "U1.25",
       "U4.16"
     ],
@@ -495,7 +441,7 @@
     ],
     "DATA_DOWN_OE_N": [
       "A1.10",
-      "R20.1",
+      "RN5.5",
       "U10.19"
     ],
     "DATA_UP_OE_N": [
@@ -525,12 +471,9 @@
       "C9.2",
       "J1.GND",
       "J2.5",
-      "R21.2",
-      "R22.2",
-      "R23.2",
-      "R24.2",
+      "J3.2",
       "RN3.1",
-      "TP7.1",
+      "RN6.1",
       "U1.29",
       "U10.1",
       "U10.10",
@@ -559,12 +502,8 @@
     ],
     "IO_RELEASE": [
       "A1.12",
-      "R23.1",
+      "RN6.4",
       "U3.5"
-    ],
-    "M1_N": [
-      "TP1.1",
-      "U1.27"
     ],
     "MREQ_N": [
       "RN4.4",
@@ -597,12 +536,12 @@
     ],
     "PICO_BUSREQ_N": [
       "A1.6",
-      "R17.1",
+      "RN5.2",
       "U4.4"
     ],
     "PICO_CLK": [
       "A1.4",
-      "R21.1",
+      "RN6.2",
       "U4.2"
     ],
     "PICO_D0": [
@@ -655,7 +594,7 @@
     ],
     "PICO_DATA_UP_OE_N": [
       "A1.9",
-      "R19.1",
+      "RN5.4",
       "U3.10"
     ],
     "PICO_GP22": [
@@ -671,7 +610,7 @@
     "PICO_GP8": [
       "A1.11",
       "J2.1",
-      "R24.1",
+      "RN6.5",
       "U4.17"
     ],
     "PICO_IORQ_N": [
@@ -699,8 +638,7 @@
     ],
     "RESET_N": [
       "A1.5",
-      "R22.1",
-      "TP3.1",
+      "RN6.3",
       "U1.26"
     ],
     "SRAM_A16": [
@@ -725,7 +663,6 @@
       "D1.1"
     ],
     "WAIT_N": [
-      "TP4.1",
       "U1.24",
       "U3.6"
     ],
@@ -736,7 +673,6 @@
       "U7.8"
     ],
     "Z80_CLK": [
-      "TP2.1",
       "U1.6",
       "U4.18"
     ]

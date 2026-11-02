@@ -211,6 +211,15 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             *[pin(number + 2, f"R{number + 1}", "passive", "right") for number in range(8)],
         ],
     ),
+    "RN4_BIAS": (
+        "RN", "4x10k bussed",
+        [pin(1, "COMMON", "passive", "top"),
+         *[pin(number + 2, f"R{number + 1}", "passive", "right") for number in range(4)]],
+    ),
+    "POWER_HEADER": (
+        "J", "EXTERNAL 5V",
+        [pin(1, "+5V", "passive", "left"), pin(2, "GND", "passive", "left")],
+    ),
     "LVC244": (
         "U",
         "SN74LVC244AN",
@@ -310,9 +319,6 @@ SYMBOL_SPECS: dict[str, tuple[str, str, list[PinDef]]] = {
             pin("SDA", "SDA", "bidirectional", "left"),
         ],
     ),
-    "TESTPOINT": (
-        "TP", "M1# TEST", [pin(1, "TP", "passive", "left")]
-    ),
     "PWR_FLAG": (
         "#FLG", "PWR_FLAG", [pin(1, "PWR_FLAG", "power_out", "bottom")]
     ),
@@ -383,7 +389,7 @@ def build_symbol_geometry(symbol_name: str, *, embedded: bool) -> SymbolGeometry
         pinNames=True,
         pinNamesOffset=1.0,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED", "USB_C_POWER"),
+        onBoard=symbol_name != "PWR_FLAG",
         properties=[
             property_value("Reference", reference_prefix, 0, -half_height - 5.08),
             property_value("Value", default_value, 0, half_height + 5.08),
@@ -407,9 +413,9 @@ schematic = Schematic(
     uuid=ROOT_UUID,
     paper=PageSettings(paperSize="A0"),
     titleBlock=TitleBlock(
-        title="Z80ROMlessSBC - Exact Breadboard Electrical Schematic",
-        date="2026-10-26",
-        revision="2",
+        title="Z80ROMlessSBC - Assisted Loader and Four-Layer PCB",
+        date="2026-11-02",
+        revision="3",
         company="Z80ROMlessSBC",
         comments={1: "Native KiCad 10 schematic generated from the verified README pin map"},
     ),
@@ -473,7 +479,7 @@ def add_component(
         position=pos(x, y, 0),
         unit=1,
         inBom=symbol_name != "PWR_FLAG",
-        onBoard=symbol_name not in ("PWR_FLAG", "SSD1315_OLED", "USB_C_POWER"),
+        onBoard=symbol_name != "PWR_FLAG",
         uuid=symbol_uuid,
         properties=instance_properties(
             reference, value,
@@ -554,7 +560,7 @@ z80_nets = {
     7: "D4", 8: "D3", 9: "D5", 10: "D6", 11: "+5V", 12: "D2", 13: "D7",
     14: "D0", 15: "D1", 16: "INT_N", 17: "NMI_N", 18: None, 19: "MREQ_N",
     20: "IORQ_N", 21: "RD_N", 22: "WR_N", 23: "BUSACK_N", 24: "WAIT_N",
-    25: "BUSREQ_N", 26: "@RESET_JUNCTION", 27: "M1_N", 28: None, 29: "GND",
+    25: "BUSREQ_N", 26: "@RESET_JUNCTION", 27: None, 28: None, 29: "GND",
     30: "A0", 31: "A1", 32: "A2", 33: "A3", 34: "A4", 35: "A5", 36: "A6",
     37: "A7", 38: "A8", 39: "A9", 40: "A10",
 }
@@ -650,7 +656,9 @@ add_component("A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets, f
 add_component(
     "J1", "USB_C_POWER", "USB-C 5V POWER BREAKOUT", 50.8, 50.8,
     {"CC2": None, "D+": None, "D-": None, "CC1": None, "GND": "GND", "VBUS": "+5V"},
-    description="External TYPE-C USB to pin DIP female adapter module; PCB body 21.6 x 12.7 mm from product image; 6-pin single-row header at user-confirmed standard breadboard pitch 2.54 mm, first-to-last hole-centre span 12.7 mm; photographed pad order CC2, D+, D-, CC1, GND, VBUS; VBUS supplies +5V from a regulated 5V USB source, not an onboard regulator or PD trigger; unused breakout pads NC; verify CC1/CC2 sink resistors before USB-C use; header offset/drill diameter, mounting-hole geometry, connector overhang and assembled height unverified, no PCB footprint",
+    footprint="Z80SBC:USB_C_Breakout_6Pin_P2.54mm_Solder",
+    description="Onboard TYPE-C power breakout, 21.6 x 12.7 mm body; solder all six 2.54 mm header pins into 1.0 mm plated carrier holes; pad order CC2, D+, D-, CC1, GND, VBUS; only VBUS/+5V and GND wired, remaining carrier pads isolated; no module screw holes; outline scaled from the vendor dimension photo, dry-fit before fabrication; verify pin fit, USB cable access and insulated underside clearance before soldering; use regulated 5V source and verify both 5.1k CC sink resistors; retain D1 isolation to Pico VSYS",
+    datasheet="https://ae-pic-a1.aliexpress-media.com/kf/Sd62e440eb12d48f8bcbf20d48ee7578cU.jpg",
 )
 add_component(
     "J2", "EXPANSION", "PICO GPIO EXPANSION", 1016.0, 152.4,
@@ -659,50 +667,35 @@ add_component(
     description="3.3V header: GP8 reserved for bank select with 10k pull-down at Pico pin 11; GP22, GP26/ADC0, Pico 3V3 output, GND",
 )
 add_component(
+    "J3", "POWER_HEADER", "EXTERNAL 5V", 50.8, 101.6,
+    {1: "+5V", 2: "GND"},
+    footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+    description="Optional auxiliary 5V input/probe header: pin 1 +5V, pin 2 GND; shares J1 rail without source isolation, use only one supply at a time; never connect to Pico VBUS",
+)
+add_component(
     "A2", "SSD1315_OLED", "0.91in SSD1315 128X32 I2C OLED", 1016.0, 254.0,
     {"VCC": "+3V3", "GND": "GND", "SCK": "PICO_GP26", "SDA": "PICO_GP22"},
-    description="External Stage 10 status OLED module, 38.00 x 12.00 mm board, 22.38 x 5.58 mm active area; 4-pin 2.54 mm header in order GND, VCC, SCK (I2C SCL), SDA; I2C address 0x3C; onboard regulator and I2C pull-ups to its 3.3V rail; supply from Pico 3V3",
+    footprint="Z80SBC:OLED_SSD1315_38x12mm_Socket",
+    description="Socketed Stage 10 status OLED, 38.00 x 12.00 mm body; header centres 1.50 mm from left edge, 2.19 mm from top for SDA, 2.54 mm pitch; GND, VCC, SCK, SDA bottom-to-top; I2C 0x3C, pull-ups to 3.3V; verify assembled height and header drill fit",
     datasheet="https://www.solomon-systech.com/product/ssd1315",
 )
 add_component("D1", "DIODE", "1N5819", 127.0, 50.8, {1: "VSYS", 2: "+5V"}, footprint="Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal")
 add_component("#FLG01", "PWR_FLAG", "PWR_FLAG", 203.2, 50.8, {1: "VSYS"})
-add_component("TP1", "TESTPOINT", "M1# TEST", 482.6, 50.8, {1: "M1_N"}, footprint="TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded")
-for reference, value, net, x in (
-    ("TP2", "CLK TEST", "Z80_CLK", 533.4),
-    ("TP3", "RESET# TEST", "RESET_N", 584.2),
-    ("TP4", "WAIT# TEST", "WAIT_N", 635.0),
-    ("TP5", "BUSREQ# TEST", "BUSREQ_N", 685.8),
-    ("TP6", "BUSACK# TEST", "BUSACK_N", 736.6),
-    ("TP7", "GND TEST", "GND", 787.4),
-):
-    add_component(
-        reference, "TESTPOINT", value, x, 50.8, {1: net},
-        footprint="TestPoint:TestPoint_Loop_D2.60mm_Drill0.9mm_Beaded",
-    )
 
 
-PULLS = [
-    ("PICO_BUSREQ_N", "+3V3"), ("BOOT_READ_DISABLE", "+3V3"),
-    ("PICO_DATA_UP_OE_N", "+3V3"), ("DATA_DOWN_OE_N", "+3V3"),
-    ("PICO_CLK", "GND"), ("RESET_N", "GND"), ("IO_RELEASE", "GND"),
-    ("PICO_GP8", "GND"),
-]
-if len(PULLS) != 8:
-    raise AssertionError(f"expected 8 discrete startup resistors, got {len(PULLS)}")
-for index, (signal, rail) in enumerate(PULLS, start=17):
-    column = index - 17
-    value = "10k"
-    # R24 is drawn beside the Pico to identify its physical attachment point.
-    x, y = (787.4, 228.6) if signal == "PICO_GP8" else (50.8 + column * 71.12, 711.2)
-    description = ("10k bank-select pull-down at Pico A1 physical pin 11 (GP8), 3.3V side of U4"
-                   if signal == "PICO_GP8" else f"{value} startup bias for {signal}")
-    add_component(
-        f"R{index}", "RESISTOR", value,
-        x, y,
-        {1: signal, 2: rail},
-        footprint="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-        description=description,
-    )
+add_component(
+    "RN5", "RN4_BIAS", "4x10k bussed", 152.4, 711.2,
+    {1: "+3V3", 2: "PICO_BUSREQ_N", 3: "BOOT_READ_DISABLE",
+     4: "PICO_DATA_UP_OE_N", 5: "DATA_DOWN_OE_N"},
+    footprint="Resistor_THT:R_Array_SIP5",
+    description="PCB startup pull-ups; electrically replaces breadboard R17-R20",
+)
+add_component(
+    "RN6", "RN4_BIAS", "4x10k bussed", 787.4, 711.2,
+    {1: "GND", 2: "PICO_CLK", 3: "RESET_N", 4: "IO_RELEASE", 5: "PICO_GP8"},
+    footprint="Resistor_THT:R_Array_SIP5",
+    description="PCB startup pull-downs; electrically replaces breadboard R21-R24; bank select remains on 3.3V side",
+)
 
 
 CAPACITORS = [
@@ -844,7 +837,7 @@ for text, x in (("MEMORY BOARD", 152.4), ("CORE BOARD", 508.0), ("PERIPHERAL BOA
     ))
 schematic.texts.extend([
     Text(
-        text="J1: external USB-C 5V power breakout, not a regulator.\\nPCB body 21.6 x 12.7 mm; USB overhang not dimensioned.\\n6-pin header: 2.54 mm pitch; hole-centre span 12.7 mm.\\nPhoto pad order: CC2, D+, D-, CC1, GND, VBUS.\\nVBUS -> +5V; GND -> common GND; other pads NC.\\nUse regulated 5V USB source; verify CC1/CC2 sink resistors.\\nKeep D1 isolation to Pico VSYS; never join Pico VBUS.\\nHeader offset/drill, mounting holes, height unverified.",
+        text="J1: onboard USB-C 5V breakout, not a regulator.\\n21.6 x 12.7 mm body; photo-scaled outline, dry-fit first.\\nSolder ALL six 2.54mm pins into 1.0mm carrier holes.\\nPhoto pad order: CC2, D+, D-, CC1, GND, VBUS.\\nOnly VBUS -> +5V and GND wired; other pads isolated.\\nNo module screw holes; insulate/support underside.\\nUse regulated 5V; verify both CC sink resistors.\\nJ3 is auxiliary: only ONE supply at a time.\\nKeep D1 to Pico VSYS; never join Pico VBUS.",
         position=pos(127.0, 76.2, 0),
         effects=effects(1.27),
         uuid=uid("text:usb-c-power-note"),
@@ -856,25 +849,25 @@ schematic.texts.extend([
         uuid=uid("text:reset-note"),
     ),
     Text(
-        text="RN4: 5V control pull-ups. R17-R20: 3V3 pull-ups. R21-R23: GPIO pull-downs. Both data paths default disabled; no PLD/programmer required.",
+        text="RN1-RN4: address, data and control bias. RN5: four 3V3 startup pull-ups (breadboard R17-R20). RN6: four startup pull-downs (breadboard R21-R24). Both data paths default disabled.",
         position=pos(50.8, 622.3, 0),
         effects=effects(1.27),
         uuid=uid("text:pull-note"),
     ),
     Text(
-        text="J2: 3.3V signals only.\\nPin 1 / GP8 reserved for SRAM bank select.\\nGP22/GP26 available for software/PIO I2C.",
+        text="J2: 3.3V expansion/probe header, not a 5V input.\\n1: GP8 reserved for SRAM bank select.\\n2: GP22/SDA; 3: GP26/SCL, shared with A2.\\n4: Pico 3V3 output; 5: GND.",
         position=pos(1016.0, 190.5, 0),
         effects=effects(1.27),
         uuid=uid("text:expansion-note"),
     ),
     Text(
-        text="BANK SELECT: Pico physical pin 11 / GP8 -> U4.17.\\nR24: 10k from Pico pin 11 to GND (3.3V side).\\nU4.3 -> U2.2 / A16 (5V side); LOW selects bank 0.\\nRemove the former U4.17 and U2.2 ground straps.",
+        text="BANK SELECT: Pico physical pin 11 / GP8 -> U4.17.\\nRN6.5: 10k to RN6.1 / GND (breadboard R24 equivalent).\\nU4.3 -> U2.2 / A16 (5V side); LOW selects bank 0.",
         position=pos(787.4, 254.0, 0),
         effects=effects(1.27),
         uuid=uid("text:bank-select-note"),
     ),
     Text(
-        text="A2: external Stage 10 0.91in SSD1315 128x32 status OLED, no PCB footprint.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader order GND, VCC, SCK, SDA: not VCC first.\\nSDA = J2.2 / GP22; SCK (I2C SCL) = J2.3 / GP26.\\nVCC = J2.4 / 3V3; GND = J2.5 / GND.\\nI2C pull-ups to 3.3V only, never 5V.\\nDMA-fed PIO I2C on core 1; address 0x3C.\\nShows IP, port 8088, uptime, heartbeat, web dot.",
+        text="A2: socketed Stage 10 0.91in SSD1315 128x32 status OLED.\\nModule 38.00 x 12.00 mm; 4-pin 2.54 mm header.\\nHeader centres 1.50mm from left; SDA 2.19mm from top.\\nHeader order GND, VCC, SCK, SDA bottom-to-top.\\nSDA = J2.2 / GP22; SCK = J2.3 / GP26.\\nVCC = J2.4 / 3V3; GND = J2.5 / GND.\\nI2C pull-ups to 3.3V only; address 0x3C.\\nVerify socket height, pin fit and insulated module support.",
         position=pos(1016.0, 292.1, 0),
         effects=effects(1.27),
         uuid=uid("text:oled-note"),
@@ -885,18 +878,18 @@ schematic.texts.extend([
 required_endpoints = {
     "+5V": {"J1.VBUS", "D1.2"},
     "VSYS": {"D1.1", "A1.39"},
-    "GND": {"J1.GND", "A1.38", "J2.5", "A2.GND", "R24.2"},
+    "GND": {"J1.GND", "A1.38", "J2.5", "A2.GND", "RN6.1"},
     "+3V3": {"A1.36", "J2.4", "A2.VCC"},
     "A0": {"U1.30", "U2.12", "U7.11", "RN1.2"},
     "A8": {"U1.38", "U2.27", "RN2.2"},
     "D0": {"U1.14", "U2.13", "U9.18", "U10.18"},
     "PICO_D0": {"A1.14", "U9.2", "U10.2", "RN3.2"},
-    "PICO_DATA_UP_OE_N": {"A1.9", "R19.1", "U3.10"},
+    "PICO_DATA_UP_OE_N": {"A1.9", "RN5.4", "U3.10"},
     "DATA_UP_OE_N": {"U3.8", "U9.19"},
-    "DATA_DOWN_OE_N": {"A1.10", "R20.1", "U10.19"},
-    "BOOT_READ_DISABLE": {"A1.7", "R18.1", "U4.6"},
-    "IO_RELEASE": {"A1.12", "R23.1", "U3.5"},
-    "RESET_N": {"U1.26", "A1.5", "R22.1"},
+    "DATA_DOWN_OE_N": {"A1.10", "RN5.5", "U10.19"},
+    "BOOT_READ_DISABLE": {"A1.7", "RN5.3", "U4.6"},
+    "IO_RELEASE": {"A1.12", "RN6.4", "U3.5"},
+    "RESET_N": {"U1.26", "A1.5", "RN6.3"},
 }
 for net, required in required_endpoints.items():
     actual = set(net_endpoints.get(net, []))
@@ -904,7 +897,7 @@ for net, required in required_endpoints.items():
         raise AssertionError(f"{net} missing endpoints: {sorted(required - actual)}")
 
 for net, required in {
-    "PICO_GP8": {"A1.11", "J2.1", "U4.17", "R24.1"},
+    "PICO_GP8": {"A1.11", "J2.1", "U4.17", "RN6.5"},
     "SRAM_A16": {"U4.3", "U2.2"},
     "PICO_GP22": {"A1.29", "J2.2", "A2.SDA"},
     "PICO_GP26": {"A1.31", "J2.3", "A2.SCK"},
@@ -925,6 +918,11 @@ manifest = {
         for reference in physical_references
     },
     "erc_symbols": erc_references,
+    "breadboard_resistor_equivalents": {
+        f"R{index + start}": {"1": f"{network}.{index + 2}", "2": f"{network}.1"}
+        for network, start in (("RN5", 17), ("RN6", 21))
+        for index in range(4)
+    },
     "nets": {net: sorted(endpoints) for net, endpoints in sorted(net_endpoints.items())},
 }
 MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -34,12 +34,12 @@ SESSION_PATH = KICAD_DIR / "reports" / "z80_romless_sbc.ses"
 
 BOARD_LEFT = 5.0
 BOARD_TOP = 5.0
-BOARD_RIGHT = 165.0
-BOARD_BOTTOM = 140.0
+BOARD_RIGHT = 90.0
+BOARD_BOTTOM = 101.0
 ANTENNA_LEFT = 47.60
 ANTENNA_RIGHT = 59.45
-ANTENNA_TOP = 117.30
-ANTENNA_BOTTOM = 132.90
+ANTENNA_TOP = 16.00
+ANTENNA_BOTTOM = 31.60
 ANTENNA_CORNER_CHAMFER = 1.00
 SIGNAL_CLEARANCE = 0.20
 SIGNAL_TRACK_WIDTH = 0.30
@@ -48,7 +48,7 @@ SIGNAL_VIA_DRILL = 0.40
 POWER_TRACK_WIDTH = 0.60
 POWER_VIA_DIAMETER = 1.00
 POWER_VIA_DRILL = 0.50
-CLOCK_CLEARANCE = 0.40
+CLOCK_CLEARANCE = 0.30
 MIN_TRACK_WIDTH = 0.20
 MIN_VIA_DIAMETER = 0.60
 MIN_VIA_ANNULAR = 0.15
@@ -202,94 +202,76 @@ def check_project_rules() -> None:
 
 def load_footprint(root: Path, library_id: str) -> pcbnew.FOOTPRINT:
     library, name = library_id.split(":", 1)
-    footprint = pcbnew.FootprintLoad(str(root / f"{library}.pretty"), name)
+    library_root = KICAD_DIR if library == "Z80SBC" else root
+    footprint = pcbnew.FootprintLoad(str(library_root / f"{library}.pretty"), name)
     if footprint is None:
         raise SystemExit(f"cannot load footprint {library_id}")
     return footprint
 
 
 def placement_table() -> dict[str, tuple[float, float, float]]:
-    placements: dict[str, tuple[float, float, float]] = {
-        "J1": (16, 13, 0),
-        "D1": (15, 105, 0),
-        "U2": (10, 22, 0),
-        "U1": (38, 17, 0),
-        "U8": (78, 22, 0),
-        "Q1": (87, 62, 0),
-        "U3": (94, 22, 0),
-        "U4": (59, 70, 90),
-        "U9": (105, 55, 0),
-        "U10": (124, 55, 0),
-        "U7": (143, 55, 0),
-        "A1": (7.8, 134, 90),
-        "RN1": (8, 67, 0),
-        "RN2": (34, 72, 0),
-        "RN3": (82, 137, 0),
-        "RN4": (30, 90, 0),
-        "RN5": (72, 90, 0),
-        "C1": (32, 42.5, 0),
-        "C2": (28, 22, 0),
-        "C3": (105, 30, 0),
-        "C4": (59, 59, 0),
-        "C5": (155, 55, 90),
-        "C6": (71, 43, 0),
-        "C7": (115.2, 55, 90),
-        "C8": (134.2, 55, 90),
-        "C9": (32, 61, 90),
-        "C10": (96, 82, 0),
-        "C11": (158, 82, 0),
-        "C12": (27, 12, 0),
-        "R29": (110, 135, 90),
-        "R30": (118, 135, 90),
-        "R31": (126, 135, 90),
-        "TP1": (43, 10, 0),
-        "TP2": (86, 68, 0),
-        "TP3": (50, 10, 0),
-        "TP4": (74, 10, 0),
-        "TP5": (81, 10, 0),
-        "TP6": (88, 10, 0),
-        "TP7": (95, 10, 0),
+    return {
+        "A1": (7.8, 32.7, 90),
+        "A2": (78.6, 20.7, 270),
+        "U1": (74, 58, 270),
+        "U2": (76.54, 83.4, 270),
+        "U3": (16.51, 76.2, 0),
+        "U4": (27.94, 76.2, 0),
+        "U7": (15.24, 42.545, 0),
+        "U9": (58.42, 43.18, 270),
+        "U10": (61.595, 31.75, 0),
+        "RN1": (47.625, 78.74, 0),
+        "RN2": (77.47, 59.69, 270),
+        "RN3": (38.1, 37.465, 0),
+        "RN4": (12.065, 43.815, 270),
+        "RN5": (29.845, 47.625, 90),
+        "RN6": (26.035, 54.61, 90),
+        "C1": (47.625, 53.975, 180),
+        "C2": (80.3, 97.6, 90),
+        "C3": (22.225, 72.39, 90),
+        "C4": (41.275, 76.2, 180),
+        "C5": (25.4, 37.465, 180),
+        "C6": (53.975, 54.61, 180),
+        "C7": (67.945, 27.305, 180),
+        "C8": (8.6, 79.5, 0),
+        "C9": (82.2, 62.6, 0),
+        "C10": (82.2, 71.4, 0),
+        "C11": (81.1, 87.7, 0),
+        "D1": (14, 8.5, 0),
+        "J1": (64.5, 16.65, 0),
+        "J2": (40, 8.5, 270),
+        "J3": (82, 78.2, 90),
     }
-    for index in range(17, 22):
-        placements[f"R{index}"] = (105 + (index - 17) * 9, 94, 90)
-    placements["R22"] = (60, 105, 90)
-    for index in range(23, 29):
-        placements[f"R{index}"] = (110 + (index - 23) * 8, 115, 90)
-    placements["R24"] = (68, 105, 90)
-    placements["R25"] = (76, 105, 90)
-    placements["R26"] = (84, 105, 90)
-    return placements
 
 
 def mounting_hole_table() -> dict[str, tuple[float, float]]:
     return {
         "H1": (9, 9),
-        "H2": (160, 9),
-        "H3": (160, 136),
-        "H4": (135, 136),
+        "H2": (86, 9),
+        "H3": (86, 97),
+        "H4": (9, 97),
     }
 
 
 def assembly_labels() -> list[tuple[str, float, float, float]]:
     return [
-        ("C1", 29.0, 42.5, 0.8),
-        ("C2", 31.0, 26.0, 0.8),
-        ("C3", 105.0, 35.0, 0.8),
-        ("C4", 68.0, 59.0, 0.8),
-        ("C5", 158.0, 55.0, 0.8),
-        ("C6", 68.0, 47.0, 0.8),
-        ("C7", 117.5, 60.0, 0.8),
-        ("C8", 136.5, 60.0, 0.8),
-        ("C9", 32.0, 66.0, 0.8),
-        ("C10", 96.0, 87.0, 0.8),
-        ("C11", 158.0, 76.0, 0.8),
-        ("C12", 27.0, 19.0, 0.8),
-        ("D1", 20.0, 99.0, 0.8),
-        ("A1 PICO 2 W", 28.0, 113.0, 1.0),
-        ("USB", 7.0, 108.0, 0.8),
-        ("+5V", 16.0, 18.4, 0.8),
-        ("GND", 21.0, 18.4, 0.8),
+        ("C1", 46.4, 52.3, 0.8), ("C2", 82.2, 96.35, 0.8),
+        ("C3", 20.4, 71.6, 0.8), ("C4", 40.0, 77.9, 0.8),
+        ("C5", 24.15, 35.8, 0.8), ("C6", 52.7, 52.3, 0.8),
+        ("C7", 66.7, 29.0, 0.8), ("C8", 11.0, 84.5, 0.8),
+        ("C9", 82.2, 58.2, 0.8), ("C10", 80.4, 67.0, 0.8),
+        ("C11", 88.2, 93.6, 0.8), ("D1", 19.1, 10.6, 0.8),
+        ("A1 PICO 2 W", 30.0, 24.0, 1.0), ("USB", 7.8, 23.8, 0.8),
+        ("+5V", 82.0, 76.2, 0.8), ("GND", 84.54, 76.2, 0.8),
+        ("AUX 5V", 83.3, 80.3, 0.8), ("ONE SUPPLY", 69.0, 21.5, 0.8),
+        ("J1 USB-C 5V", 69.0, 20.3, 0.8),
+        ("OLED 38x12 3V3", 82.4, 22.6, 0.8),
     ]
+
+
+REFERENCE_POSITIONS = {
+    "RN2": (80.2, 81.9), "RN4": (8.6, 55.0), "RN6": (26.1, 42.5),
+}
 
 
 def add_segment(
@@ -392,117 +374,31 @@ def add_locked_via(
 
 
 def add_critical_preroutes(board: pcbnew.BOARD) -> None:
-    u4_clock = pad_position(board, "U4", "18")
-    z80_clock = pad_position(board, "U1", "6")
-    z80_clock_junction = (u4_clock[0], 67.5)
+    # Both clocks stay on F.Cu over the In1 GND plane. They thread between
+    # DIP pins (Clock clearance 0.30 mm) instead of detouring around bodies.
     add_locked_track_path(
-        board,
-        "Z80_CLK",
-        pcbnew.F_Cu,
-        [
-            u4_clock,
-            z80_clock_junction,
-            (36.0, 67.5),
-            (36.0, z80_clock[1]),
-            z80_clock,
-        ],
-    )
-    pico_clock = pad_position(board, "A1", "4")
-    clock_input = pad_position(board, "U4", "2")
-    clock_bias = pad_position(board, "R22", "1")
-    clock_junction = (45.0, 100.0)
-    add_locked_track_path(
-        board,
-        "PICO_CLK",
-        pcbnew.F_Cu,
-        [
-            pico_clock,
-            (pico_clock[0], 138.0),
-            (6.4, 138.0),
-            (6.4, 100.0),
-            clock_junction,
-            (55.6, 93.0),
-            (55.6, 76.0),
-            (clock_input[0], 73.0),
-            clock_input,
-        ],
+        board, "Z80_CLK", pcbnew.F_Cu,
+        [pad_position(board, "U4", "18"), (38.10, 81.28),
+         (44.79, 74.59), (44.79, 72.60),
+         (58.09, 59.30), (60.00, 59.30), pad_position(board, "U1", "6")],
     )
     add_locked_track_path(
-        board,
-        "PICO_CLK",
-        pcbnew.F_Cu,
-        [clock_junction, clock_bias],
-    )
-
-    d4_z80 = pad_position(board, "U1", "7")
-    d4_sram = pad_position(board, "U2", "18")
-    d4_up = pad_position(board, "U9", "14")
-    d4_down = pad_position(board, "U10", "14")
-    d4_left_junction = (47.97, 76.0)
-    d4_right_junction = (118.207, 69.0401)
-    add_locked_track_path(
-        board,
-        "D4",
-        pcbnew.In2_Cu,
-        [
-            d4_z80,
-            (d4_left_junction[0], d4_z80[1]),
-            d4_left_junction,
-            (102.0, 76.0),
-            (102.0, 88.92),
-            (118.207, 88.92),
-            d4_right_junction,
-        ],
-    )
-    add_locked_track_path(
-        board,
-        "D4",
-        pcbnew.In2_Cu,
-        [d4_sram, (30.0, d4_sram[1]), (30.0, 76.0), d4_left_junction],
-    )
-    add_locked_track_path(
-        board,
-        "D4",
-        pcbnew.In2_Cu,
-        [d4_right_junction, (113.8199, 69.0401), d4_up],
-    )
-    add_locked_track_path(
-        board,
-        "D4",
-        pcbnew.In2_Cu,
-        [d4_right_junction, (130.4201, 69.0401), d4_down],
-    )
-
-    pico_d3 = pad_position(board, "A1", "17")
-    pico_d3_pull = pad_position(board, "RN3", "5")
-    pico_d3_via = (65.5096, 137.7818)
-    add_locked_track_path(
-        board,
-        "PICO_D3",
-        pcbnew.In2_Cu,
-        [pico_d3, (52.2218, 137.7818), pico_d3_via],
-    )
-    add_locked_via(board, "PICO_D3", pico_d3_via)
-    add_locked_track_path(
-        board,
-        "PICO_D3",
-        pcbnew.F_Cu,
-        [
-            pico_d3_via,
-            (67.4899, 135.8015),
-            (90.9615, 135.8015),
-            pico_d3_pull,
-        ],
+        board, "PICO_CLK", pcbnew.F_Cu,
+        [pad_position(board, "A1", "4"), (15.70, 32.70), (24.70, 41.70),
+         (24.70, 50.735), pad_position(board, "RN6", "2"), (27.30, 53.335),
+         (27.30, 57.10), (27.01, 57.39), (27.01, 73.90), (27.91, 74.80),
+         (28.80, 74.80), (29.20, 75.20), (29.20, 77.48),
+         pad_position(board, "U4", "2")],
     )
 
 
 def add_mounting_holes(board: pcbnew.BOARD, footprint_root: Path) -> None:
     for reference, position in mounting_hole_table().items():
         footprint = load_footprint(
-            footprint_root, "MountingHole:MountingHole_3.2mm_M3"
+            footprint_root, "MountingHole:MountingHole_2.7mm_M2.5"
         )
         footprint.SetReference(reference)
-        footprint.SetValue("M3 mounting hole")
+        footprint.SetValue("M2.5 mounting hole")
         footprint.SetPosition(vec(*position))
         footprint.SetBoardOnly(True)
         footprint.Reference().SetVisible(False)
@@ -510,24 +406,35 @@ def add_mounting_holes(board: pcbnew.BOARD, footprint_root: Path) -> None:
         board.Add(footprint)
 
 
-def add_ground_zone(board: pcbnew.BOARD, ground: pcbnew.NETINFO_ITEM) -> None:
-    zone = pcbnew.ZONE(board)
-    zone.SetLayer(pcbnew.In1_Cu)
-    zone.SetNet(ground)
-    zone.SetZoneName("INNER_GROUND_PLANE")
-    zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
-    zone.SetLocalClearance(mm(0.3))
-    zone.SetMinThickness(mm(0.25))
-    outline = zone.Outline()
-    outline.NewOutline()
-    for x, y in (
+PLANE_ZONES = (
+    ("INNER_GROUND_PLANE", "GND", pcbnew.In1_Cu),
+    ("INNER_5V_PLANE", "+5V", pcbnew.In2_Cu),
+)
+
+
+def plane_zone_outline() -> tuple[tuple[float, float], ...]:
+    return (
         (BOARD_LEFT + 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_TOP + 0.5),
         (BOARD_RIGHT - 0.5, BOARD_BOTTOM - 0.5),
         (BOARD_LEFT + 0.5, BOARD_BOTTOM - 0.5),
-    ):
-        outline.Append(mm(x), mm(y))
-    board.Add(zone)
+    )
+
+
+def add_plane_zones(board: pcbnew.BOARD) -> None:
+    for name, net_name, layer in PLANE_ZONES:
+        zone = pcbnew.ZONE(board)
+        zone.SetLayer(layer)
+        zone.SetNet(board.FindNet(net_name))
+        zone.SetZoneName(name)
+        zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+        zone.SetLocalClearance(mm(0.3))
+        zone.SetMinThickness(mm(0.25))
+        outline = zone.Outline()
+        outline.NewOutline()
+        for x, y in plane_zone_outline():
+            outline.Append(mm(x), mm(y))
+        board.Add(zone)
 
 
 def build_board(
@@ -538,9 +445,10 @@ def build_board(
     board.SetCopperLayerCount(4)
     board.SetLayerName(pcbnew.In1_Cu, "GND Plane")
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_MIXED)
-    board.SetLayerName(pcbnew.In2_Cu, "Inner Signal")
-    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
+    board.SetLayerName(pcbnew.In2_Cu, "+5V Plane")
+    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_POWER)
     settings = board.GetDesignSettings()
+    settings.SetBoardThickness(mm(1.6))
     default_class = board.GetAllNetClasses()["Default"]
     default_class.SetClearance(mm(SIGNAL_CLEARANCE))
     default_class.SetTrackWidth(mm(SIGNAL_TRACK_WIDTH))
@@ -589,6 +497,11 @@ def build_board(
     placements = placement_table()
     details = manifest["component_details"]
     assert isinstance(details, dict)
+    details = {
+        reference: detail
+        for reference, detail in details.items()
+        if detail["footprint"]
+    }
     missing = sorted(set(details) - set(placements))
     extra = sorted(set(placements) - set(details))
     if missing or extra:
@@ -607,16 +520,29 @@ def build_board(
         x, y, rotation = placements[reference]
         footprint.SetPosition(vec(x, y))
         footprint.SetOrientationDegrees(rotation)
+        footprint.Value().SetVisible(False)
+        footprint.Reference().SetTextSize(vec(0.8, 0.8))
+        footprint.Reference().SetTextThickness(mm(0.12))
+        footprint.Reference().SetTextAngle(pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T))
+        if reference.startswith("U"):
+            center = footprint.GetBoundingBox(False, False).GetCenter()
+            footprint.Reference().SetPosition(center)
+        if reference.startswith("RN"):
+            footprint.Reference().SetPosition(vec(x + 4, y - 2.5))
+        if reference in REFERENCE_POSITIONS:
+            footprint.Reference().SetPosition(
+                vec(*REFERENCE_POSITIONS[reference])
+            )
+        if reference in {"A2", "J1"}:
+            footprint.Reference().SetVisible(False)
         if reference.startswith("C"):
             footprint.Reference().SetLayer(pcbnew.F_Fab)
-            if reference in {f"C{index}" for index in range(1, 9)}:
+            if reference in {f"C{index}" for index in range(1, 8)}:
                 for item in footprint.GraphicalItems():
                     if item.GetLayer() == pcbnew.F_SilkS:
                         item.SetLayer(pcbnew.F_Fab)
         if reference == "D1":
             footprint.Reference().SetLayer(pcbnew.F_Fab)
-        if reference == "U4":
-            footprint.Reference().SetPosition(vec(71.0, 73.0))
         if reference == "A1":
             for item in footprint.GraphicalItems():
                 if item.GetLayer() == pcbnew.F_SilkS:
@@ -630,13 +556,7 @@ def build_board(
                 pad.SetNet(nets[net_name])
             if endpoint in {"A1.3", "A1.23", "A1.28"}:
                 pad.SetLocalClearance(mm(0.19))
-            if endpoint in {
-                "A1.3", "A1.8", "A1.13", "A1.18", "A1.23",
-                "C4.2", "C6.2",
-                "C8.2", "C10.2", "C11.2", "J1.2", "Q1.1", "R27.2",
-                "R30.2", "RN3.1", "U1.29", "U3.12", "U8.10",
-                "U8.15", "U9.10",
-            }:
+            if net_name in {"GND", "+5V"}:
                 pad.SetLocalZoneConnection(
                     pcbnew.ZONE_CONNECTION_FULL
                 )
@@ -644,12 +564,72 @@ def build_board(
     add_critical_preroutes(board)
     add_mounting_holes(board, footprint_root)
     add_outline(board)
-    add_text(board, "Z80 ROMless SBC", 130, 9, 2.0)
+    add_plane_zones(board)
+    add_text(board, "Z80 ROMless SBC", 50.5, 8.0, 1.0)
     for text, x, y, size in assembly_labels():
         add_text(board, text, x, y, size)
-    add_text(board, "REV A", 155, 136, 1.0)
+    add_text(board, "20MHz target  REV B 4L", 50.5, 10.5, 0.8)
     board.BuildConnectivity()
     return board
+
+
+# JLCPCB JLC04161H-7628 style 1.6 mm stack: F.Cu and B.Cu each sit 0.21 mm
+# above their reference plane (In1 GND, In2 +5V).
+STACKUP = (
+    ("F.SilkS", "Top Silk Screen", None, None),
+    ("F.Paste", "Top Solder Paste", None, None),
+    ("F.Mask", "Top Solder Mask", 0.01, None),
+    ("F.Cu", "copper", 0.035, None),
+    ("dielectric 1", "prepreg", 0.2104, "7628"),
+    ("In1.Cu", "copper", 0.0152, None),
+    ("dielectric 2", "core", 1.065, "FR4"),
+    ("In2.Cu", "copper", 0.0152, None),
+    ("dielectric 3", "prepreg", 0.2104, "7628"),
+    ("B.Cu", "copper", 0.035, None),
+    ("B.Mask", "Bottom Solder Mask", 0.01, None),
+    ("B.Paste", "Bottom Solder Paste", None, None),
+    ("B.SilkS", "Bottom Silk Screen", None, None),
+)
+
+
+def stackup_sexpr() -> str:
+    lines = ["\t\t(stackup"]
+    for name, kind, thickness, material in STACKUP:
+        entry = f'\t\t\t(layer "{name}" (type "{kind}")'
+        if thickness is not None:
+            entry += f" (thickness {thickness})"
+        if material is not None:
+            entry += (
+                f' (material "{material}") (epsilon_r 4.4)'
+                " (loss_tangent 0.02)"
+            )
+        lines.append(entry + ")")
+    lines += [
+        '\t\t\t(copper_finish "HAL lead-free")',
+        "\t\t\t(dielectric_constraints no)",
+        "\t\t)",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def write_stackup(board_path: Path) -> None:
+    text = board_path.read_text(encoding="utf-8")
+    if "(stackup" in text:
+        raise SystemExit(f"{board_path} already contains a stackup")
+    anchor = "\t(setup\n"
+    if anchor not in text:
+        raise SystemExit(f"{board_path} has no setup section")
+    board_path.write_text(
+        text.replace(anchor, anchor + stackup_sexpr(), 1), encoding="utf-8"
+    )
+
+
+def check_stackup(board_path: Path) -> None:
+    if stackup_sexpr() not in board_path.read_text(encoding="utf-8"):
+        raise SystemExit("PCB fabrication stackup is missing or stale")
+    thickness = sum(entry[2] or 0 for entry in STACKUP)
+    if abs(thickness - 1.6) > 0.02:
+        raise SystemExit(f"PCB stackup totals {thickness:.3f} mm, not 1.6 mm")
 
 
 def close_mm(actual: int, expected: float) -> bool:
@@ -703,9 +683,18 @@ def check_board(
     board_path: Path,
     footprint_root: Path,
 ) -> None:
+    check_stackup(board_path)
     board = pcbnew.LoadBoard(str(board_path))
+    if not close_mm(board.GetDesignSettings().GetBoardThickness(), 1.6):
+        raise SystemExit("PCB board thickness must be 1.6 mm")
     manifest_nets = manifest["nets"]
     details = manifest["component_details"]
+    assert isinstance(details, dict)
+    details = {
+        reference: detail
+        for reference, detail in details.items()
+        if detail["footprint"]
+    }
     assert isinstance(manifest_nets, dict)
     assert isinstance(details, dict)
 
@@ -734,12 +723,22 @@ def check_board(
     if set(mounting_holes) != set(mounting_hole_table()):
         raise SystemExit("PCB mounting-hole references are stale")
     for reference, (expected_x, expected_y) in mounting_hole_table().items():
-        position = mounting_holes[reference].GetPosition()
+        hole = mounting_holes[reference]
+        position = hole.GetPosition()
         if (
             abs(pcbnew.ToMM(position.x) - expected_x) > 0.01
             or abs(pcbnew.ToMM(position.y) - expected_y) > 0.01
         ):
             raise SystemExit(f"{reference} mounting-hole placement is stale")
+        pads = list(hole.Pads())
+        if (
+            str(hole.GetFPID().GetLibItemName()) != "MountingHole_2.7mm_M2.5"
+            or len(pads) != 1
+            or not close_mm(pads[0].GetDrillSize().x, 2.7)
+            or not close_mm(pads[0].GetDrillSize().y, 2.7)
+            or pads[0].GetAttribute() != pcbnew.PAD_ATTRIB_NPTH
+        ):
+            raise SystemExit(f"{reference} must be a 2.7 mm NPTH M2.5 hole")
 
     actual: dict[str, str] = {}
     placements = placement_table()
@@ -779,16 +778,41 @@ def check_board(
             if endpoint in expected:
                 actual[endpoint] = str(pad.GetNetname())
 
-    u1_right_pin = max(
-        pcbnew.ToMM(pad.GetPosition().x)
-        for pad in footprints["U1"].Pads()
-    )
-    u4_left_pin = min(
-        pcbnew.ToMM(pad.GetPosition().x)
-        for pad in footprints["U4"].Pads()
-    )
-    if u4_left_pin - u1_right_pin < 5.5:
-        raise SystemExit("U1/U4 socket pin-row clearance is below 5.5 mm")
+    oled = footprints["A2"]
+    oled_x, oled_y, _ = placements["A2"]
+    for number, offset in (("GND", 0), ("VCC", 2.54), ("SCK", 5.08), ("SDA", 7.62)):
+        pad = oled.FindPadByNumber(number)
+        if (
+            pad is None
+            or not close_mm(pad.GetPosition().x, oled_x + offset)
+            or not close_mm(pad.GetPosition().y, oled_y)
+            or not close_mm(pad.GetDrillSize().x, 1.0)
+        ):
+            raise SystemExit(f"OLED {number} socket geometry is stale")
+
+    usb_power = footprints["J1"]
+    usb_x, usb_y, _ = placements["J1"]
+    usb_pins = ("CC2", "D+", "D-", "CC1", "GND", "VBUS")
+    if {str(pad.GetNumber()) for pad in usb_power.Pads()} != set(usb_pins):
+        raise SystemExit("J1 must retain all six soldered module pins")
+    for index, number in enumerate(usb_pins):
+        pad = usb_power.FindPadByNumber(number)
+        expected_net = {"GND": "GND", "VBUS": "+5V"}.get(number, "")
+        if (
+            not close_mm(pad.GetPosition().x, usb_x + index * 2.54)
+            or not close_mm(pad.GetPosition().y, usb_y)
+            or not close_mm(pad.GetDrillSize().x, 1.0)
+            or not close_mm(pad.GetDrillSize().y, 1.0)
+            or pad.GetAttribute() != pcbnew.PAD_ATTRIB_PTH
+            or str(pad.GetNetname()) != expected_net
+        ):
+            raise SystemExit(f"J1 {number} solder geometry/net is stale")
+    usb_courtyard = usb_power.GetCourtyard(pcbnew.F_CrtYd).BBox()
+    if (
+        abs(pcbnew.ToMM(usb_courtyard.GetTop()) - BOARD_TOP) > 0.05
+        or pcbnew.ToMM(usb_courtyard.GetRight()) > BOARD_RIGHT
+    ):
+        raise SystemExit("J1 USB-C opening must sit flush with the top edge")
 
     missing_endpoints = sorted(set(expected) - set(actual))
     mismatched = sorted(
@@ -807,19 +831,19 @@ def check_board(
         )
     if (
         board.GetLayerType(pcbnew.In1_Cu) != pcbnew.LT_MIXED
-        or board.GetLayerType(pcbnew.In2_Cu) != pcbnew.LT_SIGNAL
+        or board.GetLayerType(pcbnew.In2_Cu) != pcbnew.LT_POWER
     ):
         raise SystemExit("PCB internal-layer types are stale")
     critical_layers: dict[str, set[int]] = {
-        "PICO_CLK": set(),
-        "D4": set(),
+        "PICO_CLK": set(), "Z80_CLK": set(),
     }
-    critical_vias = {"PICO_CLK": 0, "D4": 0}
+    critical_vias = {"PICO_CLK": 0, "Z80_CLK": 0}
     locked_z80_clock_segments = 0
     for item in board.GetTracks():
         net_name = str(item.GetNetname())
-        if item.GetLayer() == pcbnew.In1_Cu:
-            raise SystemExit("In1.Cu GND plane contains a signal track")
+        if item.Type() != pcbnew.PCB_VIA_T and \
+                item.GetLayer() in {pcbnew.In1_Cu, pcbnew.In2_Cu}:
+            raise SystemExit("inner plane layers must not contain tracks")
         if net_name == "Z80_CLK":
             if item.Type() != pcbnew.PCB_VIA_T and \
                     item.IsLocked() and item.GetLayer() == pcbnew.F_Cu:
@@ -835,12 +859,12 @@ def check_board(
     if critical_layers["PICO_CLK"] != {pcbnew.F_Cu} or \
             critical_vias["PICO_CLK"] != 0:
         raise SystemExit("PICO_CLK must remain a via-free F.Cu route")
-    if critical_layers["D4"] != {pcbnew.In2_Cu} or \
-            critical_vias["D4"] != 0:
-        raise SystemExit("D4 must remain a via-free In2.Cu route")
-    if locked_z80_clock_segments != 4:
+    if critical_layers["Z80_CLK"] != {pcbnew.F_Cu} or \
+            critical_vias["Z80_CLK"] != 0:
+        raise SystemExit("Z80_CLK must remain a via-free F.Cu route")
+    if locked_z80_clock_segments < 1:
         raise SystemExit(
-            "Z80_CLK CPU path must retain four locked F.Cu segments"
+            "Z80_CLK must retain its locked CPU path"
         )
     classes = {
         str(name): netclass
@@ -924,35 +948,31 @@ def check_board(
         ))))
     if actual_outline != expected_outline:
         raise SystemExit("PCB outline does not match the generator")
-    expected_zone_outline = tuple((
-        (BOARD_LEFT + 0.5, BOARD_TOP + 0.5),
-        (BOARD_RIGHT - 0.5, BOARD_TOP + 0.5),
-        (BOARD_RIGHT - 0.5, BOARD_BOTTOM - 0.5),
-        (BOARD_LEFT + 0.5, BOARD_BOTTOM - 0.5),
-    ))
-    matching_zones = [
-        zone for zone in board.Zones()
-        if str(zone.GetZoneName()) == "INNER_GROUND_PLANE"
-    ]
-    if (
-        len(matching_zones) != 1
-        or str(matching_zones[0].GetNetname()) != "GND"
-        or matching_zones[0].GetLayer() != pcbnew.In1_Cu
-        or matching_zones[0].GetPadConnection() !=
-           pcbnew.ZONE_CONNECTION_THERMAL
-        or not close_mm(matching_zones[0].GetLocalClearance(), 0.30)
-        or not close_mm(matching_zones[0].GetMinThickness(), 0.25)
-        or not matching_zones[0].IsFilled()
-        or not matching_zones[0].HasFilledPolysForLayer(pcbnew.In1_Cu)
-    ):
-        raise SystemExit("PCB must contain one filled INNER_GROUND_PLANE")
-    actual_zone_outline = tuple(
-        (round(pcbnew.ToMM(point.x), 2),
-         round(pcbnew.ToMM(point.y), 2))
-        for point in matching_zones[0].Outline().COutline(0).CPoints()
-    )
-    if actual_zone_outline != expected_zone_outline:
-        raise SystemExit("INNER_GROUND_PLANE outline is stale")
+    expected_zone_outline = plane_zone_outline()
+    for zone_name, net_name, layer in PLANE_ZONES:
+        matching_zones = [
+            zone for zone in board.Zones()
+            if str(zone.GetZoneName()) == zone_name
+        ]
+        if (
+            len(matching_zones) != 1
+            or str(matching_zones[0].GetNetname()) != net_name
+            or matching_zones[0].GetLayer() != layer
+            or matching_zones[0].GetPadConnection() !=
+               pcbnew.ZONE_CONNECTION_THERMAL
+            or not close_mm(matching_zones[0].GetLocalClearance(), 0.30)
+            or not close_mm(matching_zones[0].GetMinThickness(), 0.25)
+            or not matching_zones[0].IsFilled()
+            or not matching_zones[0].HasFilledPolysForLayer(layer)
+        ):
+            raise SystemExit(f"PCB must contain one filled {zone_name}")
+        actual_zone_outline = tuple(
+            (round(pcbnew.ToMM(point.x), 2),
+             round(pcbnew.ToMM(point.y), 2))
+            for point in matching_zones[0].Outline().COutline(0).CPoints()
+        )
+        if actual_zone_outline != expected_zone_outline:
+            raise SystemExit(f"{zone_name} outline is stale")
     pico = footprints["A1"]
     antenna_zones = [
         zone for zone in pico.Zones()
@@ -1008,13 +1028,13 @@ def check_board(
         ))
     if actual_labels != expected_labels:
         raise SystemExit("PCB assembly silkscreen labels are stale")
-    for reference in [f"C{index}" for index in range(1, 9)] + ["A1"]:
+    for reference in [f"C{index}" for index in range(1, 8)] + ["A1"]:
         if any(
             item.GetLayer() == pcbnew.F_SilkS
             for item in footprints[reference].GraphicalItems()
         ):
             raise SystemExit(f"{reference} body graphics must remain on F.Fab")
-    for reference in ("C9", "C10", "C11", "C12"):
+    for reference in ("C8", "C9", "C10", "C11"):
         if not any(
             item.GetLayer() == pcbnew.F_SilkS
             for item in footprints[reference].GraphicalItems()
@@ -1084,6 +1104,10 @@ def main() -> int:
         "(type wire_outline))\n",
         1,
     )
+    remainder = remainder.replace(
+        f"(clearance {int(SIGNAL_CLEARANCE * 1000)})",
+        f"(clearance {int((SIGNAL_CLEARANCE + 0.01) * 1000)})",
+    )
     args.dsn.write_text(
         f"(pcb {DSN_PATH.name}\n{remainder}",
         encoding="utf-8",
@@ -1092,11 +1116,11 @@ def main() -> int:
         if not pcbnew.ImportSpecctraSES(board, str(args.session)):
             raise SystemExit(f"could not import routing session {args.session}")
         board.BuildConnectivity()
-        add_ground_zone(board, board.FindNet("GND"))
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if not pcbnew.SaveBoard(str(args.output), board):
         raise SystemExit(f"could not write {args.output}")
+    write_stackup(args.output)
     if args.output.resolve() == BOARD_PATH.resolve():
         sync_project_rules()
     print(f"Wrote {args.output}")

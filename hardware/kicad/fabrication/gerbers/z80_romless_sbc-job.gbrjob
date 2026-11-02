@@ -3,9 +3,9 @@
     "GenerationSoftware": {
       "Vendor": "KiCad",
       "Application": "Pcbnew",
-      "Version": "10.0.6-10.0.6~ubuntu24.04.1"
+      "Version": "10.0.7"
     },
-    "CreationDate": "2026-09-13T00:02:14+00:00"
+    "CreationDate": "2026-11-02T13:44:49+11:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
@@ -14,12 +14,12 @@
       "Revision": "rev?"
     },
     "Size": {
-      "X": 160.25,
-      "Y": 135.25
+      "X": 85.25,
+      "Y": 96.25
     },
     "LayerNumber": 4,
     "BoardThickness": 1.6,
-    "Finish": "None"
+    "Finish": "HAL lead-free"
   },
   "DesignRules": [
     {
@@ -34,7 +34,6 @@
       "PadToPad": 0.19,
       "PadToTrack": 0.19,
       "TrackToTrack": 0.2,
-      "MinLineWidth": 0.3,
       "TrackToRegion": 0.3,
       "RegionToRegion": 0.3
     }
@@ -51,7 +50,7 @@
       "FilePolarity": "Positive"
     },
     {
-      "Path": "z80_romless_sbc-Inner Signal.g2",
+      "Path": "z80_romless_sbc-+5V Plane.g2",
       "FileFunction": "Copper,L3,Inr",
       "FilePolarity": "Positive"
     },
@@ -107,34 +106,34 @@
     },
     {
       "Type": "Dielectric",
-      "Thickness": 0.48,
-      "Material": "FR4",
+      "Thickness": 0.2104,
+      "Material": "7628",
       "Name": "F.Cu/GND Plane",
       "Notes": "Type: dielectric layer 1 (from F.Cu to GND Plane)"
     },
     {
       "Type": "Copper",
-      "Thickness": 0.035,
+      "Thickness": 0.0152,
       "Name": "GND Plane"
     },
     {
       "Type": "Dielectric",
-      "Thickness": 0.48,
+      "Thickness": 1.065,
       "Material": "FR4",
-      "Name": "GND Plane/Inner Signal",
-      "Notes": "Type: dielectric layer 2 (from GND Plane to Inner Signal)"
+      "Name": "GND Plane/+5V Plane",
+      "Notes": "Type: dielectric layer 2 (from GND Plane to +5V Plane)"
     },
     {
       "Type": "Copper",
-      "Thickness": 0.035,
-      "Name": "Inner Signal"
+      "Thickness": 0.0152,
+      "Name": "+5V Plane"
     },
     {
       "Type": "Dielectric",
-      "Thickness": 0.48,
-      "Material": "FR4",
-      "Name": "Inner Signal/B.Cu",
-      "Notes": "Type: dielectric layer 3 (from Inner Signal to B.Cu)"
+      "Thickness": 0.2104,
+      "Material": "7628",
+      "Name": "+5V Plane/B.Cu",
+      "Notes": "Type: dielectric layer 3 (from +5V Plane to B.Cu)"
     },
     {
       "Type": "Copper",

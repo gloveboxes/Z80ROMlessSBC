@@ -1,148 +1,134 @@
 # Z80 ROMless SBC KiCad sources
 
-**Current revision:** the schematic uses Pico + Z80-assisted loading, eight
-active packages, and fixed HCT32 logic. The PCB, project routing rules,
-DSN/SES, renders, and fabrication package below remain the **previous circuit**.
-Their migration is deferred. Do not manufacture them for the new schematic
-or use the new firmware on the old board. No PLD programmer is needed for the
-new breadboard build.
+Revision B implements the current eight-package, Z80-assisted-loader circuit:
+Pico 2 W, Z80, SRAM, HCT32, AHCT244, AHCT245, LVC245 and LVC244. SRAM A16
+is driven by GP8 through U4. The design target is **20 MHz**, retaining the
+project's bench-proven IC set; this PCB still requires its own qualification.
 
-The schematic's **J1** is the selected TYPE-C USB-to-pin female breakout
-module. Its PCB body is **21.6 x 12.7 mm**, as dimensioned in the product
-image; the USB connector protrusion is not included in that measurement.
-With the connector at the top as photographed, the bottom pads read
-**CC2, D+, D-, CC1, GND, VBUS** from left to right. Symbol pin identifiers
-use these printed labels. The six header holes have confirmed standard
-breadboard **2.54 mm pitch**, giving a **12.7 mm first-to-last hole-centre
-span**. VBUS feeds +5 V, GND joins common GND, and the
-four other breakout pads are marked unconnected. This is a power adapter,
-not a regulator or USB Power Delivery voltage trigger; use a regulated
-5 V USB source and verify the module's CC1/CC2 sink resistors before use.
-The existing 1N5819 path to Pico VSYS remains; never join this VBUS to
-Pico VBUS. J1 is external and has no PCB footprint because header offset/drill diameter,
-mounting-hole positions/diameters, connector overhang and assembled height
-are not specified by the image. PCB/routing/fabrication files remain unchanged.
+## Mechanical design
 
-The current schematic includes **J2**, a 1x5, 2.54 mm through-hole peripheral
-expansion header: pin 1 GP8, pin 2 GP22, pin 3 GP26/ADC0, pin 4 Pico 3.3 V
-output, pin 5 GND. Its footprint is assigned for future PCB migration, but
-the PCB and fabrication package have not been updated. All expansion signals
-are 3.3 V only. GP8 is reserved for SRAM bank select and has a 10 kOhm
-pull-down; GP22/GP26 have no fixed pulls on the board. See the
-[expansion pin map and interface limits](../../docs/docs/en/hardware/pin-mapping.md#j2-peripheral-expansion).
+- **85 x 96 mm**, four-layer, 1.6 mm FR-4, socket-compatible through-hole parts.
+  Stack-up: F.Cu signals / In1.Cu GND plane / In2.Cu +5V plane / B.Cu
+  signals, written into the board file (7628 prepreg, 1.065 mm core).
+- Four **2.7 mm NPTH holes for M2.5 standoffs**, one in each corner, with
+  centres 4 mm from both adjacent board edges. Hole spacing is **77 x 88 mm**.
+  Use standoffs/screw heads no wider than 5.4 mm overall within the
+  footprint's 5.9 mm courtyard.
+- Pico USB faces out of the left edge. Its antenna has a chamfered physical
+  FR-4/copper cutout. Keep metal standoffs, wiring and enclosure material
+  away from the antenna; mechanical clearance is not RF qualification.
+- A2 reserves the complete **38 x 12 mm SSD1315 OLED** body at the upper right.
+  The local footprint models the user-supplied
+  [dimension drawing](https://ae-pic-a1.aliexpress-media.com/kf/Sdca8c02df9d7460298598704a34813faS.jpg):
+  header centres 1.50 mm from the left edge, SDA 2.19 mm from the top, and
+  2.54 mm pitch. Viewed from above, header order bottom-to-top is
+  **GND, VCC, SCK, SDA**. Fit a 1x4 socket; verify its pins fit the 1.0 mm
+  drills and its assembled height. Support the far end with an insulating
+  spacer. No module mounting holes were dimensioned, so none are invented.
+- J1 is the **onboard 21.6 x 12.7 mm USB-C power breakout** on the top
+  edge, USB-C facing outward. Solder all six 2.54 mm header pins into the
+  six 1.0 mm plated carrier holes. Only VBUS (+5 V) and GND are wired; CC2,
+  D+, D- and CC1 have isolated pads for mechanical attachment. No module
+  screw holes are used. The outline is scaled from the vendor dimension
+  photo (pin row 1.36 mm from the rear edge; shell overhangs the board edge
+  by about 1.5 mm), so **dry-fit the purchased module before fabrication**.
+  Check USB cable access and insulate its underside; strain-relieve the
+  cable.
+  The 12 x 13.8 mm module description is not the selected part.
+- J3 remains an optional auxiliary input/probe header:
+  **pin 1 +5 V / pin 2 GND**. It shares J1's rail without source isolation:
+  **connect only one supply at a time**. D1 supplies Pico VSYS; never join
+  the main +5 V rail to Pico VBUS.
+- J2 remains the 1x5 expansion header: GP8, GP22/SDA, GP26/SCL, 3.3 V, GND.
+  GP8 is reserved for bank select. Do not connect a second display with
+  conflicting address/pull-ups while A2 is fitted.
 
-The schematic includes the fitted bank-select wiring: **Pico A1 physical
-pin 11 (GP8) -> U4 pin 17**, and **U4 pin 3 -> SRAM U2 pin 2 (A16)**.
-**R24 is 10 kOhm from Pico physical pin 11 to GND**, on the 3.3 V side of
-the level shifter. The former U4 pin 17 and SRAM A16 ground straps are
-removed. The existing AHCT244 provides the 5 V address level; no extra IC
-is required. R24 is drawn beside the Pico and marked with its attachment
-point. The net manifest, schematic exports and BOM include these changes.
+The PCB uses **six bussed 10 kOhm arrays for all 40 pull branches**:
+RN1/RN2 address pull-ups, RN3 Pico data pull-downs, RN4 control pull-ups,
+RN5 four 3.3 V startup pull-ups and RN6 four startup pull-downs. RN5/RN6
+replace breadboard R17-R24 electrically; the manifest records and validates
+this mapping without changing the breadboard installation instructions.
 
-The schematic also shows **A2**, the external 0.91-inch SSD1315 128x32 I2C
-status OLED operating in Stage 10: `SDA` joins GP22 (J2 pin 2), `SCK` (the
-module's I2C clock, SCL) joins GP26 (J2 pin 3), `VCC` joins Pico 3.3 V
-(J2 pin 4), and `GND` joins common GND (J2 pin 5). Symbol pin identifiers are
-the module's printed markings, not connector positions. A2 is excluded from
-the PCB and has no footprint; its I2C pull-ups must go to 3.3 V, never 5 V.
-See the
-[Stage 10 wiring and bench results](../../docs/docs/en/implementation/phase-10-websocket.md#ssd1315-status-oled).
+## Sources and validation
 
-This directory contains the KiCad 10 schematic and the routed four-layer PCB.
-The board is 160 x 135 mm and uses socket-compatible through-hole footprints.
-The Pico 2 W is horizontal in the bottom-left corner with USB flush to the
-left edge; its antenna sits above a dedicated internal FR-4/copper cutout.
+- `scripts/build-kicad-schematic.py`: symbols, values, exact nets and manifest.
+- `scripts/build-kicad-pcb.py`: placement, outline, cutout, pre-routes, rules,
+  GND/+5V planes, stack-up and board invariants.
+- `Z80SBC.pretty/` and `fp-lib-table`: project-local OLED and USB-C module
+  attachment geometry.
+- `reports/z80_romless_sbc.dsn`: normalized unrouted router input.
+- `reports/z80_romless_sbc.ses`: authoritative accepted route.
+- `reports/route-lengths.json`: measured copper, source-specific paths and
+  layer changes, including actual bypass-to-supply-pin paths.
 
-This is a separate physical implementation from the three-BB830 prototype.
-See the dedicated [PCB documentation](../../docs/docs/en/pcb/index.md) for
-its inventory, design considerations, and fabrication references.
-The documentation's Phase 0-10 installation sequence describes the new
-breadboard circuit. Its current pin map and firmware must not be applied to
-the previous PCB. Historical PCB assembly and qualification remain separate.
-
-## Rebuild and validate
-
-From the repository root:
+With the project closed, run from the repository root:
 
 ```sh
-python3 -m venv .venv-kicad
-.venv-kicad/bin/pip install -r scripts/requirements-kicad.txt
 PYTHON=.venv-kicad/bin/python npm run kicad
 ```
 
-The default `scripts/build-kicad.sh --schematic-only` regenerates the schematic,
-checks exact netlist parity and documented interconnects, runs strict ERC,
-and exports its SVG, PDF, BOM, and netlist. It never loads or modifies the PCB,
-project routing rules, or fabrication outputs. Use `PYTHON=.venv-kicad/bin/python`.
+The default is the full transactional pipeline: ERC, manifest and documented
+wiring parity, exact PCB/session/DSN reproduction, DRC after zone refill,
+route measurements, project-rule stability, drawings and fabrication.
+Use `npm run kicad -- --schematic-only` only for schematic-only work; it does
+not validate or update the PCB package.
 
-The historical full pipeline now requires explicit `--full`; do not run it
-for this revision until a PCB migration is separately authorized and completed.
+KiCad's bundled Python is detected on macOS. Set `KICAD_PYTHON` and
+`KICAD_FOOTPRINT_DIR` if needed. The schematic environment uses
+`scripts/requirements-kicad.txt`; install dependencies only if missing.
 
-## Historical PCB (Deferred)
+## Routing with Apple container
 
-The previous PCB route is represented by:
-
-- `z80_romless_sbc.kicad_pcb`, the editable routed board;
-- `reports/z80_romless_sbc.dsn`, the unrouted Specctra input generated from
-  the deterministic placement;
-- `reports/z80_romless_sbc.ses`, the Specctra routing session used by
-  `scripts/build-kicad-pcb.py` when regenerating the placed board and route.
-
-`build-kicad-pcb.py` requires KiCad's bundled Python interpreter because it
-imports `pcbnew`. Set `KICAD_PYTHON` if it cannot be found automatically.
-Normal validation checks the committed board against the regenerated
-schematic manifest and placement table; it does not rewrite the routed PCB.
-
-The committed session was produced with Freerouting 2.4.1 under Java 25:
+The router-only image does not depend on Ubuntu KiCad package availability:
 
 ```sh
-java -jar freerouting-2.4.1.jar \
-  --gui.enabled=false \
-  --router.layers.routable=true,false,true,true \
-  -de hardware/kicad/reports/z80_romless_sbc.dsn \
-  -do hardware/kicad/reports/z80_romless_sbc.ses \
-  -mp 500 -mt 1
-```
+container build --file scripts/freerouting/Containerfile \
+  --tag z80-freerouting:2.4.1 scripts/freerouting
 
-After routing, regenerate the board explicitly with:
+KICAD_PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3
+"$KICAD_PYTHON" scripts/build-kicad-pcb.py
 
-```sh
-KICAD_PYTHON=/path/to/kicad/python \
-  /path/to/kicad/python scripts/build-kicad-pcb.py \
+container run --rm --network none --cpus 4 --memory 6g \
+  --mount "type=bind,source=$PWD/hardware/kicad/reports,target=/work" \
+  z80-freerouting:2.4.1 --gui.enabled=false \
+  --router.layers.routable=true,false,false,true -da \
+  -de /work/z80_romless_sbc.dsn -do /work/z80_romless_sbc.ses -mp 500 -mt 1
+
+"$KICAD_PYTHON" scripts/build-kicad-pcb.py \
   --session hardware/kicad/reports/z80_romless_sbc.ses
+PYTHON=.venv-kicad/bin/python npm run kicad
 ```
 
-## Manufacturing outputs
+Before routing, run placement DRC: only unconnected items may remain.
+Network access is disabled during routing; `-da` also disables analytics.
+The image pins Java 25 and the Freerouting 2.4.1 JAR checksum.
+Only F.Cu and B.Cu route signals. In1.Cu is the GND plane and In2.Cu the
++5V plane; both are exported as DSN planes. The Z80 and Pico clocks are
+locked, via-free F.Cu preroutes with 0.30 mm Clock clearance.
+The router receives 0.21 mm signal clearance to provide a 0.01 mm numerical
+margin over KiCad's 0.20 mm requirement, not a relaxation of the rules.
 
-`fabrication/z80_romless_sbc-gerbers.zip` contains the copper, mask,
-silkscreen, edge-cut, plated-drill, and non-plated-drill files. The adjacent
-BOM, placement CSV, IPC-D-356 netlist, drill reports, and drawings support
-assembly and inspection.
+## Manufacturing and qualification
 
-Before ordering, verify actual component dimensions and pinouts against the
-selected parts, especially the Pico headers, DIP sockets, electrolytic
-capacitors, terminal block, diode, and 2N3904.
+`fabrication/z80_romless_sbc-gerbers.zip` contains four copper layers,
+masks, silkscreens, Edge.Cuts, job information, and PTH/NPTH drills. BOM,
+placement CSV, IPC-D-356, drill maps/reports, PDF/SVG drawings and 3D preview
+are adjacent outputs. Inspect the archive and confirm the fabricator's
+actual stack-up and internal-cutout process before ordering.
 
-J1 is marked `+5V` and `GND`. The polarized C9-C12 footprints retain their
-positive marks and negative-side shading on the manufactured silkscreen.
-Do not remove these markings to hide a drawing collision. The 5.76 mm U1/U4
-pin-row separation is not a measured socket-body gap, and the container's
-board-only 3D render does not validate uninstalled component or socket models.
+Both clock paths are via-free. Current paths are 49.56 mm Pico-to-U4 and
+62.16 mm U4-to-Z80. Bus matching is assessed by source/receiver path, not
+total tree copper. See the [design review](../../docs/docs/en/pcb/design-considerations.md)
+for measurements and the long raw-RD path requiring receive-pin timing review.
 
-Fit R23-R26 as 4.7 kOhm, not 10 kOhm, to guarantee startup LOW levels against
-the supported ATF22V10B's input pull-ups. With the populated board, apply
-external +5 V before USB and disconnect USB before removing external +5 V.
-Do not operate or program it from USB alone: U9's AHCT245 data ports lack
-power-off isolation. Uncontrolled external-supply loss with USB connected
-requires additional hardware protection.
+Zero ERC/DRC and exact regeneration do not qualify physical operation.
+Start PCB bring-up at 1 MHz, then qualify up to 20 MHz using SRAM patterns,
+bank switching, repeated boots, CP/M/I/O soak and receive-pin measurements.
+Do not treat one 50 ns clock period as the complete Z80 memory-access window.
 
-Signal tracks are 0.30 mm, power tracks are 0.60 mm, and the two clock nets
-have 0.40 mm clearance. In1.Cu is reserved as a solid GND plane; Freerouting
-is allowed to route only F.Cu, In2.Cu, and B.Cu. The plane uses thermal reliefs
-except at a small set of explicitly generated pads where the route would
-otherwise starve the thermal spokes.
-
-The DRC-clean layout is not a frequency qualification. Bring up at 1 MHz using
-a PCB-specific assembly and bring-up procedure. Reuse applicable firmware
-tests and receive-pin measurements from the breadboard plan, but record
-results for this PCB separately before claiming its 8 MHz design target.
+Apply J1 power (or J3 power, not both) before connecting Pico USB; disconnect
+Pico USB before removing main power. Pico-USB-only operation of the populated
+AHCT245 circuit is unsupported.
+Inspect actual socket envelopes, OLED height, screw-head clearance and
+electrolytic/diode polarity; the render lacks socket, OLED, USB-C breakout
+and standoff models.

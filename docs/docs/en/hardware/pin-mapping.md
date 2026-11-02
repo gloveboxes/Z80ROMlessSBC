@@ -41,8 +41,8 @@ GP23/24/25/29 are reserved by Pico 2 W wireless hardware.
 
 The schematic exposes the **three expansion GPIOs**, plus Pico 3.3 V and common
 GND, on a **1x5, 2.54 mm through-hole header**. Its assigned KiCad footprint is
-`Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical`, ready for the
-future PCB migration. The existing PCB does not yet include this header.
+`Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical`, fitted on the
+current PCB. A2's OLED socket shares the GP22/GP26/3.3 V/GND connections.
 
 | J2 pin | Net | Pico physical header pin | Use |
 | ---: | --- | ---: | --- |

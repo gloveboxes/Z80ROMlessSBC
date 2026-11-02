@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 python_bin=${PYTHON:-python3}
+build_mode=${1:---full}
 if [[ "$python_bin" != /* ]]; then
   if [[ -x "$repo_root/$python_bin" ]]; then
     python_bin="$repo_root/$python_bin"
@@ -22,7 +23,7 @@ mkdir -p "$staged_exports" "$staged_fabrication/gerbers" \
   "$staged_fabrication/drill" "$staged_reports"
 trap 'rm -rf "$temporary_dir"' EXIT
 
-if [[ "${1:---schematic-only}" == "--schematic-only" ]]; then
+if [[ "$build_mode" == "--schematic-only" ]]; then
   command -v kicad-cli >/dev/null
   "$python_bin" "$repo_root/scripts/build-kicad-schematic.py"
   cd "$kicad_dir"
@@ -49,7 +50,7 @@ if [[ "${1:---schematic-only}" == "--schematic-only" ]]; then
   echo "Schematic validated and exported; PCB and fabrication outputs unchanged."
   exit 0
 fi
-if [[ "$1" != "--full" ]]; then
+if [[ "$build_mode" != "--full" ]]; then
   echo "usage: $0 [--schematic-only|--full]" >&2
   exit 1
 fi
@@ -74,6 +75,7 @@ kicad-cli sym upgrade --force z80sbc.kicad_sym
 kicad-cli sch upgrade --force z80_romless_sbc.kicad_sch
 "$kicad_python" "$repo_root/scripts/build-kicad-pcb.py" \
   --sync-project-rules
+project_rules_before=$(shasum -a 256 z80_romless_sbc.kicad_pro)
 kicad-cli sch erc \
   --severity-all \
   --exit-code-violations \
@@ -132,6 +134,8 @@ kicad-cli pcb export stats \
   --format json \
   -o "$staged_reports/z80_romless_sbc-stats.json" \
   z80_romless_sbc.kicad_pcb
+"$kicad_python" "$repo_root/.github/skills/kicad-pcb/scripts/report-route-lengths.py" \
+  --check --json "$staged_reports/route-lengths.json"
 
 kicad-cli pcb export gerbers \
   --check-zones \
@@ -160,6 +164,8 @@ kicad-cli sch export bom \
   --exclude-dnp \
   -o "$staged_fabrication/z80_romless_sbc-bom.csv" \
   z80_romless_sbc.kicad_sch
+cp "$staged_fabrication/z80_romless_sbc-bom.csv" \
+  "$staged_exports/z80_romless_sbc-bom.csv"
 kicad-cli pcb export ipcd356 \
   -o "$staged_fabrication/z80_romless_sbc.ipc" \
   z80_romless_sbc.kicad_pcb
@@ -195,15 +201,22 @@ kicad-cli pcb render \
   zip -q z80_romless_sbc-gerbers.zip gerbers/* drill/*.drl
 )
 
+if [[ "$(shasum -a 256 z80_romless_sbc.kicad_pro)" != "$project_rules_before" ]]; then
+  echo "KiCad project rules changed during validation" >&2
+  exit 1
+fi
+
 for report in \
   z80_romless_sbc-erc.json \
   z80_romless_sbc.net \
   z80_romless_sbc-drc.json \
-  z80_romless_sbc-stats.json
+  z80_romless_sbc-stats.json \
+  route-lengths.json
 do
   cp "$staged_reports/$report" "reports/$report.new"
   mv "reports/$report.new" "reports/$report"
 done
+cp "$temporary_netlist" reports/netlist.xml
 
 for directory in exports fabrication
 do
