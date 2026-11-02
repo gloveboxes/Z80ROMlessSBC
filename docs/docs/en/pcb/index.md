@@ -24,9 +24,9 @@ incremental jumper-wiring instructions as PCB assembly instructions.
 
 ## Board preview
 
-![KiCad-rendered Z80 ROMless SBC PCB showing pads, silkscreen, mounting holes, and the Pico antenna cutout](../images/z80-romless-sbc-pcb.png)
+![KiCad-rendered Z80 ROMless SBC PCB showing pads, silkscreen, mounting holes, and the Pico antenna cutout](../images/z80_romless_sbc.png)
 
-*Preview exported from the current KiCad layout. Click to enlarge it.
+*Preview exported from the current KiCad layout and enhanced using ChatGPT. Click to enlarge it.
 IC and Pico models are shown, but socket, OLED, USB-C breakout and standoff
 models are not included. The render does not establish physical assembly
 clearance.*
