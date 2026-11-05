@@ -1,0 +1,570 @@
+{
+  "nets": {
+    "A0": {
+      "total_mm": 95.719,
+      "max_pad_path_mm": 69.487,
+      "max_path": "R1.1->U7.11",
+      "vias": 3
+    },
+    "A1": {
+      "total_mm": 78.673,
+      "max_pad_path_mm": 53.838,
+      "max_path": "U2.11->U7.13",
+      "vias": 2
+    },
+    "A2": {
+      "total_mm": 75.858,
+      "max_pad_path_mm": 57.875,
+      "max_path": "U2.10->U7.15",
+      "vias": 2
+    },
+    "A3": {
+      "total_mm": 46.254,
+      "max_pad_path_mm": 46.254,
+      "max_path": "R4.1->U2.9",
+      "vias": 1
+    },
+    "A4": {
+      "total_mm": 83.202,
+      "max_pad_path_mm": 70.052,
+      "max_path": "U2.8->U7.17",
+      "vias": 3
+    },
+    "A5": {
+      "total_mm": 61.409,
+      "max_pad_path_mm": 61.409,
+      "max_path": "R6.1->U2.7",
+      "vias": 2
+    },
+    "A6": {
+      "total_mm": 64.17,
+      "max_pad_path_mm": 52.893,
+      "max_path": "U1.36->U2.6",
+      "vias": 2
+    },
+    "A7": {
+      "total_mm": 74.652,
+      "max_pad_path_mm": 68.504,
+      "max_path": "U1.37->U2.5",
+      "vias": 2
+    },
+    "A8": {
+      "total_mm": 49.902,
+      "max_pad_path_mm": 49.902,
+      "max_path": "U1.38->U2.27",
+      "vias": 1
+    },
+    "A9": {
+      "total_mm": 55.465,
+      "max_pad_path_mm": 55.465,
+      "max_path": "U1.39->U2.26",
+      "vias": 1
+    },
+    "A10": {
+      "total_mm": 62.905,
+      "max_pad_path_mm": 62.905,
+      "max_path": "R11.1->U2.23",
+      "vias": 0
+    },
+    "A11": {
+      "total_mm": 91.308,
+      "max_pad_path_mm": 77.961,
+      "max_path": "U1.1->U2.25",
+      "vias": 4
+    },
+    "A12": {
+      "total_mm": 87.421,
+      "max_pad_path_mm": 87.421,
+      "max_path": "U1.2->U2.4",
+      "vias": 1
+    },
+    "A13": {
+      "total_mm": 79.15,
+      "max_pad_path_mm": 79.15,
+      "max_path": "R14.1->U2.28",
+      "vias": 1
+    },
+    "A14": {
+      "total_mm": 73.76,
+      "max_pad_path_mm": 73.76,
+      "max_path": "U1.4->U2.3",
+      "vias": 3
+    },
+    "A15": {
+      "total_mm": 91.638,
+      "max_pad_path_mm": 91.638,
+      "max_path": "R16.1->U2.31",
+      "vias": 0
+    },
+    "D0": {
+      "total_mm": 90.354,
+      "max_pad_path_mm": 87.965,
+      "max_path": "U2.13->U9.18",
+      "vias": 4
+    },
+    "D1": {
+      "total_mm": 79.395,
+      "max_pad_path_mm": 76.798,
+      "max_path": "U2.14->U9.17",
+      "vias": 1
+    },
+    "D2": {
+      "total_mm": 98.515,
+      "max_pad_path_mm": 76.38,
+      "max_path": "U2.15->U9.16",
+      "vias": 6
+    },
+    "D3": {
+      "total_mm": 55.392,
+      "max_pad_path_mm": 44.82,
+      "max_path": "U2.17->U9.15",
+      "vias": 4
+    },
+    "D4": {
+      "total_mm": 58.167,
+      "max_pad_path_mm": 49.665,
+      "max_path": "U10.14->U2.18",
+      "vias": 3
+    },
+    "D5": {
+      "total_mm": 73.407,
+      "max_pad_path_mm": 71.572,
+      "max_path": "U2.19->U9.13",
+      "vias": 2
+    },
+    "D6": {
+      "total_mm": 55.388,
+      "max_pad_path_mm": 45.293,
+      "max_path": "U2.20->U9.12",
+      "vias": 2
+    },
+    "D7": {
+      "total_mm": 57.729,
+      "max_pad_path_mm": 57.729,
+      "max_path": "U2.21->U9.11",
+      "vias": 4
+    },
+    "PICO_D0": {
+      "total_mm": 35.887,
+      "max_pad_path_mm": 33.429,
+      "max_path": "R17.1->U9.2",
+      "vias": 2
+    },
+    "PICO_D1": {
+      "total_mm": 43.332,
+      "max_pad_path_mm": 40.523,
+      "max_path": "R18.1->U9.3",
+      "vias": 2
+    },
+    "PICO_D2": {
+      "total_mm": 36.52,
+      "max_pad_path_mm": 34.382,
+      "max_path": "U10.4->U9.4",
+      "vias": 1
+    },
+    "PICO_D3": {
+      "total_mm": 28.419,
+      "max_pad_path_mm": 25.07,
+      "max_path": "U10.5->U9.5",
+      "vias": 1
+    },
+    "PICO_D4": {
+      "total_mm": 36.755,
+      "max_pad_path_mm": 34.859,
+      "max_path": "U10.6->U9.6",
+      "vias": 2
+    },
+    "PICO_D5": {
+      "total_mm": 28.743,
+      "max_pad_path_mm": 28.743,
+      "max_path": "A1.20->U10.7",
+      "vias": 1
+    },
+    "PICO_D6": {
+      "total_mm": 59.953,
+      "max_pad_path_mm": 44.116,
+      "max_path": "A1.21->U9.8",
+      "vias": 2
+    },
+    "PICO_D7": {
+      "total_mm": 64.845,
+      "max_pad_path_mm": 59.566,
+      "max_path": "A1.22->U9.9",
+      "vias": 3
+    },
+    "PICO_CLK": {
+      "total_mm": 14.284,
+      "max_pad_path_mm": 14.284,
+      "max_path": "A1.4->U4.2",
+      "vias": 0
+    },
+    "Z80_CLK": {
+      "total_mm": 39.521,
+      "max_pad_path_mm": 39.521,
+      "max_path": "U1.6->U4.18",
+      "vias": 0
+    },
+    "WAIT_N": {
+      "total_mm": 30.865,
+      "max_pad_path_mm": 30.865,
+      "max_path": "U1.24->U3.6",
+      "vias": 1
+    },
+    "SRAM_CE_N": {
+      "total_mm": 35.92,
+      "max_pad_path_mm": 35.92,
+      "max_path": "U2.22->U4.12",
+      "vias": 2
+    },
+    "SRAM_OE_N": {
+      "total_mm": 36.889,
+      "max_pad_path_mm": 36.889,
+      "max_path": "U2.24->U3.3",
+      "vias": 2
+    },
+    "SRAM_WE_N": {
+      "total_mm": 38.054,
+      "max_pad_path_mm": 38.054,
+      "max_path": "U2.29->U4.9",
+      "vias": 2
+    }
+  },
+  "paths": {
+    "Pico clock A1.4->U4.2": {
+      "length_mm": 14.284,
+      "layer_changes": 0
+    },
+    "Z80 clock U4.18->U1.6": {
+      "length_mm": 39.521,
+      "layer_changes": 0
+    },
+    "SRAM CE U4.12->U2.22": {
+      "length_mm": 35.92,
+      "layer_changes": 2
+    },
+    "SRAM OE U3.3->U2.24": {
+      "length_mm": 36.889,
+      "layer_changes": 2
+    },
+    "SRAM WE U4.9->U2.29": {
+      "length_mm": 38.054,
+      "layer_changes": 2
+    },
+    "WAIT U3.6->U1.24": {
+      "length_mm": 30.865,
+      "layer_changes": 1
+    },
+    "IORQ U1.20->U3.4": {
+      "length_mm": 89.688,
+      "layer_changes": 2
+    },
+    "RD U1.21->U4.13": {
+      "length_mm": 22.882,
+      "layer_changes": 1
+    },
+    "Buffered RD U4.7->U3.1": {
+      "length_mm": 91.724,
+      "layer_changes": 2
+    },
+    "A16 U4.3->U2.2": {
+      "length_mm": 56.826,
+      "layer_changes": 2
+    },
+    "Z80 bypass C1.1->U1.11 (plane)": {
+      "length_mm": 5.899,
+      "layer_changes": 0
+    },
+    "SRAM bypass C2.1->U2.32 (plane)": {
+      "length_mm": 4.986,
+      "layer_changes": 0
+    },
+    "HCT32 bypass C3.1->U3.14 (plane)": {
+      "length_mm": 6.922,
+      "layer_changes": 0
+    },
+    "AHCT244 bypass C4.1->U4.20 (plane)": {
+      "length_mm": 4.342,
+      "layer_changes": 0
+    },
+    "LVC244 bypass C5.1->U7.20": {
+      "length_mm": 2.734,
+      "layer_changes": 0
+    },
+    "AHCT245 bypass C6.1->U9.20 (plane)": {
+      "length_mm": 6.55,
+      "layer_changes": 0
+    },
+    "LVC245 bypass C7.1->U10.20": {
+      "length_mm": 2.337,
+      "layer_changes": 0
+    }
+  },
+  "groups": {
+    "Z80-to-SRAM address paths": {
+      "nets": {
+        "A0": {
+          "length_mm": 23.556,
+          "layer_changes": 1
+        },
+        "A1": {
+          "length_mm": 26.7,
+          "layer_changes": 1
+        },
+        "A2": {
+          "length_mm": 30.664,
+          "layer_changes": 1
+        },
+        "A3": {
+          "length_mm": 33.65,
+          "layer_changes": 1
+        },
+        "A4": {
+          "length_mm": 36.883,
+          "layer_changes": 1
+        },
+        "A5": {
+          "length_mm": 42.881,
+          "layer_changes": 2
+        },
+        "A6": {
+          "length_mm": 52.893,
+          "layer_changes": 1
+        },
+        "A7": {
+          "length_mm": 68.504,
+          "layer_changes": 2
+        },
+        "A8": {
+          "length_mm": 49.902,
+          "layer_changes": 1
+        },
+        "A9": {
+          "length_mm": 55.465,
+          "layer_changes": 1
+        },
+        "A10": {
+          "length_mm": 48.256,
+          "layer_changes": 0
+        },
+        "A11": {
+          "length_mm": 77.961,
+          "layer_changes": 3
+        },
+        "A12": {
+          "length_mm": 87.421,
+          "layer_changes": 1
+        },
+        "A13": {
+          "length_mm": 48.805,
+          "layer_changes": 0
+        },
+        "A14": {
+          "length_mm": 73.76,
+          "layer_changes": 3
+        },
+        "A15": {
+          "length_mm": 48.511,
+          "layer_changes": 0
+        }
+      },
+      "min_mm": 23.556,
+      "max_mm": 87.421,
+      "spread_mm": 63.865
+    },
+    "Z80-to-SRAM data paths": {
+      "nets": {
+        "D0": {
+          "length_mm": 39.508,
+          "layer_changes": 3
+        },
+        "D1": {
+          "length_mm": 36.342,
+          "layer_changes": 1
+        },
+        "D2": {
+          "length_mm": 43.918,
+          "layer_changes": 3
+        },
+        "D3": {
+          "length_mm": 29.192,
+          "layer_changes": 3
+        },
+        "D4": {
+          "length_mm": 32.942,
+          "layer_changes": 1
+        },
+        "D5": {
+          "length_mm": 55.745,
+          "layer_changes": 1
+        },
+        "D6": {
+          "length_mm": 27.875,
+          "layer_changes": 1
+        },
+        "D7": {
+          "length_mm": 26.846,
+          "layer_changes": 1
+        }
+      },
+      "min_mm": 26.846,
+      "max_mm": 55.745,
+      "spread_mm": 28.899
+    },
+    "Pico-write-transceiver-to-SRAM data paths": {
+      "nets": {
+        "D0": {
+          "length_mm": 87.965,
+          "layer_changes": 4
+        },
+        "D1": {
+          "length_mm": 76.798,
+          "layer_changes": 2
+        },
+        "D2": {
+          "length_mm": 76.38,
+          "layer_changes": 6
+        },
+        "D3": {
+          "length_mm": 44.82,
+          "layer_changes": 4
+        },
+        "D4": {
+          "length_mm": 45.217,
+          "layer_changes": 2
+        },
+        "D5": {
+          "length_mm": 71.572,
+          "layer_changes": 2
+        },
+        "D6": {
+          "length_mm": 45.293,
+          "layer_changes": 2
+        },
+        "D7": {
+          "length_mm": 57.729,
+          "layer_changes": 4
+        }
+      },
+      "min_mm": 44.82,
+      "max_mm": 87.965,
+      "spread_mm": 43.145
+    },
+    "SRAM-to-Pico-read-transceiver data paths": {
+      "nets": {
+        "D0": {
+          "length_mm": 74.482,
+          "layer_changes": 4
+        },
+        "D1": {
+          "length_mm": 61.209,
+          "layer_changes": 2
+        },
+        "D2": {
+          "length_mm": 57.499,
+          "layer_changes": 4
+        },
+        "D3": {
+          "length_mm": 39.765,
+          "layer_changes": 4
+        },
+        "D4": {
+          "length_mm": 49.665,
+          "layer_changes": 2
+        },
+        "D5": {
+          "length_mm": 48.995,
+          "layer_changes": 2
+        },
+        "D6": {
+          "length_mm": 37.97,
+          "layer_changes": 2
+        },
+        "D7": {
+          "length_mm": 36.588,
+          "layer_changes": 2
+        }
+      },
+      "min_mm": 36.588,
+      "max_mm": 74.482,
+      "spread_mm": 37.894
+    },
+    "Pico-to-U9 data paths": {
+      "nets": {
+        "PICO_D0": {
+          "length_mm": 29.154,
+          "layer_changes": 1
+        },
+        "PICO_D1": {
+          "length_mm": 36.248,
+          "layer_changes": 1
+        },
+        "PICO_D2": {
+          "length_mm": 20.799,
+          "layer_changes": 0
+        },
+        "PICO_D3": {
+          "length_mm": 19.612,
+          "layer_changes": 1
+        },
+        "PICO_D4": {
+          "length_mm": 11.25,
+          "layer_changes": 1
+        },
+        "PICO_D5": {
+          "length_mm": 11.885,
+          "layer_changes": 1
+        },
+        "PICO_D6": {
+          "length_mm": 44.116,
+          "layer_changes": 2
+        },
+        "PICO_D7": {
+          "length_mm": 59.566,
+          "layer_changes": 3
+        }
+      },
+      "min_mm": 11.25,
+      "max_mm": 59.566,
+      "spread_mm": 48.316
+    },
+    "Pico-to-U10 data paths": {
+      "nets": {
+        "PICO_D0": {
+          "length_mm": 15.238,
+          "layer_changes": 1
+        },
+        "PICO_D1": {
+          "length_mm": 20.98,
+          "layer_changes": 1
+        },
+        "PICO_D2": {
+          "length_mm": 13.582,
+          "layer_changes": 1
+        },
+        "PICO_D3": {
+          "length_mm": 12.155,
+          "layer_changes": 1
+        },
+        "PICO_D4": {
+          "length_mm": 23.609,
+          "layer_changes": 0
+        },
+        "PICO_D5": {
+          "length_mm": 28.743,
+          "layer_changes": 1
+        },
+        "PICO_D6": {
+          "length_mm": 40.466,
+          "layer_changes": 0
+        },
+        "PICO_D7": {
+          "length_mm": 41.053,
+          "layer_changes": 1
+        }
+      },
+      "min_mm": 12.155,
+      "max_mm": 41.053,
+      "spread_mm": 28.898
+    }
+  }
+}

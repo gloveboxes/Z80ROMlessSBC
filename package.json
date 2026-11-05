@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "kicad": "./scripts/build-kicad.sh",
+    "kicad:smt": "./scripts/build-kicad-smt.sh",
     "layout": "node scripts/build-breadboard-layout.mjs",
     "test:scope": "node --test scripts/scope-evidence.test.mjs",
     "test:control": "cmake -S src/common/tests -B build/host-control -G Ninja && cmake --build build/host-control && ctest --test-dir build/host-control --output-on-failure",

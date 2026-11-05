@@ -2,6 +2,26 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Build KiCad - SMT JLCPCB fabrication and assembly",
+			"detail": "Save and close the SMT project in KiCad first. Validates the partial-SMT board (ERC, netlist, DRC, route lengths, silk audit) and rebuilds the Gerber ZIP, JLC BOM and CPL in hardware/kicad-smt/fabrication. Does not touch hardware/kicad.",
+			"type": "shell",
+			"command": "./scripts/build-kicad-smt.sh",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"PYTHON": ".venv-kicad/bin/python"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "Build and run Pico - Stage 11 ATtiny85 ISP",
 			"detail": "Discover the spare Pico in BOOTSEL or normal SDK USB mode, build and flash the Pico 2 W ISP, then open USB console. Running firmware is interrupted after confirmation. Type P to program the ATtiny85. Never select the Z80 supervisor.",
 			"type": "shell",

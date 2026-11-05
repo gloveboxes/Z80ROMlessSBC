@@ -42,12 +42,33 @@ def plane_path_mm(
         for zone in board.Zones()
     ):
         raise ValueError(f"{net_name} has no filled plane on {PLANE_NETS[net_name]}")
+    ends = []
     for pad in (left_pad, right_pad):
-        if not pad.IsOnLayer(layer) or pad.GetNetname() != net_name:
-            raise ValueError(f"{pad.GetParentFootprint().GetReference()}.{pad.GetNumber()} does not reach the {net_name} plane")
-    dx = mm(left_pad.GetPosition().x - right_pad.GetPosition().x)
-    dy = mm(left_pad.GetPosition().y - right_pad.GetPosition().y)
-    return (dx * dx + dy * dy) ** 0.5
+        reference = f"{pad.GetParentFootprint().GetReference()}.{pad.GetNumber()}"
+        if pad.GetNetname() != net_name:
+            raise ValueError(f"{reference} is not on {net_name}")
+        if pad.IsOnLayer(layer):
+            ends.append((pad.GetPosition(), 0.0))
+            continue
+        # SMD pads reach the plane through their own fanout via.
+        vias = [
+            item for item in board.GetTracks()
+            if item.Type() == pcbnew.PCB_VIA_T
+            and item.GetNetname() == net_name and item.IsOnLayer(layer)
+        ]
+        if not vias:
+            raise ValueError(f"{reference} does not reach the {net_name} plane")
+        via = min(vias, key=lambda item: (
+            item.GetPosition() - pad.GetPosition()
+        ).EuclideanNorm())
+        stub = mm(int((via.GetPosition() - pad.GetPosition()).EuclideanNorm()))
+        if stub > 2.5:
+            raise ValueError(f"{reference} has no {net_name} plane via within 2.5 mm")
+        ends.append((via.GetPosition(), stub))
+    (left, left_stub), (right, right_stub) = ends
+    dx = mm(left.x - right.x)
+    dy = mm(left.y - right.y)
+    return left_stub + (dx * dx + dy * dy) ** 0.5 + right_stub
 
 
 def point(item: pcbnew.BOARD_ITEM) -> tuple[int, int]:
@@ -217,9 +238,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", type=Path, help="write machine-readable path evidence")
     parser.add_argument("--check", action="store_true", help="enforce layout review budgets, not timing qualification")
+    parser.add_argument("--board", type=Path, default=BOARD_PATH, help="routed .kicad_pcb to report")
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH, help="net_manifest.json for the board")
     args = parser.parse_args()
-    board = pcbnew.LoadBoard(str(BOARD_PATH))
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    board = pcbnew.LoadBoard(str(args.board))
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     evidence = {"nets": {}, "paths": {}, "groups": {}}
     for net_name in (
         [f"A{bit}" for bit in range(16)] + [f"D{bit}" for bit in range(8)]
