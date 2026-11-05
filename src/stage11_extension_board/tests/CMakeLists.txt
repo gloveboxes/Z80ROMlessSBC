@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.18)
+project(stage11_tests C)
+set(CMAKE_C_STANDARD 11)
+enable_testing()
+
+foreach(name isp target console)
+  add_executable(test_${name} test_${name}.c)
+  target_include_directories(test_${name} PRIVATE fakes)
+  target_compile_options(test_${name} PRIVATE -Wall -Wextra -Werror)
+  add_test(NAME stage11_${name} COMMAND test_${name})
+endforeach()

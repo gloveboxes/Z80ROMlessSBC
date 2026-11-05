@@ -88,23 +88,31 @@ def select_toolchain(cached: Path | None) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source-dir", type=Path, default=REPO_ROOT)
+    parser.add_argument("--sdk-path", type=Path)
+    parser.add_argument("--board", default="pico2_w", help="Pico SDK board name")
     parser.add_argument("--build-dir", required=True, type=Path)
     parser.add_argument("--target", required=True)
     args = parser.parse_args()
     build_dir = args.build_dir
     if not build_dir.is_absolute():
         build_dir = REPO_ROOT / build_dir
+    source_dir = args.source_dir.expanduser()
+    if not source_dir.is_absolute():
+        source_dir = REPO_ROOT / source_dir
     try:
         toolchain_bin = select_toolchain(cached_compiler(build_dir))
         print(f"Using Arm toolchain: {toolchain_bin}", flush=True)
         env = os.environ.copy()
         env["PATH"] = str(toolchain_bin) + os.pathsep + env.get("PATH", "")
         env["PICO_TOOLCHAIN_PATH"] = str(toolchain_bin.parent)
-        subprocess.run(
-            ["cmake", "-S", str(REPO_ROOT), "-B", str(build_dir),
-             "-G", "Ninja", "-DPICO_BOARD=pico2_w"],
-            cwd=REPO_ROOT, env=env, check=True,
-        )
+        configure = [
+            "cmake", "-S", str(source_dir), "-B", str(build_dir),
+            "-G", "Ninja", f"-DPICO_BOARD={args.board}",
+        ]
+        if args.sdk_path:
+            configure.append(f"-DPICO_SDK_PATH={args.sdk_path.expanduser().resolve()}")
+        subprocess.run(configure, cwd=REPO_ROOT, env=env, check=True)
         subprocess.run(
             ["cmake", "--build", str(build_dir), "--target", args.target, "-j"],
             cwd=REPO_ROOT, env=env, check=True,

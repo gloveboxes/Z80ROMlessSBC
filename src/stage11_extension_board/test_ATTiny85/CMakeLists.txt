@@ -1,0 +1,6 @@
+add_executable(stage11_test_attiny85 main.c)
+target_link_libraries(stage11_test_attiny85 PRIVATE pico_stdlib hardware_i2c)
+target_compile_options(stage11_test_attiny85 PRIVATE -Wall -Wextra -Werror)
+pico_enable_stdio_usb(stage11_test_attiny85 1)
+pico_enable_stdio_uart(stage11_test_attiny85 0)
+pico_add_extra_outputs(stage11_test_attiny85)

@@ -2,6 +2,46 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Build and run Pico - Stage 11 ATtiny85 ISP",
+			"detail": "Discover the spare Pico in BOOTSEL or normal SDK USB mode, build and flash the Pico 2 W ISP, then open USB console. Running firmware is interrupted after confirmation. Type P to program the ATtiny85. Never select the Z80 supervisor.",
+			"type": "shell",
+			"command": "if [ \"$STAGE11_CONFIRM\" != \"Run ISP on spare Pico\" ]; then printf '%s\\n' 'Stage 11 cancelled; no hardware touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_stage11.py isp --confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"STAGE11_CONFIRM": "${input:picoStage11IspSafety}"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": ["$gcc"]
+		},
+		{
+			"label": "Build and run Pico - Stage 11 ATtiny85 test",
+			"detail": "Discover the testing Pico in BOOTSEL or normal SDK USB mode, build and flash the Pimoroni Pico Plus 2 W I2C test, then open USB console. Running firmware is interrupted after confirmation. No ISP wiring on this board.",
+			"type": "shell",
+			"command": "if [ \"$STAGE11_CONFIRM\" != \"Run test on spare Pico\" ]; then printf '%s\\n' 'Stage 11 cancelled; no hardware touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_stage11.py test --confirmed",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"STAGE11_CONFIRM": "${input:picoStage11TestSafety}"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": ["$gcc"]
+		},
+		{
 			"label": "Build and flash Pico - CP/M system and Drive A",
 			"detail": "Requires Phase 10 firmware built from the same source revision (bank-1 BDOS, loader and allocator). Flash the Phase 10 firmware task first, then replace the matching CP/M boot package and Drive A. No backups; preserves firmware, B-D, journal and ENV. Force entry with journal and read-back checks.",
 			"type": "shell",
@@ -749,6 +789,20 @@
 		}
 	],
 	"inputs": [
+		{
+			"id": "picoStage11IspSafety",
+			"type": "pickString",
+			"description": "Confirm only the flashing Pico 2 W is connected by USB, isolated from the Z80 board, with 3.3 V ISP wiring and no buzzer/I2C loads. It is safe to interrupt its running firmware for automatic reboot/flashing. Typing P later erases the ATtiny85.",
+			"options": ["Cancel", "Run ISP on spare Pico"],
+			"default": "Cancel"
+		},
+		{
+			"id": "picoStage11TestSafety",
+			"type": "pickString",
+			"description": "Confirm the ATtiny85 was transferred with both boards off, with 3.3 V I2C/LED/piezo wiring and no ISP leads. Only the testing Pimoroni Pico Plus 2 W is connected by USB, isolated from the Z80 board. It is safe to interrupt its running firmware for automatic reboot/flashing.",
+			"options": ["Cancel", "Run test on spare Pico"],
+			"default": "Cancel"
+		},
 		{
 			"id": "picoCpmSystemSafety",
 			"type": "pickString",
