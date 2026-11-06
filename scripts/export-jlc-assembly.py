@@ -2,7 +2,7 @@
 """Write the JLCPCB assembly BOM and CPL for the partial-SMT board.
 
 Run with KiCad's Python (pcbnew). Only components whose manifest assembly is
-"jlc" are exported; hand-soldered parts (Z80, Pico, OLED, headers) are left
+"jlc" are exported; hand-soldered parts (Z80, OLED, headers) are left
 out of both files.
 """
 
@@ -29,11 +29,38 @@ MANIFEST_PATH = KICAD_DIR / "reports" / "net_manifest.json"
 ROTATION_CORRECTIONS = (
     (r"^SOIC-", 270),
     (r"^SOP-(?!4_|18_)", 270),
-    (r"^CP_Elec_", 180),
-    (r"^USB_C_Receptacle_HRO_TYPE-C-31-M-12$", 180),
+    # JLC's preview of C150379/C346929 showed the community +180 degree
+    # rule reversing the polarity, so these models match KiCad directly.
+    (r"^CP_Elec_", 0),
+    # JLC's C393939 preview showed the community +180 degree rule pointing
+    # the receptacle mouth inward.
+    (r"^USB_C_Receptacle_HRO_TYPE-C-31-M-12$", 0),
     (r"^D_SMA$", 0),
     (r"^[RC]_0603_1608Metric$", 0),
+    # C42394205 has no community rule. At 0 degrees JLC's model points its
+    # USB end left, 90 degrees counter-clockwise from KiCad's USB-up
+    # footprint (seen in the JLC placement preview).
+    (r"^RaspberryPi_Pico_W_SMD$", 270),
 )
+
+# JLC centres these models on their pad pattern, while the KiCad origin is
+# offset toward the receptacle mouth; place them at the copper pad centre.
+PAD_CENTRED = (r"^USB_C_Receptacle_HRO_TYPE-C-31-M-12$",)
+
+
+def placement_position(footprint: pcbnew.FOOTPRINT) -> pcbnew.VECTOR2I:
+    name = str(footprint.GetFPID().GetLibItemName())
+    if not any(re.search(pattern, name) for pattern in PAD_CENTRED):
+        return footprint.GetPosition()
+    box = None
+    for pad in footprint.Pads():
+        if pad.IsOnCopperLayer():
+            pad_box = pad.GetBoundingBox()
+            if box is None:
+                box = pad_box
+            else:
+                box.Merge(pad_box)
+    return box.GetCenter()
 
 
 def rotation_correction(footprint_name: str) -> int:
@@ -111,7 +138,7 @@ def main() -> int:
             raise SystemExit(f"{reference} PCB value does not match schematic")
         groups[(item["value"], footprint_name, lcsc)].append(reference)
 
-        position = footprint.GetPosition()
+        position = placement_position(footprint)
         rotation = (
             footprint.GetOrientationDegrees() + rotation_correction(footprint_name)
         ) % 360

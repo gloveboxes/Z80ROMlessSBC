@@ -1,12 +1,12 @@
 # Partial-SMT PCB (JLCPCB assembly variant)
 
 This is a separate KiCad project for a 98.3 × 60 mm, four-layer board. JLCPCB
-assembles every top-side SMT part, and only five parts are hand-soldered:
+assembles every top-side SMT part, including the Raspberry Pi Pico 2 W module,
+and only four parts are hand-soldered:
 
 | Ref | Part | Assembly |
 | --- | --- | --- |
 | U1 | Z84C0020PEC, DIP-40 | Hand-soldered |
-| A1 | Raspberry Pi Pico 2 W, through-hole pads | Hand-soldered |
 | A2 | 0.91 in SSD1315 OLED on a 1×4 2.54 mm female header, 5.0 mm body | Hand-soldered |
 | J2 | Pico GPIO expansion header, 1×4 | Hand-soldered |
 | J3 | Auxiliary external 5 V header, 1×2 | Hand-soldered |
@@ -18,6 +18,8 @@ All other parts are JLCPCB-assembled from the LCSC numbers in the schematic:
 - SS14 diode.
 - SMT electrolytic capacitors.
 - Power-only USB-C receptacle with 5.1 kΩ CC pull-downs.
+- Raspberry Pi Pico 2 W (C42394205), reflowed on its castellated pads with
+  KiCad's `RaspberryPi_Pico_W_SMD` footprint.
 
 ## Sources
 
@@ -67,10 +69,16 @@ It does not modify `hardware/kicad/`.
   reports about 0.05 mm closer than it is. After import, the generator
   nudges each such via (and its track ends) until it is ≥ 0.16 mm from
   every square-cornered mask opening.
+- The Pico footprint keeps the library's landing pads for the module's
+  underside test points (TP1–TP6), SWD pads and USB shell legs. They are
+  unconnected, and routed copper clears them. The library's
+  "suggested RF board edge" keepouts are replaced by the enclosed antenna
+  window and bridge keepout; the antenna keepout itself is retained.
 - J1's stacked USB-C pad pairs (A1/B12, A4/B9, A9/B4, A12/B1) keep both
   copper pads but emit one mask and paste opening each.
 - SMT pads sit at least 3.07 mm from other parts' through-hole pads.
-  JLCDFM rates more than 3.05 mm as good. J1's own shell legs are part of
+  JLCDFM rates more than 3.05 mm as good. J2 and J3 sit 2.85 mm from the
+  left edge so their pads clear the Pico castellations by 3.12 mm. J1's own shell legs are part of
   the same footprint, and JLCDFM does not report them.
 - J1's plated shell slots are widened to 0.85 mm (1.9 mm and 1.75 mm long)
   with a 0.2 mm annular ring. Each slot is moved 0.125 mm outward so its
@@ -115,16 +123,24 @@ PCB:
 PCBA:
 
 - **Top side only**.
-- Upload the JLC BOM and CPL listed above. The five hand-soldered parts are
+- Upload the JLC BOM and CPL listed above. The four hand-soldered parts are
   intentionally absent from both files.
+- The Pico 2 W (C42394205) is an Extended part that JLCPCB requires X-ray
+  inspection for. Pre-order it into your JLCPCB parts library if it is not
+  in stock.
 
 ## Before ordering
 
 - **Check every part's rotation in JLCPCB's placement preview.** The CPL
   applies the community kicad-jlcpcb-tools correction table:
   - SOIC/SOP: +270°.
-  - `CP_Elec`: +180°.
-  - HRO-pattern USB-C: +180°.
+  - `CP_Elec`: 0°. The community +180° rule reversed C150379/C346929 in
+    JLC's preview.
+  - HRO-pattern USB-C: 0°, placed at its copper pad centre (1.5 mm inboard
+    of the KiCad origin). The community +180° rule turned C393939's mouth
+    inward in JLC's preview.
+  - Pico 2 W module: +270°. There is no community rule for C42394205;
+    JLC's preview showed its model at 0° with the USB end to the left.
   - SMA and 0603: 0°.
 
   Specifically confirm:
@@ -132,6 +148,8 @@ PCBA:
   - The `+` lead on C8–C11.
   - The cathode band on D1, which faces Pico VSYS.
   - The USB-C mouth on J1, which faces the board edge.
+  - The Pico 2 W's micro-USB connector, which faces the bottom edge, and
+    its antenna over the enclosed window.
 - Confirm stock for U2 (IS62C1024AL-35QLI, C397875, Extended and low stock)
   and the other Extended parts at order time.
 - Confirm JLCPCB quotes J1's shell legs as part of the SMT assembly.

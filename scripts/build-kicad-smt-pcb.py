@@ -42,11 +42,19 @@ BOARD_WIDTH = 98.3
 BOARD_HEIGHT = 60.0
 BOARD_RIGHT = BOARD_LEFT + BOARD_WIDTH
 BOARD_BOTTOM = BOARD_TOP + BOARD_HEIGHT
-# Pico 2 W: rotated 180 degrees, pin 1 at this point, USB flush with the
-# bottom edge and the antenna end over an enclosed window. A full-width
-# FR4 bridge along the top edge keeps the board rigid; it carries no copper.
+# Pico 2 W: rotated 180 degrees, pin 1's module hole centre at this point,
+# USB flush with the bottom edge and the antenna end over an enclosed window.
+# A full-width FR4 bridge along the top edge keeps the board rigid; it
+# carries no copper. The JLC-assembled SMD footprint's origin is the module
+# centre, and its castellated pads extend 0.8 mm beyond the hole rows.
 PICO_X = BOARD_LEFT + 27.0
 PICO_Y = BOARD_BOTTOM - 2.8
+PICO_FOOTPRINT = "RaspberryPi_Pico_W_SMD"
+PICO_PIN1_OFFSET = (8.89, 24.13)
+# Library zones that suggest an RF board edge; the enclosed antenna window
+# and bridge keepout replace them.
+PICO_DROPPED_ZONES = {"RF Copper Keep Out", "Board Keep Out Suggestion RF"}
+_DETACHED_ITEMS: list[object] = []
 ANTENNA_LEFT = PICO_X - 16.30
 ANTENNA_RIGHT = PICO_X - 1.50
 ANTENNA_BRIDGE = 4.0
@@ -98,7 +106,8 @@ NETCLASSES = (
 
 
 def mm(value: float) -> int:
-    return pcbnew.FromMM(value)
+    # pcbnew.FromMM truncates, so 32.8 mm would become 32799999 nm.
+    return round(value * pcbnew.FromMM(1))
 
 
 def vec(x: float, y: float) -> pcbnew.VECTOR2I:
@@ -388,6 +397,25 @@ def load_footprint(root: Path, library_id: str) -> pcbnew.FOOTPRINT:
     return footprint
 
 
+def prepare_pico_footprint(footprint: pcbnew.FOOTPRINT, root: Path) -> None:
+    # The SMD library footprint has no USB cable envelope; reuse the THT
+    # footprint's, shifted from its pin-1 origin to the module centre. Load
+    # it before removing zones: SWIG frees removed items on collection,
+    # which corrupts the next library load, so keep them referenced.
+    tht = load_footprint(root, "Module:RaspberryPi_Pico_Common_THT")
+    usb = [zone for zone in tht.Zones() if str(zone.GetZoneName()) == "USB Cable"]
+    if len(usb) != 1:
+        raise SystemExit("THT Pico footprint has no USB cable envelope")
+    for zone in list(footprint.Zones()):
+        if str(zone.GetZoneName()) in PICO_DROPPED_ZONES:
+            footprint.Remove(zone)
+            _DETACHED_ITEMS.append(zone)
+    envelope = pcbnew.ZONE(usb[0])
+    envelope.Move(vec(-PICO_PIN1_OFFSET[0], -PICO_PIN1_OFFSET[1]))
+    footprint.Add(envelope)
+    _DETACHED_ITEMS.append(tht)
+
+
 def merge_stacked_pad_openings(footprint: pcbnew.FOOTPRINT) -> None:
     # USB-C pairs such as A1/B12 are identical pads at one position. Keep
     # both for connectivity, but emit one mask and paste opening so JLCDFM
@@ -419,12 +447,15 @@ def pico_pin_y(pin: int) -> float:
     return round(PICO_Y - BOARD_TOP - row * 2.54, 3)
 
 
+# J2/J3 hug the left edge to keep their plated pads > 3.05 mm from the
+# Pico castellations (JLCDFM THT-to-SMD).
+HEADER_X = 2.85
 CHANNEL_X = 32.1        # Pico-side pull resistors, between Pico and buffers
 BUFFER_X = 40.8         # SOIC-20W buffer column
 BYPASS_X = 47.65        # decoupling column, > 3.05 mm from U1 THT pads
 Z80_X = 52.2            # U1 pin 1
 Z80_Y = 3.0
-SRAM_X = 79.0
+SRAM_X = 79.2
 STRIP_X = 94.5          # right-edge electrolytic column
 
 # Pico-side pull resistors sit level with the Pico pad they bias so each
@@ -445,9 +476,10 @@ GRID_PULLS = [f"R{index}" for index in range(1, 17)] + [
 
 def placement_table() -> dict[str, tuple[float, float, float]]:
     table = {
-        "A1": (PICO_X, PICO_Y, 180),
-        "J3": rel(3.2, 13.0),
-        "J2": rel(3.2, pico_pin_y(29)),
+        "A1": (round(PICO_X - PICO_PIN1_OFFSET[0], 3),
+               round(PICO_Y - PICO_PIN1_OFFSET[1], 3), 180),
+        "J3": rel(HEADER_X, 13.0),
+        "J2": rel(HEADER_X, pico_pin_y(29)),
         "D1": rel(3.2, 47.0, 90),
         "U9": rel(BUFFER_X, 7.7),
         "U10": rel(BUFFER_X, 21.3),
@@ -506,20 +538,23 @@ def mounting_hole_table() -> dict[str, tuple[float, float]]:
     }
 
 
-J2_PIN_LABELS = tuple(
-    (text, rel(5.9, pico_pin_y(29) + index * 2.54)[0],
-     rel(5.9, pico_pin_y(29) + index * 2.54)[1])
+# Vertical pin labels between the 2.54 mm headers and the Pico castellations.
+HEADER_PIN_LABELS = tuple(
+    (text, rel(5.55, pico_pin_y(29) + index * 2.54)[0],
+     rel(5.55, pico_pin_y(29) + index * 2.54)[1])
     for index, text in enumerate(("SDA", "SCL", "3V3", "GND"))
+) + tuple(
+    (text, *rel(5.0, 13.0 + index * 2.54)[:2])
+    for index, text in enumerate(("+5V", "GND"))
 )
 
 
 def assembly_labels() -> list[tuple[str, float, float, float]]:
     return [
         (text, *rel(x, y)[:2], size) for text, x, y, size in (
-            ("+5V", 6.1, 13.0, 0.8), ("GND", 6.1, 15.54, 0.8),
             ("A1 PICO 2 W", 18.1, 32.0, 1.0),
             ("USB-C OR J3\nONE SUPPLY", 93.3, 53.6, 0.8),
-            ("OLED", 30.5, 58.6, 0.8),
+            ("OLED", 31.5, 58.6, 0.8),
         )
     ]
 
@@ -824,7 +859,7 @@ MASK_TRACK_CLEARANCE = 0.155
 # USB-C pads use less so their mask webs stay >= 0.12 mm.
 SOLDER_MASK_EXPANSION = 0.05
 USB_C_MASK_EXPANSION = 0.04
-MASK_TRACK_STEP = 0.05
+MASK_TRACK_STEP = 0.01
 ROUTE_MARGIN = 0.005
 MASK_LAYERS = ((pcbnew.F_Cu, pcbnew.F_Mask), (pcbnew.B_Cu, pcbnew.B_Mask))
 
@@ -1098,12 +1133,114 @@ def straighten_pad_exit(
     return False
 
 
+def slide_stub_junction(
+    board: pcbnew.BOARD,
+    pad: pcbnew.PAD,
+    target: pcbnew.PCB_TRACK,
+    copper_layer: int,
+    mask_layer: int,
+) -> bool:
+    # A routed stub that tees into a locked same-net track beside the pad is
+    # moved along that locked track until the stub clears the mask opening.
+    if target.IsLocked():
+        return False
+    opening = mask_opening(pad, mask_layer)
+    same_net = [
+        track for track in board.GetTracks()
+        if track.Type() == pcbnew.PCB_TRACE_T
+        and track.GetLayer() == copper_layer
+        and track.GetNetCode() == target.GetNetCode()
+    ]
+    locked = [track for track in same_net if track.IsLocked()]
+    vias = {
+        (via.GetPosition().x, via.GetPosition().y)
+        for via in board.GetTracks() if via.Type() == pcbnew.PCB_VIA_T
+    }
+
+    def touching(point: pcbnew.VECTOR2I) -> list[pcbnew.PCB_TRACK]:
+        return [t for t in same_net if point in (t.GetStart(), t.GetEnd())]
+
+    for junction in (target.GetStart(), target.GetEnd()):
+        hosts = [
+            host for host in locked if junction in (host.GetStart(), host.GetEnd())
+        ]
+        if not hosts:
+            continue
+        # Unbranched run of unlocked tracks leading away from the junction.
+        stub = [target]
+        points = [
+            junction,
+            target.GetEnd() if target.GetStart() == junction else target.GetStart(),
+        ]
+        while (points[-1].x, points[-1].y) not in vias:
+            following = [t for t in touching(points[-1]) if uid(t) != uid(stub[-1])]
+            if len(following) != 1 or following[0].IsLocked():
+                break
+            stub.append(following[0])
+            points.append(
+                following[0].GetEnd() if following[0].GetStart() == points[-1]
+                else following[0].GetStart()
+            )
+        width = target.GetWidth()
+        for host in hosts:
+            far = host.GetEnd() if host.GetStart() == junction else host.GetStart()
+            length = (far - junction).EuclideanNorm()
+            steps = max(1, int(length // mm(MASK_TRACK_STEP)))
+            for anchor_index in range(1, len(points)):
+                anchor = points[anchor_index]
+                removed = stub[:anchor_index]
+                if any(
+                    poly_segment_gap(
+                        opening, track.GetStart(), track.GetEnd(), track.GetWidth(),
+                    ) < MASK_TRACK_CLEARANCE
+                    for track in stub[anchor_index:]
+                ):
+                    continue
+                for step in range(steps, 0, -1):
+                    fraction = step / steps
+                    point = pcbnew.VECTOR2I(
+                        round(junction.x + (far.x - junction.x) * fraction),
+                        round(junction.y + (far.y - junction.y) * fraction),
+                    )
+                    if poly_segment_gap(
+                        opening, anchor, point, width,
+                    ) < MASK_TRACK_CLEARANCE:
+                        continue
+                    if not segment_clear_of_other_nets(
+                        board, anchor, point, width, target.GetNetCode(),
+                        copper_layer, mask_layer, pad, removed,
+                    ):
+                        continue
+                    if point != far:
+                        tail = pcbnew.PCB_TRACK(board)
+                        tail.SetStart(point)
+                        tail.SetEnd(far)
+                        tail.SetLayer(copper_layer)
+                        tail.SetWidth(host.GetWidth())
+                        tail.SetNet(host.GetNet())
+                        tail.SetLocked(True)
+                        board.Add(tail)
+                        if host.GetStart() == far:
+                            host.SetStart(point)
+                        else:
+                            host.SetEnd(point)
+                    for track in removed[1:]:
+                        board.Remove(track)
+                    target.SetStart(anchor)
+                    target.SetEnd(point)
+                    return True
+    return False
+
+
 def straighten_pad_exits(board: pcbnew.BOARD) -> None:
     for copper_layer, mask_layer in MASK_LAYERS:
         for _ in range(200):
             violations = mask_track_violations(board, copper_layer, mask_layer)
             if not any(
                 straighten_pad_exit(board, pad, track, copper_layer, mask_layer)
+                or slide_stub_junction(
+                    board, pad, track, copper_layer, mask_layer,
+                )
                 for _, pad, track in violations
                 if pad.GetNetCode() == track.GetNetCode()
             ):
@@ -1115,7 +1252,7 @@ def straighten_pad_exits(board: pcbnew.BOARD) -> None:
 # 0.05 mm less than the true gap (0.12 mm for a via 0.17 mm from the real
 # opening). Vias are kept this far from each square-cornered mask opening.
 VIA_MASK_CLEARANCE = 0.16
-VIA_NUDGE_ANGLES = (0, 30, -30, 60, -60, 90, -90)
+VIA_NUDGE_ANGLES = (0, 30, -30, 60, -60, 75, -75, 90, -90)
 SQUARE_PAD_SHAPES = {
     pcbnew.PAD_SHAPE_RECTANGLE, pcbnew.PAD_SHAPE_ROUNDRECT,
     pcbnew.PAD_SHAPE_CHAMFERED_RECT,
@@ -1227,7 +1364,7 @@ def nudge_via(
     if any(track.IsLocked() for track in attached) or via.IsLocked():
         return False
     deficit = VIA_MASK_CLEARANCE - gap + ROUTE_MARGIN
-    for step in range(1, 5):
+    for step in range(1, 9):
         distance = mm(deficit + 0.02 * (step - 1))
         for degrees in VIA_NUDGE_ANGLES:
             angle = math.radians(degrees)
@@ -1326,8 +1463,8 @@ USB_C_SLOT_WIDTH = 0.85
 USB_C_SLOT_RING = 0.20
 USB_C_SLOT_LENGTHS = {1.7: 1.9, 1.2: 1.75}  # stock slot length -> new length
 # JLCDFM "THT to SMD": danger < 2.03 mm, warning 2.03-3.05 mm, good > 3.05 mm,
-# measured between a plated hole's pad and another part's SMD pad. The Pico
-# rows sit 3.075 mm from their channel pull-ups.
+# measured between a plated hole's pad and another part's SMD pad. The Pico's
+# left castellations sit 3.12 mm from the J2/J3 header pads.
 THT_SMD_CLEARANCE = 3.07
 
 
@@ -1406,7 +1543,8 @@ def check_tht_smd_clearance(board: pcbnew.BOARD) -> None:
         for pad in footprint.Pads():
             if pad.GetAttribute() == pcbnew.PAD_ATTRIB_PTH:
                 tht.append(pad)
-            elif pad.GetAttribute() == pcbnew.PAD_ATTRIB_SMD:
+            elif pad.GetAttribute() == pcbnew.PAD_ATTRIB_SMD and \
+                    pad.IsOnCopperLayer():
                 smd.append(pad)
     failures = []
     for hole in tht:
@@ -1567,6 +1705,8 @@ def add_plane_fanouts(board: pcbnew.BOARD) -> None:
         (pad, str(pad.GetNetname()), pad_rect(pad))
         for footprint in board.GetFootprints()
         for pad in footprint.Pads()
+        # Paste-only apertures (Pico castellations) carry no copper.
+        if pad.IsOnCopperLayer()
     ]
     tracks = [
         (str(track.GetNetname()),
@@ -1844,6 +1984,8 @@ def build_board(
         if not footprint_id:
             raise SystemExit(f"{reference} has no footprint")
         footprint = load_footprint(footprint_root, footprint_id)
+        if reference == "A1":
+            prepare_pico_footprint(footprint, footprint_root)
         merge_stacked_pad_openings(footprint)
         assign_3d_model(footprint)
         footprint.SetReference(reference)
@@ -1931,7 +2073,7 @@ def build_board(
     )
     for text, x, y, size in assembly_labels():
         add_text(board, text, x, y, size)
-    for text, x, y in J2_PIN_LABELS:
+    for text, x, y in HEADER_PIN_LABELS:
         add_text(board, text, x, y, 0.8, 90)
     add_text(
         board, "REV SMT-A", TITLE_BACK_POSITION[0] - 2.5,
@@ -2414,6 +2556,8 @@ def check_board(
     ):
         raise SystemExit("Antenna bridge copper keepout is missing or stale")
     for pad in pico.Pads():
+        if not pad.IsOnCopperLayer():
+            continue
         pad_box = pad.GetBoundingBox()
         left, right = pcbnew.ToMM(pad_box.GetLeft()), pcbnew.ToMM(pad_box.GetRight())
         top, bottom = pcbnew.ToMM(pad_box.GetTop()), pcbnew.ToMM(pad_box.GetBottom())
@@ -2428,7 +2572,7 @@ def check_board(
         for text, x, y, _ in assembly_labels()
     }
     expected_labels |= {
-        (text, round(x, 2), round(y, 2)) for text, x, y in J2_PIN_LABELS
+        (text, round(x, 2), round(y, 2)) for text, x, y in HEADER_PIN_LABELS
     }
     actual_labels = set()
     for drawing in board.GetDrawings():

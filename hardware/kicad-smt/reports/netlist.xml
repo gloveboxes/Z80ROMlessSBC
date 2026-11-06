@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad-smt/z80_romless_sbc_smt.kicad_sch</source>
-    <date>2026-11-06T10:24:00</date>
+    <date>2026-11-06T15:30:00</date>
     <tool>Eeschema 10.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -26,16 +26,16 @@
   <components>
     <comp ref="A1">
       <value>Raspberry Pi Pico 2 W</value>
-      <footprint>Module:RaspberryPi_Pico_Common_THT</footprint>
-      <description>Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)</description>
+      <footprint>Module:RaspberryPi_Pico_W_SMD</footprint>
+      <description>Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)</description>
       <fields>
-        <field name="LCSC"/>
-        <field name="Footprint">Module:RaspberryPi_Pico_Common_THT</field>
+        <field name="LCSC">C42394205</field>
+        <field name="Footprint">Module:RaspberryPi_Pico_W_SMD</field>
         <field name="Datasheet"/>
-        <field name="Description">Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)</field>
+        <field name="Description">Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)</field>
       </fields>
       <libsource lib="Z80SBC" part="PICO2" description="Z80ROMlessSBC project symbol: Raspberry Pi Pico 2"/>
-      <property name="LCSC" value=""/>
+      <property name="LCSC" value="C42394205"/>
       <property name="Sheetname" value="z80_romless_sbc_smt"/>
       <property name="Sheetfile" value="z80_romless_sbc_smt.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>

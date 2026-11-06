@@ -74,10 +74,10 @@
     "A1": {
       "symbol": "PICO2",
       "value": "Raspberry Pi Pico 2 W",
-      "footprint": "Module:RaspberryPi_Pico_Common_THT",
-      "description": "Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)",
-      "lcsc": "",
-      "assembly": "hand"
+      "footprint": "Module:RaspberryPi_Pico_W_SMD",
+      "description": "Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)",
+      "lcsc": "C42394205",
+      "assembly": "jlc"
     },
     "A2": {
       "symbol": "SSD1315_OLED",

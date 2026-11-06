@@ -1,5 +1,5 @@
 "Refs","Value","Footprint","LCSC","Qty","DNP"
-"A1","Raspberry Pi Pico 2 W","Module:RaspberryPi_Pico_Common_THT","","1",""
+"A1","Raspberry Pi Pico 2 W","Module:RaspberryPi_Pico_W_SMD","C42394205","1",""
 "A2","0.91in SSD1315 128X32 I2C OLED","Z80SBC:OLED_SSD1315_38x12mm_Socket","","1",""
 "C1-C7","100n","Capacitor_SMD:C_0603_1608Metric","C14663","7",""
 "C8-C10","22u","Capacitor_SMD:CP_Elec_6.3x5.4","C150379","3",""

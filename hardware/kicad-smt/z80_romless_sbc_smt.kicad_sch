@@ -18764,7 +18764,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Module:RaspberryPi_Pico_Common_THT"
+		(property "Footprint" "Module:RaspberryPi_Pico_W_SMD"
 			(at 863.6 152.4 0)
 			(hide yes)
 			(show_name no)
@@ -18786,7 +18786,7 @@
 				)
 			)
 		)
-		(property "Description" "Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)"
+		(property "Description" "Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)"
 			(at 863.6 152.4 0)
 			(hide yes)
 			(show_name no)
@@ -18797,7 +18797,7 @@
 				)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C42394205"
 			(at 863.6 152.4 0)
 			(hide yes)
 			(show_name no)

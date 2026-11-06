@@ -651,9 +651,9 @@ pico_nets = {
 }
 add_component(
     "A1", "PICO2", "Raspberry Pi Pico 2 W", 863.6, 152.4, pico_nets,
-    footprint="Module:RaspberryPi_Pico_Common_THT",
-    description="Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)",
-    assembly="hand",
+    footprint="Module:RaspberryPi_Pico_W_SMD",
+    description="Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)",
+    lcsc="C42394205", assembly="jlc",
 )
 
 add_component(

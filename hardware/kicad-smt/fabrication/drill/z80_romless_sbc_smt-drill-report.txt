@@ -1,5 +1,5 @@
 Drill report for z80_romless_sbc_smt.kicad_pcb
-Created on 2026-11-06T10:24:14
+Created on 2026-11-06T15:30:18
 
 Copper Layer Stackup:
     =============================================================
@@ -12,12 +12,12 @@ Copper Layer Stackup:
 Drill file 'z80_romless_sbc_smt-PTH.drl' contains
     plated through holes:
     =============================================================
-    T1  0.400mm  0.0157"  (210 holes))
+    T1  0.400mm  0.0157"  (251 holes))
     T2  0.800mm  0.0315"  (40 holes))
     T3  0.850mm  0.0335"  (4 holes)  (with 4 slots)
-    T4  1.000mm  0.0394"  (50 holes))
+    T4  1.000mm  0.0394"  (10 holes))
 
-    Total plated holes count 304
+    Total plated holes count 305
 
 
 Drill file 'z80_romless_sbc_smt-NPTH.drl' contains

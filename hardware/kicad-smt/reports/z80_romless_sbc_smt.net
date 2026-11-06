@@ -2,7 +2,7 @@
 	(version "E")
 	(design
 		(source "/Users/dave/GitHub/Z80ROMlessSBC/hardware/kicad-smt/z80_romless_sbc_smt.kicad_sch")
-		(date "2026-11-06T10:24:00")
+		(date "2026-11-06T15:29:59")
 		(tool "Eeschema 10.0.7")
 		(sheet
 			(number "1")
@@ -57,19 +57,18 @@
 		(comp
 			(ref "A1")
 			(value "Raspberry Pi Pico 2 W")
-			(footprint "Module:RaspberryPi_Pico_Common_THT")
-			(description "Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)")
+			(footprint "Module:RaspberryPi_Pico_W_SMD")
+			(description "Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)")
 			(fields
 				(field
-					(name "LCSC")
-				)
+					(name "LCSC") "C42394205")
 				(field
-					(name "Footprint") "Module:RaspberryPi_Pico_Common_THT")
+					(name "Footprint") "Module:RaspberryPi_Pico_W_SMD")
 				(field
 					(name "Datasheet")
 				)
 				(field
-					(name "Description") "Raspberry Pi Pico 2 W, through-hole edge pads (hand assembly)")
+					(name "Description") "Raspberry Pi Pico 2 W, castellated SMD module (JLC assembly)")
 			)
 			(libsource
 				(lib "Z80SBC")
@@ -78,7 +77,7 @@
 			)
 			(property
 				(name "LCSC")
-				(value "")
+				(value "C42394205")
 			)
 			(property
 				(name "Sheetname")
