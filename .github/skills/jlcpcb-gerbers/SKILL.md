@@ -1,6 +1,6 @@
 ---
 name: jlcpcb-gerbers
-description: 'Create, regenerate, inspect, or fix the JLCPCB Gerber upload ZIP for Z80ROMlessSBC. Use for Gerbers, fabrication archives, four-layer PCB ordering options, missing copper layers, plated/non-plated drill files, and JLCDFM silkscreen-to-pad, silkscreen-to-hole or line-width warnings.'
+description: 'Create, regenerate, inspect, or fix the JLCPCB Gerber upload ZIP and PCBA BOM/CPL for Z80ROMlessSBC, including the partial-SMT board in hardware/kicad-smt. Use for Gerbers, fabrication archives, four-layer PCB ordering options, missing copper layers, plated/non-plated drill files, JLCDFM silkscreen, solder-mask, via and slot warnings, SMT tolerances, CPL rotations and offsets, and validating JLCPCB component-placement previews.'
 ---
 
 # JLCPCB Gerber Upload
@@ -9,6 +9,31 @@ Produce the manufacturing ZIP from this repository's current routed board.
 Use the `kicad-pcb` and `z80-romless-sbc` skills alongside this workflow.
 Generate files locally; do not upload, order, or approve production without
 the user's authorization.
+
+## Source of truth
+
+JLCPCB's official documentation is the authority for manufacturing
+capabilities and tolerances:
+
+- Main capabilities page:
+  <https://jlcpcb.com/capabilities/pcb-assembly-capabilities>
+- PCB design-rules guide:
+  <https://jlcpcb.com/blog/a-comprehensive-guide-for-optimal-results>
+
+Fetch both pages at the start of any new layout, rule change or order review.
+The tables in this skill and the generator constants are dated snapshots
+and observed JLCDFM results. They are not the authority.
+
+If the official pages disagree with this skill, a README or a generator
+constant:
+
+1. Follow the official value.
+2. Update this skill and the affected constants and documentation.
+3. Tell the user what changed.
+
+If a page cannot be fetched, say so and treat the snapshot values as
+unverified. JLCDFM findings on the uploaded files can be stricter than the
+published minimums; meet both.
 
 ## 1. Preflight
 
@@ -137,7 +162,8 @@ job's stroke-expanded bounding box.
 
 ## 4. Handle JLCDFM findings at the producer
 
-The observed JLCDFM limits for this order are:
+The observed JLCDFM limits for this order are listed below. They are subject
+to the official pages under "Source of truth":
 
 | Check | Danger | Warning | Good | Local enforced target |
 | --- | --- | --- | --- | --- |
@@ -215,6 +241,192 @@ For intentional silkscreen repairs:
   `docs/`, which the interconnect check reads) and never replace the
   accepted SES or production ZIP with its output.
 
+## Partial-SMT assembly board (`hardware/kicad-smt`)
+
+The SMT variant is a separate project; never modify `hardware/kicad/` or
+`scripts/build-kicad-pcb.py` for it. Sources:
+
+- `scripts/build-kicad-smt-schematic.py`: schematic and net manifest. Each
+  part is declared `jlc` or `hand`, and every `jlc` part needs an LCSC number.
+- `scripts/build-kicad-smt-pcb.py`: placement, rules and DFM fixers.
+- `reports/z80_romless_sbc_smt.ses`: the accepted Freerouting result.
+- `scripts/export-jlc-assembly.py`: the JLC BOM and CPL.
+
+Build with `PYTHON=.venv-kicad/bin/python npm run kicad:smt` and require
+exit 0. The pipeline publishes outputs only after all of these pass:
+
+- ERC and manifest parity.
+- Zone-refilled DRC.
+- Route-length budgets.
+- Mask, silk and THT-SMD gates.
+- BOM/CPL consistency.
+
+The ZIP also contains `F_Paste` for the stencil. Upload these three files:
+
+- the Gerber ZIP;
+- `fabrication/assembly/*-jlc-bom.csv`;
+- `fabrication/assembly/*-jlc-cpl.csv`.
+
+[`hardware/kicad-smt/README.md`](../../../hardware/kicad-smt/README.md)
+documents every rule below; keep it in step with the generator.
+
+### Published JLCPCB capabilities
+
+This is a snapshot from November 2026 of the two source-of-truth pages above.
+Re-fetch them and update this table if anything has changed.
+
+The published values are process minimums. JLCDFM's observed good/warning
+boundaries (next table) are stricter and decide whether files pass review.
+
+| Capability | Economic PCBA | Standard PCBA | This board |
+| --- | --- | --- | --- |
+| Single-board size | 10 × 10 to 470 × 500 mm | **70 × 70** to 460 × 500 mm | 98.3 × 60 mm, so **Economic only**, unless panelised with rails |
+| Layers / thickness | 2, 4, 6 / 0.8–1.6 mm, standard stack-up only | 1–32 / any | 4 layers, 1.6 mm |
+| Sides | Single | Single or double | Top only |
+| Castellations / edge plating on the PCB | Not supported | Supported | None on the PCB (the Pico module's castellations are on the module) |
+| Edge rails / fiducials | Not needed | Needed (5 mm rails, 2 mm tooling holes, 1 mm fiducials) | None |
+| Smallest package | 0402 | 0201 (01005 listed) | 0603 |
+| Minimum IC pin pitch | 0.4 mm | 0.35 mm | 0.5 mm (USB-C) |
+| Reflow | 255 ± 5 °C, fixed | 240 ± 5 °C | — |
+| X-ray | Certain parts only (for example BGA) | Same | Pico 2 W flagged for X-ray |
+
+Design-rule minimums from the guide, with values measured on the SMT board:
+
+| Rule | JLCPCB minimum | SMT board |
+| --- | --- | --- |
+| Trace / space, 1 oz multilayer | 0.09 / 0.09 mm | 0.15 mm minimum track (USB), 0.20 mm clearance |
+| Via hole to track | 0.20 mm | 0.41 mm |
+| PTH hole to track | 0.28 mm | 0.56 mm |
+| SMD pad to pad (different nets) | 0.15 mm | 0.25 mm (J1 trimmed pads) |
+| Routed-edge copper clearance | 0.20 mm | 0.20 mm (`COPPER_EDGE_CLEARANCE`) |
+
+If the board shrinks, a part moves to 0402 or finer pitch, or a second
+side is populated, re-check which PCBA tier applies before routing.
+
+### SMT tolerances (JLCDFM boundaries and enforced targets)
+
+JLCDFM rates a value as good only if it is strictly beyond its threshold.
+Enforce a small margin above each one, because KiCad's internal-unit rounding
+can land exactly on the boundary.
+
+| Check | JLCDFM good | Enforced | Generator constant / fix |
+| --- | --- | --- | --- |
+| Silk stroke | > 0.15 mm | 0.16 mm | `SILK_MIN_STROKE` |
+| Silk to hole / mask opening | ≥ 0.18 mm | 0.20 mm | `SILK_*_CLEARANCE` |
+| Track to unrelated mask opening | > 0.15 mm | 0.155 mm | `MASK_TRACK_CLEARANCE`; slide or straighten stubs |
+| Via to square-cornered mask opening | > 0.15 mm | 0.16 mm | `VIA_MASK_CLEARANCE`; via nudger |
+| Mask bridge between pads | ≥ 0.15 mm | 0.16 mm, or merge the openings | `MASK_BRIDGE_MIN` |
+| Mask expansion | not 1:1 | 0.05 mm per side (0.04 mm on 0.5 mm-pitch USB-C) | `SOLDER_MASK_EXPANSION` |
+| Plated slot width | > 0.81 mm | 0.82 mm (USB-C 0.85 mm, ≥ 2:1, 0.2 mm ring) | `SLOT_MIN_WIDTH` |
+| SMT pad to another part's THT pad | > 3.05 mm | 3.07 mm | `THT_SMD_CLEARANCE` |
+| Copper to board edge | — | 0.20 mm | `COPPER_EDGE_CLEARANCE` |
+
+Lessons from the DFM rounds:
+
+- **KiCad DRC passing does not mean JLCDFM accepts the board.** KiCad
+  checks copper clearances. JLCDFM checks against mask openings and treats
+  rectangular pads as square-cornered. A via sitting diagonally off a
+  rounded SOIC corner therefore reports about 0.05 mm closer than KiCad
+  measures. Measure everything against the mask opening, not the copper.
+- **Freerouting's 45° pad exits skim their neighbours' mask openings.**
+  After importing the SES, the generator:
+  - straightens exits;
+  - slides stub junctions along locked same-net tracks
+    (`slide_stub_junction`, 0.01 mm `MASK_TRACK_STEP`);
+  - nudges vias.
+
+  Steps coarser than 0.01 mm miss valid positions.
+- **Round, do not truncate, when converting to internal units (`mm()`).**
+  Truncation left route ends 1 nm off pad centres and created spurious
+  near-misses.
+- **Gates must skip paste-only pads** (`IsOnCopperLayer()`). Module
+  footprints such as the Pico SMD carry paste-only and unconnected landing
+  pads (test points, SWD, USB shell legs). Routed copper must still clear
+  them.
+- **Fine-pitch USB-C:**
+  - Trim the signal pads 0.05 mm narrower to keep mask bridges at 0.16 mm or more.
+  - Emit one mask/paste opening for each stacked pad pair.
+  - Widen the shell slots outward so their inner edge stays at the stock position.
+- **Hand-soldered THT headers must stay more than 3.05 mm from SMT pads**,
+  including castellated module pads. Move the header, not the rule.
+- **Freerouting with the optimiser off is deterministic.** To meet a
+  length budget or fix an unroutable net:
+  1. Nudge a part 0.2 mm in x or y and reroute the variants in parallel
+     scratch copies.
+  2. Pick a variant that passes every gate.
+  3. Promote only that variant's SES.
+- **Fix the generator, then regenerate.** Never hand-edit Gerbers, the PCB
+  or the CPL.
+
+### JLC CPL rotations and positions
+
+JLC's 3D models do not share KiCad's zero orientation or origin. The
+community kicad-jlcpcb-tools rotation table was **wrong for several parts
+on this board**, and only JLC's placement preview revealed it.
+
+Every assembled footprint must match exactly one rule in
+`ROTATION_CORRECTIONS`, so a new package cannot silently default to 0°.
+
+| Package | Correction | Preview evidence |
+| --- | --- | --- |
+| SOIC / SOP | +270° | Pin 1 dots matched |
+| `CP_Elec` (C150379, C346929) | 0° | The community +180° rule reversed the polarity |
+| HRO USB-C (C393939) | 0°, **placed at the copper pad centre** (`PAD_CENTRED`) | +180° pointed the mouth inward; the KiCad origin is 1.5 mm toward the mouth |
+| Pico 2 W SMD (C42394205) | +270° | There was no community rule; at 0° the USB end pointed left |
+| SMA, 0603 | 0° | Correct |
+
+If JLC's model centre differs from the KiCad origin, add the footprint to
+`PAD_CENTRED` rather than hand-editing CPL coordinates. A board that is
+electrically correct but has a wrong CPL rotation still fails: a reversed
+electrolytic, or a USB-C socket with no pad contact.
+
+### Validate JLC's component-placement preview (required)
+
+Generating the CPL does not validate placement; JLC's rendering does. After
+the user uploads the ZIP, BOM and CPL, and **before any order is approved**:
+
+1. **Ask the user to download or screenshot the full component-placement
+   image** from JLCPCB's PCBA "Component Placements" step. It should show
+   the whole board, top side, with JLC's 3D models and the pin-1 and
+   polarity markers. Ask for zoomed captures wherever a marker is ambiguous:
+   - IC pin-1 dots;
+   - electrolytic `+` and stripe;
+   - the diode band;
+   - the USB-C mouth;
+   - module connectors.
+2. Map the image to board millimetres. Detect the green board edges, and
+   check that the pixel scale is the same in x and y. Then overlay every
+   copper pad from the routed `.kicad_pcb`, highlighting pin 1 / `+` / A1.
+3. Check every assembled part (62 on the current board):
+   - The model is centred on its pads.
+   - Pin 1 or polarity is on the highlighted pad.
+   - The connector mouth faces the board edge.
+   - The module antenna sits over its window.
+
+   Then cross-check the polarity pads' nets in the PCB:
+   - Electrolytic pad 1 is +5V.
+   - The D1 cathode is VSYS.
+   - IC GND and VCC are on the datasheet pins.
+4. Fix any wrong part in `export-jlc-assembly.py`, regenerate with the full
+   pipeline, and ask for a **new** preview image after the re-upload. Repeat
+   until every part passes. Never assume that a CPL change worked without a
+   fresh JLC image.
+5. Report each part as verified or wrong, with evidence, and list the
+   hand-soldered parts, which are intentionally missing from the preview.
+
+### SMT order notes
+
+- JLC ignores the Gerber job's `"Finish": "HAL lead-free"`. Select
+  **LeadFree HASL** manually; the order form defaults to leaded HASL.
+- PCBA: top side only; the hand-soldered parts are absent from the BOM and CPL.
+  At 60 mm tall, the single board is below Standard PCBA's 70 mm minimum:
+  choose **Economic PCBA**, or panelise with rails and fiducials for Standard.
+- Check Extended-part fees and stock (U2 SRAM is low-stock). The Pico 2 W
+  (C42394205) is Extended, needs X-ray inspection, and may need to be
+  pre-ordered into the user's JLC parts library.
+- Validate the JLC BOM page line by line against the CSV. Quantities include
+  JLC's attrition.
+
 ## 5. JLCPCB order review
 
 For the current board:
@@ -245,5 +457,7 @@ the render does not contain every physical assembly model.
 
 Link the updated ZIP and report the included layers/drills, archive check,
 ERC/DRC outcome and any remaining external DFM or physical checks. Register
-the ZIP as the requested deliverable. Do not equate fabrication acceptance
+the ZIP as the requested deliverable. For the SMT board, also report the BOM/CPL
+and the JLC placement-preview verdict; without a reviewed preview image, state
+that placement is unverified. Do not equate fabrication acceptance
 with electrical/RF/timing qualification; physical bring-up starts at 1 MHz.

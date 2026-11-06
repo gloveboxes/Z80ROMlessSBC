@@ -123,6 +123,9 @@ PCB:
 PCBA:
 
 - **Top side only**.
+- **Economic PCBA.** The 60 mm board height is below Standard PCBA's
+  70 × 70 mm single-board minimum. Standard PCBA would require a panel with
+  edge rails and fiducials.
 - Upload the JLC BOM and CPL listed above. The four hand-soldered parts are
   intentionally absent from both files.
 - The Pico 2 W (C42394205) is an Extended part that JLCPCB requires X-ray
