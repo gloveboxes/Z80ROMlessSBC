@@ -117,6 +117,16 @@ class BuildImagesTest(unittest.TestCase):
             self.bios,
         )
 
+    def test_banked_ccp_launches_through_runtime_reset(self) -> None:
+        system = build_images.build_banked_cpm_system("z80asm")
+        launch = self.z80_system[:0x800].index(b"\xCD\x00\x01")
+        self.assertEqual(system[launch:launch + 3], b"\xCD\x68\xFB")
+        self.assertEqual(system[:launch], self.z80_system[:launch])
+        self.assertEqual(system[launch + 3:0x800], self.z80_system[launch + 3:0x800])
+        trampoline = build_images.build_bank_trampoline("z80asm")
+        self.assertEqual(system[0x1540:0x1580], trampoline)
+        self.assertEqual(trampoline[0x28:0x2E], b"\xF5\xC5\xD5\xE5\x1E\x0A")
+
     def test_boot_package_rejects_incomplete_or_wrong_reset_image(self) -> None:
         for size in (0, 1, 65535, 65537):
             with self.subTest(size=size):

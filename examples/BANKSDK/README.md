@@ -80,6 +80,8 @@ allocation-backed buffers. Raw BIOS calls require a successful
   `bank_bios_query()` discovers pool geometry, byte-copy entries and the
   structured library service. `bank_bios_library_control()` submits its
   versioned 32-byte request without exposing loader-private mailboxes.
+  Initialization does not reset the pool, so memory and library APIs can be
+  initialized in either order without destroying the current app's leases.
 - Memory operations return zero on failure; allocation returns a nonzero
   handle, while size/available report bytes. `bank_memory_free(0)` succeeds.
   `bank_memory_reset()` is destructive to every allocation in the shared pool.
@@ -141,7 +143,21 @@ bytes; shared disk-geometry scratch is neither saved nor restored. The host BDOS
 proxy uses the same search packing as library entry/return. Resident metadata
 selectors use flag-preserving bit operations instead of saving AF on the stack,
 and SIZE validates live table entries directly without caching their values.
-Module generations, pool epochs and per-call object tokens never wrap.
+Before every CCP-launched `.COM`, CP/M starts a fresh banked runtime: it
+reclaims all 5,632 pool bytes, invalidates the previous library, clears its
+DMA/search context and starts a new module-generation/pool-epoch namespace.
+This happens whether the previous app returned with `RET`, warm-booted or
+left allocations open. No pool allocation or library handle survives into
+the next app. Repeated SUBMIT jobs therefore do not accumulate allocations,
+fragmentation or generation exhaustion across app launches.
+
+Module generations, pool epochs and per-call object tokens never wrap within
+one application's lifetime. Explicit `bank_memory_reset()` still advances
+the epoch and invalidates pool leases without unloading the current library.
+LOAD/RESET and calls still report exhaustion rather than reusing tokens
+inside an app. CP/M's application-start service (E=10) is for the CCP, not
+for SDK initialization or recovery during a live session. A program that
+chains another image without returning to the CCP owns its cleanup.
 
 ## Use from a client
 

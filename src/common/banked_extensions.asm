@@ -199,6 +199,24 @@ pool_size:
 invalid_pool:
         ld hl,0
         ret
+        defs 0ed88h-$,0
+application_start:
+        ; The CCP has replaced the transient: no previous app state is live.
+        xor a
+        ld (0de9fh),a
+        ld (0e4d2h),a
+        ld hl,0
+        ld (0e4d6h),hl
+        ld hl,0dfa0h
+        ld de,0dfa1h
+        ld bc,7
+        ld (hl),a
+        ldir
+        call 0e396h
+        ld a,1
+        ld (0dfa5h),a           ; allocator returns to the private-stack dispatcher
+        ld e,4
+        jp 0e800h
         defs 0edc0h-$,0
 complete_control:
         push hl

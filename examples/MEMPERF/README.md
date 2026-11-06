@@ -21,6 +21,10 @@ Preparation, poisoning, verification and printing are outside the timed
 intervals. Both directions are verified afterward. Reported milliseconds
 are the **total for all 32 repeats**, and KiB/s uses the full 128 KiB.
 The 5,632-byte general pool must have a contiguous 4 KiB extent available.
+CP/M reinitializes this pool before every CCP-launched `.COM`, so repeated
+MEMPERF/DATATEST SUBMIT runs start with the full pool even if a previous app
+left allocations open. This requires matching application-start firmware
+and CP/M system images; SDK initialization alone does not reset the pool.
 
 A single 4 KiB copy measured with whole milliseconds can only report
 800.0 KiB/s at 5 ms or 666.6 KiB/s at 6 ms. That is too coarse to diagnose

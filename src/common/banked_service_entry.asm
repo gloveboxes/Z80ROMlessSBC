@@ -1,7 +1,8 @@
 ; Bank-1 gateway dispatch. The mirrored FF10h entry switches banks first.
 ; E=0..5 enter the extent allocator, 6 the BDOS proxy used by the bank-0
 ; shim, 7 queries capabilities, 8 submits a library request and 9 returns
-; the last service status. No service re-enters the gateway while its
+; the last service status. E=10 is the CCP application-start reset.
+; No service re-enters the gateway while its
 ; bank-0 caller is suspended.
         org 0e640h
 bank_service_entry:
@@ -18,12 +19,17 @@ bank_service_entry:
         jp z,0ec00h
         cp 8
         jr z,library_control
+        cp 10
+        jr z,application_start
         jp 0e800h               ; allocator rejects unknown operations
 last_status:
         ld a,(0dfa2h)
         ld l,a
         ld h,0
         jp 0ff13h
+application_start:
+        ld de,0ed88h
+        jr private_stack
 bdos_proxy:
         ld de,0de00h
         jr private_stack

@@ -56,6 +56,7 @@ A-D are **four 512 KiB onboard-flash images**: 128 tracks x 32 records x 128 byt
 
 - **Cold boot:** core 0 recovers the journal, validates the image, then injects instructions under slow clocks so the Z80 loads/verifies 64 KiB in bank 0 and 8,960 bytes in bank 1 (page zero plus `DE00h`-`FFFFh`). Owners initialize `0100h`-`DDFFh` before use. PIO starts only after verification.
 - **CP/M entry:** BIOS installs `0000h` (warm boot) and `0005h` (BDOS) vectors, then enters CCP at `E600h`; programs start at `0100h`.
+- **Application entry:** the banked CCP calls the launch trampoline at `FB68h` before entering each `.COM` at `0100h`. Resident service E=10 reclaims the entire 5,632-byte shared pool, invalidates the previous library, clears its DMA/search context and initializes application-scoped generation/epoch state. Neither abandoned allocations nor exhausted counters carry into the next app, including successive SUBMIT commands and apps that exit with `RET`.
 - **Warm boot:** selects bank 0, flushes writes and reloads 44 system records from Drive A, restoring CCP and the bank-0 shim before the prompt.
 - **Flash commit:** core 0 parks the Z80 with `BUSREQ#`/`BUSACK#`, drains I/O and pauses the engine for core-1 programming, then rearms and returns the bus. The Pico never drives SRAM addresses or write strobes.
 
@@ -283,6 +284,13 @@ The 237-byte gateway uses two bank-select OUTs per 16-byte burst and bookkeeping
 | 7 | CAPABILITIES | Returns bank-1 address of a 48-byte versioned descriptor, or zero |
 | 8 | LIB CONTROL | HL=discovered request address; returns status independently of results |
 | 9 | LAST STATUS | Returns last resident-service status without clearing it |
+| 10 | APPLICATION START | CCP-only lifecycle service: invalidates the previous module, reclaims the pool and begins a fresh application token namespace; returns 1 |
+
+SDK initialization only validates capabilities. It must not invoke APPLICATION
+START or reset another API's live allocations. Application state does not
+survive a new CCP transient launch; explicit RESET within an app affects only
+pool allocations and preserves the loaded module. Direct program chaining
+that bypasses the CCP must manage its own cleanup.
 
 #### Capability and library control records
 
@@ -312,7 +320,7 @@ Feature bits 0-5 advertise byte transfers, library control, detailed status, DMA
 - **LOAD:** copies a padded 48-byte FCB from a live pool allocation.
 - **QUERY:** returns descriptors without changing ownership.
 - **CALL:** requires a live 512-byte frame extent, a body-length prefix in 1..256, a typed export and matching module generation/pool epoch.
-- **INVALIDATE:** makes the module uncallable even at generation exhaustion. Generations/epochs never wrap; LOAD/RESET returns EXHAUSTED rather than reviving stale state.
+- **INVALIDATE:** makes the module uncallable even at generation exhaustion. Generations/epochs never wrap within an application; LOAD/RESET returns EXHAUSTED rather than reviving stale state. The next CCP application launch begins a new namespace after discarding all prior application state.
 
 BIOS status codes are:
 

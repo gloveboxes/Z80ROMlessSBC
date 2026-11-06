@@ -29,4 +29,19 @@ extent_selected:
         out (7),a
         ld a,l
         ret
+        defs 0fb68h-$,0
+; CCP transient launch: discard the previous app's banked runtime before
+; entering 0100h. Preserve the CCP's argument registers and return address.
+application_start:
+        push af
+        push bc
+        push de
+        push hl
+        ld e,10
+        call 0ff10h
+        pop hl
+        pop de
+        pop bc
+        pop af
+        jp 0100h
         defs 0fb80h-$,0

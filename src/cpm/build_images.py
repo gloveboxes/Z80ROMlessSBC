@@ -138,8 +138,14 @@ def build_cpm_system(assembler: str) -> bytes:
 
 
 def build_banked_cpm_system(assembler: str) -> bytes:
-    """Keep the CCP and replace the bank-0 BDOS with its bank-1 proxy."""
-    pristine = bytearray(build_cpm_system(assembler))
+    """Wire CCP application startup and replace BDOS with its bank-1 proxy."""
+    ccp_source = CPM_Z80_SOURCE_PATH.read_text(encoding="ascii")
+    launch = "        call 0x0100\n"
+    if ccp_source.count(launch) != 1:
+        raise ValueError("CCP must contain exactly one transient launch call")
+    pristine = bytearray(assemble_cpm_source(
+        assembler, ccp_source.replace(launch, "        call 0xfb68\n")
+    ))
     source = REPO_ROOT / "src/cpm/bank0_bdos_shim.asm"
     with tempfile.TemporaryDirectory(prefix="z80sbc-bdos-shim-") as directory:
         binary = Path(directory) / "shim.bin"

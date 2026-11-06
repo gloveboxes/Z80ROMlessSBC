@@ -103,6 +103,37 @@ class HighResidentAllocator(unittest.TestCase):
         self.assertEqual(self.call(2, 0x0100), 0xBF00)
         self.assertEqual(self.call(2, 0xC000), 0x0800)
 
+    def test_application_start_reclaims_pool_and_token_namespace(self) -> None:
+        self.assertEqual(self.call(0, 4096), 0xC800)
+        self.assertEqual(self.call(0, 272), 0xD800)
+        bank = self.banks[1]
+        bank[0xDFA0:0xDFA8] = b"\xFF" * 8
+        bank[0xE4D2] = 8
+        bank[0xE4D6:0xE4D8] = b"\xFF\xFF"
+        bank[0xDF80:0xDF9E] = b"\xA5" * 30
+        self.assertEqual(self.call(10), 1)
+        self.assertEqual(self.call(9), 0)
+        self.assertEqual(bank[0xDFA0:0xDFA8], b"\x00" * 6 + b"\x01\x00")
+        self.assertEqual(bank[0xDE9F], 0)
+        self.assertEqual(bank[0xE4D2], 0)
+        self.assertEqual(bank[0xE4D6:0xE4D8], b"\x00\x00")
+        self.assertEqual(bank[0xDF80:0xDF9E], b"\x80" + b"\x00" * 29)
+        self.assertEqual(self.call(3), 5632)
+        self.assertEqual(self.call(0, 4096), 0xC800)
+
+    def test_more_than_65535_application_starts_do_not_exhaust(self) -> None:
+        # Each app abandons both a benchmark buffer and a library workspace.
+        self.banks[1][0xE000:0xE004] = b"\x21\x00\x00\xC9"
+        for _ in range(65536):
+            self.assertEqual(self.call(10), 1)
+            self.assertEqual(self.call(0, 4096), 0xC800)
+            workspace = self.call(0, 272)
+            self.assertEqual(workspace, 0xD800)
+            self.assertEqual(self.control(0, {12: workspace}), 0)
+            self.assertEqual(self.control(1), 0)
+        self.assertEqual(self.call(10), 1)
+        self.assertEqual(self.call(3), 5632)
+
     def test_fragmentation_matches_address_ordered_first_fit(self) -> None:
         rng = random.Random(0xB105)
         free = [(0xC8, 22)]
@@ -212,7 +243,7 @@ class HighResidentAllocator(unittest.TestCase):
         self.assertEqual(bank[0xDFA6:0xDFA8], b"\xff\xff")
 
     def test_resident_code_budgets(self) -> None:
-        for code, budget in ((self.transfer, 240), (self.entry, 80),
+        for code, budget in ((self.transfer, 240), (self.entry, 92),
                              (self.context, 128), (self.allocator, 832),
                              (self.extensions, 512), (self.descriptor, 112)):
             self.assertLessEqual(len(code), budget)

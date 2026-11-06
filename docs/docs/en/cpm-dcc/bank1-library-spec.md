@@ -23,6 +23,11 @@ vector. Bank-0 console calls remain local. One DCC library can be loaded at
 
 The library image, C stack, and allocator are pinned. `breset` resets only the
 general pool; it does not unload the library or reset its DCC heap.
+Each CCP-launched `.COM` starts with all 5,632 pool bytes available and no
+loaded library. The application-start service discards the previous app's
+allocations and library context and initializes fresh generation/epoch state.
+This boundary applies to both ordinary returns and warm-boot exits; SDK
+initialization itself is nondestructive.
 
 ## Library memory layout
 
@@ -187,8 +192,8 @@ with distinct FORMAT/IO status. The SDK runs `onload`/`onunload` automatically;
 these C lifecycle hooks are SDK policy, not CP/M BDOS functions.
 
 The resident dispatcher publishes a per-call two-byte token at the public
-`E4D6h` ABI data address. The runtime never reuses a token within its
-lifetime: after 65,534 invocations it returns `BL_EXHAUSTED` rather than
+`E4D6h` ABI data address. The runtime never reuses a token within one
+application's lifetime: after 65,534 invocations it returns `BL_EXHAUSTED` rather than
 wrapping, reserving the last token for unload cleanup.
 Bank-1 object constructors may use the token as an opaque handle.
 

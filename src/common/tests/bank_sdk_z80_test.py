@@ -293,16 +293,38 @@ class BankSdkExecution(unittest.TestCase):
 
         machine.set_output_callback(output)
         machine.set_input_callback(input_byte)
-        image = (self.folder / "build/MEMPERF.COM").read_bytes()
-        machine.memory[0x100:0x100 + len(image)] = image
-        machine.pc = 0x100
-        start = len(case.output)
-        output_text = case.until_prompt(start)
-        self.assertNotIn(b"FAIL:", output_text, output_text.decode(errors="replace"))
-        self.assertEqual((starts, reads, timing, timer_bytes), (8, 8, False, []))
-        self.assertEqual(output_text.count(b"100 ms; 1280.0 KiB/s"), 8)
-        self.assertEqual(output_text.count(b"128 KiB per timed direction (32 repeats)"), 2)
-        self.assertIn(b"PASS: MEMPERF complete; 5632 bytes free.", output_text)
+        root = Path(__file__).resolve().parents[3]
+        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
+        example = root / "examples/LIBDEMO"
+        subprocess.run([str(dcc / "dccmake")], cwd=example, check=True,
+                       capture_output=True, env={**os.environ, "DCC_DIR": str(dcc)})
+        for name, artifact in (
+                ("MEMPERF.COM", self.folder / "build/MEMPERF.COM"),
+                ("DATATEST.COM", example / "host/build/DATATEST.COM"),
+                ("DATA.LIB", example / "lib/build/DATA.LIB")):
+            case.disks[3][:] = cpm_boot_z80_test.install_program(
+                bytes(case.disks[3]), name, artifact.read_bytes())
+        # An app using only raw BIOS allocation must not poison the next SDK app.
+        leak = bytes((0x21, 0x00, 0x10, 0x1E, 0x00, 0xCD, 0x10, 0xFF, 0xC9))
+        case.disks[3][:] = cpm_boot_z80_test.install_program(
+            bytes(case.disks[3]), "LEAK.COM", leak)
+        self.assertIn(b"D>", case.command("D:"))
+        self.assertIn(b"D>", case.command("LEAK"))
+        system.banks[1][0xDFA0:0xDFA2] = b"\xFF\xFF"
+        for repeat in range(3):
+            with self.subTest(repeat=repeat):
+                library_output = case.command("DATATEST")
+                self.assertNotIn(b"FAIL:", library_output,
+                                 library_output.decode(errors="replace"))
+                self.assertIn(b"PASS: all 8 bank-1 library checks.", library_output)
+                output_text = case.command("MEMPERF")
+                self.assertNotIn(b"FAIL:", output_text,
+                                 output_text.decode(errors="replace"))
+                self.assertEqual(output_text.count(b"100 ms; 1280.0 KiB/s"), 8)
+                self.assertEqual(
+                    output_text.count(b"128 KiB per timed direction (32 repeats)"), 2)
+                self.assertIn(b"PASS: MEMPERF complete; 5632 bytes free.", output_text)
+        self.assertEqual((starts, reads, timing, timer_bytes), (24, 24, False, []))
 
 
 if __name__ == "__main__":

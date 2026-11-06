@@ -103,6 +103,45 @@ class BankOneSystemBoot(unittest.TestCase):
         self.assertIn(b"A>", case.until_prompt(len(case.output)))
         self.assertEqual(self.active, 0)
 
+    def test_application_launch_recovers_pool_and_exhausted_runtime(self) -> None:
+        case = self.case
+        # Deliberately abandon a 4 KiB allocation on both CP/M exit paths.
+        allocate = bytes((0x21, 0x00, 0x10, 0x1E, 0x00,
+                          0xCD, 0x10, 0xFF, 0x22, 0x88, 0x00))
+        for name, exit_code in (("LEAKRET.COM", b"\xC9"),
+                                ("LEAKBOOT.COM", b"\xC3\x00\x00")):
+            case.disks[0][:] = cpm_boot_z80_test.install_program(
+                bytes(case.disks[0]), name, allocate + exit_code)
+        case.until_prompt()
+        for _ in range(100):
+            if not self.active:
+                break
+            case.machine.ticks_to_stop = 1000
+            case.machine.run()
+        self.assertEqual(self.active, 0)
+        bank = self.banks[1]
+        bank[0xDFA0:0xDFA2] = b"\xFF\xFF"
+        bank[0xDFA6:0xDFA8] = b"\xFF\xFF"
+        bank[0xDE9F] = 1
+        bank[0xE4D2] = 8
+        for command in ("LEAKRET", "LEAKRET", "LEAKBOOT", "LEAKRET"):
+            with self.subTest(command=command):
+                self.assertIn(b"A>", case.command(command))
+                for _ in range(100):
+                    if not self.active:
+                        break
+                    case.machine.ticks_to_stop = 1000
+                    case.machine.run()
+                self.assertEqual(self.active, 0)
+                self.assertEqual(case.machine.memory[0x88:0x8A], b"\x00\xC8")
+                self.assertEqual(bank[0xE614:0xE616], b"\x00\x06")
+                self.assertEqual(bank[0xDFA0:0xDFA2], b"\x00\x00")
+                self.assertEqual(bank[0xDFA6:0xDFA8], b"\x01\x00")
+                self.assertEqual(bank[0xDE9F], 0)
+                self.assertEqual(bank[0xE4D2], 0)
+                self.assertEqual(bank[0xE701:0xE703], b"\xBF\x08")
+                self.assertEqual(bank[0xE800:0xEC00], self.resident[0x200:0x600])
+
     def test_dcc_library_loaded_and_called_from_bank_zero(self) -> None:
         self.check_dcc_library(0)
 
