@@ -21,6 +21,11 @@ All other parts are JLCPCB-assembled from the LCSC numbers in the schematic:
 - Raspberry Pi Pico 2 W (C42394205), reflowed on its castellated pads with
   KiCad's `RaspberryPi_Pico_W_SMD` footprint.
 
+The bulk capacitors are C8-C10 = 22 µF, 35 V (LCSC C150379) and C11 = 100 µF,
+16 V (LCSC C346929). Both parts use the same 6.3 × 5.4 mm case, so they look
+the same size in JLCPCB's placement preview; check the BOM part numbers and
+values rather than judging capacitance from the rendered body size.
+
 ## Sources
 
 - `scripts/build-kicad-smt-schematic.py` generates the schematic, symbols and
