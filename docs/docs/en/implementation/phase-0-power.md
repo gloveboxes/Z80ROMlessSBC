@@ -23,7 +23,7 @@ The selected TYPE-C USB-to-pin female adapter is a **USB-C breakout, not a
 The six header holes use confirmed standard breadboard **2.54 mm pitch**,
 with **12.7 mm between the first and last hole centres** (five gaps).
 Header offsets, mounting-hole geometry, USB connector overhang and assembled
-height remain unspecified. The separate [PCB implementation](../pcb/design-considerations.md#usb-c-power-module-mounting)
+height remain unspecified. The separate [DIP PCB implementation](../pcb/design-considerations.md#usb-c-power-module-mounting)
 uses six soldered header pins, no module screw holes, and a photo-scaled
 outline that must be dry-fitted before fabrication. This Phase 0 procedure is
 for the breadboard; it uses the same VBUS/GND connections.

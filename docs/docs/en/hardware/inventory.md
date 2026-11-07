@@ -199,10 +199,15 @@ is schematic A2, wired through J2 on the breadboard and socketed in a
 38 x 12 mm reservation on the PCB. It is not included in the core package count; see the
 [status display module](#status-display-module) inventory and pricing.
 
-The [PCB inventory](../pcb/inventory.md) owns the compact four-layer assembly:
+The [DIP PCB inventory](../pcb/inventory.md) owns the through-hole assembly:
 six bussed resistor arrays replace all 40 discrete pull resistors, J1 mounts
 the USB-C breakout on six soldered pins with only +5 V/GND wired, and four
 corner 2.7 mm holes accept
 M2.5 standoffs. The PCB's 20 MHz target requires its own qualification.
 J3 is an optional auxiliary power/probe header; use only one supply at a time.
 Keep the discrete-resistor inventory above for the breadboard build.
+
+The [partial-SMT inventory](../pcb/smt-inventory.md) is separate: it uses
+SOIC logic, IS62C1024AL-35QLI SOP SRAM, individual 0603 pulls and an onboard
+USB-C receptacle. [Compare both PCBs](../pcb/variants.md) before ordering;
+their BOMs and assembly methods are not interchangeable.

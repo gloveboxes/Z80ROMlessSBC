@@ -4,10 +4,10 @@
 
 **Scope: the three-BB830 breadboard prototype.** Phase 0-10 below describe
 incremental socket installation, jumper wiring, and breadboard bring-up.
-The [four-layer PCB](../pcb/index.md) implements the same electrical circuit,
-but has its own BOM, mechanical assembly and 20 MHz qualification target.
-Do not substitute its placement or resistor-array packages into these
-breadboard installation steps.
+The [DIP and partial-SMT PCBs](../pcb/variants.md) implement the same circuit,
+but each has its own BOM, mechanical assembly and 20 MHz qualification
+target. Do not substitute either PCB's placement or component packages
+into these breadboard installation steps.
 
 *Bring-up* means proving a small part of the circuit works before adding the
 next part. Treat each phase like an integration test with a hardware fixture:

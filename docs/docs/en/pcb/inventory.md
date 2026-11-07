@@ -1,4 +1,8 @@
-# PCB Inventory
+# DIP / Through-Hole PCB Inventory
+
+These parts are for the **DIP / through-hole PCB**, not the
+[partial-SMT inventory](smt-inventory.md). See
+[Choose a PCB design](variants.md) before buying parts or ordering boards.
 
 This is the Revision B **85 x 96 mm**, four-layer assisted-loader PCB.
 The [generated BOM](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/hardware/kicad/fabrication/z80_romless_sbc-bom.csv)

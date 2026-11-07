@@ -13,19 +13,21 @@ all electrical and timing claims as proposed until the staged bench tests pass.
 - [Read the published documentation](https://gloveboxes.github.io/Z80ROMlessSBC/)
 - [Follow the staged breadboard implementation plan](docs/docs/en/implementation/index.md)
 - [Review the KiCad schematic](hardware/kicad/exports/z80_romless_sbc.pdf)
-- [PCB design, inventory, and fabrication](docs/docs/en/pcb/index.md)
+- [Choose a PCB: DIP or partial-SMT](docs/docs/en/pcb/variants.md)
 
 The documentation covers the component inventory, pin maps, voltage domains,
 breadboard construction, Z80-assisted loading, firmware architecture, CP/M storage,
 DHO814/DSLogic Plus measurements, and the complete phase-by-phase bring-up
 procedure.
 
-Phases 0-10 build the three-BB830 breadboard prototype. The PCB is a separate
-physical implementation of the same eight-package assisted-loader circuit:
-85 x 96 mm, four layers, resistor arrays, an OLED socket and four corner
-M2.5 standoff holes. Its 20 MHz design target requires separate PCB
-qualification. Both builds use fixed HCT32 logic and Z80-executed RAM loading,
-with no PLD programmer or address expander.
+Phases 0-10 build the three-BB830 breadboard prototype. Two four-layer PCBs
+implement the same assisted-loader circuit: an **85 x 96 mm DIP / through-hole
+board** for hand assembly, and a **98.3 x 60 mm partial-SMT board** for JLCPCB
+assembly. DIP is the budget-oriented option for one hand-built machine;
+partial-SMT reduces hand-soldering and uses a different SRAM part.
+Each PCB's 20 MHz target requires separate qualification. All builds use
+fixed HCT32 logic and Z80-executed RAM loading, with no PLD programmer or
+address expander.
 
 ## Related projects
 

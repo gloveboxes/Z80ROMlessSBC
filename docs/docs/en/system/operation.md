@@ -259,13 +259,15 @@ wear-levelled storage.
     not automatically to every assembled board. The project IC set has been
     tested at 20 MHz, but PCB receiving-pin margins require separate evidence.
     A 50 ns clock period is not the complete Z80 memory-access window:
-    compare the actual read/write edges, 55 ns SRAM access, AHCT244/HCT32
+    compare the actual read/write edges, SRAM access (55 ns on the DIP board,
+    35 ns on the partial-SMT board), AHCT244/HCT32
     propagation and setup/hold requirements. Changing a clock setting alone
     does not establish these margins.
 
-  - *PCB Target:* The [four-layer board](../pcb/index.md) implements this
-    circuit with a 20 MHz qualification target, measured route lengths and
-    its own manufacturing package. Start PCB bring-up at 1 MHz.
+  - *PCB Targets:* The [DIP and partial-SMT boards](../pcb/variants.md)
+    implement this circuit with separate inventories, measured route
+    lengths and manufacturing packages. Each has a 20 MHz qualification
+    target; start either PCB's bring-up at 1 MHz.
 
 ### PIO I/O service
 

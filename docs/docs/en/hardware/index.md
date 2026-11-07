@@ -16,10 +16,11 @@ chapter order is not the chip-installation order.
 | [4. Output buffer](output-buffer.md) | AHCT244 channel allocation and enable behavior |
 | [5. Bus isolation](bus-isolation.md) | Address, data, and control transceiver operating modes |
 
-The [PCB design](../pcb/index.md) is a compact four-layer implementation of
-this circuit, with resistor arrays, an OLED socket and corner M2.5 mounting.
-Its mechanical assembly and 20 MHz qualification are separate from the
-breadboard implementation sequence.
+There are [two four-layer PCB designs](../pcb/variants.md): a hand-assembled
+DIP / through-hole board and a compact, JLC-assembled partial-SMT board.
+They use different packages, SRAM parts and BOMs. Each board's mechanical
+assembly and 20 MHz qualification are separate from the breadboard
+implementation sequence.
 
 The instrument procedures are cross-cutting qualification references rather
 than additional hardware chapters. Use the

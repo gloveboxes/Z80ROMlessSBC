@@ -1,4 +1,8 @@
-# PCB Design Considerations
+# DIP / Through-Hole PCB Design Considerations
+
+These constraints apply to `hardware/kicad/`. The
+[partial-SMT design](smt-design-considerations.md) has different packages,
+placement, SRAM timing and assembly requirements.
 
 Revision B is a compact **85 x 96 mm** implementation of the current
 eight-package assisted-loader circuit. It retains the IC set already tested

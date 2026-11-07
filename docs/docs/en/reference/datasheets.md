@@ -2,6 +2,8 @@
 
 - [Z84C00 CPU datasheet](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/Z8400.PDF)
 - [AS6C1008 SRAM datasheet](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/AS6C1008_Mar_2023V1.2.pdf)
+- [IS62C1024AL SRAM datasheet](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/IS62C1024AL.pdf)
+	(IS62C1024AL-35QLI, SOP-32 SRAM fitted to the partial-SMT PCB)
 - [SN74HCT32 quad OR datasheet](https://www.ti.com/lit/ds/symlink/sn74hct32.pdf)
 	([searchable text](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/SN74HCT32.txt))
 - [SN74AHCT244 datasheet](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/datasheets/SN74AHCT244.pdf)

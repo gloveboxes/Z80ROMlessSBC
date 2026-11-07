@@ -1,4 +1,10 @@
-# PCB Design
+# DIP / Through-Hole PCB
+
+This page covers the **DIP / through-hole design** in `hardware/kicad/`.
+For the other design, see the [partial-SMT PCB](smt.md), or
+[compare both boards](variants.md). This is the budget-oriented option
+for one hand-built machine: populate one board from the bare-PCB batch
+without paying for factory assembly.
 
 The PCB is a **separate physical implementation** of the Z80 ROMless SBC:
 a **85 x 96 mm**, four-layer, through-hole board implementing the current
@@ -40,7 +46,7 @@ onboard J1 USB-C power breakout. Its other four pins have isolated solder
 pads, not signal connections. Revision B has no test points: the circuit is
 proven on the prototype, so probe IC pins or socket leads directly. Four 2.7 mm NPTH mounting footprints are additional mechanical
 features. The corner holes are 4 mm from both adjacent edges, with
-**102 x 104 mm** centre spacing for four M2.5 standoffs.
+**77 x 88 mm** centre spacing for four M2.5 standoffs.
 
 The routed PCB and its fabrication files have passed the repository's
 connectivity, layout, and generation checks. **This is not a

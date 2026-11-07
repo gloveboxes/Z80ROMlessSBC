@@ -33,9 +33,15 @@ nav:
       - RIGOL DHO814 oscilloscope: en/hardware/oscilloscope.md
       - DSLogic Plus logic analyzer: en/hardware/logic-analyzer.md
   - PCB design:
-      - Overview and fabrication: en/pcb/index.md
-      - Inventory: en/pcb/inventory.md
-      - Design considerations: en/pcb/design-considerations.md
+      - Choose a PCB: en/pcb/variants.md
+      - DIP / through-hole PCB:
+          - Overview and fabrication: en/pcb/index.md
+          - Inventory: en/pcb/inventory.md
+          - Design considerations: en/pcb/design-considerations.md
+      - Partial-SMT PCB:
+          - Overview and fabrication: en/pcb/smt.md
+          - Inventory and assembly: en/pcb/smt-inventory.md
+          - Design considerations: en/pcb/smt-design-considerations.md
   - System architecture:
       - Operational boundaries: en/system/operation.md
       - CP/M execution and banked memory: en/system/cpm-execution.md
