@@ -27,6 +27,7 @@ public:
   explicit WebSocketServer(uint32_t) {}
   ReceiveLimits receive_limits;
   ReceiveQueueStats receive_queue_stats;
+  uint16_t listening_port = 0;
   CloseDetailsCallback close_details_callback = nullptr;
   void setConnectCallback(ConnectCallback) {}
   void setCloseCallback(CloseCallback) {}
@@ -40,7 +41,7 @@ public:
            limits.queuedMessages == 64 && limits.dispatchMessages == 32;
   }
   bool getReceiveQueueStats(uint32_t, ReceiveQueueStats&);
-  bool startListening(uint16_t) { return true; }
+  bool startListening(uint16_t port) { listening_port = port; return true; }
   void popMessages();
   bool close(uint32_t);
   bool abort(uint32_t);

@@ -563,6 +563,7 @@ int main() {
   advance(RETRY_DELAY_MS);
   assert(!poll_network());
   assert(poll_network());
+  assert(server_started && server->listening_port == 80);
   assert(power_mode_calls == 2 &&
          power_mode_setting == CYW43_NO_POWERSAVE_MODE);
   assert(time_client_starts == 1 && std::string(service_address) == "192.0.2.1");

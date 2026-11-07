@@ -455,7 +455,7 @@ static void print_status(bool requested) {
            !!(__atomic_load_n(&usb_state, __ATOMIC_ACQUIRE) & USB_SETUP),
            has_address ? address : "unavailable");
     if (has_address)
-      printf("[network] Terminal: http://%s:%u/\n", address, Z80_WEB_TERMINAL_PORT);
+      printf("[network] Terminal: http://%s/\n", address);
     z80_oled_print_status();
   }
   z80_web_terminal_stats_t web = z80_web_terminal_get_stats();

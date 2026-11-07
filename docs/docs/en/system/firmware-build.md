@@ -229,7 +229,8 @@ Flash offsets (picotool addresses include the `0x10000000` XIP base):
 | ENV (preserve during boot updates) | `0x1FE000`–`0x1FFFFF` |
 | Drive A / B / C / D | `0x200000` / `0x280000` / `0x300000` / `0x380000` |
 
-After Phase 10 joins Wi-Fi, open `http://<pico-dhcp-address>:8088/`.
+After Phase 10 joins Wi-Fi, open `http://<pico-dhcp-address>/`.
+HTTP and WebSocket share default port 80.
 Use **Ctrl-] s** for supervisor status. Disk writes persist across reboots;
 full provisioning replaces them.
 

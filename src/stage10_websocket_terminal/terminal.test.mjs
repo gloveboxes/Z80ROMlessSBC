@@ -21,7 +21,7 @@ function frame(type, sequence, payload = []) {
   return bytes;
 }
 
-function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }) {
+function terminal(location = { hostname: '192.0.2.1', port: '', search: '' }) {
   const sent = [];
   let keydown;
   let onData;
@@ -34,6 +34,7 @@ function terminal(location = { hostname: '192.0.2.1', port: '8088', search: '' }
   const term = {
     focus() {},
     onData(handler) { onData = handler; return { dispose() {} }; },
+    onBell() { return { dispose() {} }; },
     attachCustomKeyEventHandler(handler) { keydown = handler; },
     write(data, callback) {
       written.push([...data]);
@@ -193,24 +194,47 @@ test('xterm input forwards bytes, CP/M controls and pastes; disconnected input i
   assert.equal(input.press('c', 67, { ctrlKey: true }), true);
   input.type('\x03\x1aDIR\r');
   assert.deepEqual(input.sent.at(-1), [2, 1, 0, 0, 0, 3, 26, 68, 73, 82, 13]);
-  assert.equal(input.api.getWebSocketUrl(), 'ws://192.0.2.1:8088/');
+  assert.equal(input.api.getWebSocketUrl(), 'ws://192.0.2.1/');
   input.api.state.connected = false;
   const count = input.sent.length;
   input.type('not sent');
   assert.equal(input.sent.length, count);
 });
 
-test('Pico WebSocket always uses port 8088 and root, including separately hosted pages', () => {
-  for (const port of ['', '80', '8088', '5500']) {
+test('Pico HTTP and WebSocket use default port 80 and root, including separately hosted pages', () => {
+  const header = readFileSync(new URL('./web_terminal.h', import.meta.url), 'utf8');
+  assert.match(header, /Z80_WEB_TERMINAL_PORT\s*=\s*80,/);
+  for (const port of ['', '80', '8080', '5500']) {
     const input = terminal({ hostname: '192.0.2.1', port, search: '' });
-    assert.equal(input.api.getWebSocketUrl(), 'ws://192.0.2.1:8088/');
+    assert.equal(input.api.getWebSocketUrl(), 'ws://192.0.2.1/');
   }
   const remote = terminal({
     hostname: 'localhost', port: '5500', search: '?altair=192.0.2.50',
   });
-  assert.equal(remote.api.getWebSocketUrl(), 'ws://192.0.2.50:8088/');
+  assert.equal(remote.api.getWebSocketUrl(), 'ws://192.0.2.50/');
   const local = terminal({ hostname: '', port: '', search: '' });
-  assert.equal(local.api.getWebSocketUrl(), 'ws://localhost:8088/');
+  assert.equal(local.api.getWebSocketUrl(), 'ws://localhost/');
+});
+
+test('HTTPS proxies and Dev Tunnels retain default TLS WebSocket URLs', () => {
+  const proxy = terminal({
+    hostname: 'terminal.example', protocol: 'https:', port: '', search: '',
+  });
+  assert.equal(proxy.api.getWebSocketUrl(), 'wss://terminal.example/');
+  const tunnel = terminal({
+    hostname: 'example-80.devtunnels.ms', protocol: 'https:', port: '',
+    search: '?altair=192.0.2.50',
+  });
+  assert.equal(tunnel.api.getWebSocketUrl(), 'wss://example-80.devtunnels.ms/');
+});
+
+test('URL construction failures report an error and fall back to default-port localhost', () => {
+  const input = terminal();
+  input.context.URLSearchParams = class {
+    constructor() { throw new Error('URL parameters unavailable'); }
+  };
+  assert.equal(input.api.getWebSocketUrl(), 'ws://localhost/');
+  assert.ok(input.errors.some(error => error.includes('Failed to construct WebSocket URL')));
 });
 
 test('ESP32 terminal layout keeps 80 columns and a separate scrollbar strip', () => {

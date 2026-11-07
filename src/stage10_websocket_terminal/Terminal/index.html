@@ -399,7 +399,6 @@
         XTERM_FONT_SIZE: 18,
         XTERM_ROWS: 30,
         XTERM_COLS: 80,
-        WEBSOCKET_PORT: 8088,
         INPUT_FRAME_BYTES: 64,
         MAX_PENDING_INPUT: 65536,
         INPUT_RETRY_MS: 250,
@@ -1144,7 +1143,7 @@
           const hostAddress = urlParams.get('altair');
 
           // Dev Tunnels terminate TLS and route the public hostname to the
-          // configured tunnel port, so keep that hostname and omit :8088.
+          // configured tunnel port, so keep that hostname and use default TLS.
           const pageHostname = window.location.hostname || '';
           if (pageHostname.toLowerCase().endsWith('.devtunnels.ms')) {
             return `wss://${pageHostname}/`;
@@ -1155,13 +1154,13 @@
             ? sanitizeHostAddress(hostAddress)
             : window.location.hostname || 'localhost';
 
-          // Pico HTTP and WebSocket share port 8088 at the root path.
+          // Pico HTTP and WebSocket share default port 80 at the root path.
           const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-          return `${scheme}://${altairAddress}:${CONFIG.WEBSOCKET_PORT}/`;
+          return `${scheme}://${altairAddress}/`;
         } catch (error) {
           console.error("Failed to construct WebSocket URL:", error);
           const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-          return `${scheme}://localhost:${CONFIG.WEBSOCKET_PORT}/`;
+          return `${scheme}://localhost/`;
         }
       }
 

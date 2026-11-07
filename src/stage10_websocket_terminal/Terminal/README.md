@@ -4,9 +4,12 @@ Based on the updated `esp32-altair-8800/terminal` web terminal, now version 3.3.
 with the Pico transport and CP/M adaptations retained. The refreshed UI uses
 80 columns by 30 rows, xterm's overlay scrollbar kept in a separate right-side strip,
 and horizontal terminal scrolling on narrow screens rather than clipping columns.
-The xterm.js UI uses the page's host (or `?altair=<pico-ip>`) and fixed Pico
-port **8088** for a root-path WebSocket, not the ESP32 `/ws` endpoint.
+The xterm.js UI uses the page's host (or `?altair=<pico-ip>`) and default Pico
+port **80** for a root-path WebSocket, not the ESP32 `/ws` endpoint.
+Open `http://<pico-ip>/`; the WebSocket URL is `ws://<pico-ip>/`.
 This also works when the HTML is opened locally or served on another port.
+HTTPS proxies use default TLS port 443; Dev Tunnels retain their public
+hostname and must forward to Pico port 80.
 The **Keys** toolbar button toggles an on-screen cursor pad (arrows, Esc, Ctrl+C,
 Ctrl+O, Space, Enter) for tablets without a keyboard. Arrows send the same WordStar
 codes as the physical keys (Ctrl-E/S/D/X), held keys auto-repeat, and taps never

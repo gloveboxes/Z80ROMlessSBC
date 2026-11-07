@@ -182,7 +182,7 @@ The fitted IC references below match the current schematic and
 | UART | Universal asynchronous receiver/transmitter | Common serial protocol supported by decoders; the Z80 terminal itself is virtual, not a UART chip. |
 | I2C / I²C | Inter-Integrated Circuit | Two-wire serial protocol supported by instruments but not used for the CPU/SRAM interface. |
 | TCP/IP | Transmission Control Protocol / Internet Protocol | Networking foundation used by HTTP and WebSocket traffic. |
-| HTTP | Hypertext Transfer Protocol | Serves the browser terminal page from Pico port 8088. |
+| HTTP | Hypertext Transfer Protocol | Serves the browser terminal page from Pico default port 80, shared with WebSocket. |
 | HTML | Hypertext Markup Language | Source format of the embedded browser terminal interface. |
 | JSON | JavaScript Object Notation | Structured text format used for generated manifests. |
 | CSV | Comma-separated values | Plain-text tabular export format for captures, measurements, and generated data. |

@@ -749,7 +749,7 @@ static void test_browser_usb_routing(void) {
   network_address = "192.0.2.42";
   command('s');
   assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
-  assert(strstr(output, "[network] Terminal: http://192.0.2.42:8088/"));
+  assert(strstr(output, "[network] Terminal: http://192.0.2.42/"));
   assert(strstr(output, "[web] retransmits=1 flush_failures=3 ack_timeouts=6 "
                         "pong_timeouts=2"));
   assert(strstr(output, "[webbuf] in_msgs=0/64 peak=0 in_bytes=0/1024 peak=0"));

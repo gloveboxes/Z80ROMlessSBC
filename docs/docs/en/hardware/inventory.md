@@ -40,7 +40,7 @@ packages. It connects to J2's 3.3 V I2C pins.
 
 | Done | Qty | Reference | Part | Size / connector | Role |
 | --- | ---: | --- | --- | --- | --- |
-| <input type="checkbox" data-checklist-id="a2-oled" aria-label="0.91-inch SSD1315 OLED module available"> | 1 | A2 | 0.91-inch 128x32 I2C OLED module, SSD1315 controller, white or blue | 38.00 x 12.00 mm board; 30.00 mm panel; 22.38 x 5.58 mm active area; 4-pin 2.54 mm header | [Status display](../implementation/phase-10-websocket.md#ssd1315-status-oled): IP address, web-terminal port, uptime, heartbeat and web-terminal connection dot |
+| <input type="checkbox" data-checklist-id="a2-oled" aria-label="0.91-inch SSD1315 OLED module available"> | 1 | A2 | 0.91-inch 128x32 I2C OLED module, SSD1315 controller, white or blue | 38.00 x 12.00 mm board; 30.00 mm panel; 22.38 x 5.58 mm active area; 4-pin 2.54 mm header | [Status display](../implementation/phase-10-websocket.md#ssd1315-status-oled): IP address, uptime, heartbeat and web-terminal connection dot |
 
 The header order is **GND, VCC, SCK, SDA**, with GND first. Many similar
 modules put VCC first, so wire by the printed labels. The module prints `SCK`

@@ -74,11 +74,11 @@ flushing disks cannot save unsaved application RAM.
 ### 3. Open the browser terminal
 
 1. Press **Ctrl-] s** on USB to display the Pico's address.
-2. Open **`http://<pico-ip>:8088/`**.
+2. Open **`http://<pico-ip>/`**. HTTP and WebSocket share default port **80**.
 3. Press **Enter** for a fresh CP/M prompt, then try `DIR`.
 
 - <input type="checkbox" data-checklist-id="conditional-network-diagnosis" aria-label="Network address verified"> Pico address verified and terminal page opened.
-- <input type="checkbox" data-checklist-id="functional-tests-trusted-network" aria-label="Trusted local network selected"> Use a **trusted local network only**. The terminal has no authentication or TLS; never expose port 8088 to the Internet.
+- <input type="checkbox" data-checklist-id="functional-tests-trusted-network" aria-label="Trusted local network selected"> Use a **trusted local network only**. The terminal has no authentication or TLS; never expose port 80 to the Internet.
 - The browser needs Internet access on first use to load xterm.js dependencies.
 - Reload the terminal page after firmware updates.
 
@@ -127,7 +127,7 @@ Passwords and API keys are hidden during entry and masked on display.
 | USB ignores normal typing | A browser owns CP/M. Close it to return to USB; USB supervisor commands still work. |
 | Second browser cannot connect | Only one browser may own the terminal. |
 | Browser disappears | USB ownership returns on disconnect/Wi-Fi loss, or after five missed pongs; pings are sent every five minutes. The Z80 keeps running. |
-| Wrong address | Use the Pico's address, not `FS_SERVER`. HTTP/WebSocket use port 8088; `?altair=<pico-ip>` changes the host only. |
+| Wrong address | Use the Pico's address, not `FS_SERVER`. HTTP/WebSocket use default port 80; `?altair=<pico-ip>` changes the host only. |
 | Configuration save fails | Reopen **Ctrl-] c**, inspect saved values and retry affected fields. |
 
 <input type="checkbox" data-checklist-id="conditional-boot-diagnosis" aria-label="Boot and network failures distinguished"> Confirm boot and network faults separately.
@@ -142,14 +142,12 @@ The 0.91-inch, monochrome 128x32 I2C OLED shows two lines and a heartbeat:
 - **IP address:** `IP: 192.168.1.10`, checked once per second through a lock-free change counter;
   the rendered bitmap is cached and redrawn only when the address changes. With
   no address it shows `IP: OFFLINE`.
-- **Port and uptime:** the second line starts with the fixed web-terminal
-  port, `P:8088`, then `U: HH:MM` for the first day (up to `U: 23:59`), then
-  days, for example `P:8088 U: 4d 05:23`. The uptime is redrawn once per
-  uptime minute. The port never changes, so its bitmap is a compile-time
-  constant drawn once; uptime redraws only send the columns to its right.
-  `P:8088 U: 999d 23:59` fills the width exactly. From 1000 days the `U:`
-  label is dropped (`P:8088 1000d 01:02`), and for very long uptimes, the
-  clock too, so the line never passes the edge.
+- **Uptime:** the second line starts at the left edge with `U: HH:MM`
+  for the first day (up to `U: 23:59`), then days, for example
+  `U: 4d 05:23`. The uptime is redrawn once per uptime minute; only changed
+  column spans are sent. The default HTTP port needs no display label.
+  The `U:` label fits through eight day digits; with nine day digits it is
+  dropped so the clock still fits throughout the 64-bit microsecond range.
 
 Text uses 3x5 glyphs at double size with proportional spacing: `.` and `:` take
 one pixel column, so the longest address, `IP: 255.255.255.255`, fits the
@@ -255,7 +253,7 @@ and failures without periodic terminal logging.
     re-publish), counter-gated address reads, exact two-byte heartbeat writes that preserve neighbouring
     pixels and survive uptime redraws, the web-terminal dot (one-write
     blinking, lit-tick-only browser reads, disconnect clearing and pause),
-    the compile-time port bitmap, minute-only uptime writes limited to
+    full-width uptime formatting, minute-only uptime writes limited to
     pages 2-3, the longest IPv4 address, pause gating, NACKs on every byte
     of a maximum-length write, and transport timeout/resource failures with
     cleanup.

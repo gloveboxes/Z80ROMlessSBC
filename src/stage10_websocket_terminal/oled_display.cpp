@@ -1,6 +1,5 @@
 #include "oled_display.h"
 #include "display_i2c.h"
-#include "web_terminal.h"
 #include "../common/io_service.h"
 #include "pico/stdlib.h"
 #include "z80sbc/ram_timer.h"
@@ -128,48 +127,16 @@ void text(unsigned y, const char *value, unsigned x = 0) {
   draw_text(framebuffer, WIDTH, PAGES * 8, x, y, value);
 }
 
-void clear_field(unsigned y, unsigned first_x = 0) {
+void clear_field(unsigned y) {
   for (unsigned row = y; row < y + FIELD_ROWS; ++row)
-    for (unsigned x = first_x; x < WIDTH; ++x)
+    for (unsigned x = 0; x < WIDTH; ++x)
       framebuffer[(row / 8) * WIDTH + x] &= ~(1u << (row % 8));
 }
 
-// "P:<port>" is fixed at build time, so its bitmap is a compile-time constant
-// blitted once; uptime redraws only touch the columns to its right.
-struct PortLabel { char text[8]; };
-constexpr PortLabel port_label() {
-  PortLabel label{{'P', ':'}};
-  unsigned digits = 1;
-  for (unsigned value = Z80_WEB_TERMINAL_PORT; value >= 10; value /= 10)
-    ++digits;
-  for (unsigned i = 0, value = Z80_WEB_TERMINAL_PORT; i < digits; ++i, value /= 10)
-    label.text[1 + digits - i] = static_cast<char>('0' + value % 10);
-  return label;
-}
-constexpr PortLabel PORT_LABEL = port_label();
-constexpr unsigned PORT_COLUMNS = text_width(PORT_LABEL.text);
-// One glyph gap plus one space gap separate the port from the uptime.
-constexpr unsigned UPTIME_X = PORT_COLUMNS + 2 * SCALE;
 constexpr unsigned UPTIME_PAGE = UPTIME_Y / 8;
 static_assert(UPTIME_Y + FIELD_ROWS <= (UPTIME_PAGE + 2) * 8);
-struct PortBitmap { uint8_t pixels[2 * PORT_COLUMNS]; };
-constexpr PortBitmap port_bitmap() {
-  PortBitmap bitmap{};
-  draw_text(bitmap.pixels, PORT_COLUMNS, 16, 0, UPTIME_Y - UPTIME_PAGE * 8,
-            PORT_LABEL.text);
-  return bitmap;
-}
-constexpr PortBitmap PORT_BITMAP = port_bitmap();
-// The widest uptime that keeps the label and clock: "U: 999d 23:59". The
-// days-only fallback fits every 64-bit microsecond uptime (nine day digits).
-static_assert(UPTIME_X + text_width("U: 999d 23:59") <= WIDTH);
-static_assert(UPTIME_X + text_width("999999999d") <= WIDTH);
-
-void draw_port() {
-  for (unsigned p = 0; p < 2; ++p)
-    memcpy(framebuffer + (UPTIME_PAGE + p) * WIDTH,
-           PORT_BITMAP.pixels + p * PORT_COLUMNS, PORT_COLUMNS);
-}
+static_assert(text_width("U: 99999999d 23:59") <= WIDTH);
+static_assert(text_width("999999999d 23:59") <= WIDTH);
 
 // Sets or clears one 2x2 dot in rows 30-31 without touching other bits.
 void set_dot(unsigned column, bool on) {
@@ -204,13 +171,10 @@ void render(uint64_t now_us) {
   }
   uint64_t seconds = now_us / 1'000'000;
   if (seconds / 60 != uptime_minute) {
-    if (uptime_minute == UINT64_MAX)
-      draw_port();
     char uptime[32];
     uint64_t hours = seconds / 3600;
     unsigned minutes = static_cast<unsigned>((seconds / 60) % 60);
-    // HH:MM for the first day, then days: "U: 4d 05:23". From 1000 days the
-    // label, then the clock, are dropped so the line never passes the edge.
+    // Drop the label only when nine day digits need its space.
     if (hours < 24) {
       snprintf(uptime, sizeof(uptime), "U: %02u:%02u",
                static_cast<unsigned>(hours), minutes);
@@ -218,13 +182,11 @@ void render(uint64_t now_us) {
       auto days = static_cast<unsigned long long>(hours / 24);
       auto hour = static_cast<unsigned>(hours % 24);
       snprintf(uptime, sizeof(uptime), "U: %llud %02u:%02u", days, hour, minutes);
-      if (UPTIME_X + text_width(uptime) > WIDTH)
+      if (text_width(uptime) > WIDTH)
         snprintf(uptime, sizeof(uptime), "%llud %02u:%02u", days, hour, minutes);
-      if (UPTIME_X + text_width(uptime) > WIDTH)
-        snprintf(uptime, sizeof(uptime), "%llud", days);
     }
-    clear_field(UPTIME_Y, UPTIME_X);
-    text(UPTIME_Y, uptime, UPTIME_X);
+    clear_field(UPTIME_Y);
+    text(UPTIME_Y, uptime);
     uptime_minute = seconds / 60;
     changed_pages |= 0x0c;
   }

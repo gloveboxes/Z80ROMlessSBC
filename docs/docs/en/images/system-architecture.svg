@@ -125,7 +125,7 @@
   <rect x="1600" y="250" width="280" height="200" rx="14" fill="#ffffff" stroke="#aad8cd"/>
   <text x="1620" y="286" class="section teal">WI-FI CLIENT</text>
   <text x="1620" y="328" class="heading">Browser / xterm.js</text>
-  <text x="1620" y="366" class="body">HTTP + WebSocket :8088</text>
+  <text x="1620" y="366" class="body">HTTP + WebSocket :80</text>
   <text x="1620" y="399" class="small">Exclusive CP/M console owner</text>
   <text x="1620" y="426" class="small muted">Disconnect restores USB console</text>
   <path d="M1530 350H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
