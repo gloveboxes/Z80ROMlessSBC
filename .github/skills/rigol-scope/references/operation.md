@@ -11,27 +11,46 @@ other models from a family name alone.
 
 ## Start and Discover
 
-1. Use the selected server in `.vscode/mcp.json`. Its runtime must be running and
-  `rigol-mcp:local` must exist in that runtime's image store. Build from the root
-  with `docker build -t rigol-mcp:local .` or `container build -t rigol-mcp:local .`,
-  matching the selected runtime. After rebuilding, ask the user to restart the
-  selected MCP server and wait for confirmation before resuming instrument calls.
-  Do not stop, replace, or restart its container yourself. Apple Container also
-  needs one-time capture-volume initialization; see `docs/apple-container.md`.
-2. The configuration passes `env.RIGOL_IP` into the container with `-e RIGOL_IP`.
+1. Use the root `.mcp.json` workspace configuration. Confirm its `mcpServers`
+   entry uses the intended runtime (`docker` or `container`) and only one server
+   instance controls the scope.
+2. The selected runtime must be running and `rigol-mcp:local` must exist in that
+   runtime's image store. Docker and Apple Container have separate image stores.
+   If the image is absent, build it from the `rigol-mcp` source root with
+   `docker build -t rigol-mcp:local .` or `container build -t rigol-mcp:local .`,
+   matching the selected runtime. After rebuilding, ask the user to restart the
+   selected MCP server and wait for confirmation before instrument calls. Do not
+   stop, replace, or restart its container yourself.
+3. For Apple Container, run `container system start` if its service is stopped.
+   Initialize the capture volume once using the `rigol-mcp` repository's
+   [Apple Container guide](https://github.com/gloveboxes/rigol-mcp/blob/main/docs/apple-container.md).
+4. The configuration passes `env.RIGOL_IP` into the container with `-e RIGOL_IP`.
    Edit that value for a different scope; the image contains no scope address.
-  It also forwards `RIGOL_ENABLE_SEND_RAW`, which remains `0` by default.
-  The container runtime must reach the scope's TCP port 5555.
-3. If tools are unavailable, have the user run **MCP: List Servers**, select
-  the configured server (`rigol-scope`, or the chosen development entry), and
-  start/restart it, accepting any trust prompt themselves. Ensure
-   the server's tools are enabled in chat. A skill cannot grant tool access.
-4. Discover the available tools. Names below are the server's logical tool names;
+   It also forwards `RIGOL_ENABLE_SEND_RAW`, which remains `0` by default. The
+   container runtime must reach the scope's TCP port 5555.
+5. If the MCP process cannot start, troubleshoot in this order:
+   - In **MCP: List Servers**, inspect and start the root-configured server.
+   - Check the selected runtime's image list; build the image there if absent.
+     For registry pull failures, inspect the error rather than assuming an
+     image is missing.
+   - For Apple Container, check `container system start` and `container list`.
+     If no Rigol container appears after the user starts the MCP server, inspect
+     VS Code's MCP/Agent Host logs for launch errors.
+   - If the executable cannot be found, resolve it with `command -v container`
+     or `command -v docker`; use that executable path in MCP configuration if
+     the GUI host's PATH does not include it.
+   Ask the user to accept trust prompts and restart servers. Do not launch a
+   second MCP process or open a direct instrument connection for diagnosis.
+6. If tools are unavailable, have the user start/restart the configured server
+   and enable its tools in chat. A skill cannot grant tool access.
+7. Discover the available tools. Names below are the server's logical tool names;
    use the actual names exposed by the MCP client, which may include a namespace.
    Load deferred tools through tool search when the client requires it. Never
    invent a tool prefix or substitute terminal commands for unavailable MCP tools.
-5. Call `idn`, then `get_capabilities`, then `get_scope_state` sequentially.
-   Confirm the intended instrument before making any changes.
+8. Prefer `inspect_scope` for identity, capabilities, and current settings in one
+   call. Check completion and error details, then confirm the instrument identity.
+   If unavailable, call `idn`, `get_capabilities`, then `get_scope_state`
+   sequentially. Do not change settings until the intended instrument is confirmed.
 
 Do not launch another server or open a second VISA/socket connection while the
 registered server controls the scope. Do not use Docker `-t`, publish a port for
@@ -127,6 +146,6 @@ without reading and resending its bytes, and only with authorization to replace 
 Report observed model/firmware, successful checks, warnings, changes/restoration,
 and what remains unverified. Never equate offline tests with hardware validation.
 
-For installation, coverage, and maintenance details, consult the repository's
+For installation, coverage, and maintenance details, consult the `rigol-mcp` repository's
 `docs/docker.md` and `docs/dho814-support.md` only when needed. Do not load the
 entire bundled command catalog into agent context.

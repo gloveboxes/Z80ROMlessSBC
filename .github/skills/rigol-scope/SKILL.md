@@ -13,9 +13,11 @@ description: 'Use for Rigol DHO814 MCP control over LAN: discovery, acquisition,
 2. Discover tools from the selected registered MCP server. Use one server per
    scope and strictly sequential calls; do not substitute direct sockets,
    ad hoc scripts or another server when tools are unavailable.
-3. Call `idn`, `get_capabilities`, then `get_scope_state` sequentially.
-   Confirm the intended instrument before changing it. Initial connection clears
-   SCPI errors; capability verification also drains them unless disabled.
+3. Start with `inspect_scope` for identity, capabilities, and current settings.
+   Check its completion and error details, and confirm the intended instrument
+   before changing it. If unavailable, call `idn`, `get_capabilities`, then
+   `get_scope_state` sequentially. Initial connection clears SCPI errors;
+   capability verification also drains them unless disabled.
 4. Choose the [task-specific tool](./references/operation.md#choose-the-tool)
    from its discovered schema. Prefer semantic tools; use `scpi_catalog` before
    `scpi_execute`. Keep unrestricted `send_raw` disabled unless authorized.
