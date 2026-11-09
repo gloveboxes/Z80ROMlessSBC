@@ -35,7 +35,6 @@ class HighResidentAllocator(unittest.TestCase):
 
     def setUp(self) -> None:
         self.machine = z80.Z80Machine()
-        self.banks = [bytearray(65536), bytearray(65536)]
         for bank in self.banks:
             bank[0xFF00:0xFF00 + len(self.transfer)] = self.transfer
             bank[0xFB40:0xFB80] = self.trampoline
@@ -52,23 +51,26 @@ class HighResidentAllocator(unittest.TestCase):
         bank[0xFC24] = 0xC9  # SETDMA stub; this fixture has no CP/M BIOS.
         bank[0x0100:0x0104] = bytes((0x21, 0xEF, 0xBE, 0xC9))
         bank[0xDE9F] = 1
-        self.active = 0
         self.machine.set_output_callback(self.output)
         self.machine.set_input_callback(lambda port: 0xB4 if (port & 255) == 7 else 0)
         self.machine.set_breakpoint(0x1003)
         self.call(4)
 
+    @property
+    def active(self) -> int:
+        return self.machine.active_bank
+
+    @property
+    def banks(self):
+        return [self.machine.bank(0), self.machine.bank(1)]
+
     def output(self, port: int, value: int) -> None:
         self.assertEqual(port & 255, 7)
-        self.banks[self.active][:] = self.machine.memory
-        self.active = value & 1
-        self.machine.memory[:] = self.banks[self.active]
 
     def call(self, operation: int, hl: int = 0, bc: int = 0,
              ix: int = 0, iy: int = 0) -> int:
         m = self.machine
         self.banks[0][0x1000:0x1003] = bytes((0xCD, 0x10, 0xFF))
-        m.memory[:] = self.banks[0]
         m.pc, m.sp, m.hl, m.e, m.bc, m.ix, m.iy = (
             0x1000, 0xD000, hl, operation, bc, ix, iy)
         m.iff1 = m.iff2 = False
@@ -78,8 +80,7 @@ class HighResidentAllocator(unittest.TestCase):
                 break
         else:
             self.fail("allocator did not return")
-        self.assertEqual((self.active, m.sp, m.pc), (0, 0xD000, 0x1003))
-        self.banks[0][:] = m.memory
+        self.assertEqual((m.active_bank, m.sp, m.pc), (0, 0xD000, 0x1003))
         return m.hl
 
     def test_pinned_library_and_stack(self) -> None:
@@ -309,7 +310,6 @@ class HighResidentAllocator(unittest.TestCase):
         machine = self.machine
         address = 0xF803 if writing else 0xF800
         self.banks[0][0x1000:0x1003] = bytes((0xCD, address & 255, address >> 8))
-        machine.memory[:] = self.banks[0]
         machine.pc, machine.sp = 0x1000, 0xD000
         machine.hl, machine.de, machine.bc = base, bank, length
         machine.ix, machine.iy = 0x1234, 0x5678
@@ -320,11 +320,10 @@ class HighResidentAllocator(unittest.TestCase):
                 break
         else:
             self.fail(f"byte transfer did not return: PC={machine.pc:04x}")
-        self.assertEqual((self.active, machine.pc, machine.sp), (0, 0x1003, 0xD000))
+        self.assertEqual((machine.active_bank, machine.pc, machine.sp), (0, 0x1003, 0xD000))
         self.assertEqual((machine.ix, machine.iy), (0x1234, 0x5678))
         self.assertEqual(bool(machine.iff1), interrupts)
         self.assertEqual(bool(machine.iff2), interrupts)
-        self.banks[0][:] = machine.memory
 
     def test_byte_transfers_preserve_guards_and_interrupt_state(self) -> None:
         for length in (0, 1, 15, 16, 17, 127, 255, 256, 511):

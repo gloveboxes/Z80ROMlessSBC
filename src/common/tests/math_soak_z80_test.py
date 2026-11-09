@@ -1,4 +1,4 @@
-"""Execute the actual resident image in an independent Z80 instruction core."""
+"""Execute the actual resident image on the C Z80 emulator."""
 
 from __future__ import annotations
 

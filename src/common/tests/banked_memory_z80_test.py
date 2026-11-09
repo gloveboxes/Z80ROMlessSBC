@@ -1,8 +1,8 @@
-"""Execute a bank-switching probe in the project's independent Z80 emulator.
+"""Execute a bank-switching probe in the project's C Z80 emulator.
 
-The emulator exposes a flat 64 KiB array. The OUT callback swaps that array
-with one of two 64 KiB SRAM banks, modeling the proposed A16 pin behavior.
-This checks software-visible bank isolation; it does not model bus timing.
+The emulator models two 64 KiB SRAM banks selected by OUT (07h) bit 0, the
+A16 pin behavior. This checks software-visible bank isolation; it does not
+model bus timing.
 """
 
 from __future__ import annotations
@@ -111,29 +111,24 @@ class BankedMemoryExecution(unittest.TestCase):
                         with self.subTest(writing=writing, enabled=enabled,
                                           base=base, address=address, length=length):
                             m = z80.Z80Machine()
-                            banks = [initialize_bank(), initialize_bank()]
-                            active = 0
+                            m.bank(0)[:] = initialize_bank()
+                            m.bank(1)[:] = initialize_bank()
                             switches = []
                             payload = bytes(((i * 73) ^ (i >> 8) ^ (i >> 3)) & 255
                                             for i in range(length))
-                            banks[0][base:base + length] = payload if writing else b"\xEE" * length
-                            banks[1][address:address + length] = b"\xEE" * length if writing else payload
+                            m.bank(0)[base:base + length] = payload if writing else b"\xEE" * length
+                            m.bank(1)[address:address + length] = b"\xEE" * length if writing else payload
                             # The largest legal buffer covers 0100h..FEFFh.
                             # Keep the caller and its stack below that range.
-                            banks[0][:4] = bytes((0xCD, 3 if writing else 0, 0xFF, 0x76))
-                            banks[0][0x80:0x100] = bytes(range(128))
-                            m.memory[:] = banks[0]
+                            m.bank(0)[:4] = bytes((0xCD, 3 if writing else 0, 0xFF, 0x76))
+                            m.bank(0)[0x80:0x100] = bytes(range(128))
                             m.pc, m.sp, m.ix, m.iy = 0, 0x80, 0x4567, 0x89AB
                             m.hl, m.de, m.bc = base, address, length
                             m.iff1 = m.iff2 = enabled
 
                             def output(port: int, value: int) -> None:
-                                nonlocal active
                                 self.assertEqual(port & 0x17, 7)
-                                banks[active][:] = m.memory
-                                active = value & 1
-                                switches.append(active)
-                                m.memory[:] = banks[active]
+                                switches.append(m.active_bank)
 
                             m.set_output_callback(output)
                             for _ in range(500):
@@ -149,7 +144,7 @@ class BankedMemoryExecution(unittest.TestCase):
                             self.assertEqual(bool(m.iff1), enabled)
                             self.assertEqual(bool(m.iff2), enabled)
                             self.assertEqual(bytes(m.memory[0x80:0x100]), bytes(range(128)))
-                            actual = (banks[1][address:address + length] if writing else
+                            actual = (m.bank(1)[address:address + length] if writing else
                                       m.memory[base:base + length])
                             self.assertEqual(bytes(actual), payload)
 
@@ -163,8 +158,6 @@ class BankedMemoryExecution(unittest.TestCase):
 
     def test_two_banks_and_live_z80_execution(self) -> None:
         machine = z80.Z80Machine()
-        banks = [bytearray(65536), bytearray(65536)]
-        active = 0
         finished: list[int] = []
 
         # LD A,11h; LD (8000h),A; LD A,1; OUT (07h),A;
@@ -181,21 +174,14 @@ class BankedMemoryExecution(unittest.TestCase):
             0x3E, 0xE1, 0xD3, 0x06, 0x76,
         ))
         # Both banks contain the same probe so execution continues across OUT.
-        banks[0][:len(program)] = program
-        banks[1][:len(program)] = program
-        machine.memory[:] = banks[0]
+        machine.bank(0)[:len(program)] = program
+        machine.bank(1)[:len(program)] = program
 
         def output(port: int, value: int) -> None:
-            nonlocal active
             decoded = port & 0x17
-            if decoded == 0x07:
-                requested = value & 1
-                banks[active][:] = machine.memory
-                active = requested
-                machine.memory[:] = banks[active]
-            elif decoded == 0x06:
+            if decoded == 0x06:
                 finished.append(value)
-            else:
+            elif decoded != 0x07:
                 self.fail(f"Unexpected OUT {port:04x}, {value:02x}")
 
         machine.set_output_callback(output)
@@ -207,8 +193,8 @@ class BankedMemoryExecution(unittest.TestCase):
                 break
         self.assertTrue(machine.halted, "probe did not halt within budget")
         self.assertEqual(finished, [0xA5])
-        self.assertEqual(banks[0][0x8000], 0x11)
-        self.assertEqual(banks[1][0x8000], 0x22)
+        self.assertEqual(machine.bank(0)[0x8000], 0x11)
+        self.assertEqual(machine.bank(1)[0x8000], 0x22)
 
 
 if __name__ == "__main__":

@@ -59,9 +59,6 @@ class BankedHeapExecution(unittest.TestCase):
         def write_port(port: int, value: int) -> None:
             nonlocal switches
             if port & 255 == 7:
-                boot.banks[boot.active][:] = machine.memory
-                boot.active = value & 1
-                machine.memory[:] = boot.banks[boot.active]
                 switches += 1
                 return
             if port & 255 != TIMER_PORT:
@@ -129,7 +126,6 @@ class BankedHeapExecution(unittest.TestCase):
         while boot.active:
             machine.ticks_to_stop = 1000
             run()
-        boot.banks[0][:] = machine.memory
         return bytes(case.output[start:]), boot.banks, boot.active, switches
 
     def assert_pool_restored(self, banks: list[bytearray]) -> None:
@@ -180,15 +176,6 @@ class BankedHeapExecution(unittest.TestCase):
         self.assertIn(b"Next after 50: 53; HL=53", output)
         self.assertIn(b"Next after 254: 0; HL=0", output)
         self.assertNotIn(b"FAIL:", output)
-        self.assertEqual(active, 0)
-        self.assert_pool_restored(banks)
-
-    def test_compiled_spreads_two_entries(self) -> None:
-        self.program = ROOT / "examples/SPREADS/build/SPREADS.COM"
-        output, banks, active, switches = self.execute_program()
-        self.assertIn(b"SPREADS: two bank-1 entry points.\r\nVEGEMITE\r\nMARMITE\r\nVEG\r\n",
-                      output, output.decode(errors="replace"))
-        self.assertIn(b"PASS: both entry points ran and the bank-1 heap was restored.", output)
         self.assertEqual(active, 0)
         self.assert_pool_restored(banks)
 

@@ -41,8 +41,7 @@ class BankOneSystemBoot(unittest.TestCase):
         case.disks[0][:] = self.disk
         self.case = case
         machine = case.machine
-        bank0 = bytearray(machine.memory)
-        bank1 = bytearray(65536)
+        bank1 = machine.bank(1)
         bank1[0:3] = b"\xC3\x40\xFB"
         bank1[5:8] = b"\xC3\x06\xEE"
         bank1[0xDE00:0xE600] = self.service
@@ -50,20 +49,18 @@ class BankOneSystemBoot(unittest.TestCase):
         bank1[0xEE00:0xFB40] = self.bdos
         bank1[0xFB40:0x10000] = self.image[0xFB40:0x10000]
         bank1[0xFC03:0xFC06] = b"\xC3\x40\xFB"
-        self.banks = [bank0, bank1]
-        self.active = 0
-
-        def output(port: int, value: int) -> None:
-            if port & 255 == 7:
-                self.banks[self.active][:] = machine.memory
-                self.active = value & 1
-                machine.memory[:] = self.banks[self.active]
-            else:
-                case.write_port(port, value)
-
-        machine.set_output_callback(output)
-        machine.set_input_callback(lambda port: 0xB4 | self.active if port & 255 == 7
+        machine.set_output_callback(
+            lambda port, value: None if port & 255 == 7 else case.write_port(port, value))
+        machine.set_input_callback(lambda port: 0xB4 | machine.active_bank if port & 255 == 7
                                    else case.read_port(port))
+
+    @property
+    def banks(self):
+        return [self.case.machine.bank(0), self.case.machine.bank(1)]
+
+    @property
+    def active(self) -> int:
+        return self.case.machine.active_bank
 
     def test_directory_file_read_and_warm_boot(self) -> None:
         case = self.case
@@ -96,9 +93,7 @@ class BankOneSystemBoot(unittest.TestCase):
     def test_warm_boot_entered_from_bank_one_returns_to_bank_zero(self) -> None:
         case = self.case
         case.until_prompt()
-        self.banks[0][:] = case.machine.memory
-        self.active = 1
-        case.machine.memory[:] = self.banks[1]
+        case.machine.select_bank(1)
         case.machine.pc = 0xFC03
         self.assertIn(b"A>", case.until_prompt(len(case.output)))
         self.assertEqual(self.active, 0)

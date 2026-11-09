@@ -34,6 +34,7 @@ extern "C"
 #endif
 
 #include "x80.hxx"
+#include "sbc_bank.h"
 #include <djltrace.hxx>
 
 static_assert(registers::z80_only, "debugger adapter requires a Z80-only engine");
@@ -160,7 +161,7 @@ extern "C" void z80_reset(z80_t *cpu, port_in in, port_out out, read_sense_switc
 
     g_cpu = cpu;
     sbc_mode = false;
-
+    sbc_bank_select(0);
     // Zero-initialize the core's registers. The boot loader address is loaded
     // subsequently via z80_examine().
     reg = registers();
@@ -435,6 +436,9 @@ void x80_invoke_in(uint8_t port)
     case 0x11:
         reg.a = sbc_mode ? cpu->io_port_in_handler(port) : cpu->term_in();
         break;
+    case 0x07:
+        reg.a = sbc_bank_status();
+        break;
     case 0xff: // Front panel switches
         reg.a = cpu->sense();
         break;
@@ -450,6 +454,9 @@ void x80_invoke_out(uint8_t port)
 {
     z80_t *cpu = g_cpu;
     cpu->cpuStatus |= STATUS_PORT_OUTPUT | STATUS_WRITE_OUTPUT;
+
+    if (sbc_bank_port_matches(port) && sbc_bank_available())
+        sbc_bank_select(reg.a & 1);
 
     switch (port)
     {

@@ -57,8 +57,7 @@ class BankOneBdos(unittest.TestCase):
                 case.disks[0][:] = disk.read_bytes()
         case.until_prompt()
         machine = case.machine
-        base = bytearray(machine.memory)
-        extra = bytearray(65536)
+        base, extra = machine.bank(0), machine.bank(1)
         extra[0xEE00:0xFF00] = case.image[0xEE00:0xFF00]
         extra[5:8] = bytes((0xC3, 0x06, 0xEE))
         extra[0xDE00:0xE600] = bank1_system_boot_z80_test.generated_array("bank1_service_code")
@@ -73,28 +72,15 @@ class BankOneBdos(unittest.TestCase):
         extra[0x100:0x100 + len(payload)] = payload
         for bank in (base, extra):
             bank[0xFF00:0xFF00 + len(self.transfer)] = self.transfer
-        banks = [base, extra]
-        active = 0
-
-        def output(port: int, value: int) -> None:
-            nonlocal active
-            if port & 255 == 7:
-                banks[active][:] = machine.memory
-                active = value & 1
-                machine.memory[:] = banks[active]
-            else:
-                case.write_port(port, value)
-
-        machine.set_output_callback(output)
-        machine.set_input_callback(lambda port: 0xB4 | active if port & 255 == 7
+        machine.set_output_callback(
+            lambda port, value: None if port & 255 == 7 else case.write_port(port, value))
+        machine.set_input_callback(lambda port: 0xB4 | machine.active_bank if port & 255 == 7
                                    else case.read_port(port))
         machine.set_breakpoint(0x1003)
 
         def gateway(operation: int, hl: int, bc: int = 0) -> int:
-            if active == 0:
-                banks[0][:] = machine.memory
-            banks[0][0x1000:0x1003] = bytes((0xCD, 0x10, 0xFF))
-            machine.memory[:] = banks[0]
+            machine.select_bank(0)
+            machine.bank(0)[0x1000:0x1003] = bytes((0xCD, 0x10, 0xFF))
             machine.pc, machine.sp, machine.hl, machine.e = 0x1000, 0xD000, hl, operation
             machine.bc, machine.ix, machine.iy = bc, 0, 0
             machine.ticks_to_stop = 5_000_000
@@ -102,8 +88,8 @@ class BankOneBdos(unittest.TestCase):
                 if machine.run() & machine._BREAKPOINT_HIT:
                     break
             else:
-                self.fail(f"bank-1 service did not return: PC={machine.pc:04x} bank={active} SP={machine.sp:04x} status={machine.memory[0xE4D1]:02x} reads={case.reads} output={case.output[-100:]!r}")
-            self.assertEqual((active, machine.pc, machine.sp), (0, 0x1003, 0xD000))
+                self.fail(f"bank-1 service did not return: PC={machine.pc:04x} bank={machine.active_bank} SP={machine.sp:04x} status={machine.memory[0xE4D1]:02x} reads={case.reads} output={case.output[-100:]!r}")
+            self.assertEqual((machine.active_bank, machine.pc, machine.sp), (0, 0x1003, 0xD000))
             return machine.hl
 
         if lib_file is not None and operation == 8:
@@ -111,15 +97,15 @@ class BankOneBdos(unittest.TestCase):
             # a library request. HL returns the BIOS status.
             fcb = gateway(0, 48)
             self.assertEqual(fcb, 0xC800)
-            banks[1][fcb:fcb + 48] = b"\0TEST    LIB" + bytes(36)
+            extra[fcb:fcb + 48] = b"\0TEST    LIB" + bytes(36)
             request = bytearray(32)
             for offset, value in {0: 32, 2: 1, 4: 0, 12: fcb}.items():
                 request[offset:offset + 2] = value.to_bytes(2, "little")
-            banks[1][0xDF20:0xDF40] = request
+            extra[0xDF20:0xDF40] = request
             gateway(8, 0xDF20)
         else:
             gateway(operation, 0x0100, 0xC000)
-        return case, banks[1]
+        return case, extra
 
     def test_bdos_console_output_from_bank_one(self) -> None:
         message = b"BANK 1 BDOS$"

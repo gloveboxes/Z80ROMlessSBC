@@ -1,4 +1,4 @@
-"""Execute the packaged CP/M and real BIOS with an independent Z80 core."""
+"""Execute the packaged CP/M and real BIOS on the C Z80 emulator."""
 
 from __future__ import annotations
 

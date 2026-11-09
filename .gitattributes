@@ -1,2 +1,3 @@
 *.pdf binary
 *.img binary
+src/cpm/z80_debug_host/x80.cxx -text

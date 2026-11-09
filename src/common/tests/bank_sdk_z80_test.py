@@ -276,9 +276,7 @@ class BankSdkExecution(unittest.TestCase):
                 else:
                     self.assertEqual(value, 0)
             elif port == 7:
-                system.banks[system.active][:] = machine.memory
-                system.active = value & 1
-                machine.memory[:] = system.banks[system.active]
+                pass
             else:
                 self.assertFalse(timing, "output or BDOS I/O inside timed copies")
                 case.write_port(port, value)

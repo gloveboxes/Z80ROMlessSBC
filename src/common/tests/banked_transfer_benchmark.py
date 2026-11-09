@@ -9,26 +9,21 @@ from banked_memory_z80_test import transfer_code
 
 def measure(code: bytes, writing: bool, length: int) -> dict:
     machine = z80.Z80Machine()
-    banks = [bytearray(65536), bytearray(65536)]
     payload = bytes(i & 255 for i in range(length))
     base, bank = 0x2000, 0x4000
-    for memory in banks:
-        memory[0xFF00:0xFF00 + len(code)] = code
-    banks[0][base:base + length] = payload if writing else bytes(length)
-    banks[1][bank:bank + length] = bytes(length) if writing else payload
-    banks[0][0x1000:0x1004] = bytes((0xCD, 3 if writing else 0, 0xFF, 0x76))
-    machine.memory[:] = banks[0]
+    for index in (0, 1):
+        machine.bank(index)[0xFF00:0xFF00 + len(code)] = code
+    machine.bank(0)[base:base + length] = payload if writing else bytes(length)
+    machine.bank(1)[bank:bank + length] = bytes(length) if writing else payload
+    machine.bank(0)[0x1000:0x1004] = bytes((0xCD, 3 if writing else 0, 0xFF, 0x76))
     machine.pc, machine.sp = 0x1000, 0xE000
     machine.hl, machine.de, machine.bc = base, bank, length
     machine.ix, machine.iy = 0x4567, 0x89AB
-    active = switches = ticks = 0
+    switches = ticks = 0
 
     def output(port: int, value: int) -> None:
-        nonlocal active, switches
+        nonlocal switches
         assert port & 0x17 == 7
-        banks[active][:] = machine.memory
-        active = value & 1
-        machine.memory[:] = banks[active]
         switches += 1
 
     machine.set_output_callback(output)
@@ -44,11 +39,11 @@ def measure(code: bytes, writing: bool, length: int) -> dict:
             break
     else:
         raise AssertionError("benchmark exceeded execution budget")
-    actual = banks[1][bank:bank + length] if writing else machine.memory[base:base + length]
+    actual = machine.bank(1)[bank:bank + length] if writing else machine.memory[base:base + length]
     assert bytes(actual) == payload
     assert machine.a == 0 and not machine.f & 1
     assert (machine.pc, machine.sp, machine.ix, machine.iy) == (0x1003, 0xE000, 0x4567, 0x89AB)
-    assert active == 0 and switches == 2 * (length // 16)
+    assert machine.active_bank == 0 and switches == 2 * (length // 16)
     return {"direction": "write" if writing else "read", "bytes": length,
             "tstates": ticks, "us_at_20mhz_without_traps": ticks / 20,
             "bank_switches": switches}

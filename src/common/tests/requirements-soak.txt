@@ -1,2 +1,0 @@
-# Optional host-only execution test; Python 3.10 or newer.
-z80==1.0.0
