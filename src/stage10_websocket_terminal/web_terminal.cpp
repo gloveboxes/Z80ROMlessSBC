@@ -321,15 +321,17 @@ void accept_pending_input() {
 }
 
 void on_connect(WebSocketServer &websocket, uint32_t connection) {
-  int32_t expected = -1;
-  if (active_connection.compare_exchange_strong(
-          expected, (int32_t)connection, std::memory_order_acq_rel)) {
-    reset_receive_queue_usage();
-    pending_connected.store(true, std::memory_order_release);
-  } else {
-    close_connection(websocket, connection);
-    printf("[network] Terminal busy; rejected another browser.\n");
+  int32_t previous = active_connection.exchange((int32_t)connection,
+                                                 std::memory_order_acq_rel);
+  if (previous >= 0) {
+    last_disconnected_connection.store(previous, std::memory_order_release);
+    // Deferred abort reclaims the old slot without waiting for a close reply.
+    if (!websocket.abort((uint32_t)previous))
+      printf("[network] Previous terminal connection already removed.\n");
+    printf("[network] New browser replaced the previous terminal connection.\n");
   }
+  reset_receive_queue_usage();
+  pending_connected.store(true, std::memory_order_release);
 }
 
 void on_close(WebSocketServer &, uint32_t connection) {

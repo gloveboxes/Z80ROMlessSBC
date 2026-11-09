@@ -125,7 +125,7 @@ Passwords and API keys are hidden during entry and masked on display.
 | Page opens, but no prompt | Press **Enter**. Old output is not replayed to a new browser. |
 | CP/M still does not respond | Use **Ctrl-] s** to inspect boot evidence, disk errors, queue drops and browser ownership. A working web page does not prove Z80 operation. |
 | USB ignores normal typing | A browser owns CP/M. Close it to return to USB; USB supervisor commands still work. |
-| Second browser cannot connect | Only one browser may own the terminal. |
+| Previous browser disconnects when another connects | Last connection wins: the new browser owns the terminal and the previous socket is disconnected. |
 | Browser disappears | USB ownership returns on disconnect/Wi-Fi loss, or after five missed pongs; pings are sent every five minutes. The Z80 keeps running. |
 | Wrong address | Use the Pico's address, not `FS_SERVER`. HTTP/WebSocket use default port 80; `?altair=<pico-ip>` changes the host only. |
 | Configuration save fails | Reopen **Ctrl-] c**, inspect saved values and retry affected fields. |
@@ -322,7 +322,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 **Tick only after recording hardware results.** A successful build or host test is not hardware qualification.
 
 - <input type="checkbox" data-checklist-id="no-client-test" aria-label="USB fallback and headless boot tested"> **Boot:** test USB-only, then no USB/no Wi-Fi. Reconnect USB; confirm BIOS/CCP evidence and no fatal error.
-- <input type="checkbox" data-checklist-id="client-status-test" aria-label="Exclusive browser routing tested"> **Ownership:** run browser `DIR`; no duplicate USB output. USB **Ctrl-] s** still works; a second browser is rejected.
+- <input type="checkbox" data-checklist-id="client-status-test" aria-label="Exclusive browser routing tested"> **Ownership:** run browser `DIR`; no duplicate USB output. USB **Ctrl-] s** still works. Connect a second browser: the first disconnects and the second owns CP/M. Repeat rapidly; old input/output must not replay and late closes must not disconnect the newest browser.
 - <input type="checkbox" data-checklist-id="tx-order-overflow" aria-label="Ordered output and bounded queues tested"> **Traffic:** sustain output and paste over 128 bytes. Check order, zero drops/faults and no duplicate output when ACKs pause.
 - <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="CP/M keys and status tested"> **Keys:** test Ctrl+C, Ctrl+Z, Ctrl+M/Enter, ESC, arrows, Insert/Delete and Page Up/Down. Ctrl+M is carriage return. On a tablet, test the **Keys** pad: the arrows send the same WordStar cursor codes (Ctrl-E/S/D/X), held keys repeat, taps do not raise the on-screen keyboard, and the floating pad can be dragged by any non-key part of the panel and keeps its position after rotation.
 - <input type="checkbox" data-checklist-id="cpm-storage-acceptance" aria-label="Combined terminal and disk operations tested"> **Disks:** repeat [Phase 9 sentinel, A-D, warm-boot and copy tests](phase-9-flash-storage.md#pass-gate) through the browser.
@@ -334,7 +334,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 ??? info "What host tests establish"
 
     - Console tests cover concurrent 256 KiB transfers, handover and queue bounds.
-    - Terminal tests cover ordering, duplicate suppression, sequence wrap, backpressure, ACK retries, 1 ms batching and the four-frame window.
+    - Terminal tests cover last-connection-wins takeover, stale callbacks, ordering, duplicate suppression, sequence wrap, backpressure, ACK retries, 1 ms batching and the four-frame window.
     - With `PICO_SDK_PATH`, WebSocket tests use the actual server with fake lwIP and real Mbed TLS; weather tests also verify the firmware TLS configuration and bundled CA.
     - Weather tests cover all 15 fields, caching, cancellation, malformed responses and failures.
     - These prove software behavior, not wireless throughput or hardware latency. See [firmware testing](../system/firmware-testing.md).
@@ -357,7 +357,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     - **Core 0:** Z80 GPIO/clock/traps, journal recovery, validated SRAM loading, queued supervisor requests and flash quiescence. No USB endpoint calls.
     - **Core 1:** USB, runtime storage, ENV, services, Wi-Fi and HTTP/WebSocket. Disk work runs before network work; networking uses `pico_cyw43_arch_lwip_poll`.
     - **Queues:** 128-byte console RX, 512-byte TX, four supervisor entries and a 4 KiB diagnostic ring (128-byte drain/pass). Short locks and atomic state publication separate cores.
-    - **Ownership:** one browser replaces ordinary USB I/O; USB supervisor/setup stays available. Switching transports clears queued input/output. Wi-Fi changes alone do not clear USB-owned queues.
+    - **Ownership:** one browser replaces ordinary USB I/O; USB supervisor/setup stays available. Last connection wins: a new WebSocket disconnects the previous browser and starts a fresh protocol session. Switching transports or browsers clears queued input/output; old output and unconfirmed input are not replayed. Wi-Fi changes alone do not clear USB-owned queues.
     - **Disconnected:** output is discarded and TX-ready stays set. Intentional discards are distinct from reported queue overflows.
     - **Ports:** `0x00` data; `0x01` bit 0 RX-ready, bit 1 TX-room/disconnected, bit 7 active transport. Storage/service ports and safe stop/flush are unchanged.
 

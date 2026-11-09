@@ -274,6 +274,59 @@ static void poll_terminal() {
   assert_buffer_usage();
 }
 
+static void test_last_connection_wins() {
+  message(1, INPUT, 1, INPUT_BYTES, 'A');
+  message(1, INPUT, 2, INPUT_BYTES, 'B');
+  message(1, INPUT, 3, INPUT_BYTES, 'C');
+  assert(received.size() == 128 && pending_input_length == INPUT_BYTES);
+  outgoing.assign(FRAME_BYTES, 'O');
+  poll_terminal();
+  assert(output_count == 1 && retained_output_bytes == FRAME_BYTES);
+  awaiting_pong = true;
+  missed_pongs = 2;
+
+  unsigned closes = closed.size();
+  unsigned old_disconnects = disconnects;
+  connect_client(100);
+  assert(active_connection.load() == 100 && connected);
+  assert(closed.size() == closes + 1 && closed.back() == 1);
+  assert(disconnects == old_disconnects);
+  assert(!protocol_ready && !awaiting_pong && missed_pongs == 0);
+  assert(received.empty() && outgoing.empty() && pending_input_length == 0);
+  assert(output_count == 0 && retained_output_bytes == 0);
+  assert(input_sequence == 1 && output_sequence == 1);
+  assert(sent[0] == HELLO && read_sequence(sent.data() + 1) == PROTOCOL_VERSION);
+  message(1, READY, PROTOCOL_VERSION);
+  message(1, INPUT, 1, 1);
+  assert(!protocol_ready && received.empty());
+  message(100, READY, PROTOCOL_VERSION);
+  message(100, INPUT, 1, 1, 'N');
+  close_client(1);
+  poll_terminal();
+  assert(active_connection.load() == 100 && connected && protocol_ready);
+  assert(received == std::vector<uint8_t>{'N'} && input_sequence == 2);
+
+  // Several upgrades in one network poll must still select only the last.
+  cyw43_arch_lwip_begin();
+  on_connect(*server, 101);
+  on_connect(*server, 102);
+  on_close(*server, 100);
+  on_close(*server, 101);
+  cyw43_arch_lwip_end();
+  poll_terminal();
+  assert(active_connection.load() == 102 && connected && !protocol_ready);
+  assert(received.empty() && closed[closes + 1] == 100 && closed.back() == 101);
+  message(102, READY, PROTOCOL_VERSION);
+  message(102, INPUT, 1, 1, 'L');
+  assert(received == std::vector<uint8_t>{'L'});
+  close_client(102);
+  poll_terminal();
+  assert(!connected && active_connection.load() == -1);
+
+  connect_client(1);
+  message(1, READY, PROTOCOL_VERSION);
+}
+
 static void test_output_coalescing() {
   static_assert(FRAME_BYTES == 512 && OUTPUT_WINDOW == 4 && PROTOCOL_VERSION == 4);
   advance(1);
@@ -603,13 +656,7 @@ int main() {
   assert(sent[0] == HELLO && read_sequence(sent.data() + 1) == PROTOCOL_VERSION);
   message(1, READY, PROTOCOL_VERSION);
   assert(protocol_ready);
-  connect_client(100);
-  close_ok = false;
-  connect_client(101);
-  close_ok = true;
-  assert(active_connection.load() == 1 && closed.size() == 2);
-  message(100, INPUT, 1, 1);
-  assert(received.empty());
+  test_last_connection_wins();
 
   // Retained input is admitted on the next poll, not on a 250 ms retransmit.
   message(1, INPUT, 1, 64, 'A');

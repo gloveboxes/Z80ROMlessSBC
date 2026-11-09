@@ -352,6 +352,38 @@ static void test_invalid() {
 }
 
 static void test_lifecycle() {
+  {
+    Fixture f;
+    f.server.setConnectCallback([](WebSocketServer& s, uint32_t id) {
+      auto& fixture = *static_cast<Fixture*>(s.getCallbackExtra());
+      if (!fixture.ids.empty())
+        assert(s.abort(fixture.ids.back()));
+      fixture.ids.push_back(id);
+    });
+    f.start();
+    f.upgrade(f.first);
+    assert(f.feed(f.first, frame(2, {'o', 'l', 'd'})) == ERR_OK);
+    f.upgrade(f.second);
+    assert(!f.first.aborted && !f.second.aborted);
+    f.server.popMessages();
+    assert(f.first.aborted && !f.first.arg && !f.first.recv &&
+           !f.first.sent && !f.first.poll && !f.first.error);
+    assert(!f.second.aborted && f.closed.size() == 1 && f.messages.empty());
+    assert(f.close_details.back().reason == CloseReason::server_abort);
+    // Reclaim each displaced slot in one pass, even if the peer never replies.
+    tcp_pcb* current = &f.second;
+    tcp_pcb* next = &f.first;
+    for (unsigned i = 0; i < 12; ++i) {
+      *next = tcp_pcb{};
+      f.upgrade(*next);
+      f.server.popMessages();
+      assert(current->aborted && !next->aborted && f.closed.size() == i + 2);
+      assert(f.feed(*next, frame(2, {'n', 'e', 'w'})) == ERR_OK);
+      f.server.popMessages();
+      assert(f.delivered_ids.back() == f.ids.back());
+      std::swap(current, next);
+    }
+  }
   for (bool write_failure : {false, true}) {
     Fixture f;
     f.start();
