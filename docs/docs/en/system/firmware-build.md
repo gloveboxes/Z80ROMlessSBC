@@ -202,12 +202,11 @@ and [device selection and diagnostics](#device-selection-and-diagnostics) below.
 | Firmware only | **Build and flash Pico - Phase 9/10 firmware** | Firmware; preserves CP/M, disks, journal, and ENV |
 | Selected disks | [VS Code disk tasks](#system-and-storage-deployment) | Selected drives only |
 | CP/M assembly | **Build and flash Pico - CP/M system and Drive A** | Matching boot package and Drive A, including its files |
-| Initial provisioning / old 320 KiB layout | **Build and flash Pico - Phase 10 firmware and disks** | Entire flash, including disks and ENV |
+| Initial provisioning | **Build and flash Pico - Phase 10 firmware and disks** | Entire flash, including disks and ENV |
 
 Selective storage updates require matching `z80sbc-storage:` firmware metadata
 and compatible BIOS geometry. For an existing 512 KiB installation without
-metadata, update firmware first. A 320 KiB installation requires full
-provisioning. Stop/flush and recover any pending journal before replacing disks.
+metadata, update firmware first. Stop/flush and recover any pending journal before replacing disks.
 Updating the boot package alone leaves stale system records on Drive A.
 
 ### Full provisioning

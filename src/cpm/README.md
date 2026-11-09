@@ -239,14 +239,8 @@ and configuration errors share a string printer, the startup banner is shortened
 and warm boot reads its 44 system records using a linear sector index on track 0.
 The public BIOS disk addressing and the TPA remain unchanged.
 
-The flash layout now reserves firmware below `0x1D0000`, journal at `0x1D0000`,
+The flash layout reserves firmware below `0x1D0000`, journal at `0x1D0000`,
 boot at `0x1E0000`, environment at `0x1FE000`, and four 512 KiB drives starting
-at `0x200000`, `0x280000`, `0x300000`, and `0x380000`.
-
-This layout requires reprovisioning the boot package and all four disks together
-with the firmware. Before upgrading an existing board, save its disks and
-configuration using the old firmware and layout. Preserve the old disk images;
-320 KiB native images can be extended to 512 KiB with `0xE5` padding, keeping
-existing records and allocation block numbers unchanged. Drive A also needs the
-new native BIOS/system tracks. Do not use a firmware-only update to migrate:
-the new offsets overlap the old storage regions.
+at `0x200000`, `0x280000`, `0x300000`, and `0x380000`. Every native drive image
+is exactly 512 KiB; only the framed Altair sources in `src/disks/source-altair/`
+are smaller, and the converter expands them.

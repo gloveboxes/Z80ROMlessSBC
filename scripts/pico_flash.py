@@ -154,9 +154,7 @@ def prepare_storage(args: argparse.Namespace) -> str:
     ):
         raise FlashError(
             "Installed firmware does not advertise the required 512 KiB flash layout; "
-            "no storage writes performed. For an already migrated 512 KiB board, "
-            "install the current firmware-only build first. For a 320 KiB board, "
-            "back up disks/settings and use full firmware-and-disks provisioning."
+            "no storage writes performed. Install the current firmware-only build first."
         )
     check_journal(device)
     return device

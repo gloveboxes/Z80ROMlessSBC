@@ -137,8 +137,7 @@ when updating source disks.
 Selective writes require the installed firmware's exact `z80sbc-storage:`
 layout metadata, checked before journal reads or storage writes. An existing
 512 KiB installation without this metadata needs a firmware-only update first;
-its boot package, ENV, and disks are preserved. A 320 KiB installation needs
-full provisioning after backup. Drive A and boot packages are checked for the
+its boot package, ENV, and disks are preserved. Drive A and boot packages are checked for the
 current BIOS geometry and allocation-map layout as well as warm-boot records.
 
 ## BIOS compatibility
