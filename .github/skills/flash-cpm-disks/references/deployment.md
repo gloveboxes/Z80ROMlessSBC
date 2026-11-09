@@ -49,12 +49,12 @@ The Pico 2 W has 4 MiB onboard flash. Every native disk is exactly **524,288
 bytes**: 128 tracks x 32 records x 128 bytes. Addresses passed to `picotool`
 include the `0x10000000` XIP base.
 
-| Drive | Typical input | Native image | Flash address | Exclusive end |
-| --- | --- | --- | --- | --- |
-| A | `cpm63k.dsk` | `drive_a_cpm63k-z80.img` | `0x10200000` | `0x10280000` |
-| B | `bdsc-v1.60.dsk` | `drive_b_bdsc.img` | `0x10280000` | `0x10300000` |
-| C | `escape-posix.dsk` | `drive_c_escape.img` | `0x10300000` | `0x10380000` |
-| D | `source-native/drive_d_doctor.img` | `drive_d_blank.img` | `0x10380000` | `0x10400000` |
+| Drive | Typical input | Flash address | Exclusive end |
+| --- | --- | --- | --- |
+| A | `build/cpm/drive_a_cpm63k-z80.img` | `0x10200000` | `0x10280000` |
+| B | `build/cpm/drive_b_bdsc.img` | `0x10280000` | `0x10300000` |
+| C | `src/disks/native/drive_c_escape.img` | `0x10300000` | `0x10380000` |
+| D | `src/disks/native/drive_d_blank.img` | `0x10380000` | `0x10400000` |
 
 Protected regions for disk-only work:
 
@@ -64,16 +64,15 @@ Protected regions for disk-only work:
 - All unselected disk slots.
 
 Never use a complete flash image, mass erase, or firmware UF2 to update disks.
-Never write a framed Altair `.dsk` directly into a native disk slot.
-Drive A requires the board-native system tracks; the plain converter output
-`drive_a_cpm63k.img` is **not** a provisionable system disk. For Drive A, use
+Drive A requires the board-native system tracks; the checked-in
+`src/disks/native/drive_a_cpm63k.img` is **not** a provisionable system disk. For Drive A, use
 an already matching board-native image or switch to the CP/M image-build
 workflow rather than inventing BIOS/build steps here.
 
 ## 1. Identify Inputs; No Backups by Default
 
-1. Resolve the exact files the user supplied; images may be in `src/disks/`
-   or `src/disks/source-altair/`. Never substitute a same-named copy from
+1. Resolve the exact files the user supplied; images may be in `src/disks/native/`
+   or `build/cpm/`. Never substitute a same-named copy from
    another directory.
 2. Map the selected images to drives using the table. Ask only if ambiguous.
 3. This is a development/non-production board. The standing project preference
@@ -81,19 +80,11 @@ workflow rather than inventing BIOS/build steps here.
    routine replacements. Only perform a backup when explicitly requested
    separately; the disk command itself has no backup step.
 4. Check `git status --short`. Preserve unrelated changes and source images;
-   deployment alone does not require modifying canonical sources, generated
-   images, manifests, or documentation.
+   deployment alone does not require modifying `src/disks/native/` or documentation.
 
 ## 2. Prepare and Validate Native Images
 
-The tool detects native versus framed Altair format by exact length, not
-extension. Framed inputs are 337,568 or 337,664 bytes (77 x 32 x 137,
-optionally followed by a 96-byte marker). B-D Altair inputs are automatically
-validated and converted using the maintained `validate_source()` and `convert()`
-helpers in `src/disks/convert_altair_disks.py`, including sector checksum,
-framing and high-track sector-ID checks. Do not duplicate their sector mapping.
-
-Run the existing converter tests:
+Run the disk-image tests:
 
 ```sh
 . .venv-flash/bin/activate &&
@@ -101,10 +92,10 @@ python -c 'import sys, serial; print("Using", sys.executable)' &&
 python -m unittest discover -s src/disks -p 'test_*.py' -v
 ```
 
-Native inputs must be exactly 524,288 bytes; no conversion is applied. The tool
+Inputs must be exactly 524,288 bytes. The tool
 checks every selected input before disconnecting/stopping hardware and logs each
 resulting image's SHA-256. Duplicate or invalid drive assignments are rejected.
-Drive A requires a board-native image: framed Altair A is rejected, and its
+Drive A requires a board-native image, and its
 sequential warm-boot records must match the installed boot package. That
 read-only compatibility check validates the package manifest/payload CRCs and
 does not replace firmware or boot data.
@@ -168,16 +159,15 @@ it can contain recoverable writes for unselected drives.
 
 ## 5. Program Only Selected Slots and Verify
 
-For B and C, using the exact supplied source paths (Altair or native). Drive
-B's native image from `src/cpm/build_images.py` carries the current banked
-examples; the plain Altair source holds older binaries:
+For B and C, using the exact supplied image paths. `src/cpm/build_images.py`
+installs the current banked examples onto Drive B:
 
 ```sh
 . .venv-flash/bin/activate &&
 python -c 'import sys, serial; print("Using", sys.executable)' &&
 python scripts/pico_flash.py disks \
   --drive B=build/cpm/drive_b_bdsc.img \
-  --drive C=src/disks/escape-posix.dsk \
+  --drive C=src/disks/native/drive_c_escape.img \
   --power-confirmed
 ```
 

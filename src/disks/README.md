@@ -1,76 +1,26 @@
 # CP/M disk media
 
-`source-altair/` contains byte-for-byte copies from:
+`native/` holds the four checked-in drive images. Each is exactly 524,288
+bytes (128 tracks of 32 records of 128 bytes), the same format the Pico flash
+slots and the host emulator use, so no conversion step exists.
 
-`/Users/dave/GitHub/esp32/esp32-altair-8800`
-
-The original source is recorded in that project's `disk_archive/README.md` as
-<https://github.com/companje/Altair8800/tree/master/data>. The copied license is
-in `source-altair/LICENSE`.
-
-## Formats
-
-The source `.dsk` files use the Altair 88-DCDD layout: 77 tracks, 32 sectors
-per track, and 137 bytes per physical sector. The authentic Burcon BIOS uses
-two different physical sector layouts within that same 137-byte envelope:
-tracks 0-5 hold a 3-byte header followed by the 128-byte CP/M record (6-byte
-trailer), while tracks 6-76 hold a 7-byte header (track, sector, checksum)
-followed by the 128-byte record (2-byte trailer). Tracks 6-76 also apply an
-extra rotation on top of the standard 32-sector skew table for logical
-sectors 16-31 (equivalent to adding 16, mod 32, one-based, to the skew
-table's result); logical sectors 0-15 use the skew table unchanged. Some
-system images append a 96-byte marker after the complete sector grid.
-
-The Pico firmware does not consume that framing. Run:
-
-```sh
-python3 src/disks/convert_altair_disks.py
-```
-
-Use `--output-dir DIRECTORY` to generate fresh converted images outside the
-tracked `generated/` folder. The converter validates source framing and
-checksums before conversion.
-
-This writes four exact 524,288-byte files under `generated/`:
-
-| Flash drive | Generated image | Source image |
+| Flash drive | Image | Contents |
 | ---: | --- | --- |
-| A | `drive_a_cpm63k.img` | `cpm63k.dsk` |
-| B | `drive_b_bdsc.img` | `bdsc-v1.60.dsk` |
-| C | `drive_c_escape.img` | `escape-posix.dsk` |
-| D | `drive_d_blank.img` | `source-native/drive_d_doctor.img` |
+| A | `drive_a_cpm63k.img` | CP/M 2.2 files; `build_images.py` replaces its system tracks and `AUTORUN.COM` |
+| B | `drive_b_bdsc.img` | BDS C tools plus the current banked-memory examples |
+| C | `drive_c_escape.img` | Escape applications and games |
+| D | `drive_d_blank.img` | DOCTOR/DOCGEN ISAM demonstration database |
 
-The converter applies the source BIOS's per-track sector layout and 32-sector
-translation table (with the tracks 6-76 rotation described above), extracts
-every 128-byte record, and pads the three additional tracks with `0xE5`. It
-also writes `generated/manifest.json` with source and output SHA-256 values.
-The plain generated Drive A is an intermediate image: its system tracks still
-contain Altair-specific content, while its directory and file records from
-track 2 onward retain the original files, including the Altair-only AUTORUN.
+The CP/M files originate from the Altair 8800 disk archive at
+<https://github.com/companje/Altair8800/tree/master/data>; its license is in
+`native/LICENSE`. Drive A's system tracks still carry Altair-specific content,
+so provision `build/cpm/drive_a_cpm63k-z80.img`, never the checked-in image.
 
-Drive D is the exception: its DOCTOR/DOCGEN ISAM database exceeds the 77
-framed Altair tracks, so `source-native/drive_d_doctor.img` is a native
-524,288-byte image that the converter copies unchanged.
+## Building images
 
-## Saving changes made in an emulator session
-
-Interactive sessions write to `build/cpm/drive_*.img`, which
-`build_images.py` regenerates from these sources. After the session ends, run
-`python3 src/disks/save_session_disk.py D` (or `B`, `C`) to store the modified
-image in its checked-in source, then `python3 src/disks/convert_altair_disks.py`
-to refresh `generated/` and `manifest.json`, and commit both. Drives B and C
-are re-framed into their Altair sources and must fit its 77 tracks; Drive A is
-rebuilt from `cpm63k.dsk`.
-
-After rebuilding the banked-memory examples, run
-`python3 src/disks/refresh_drive_b.py` to install them into `bdsc-v1.60.dsk`
-(it removes the retired `SPREADS`/`SPRDHOST`/`LIBHOST` files and re-frames the
-records with `convert_altair_disks.encode`), then rerun the converter so
-`generated/` and `manifest.json` match.
-
-Run the CP/M image builder to replace those two system tracks with sequential
-CCP/BDOS records, the board-native BIOS, and a disabled native auto-run
-configuration record. The builder also replaces user 0's `AUTORUN.COM`
+Run the CP/M image builder to replace Drive A's two system tracks with
+sequential CCP/BDOS records, the board-native BIOS, and a disabled native
+auto-run configuration record. The builder also replaces user 0's `AUTORUN.COM`
 with the native utility; it requires Python 3.9+, `z80asm`, and `cpmtools`
 (`cpmcp` and `cpmrm`):
 
@@ -78,10 +28,9 @@ with the native utility; it requires Python 3.9+, `z80asm`, and `cpmtools`
 python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
-Provision `build/cpm/drive_a_cpm63k-z80.img`, not the intermediate
-`generated/drive_a_cpm63k.img`. Drives C and D are copied unchanged. Drive B
-receives the current banked-memory example binaries (`ALLOCPRF`, `BANKED`,
-`MEMPERF`, `PRIMEBK1`, and `DATA.LIB`/`DATATEST.COM` when both are built). Supplying Stage 10's
+Drives C and D are copied unchanged. Drive B receives the current
+banked-memory example binaries (`ALLOCPRF`, `BANKED`, `MEMPERF`, `PRIMEBK1`,
+and `DATA.LIB`/`DATATEST.COM` when both are built). Supplying Stage 10's
 firmware binary also creates a complete fixed-layout flash image:
 
 ```sh
@@ -90,64 +39,66 @@ python3 src/cpm/build_images.py \
   --output-dir build/cpm
 ```
 
+CMake runs the same builder and rebuilds the CP/M images when any `native/`
+image, the builder, or the geometry changes.
+
 Native auto-run settings occupy only drive A's final reserved system record
 (LBA 63, image offset `0x1F80`), outside the filesystem and boot code.
-Replacing the whole drive A image resets these settings to disabled.
-Install its matching boot package as well when upgrading the BIOS; the old
-Altair utility is not compatible with the native disk layout. See
+Replacing the whole drive A image resets these settings to disabled. See
 [native auto-run](../cpm/README.md#native-auto-run) for the menu, record
 format, and boot-time recovery bypass.
 
+## Keeping the checked-in images current
+
+Interactive emulator sessions write to `build/cpm/drive_*.img`, which
+`build_images.py` regenerates from `native/`. After the session ends, run
+`python3 src/disks/save_session_disk.py D` (or `A`, `B`, `C`) to store the
+modified image in `native/`, then commit it. Drive A keeps only its file
+changes, because its system tracks are rebuilt.
+
+After rebuilding the banked-memory examples, run
+`python3 src/disks/refresh_drive_b.py` to install them into
+`native/drive_b_bdsc.img` and remove the retired `SPREADS`, `SPRDHOST` and
+`LIBHOST` files. `test_native_disks.py` fails if drive B and the examples
+differ.
+
 ## Selective flashing without backups
 
-From the repository root, use the maintained tool rather than manual conversion
-and write commands:
+From the repository root, use the maintained tool rather than manual write
+commands:
 
 ```sh
 . .venv-flash/bin/activate &&
 python -c 'import sys, serial; print("Using", sys.executable)' &&
 python scripts/pico_flash.py disks \
-  --drive B=src/disks/source-altair/bdsc-v1.60.dsk \
-  --drive C=src/disks/source-altair/escape-posix.dsk \
+  --drive C=src/disks/native/drive_c_escape.img \
+  --drive D=src/disks/native/drive_d_blank.img \
   --power-confirmed
 ```
 
 Repeat `--drive DRIVE=IMAGE` for one or more unique A-D slots. The development
 workflow makes no backups: it disconnects picocom, confirms stop/flush, checks
-the journal, converts validated Altair B-D sources when necessary, and writes
-only selected native-sized slots with read-back verification. It reboots once
-after all selected writes, without testing the booted firmware; `--no-reboot`
-leaves BOOTSEL instead.
+the journal, and writes only selected slots with read-back verification. It
+reboots once after all selected writes, without testing the booted firmware;
+`--no-reboot` leaves BOOTSEL instead.
 
-Native images must be exactly 524,288 bytes. Altair sources are checked with
-`validate_source()` before conversion. Drive A must be a matching board-native
-image; its warm-boot CCP/BDOS records are checked against the installed,
-CRC-validated boot package before any selected disk is written. Sources and
-unselected flash regions are unchanged.
+Images must be exactly 524,288 bytes. Drive A must be a matching board-native
+image built by `build_images.py`; its warm-boot CCP/BDOS records are checked
+against the installed, CRC-validated boot package before any selected disk is
+written. Sources and unselected flash regions are unchanged.
 
 See the [flashing-tool setup and safety workflow](../../docs/docs/en/system/firmware-build.md#72-flash-provisioning).
-
-## Build freshness and selective updates
-
-CMake converts the current source disks into `build/cpm-converted/` and rebuilds
-CP/M images when any source disk, conversion code, or geometry changes. The
-checked-in `generated/` images are references; refresh them with the converter
-when updating source disks.
 
 Selective writes require the installed firmware's exact `z80sbc-storage:`
 layout metadata, checked before journal reads or storage writes. An existing
 512 KiB installation without this metadata needs a firmware-only update first;
-its boot package, ENV, and disks are preserved. Drive A and boot packages are checked for the
-current BIOS geometry and allocation-map layout as well as warm-boot records.
+its boot package, ENV, and disks are preserved. Drive A and boot packages are
+checked for the current BIOS geometry and allocation-map layout as well as
+warm-boot records.
 
-## BIOS compatibility
+## BIOS
 
-`source-altair/altair_88dskrom.h` and `altair_disk_loader.h` are retained as
-references only. They are Altair 88-DCDD boot ROMs that use ports
-`0x08`-`0x0A`; they are not a BIOS for this board and are not compiled into the
-Pico firmware.
-
-The source CP/M image contains an Altair BIOS and the DPB
+The checked-in Drive A files were created under an Altair BIOS with the DPB
 `SPT=32, BSH=4, BLM=15, EXM=0, DSM=149, DRM=63, AL0=0xC0, CKS=16, OFF=2`.
 The image builder installs a replacement BIOS for terminal ports `0x00`-`0x01`
 and disk ports `0x10`-`0x14`, with the final geometry sourced from

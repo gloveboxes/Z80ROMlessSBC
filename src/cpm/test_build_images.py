@@ -64,7 +64,7 @@ class BuildImagesTest(unittest.TestCase):
             build_images.REPO_ROOT
             / "src"
             / "disks"
-            / "generated"
+            / "native"
             / "drive_a_cpm63k.img"
         )
         cls.generated_drive = generated_path.read_bytes()

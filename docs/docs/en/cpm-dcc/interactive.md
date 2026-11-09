@@ -9,8 +9,14 @@ I/O. Requires CMake, a C/C++ compiler, Python 3.10+, `z80asm`, and `cpmtools`.
 2. Wait for `64K CP/M 2.2` and the `A>` prompt.
 3. Enter CP/M commands. Press `Ctrl+]` to stop the session.
 
-The pre-launch task builds the project’s Z80 host, I/O adapter, and images in
-`build/cpm`. The launcher loads the 64 KiB payload from `z80boot.pkg` and
+Starting rebuilds the project's Z80 host, I/O adapter, banked examples, CP/M,
+BIOS and images in `build/cpm`. Examples are rebuilt with `dccmake` from
+`$DCC_DIR` or a sibling `dcc` checkout; without one, the checked-in binaries
+are used. Every launch replaces `build/cpm/drive_*.img` from `src/disks/native/`, so
+session changes are discarded unless saved with
+`python3 src/disks/save_session_disk.py <drive>`.
+Use `--prepare-only` to build without starting, and `--skip-examples` to skip
+`dccmake`. The launcher loads the 64 KiB payload from `z80boot.pkg` and
 attaches Drives A–D. No Pico or external Altair checkout is needed.
 
 The session is banked: the launcher passes a generated bank-1 image

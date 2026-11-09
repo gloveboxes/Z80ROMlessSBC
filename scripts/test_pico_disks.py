@@ -27,8 +27,8 @@ class DiskFlashTaskTests(unittest.TestCase):
                     "Build and flash Pico - CP/M system and Drive A")
         stages = [shlex.split(stage.strip()) for stage in task["command"].split("&&")]
         self.assertEqual(stages[-2], [
-            "python", "src/cpm/build_images.py", "--disk-dir",
-            "build/cpm-system-update/converted", "--output-dir", "build/cpm-system-update",
+            "python", "src/cpm/build_images.py",
+            "--output-dir", "build/cpm-system-update",
         ])
         self.assertEqual(stages[-1], [
             "python", "scripts/pico_flash.py", "system", "--boot-package",
@@ -41,8 +41,8 @@ class DiskFlashTaskTests(unittest.TestCase):
         source_images = {
             "A": "build/cpm-disk-update/drive_a_cpm63k-z80.img",
             "B": "build/cpm-disk-update/drive_b_bdsc.img",
-            "C": "src/disks/source-altair/escape-posix.dsk",
-            "D": "src/disks/source-native/drive_d_doctor.img",
+            "C": "src/disks/native/drive_c_escape.img",
+            "D": "src/disks/native/drive_d_blank.img",
         }
         labels = ["Flash Pico - All disks (A-D)", *(
             f"Flash Pico - Drive {drive}" for drive in "ABCD"
@@ -71,13 +71,8 @@ class DiskFlashTaskTests(unittest.TestCase):
                 self.assertEqual(flash_index, len(stages) - 1)
                 self.assertEqual(command.count("scripts/pico_flash.py disks"), 1)
                 if "A" in drives or "B" in drives:
-                    self.assertEqual(stages[flash_index - 2], [
-                        "python", "src/disks/convert_altair_disks.py",
-                        "--output-dir", "build/cpm-disk-update/converted",
-                    ])
                     self.assertEqual(stages[flash_index - 1], [
                         "python", "src/cpm/build_images.py",
-                        "--disk-dir", "build/cpm-disk-update/converted",
                         "--output-dir", "build/cpm-disk-update",
                     ])
 
@@ -352,26 +347,12 @@ class DiskFlashTests(unittest.TestCase):
             with self.subTest(size=size), self.assertRaises(FlashError):
                 flash.load_disk_image("B", source)
 
-    def test_altair_sources_use_maintained_conversion(self) -> None:
-        source = REPO_ROOT / "src/disks/source-altair/bdsc-v1.60.dsk"
-        expected = flash.convert(source.read_bytes())
-        self.assertEqual(flash.load_disk_image("B", source), expected)
-        grid = source.read_bytes()[:flash.SOURCE_GRID_BYTES]
-        marked = self.directory / "altair-with-marker.img"
-        marked.write_bytes(grid + bytes(96))
-        self.assertEqual(flash.load_disk_image("D", marked), expected)
-
-    def test_corrupt_altair_and_framed_drive_a_fail_before_hardware(self) -> None:
-        source = REPO_ROOT / "src/disks/source-altair/bdsc-v1.60.dsk"
-        with self.assertRaisesRegex(FlashError, "board-native"):
-            flash.load_disk_image("A", source)
-        corrupted = bytearray(source.read_bytes())
-        corrupted[131] ^= 1
-        self.source.write_bytes(corrupted)
-        with patch.object(flash, "prepare_storage") as prepare:
-            with self.assertRaisesRegex(FlashError, "framing/checksum"):
-                flash.flash_disks(self.arguments())
-        prepare.assert_not_called()
+    def test_checked_in_native_disks_load_unchanged(self) -> None:
+        for name in flash.cpm_images.SOURCE_DISK_NAMES:
+            with self.subTest(image=name):
+                source = REPO_ROOT / "src/disks/native" / name
+                drive = "ABCD"[flash.cpm_images.SOURCE_DISK_NAMES.index(name)]
+                self.assertEqual(flash.load_disk_image(drive, source), source.read_bytes())
 
     def test_all_inputs_validated_before_disconnect_or_stop(self) -> None:
         bad = self.directory / "bad.img"

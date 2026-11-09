@@ -149,7 +149,7 @@ or run unit tests merely to work around a failed dependency import.
 These tests cover serial-number discovery and changed port names, targeted
 picocom disconnection, exclusive serial settings, status/boot ordering,
 stop/flush timeouts, exact UF2 firmware boundaries, journal headers, no-backup
-selected-slot disk writes, real Altair conversion, installed Drive A warm-boot
+selected-slot disk writes, native 512 KiB image loading, installed Drive A warm-boot
 compatibility and picotool failure handling. macOS `lsof` can include file-descriptor records
 and return exit 1 with valid owners when only one device alias matches;
 picotool force options must follow serial selection. Both cases have

@@ -60,8 +60,7 @@ python scripts/pico_flash.py firmware \
   Serial clients always close on completion or failure.
 - For disk-only updates use `pico_flash.py disks --drive B=IMAGE --drive C=IMAGE
   --power-confirmed` and the `flash-cpm-disks` skill. The command disconnects
-  picocom, stops/flushes, checks the journal, converts validated Altair B-D inputs
-  if needed and verifies only selected slots. The standing project preference is
+  picocom, stops/flushes, checks the journal, verifies only selected slots. The standing project preference is
   **no backups** on this non-production board; do not ask about or create backups
   for routine replacements. Drive A requires matching board-native system records.
 - After changing these tools, run the following; tests do not flash or stop

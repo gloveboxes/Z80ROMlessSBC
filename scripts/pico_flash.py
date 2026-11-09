@@ -18,7 +18,6 @@ import serial
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.cpm import build_images as cpm_images
-from src.disks.convert_altair_disks import SOURCE_GRID_BYTES, convert, validate_source
 
 from pico_supervisor import (
     FlashError, disconnect_picocom, open_supervisor, positive_seconds,
@@ -169,23 +168,12 @@ def drive_image(value: str) -> tuple[str, Path]:
 
 
 def load_disk_image(drive: str, source: Path) -> bytes:
-    size = source.stat().st_size
-    if size not in {cpm_images.DISK_IMAGE_BYTES, SOURCE_GRID_BYTES, SOURCE_GRID_BYTES + 96}:
-        raise FlashError(
-            f"{source}: unexpected disk size {size}; expected {cpm_images.DISK_IMAGE_BYTES} "
-            "native bytes or a complete framed Altair image"
-        )
     data = source.read_bytes()
-    if size != cpm_images.DISK_IMAGE_BYTES:
-        if drive == "A":
-            raise FlashError("Drive A requires a matching board-native image, not a framed Altair disk")
-        try:
-            validate_source(data)
-            data = convert(data)
-        except ValueError as error:
-            raise FlashError(f"{source}: {error}") from error
     if len(data) != cpm_images.DISK_IMAGE_BYTES:
-        raise FlashError(f"{source}: native disk must contain exactly {cpm_images.DISK_IMAGE_BYTES} bytes")
+        raise FlashError(
+            f"{source}: unexpected disk size {len(data)}; "
+            f"expected a native {cpm_images.DISK_IMAGE_BYTES}-byte image"
+        )
     return data
 
 
@@ -387,7 +375,7 @@ def main() -> int:
     )
     disks.add_argument(
         "--drive", action="append", type=drive_image, required=True,
-        help="repeat DRIVE=IMAGE for each selected A-D slot; native images or Altair B-D sources",
+        help="repeat DRIVE=IMAGE for each selected A-D slot; native 512 KiB images",
     )
     disks.add_argument("--boot-package", type=Path,
                        help="validate and replace a matching CP/M boot package; requires Drive A")

@@ -50,7 +50,7 @@ class CpmBootExecution(unittest.TestCase):
         system = build_images.build_cpm_system(assembler)
         bios = build_images.build_bios(assembler)
         cls.image = build_images.build_z80_image(system, bios)
-        directory = build_images.REPO_ROOT / "src" / "disks" / "generated"
+        directory = build_images.REPO_ROOT / "src" / "disks" / "native"
         cls.disks = [
             (directory / name).read_bytes()
             for name in build_images.SOURCE_DISK_NAMES

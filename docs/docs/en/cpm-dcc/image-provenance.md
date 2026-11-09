@@ -36,6 +36,11 @@ relocated entry vectors.
   loader. It uses the board's Pico-serviced terminal and flash-disk ports,
   rather than the Altair controller's ports `0x08`–`0x0A`.
   See [Custom BIOS](../system/cpm-execution.md#custom-bios-reference).
+- **Non-standard 512 KiB disk format:** each drive is a flat image of 128
+  tracks x 32 records x 128 bytes (524,288 bytes), with no sector framing or
+  skew. It matches neither IBM 3740 SSSD nor the Altair 88-DCDD 77-track
+  media. The BIOS reports one disk parameter block for A–D; see
+  [Disk format](../system/cpm-execution.md#disk-format).
 - **Validation:** The port's unoptimised mode reproduces the reference
   byte-for-byte. Host tests check relocation and Z80 instructions, plus
   cold boot, `DIR`, program loading, and warm boot.

@@ -161,12 +161,10 @@ reserves the remainder as follows:
 
 **Disk format.** Each disk is exactly 524,288 bytes: 128 tracks of 32
 sequential 128-byte records. This project-specific format is not IBM 3740
-SSSD. CMake automatically converts the current `src/disks/source-altair/`
-images (and copies the native `src/disks/source-native/` Drive D image) into `build/cpm-converted/` before packaging CP/M. It tracks source-disk
-changes, so rebuilding cannot silently reuse stale checked-in images.
-`src/disks/convert_altair_disks.py` removes Altair framing and skew, extracts
-the CP/M records, and pads the images from 77 to 128 tracks. Its default output
-remains `src/disks/generated/` for refreshing the checked-in reference images.
+SSSD. CMake builds the CP/M images from the 512 KiB images in
+`src/disks/native/` and tracks their changes, so rebuilding cannot silently
+reuse stale images. The same files are used by the host emulator and the Pico
+flash slots.
 
 **Build and provisioning.** The `z80_cpm_images` target automatically creates
 the boot package, four disk images, and combined

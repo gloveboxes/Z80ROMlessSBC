@@ -65,7 +65,7 @@
 			"label": "Build and flash Pico - CP/M system and Drive A",
 			"detail": "Requires Phase 10 firmware built from the same source revision (bank-1 BDOS, loader and allocator). Flash the Phase 10 firmware task first, then replace the matching CP/M boot package and Drive A. No backups; preserves firmware, B-D, journal and ENV. Force entry with journal and read-back checks.",
 			"type": "shell",
-			"command": "if [ \"${input:picoCpmSystemSafety}\" != \"Replace CP/M and drive A\" ]; then printf '%s\\n' 'CP/M update cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-system-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-system-update/converted --output-dir build/cpm-system-update && python scripts/pico_flash.py system --boot-package build/cpm-system-update/z80boot.pkg --drive-a build/cpm-system-update/drive_a_cpm63k-z80.img --power-confirmed --force",
+			"command": "if [ \"${input:picoCpmSystemSafety}\" != \"Replace CP/M and drive A\" ]; then printf '%s\\n' 'CP/M update cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/cpm/build_images.py --output-dir build/cpm-system-update && python scripts/pico_flash.py system --boot-package build/cpm-system-update/z80boot.pkg --drive-a build/cpm-system-update/drive_a_cpm63k-z80.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -120,7 +120,7 @@
 			"label": "Build and flash Pico - Phase 10 firmware and disks",
 			"detail": "Provision the 512 KiB disk layout: replace ALL flash including firmware, CP/M boot package, A-D and ENV. No backups; save existing disks/settings before running.",
 			"type": "shell",
-			"command": "if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then printf '%s\\n' 'Provisioning cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_build.py --build-dir build --target z80_stage10_websocket_terminal && python src/disks/convert_altair_disks.py --output-dir build/cpm-layout-upgrade/converted && python src/cpm/build_images.py --disk-dir build/cpm-layout-upgrade/converted --output-dir build/cpm-layout-upgrade --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v build/cpm-layout-upgrade/z80romless-flash.bin -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
+			"command": "if [ \"${input:picoProvisionSafety}\" != \"Replace all flash\" ]; then printf '%s\\n' 'Provisioning cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_build.py --build-dir build --target z80_stage10_websocket_terminal && python src/cpm/build_images.py --output-dir build/cpm-layout-upgrade --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin && picotool info --ser \"${input:picoUsbSerial}\" -F && picotool load --ser \"${input:picoUsbSerial}\" -v build/cpm-layout-upgrade/z80romless-flash.bin -t bin -o 0x10000000 && picotool reboot --ser \"${input:picoUsbSerial}\"",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -135,9 +135,9 @@
 		},
 		{
 			"label": "Flash Pico - All disks (A-D)",
-			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and B (with the current banked examples) and convert C-D at flash time. No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
+			"detail": "Replace all disks from src/disks/native; regenerate native A and B (with the current banked examples). No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=build/cpm-disk-update/drive_b_bdsc.img --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-native/drive_d_doctor.img --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/cpm/build_images.py --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=build/cpm-disk-update/drive_b_bdsc.img --drive C=src/disks/native/drive_c_escape.img --drive D=src/disks/native/drive_d_blank.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -152,9 +152,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive A",
-			"detail": "Regenerate native A from src/disks/source-altair/cpm63k.dsk; installed boot compatibility is checked. No backups. Force entry; no running-firmware handshake.",
+			"detail": "Regenerate native A from src/disks/native/drive_a_cpm63k.img; installed boot compatibility is checked. No backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/cpm/build_images.py --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -169,9 +169,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive B",
-			"detail": "Replace only B: BDS C disk from src/disks/source-altair with the current banked examples, verified at flash time; no backups. Force entry; no running-firmware handshake.",
+			"detail": "Replace only B: BDS C disk from src/disks/native with the current banked examples, verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive B=build/cpm-disk-update/drive_b_bdsc.img --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/cpm/build_images.py --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive B=build/cpm-disk-update/drive_b_bdsc.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -186,9 +186,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive C",
-			"detail": "Replace only C from src/disks/source-altair/escape-posix.dsk, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
+			"detail": "Replace only C from src/disks/native/drive_c_escape.img, verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=src/disks/source-altair/escape-posix.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive C=src/disks/native/drive_c_escape.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -203,9 +203,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive D",
-			"detail": "Replace only D from src/disks/source-native/drive_d_doctor.img, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
+			"detail": "Replace only D from src/disks/native/drive_d_blank.img, verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/source-native/drive_d_doctor.img --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/native/drive_d_blank.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -221,7 +221,8 @@
 		{
 			"label": "Prepare interactive CP/M emulator",
 			"type": "shell",
-			"command": "cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF && cmake --build build/cpm/z80_debug_host && cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter -DBUILD_TESTING=OFF && cmake --build build/cpm/dcc_io_adapter && python3 src/cpm/build_images.py --assembler z80asm --output-dir build/cpm",
+			"detail": "Build the emulator, banked examples and CP/M images without starting a session.",
+			"command": "python3 src/cpm/interactive/launch.py --prepare-only",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -237,10 +238,9 @@
 		},
 		{
 			"label": "Run interactive CP/M emulator",
-			"detail": "Build, then start the banked CP/M emulator in a terminal. Press Ctrl+] to stop.",
+			"detail": "Build everything, then start the banked CP/M emulator in a terminal. Press Ctrl+] to stop.",
 			"type": "shell",
 			"command": "python3 src/cpm/interactive/launch.py",
-			"dependsOn": "Prepare interactive CP/M emulator",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},

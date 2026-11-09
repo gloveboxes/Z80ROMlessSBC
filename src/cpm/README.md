@@ -1,7 +1,7 @@
 # Native CP/M boot image
 
-The board runs a 64K CP/M 2.2 system generated from the preserved
-`src/disks/source-altair/cpm63k.dsk`, but replaces its Altair controller BIOS.
+The board runs a 64K CP/M 2.2 system generated from the files on
+`src/disks/native/drive_a_cpm63k.img`, but replaces its Altair controller BIOS.
 The memory map is:
 
 | Region | Z80 address | Size |
@@ -193,8 +193,8 @@ with `--host`. The Python test extracts the SRAM payload from `z80boot.pkg`
 instead of loading a separate boot-image artifact.
 
 To interact with CP/M in the emulator, select **Interactive CP/M emulator** in
-VS Code's **Run and Debug** view and press Start. Its pre-launch task builds the
-local host and regenerates the CP/M images; the launcher then loads the payload
+VS Code's **Run and Debug** view and press Start. `launch.py` first builds the
+local host, banked examples and CP/M images; it then loads the payload
 from `z80boot.pkg` and connects the integrated terminal to the emulated CP/M
 console. Wait for `A>`, then type commands normally; `DIR`, `LS`, `C:`,
 `ATTNC11`, and cross-drive `PIP` copies provide progressively broader checks of
@@ -242,5 +242,4 @@ The public BIOS disk addressing and the TPA remain unchanged.
 The flash layout reserves firmware below `0x1D0000`, journal at `0x1D0000`,
 boot at `0x1E0000`, environment at `0x1FE000`, and four 512 KiB drives starting
 at `0x200000`, `0x280000`, `0x300000`, and `0x380000`. Every native drive image
-is exactly 512 KiB; only the framed Altair sources in `src/disks/source-altair/`
-are smaller, and the converter expands them.
+is exactly 512 KiB, matching the host emulator and the images in `src/disks/native/`.

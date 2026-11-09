@@ -174,7 +174,10 @@ Report missing tools or build errors explicitly, not as successful generation.
 5. The one emulator is the C Z80 emulator in `src/cpm/z80_debug_host`
    (`libz80sbc-emulator`: x80 core plus two-bank SRAM), driven by Python 3.10+
    tests in `src/common/tests/`. The VS Code "Interactive CP/M emulator" runs the
-   same banked system through `z80-debug-host --bank1-image`. Build it once if
+   same banked system through `z80-debug-host --bank1-image`;
+   `src/cpm/interactive/launch.py` first rebuilds the emulator, examples (via
+   `dccmake`) and images, replacing the session drives.
+   For tests, build the emulator once if
    `build/cpm/z80_debug_host/libz80sbc-emulator.*` is missing (`z80asm` must be
    on `PATH`):
 

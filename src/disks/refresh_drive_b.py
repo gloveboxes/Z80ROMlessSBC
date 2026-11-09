@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Install the current banked-memory examples into the drive B Altair source disk.
+"""Install the current banked-memory examples into the native drive B image.
 
-Run this after rebuilding the examples, then run convert_altair_disks.py to
-refresh src/disks/generated/.
+Run this after rebuilding the examples. build_images.py applies the same
+install at build time, so this only keeps the checked-in image current.
 """
 
 from __future__ import annotations
@@ -13,13 +13,11 @@ import sys
 from pathlib import Path
 
 DISK_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(DISK_DIR))
 sys.path.insert(0, str(DISK_DIR.parent / "cpm"))
 
 import build_images
-import convert_altair_disks as altair
 
-SOURCE = DISK_DIR / "source-altair" / altair.DISKS["drive_b_bdsc.img"]
+IMAGE = DISK_DIR / "native" / "drive_b_bdsc.img"
 
 
 def main() -> None:
@@ -28,13 +26,11 @@ def main() -> None:
     args = parser.parse_args()
     if args.cpmcp is None:
         raise SystemExit("cpmcp was not found; install cpmtools or pass --cpmcp")
-    template = SOURCE.read_bytes()
-    native = altair.convert(template)
-    updated = build_images.install_files(
-        native, build_images.example_files(), build_images.EXAMPLE_REMOVED_FILES, args.cpmcp
-    )
-    SOURCE.write_bytes(altair.encode(updated, template))
-    print(f"updated {SOURCE}")
+    IMAGE.write_bytes(build_images.install_files(
+        IMAGE.read_bytes(), build_images.example_files(),
+        build_images.EXAMPLE_REMOVED_FILES, args.cpmcp,
+    ))
+    print(f"updated {IMAGE}")
 
 
 if __name__ == "__main__":

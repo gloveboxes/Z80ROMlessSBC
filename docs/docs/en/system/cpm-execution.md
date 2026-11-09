@@ -252,6 +252,27 @@ The standard CP/M 2.2 17-entry jump table also supports DCC direct-BIOS calls:
 
 See the [I/O port map](io-ports.md) for decoding and aliases.
 
+### Disk format
+
+Drives A–D share one non-standard geometry, defined in
+[geometry.py](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/geometry.py).
+The same 524,288-byte image is used in onboard flash, by the host emulator and
+by `cpmtools`:
+
+| Property | Value |
+| --- | --- |
+| Layout | 128 tracks x 32 records x 128 bytes, sequential, no skew |
+| Reserved (system) tracks | 2 |
+| Block size | 2 KiB (`BSH=4`, `BLM=15`) |
+| Blocks | 252 (`DSM=251`), 502 KiB of files |
+| Directory | 64 entries (`DRM=63`), one block (`AL0=0x80`) |
+| Checksum vector | None (`CKS=0`, fixed disk) |
+
+This is neither IBM 3740 SSSD nor the Altair 88-DCDD layout, so generic CP/M
+disk images must be converted to this layout (for example by copying files
+with `cpmcp`) before use. See the
+[disk media notes](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md).
+
 ### Banked-memory BIOS extension (ABI 1.0)
 
 Check `BMX1` at `FF09h`, major 1 at `FF0Dh`, minor 0 at `FF0Eh`, and INFO success before using the mirrored extension:

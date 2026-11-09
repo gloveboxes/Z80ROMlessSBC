@@ -1,6 +1,6 @@
 ---
 name: flash-cpm-disks
-description: 'Use for disk-only CP/M .dsk/.img flashing on Pico 2 W: selective drives A-D, BDS C/Escape, Altair conversion, installed-layout checks, journal recovery, BOOTSEL and read-back verification without rebuilding firmware.'
+description: 'Use for disk-only CP/M .img flashing on Pico 2 W: selective drives A-D, BDS C/Escape, installed-layout checks, journal recovery, BOOTSEL and read-back verification without rebuilding firmware.'
 argument-hint: 'Disk image paths and target drives A-D'
 user-invocable: true
 ---
@@ -18,8 +18,8 @@ in [firmware engineering](../z80-romless-sbc/SKILL.md).
 2. Use `scripts/pico_flash.py disks`, not custom serial, conversion or picotool
    clients. In every fresh shell, activate `.venv-flash` and verify `serial`
    imports in the same `&&` chain as the command. Stop on preflight failure.
-3. Validate all inputs and installed-layout metadata. Native disks are exactly
-   524,288 bytes; B-D Altair inputs are converted by the maintained tool.
+3. Validate all inputs and installed-layout metadata. Disks are exactly
+   524,288 bytes.
    Drive A must match the installed board-native boot package.
 4. Confirm deployment authorization, saved CP/M work and external +5 V.
    Apply external power before USB; disconnect USB before removing it.
@@ -35,4 +35,4 @@ in [firmware engineering](../z80-romless-sbc/SKILL.md).
    requested reboot, without extra boot/health checks.
 
 The reference contains exact commands, BOOTSEL exceptions, compatibility gates
-and focused tests for converter or flashing-tool changes.
+and focused tests for flashing-tool changes.

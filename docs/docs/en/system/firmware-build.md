@@ -96,9 +96,12 @@ Disk and full-flash replacements create no backups.
 
 ### Host emulator
 
-**Prepare interactive CP/M emulator** builds the host, adapter, and images
-without accessing the Pico. The **Interactive CP/M emulator** Run and Debug
-configuration runs it automatically; see the [interactive test](../cpm-dcc/interactive.md).
+`python3 src/cpm/interactive/launch.py` builds the host, adapter, banked
+examples (with `dccmake` when a dcc checkout is found), BIOS and images, then
+starts the emulator without accessing the Pico. The **Interactive CP/M
+emulator** Run and Debug configuration, the **Run interactive CP/M emulator**
+task and **Prepare interactive CP/M emulator** (`--prepare-only`) all use it;
+see the [interactive test](../cpm-dcc/interactive.md).
 
 ## 7.1 Firmware and CP/M Build
 
@@ -261,8 +264,8 @@ See the [board verification notes](../hardware/address-interface.md#board-verifi
 
 ### Storage update checks
 
-Disk tasks regenerate native Drive A and convert B–D from `src/disks/source-altair/` (Drive D from `src/disks/source-native/`).
-They do not compile applications; update source disks first. The CP/M system
+Disk tasks regenerate native Drive A and flash B–D from the 512 KiB images in `src/disks/native/`.
+They do not compile applications; update the native disk images first. The CP/M system
 task assembles current `.asm` files without regenerating them through
 `disassemble_cpm64.py`; outputs go to `build/cpm-system-update/`.
 

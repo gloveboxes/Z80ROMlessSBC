@@ -6,8 +6,8 @@ See [image provenance](image-provenance.md) and the [memory map](../system/cpm-e
 
 ## Build images
 
-Requires Python 3, `z80asm`, `cpmtools`, and the converted disks in
-`src/disks/generated/`. Run from the repository root:
+Requires Python 3, `z80asm`, `cpmtools`, and the disk images in
+`src/disks/native/`. Run from the repository root:
 
 ```sh
 python3 src/cpm/build_images.py --output-dir build/cpm
@@ -16,7 +16,7 @@ python3 src/cpm/build_images.py --output-dir build/cpm
 Outputs include `bios.bin`, the 64 KiB `z80boot.img`, CRC-protected
 `z80boot.pkg`, `AUTORUN.COM`, four 512 KiB disk images, and `manifest.json`.
 Drive A receives the native system tracks and AUTORUN utility/configuration;
-Drives B–D are unchanged copies of the converted images.
+Drive B also receives the current banked examples; Drives C and D are unchanged copies of `src/disks/native/`.
 
 To also create a complete 4 MiB `z80romless-flash.bin`, supply Phase 10 firmware:
 

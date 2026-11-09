@@ -29,6 +29,9 @@ extension is unreliable here, so its failures are not build evidence.
 - Every Z80 result depends on the emulator: run `emulator_z80_test.py` first and
   after any change to `x80.cxx`, `sbc_*.c*` or the bank model. Add a regression
   there for each emulator bug, checked against an independent reference.
+- Disks: the only sources are the 512 KiB images in `src/disks/native/`, the same
+  format the emulator and Pico flash use. Keep changes with
+  `src/disks/save_session_disk.py` (emulator session) or `refresh_drive_b.py`.
 - KiCad DIP/SMT: `PYTHON=.venv-kicad/bin/python npm run kicad` / `npm run kicad:smt`
 - Docs: `docs/docs/.venv/bin/mkdocs build --strict -f docs/docs/mkdocs.yml`
 

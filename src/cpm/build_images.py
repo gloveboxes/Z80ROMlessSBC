@@ -479,7 +479,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--disk-dir",
         type=Path,
-        default=REPO_ROOT / "src" / "disks" / "generated",
+        default=REPO_ROOT / "src" / "disks" / "native",
     )
     parser.add_argument(
         "--output-dir",

@@ -70,11 +70,11 @@ following workflow to bring applications across from the Altair project.
 ### In the ESP32 Altair 8800 AI Edition project
 
 1. Build the desired C application in the Altair project's `Apps` collection
-   using its DCC build instructions, and create the corresponding 88-DCDD
-   `.dsk` image.
-2. Find the source disk images in the Altair project's
-   `/esp32-altair-8800/disks` folder, then copy the desired `.dsk` image into
-   `Z80ROMlessSBC/src/disks/source-altair/`.
+   using its DCC build instructions to produce its `.COM` file.
+2. Copy the `.COM` onto the target 512 KiB image in
+   `Z80ROMlessSBC/src/disks/native/` with `cpmcp`, or install it in an
+   interactive emulator session and save the drive with
+   `src/disks/save_session_disk.py`.
 
 ### In the Z80ROMlessSBC project
 
@@ -103,20 +103,20 @@ the original 88-DCDD sector framing.
 ### VS Code disk deployment tasks
 
 The tasks in [`.vscode/tasks.json`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.vscode/tasks.json)
-use the following source images from `src/disks/source-altair/` (Drive D: `src/disks/source-native/`):
+use the following 512 KiB images from `src/disks/native/`:
 
 | Task | Disks replaced | Source image |
 | --- | --- | --- |
 | **Flash Pico - All disks (A-D)** | A: through D: | All four images listed below |
-| **Flash Pico - Drive A** | A: | `cpm63k.dsk` |
-| **Flash Pico - Drive B** | B: | `bdsc-v1.60.dsk` |
-| **Flash Pico - Drive C** | C: | `escape-posix.dsk` |
-| **Flash Pico - Drive D** | D: | `source-native/drive_d_doctor.img` (native image) |
+| **Flash Pico - Drive A** | A: | `drive_a_cpm63k.img` (system tracks rebuilt) |
+| **Flash Pico - Drive B** | B: | `drive_b_bdsc.img` |
+| **Flash Pico - Drive C** | C: | `drive_c_escape.img` |
+| **Flash Pico - Drive D** | D: | `drive_d_blank.img` |
 
 Copy an updated disk image using the filename expected by its task, or update
 the task's source path to select a different application image. The A: tasks
-regenerate the board-native boot disk; the B:–D: tasks convert the selected
-Altair images at flash time. The tasks replace the selected disks without
+regenerate the board-native boot disk; the B:–D: tasks flash the selected
+images directly. The tasks replace the selected disks without
 backups and preserve firmware and ENV settings. **All disks (A-D)** also
 validates and installs the newly built boot package with Drive A. Individual
 drive tasks preserve the installed boot package; Drive A checks compatibility.
