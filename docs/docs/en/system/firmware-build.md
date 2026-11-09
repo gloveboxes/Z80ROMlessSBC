@@ -262,7 +262,7 @@ See the [board verification notes](../hardware/address-interface.md#board-verifi
 
 ### Storage update checks
 
-Disk tasks regenerate native Drive A and convert B–D from `src/disks/source-altair/`.
+Disk tasks regenerate native Drive A and convert B–D from `src/disks/source-altair/` (Drive D from `src/disks/source-native/`).
 They do not compile applications; update source disks first. The CP/M system
 task assembles current `.asm` files without regenerating them through
 `disassemble_cpm64.py`; outputs go to `build/cpm-system-update/`.

@@ -109,6 +109,14 @@ class ConvertAltairDisksTest(unittest.TestCase):
                 self.assertEqual(generated, converted)
                 self.assertEqual(len(generated), geometry.IMAGE_BYTES)
 
+    def test_native_sources_are_copied_unchanged(self) -> None:
+        for output_name, source_name in convert_altair_disks.NATIVE_DISKS.items():
+            with self.subTest(image=output_name):
+                source = (DISK_DIR / "source-native" / source_name).read_bytes()
+                generated = (DISK_DIR / "generated" / output_name).read_bytes()
+                self.assertEqual(len(source), geometry.IMAGE_BYTES)
+                self.assertEqual(generated, source)
+
     def test_all_directory_extents_match_native_dpb(self) -> None:
         directory_offset = geometry.RESERVED_TRACKS * geometry.SECTORS_PER_TRACK * geometry.RECORD_BYTES
         directory_bytes = (geometry.DPB_DRM + 1) * 32
@@ -117,7 +125,7 @@ class ConvertAltairDisksTest(unittest.TestCase):
 
         self.assertEqual(geometry.DPB_EXM, 0)
         self.assertEqual(blocks_per_extent, 8)
-        for output_name in convert_altair_disks.DISKS:
+        for output_name in (*convert_altair_disks.DISKS, *convert_altair_disks.NATIVE_DISKS):
             image = (DISK_DIR / "generated" / output_name).read_bytes()
             directory = image[directory_offset : directory_offset + directory_bytes]
             files: dict[tuple[int, bytes], list[int]] = {}
@@ -213,7 +221,7 @@ class ConvertAltairDisksTest(unittest.TestCase):
                 native = convert_altair_disks.convert(source)
                 self.assertEqual(convert_altair_disks.encode(native, source), source)
 
-        source = (DISK_DIR / "source-altair" / "blank.dsk").read_bytes()
+        source = (DISK_DIR / "source-altair" / "escape-posix.dsk").read_bytes()
         native = bytearray(convert_altair_disks.convert(source))
         for record in (0, 5 * geometry.SECTORS_PER_TRACK + 3, 40 * geometry.SECTORS_PER_TRACK + 20):
             native[record * geometry.RECORD_BYTES:(record + 1) * geometry.RECORD_BYTES] = bytes(range(128))
@@ -222,7 +230,7 @@ class ConvertAltairDisksTest(unittest.TestCase):
         self.assertEqual(convert_altair_disks.convert(encoded), bytes(native))
 
     def test_encode_rejects_records_beyond_the_framed_tracks(self) -> None:
-        source = (DISK_DIR / "source-altair" / "blank.dsk").read_bytes()
+        source = (DISK_DIR / "source-altair" / "escape-posix.dsk").read_bytes()
         native = bytearray(convert_altair_disks.convert(source))
         native[-1] = 0
         with self.assertRaisesRegex(ValueError, "beyond"):

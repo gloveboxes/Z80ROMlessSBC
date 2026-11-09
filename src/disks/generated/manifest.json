@@ -25,10 +25,10 @@
     },
     "drive_d_blank.img": {
       "output_bytes": 524288,
-      "output_sha256": "e4833e1b1ff5651eb37003d77ab581e5dd26f6919c1023bb3a9dee19cca80cec",
-      "source": "blank.dsk",
-      "source_bytes": 337568,
-      "source_sha256": "377f3e4e61bde471713ca257c2e294cb099f39931a6c9b1e26d27790b658cb8b"
+      "output_sha256": "c4272f70cfcb49ac3a3f8bb153d1e5c84fbb82d71907dad3c6e7e90b23afc8ec",
+      "source": "source-native/drive_d_doctor.img",
+      "source_bytes": 524288,
+      "source_sha256": "c4272f70cfcb49ac3a3f8bb153d1e5c84fbb82d71907dad3c6e7e90b23afc8ec"
     }
   }
 }

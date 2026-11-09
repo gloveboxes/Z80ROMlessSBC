@@ -103,7 +103,7 @@ the original 88-DCDD sector framing.
 ### VS Code disk deployment tasks
 
 The tasks in [`.vscode/tasks.json`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.vscode/tasks.json)
-use the following source images from `src/disks/source-altair/`:
+use the following source images from `src/disks/source-altair/` (Drive D: `src/disks/source-native/`):
 
 | Task | Disks replaced | Source image |
 | --- | --- | --- |
@@ -111,7 +111,7 @@ use the following source images from `src/disks/source-altair/`:
 | **Flash Pico - Drive A** | A: | `cpm63k.dsk` |
 | **Flash Pico - Drive B** | B: | `bdsc-v1.60.dsk` |
 | **Flash Pico - Drive C** | C: | `escape-posix.dsk` |
-| **Flash Pico - Drive D** | D: | `blank.dsk` |
+| **Flash Pico - Drive D** | D: | `source-native/drive_d_doctor.img` (native image) |
 
 Copy an updated disk image using the filename expected by its task, or update
 the task's source path to select a different application image. The A: tasks

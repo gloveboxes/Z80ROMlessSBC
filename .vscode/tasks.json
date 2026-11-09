@@ -137,7 +137,7 @@
 			"label": "Flash Pico - All disks (A-D)",
 			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and B (with the current banked examples) and convert C-D at flash time. No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=build/cpm-disk-update/drive_b_bdsc.img --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=build/cpm-disk-update/drive_b_bdsc.img --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-native/drive_d_doctor.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -203,9 +203,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive D",
-			"detail": "Replace only D from src/disks/source-altair/blank.dsk, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
+			"detail": "Replace only D from src/disks/source-native/drive_d_doctor.img, converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive D=src/disks/source-native/drive_d_doctor.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},

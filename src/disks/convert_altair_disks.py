@@ -69,7 +69,11 @@ DISKS = {
     "drive_a_cpm63k.img": "cpm63k.dsk",
     "drive_b_bdsc.img": "bdsc-v1.60.dsk",
     "drive_c_escape.img": "escape-posix.dsk",
-    "drive_d_blank.img": "blank.dsk",
+}
+# Native 512 KiB images are copied unchanged; Drive D's database exceeds the
+# 77 framed Altair tracks.
+NATIVE_DISKS = {
+    "drive_d_blank.img": "drive_d_doctor.img",
 }
 
 
@@ -202,11 +206,24 @@ def main() -> None:
             "output_sha256": sha256(output),
         }
 
+    for output_name, source_name in NATIVE_DISKS.items():
+        output = (disk_dir / "source-native" / source_name).read_bytes()
+        if len(output) != OUTPUT_BYTES:
+            raise ValueError(f"unexpected native image size: {len(output)}")
+        (output_dir / output_name).write_bytes(output)
+        images[output_name] = {
+            "source": f"source-native/{source_name}",
+            "source_bytes": len(output),
+            "source_sha256": sha256(output),
+            "output_bytes": len(output),
+            "output_sha256": sha256(output),
+        }
+
     manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="ascii"
     )
-    print(f"wrote {len(DISKS)} images and {manifest_path}")
+    print(f"wrote {len(images)} images and {manifest_path}")
 
 
 if __name__ == "__main__":

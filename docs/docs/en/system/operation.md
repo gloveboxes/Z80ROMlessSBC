@@ -162,7 +162,7 @@ reserves the remainder as follows:
 **Disk format.** Each disk is exactly 524,288 bytes: 128 tracks of 32
 sequential 128-byte records. This project-specific format is not IBM 3740
 SSSD. CMake automatically converts the current `src/disks/source-altair/`
-images into `build/cpm-converted/` before packaging CP/M. It tracks source-disk
+images (and copies the native `src/disks/source-native/` Drive D image) into `build/cpm-converted/` before packaging CP/M. It tracks source-disk
 changes, so rebuilding cannot silently reuse stale checked-in images.
 `src/disks/convert_altair_disks.py` removes Altair framing and skew, extracts
 the CP/M records, and pads the images from 77 to 128 tracks. Its default output

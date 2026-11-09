@@ -54,7 +54,7 @@ include the `0x10000000` XIP base.
 | A | `cpm63k.dsk` | `drive_a_cpm63k-z80.img` | `0x10200000` | `0x10280000` |
 | B | `bdsc-v1.60.dsk` | `drive_b_bdsc.img` | `0x10280000` | `0x10300000` |
 | C | `escape-posix.dsk` | `drive_c_escape.img` | `0x10300000` | `0x10380000` |
-| D | `blank.dsk` | `drive_d_blank.img` | `0x10380000` | `0x10400000` |
+| D | `source-native/drive_d_doctor.img` | `drive_d_blank.img` | `0x10380000` | `0x10400000` |
 
 Protected regions for disk-only work:
 

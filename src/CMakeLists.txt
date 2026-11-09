@@ -124,7 +124,7 @@ if(Z80ASM_EXECUTABLE)
       disks/source-altair/cpm63k.dsk
       disks/source-altair/bdsc-v1.60.dsk
       disks/source-altair/escape-posix.dsk
-      disks/source-altair/blank.dsk
+      disks/source-native/drive_d_doctor.img
     VERBATIM
   )
   function(add_cpm_images target firmware directory)

@@ -38,7 +38,7 @@ This writes four exact 524,288-byte files under `generated/`:
 | A | `drive_a_cpm63k.img` | `cpm63k.dsk` |
 | B | `drive_b_bdsc.img` | `bdsc-v1.60.dsk` |
 | C | `drive_c_escape.img` | `escape-posix.dsk` |
-| D | `drive_d_blank.img` | `blank.dsk` |
+| D | `drive_d_blank.img` | `source-native/drive_d_doctor.img` |
 
 The converter applies the source BIOS's per-track sector layout and 32-sector
 translation table (with the tracks 6-76 rotation described above), extracts
@@ -47,6 +47,20 @@ also writes `generated/manifest.json` with source and output SHA-256 values.
 The plain generated Drive A is an intermediate image: its system tracks still
 contain Altair-specific content, while its directory and file records from
 track 2 onward retain the original files, including the Altair-only AUTORUN.
+
+Drive D is the exception: its DOCTOR/DOCGEN ISAM database exceeds the 77
+framed Altair tracks, so `source-native/drive_d_doctor.img` is a native
+524,288-byte image that the converter copies unchanged.
+
+## Saving changes made in an emulator session
+
+Interactive sessions write to `build/cpm/drive_*.img`, which
+`build_images.py` regenerates from these sources. After the session ends, run
+`python3 src/disks/save_session_disk.py D` (or `B`, `C`) to store the modified
+image in its checked-in source, then `python3 src/disks/convert_altair_disks.py`
+to refresh `generated/` and `manifest.json`, and commit both. Drives B and C
+are re-framed into their Altair sources and must fit its 77 tracks; Drive A is
+rebuilt from `cpm63k.dsk`.
 
 After rebuilding the banked-memory examples, run
 `python3 src/disks/refresh_drive_b.py` to install them into `bdsc-v1.60.dsk`

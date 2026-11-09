@@ -40,9 +40,9 @@ class DiskFlashTaskTests(unittest.TestCase):
         tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
         source_images = {
             "A": "build/cpm-disk-update/drive_a_cpm63k-z80.img",
-            "B": "src/disks/source-altair/bdsc-v1.60.dsk",
+            "B": "build/cpm-disk-update/drive_b_bdsc.img",
             "C": "src/disks/source-altair/escape-posix.dsk",
-            "D": "src/disks/source-altair/blank.dsk",
+            "D": "src/disks/source-native/drive_d_doctor.img",
         }
         labels = ["Flash Pico - All disks (A-D)", *(
             f"Flash Pico - Drive {drive}" for drive in "ABCD"
@@ -70,7 +70,7 @@ class DiskFlashTaskTests(unittest.TestCase):
                 )
                 self.assertEqual(flash_index, len(stages) - 1)
                 self.assertEqual(command.count("scripts/pico_flash.py disks"), 1)
-                if "A" in drives:
+                if "A" in drives or "B" in drives:
                     self.assertEqual(stages[flash_index - 2], [
                         "python", "src/disks/convert_altair_disks.py",
                         "--output-dir", "build/cpm-disk-update/converted",
