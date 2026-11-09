@@ -161,16 +161,48 @@ Each cycle starts with a **tone-off LED check**:
 1. Red only, fully on for one second.
 2. Blue only, fully on for one second.
 3. Both fully on for one second; neither should flicker.
-4. Both fade up and down together, with identical brightness commands.
+4. Both fade up and down together autonomously, with one command per fade.
 
-The test then sweeps the piezo from **1000 to 5000 Hz in 250 Hz steps**
-(400 ms tone, 600 ms per step, LEDs off). The console prints each
-frequency as it plays; note the loudest one. Passive piezos are usually
-loudest near their resonance; for the AB3342, this should be about 4000 Hz.
+An arcade showcase follows: **coin pickup, jump, ricochet, teleport,
+shield recharge, extra life, victory fanfare and game over**. Each effect
+is one autonomous sequence, sweep or synchronized cue, with a 200 ms pause after
+the sound completes. Jump flashes blue; shield recharge fades blue up.
+Next is a 2.25-second **do, re, mi, fa, sol, la, ti, do**
+major scale (C6-C7), holding the final note twice as long.
+Original maze-chase effects follow: **pellet munching, power pellet and
+enemy capture**. Brick-breaker effects follow: **paddle bounce,
+wall bounce, brick shatter and ball lost**, with a fading red flash on loss.
+The final set covers **accelerating invader footsteps, UFO flyby, robot
+chatter, engine acceleration and warble, accelerating bomb countdown,
+explosion/player death, door unlocking, sonar ping, low-health heartbeat,
+combo multiplier, treasure discovery and level complete**. Engine and door
+effects each use two stages. The explosion is a jagged tonal descent into
+a low buzz, not noise; the heartbeat may be quiet on the passive piezo.
+The combo demonstrates a rising hit chain rather than reacting to game input.
+Six primitive demonstrations finish the showcase: **smooth segmented engine,
+repeating segmented ricochet, twelve accelerating countdown pulses, eight
+slowing radar pulses, rising UFO with vibrato and descending engine with
+vibrato**.
+These are genre-inspired effects, not reproductions of game recordings.
+The console names each effect. Program the ATtiny85 with the compiled target
+firmware before running the testing Pico; the showcase exercises all target
+commands.
 
-Next it plays 1 kHz for 1500 ms while cross-fading the LEDs
-(red fades up as blue fades down), leaves the tone off, plays a short
-440 Hz tone, and tests explicit stop of an 880 Hz tone. The sequence repeats.
+The effects demonstration then runs:
+
+1. Descending laser and ascending power-up pitch sweeps.
+2. A finite siren with alternating red/blue LEDs; both stop automatically.
+3. A jingle with a silent rest, repeated twice, while both LEDs breathe.
+4. Three red blinks while blue independently fades to off.
+5. One synchronized cue: rising pitch, red fade-up and blue fade-down.
+6. Indefinite siren/breathing, then sound-only and red-only cancellation.
+7. Replacement of blue breathing with indefinite blinking, then fixed brightness.
+8. Indefinite jingle replaced by a timed tone, followed by explicit tone stop.
+9. Indefinite alternating LEDs, LED-only stop, then siren/blinking and all-stop.
+
+The game-side equivalent only sends these effect commands; it does not
+stream brightness or frequency updates. Console messages identify each
+observation. The cycle repeats after the all-stop pause.
 
 I2C failures (including timeouts and short writes) print an error, abandon
 the current cycle, and retry from the tone-off LED check after one second.
@@ -189,15 +221,12 @@ work on PB3 (DIP pin 2) but not PB4 (DIP pin 3), the symptom follows the
 output path rather than the LED colour.
 
 Use the console messages to distinguish the tone-off check from the
-tone-playing cross-fade. If PB4 flickers during its **fully on** check,
+sound-and-light effects. If PB4 flickers during its **fully on** check,
 this is not an expected PWM effect: brightness 255 is continuously on.
 With power disconnected, check the pin-3 jumper, socket/breadboard contact,
 resistor connections and ground return. A fault that appears only while
 tones play needs a separate timer/output or supply-noise investigation;
 the visual result alone does not identify its cause.
-
-This diagnostic changes only the Pico test program. Rerun the test task;
-there is no need to reflash or move the ATtiny85 just to run these checks.
 
 ## Command protocol and timers
 
@@ -205,15 +234,64 @@ there is no need to reflash or move the ATtiny85 just to run these checks.
 Send **one complete command per write**, followed by STOP; no register
 pointer or read-back protocol is implemented.
 
+All named frequency, time and repeat fields below are **unsigned big-endian
+16-bit** values. Times are milliseconds; brightness, mask, idle and count
+are single bytes. Brightness ranges from 0 (off) to 255 (fully on).
+LED masks are red `01`, blue `02`, or both `03`. Stop masks also accept
+sound `04`; OR channels together, or use `07` for all.
+
 | Command | Bytes, in order | Meaning |
 | --- | --- | --- |
-| `01` | `01 freq_hi freq_lo ms_hi ms_lo` | Big-endian 16-bit Hz and duration in ms |
-| `02` | `02 brightness` | Red brightness, 0 off through 255 fully on |
-| `03` | `03 brightness` | Blue brightness, 0 off through 255 fully on |
+| `01` | `01 frequency duration` | Timed tone; either field zero stops sound |
+| `02` | `02 brightness` | Fixed red brightness |
+| `03` | `03 brightness` | Fixed blue brightness |
+| `04` | `04 start_Hz end_Hz duration` | Linear pitch sweep, then silence |
+| `05` | `05 low_Hz high_Hz rise fall total` | Repeating linear siren; `total=0` runs indefinitely |
+| `06` | `06 count repeats (frequency duration)...` | 1-8 notes/rests; repeats counts complete sequences, `0` runs indefinitely |
+| `07` | `07 mask start end duration` | Linear LED fade; holds end brightness |
+| `08` | `08 mask brightness on off repeats` | LED blink; repeats counts complete on/off cycles, `0` runs indefinitely |
+| `09` | `09 mask minimum maximum rise fall total idle` | Linear breathing; `total=0` runs indefinitely; finishes at idle |
+| `0A` | `0A brightness red_time blue_time repeats` | Alternating LEDs; repeats counts complete red/blue cycles, `0` runs indefinitely |
+| `0B` | `0B mask` | Cancel selected channels: silence/off |
+| `0C` | `0C start_Hz end_Hz duration red_start red_end blue_start blue_end` | Start a pitch sweep and two LED fades on the same timeline |
+| `0D` | `0D count repeats start_Hz (target_Hz duration)...` | 1-7 joined linear sweeps; repeats counts complete envelopes, `0` runs indefinitely |
+| `0E` | `0E count frequency on start_gap end_gap` | 1-64 pulses with linearly changing silent gaps; finishes after the final beep |
+| `0F` | `0F start_Hz end_Hz duration depth_Hz period` | Linear sweep plus triangular vibrato; finishes silent |
 
 For example `01 03 E8 05 DC` plays 1000 Hz for 1500 ms.
-Frequency or duration zero stops the tone. A new tone replaces the current
-one; the 16-bit duration supports up to 65535 ms.
+For example `04 0F A0 03 E8 00 B4` sweeps 4000 to 1000 Hz over 180 ms.
+Each time field supports up to 65535 ms. Siren/breathing total duration is
+independent of cycle length and may end partway through a cycle.
+Sequence frequency zero means a silent rest; note durations must be nonzero.
+Sweep/cue/siren frequencies and all cycle-leg/fade durations must be nonzero.
+Breathing minimum must not exceed maximum. Masks must select valid channels.
+Invalid parameters are NACKed without replacing an active effect.
+
+Segment targets, starting frequency and durations must be nonzero.
+Each segment begins at the preceding target; repetitions restart at
+`start_Hz`, so choose a matching final target for a continuous loop.
+The seven durations can total up to 458745 ms per envelope.
+
+Pulse frequency and on-time must be nonzero. Gaps may be zero: with three
+or more pulses they interpolate from the first to the last inter-pulse
+gap, rounding the change toward the starting gap. One pulse has no gap;
+two pulses use only `start_gap`. There is no trailing gap.
+
+Vibrato period is a full cycle in milliseconds (minimum 2); depth is the
+maximum offset in Hz, not volume. Its triangle starts at `-depth`, reaches
+`+depth` after half a period, and returns to `-depth`. The sweep duration
+must be nonzero; both endpoints minus/plus depth must stay within
+1-65535 Hz. Depth zero gives an unmodulated sweep. All three primitives
+replace only the sound channel and can run alongside LED effects.
+
+One sound and two independent LED effects run concurrently. A command
+replaces only its selected channel(s); fixed brightness cancels that LED's
+effect, and a timed tone replaces the sound effect. Blink/alternate finish
+off; breathing uses its specified idle brightness. A cue finishes silent
+and holds both LED endpoints. Stop cancels immediately when executed;
+there is no priority system, command scripting or volume envelope.
+Repeating effects continue until their finite limit, replacement, stop or
+power-off; I2C disconnection does not cancel them.
 
 The target uses avr-libc directly, not Arduino or an `analogWrite` dependency.
 Timer1 produces the PB1 waveform in hardware, using non-inverted PWM
@@ -221,16 +299,22 @@ without enabling its complementary PB0 output (SDA must remain free).
 The special 1 Hz case uses hardware compare-toggle because Timer1 PWM
 cannot reach 1 Hz at 8 MHz. Frequencies are rounded to timer divisors.
 
-Timer0 supplies 32 us ticks for duration expiry and independent 8-bit
-software PWM on PB3/PB4 (nominally 122 Hz). PB3/PB4 cannot provide
+Timer0 supplies 32 us ticks, a millisecond timebase and independent 8-bit
+software PWM on PB3/PB4 (nominally 122 Hz). Integer interpolation, repeat
+tracking and Timer1 frequency changes run in the foreground, not the PWM
+ISR. Frequency updates retain the running timer when possible instead of
+restarting every millisecond. PB3/PB4 cannot provide
 independently timed hardware brightness PWM while Timer1 owns the tone.
 Timer/RC accuracy and I2C interrupt latency affect the physical waveform;
 builds and host tests do not establish measured timing accuracy.
 
 USI START/overflow handlers receive all bytes and perform ACK/NACK, with a
-three-command queue for foreground execution. Incomplete packets are
-discarded at the next START. Unknown commands, read addresses and a full
-queue are NACKed. Once the expected final byte is accepted, the command is
+three-command queue for foreground execution, with packets up to 36 bytes.
+Incomplete packets are discarded at the next START. Unknown commands,
+invalid parameters, read addresses and a full queue are NACKed.
+Once the expected final byte is accepted, the command is
 queued; extra bytes are NACKed and do not roll it back. A stalled I2C
-master does not busy-wait in an ISR, so the duration timer continues.
-There are no blocking tone delays.
+master does not busy-wait in an ISR, so PWM and foreground effects continue.
+Effect transitions occur on foreground service passes using elapsed
+milliseconds; they are not sample-accurate audio. There are no blocking
+effect delays or heap allocations.

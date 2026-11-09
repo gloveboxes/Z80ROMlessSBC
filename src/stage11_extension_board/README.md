@@ -9,6 +9,12 @@ Neither Pico is the Z80 supervisor. Do not use these pin assignments on a
 Pico still connected to the Z80 board. No existing CP/M images or supervisor
 firmware are changed by building this project.
 
+The target runs autonomous pitch sweeps, segmented pitch envelopes,
+accelerating/decelerating pulses, sweep-plus-vibrato, sirens, note/rest sequences, LED
+fades, blinking, breathing and alternating lights. Sound and both LED
+channels operate independently, with selective stop and a synchronized
+sound/light cue. See the [command protocol](test_ATTiny85/README.md#command-protocol-and-timers).
+
 ## Separate board guides
 
 | Board | Guide | Fitted hardware |
@@ -149,6 +155,9 @@ Tests compile the actual programmer/target sources against small hardware
 fakes. They cover ISP byte/word/page boundaries, padding, full-flash
 verification, signature/fuse/transport/timeout failures and RESET release;
 USI receive states, partial packets, queue overflow, endian decoding,
-all LED brightness values, all nonzero 16-bit tone frequencies, replacement
-and timed stop. They do not simulate electrical USI edges or replace
-hardware acceptance testing.
+all LED brightness values, all nonzero 16-bit tone frequencies, effect
+boundaries, finite/indefinite repeats, rests, synchronized cues, independent
+replacement/cancellation, maximum packets and clock wrap. Pico tests check
+the demonstration packets and retry after timeout/short writes at every
+command. They do not simulate electrical USI edges or replace hardware
+acceptance testing.
