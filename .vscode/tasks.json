@@ -135,9 +135,9 @@
 		},
 		{
 			"label": "Flash Pico - All disks (A-D)",
-			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and convert B-D at flash time. No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
+			"detail": "Replace all disks from src/disks/source-altair; regenerate native A and B (with the current banked examples) and convert C-D at flash time. No backups; matching CP/M boot package is also replaced; firmware and ENV are preserved. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=src/disks/source-altair/bdsc-v1.60.dsk --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --boot-package build/cpm-disk-update/z80boot.pkg --drive A=build/cpm-disk-update/drive_a_cpm63k-z80.img --drive B=build/cpm-disk-update/drive_b_bdsc.img --drive C=src/disks/source-altair/escape-posix.dsk --drive D=src/disks/source-altair/blank.dsk --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -169,9 +169,9 @@
 		},
 		{
 			"label": "Flash Pico - Drive B",
-			"detail": "Replace only B from src/disks/source-altair/bdsc-v1.60.dsk (BDS C), converted and verified at flash time; no backups. Force entry; no running-firmware handshake.",
+			"detail": "Replace only B: BDS C disk from src/disks/source-altair with the current banked examples, verified at flash time; no backups. Force entry; no running-firmware handshake.",
 			"type": "shell",
-			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python scripts/pico_flash.py disks --drive B=src/disks/source-altair/bdsc-v1.60.dsk --power-confirmed --force",
+			"command": "if [ \"${input:picoDiskFlashSafety}\" != \"Replace selected disks\" ]; then printf '%s\\n' 'Disk flash cancelled; Pico was not touched.'; exit 1; fi; . .venv-flash/bin/activate && python -c 'import sys, serial; print(\"Using\", sys.executable)' && python src/disks/convert_altair_disks.py --output-dir build/cpm-disk-update/converted && python src/cpm/build_images.py --disk-dir build/cpm-disk-update/converted --output-dir build/cpm-disk-update && python scripts/pico_flash.py disks --drive B=build/cpm-disk-update/drive_b_bdsc.img --power-confirmed --force",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -221,7 +221,7 @@
 		{
 			"label": "Prepare interactive CP/M emulator",
 			"type": "shell",
-			"command": "cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF && cmake --build build/cpm/z80_debug_host && cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter -DBUILD_TESTING=OFF && cmake --build build/cpm/dcc_io_adapter && python3 src/cpm/build_images.py --assembler z80asm --output-dir build/cpm",
+			"command": "cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF && cmake --build build/cpm/z80_debug_host && cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter -DBUILD_TESTING=OFF && cmake --build build/cpm/dcc_io_adapter && python3 src/cpm/build_images.py --assembler z80asm --output-dir build/cpm",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -234,6 +234,24 @@
 			},
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "Run interactive CP/M emulator",
+			"detail": "Build, then start the banked CP/M emulator in a terminal. Press Ctrl+] to stop.",
+			"type": "shell",
+			"command": "python3 src/cpm/interactive/launch.py",
+			"dependsOn": "Prepare interactive CP/M emulator",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
 		},
 		{
 			"label": "Build Pico - Phase 1 supervisor",

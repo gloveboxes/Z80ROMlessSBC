@@ -91,8 +91,12 @@ def main() -> None:
     env_path.write_text("".join(f"DRIVE_{chr(65+i)}={disk}\n" for i, disk in enumerate(disks)) +
                         f"HTTP_BASE_URL={base}\n")
     smoke = write_smoke_program(output)
+    image = (disk_dir / "z80boot.pkg").read_bytes()[images.BOOT_PAYLOAD_OFFSET:]
+    bank1_path = output / "z80bank1.img"
+    bank1_path.write_bytes(images.build_bank1_image(image))
     session = MISession(args.host.resolve(), ["--direct-loader", "--io-adapter", str(args.adapter.resolve()),
-                                             "--env-file", str(env_path)])
+                                             "--env-file", str(env_path),
+                                             "--bank1-image", str(bank1_path)])
     results = {"source_sha256": hashlib.sha256(source).hexdigest(), "checks": []}
 
     def run(text: str, expected: str = "D>") -> str:
@@ -135,7 +139,6 @@ def main() -> None:
         session.command(f'-file-exec-and-symbols "{smoke}"')
         session.command("-break-insert -t *0x100")
         session.command("-exec-run", stop=True)
-        image = (disk_dir / "z80boot.pkg").read_bytes()[images.BOOT_PAYLOAD_OFFSET:]
         write_memory(session, image)
         bios = int.from_bytes(image[1:3], "little")
         trampoline = bytes((0x3e, 0xa5, 0xd3, 0x15, 0xc3, bios & 255, bios >> 8))

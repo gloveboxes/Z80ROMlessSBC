@@ -41,6 +41,7 @@ target_include_directories(dcc-debug-io-adapter PRIVATE
     host/PortDrivers
     port_drivers
     ../../common
+    ../../common/include
 )
 target_compile_definitions(dcc-debug-io-adapter PRIVATE
     DCC_DEBUG_IO_ADAPTER_BUILD=1

@@ -38,6 +38,8 @@ with tempfile.TemporaryDirectory(prefix="z80sbc-interactive-") as directory_name
     ).read_text(encoding="ascii")
     if adapter_environment and not adapter_environment.endswith("\n"):
         adapter_environment += "\n"
+    bank1_image = directory / "z80bank1.img"
+    bank1_image.write_bytes(build_images.build_bank1_image(image))
     program = directory / "loader.COM"
     program.write_bytes(bytes((0xC3, 0x00, 0x01)))
     (directory / "loader.dbg").write_text(
@@ -66,6 +68,7 @@ with tempfile.TemporaryDirectory(prefix="z80sbc-interactive-") as directory_name
 
     session = MISession(host, [
         "--direct-loader",
+        "--bank1-image", str(bank1_image),
         "--io-adapter", str(adapter),
         "--env-file", str(environment),
         "--terminal-endpoint-file", str(endpoint),

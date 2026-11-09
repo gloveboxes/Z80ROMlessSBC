@@ -64,6 +64,10 @@ bool parse_options(int argc, char **argv, FullCpmOptions &options)
         {
             if (!require_path(options.terminal_endpoint_file)) return false;
         }
+        else if (argument == "--bank1-image")
+        {
+            if (!require_path(options.bank1_image)) return false;
+        }
         else if (argument == "--direct-loader")
         {
             options.direct_loader = true;
@@ -101,7 +105,7 @@ int main(int argc, char **argv)
                      "  [--io-adapter LIBRARY]\n"
                      "  [--env-file FILE]\n"
                      "  [--save-fixtures DIR]\n"
-                     "  [--direct-loader]\n"
+                     "  [--direct-loader] [--bank1-image FILE]\n"
                      "  [--terminal-endpoint-file FILE]\n";
         return 2;
     }

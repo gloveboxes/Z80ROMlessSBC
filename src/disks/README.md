@@ -59,7 +59,9 @@ python3 src/cpm/build_images.py --output-dir build/cpm
 ```
 
 Provision `build/cpm/drive_a_cpm63k-z80.img`, not the intermediate
-`generated/drive_a_cpm63k.img`. Drives B-D are copied unchanged. Supplying Stage 10's
+`generated/drive_a_cpm63k.img`. Drives C and D are copied unchanged. Drive B
+receives the current banked-memory example binaries (`ALLOCPRF`, `BANKED`,
+`MEMPERF`, `PRIMEBK1`, and `DATA.LIB`/`DATATEST.COM` when both are built). Supplying Stage 10's
 firmware binary also creates a complete fixed-layout flash image:
 
 ```sh

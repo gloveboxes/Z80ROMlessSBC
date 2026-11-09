@@ -85,6 +85,20 @@ OUTPUT_DISK_NAMES = (
     *SOURCE_DISK_NAMES[1:],
 )
 
+# Banked-memory example binaries kept current on drive B. DATA.LIB and
+# DATATEST.COM are staged together, and only when both are built.
+EXAMPLE_PROGRAMS = (
+    "ALLOCPRF/ALLOCPRF.COM",
+    "BANKED/BANKED.COM",
+    "MEMPERF/MEMPERF.COM",
+    "PRIMEBK1/PRIMEBK1.COM",
+)
+EXAMPLE_LIBRARY_PAIR = (
+    "LIBDEMO/lib/DATA.LIB",
+    "LIBDEMO/host/build/DATATEST.COM",
+)
+EXAMPLE_REMOVED_FILES = ("SPREADS.COM", "SPREADS.LIB", "SPRDHOST.COM", "LIBHOST.COM")
+
 assert FLASH_LINK_LIMIT == FLASH_JOURNAL_OFFSET
 assert FLASH_JOURNAL_OFFSET + FLASH_JOURNAL_BYTES == FLASH_BOOT_OFFSET
 assert FLASH_BOOT_OFFSET + FLASH_BOOT_BYTES == FLASH_DISK_OFFSETS[0]
@@ -302,6 +316,46 @@ def install_autorun(disk: bytes, utility: bytes, cpmcp: str) -> bytes:
         return image.read_bytes()
 
 
+def example_files(examples: Path = REPO_ROOT / "examples") -> dict[str, bytes]:
+    paths = list(EXAMPLE_PROGRAMS)
+    if all((examples / path).is_file() for path in EXAMPLE_LIBRARY_PAIR):
+        paths.extend(EXAMPLE_LIBRARY_PAIR)
+    return {Path(path).name: (examples / path).read_bytes() for path in paths}
+
+
+def install_files(disk: bytes, files: dict[str, bytes], remove: tuple[str, ...], cpmcp: str) -> bytes:
+    """Replace user-0 files on a native image; names in `remove` may be absent."""
+    resolved = shutil.which(cpmcp)
+    if resolved is None:
+        raise ValueError(f"cpmcp executable not found: {cpmcp}")
+    cpmrm = Path(resolved).with_name("cpmrm")
+    present = set()
+    for offset in range(SYSTEM_BYTES, SYSTEM_BYTES + (DPB_DRM + 1) * 32, 32):
+        entry = disk[offset:offset + 32]
+        if entry[0] == 0:
+            raw = bytes(value & 0x7F for value in entry[1:12])
+            present.add(f"{raw[:8].decode('ascii').rstrip()}.{raw[8:].decode('ascii').rstrip()}")
+    with tempfile.TemporaryDirectory(prefix="z80sbc-cpmcp-") as directory:
+        temporary = Path(directory)
+        (temporary / "diskdefs").write_text(cpm_diskdefs(), encoding="ascii")
+        image = temporary / "drive.img"
+        image.write_bytes(disk)
+        environment = {**os.environ, "DISKDEFS": str(temporary / "diskdefs")}
+        for name in sorted(present & (set(remove) | set(files))):
+            subprocess.run(
+                [str(cpmrm), "-f", "z80sbc", str(image), f"0:{name}"],
+                cwd=temporary, env=environment, check=True,
+            )
+        for name, data in files.items():
+            program = temporary / name
+            program.write_bytes(data)
+            subprocess.run(
+                [cpmcp, "-f", "z80sbc", str(image), str(program), f"0:{name}"],
+                cwd=temporary, env=environment, check=True,
+            )
+        return image.read_bytes()
+
+
 def autorun_record(mode: int = 0, command: str = "") -> bytes:
     encoded = command.encode("ascii")
     if mode not in range(4) or len(encoded) > AUTORUN_MAX_COMMAND:
@@ -325,6 +379,25 @@ def banked_transfer_code() -> bytes:
     if not code or len(code) > BANKED_PARAMETERS - BANKED_CODE_ADDRESS:
         raise ValueError("resident transfer code overlaps its parameter block")
     return code
+
+
+def bank1_system_array(name: str) -> bytes:
+    header = (REPO_ROOT / "src/common/include/z80sbc/bank1_system.h").read_text()
+    payload = header.split(f"{name}[] = {{", 1)[1].split("};", 1)[0]
+    return bytes(int(value, 16) for value in re.findall(r"0x([0-9A-F]{2})", payload))
+
+
+def build_bank1_image(z80_image: bytes) -> bytes:
+    """Return the 64 KiB bank 1 contents the firmware writes after loading bank 0."""
+    bank1 = bytearray(Z80_IMAGE_BYTES)
+    bank1[0:3] = b"\xC3\x40\xFB"
+    bank1[5:8] = b"\xC3\x06\xEE"
+    bank1[0xDE00:0xE600] = bank1_system_array("bank1_service_code")
+    bank1[0xE600:0xEE00] = bank1_system_array("bank1_resident_code")
+    bank1[0xEE00:0xFB40] = bank1_system_array("bank1_bdos_code")
+    bank1[0xFB40:0x10000] = z80_image[0xFB40:0x10000]
+    bank1[0xFC03:0xFC06] = b"\xC3\x40\xFB"
+    return bytes(bank1)
 
 
 def build_z80_image(cpm_system: bytes, bios: bytes) -> bytes:
@@ -438,7 +511,14 @@ def main() -> None:
         (args.disk_dir / name).read_bytes() for name in SOURCE_DISK_NAMES
     ]
     native = build_native_drive(generated[0], cpm_system, bios)
-    disks = [install_autorun(native, utility, args.cpmcp), *generated[1:]]
+    examples_drive = install_files(
+        generated[1], example_files(), EXAMPLE_REMOVED_FILES, args.cpmcp
+    )
+    disks = [
+        install_autorun(native, utility, args.cpmcp),
+        examples_drive,
+        *generated[2:],
+    ]
     if any(len(disk) != DISK_IMAGE_BYTES for disk in disks):
         raise ValueError("all disk images must be exactly 512 KiB")
 

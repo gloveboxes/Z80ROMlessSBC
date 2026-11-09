@@ -124,6 +124,80 @@ def build_adapter(dcc_root: Path, output: Path) -> None:
     shutil.copy2(library, output)
 
 
+BANK_CHECK_SOURCE = """\
+        org 0100h
+        call 0ff06h             ; INFO: bank 1 present
+        jr c,fail
+        ld e,0                  ; service ALLOC 16 bytes
+        ld hl,16
+        call 0ff10h
+        ld a,h
+        or l
+        jr z,fail
+        ld (handle),hl
+        ld hl,pattern           ; WRITE bank 0 -> bank 1
+        ld de,(handle)
+        ld bc,16
+        call 0ff03h
+        jr c,fail
+        ld hl,readback          ; READ bank 1 -> bank 0
+        ld de,(handle)
+        ld bc,16
+        call 0ff00h
+        jr c,fail
+        ld hl,pattern
+        ld de,readback
+        ld b,16
+compare:
+        ld a,(de)
+        cp (hl)
+        jr nz,fail
+        inc hl
+        inc de
+        djnz compare
+        ld e,1                  ; service FREE
+        ld hl,(handle)
+        call 0ff10h
+        ld de,pass
+        jr print
+fail:   ld de,failed
+print:  ld c,9
+        call 5
+        ret
+handle: defw 0
+pattern:
+        defb 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+readback:
+        defs 16
+pass:   defm "BANKCHK PASS",13,10,"$"
+failed: defm "BANKCHK FAIL",13,10,"$"
+"""
+
+
+def install_bank_check(assembler: str, drive: Path, directory: Path) -> None:
+    import build_images
+
+    source = directory / "bankchk.asm"
+    program = directory / "BANKCHK.COM"
+    source.write_text(BANK_CHECK_SOURCE, encoding="ascii")
+    subprocess.run([assembler, "-o", str(program), str(source)], check=True)
+    diskdefs = directory / "diskdefs"
+    diskdefs.write_text(build_images.cpm_diskdefs(), encoding="ascii")
+    cpmcp = shutil.which("cpmcp")
+    if cpmcp is None:
+        raise RuntimeError("cpmcp is required")
+    cpmrm = shutil.which("cpmrm")
+    if cpmrm is None:
+        raise RuntimeError("cpmrm is required")
+    subprocess.run(
+        [cpmrm, "-f", "z80sbc", str(drive), "0:*"], cwd=directory, check=True
+    )
+    subprocess.run(
+        [cpmcp, "-f", "z80sbc", str(drive), str(program), "0:BANKCHK.COM"],
+        cwd=directory, check=True,
+    )
+
+
 def write_smoke_program(directory: Path) -> Path:
     source = directory / "smoke.c"
     program = directory / "SMOKE.COM"
@@ -247,9 +321,8 @@ def main() -> None:
             "drive_d_blank.img",
         )
         scratch_drive = directory / "drive_d_scratch.img"
-        scratch_drive.write_bytes(
-            bytes([0xE5]) * (output / drive_names[3]).stat().st_size
-        )
+        shutil.copyfile(output / drive_names[3], scratch_drive)
+        install_bank_check(args.assembler, scratch_drive, directory)
         environment = directory / "z80sbc.env"
         environment.write_text(
             "".join(
@@ -265,9 +338,12 @@ def main() -> None:
         if len(image) != 65536:
             raise RuntimeError("generated boot image is not 64 KiB")
 
+        bank1_image = directory / "z80bank1.img"
+        bank1_image.write_bytes(build_images.build_bank1_image(image))
         host_arguments = [
             "--io-adapter", str(adapter),
             "--env-file", str(environment),
+            "--bank1-image", str(bank1_image),
         ]
         if host == LOCAL_HOST.resolve():
             host_arguments.insert(0, "--direct-loader")
@@ -442,6 +518,16 @@ def main() -> None:
                 raise RuntimeError(
                     f"multi-track copied ATTNC11 failed: {copied_text!r}"
                 )
+            before_bank = session.target_text()
+            _, stopped = session.command(
+                '-interpreter-exec console "input BANKCHK"', stop=True
+            )
+            stopped = resume_past_spurious_exit(session, stopped)
+            if 'reason="end-stepping-range"' not in stopped:
+                raise RuntimeError(f"BANKCHK did not return: {stopped}")
+            bank_text = session.target_text()[len(before_bank) :]
+            if "BANKCHK PASS" not in bank_text or "D>" not in bank_text:
+                raise RuntimeError(f"bank-1 transfer failed: {bank_text!r}")
             variant = (
                 f"source from {args.git_revision}"
                 if args.git_revision
@@ -457,6 +543,7 @@ def main() -> None:
             print("      reloaded CP/M and restored the A> prompt")
             print("PASS: multi-extent ATTNC11.COM completed on drive C")
             print("PASS: PIP copied ATTNC11.COM across track 6 and the copy ran")
+            print("PASS: bank-1 allocate, write, read and free ran through the BIOS gateway")
         finally:
             session.close()
 

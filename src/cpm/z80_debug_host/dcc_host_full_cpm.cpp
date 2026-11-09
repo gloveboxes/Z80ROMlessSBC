@@ -7,6 +7,7 @@ extern "C"
 #include "memory.h"
 #include "universal_88dcdd.h"
 #include "interrupt_controller.h"
+#include "sbc_bank.h"
 }
 
 #include <algorithm>
@@ -15,6 +16,7 @@ extern "C"
 #include <cctype>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <system_error>
 
 namespace fs = std::filesystem;
@@ -507,6 +509,8 @@ bool FullCpmHost::start_cpm(const fs::path &boot_drive_a, std::string &error)
         if (!io_adapter_.load(options_.io_adapter, config, error))
             return false;
     }
+    if (!prepare_banks(false, error))
+        return false;
     z80_reset(&cpu_, terminal_read_callback, terminal_write_callback,
               sense_switches_callback, &disk_controller_,
               io_port_in_callback, io_port_out_callback);
@@ -550,11 +554,42 @@ bool FullCpmHost::start_direct_loader(std::string &error)
         if (!io_adapter_.load(options_.io_adapter, config, error))
             return false;
     }
+    if (!prepare_banks(true, error))
+        return false;
     z80_reset(&cpu_, terminal_read_callback, terminal_write_callback,
               sense_switches_callback, &disk_controller_,
               io_port_in_callback, io_port_out_callback);
     z80_examine(&cpu_, 0x0100);
     target_active_ = true;
+    return true;
+}
+
+// Bank 1 exists only when a verified image was supplied, as on the board:
+// otherwise IN 07h reports no bank and OUT 07h is ignored.
+bool FullCpmHost::prepare_banks(bool banked, std::string &error)
+{
+    sbc_bank_select(0);
+    sbc_bank_reset();
+    if (!banked || options_.bank1_image.empty())
+    {
+        sbc_bank_set_available(0);
+        return true;
+    }
+    std::ifstream input(options_.bank1_image, std::ios::binary);
+    std::vector<char> image((std::istreambuf_iterator<char>(input)),
+                            std::istreambuf_iterator<char>());
+    if (!input.good() && !input.eof())
+    {
+        error = "cannot read bank 1 image: " + options_.bank1_image.string();
+        return false;
+    }
+    if (image.size() != SBC_BANK_SIZE)
+    {
+        error = "bank 1 image must be exactly 64 KiB: " + options_.bank1_image.string();
+        return false;
+    }
+    std::memcpy(sbc_bank_view(1), image.data(), SBC_BANK_SIZE);
+    sbc_bank_set_available(1);
     return true;
 }
 

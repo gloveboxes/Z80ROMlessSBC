@@ -26,6 +26,7 @@ struct FullCpmOptions
     std::filesystem::path io_adapter;
     std::filesystem::path environment_file;
     std::filesystem::path terminal_endpoint_file;
+    std::filesystem::path bank1_image;
     std::filesystem::path save_fixtures_directory;
     std::vector<DebugFixture> fixtures;
     bool direct_loader = false;
@@ -88,6 +89,7 @@ private:
     bool start_cpm(const std::filesystem::path &drive_a,
                    std::string &error);
     bool start_direct_loader(std::string &error);
+    bool prepare_banks(bool banked, std::string &error);
 
     FullCpmOptions options_;
     z80_t cpu_{};

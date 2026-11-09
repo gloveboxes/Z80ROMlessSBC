@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import binascii
+import os
 import shutil
 import struct
 import subprocess
@@ -226,6 +227,43 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(
             build_images.install_autorun(installed, utility, cpmcp), installed
         )
+
+    def test_example_install_replaces_stale_and_removes_retired_files(self) -> None:
+        cpmcp = shutil.which("cpmcp")
+        if cpmcp is None:
+            self.skipTest("cpmtools is required")
+        stale = build_images.install_files(
+            self.native_drive, {"MEMPERF.COM": b"old"}, (), cpmcp
+        )
+        stale = build_images.install_files(
+            stale, {"SPREADS.COM": b"old"}, (), cpmcp
+        )
+        files = build_images.example_files()
+        self.assertIn("MEMPERF.COM", files)
+        fresh = build_images.install_files(
+            stale, files, build_images.EXAMPLE_REMOVED_FILES, cpmcp
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            (temporary / "diskdefs").write_text(
+                build_images.cpm_diskdefs(), encoding="ascii"
+            )
+            image = temporary / "drive.img"
+            image.write_bytes(fresh)
+            environment = {**os.environ,
+                           "DISKDEFS": str(temporary / "diskdefs")}
+            listing = subprocess.run(
+                [cpmcp.replace("cpmcp", "cpmls"), "-f", "z80sbc", str(image)],
+                cwd=temporary, env=environment, check=True,
+                capture_output=True, text=True,
+            ).stdout
+            self.assertNotIn("spreads.com", listing)
+            subprocess.run(
+                [cpmcp, "-f", "z80sbc", str(image), "0:MEMPERF.COM", "out.com"],
+                cwd=temporary, env=environment, check=True,
+            )
+            self.assertEqual((temporary / "out.com").read_bytes(),
+                             files["MEMPERF.COM"])
 
     def test_cpm_and_disk_geometry(self) -> None:
         self.assertEqual(
