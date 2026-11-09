@@ -82,6 +82,28 @@ def main() -> None:
         def log_message(self, *_args):
             pass
 
+        def do_GET(self):
+            if self.path == "/REDIR.BIN":
+                self.send_response(302)
+                self.send_header("Location", "/BINARY.BIN")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+            elif self.path == "/CHUNK.BIN":
+                self.send_response(200)
+                self.send_header("Transfer-Encoding", "chunked")
+                self.end_headers()
+                for part in (BINARY[:255], BINARY[255:256], BINARY[256:513]):
+                    self.wfile.write(f"{len(part):x};test=yes\r\n".encode() + part + b"\r\n")
+                self.wfile.write(b"0\r\nX-Test: complete\r\n\r\n")
+            elif self.path == "/SHORT.BIN":
+                self.send_response(200)
+                self.send_header("Content-Length", "1024")
+                self.end_headers()
+                self.wfile.write(BINARY[:513])
+                self.close_connection = True
+            else:
+                super().do_GET()
+
     server = http.server.ThreadingHTTPServer(
         ("127.0.0.1", 0), functools.partial(Handler, directory=str(served)))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -163,6 +185,17 @@ def main() -> None:
         text = run("FT -GB BINARY.BIN")
         assert f"Done ({len(BINARY)} bytes)" in text, text
         check_file("BINARY.BIN", BINARY)
+        assert f"Done ({len(BINARY)} bytes)" in run("FT -GB REDIR.BIN")
+        check_file("REDIR.BIN", BINARY)
+        assert "Done (513 bytes)" in run("FT -GB CHUNK.BIN")
+        check_file("CHUNK.BIN", BINARY[:513])
+        text = run("FT -GB SHORT.BIN")
+        assert "Failed - file not found or server error" in text, text
+        run("SYNC")
+        listing = subprocess.check_output(["cpmls", "-f", "z80sbc", str(disks[3])],
+                                          cwd=output, text=True)
+        assert "short.bin" not in listing.lower()
+        print("PASS: truncated HTTP body removes the partial CP/M file", flush=True)
         assert "Done (0 bytes)" in run("FT -GB EMPTY.BIN")
         check_file("EMPTY.BIN", b"")
         assert "Failed - file not found or server error" in run("FT -G MISSING.BAS")
@@ -185,6 +218,8 @@ def main() -> None:
         text = run("FT -GB EMPTY.BIN")
         assert "Missing HTTP_BASE_URL in ENV." in text, text
         assert "Run ENV, choose A to add or its number to edit." in text, text
+        run_prompted(base + "EMPTY.BIN", "Done (0 bytes)")
+        print("PASS: absolute HTTP URL works without HTTP_BASE_URL", flush=True)
         env_path.write_text(configured_env)
         assert "Done (0 bytes)" in run("FT -GB EMPTY.BIN")
         if args.https:

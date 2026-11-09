@@ -27,6 +27,7 @@ set(ADAPTER_SOURCES
     host/PortDrivers/host_http_io.c
     ../../common/http_io.c
     ../../common/http_stream.c
+    ../../common/io_ports.c
     host/PortDrivers/time_io.c
     host/PortDrivers/utility_io.c
     host/PortDrivers/weather_io.c

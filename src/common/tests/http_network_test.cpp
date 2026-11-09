@@ -160,22 +160,22 @@ err_t dns_gethostbyname(const char *host, ip_addr_t *out,
 static void service() { z80_http_network_service(true, 7); }
 static uint8_t status();
 static void request(const char *name = "LOVE.BAS") {
-  z80_http_io_out(21, HTTP_SET_FILENAME);
-  while (*name) z80_http_io_out(22, (uint8_t)*name++);
-  z80_http_io_out(22, 0);
-  z80_http_io_out(21, HTTP_REQUEST_CHUNK);
+  z80_http_io_command(HTTP_SET_FILENAME);
+  while (*name) z80_http_io_filename_byte((uint8_t)*name++);
+  z80_http_io_filename_byte(0);
+  z80_http_io_command(HTTP_REQUEST_CHUNK);
   test_wire.clear();
   service();
   for (unsigned i = 0; i < 3; ++i) { (void)status(); service(); }
 }
-static uint8_t status() { return z80_http_io_in(21); }
+static uint8_t status() { return z80_http_io_status(); }
 static std::string output;
 static void drain() {
   if (status() != HTTP_DATA_READY) return;
-  size_t n = z80_http_io_in(22);
+  size_t n = z80_http_io_read();
   if (!n) n = 256;
-  for (size_t i = 0; i < n; ++i) output += (char)z80_http_io_in(22);
-  if (status() != HTTP_EOF) z80_http_io_out(21, HTTP_REQUEST_CHUNK);
+  for (size_t i = 0; i < n; ++i) output += (char)z80_http_io_read();
+  if (status() != HTTP_EOF) z80_http_io_command(HTTP_REQUEST_CHUNK);
 }
 static void handshake() {
   cyw43_arch_lwip_begin();

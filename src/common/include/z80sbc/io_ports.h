@@ -26,6 +26,7 @@ enum {
   IO_SERVICE_WEATHER = 0x40,
   IO_SERVICE_CHAT = 0x50,
   IO_SERVICE_SENSE_HAT = 0x60,
+  IO_SERVICE_HTTP = 0x70,
 };
 
 typedef enum {
@@ -55,6 +56,8 @@ typedef enum {
   IO_SERVICE_NOT_FOUND = 0x14,
   IO_SERVICE_CLOCK_UNSYNCED = 0x15,
   IO_SERVICE_REBOOT_CONFIRMATION = 0x16,
+  IO_SERVICE_HTTP_BASE_URL = 0x20,
+  IO_SERVICE_HTTP_TRANSFER = 0x21,
 } io_service_error_t;
 
 /* Initialize on core 0 before launching core 1. Port handlers run on core 0

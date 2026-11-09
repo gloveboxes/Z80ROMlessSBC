@@ -121,6 +121,31 @@ int main(int argc, char **argv)
     assert(adapter.abi_version == DCC_DEBUG_IO_ADAPTER_ABI_VERSION);
     assert(host.registrations == 1);
     assert(host.poll != NULL);
+    adapter.output(adapter.context, 2, 1);
+    adapter.output(adapter.context, 2, 2);
+    assert(adapter.input(adapter.context, 2) == 2);
+    assert(adapter.input(adapter.context, 4) == 13);
+    assert(adapter.input(adapter.context, 4) == 0);
+    for (const char *p = "ROMLESS-SVC/1"; *p; ++p)
+        assert(adapter.input(adapter.context, 4) == (uint8_t)*p);
+    assert(adapter.input(adapter.context, 2) == 0);
+    adapter.output(adapter.context, 2, 0x70);
+    adapter.output(adapter.context, 3, 1);
+    adapter.output(adapter.context, 3, 0);
+    adapter.output(adapter.context, 3, 4);
+    assert(adapter.input(adapter.context, 2) == 1);
+    adapter.output(adapter.context, 2, 0);
+    assert(adapter.input(adapter.context, 2) == 0);
+    adapter.output(adapter.context, 2, 0x70);
+    adapter.output(adapter.context, 3, 1);
+    adapter.output(adapter.context, 3, 0);
+    adapter.output(adapter.context, 3, 3);
+    assert(adapter.input(adapter.context, 2) == 0xff);
+    assert(adapter.input(adapter.context, 4) == 1);
+    assert(adapter.input(adapter.context, 4) == 0);
+    assert(adapter.input(adapter.context, 4) == 0x21);
+    adapter.output(adapter.context, 2, 0);
+    assert(adapter.input(adapter.context, 2) == 0);
     adapter.output(adapter.context, 52, 200);
     assert(adapter.input(adapter.context, 52) == 200);
     for (uint8_t drive = 0; drive < 4; ++drive)

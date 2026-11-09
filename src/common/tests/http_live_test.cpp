@@ -1,5 +1,5 @@
 /* Optional native integration runner: real sockets and the firmware Mbed TLS
- * configuration/trust bundle, feeding the production parser and FT ports.
+ * configuration/trust bundle, feeding the production parser and FT mailbox.
  * The host socket backend blocks; the Pico backend is tested separately. */
 #include <algorithm>
 #include <cassert>
@@ -120,10 +120,10 @@ int main(int argc, char **argv) {
   z80_http_io_init();
   z80_http_io_backend(start, cancel);
   z80_http_io_network_state(true, 1);
-  z80_http_io_out(21, HTTP_SET_FILENAME);
-  for (const char *p = argv[1]; *p; ++p) z80_http_io_out(22, static_cast<uint8_t>(*p));
-  z80_http_io_out(22, 0);
-  z80_http_io_out(21, HTTP_REQUEST_CHUNK);
+  z80_http_io_command(HTTP_SET_FILENAME);
+  for (const char *p = argv[1]; *p; ++p) z80_http_io_filename_byte(static_cast<uint8_t>(*p));
+  z80_http_io_filename_byte(0);
+  z80_http_io_command(HTTP_REQUEST_CHUNK);
   FILE *file = fopen(argv[2], "wb"); assert(file);
   size_t total = 0;
   unsigned char bytes[997];
@@ -135,15 +135,15 @@ int main(int argc, char **argv) {
       received = offset = 0;
       previous_generation = transfer_generation;
     }
-    uint8_t status = z80_http_io_in(21);
+    uint8_t status = z80_http_io_status();
     if (status == HTTP_ERROR) { fclose(file); cancel(); return 1; }
     if (status == HTTP_EOF) break;
     if (status == HTTP_DATA_READY) {
-      size_t n = z80_http_io_in(22); if (!n) n = 256;
-      for (size_t i = 0; i < n; ++i) assert(fputc(z80_http_io_in(22), file) != EOF);
+      size_t n = z80_http_io_read(); if (!n) n = 256;
+      for (size_t i = 0; i < n; ++i) assert(fputc(z80_http_io_read(), file) != EOF);
       total += n;
-      if (z80_http_io_in(21) == HTTP_EOF) break;
-      z80_http_io_out(21, HTTP_REQUEST_CHUNK);
+      if (z80_http_io_status() == HTTP_EOF) break;
+      z80_http_io_command(HTTP_REQUEST_CHUNK);
     }
     if (z80_http_io_active()) {
       if (offset == received) {
@@ -158,10 +158,10 @@ int main(int argc, char **argv) {
       offset += z80_http_io_receive(bytes + offset, received - offset);
     }
   }
-  assert(z80_http_io_in(21) == HTTP_EOF);
-  z80_http_io_out(21, HTTP_CLOSE);
+  assert(z80_http_io_status() == HTTP_EOF);
+  z80_http_io_command(HTTP_CLOSE);
   z80_http_io_core1_service();
   fclose(file); cancel();
   mbedtls_ssl_config_free(&config); mbedtls_x509_crt_free(&roots);
-  fprintf(stderr, "PASS: %zu bytes via firmware FT ports and %s\n", total, secure ? "verified TLS 1.2" : "HTTP");
+  fprintf(stderr, "PASS: %zu bytes via firmware FT mailbox and %s\n", total, secure ? "verified TLS 1.2" : "HTTP");
 }

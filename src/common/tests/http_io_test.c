@@ -23,24 +23,24 @@ bool environment_io_get(const char *key, char *value, size_t capacity) {
 static bool start(const z80_http_url_t *url) { requested = *url; ++starts; return true; }
 static void cancel(void) { ++cancels; }
 static void service(void) { z80_http_io_core1_service(); }
-static uint8_t status(void) { return z80_http_io_in(HTTP_COMMAND_PORT); }
-static void command(uint8_t byte) { z80_http_io_out(HTTP_COMMAND_PORT, byte); }
+static uint8_t status(void) { return z80_http_io_status(); }
+static void command(uint8_t byte) { z80_http_io_command(byte); }
 static void filename(const char *name) {
   command(HTTP_SET_FILENAME);
-  while (*name) z80_http_io_out(HTTP_DATA_PORT, (uint8_t)*name++);
-  z80_http_io_out(HTTP_DATA_PORT, 0);
+  while (*name) z80_http_io_filename_byte((uint8_t)*name++);
+  z80_http_io_filename_byte(0);
   assert(status() == HTTP_IDLE);
 }
 static void get(void) { command(HTTP_REQUEST_CHUNK); service(); }
 static void drain(void) {
   service();
   if (status() != HTTP_DATA_READY) return;
-  size_t n = z80_http_io_in(HTTP_DATA_PORT);
+  size_t n = z80_http_io_read();
   if (!n) n = 256;
   assert(status() == HTTP_DATA_READY);
   for (size_t i = 0; i < n; ++i) {
     assert(output_length < sizeof(output));
-    output[output_length++] = z80_http_io_in(HTTP_DATA_PORT);
+    output[output_length++] = z80_http_io_read();
   }
   if (status() != HTTP_EOF) get();
 }
@@ -131,8 +131,8 @@ int main(void) {
   command(HTTP_CLOSE); service(); assert(status() == HTTP_IDLE && !z80_http_io_active());
 
   command(HTTP_SET_FILENAME);
-  for (unsigned i = 0; i < Z80_HTTP_URL_MAX + 2; ++i) z80_http_io_out(HTTP_DATA_PORT, 'a');
-  z80_http_io_out(HTTP_DATA_PORT, 0); get(); assert(status() == HTTP_ERROR);
+  for (unsigned i = 0; i < Z80_HTTP_URL_MAX + 2; ++i) z80_http_io_filename_byte('a');
+  z80_http_io_filename_byte(0); get(); assert(status() == HTTP_ERROR);
   base = NULL; begin("LOVE.BAS"); assert(status() == HTTP_MISSING_BASE_URL);
   base = ""; begin("LOVE.BAS"); assert(status() == HTTP_MISSING_BASE_URL);
   base = "https://example.org/CaseSensitive/";
@@ -145,5 +145,5 @@ int main(void) {
   assert(!z80_http_url_parse("ftp://example.org/x", &url));
   assert(!z80_http_url_parse("https://user@example.org/x", &url));
   assert(cancels > 0);
-  puts("PASS: HTTP(S) FT ports, framing, binary data, large streams, cancellation and errors");
+  puts("PASS: HTTP(S) mailbox, framing, binary data, large streams, cancellation and errors");
 }

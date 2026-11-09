@@ -67,12 +67,14 @@ python3 src/cpm/test_http_ft.py --https
 The test requires `FT.ASM` from the sibling ESP32 Altair checkout (default:
 `../esp32/esp32-altair-8800/Apps/disk-c-apps/FT/FT.ASM`; override with `--ft-source`).
 It assembles FT with CP/M MAC/LOAD, tests local HTTP binary/text transfers,
-empty files, error recovery, and prompted filenames. `--https` also downloads
+empty files, redirects, chunked/truncated bodies, error recovery, and prompted
+filenames. `--https` also downloads
 `LOVE.BAS` and runs it in MBASIC.
 
 Artifacts, hashes, and transcripts go to `build/cpm-http-ft`; ordinary
 `build/cpm` disks remain unchanged. The adapter uses the production HTTP
-mailbox/parser with a native curl transport.
+shared-service framing, HTTP mailbox/parser and a native curl transport.
+FT uses group `0x70` on ports 2/3/4; its binary is assembled from that source.
 
 When using cpmtools directly, use `build_images.cpm_diskdefs()`: its explicit
 `logicalextents 1` is required for files larger than 16 KiB.

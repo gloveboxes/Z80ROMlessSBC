@@ -109,7 +109,7 @@ void host_http_io_poll(void) {
 }
 
 void host_http_io_close(void) {
-  z80_http_io_out(HTTP_COMMAND_PORT, HTTP_CLOSE);
+  z80_http_io_command(HTTP_CLOSE);
   z80_http_io_core1_service();
 #ifdef HAVE_LIBCURL
   cancel();

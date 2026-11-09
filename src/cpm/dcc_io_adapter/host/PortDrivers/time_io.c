@@ -30,7 +30,7 @@ static uint64_t stopwatch_start_ms[NUM_STOPWATCHES] = {0, 0, 0};
 static uint64_t emulator_start_ms = 0;
 
 /* Monotonic milliseconds since process start. */
-static uint64_t host_now_ms(void)
+uint64_t time_monotonic_ms(void)
 {
 #ifdef _WIN32
     static LARGE_INTEGER frequency;
@@ -51,7 +51,7 @@ static uint64_t host_now_ms(void)
 
 static inline uint64_t get_elapsed_ms(void)
 {
-    uint64_t now_ms = host_now_ms();
+    uint64_t now_ms = time_monotonic_ms();
 
     if (now_ms < emulator_start_ms)
     {
@@ -99,7 +99,7 @@ void time_reset(void)
     }
 
     seconds_timer_target = 0;
-    emulator_start_ms = host_now_ms();
+    emulator_start_ms = time_monotonic_ms();
 
     for (int i = 0; i < NUM_STOPWATCHES; i++)
     {

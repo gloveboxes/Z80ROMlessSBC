@@ -8,15 +8,16 @@ extern "C" {
 #endif
 
 enum {
-  HTTP_COMMAND_PORT = 21, HTTP_DATA_PORT = 22,
   HTTP_IDLE = 0, HTTP_DATA_READY = 1, HTTP_EOF = 2, HTTP_BUSY = 3,
   HTTP_MISSING_BASE_URL = 4, HTTP_ERROR = 255,
   HTTP_SET_FILENAME = 1, HTTP_REQUEST_CHUNK = 3, HTTP_CLOSE = 4,
 };
-/* Core 0: bounded port operations; no network, ENV, waits or allocation. */
+/* Core 0: bounded mailbox operations; no network, ENV, waits or allocation. */
 void z80_http_io_init(void);
-void z80_http_io_out(uint8_t port, uint8_t data);
-uint8_t z80_http_io_in(uint8_t port);
+void z80_http_io_command(uint8_t command);
+void z80_http_io_filename_byte(uint8_t data);
+uint8_t z80_http_io_status(void);
+uint8_t z80_http_io_read(void);
 
 /* Core 1: install an asynchronous backend, then service once per worker loop. */
 void z80_http_io_backend(bool (*start)(const z80_http_url_t *), void (*cancel)(void));

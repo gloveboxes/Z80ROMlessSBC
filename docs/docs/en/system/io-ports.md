@@ -37,11 +37,11 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x12` | 18 | Disk sector address, low byte | Fixed |
 | `0x13` | 19 | Disk sector address, high byte | Fixed |
 | `0x14` | 20 | Disk data, IN/OUT | Fixed |
-| `0x15` | 21 | HTTP(S) file-transfer command (OUT) / status (IN) | Implemented in Phase 10 |
-| `0x16` | 22 | File-transfer filename/data bytes | Implemented in Phase 10 |
+| `0x15` | 21 | Available | Unallocated |
+| `0x16` | 22 | Available | Unallocated |
 | `0x17` | 23 | Independent countdown timers and stopwatches, IN/OUT | Implemented |
 
-This assigns or reserves **all 16 ports**. A port supports
+This assigns or reserves **14 ports**, leaving two available. A port supports
 both IN and OUT, so a command and its status can share one number.
 
 Bank select returns `B4h`/`B5h` when the loader verified banked SRAM, or `00h`
@@ -58,9 +58,10 @@ fixed terminal or disk ABI.
 
 ### HTTP and HTTPS file transfer
 
-Phase 10 supports the existing
-[FT.COM protocol](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/FT/FT.ASM)
-on ports 21/22. Phase 9 returns ERROR for downloads.
+Phase 10 supports the
+[FT.COM protocol](https://github.com/gloveboxes/Altair-8800-AI-Edition/blob/main/Apps/disk-c-apps/FT/FT.ASM)
+through shared-service group `0x70` on ports `0x02`/`0x03`/`0x04`.
+Phase 9 returns HTTP_TRANSFER for downloads.
 
 Set `HTTP_BASE_URL` using interactive `ENV` to preserve URL case: run `ENV`,
 choose **A** to add or an entry number to edit, then **Q** to quit. For example:
@@ -85,19 +86,26 @@ and hostname. The [CA bundle](https://github.com/gloveboxes/Z80ROMlessSBC/blob/m
 can be replaced with `-DZ80_HTTP_CA_FILE=/absolute/path/to/bundle.pem`.
 Plain HTTP needs no synchronized clock.
 
-The port ABI is independent of shared services on ports 2/3/4:
+Each request uses the [shared framing](#framing-and-recovery), including its
+16-bit little-endian lengths. The payload includes the operation byte:
 
-| Operation (decimal ports) | Behavior |
+| Request payload | Result |
 | --- | --- |
-| OUT 21, 1 | Reset; collect a new filename/URL |
-| OUT 22, byte | Append filename bytes, terminated by NUL |
-| OUT 21, 3 | Request the next chunk; status becomes BUSY |
-| IN 21 | `0` IDLE, `1` DATA, `2` EOF, `3` BUSY, `4` missing/empty base URL, `255` ERROR |
-| IN 22 | Read count (`0` = 256), then that many file bytes |
-| OUT 21, 4 | Cancel/close; return to IDLE |
+| `[1, filename/URL bytes]` | Open/replace the session; COMPLETE, then ACK |
+| `[3]` | BUSY until a chunk or EOF; RESPONSE_READY with `[state, file bytes...]` |
+| `[4]` | Cancel/close; COMPLETE, then ACK |
 
-Consume each chunk fully before requesting another. Empty files return EOF;
-reset after ERROR. Transfers stream on core 1 without loading the whole file
+Names contain 1-767 bytes without a NUL terminator. Read responses contain
+one state byte (`0` more data, `2` EOF) followed by 0-256 file bytes, so their
+framed length is 1-257. EOF can accompany the final data bytes; an empty file
+returns `[2]`. HTTP_BASE_URL (`0x20`) and HTTP_TRANSFER (`0x21`) are shared
+errors, not response states. Invalid operations, lengths and embedded NULs
+use the standard shared errors.
+
+Consume each response fully before another shared transaction. Other groups
+can run between chunks without changing the open session. Explicit shared
+RESET cancels a pending HTTP read; close or open replaces the session.
+Transfers stream on core 1 without loading the whole file
 into RAM. HTTP/1.0 and 1.1, chunked bodies, and up to five redirects are
 supported; HTTPS downgrades, compressed or malformed responses fail.
 Network stalls time out after 30 seconds, excluding consumer backpressure.
@@ -178,6 +186,7 @@ Error codes match the ESP32 client:
 | `0x10` / `0x11` / `0x12` | STORAGE_OPEN / STORAGE_READ / STORAGE_WRITE |
 | `0x13` / `0x14` | CAPACITY / NOT_FOUND |
 | `0x15` / `0x16` | CLOCK_UNSYNCED / REBOOT_CONFIRMATION |
+| `0x20` / `0x21` | HTTP_BASE_URL (missing/empty) / HTTP_TRANSFER |
 
 ### Groups and operations
 
@@ -193,6 +202,7 @@ All integer request fields and binary results are little-endian.
 | Weather `0x40` | `[0, field_id]` reads text; `[1]` reads status | Phase 10 cached weather; Phase 9 UNAVAILABLE |
 | Chat `0x50` | Reset/append/submit/status/chunk operations below | Phase 10 streaming OpenAI/Ollama; Phase 9 UNAVAILABLE |
 | Sense HAT `0x60` | Recognized group without a Pico driver | UNAVAILABLE |
+| HTTP(S) `0x70` | `[1, name...]` open; `[3]` read; `[4]` close | COMPLETE or `[state, up to 256 file bytes]`; [details above](#http-and-https-file-transfer) |
 
 There are **four countdown timers**: IDs 0-2 take 0-65535 milliseconds;
 ID 3 takes 0-255 whole seconds. The shared duration field is four bytes for

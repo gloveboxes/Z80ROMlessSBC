@@ -70,25 +70,27 @@ static void __not_in_flash_func(pump)(void) {
   }
 }
 
-void __not_in_flash_func(z80_http_io_out)(uint8_t address, uint8_t data) {
-  if (address == HTTP_COMMAND_PORT) {
-    if (data == HTTP_SET_FILENAME || data == HTTP_CLOSE) {
-      __atomic_add_fetch(&session, 1, __ATOMIC_RELEASE);
-      memset(&port, 0, sizeof(port));
-      port.collecting = data == HTTP_SET_FILENAME;
-      pump();
-    } else if (data == HTTP_REQUEST_CHUNK) {
-      if (port.want_chunk || port.position < port.length) return;
-      if (port.collecting || port.overflow || !port.name_length || port.status == HTTP_ERROR) {
-        port.status = HTTP_ERROR;
-        return;
-      }
-      if (port.status == HTTP_EOF) return;
-      port.want_chunk = true;
-      port.status = HTTP_BUSY;
-      pump();
+void __not_in_flash_func(z80_http_io_command)(uint8_t data) {
+  if (data == HTTP_SET_FILENAME || data == HTTP_CLOSE) {
+    __atomic_add_fetch(&session, 1, __ATOMIC_RELEASE);
+    memset(&port, 0, sizeof(port));
+    port.collecting = data == HTTP_SET_FILENAME;
+    pump();
+  } else if (data == HTTP_REQUEST_CHUNK) {
+    if (port.want_chunk || port.position < port.length) return;
+    if (port.collecting || port.overflow || !port.name_length || port.status == HTTP_ERROR) {
+      port.status = HTTP_ERROR;
+      return;
     }
-  } else if (address == HTTP_DATA_PORT && port.collecting) {
+    if (port.status == HTTP_EOF) return;
+    port.want_chunk = true;
+    port.status = HTTP_BUSY;
+    pump();
+  }
+}
+
+void __not_in_flash_func(z80_http_io_filename_byte)(uint8_t data) {
+  if (port.collecting) {
     if (!data) {
       port.collecting = false;
       port.filename[port.name_length] = 0;
@@ -102,11 +104,14 @@ void __not_in_flash_func(z80_http_io_out)(uint8_t address, uint8_t data) {
   }
 }
 
-uint8_t __not_in_flash_func(z80_http_io_in)(uint8_t address) {
+uint8_t __not_in_flash_func(z80_http_io_status)(void) {
   /* Do not recycle DONE while core 0 is still reading its data. */
   if (port.position >= port.length) pump();
-  if (address == HTTP_COMMAND_PORT) return port.status;
-  if (address != HTTP_DATA_PORT || port.position >= port.length) return 0;
+  return port.status;
+}
+
+uint8_t __not_in_flash_func(z80_http_io_read)(void) {
+  if (port.position >= port.length) return 0;
   size_t position = port.position++;
   uint8_t byte = position ? slot.data[position - 1] : (uint8_t)slot.length;
   if (port.position == port.length) {

@@ -1480,31 +1480,27 @@ static void test_supervisor_queue_ownership(void) {
   assert(strstr(output, "core 1 USB/flash-safe initialization; CPU held reset"));
 }
 
-static void test_http_port_dispatch(void) {
+static void test_unallocated_port_dispatch(void) {
   reset_fixture();
   unsigned disks = disk_writes;
-  /* Use FT.ASM's actual ABI, independently of the mock's handles predicate.
-   * The previous emulator test called the driver directly and skipped these
-   * firmware callbacks, leaving both registers mapped to the default FFh. */
   const uint8_t ports[] = {21, 22};
   const uint8_t values[] = {1, 'L', 'O', 'V', 'E', '.', 'B', 'A', 'S', 0, 3, 4};
   for (size_t i = 0; i < sizeof(ports); ++i) {
     for (size_t j = 0; j < sizeof(values); ++j) {
       unsigned writes = service_writes;
       virtual_write(ports[i], values[j], NULL);
-      assert(service_writes == writes + 1);
-      assert(service_write_port == ports[i] && service_write_value == values[j]);
+      assert(service_writes == writes);
     }
     unsigned reads = service_reads;
-    assert(virtual_read(ports[i], NULL) == 0x42);
-    assert(service_reads == reads + 1 && service_read_port == ports[i]);
+    assert(virtual_read(ports[i], NULL) == 0xff);
+    assert(service_reads == reads);
   }
   assert(disk_writes == disks);
   assert(!io_services && !network_services);
 }
 
 int main(void) {
-  test_http_port_dispatch();
+  test_unallocated_port_dispatch();
 #ifdef Z80_STAGE10_NETWORK
   test_oled_running_gate();
   test_config_orderly_reboot();
@@ -1513,7 +1509,7 @@ int main(void) {
   test_direct_port_dispatch();
   static const uint8_t service_ports[] = {
     IO_SERVICE_COMMAND_PORT, IO_SERVICE_REQUEST_PORT, IO_SERVICE_RESPONSE_PORT,
-    HTTP_COMMAND_PORT, HTTP_DATA_PORT, IO_TIMER_PORT,
+    IO_TIMER_PORT,
   };
   for (size_t i = 0; i < sizeof(service_ports); ++i) {
     uint8_t port = service_ports[i];

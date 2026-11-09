@@ -6,7 +6,7 @@
 #include "PortDrivers/environment_io.h"
 #include "PortDrivers/host_files_io.h"
 #include "PortDrivers/host_http_io.h"
-#include "http_io.h"
+#include "io_service.h"
 #include "PortDrivers/time_io.h"
 #include "PortDrivers/weather_io.h"
 #include "interrupt_timer.h"
@@ -14,6 +14,22 @@
 
 #include <stdio.h>
 #include <string.h>
+
+/* The native adapter shares the firmware framing, HTTP mailbox and timers.
+ * Other shared worker groups have no native backend in this adapter. */
+void z80_io_service_init(void) {}
+const io_service_result_t *z80_io_service_poll(void) { return NULL; }
+io_service_error_t z80_io_service_submit(uint8_t command, const uint8_t *data,
+                                        size_t length, uint32_t generation)
+{
+    (void)command; (void)data; (void)length; (void)generation;
+    return IO_SERVICE_UNAVAILABLE;
+}
+uint64_t z80_service_micros(void)
+{
+    return time_monotonic_ms() * 1000;
+}
+uint64_t z80_service_millis(void) { return time_monotonic_ms(); }
 
 static int s_initialized;
 
@@ -36,8 +52,8 @@ static uint8_t adapter_input(void *context, uint8_t port)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
     host_http_io_poll();
-    if (port == HTTP_COMMAND_PORT || port == HTTP_DATA_PORT)
-        return z80_http_io_in(port);
+    if (port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT)
+        return z80_io_port_in(port);
     if (sbc_disk_handles_port(port))
         return sbc_disk_input(&adapter->disk, port);
     return io_port_in(port);
@@ -47,9 +63,8 @@ static void adapter_output(void *context, uint8_t port, uint8_t data)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
     host_http_io_poll();
-    /* Keep the native-loader activation byte; FT never sends command A5h. */
-    if (port == HTTP_DATA_PORT || (port == HTTP_COMMAND_PORT && data != 0xa5)) {
-        z80_http_io_out(port, data);
+    if (port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT) {
+        z80_io_port_out(port, data);
         return;
     }
     if (sbc_disk_handles_port(port))
@@ -135,6 +150,7 @@ int dcc_debug_io_adapter_init(const dcc_debug_io_adapter_config_t *config,
     dcc_debug_terminal_input_init(&s_context.terminal);
     host_files_init(config->files_root ? config->files_root : ".");
     environment_io_init(config->environment_file);
+    z80_io_ports_init();
     host_http_io_init();
     chat_io_init();
     weather_io_init();

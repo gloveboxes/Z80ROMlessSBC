@@ -7,9 +7,14 @@ slots and the host emulator use, so no conversion step exists.
 | Flash drive | Image | Contents |
 | ---: | --- | --- |
 | A | `drive_a_cpm63k.img` | CP/M 2.2 files; `build_images.py` replaces its system tracks and `AUTORUN.COM` |
-| B | `drive_b_bdsc.img` | BDS C tools plus the current banked-memory examples |
-| C | `drive_c_escape.img` | Escape applications and games |
+| B | `drive_b_bdsc.img` | BDS C tools, banked-memory examples and `FT.COM` |
+| C | `drive_c_escape.img` | Escape applications, games and `FT.COM` |
 | D | `drive_d_blank.img` | DOCTOR/DOCGEN ISAM demonstration database |
+
+Both `FT.COM` copies use [HTTP shared-service group 0x70](../../docs/docs/en/system/io-ports.md#http-and-https-file-transfer).
+Rebuild and validate the assembly client with
+[`test_http_ft.py`](../cpm/test_http_ft.py), then replace only `FT.COM` on B/C
+session images and save them with `save_session_disk.py`.
 
 The CP/M files originate from the Altair 8800 disk archive at
 <https://github.com/companje/Altair8800/tree/master/data>; its license is in

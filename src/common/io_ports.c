@@ -17,7 +17,7 @@ static struct {
   uint32_t generation;
   bool reset_required;
   uint8_t request[IO_SERVICE_MAX_PAYLOAD];
-  uint8_t local_response[16];
+  uint8_t local_response[257];
   const uint8_t *response;
 } transport;
 
@@ -175,6 +175,31 @@ static void __not_in_flash_func(timer_service)(void) {
 }
 
 static void __not_in_flash_func(poll_service)(void) {
+  if (transport.command == IO_SERVICE_HTTP &&
+      transport.status == IO_SERVICE_BUSY) {
+    uint8_t status = z80_http_io_status();
+    if (status == HTTP_BUSY)
+      return;
+    if (status == HTTP_ERROR || status == HTTP_MISSING_BASE_URL) {
+      fail(status == HTTP_MISSING_BASE_URL ? IO_SERVICE_HTTP_BASE_URL
+                                          : IO_SERVICE_HTTP_TRANSFER, false);
+      return;
+    }
+    size_t length = 0;
+    if (status == HTTP_DATA_READY) {
+      length = z80_http_io_read();
+      if (!length) length = 256;
+      for (size_t i = 0; i < length; ++i)
+        transport.local_response[i + 1] = z80_http_io_read();
+      status = z80_http_io_status();
+    }
+    transport.local_response[0] = status;
+    transport.response = transport.local_response;
+    transport.response_length = length + 1;
+    transport.response_position = 0;
+    transport.status = IO_SERVICE_RESPONSE_READY;
+    return;
+  }
   const io_service_result_t *result = z80_io_service_poll();
   if (result == NULL || result->generation != transport.generation ||
       transport.status != IO_SERVICE_BUSY)
@@ -205,6 +230,9 @@ void z80_io_ports_init(void) {
 
 static void __not_in_flash_func(command_out)(uint8_t command) {
   if (command == IO_SERVICE_RESET) {
+    if (transport.command == IO_SERVICE_HTTP &&
+        transport.status == IO_SERVICE_BUSY)
+      z80_http_io_command(HTTP_CLOSE);
     reset_transport();
     return;
   }
@@ -240,6 +268,7 @@ static void __not_in_flash_func(command_out)(uint8_t command) {
   case IO_SERVICE_WEATHER:
   case IO_SERVICE_CHAT:
   case IO_SERVICE_SENSE_HAT:
+  case IO_SERVICE_HTTP:
     transport.command = command;
     transport.length_bytes = 0;
     transport.request_length = 0;
@@ -270,6 +299,34 @@ static void __not_in_flash_func(request_out)(uint8_t data) {
   if (transport.request_position != transport.request_length)
     return;
   poll_service();
+  if (transport.command == IO_SERVICE_HTTP) {
+    uint8_t operation = transport.request[0];
+    if (operation != HTTP_SET_FILENAME && operation != HTTP_REQUEST_CHUNK &&
+        operation != HTTP_CLOSE) {
+      fail(IO_SERVICE_UNKNOWN_OPERATION, false);
+      return;
+    }
+    size_t length = transport.request_length - 1;
+    if ((operation == HTTP_SET_FILENAME && (!length || length >= Z80_HTTP_URL_MAX)) ||
+        (operation != HTTP_SET_FILENAME && length)) {
+      fail(IO_SERVICE_INVALID_LENGTH, false);
+      return;
+    }
+    if (operation == HTTP_SET_FILENAME &&
+        memchr(transport.request + 1, 0, length)) {
+      fail(IO_SERVICE_INVALID_PARAMETER, false);
+      return;
+    }
+    z80_http_io_command(operation);
+    if (operation == HTTP_SET_FILENAME) {
+      for (size_t i = 1; i < transport.request_length; ++i)
+        z80_http_io_filename_byte(transport.request[i]);
+      z80_http_io_filename_byte(0);
+    }
+    transport.status = operation == HTTP_REQUEST_CHUNK ? IO_SERVICE_BUSY
+                                                      : IO_SERVICE_COMPLETE;
+    return;
+  }
   if (transport.command == IO_SERVICE_TIMERS ||
       transport.command == IO_SERVICE_STOPWATCHES) {
     timer_service();
@@ -286,10 +343,6 @@ static void __not_in_flash_func(request_out)(uint8_t data) {
 
 void __not_in_flash_func(z80_io_port_out)(uint8_t port, uint8_t data) {
   switch (port) {
-  case HTTP_COMMAND_PORT:
-  case HTTP_DATA_PORT:
-    z80_http_io_out(port, data);
-    break;
   case IO_TIMER_PORT:
     timer_out(data);
     break;
@@ -307,9 +360,6 @@ void __not_in_flash_func(z80_io_port_out)(uint8_t port, uint8_t data) {
 
 uint8_t __not_in_flash_func(z80_io_port_in)(uint8_t port) {
   switch (port) {
-  case HTTP_COMMAND_PORT:
-  case HTTP_DATA_PORT:
-    return z80_http_io_in(port);
   case IO_TIMER_PORT:
     return timer_in();
   case IO_SERVICE_COMMAND_PORT:

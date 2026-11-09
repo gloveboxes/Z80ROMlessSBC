@@ -152,21 +152,9 @@ static void test_transport(void) {
       for (unsigned i = 0; i < 13; ++i)
         assert(z80_io_port_in((uint8_t)port) == (uint8_t)"ROMLESS-SVC/1"[i]);
       assert(z80_io_port_in(2) == IO_SERVICE_READY);
-    } else if (masked == HTTP_COMMAND_PORT || masked == HTTP_DATA_PORT) {
-      uint8_t command_port = masked == HTTP_COMMAND_PORT ? (uint8_t)port : 21;
-      uint8_t data_port = masked == HTTP_DATA_PORT ? (uint8_t)port : 22;
-      z80_io_port_out(command_port, HTTP_SET_FILENAME);
-      assert(z80_io_port_in(command_port) == HTTP_IDLE);
-      for (const char *p = "http://example.org/FILE.BIN"; *p; ++p)
-        z80_io_port_out(data_port, (uint8_t)*p);
-      z80_io_port_out(data_port, 0);
-      z80_io_port_out(command_port, HTTP_REQUEST_CHUNK);
-      assert(z80_io_port_in(command_port) == HTTP_BUSY);
-      z80_io_ports_core1_service();
-      /* This common-service fixture has no installed network backend. */
-      assert(z80_io_port_in(command_port) == HTTP_ERROR);
-      z80_io_port_out(command_port, HTTP_CLOSE);
-      assert(z80_io_port_in(command_port) == HTTP_IDLE);
+    } else if (masked == 0x15 || masked == 0x16) {
+      z80_io_port_out((uint8_t)port, HTTP_SET_FILENAME);
+      assert(z80_io_port_in((uint8_t)port) == 0);
       assert(z80_io_port_in(2) == IO_SERVICE_READY);
     }
   }
@@ -237,6 +225,135 @@ static void test_worker_response_lifetime(void) {
   const uint8_t random[] = {0};
   call(IO_SERVICE_UTILITY, random, sizeof(random), IO_SERVICE_RESPONSE_READY);
   assert(reply_length == 2 && reply[0] == 0x34 && reply[1] == 0x12);
+}
+
+static unsigned http_starts, http_cancels;
+static char http_path[Z80_HTTP_URL_MAX];
+
+static bool http_start(const z80_http_url_t *url) {
+  ++http_starts;
+  strcpy(http_path, url->path);
+  return true;
+}
+
+static void http_cancel(void) { ++http_cancels; }
+
+static void http_open(const char *name) {
+  uint8_t request[Z80_HTTP_URL_MAX] = {HTTP_SET_FILENAME};
+  size_t length = strlen(name);
+  assert(length < sizeof(request));
+  memcpy(request + 1, name, length);
+  call(IO_SERVICE_HTTP, request, (unsigned)length + 1, IO_SERVICE_COMPLETE);
+  z80_io_port_out(2, IO_SERVICE_ACK);
+  assert(z80_io_port_in(2) == IO_SERVICE_READY);
+}
+
+static void test_http_service(void) {
+  const uint8_t read[] = {HTTP_REQUEST_CHUNK}, close[] = {HTTP_CLOSE};
+  error(IO_SERVICE_HTTP, (const uint8_t[]){0}, 1, IO_SERVICE_UNKNOWN_OPERATION);
+  error(IO_SERVICE_HTTP, (const uint8_t[]){HTTP_SET_FILENAME}, 1,
+        IO_SERVICE_INVALID_LENGTH);
+  error(IO_SERVICE_HTTP, (const uint8_t[]){HTTP_SET_FILENAME, 'a', 0}, 3,
+        IO_SERVICE_INVALID_PARAMETER);
+  error(IO_SERVICE_HTTP, (const uint8_t[]){HTTP_REQUEST_CHUNK, 0}, 2,
+        IO_SERVICE_INVALID_LENGTH);
+  error(IO_SERVICE_HTTP, (const uint8_t[]){HTTP_CLOSE, 0}, 2,
+        IO_SERVICE_INVALID_LENGTH);
+  uint8_t oversized[Z80_HTTP_URL_MAX + 1];
+  memset(oversized, 'a', sizeof(oversized));
+  oversized[0] = HTTP_SET_FILENAME;
+  error(IO_SERVICE_HTTP, oversized, sizeof(oversized), IO_SERVICE_INVALID_LENGTH);
+  error(IO_SERVICE_HTTP, read, 1, IO_SERVICE_HTTP_TRANSFER);
+
+  z80_http_io_backend(http_start, http_cancel);
+  z80_http_io_network_state(true, 1);
+  char maximum[Z80_HTTP_URL_MAX];
+  memset(maximum, 'x', sizeof(maximum) - 1);
+  maximum[sizeof(maximum) - 1] = 0;
+  http_open(maximum);
+  call(IO_SERVICE_HTTP, close, 1, IO_SERVICE_COMPLETE);
+  const unsigned sizes[] = {0, 1, 127, 128, 255, 256, 257, 513};
+  uint8_t payload[513];
+  for (size_t i = 0; i < sizeof(payload); ++i) payload[i] = (uint8_t)i;
+  for (size_t s = 0; s < sizeof(sizes) / sizeof(sizes[0]); ++s) {
+    http_open("https://example.org/MiXeD.bin");
+    send(IO_SERVICE_HTTP, read, 1);
+    assert(finish() == IO_SERVICE_BUSY);
+    z80_io_port_out(0x15, HTTP_CLOSE);
+    z80_io_port_out(0x16, 0);
+    assert(z80_io_port_in(2) == IO_SERVICE_BUSY);
+    assert(!strcmp(http_path, "/MiXeD.bin"));
+    char header[80];
+    int n = snprintf(header, sizeof(header),
+                     "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n\r\n", sizes[s]);
+    assert(n > 0 && (size_t)n < sizeof(header));
+    assert(z80_http_io_receive((const uint8_t *)header, (size_t)n) == (size_t)n);
+    assert(z80_http_io_receive(payload, sizes[s]) == sizes[s]);
+    unsigned position = 0;
+    for (;;) {
+      assert(finish() == IO_SERVICE_RESPONSE_READY);
+      unsigned chunk = sizes[s] - position;
+      if (chunk > 256) chunk = 256;
+      assert(reply_length == chunk + 1);
+      bool eof = position + chunk == sizes[s];
+      assert(reply[0] == (eof ? HTTP_EOF : HTTP_IDLE));
+      assert(!memcmp(reply + 1, payload + position, chunk));
+      position += chunk;
+      /* Other shared services must not close or corrupt the HTTP session. */
+      call(IO_SERVICE_UTILITY, (const uint8_t[]){0}, 1, IO_SERVICE_RESPONSE_READY);
+      assert(reply_length == 2 && reply[0] == 0x34 && reply[1] == 0x12);
+      if (eof) break;
+      send(IO_SERVICE_HTTP, read, 1);
+    }
+    call(IO_SERVICE_HTTP, read, 1, IO_SERVICE_RESPONSE_READY);
+    assert(reply_length == 1 && reply[0] == HTTP_EOF);
+    call(IO_SERVICE_HTTP, close, 1, IO_SERVICE_COMPLETE);
+  }
+  assert(http_starts == sizeof(sizes) / sizeof(sizes[0]));
+
+  /* Reset a pending read, reuse the worker and discard the stale mailbox. */
+  http_open("http://example.org/old.bin");
+  send(IO_SERVICE_HTTP, read, 1);
+  assert(finish() == IO_SERVICE_BUSY);
+  unsigned cancels = http_cancels;
+  reset();
+  z80_io_ports_core1_service();
+  assert(http_cancels > cancels && !z80_http_io_active());
+  http_open("http://example.org/new.bin");
+  send(IO_SERVICE_HTTP, read, 1);
+  assert(finish() == IO_SERVICE_BUSY);
+  assert(!strcmp(http_path, "/new.bin"));
+  const char *empty = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
+  assert(z80_http_io_receive((const uint8_t *)empty, strlen(empty)) == strlen(empty));
+  assert(finish() == IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 1 && reply[0] == HTTP_EOF);
+
+  /* Discard a partly read framed response without exposing stale bytes. */
+  call(IO_SERVICE_HTTP, close, 1, IO_SERVICE_COMPLETE);
+  http_open("http://example.org/partial.bin");
+  send(IO_SERVICE_HTTP, read, 1);
+  assert(finish() == IO_SERVICE_BUSY);
+  const char *one = "HTTP/1.1 200 OK\r\nContent-Length: 1\r\n\r\nx";
+  assert(z80_http_io_receive((const uint8_t *)one, strlen(one)) == strlen(one));
+  z80_io_ports_core1_service();
+  assert(z80_io_port_in(2) == IO_SERVICE_RESPONSE_READY);
+  assert(z80_io_port_in(4) == 2);
+  reset();
+  z80_io_port_out(2, IO_SERVICE_IDENTIFY);
+  assert(finish() == IO_SERVICE_RESPONSE_READY);
+  assert(!strcmp((char *)reply, "ROMLESS-SVC/1"));
+
+  http_open("http://example.org/disconnect.bin");
+  send(IO_SERVICE_HTTP, read, 1);
+  assert(finish() == IO_SERVICE_BUSY);
+  z80_http_io_network_state(false, 2);
+  assert(finish() == IO_SERVICE_ERROR && reply[0] == IO_SERVICE_HTTP_TRANSFER);
+  call(IO_SERVICE_HTTP, close, 1, IO_SERVICE_COMPLETE);
+  z80_http_io_network_state(true, 3);
+  http_open("MISSING.BIN");
+  error(IO_SERVICE_HTTP, read, 1, IO_SERVICE_HTTP_BASE_URL);
+  call(IO_SERVICE_HTTP, close, 1, IO_SERVICE_COMPLETE);
+  z80_http_io_backend(NULL, NULL);
 }
 
 static void test_timers(void) {
@@ -654,6 +771,7 @@ int main(void) {
   z80_io_ports_init();
   test_transport();
   test_worker_response_lifetime();
+  test_http_service();
   test_timers();
   test_led();
   test_environment();
