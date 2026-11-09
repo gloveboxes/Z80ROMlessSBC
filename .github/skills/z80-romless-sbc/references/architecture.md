@@ -13,17 +13,18 @@ The current assisted-loader design has eight active through-hole packages:
 - SN74LVC245AN fixed 5 V-to-Pico data path
 - SN74LVC244AN eight-signal input buffer
 
-The address expander and programmed PLD are retired. No external programmer
-is required. The older LVC8T245 carrier, SD, PSRAM, three AHCT125 packages,
-and HCT157/HCT08 arbitration are not current. Revision B PCB implements the
-same assisted-loader circuit with resistor arrays and a socketed OLED.
-Its 20 MHz design target requires separate physical qualification.
+Address decoding and arbitration use only these fixed-logic packages; no PLD,
+address expander or external programmer is used. The Pico never masters memory
+buses; changing that requires an explicit redesign request. Revision B PCB
+implements the same assisted-loader circuit with resistor arrays and a socketed
+OLED. Its 20 MHz design target requires separate physical qualification.
 
 ## Bench Instruments
 
 - The RIGOL DHO814 validates analogue voltage, edge quality, ringing,
   overshoot, pulse width, and close timing. Bond its chassis to protective
-  earth before connecting any input/output lead.
+  earth before connecting any input/output lead. Ordinary passive probes are
+  not isolated.
 - The DreamSourceLab DSLogic Plus validates digital state and ordering in the
   Group A-D capture sets defined in
   `docs/docs/en/hardware/logic-analyzer.md`.
@@ -35,6 +36,7 @@ Its 20 MHz design target requires separate physical qualification.
   standard project captures.
 - Neither instrument replaces the other: digital thresholds do not prove
   analogue margins, and four scope channels do not prove whole-bus ordering.
+  No 16-channel capture proves complete address, data and controls simultaneously.
 
 ## Voltage and Power
 
@@ -51,6 +53,8 @@ Its 20 MHz design target requires separate physical qualification.
 ## Assisted Loading and Buses
 
 - Z80 alone drives A0-A15 and writes SRAM, including during loading. Pico injects LD HL,nn / LD (HL),n / LD A,(HL) under slow clocks; it never masters memory buses.
+- Do not bypass AHCT244 translation on Z80-to-SRAM controls: Z80 TTL HIGH does
+  not meet SRAM CMOS input requirements.
 - AHCT244 translates GP2 CLK (2->18), GP4 BUSREQ (4->16), GP5 inhibit (6->14), MREQ (8->12), WR (11->9), RD (13->7), GP8 bank select (17->3, SRAM A16). Unused input15 GND; output5 NC. Both OEs LOW. Keep the buffer beside CPU.
 - HCT32 pins1/2->3 compute buffered RD OR buffered inhibit to SRAM OE; pins4/5->6 compute raw IORQ OR GP9 to WAIT; pins9/10->8 compute raw RD OR GP6 to U9 OE. Inputs12/13 GND, output11 NC.
 - GP6 up-OE request and GP7 down-OE default HIGH. Both paths must be disabled before preload/direction changes. U9 DIR +5V, U10 DIR GND. RD gating is not an all-state hardware mutual exclusion guarantee.
@@ -59,14 +63,14 @@ Its 20 MHz design target requires separate physical qualification.
 - Slow clocks return only after a fixed 1 us LOW settling interval. Hold a frozen PWM HIGH for at least 1 us before selecting preloaded LOW SIO; do not repeat this handover guard on already-SIO steps. Wait at least 1 us after isolation before driving Pico data pins or resuming trapped execution.
 - Release RESET while CLK is stopped LOW, wait at least 1 us, then start PWM. Integer/even PWM selection must never exceed the requested frequency. Configure clk_sys to 144 MHz at SDK startup (1440 MHz PLL_SYS VCO, reference divider 1, post-dividers 5 and 2); an 8 MHz request produces nominally exact 8 MHz. USB retains its independent 48 MHz PLL.
 - Decode only A0/A1/A2/A4 (mask0x17): console00/01 and disk10-14 remain distinct; A3/A5-A7 and high byte alias.
-- Stage 8 diagnostics use masked result port 06. The replacement Stage 10 compiles the Stage 9 automatic-loader application: its read-only disk diagnostic uses data port 06 and the shared boot-report result port. Generated test programs and expected alias replies must match the trap.
+- Stage 8 diagnostics use masked result port 06. The Stage 10 application compiles the Stage 9 automatic loader: its read-only disk diagnostic uses data port 06 and the shared boot-report result port. Generated test programs and expected alias replies must match the trap.
 - Loader resets six clocks, releases RESET, supplies two exit clocks, then injects. Re-reset to PC zero after verification before SRAM execution. Host cycle models do not prove physical reset-exit timing.
 - Address and data buses are short shared trunks with taps, not stars or implied series paths.
 - Z80 BUSACK# floats address, data, MREQ#, IORQ#, RD#, and WR#; fitted 5 V pull-ups define monitored controls during the grant.
 
 ## Firmware Scope
 
-Pico source remains breadboard-first. The replacement Stage 10 inherits the
+Pico source remains breadboard-first. Stage 10 inherits the
 tested Stage 9 automatic loader's 120 MHz supervisor and nominal 20 MHz Z80
 settings; this does not qualify combined network operation. The existing
 PCB uses the same electrical nets, with startup pulls in RN5/RN6 rather than
@@ -91,6 +95,8 @@ With BB830 row 1 at top and row 63 at bottom:
 
 Narrow DIPs cross E/F. Z80 and SRAM require real 0.6-inch sockets. Verify
 construction pin-1 corners. AHCT244/AHCT245/LVC245 notchdown; others notchup.
+Verify package suffixes, TO-92 lead order, breadboard geometry and active-low
+polarity against the exact datasheet and current placement table, not memory.
 
 ## Timing
 
@@ -157,6 +163,8 @@ Follow maintained sources rather than creating parallel transport abstractions:
   until verified CP/M startup. USB is serviced while loading or paused/stopped.
 - These multicore USB contracts apply to Stages 9/10; earlier bring-up targets
   retain their single-core diagnostic USB behavior.
+- Publish CPU state and cancellation atomically; use real multicore lockout
+  during recovery rather than substituting local interrupt masking.
 - Keep Z80 port/trap handlers as bounded adapters to buffers and worker requests.
   Do not perform slow service transactions synchronously in those handlers.
 

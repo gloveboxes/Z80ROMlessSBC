@@ -19,10 +19,16 @@ python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 
 ## Canonical build guarantees
 
+These counts and checks describe the DIP board; use the SMT project's own
+manifest and pipeline for that variant.
+
 The build must prove:
 
 - strict schematic ERC
-- exact manifest/netlist parity
+- exact manifest/netlist parity: 71 real nets, 278 schematic endpoints and
+  30 fitted PCB footprints with 278 connected endpoints; no test points
+  may be added without a request
+- footprint values and packages match the manifest, not just net connectivity
 - exact documented chip-pair connectivity
 - PCB footprint, pad/net, placement, rotation, outline, mounting-hole,
   connector, cutout, keepout, netclass, project-rule, assembly-label, and
@@ -34,6 +40,9 @@ The build must prove:
   from every pad/via drill and from same-side pad copper plus mask
   expansion; labels and polarity marks remain readable
 - `.kicad_pro` remains stable after validation
+- Default, Power and Clock netclasses retain their pattern assignments
+
+Never turn a DRC warning into an exclusion merely to finish a route.
 
 Artifacts are generated under a temporary directory and swapped into
 `exports/` and `fabrication/` only after all validation passes.

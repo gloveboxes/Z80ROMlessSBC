@@ -1,4 +1,4 @@
-# Documentation Lessons
+# Documentation Conventions
 
 ## Information Architecture
 
@@ -42,7 +42,7 @@ A hardware change usually touches more than one section. Search and reconcile:
 - glossary component and signal entries
 - datasheet and source indexes
 
-Search for stale part numbers, obsolete architecture names, old section numbers, duplicate commands, and superseded cross-references before finishing.
+Remove stale part numbers, architecture names, section numbers, duplicate commands and dead cross-references outright; never annotate them as old or replaced.
 
 ## MkDocs Site
 

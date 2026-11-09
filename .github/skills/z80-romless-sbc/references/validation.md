@@ -33,6 +33,12 @@ Configure native tests with `-DPICO_SDK_PATH=/path/to/pico-sdk` to include
 and CA, not fake TLS APIs. Keep SHA-384 enabled for the USERTrust RSA root;
 Mbed TLS 3's SHA-512 option does not imply SHA-384 support.
 
+Z80 execution results come from the C emulator in `src/cpm/z80_debug_host`.
+Run `python3.14 src/common/tests/emulator_z80_test.py` first and after any
+emulator change (`x80.cxx`, `sbc_*.c*`, bank model); it tests flags,
+instructions and banking against an independent reference. Each emulator bug
+gets a regression there. Emulator tests do not qualify hardware timing.
+
 Run host image tests from the repository root with discovery:
 
 ```sh
@@ -193,35 +199,8 @@ For any pin, part, package, resistor, capacitor, or layout change, also verify:
 
 ## Documentation
 
-```sh
-npm run layout
-docs/docs/.venv/bin/mkdocs build --strict -f docs/docs/mkdocs.yml
-git diff --check HEAD -- README.md docs .github/workflows/docs.yml
-```
-
-`npm run layout` regenerates
-`docs/docs/en/images/breadboard-layout.svg`. The pinout images live beside it.
-Inspect representative generated pages for broken tables, Mermaid failures, and
-poor heading placement after structural changes.
-
-A strict build validates Markdown and links but does not execute JavaScript.
-After changing Mermaid source, `mermaid.mjs`, CSS, navigation, or the theme,
-also use a browser at desktop and 390 px mobile widths to verify:
-
-- every `pre.z80-mermaid` becomes one populated `.mermaid svg`
-- the expected diagram count renders on every affected page
-- SVG and table containers do not cause page-level horizontal overflow
-- labels remain readable and client-side navigation reruns the Mermaid adapter
-
-## Documentation C Excerpts
-
-The phase-specific C excerpts are explanatory and cumulative. When editing them:
-
-- Keep maintained-source links adjacent.
-- Validate Markdown fence balance.
-- Keep each page internally coherent; do not imply that a snippet is the
-  canonical maintained implementation.
-- Prefer validating the maintained source and stage builds over trusting hand-written SDK stubs; stubs can miss incorrect or absent real SDK includes.
+Use the [mkdocs-docs](../../mkdocs-docs/SKILL.md) skill for site, diagram and
+C-excerpt validation.
 
 ## Qualification Evidence
 

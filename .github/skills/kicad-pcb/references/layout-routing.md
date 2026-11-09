@@ -31,14 +31,15 @@ margin around the official keepout.
 - Pico 2 W/RP2350 can run its system/core clock at up to 150 MHz. The generated
   Z80 clock targets PCB qualification through 20 MHz, but Pico-driven nets
   still have fast GPIO edges; do not use the Z80 clock rate as the sole
-  signal-integrity model.
+  signal-integrity model. Query `clock_get_hz(clk_sys)` when the actual firmware
+  system-clock value matters.
 - Default signals: 0.30 mm tracks.
 - Power (`+5V`, `+3V3`, `VSYS`): 0.60 mm tracks; +5V is normally carried
   by the In2.Cu plane.
 - Clock (`PICO_CLK`, `Z80_CLK`): 0.30 mm clearance, locked via-free F.Cu
   preroutes. 0.30 mm is the largest clearance that still lets a 0.30 mm
   track pass between 1.6 mm DIP pads at 2.54 mm pitch; 0.40 mm forces
-  long detours around package ends.
+  long detours around package ends. Keep the AHCT244-to-Z80 clock local.
 - Solid In1.Cu GND and In2.Cu +5V planes with thermal reliefs, inset 0.5 mm
   from Edge.Cuts. Freerouting must keep both inner layers disabled with
   `--router.layers.routable=true,false,false,true`. Use local
@@ -63,12 +64,13 @@ adjacent corner edge (77 x 88 mm spacing). A2 reserves the complete 38 x 12 mm O
 footprint uses the supplied header offsets, not guessed mounting holes.
 
 J1 is the pictured 21.6 x 12.7 mm USB-C breakout on the top edge, soldered
-through all six header pins. Only VBUS/+5V and GND are wired; the other four
+through six 1.0 mm plated holes at 2.54 mm pitch. Only VBUS/+5V and GND are wired; the other four
 carrier pads are isolated. Its outline is scaled from the vendor dimension
 photo and its courtyard is flush with the top edge (a generator check);
 require a dry-fit before fabrication. Do not invent
 module screw holes. Check pin fit, underside insulation and cable access
 on the purchased part. J3 is auxiliary; J1/J3 have no source isolation.
+Never connect two supplies.
 
 Do not confuse a connector cable envelope with the connector shell. Validate
 the official footprint geometry against Edge.Cuts. For the Pico:
@@ -83,6 +85,13 @@ the official footprint geometry against Edge.Cuts. For the Pico:
 
 ## Routing iteration
 
+Generate clean placement before routing (replace the interpreter placeholder):
+
+```sh
+KICAD_PYTHON=/path/to/kicad/python \
+  /path/to/kicad/python scripts/build-kicad-pcb.py
+```
+
 1. DRC the placed/unrouted board.
 2. Export a clean DSN.
 3. Autoroute.
@@ -92,3 +101,25 @@ the official footprint geometry against Edge.Cuts. For the Pico:
   cutout margin—before adding manual copper.
 7. If a generated fixed route is necessary, encode it in Python and include it
   in session/copper signature validation.
+
+## Timing-sensitive route measurement
+
+After placement or routing changes, run from the repository root:
+
+```sh
+KICAD_PYTHON=/path/to/kicad/python \
+  /path/to/kicad/python \
+  .github/skills/kicad-pcb/scripts/report-route-lengths.py
+```
+
+Review every address (`A0-A15`), data (`D0-D7`), Pico data
+(`PICO_D0-PICO_D7`), clock, WAIT# and SRAM-control net. Record point-to-point
+path length, total copper, layer changes and outliers; inspect long branches,
+stars, unnecessary vias and one-bit outliers rather than adding serpentine
+equality.
+
+Report Z80-to-SRAM address/data, Pico-write-transceiver-to-SRAM,
+SRAM-to-Pico-read-transceiver and Pico-to-each-transceiver paths separately.
+Only the Z80 drives the address bus. Total copper or one source/receiver pair
+cannot establish bus length matching. Remeasure rather than reusing baseline
+numbers after a board edit.
