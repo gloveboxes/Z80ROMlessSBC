@@ -128,7 +128,7 @@ def main() -> int:
             print("Type uppercase P in the console to erase/program the ATtiny85.",
                   flush=True)
         else:
-            print("The LED/tone test starts when the console connects.", flush=True)
+            print("The sound/status test starts automatically at power-up.", flush=True)
         subprocess.run(
             [console, "--baud", "115200", "--flow", "n", "--imap", "lfcrlf", port],
             cwd=REPO_ROOT, check=True,

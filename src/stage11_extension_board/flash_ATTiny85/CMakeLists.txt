@@ -14,7 +14,7 @@ add_custom_command(
   COMMAND ${AVR_OBJCOPY} -O binary -R .eeprom ${target_elf} ${target_binary}
   COMMAND ${CMAKE_COMMAND} -DINPUT=${target_binary} -DOUTPUT=${target_header}
     -P ${CMAKE_CURRENT_LIST_DIR}/embed_firmware.cmake
-  DEPENDS target/main.c target/protocol.h embed_firmware.cmake
+  DEPENDS target/main.c target/protocol.h target/presets.h embed_firmware.cmake
   VERBATIM
 )
 add_custom_target(stage11_attiny85_firmware DEPENDS ${target_header})

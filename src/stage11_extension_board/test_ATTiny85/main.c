@@ -1,397 +1,273 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "hardware/i2c.h"
 #include "pico/stdlib.h"
-
 #include "../flash_ATTiny85/target/protocol.h"
 
 #define PIN_SDA 20u
 #define PIN_SCL 21u
 #define BE16(value) (uint8_t)((value) >> 8), (uint8_t)(value)
 
-static const struct {
-    const char *name;
-    uint8_t packet[COMMAND_MAX_BYTES];
-    uint16_t wait_ms;
-} arcade_effects[] = {
-    {"Coin pickup", {
-        COMMAND_SEQUENCE, 2, BE16(1),
-        BE16(2600), BE16(70), BE16(3900), BE16(180)
-    }, 450},
-    {"Jump", {
-        COMMAND_CUE, BE16(800), BE16(2800), BE16(220), 0, 0, 255, 0
-    }, 420},
-    {"Ricochet", {
-        COMMAND_SEQUENCE, 6, BE16(1),
-        BE16(4000), BE16(40), BE16(1800), BE16(50),
-        BE16(3500), BE16(40), BE16(1400), BE16(60),
-        BE16(2800), BE16(40), BE16(900), BE16(100)
-    }, 530},
-    {"Teleport", {
-        COMMAND_SEQUENCE, 4, BE16(3),
-        BE16(1200), BE16(45), BE16(2400), BE16(45),
-        BE16(3600), BE16(45), BE16(0), BE16(45)
-    }, 740},
-    {"Shield recharge", {
-        COMMAND_CUE, BE16(1200), BE16(4200), BE16(750), 0, 0, 0, 255
-    }, 950},
-    {"Extra life", {
-        COMMAND_SEQUENCE, 6, BE16(1),
-        BE16(1568), BE16(90), BE16(2093), BE16(90),
-        BE16(2637), BE16(90), BE16(3136), BE16(90),
-        BE16(0), BE16(80), BE16(4186), BE16(280)
-    }, 920},
-    {"Victory fanfare", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(2093), BE16(100), BE16(0), BE16(40),
-        BE16(2093), BE16(100), BE16(2637), BE16(160),
-        BE16(3136), BE16(160), BE16(0), BE16(60),
-        BE16(2637), BE16(120), BE16(4186), BE16(400)
-    }, 1340},
-    {"Game over", {
-        COMMAND_SEQUENCE, 5, BE16(1),
-        BE16(2400), BE16(180), BE16(2000), BE16(180),
-        BE16(1600), BE16(180), BE16(1200), BE16(180),
-        BE16(600), BE16(400)
-    }, 1320},
-    {"Do re mi fa sol la ti do (C6-C7)", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1047), BE16(250), BE16(1175), BE16(250),
-        BE16(1319), BE16(250), BE16(1397), BE16(250),
-        BE16(1568), BE16(250), BE16(1760), BE16(250),
-        BE16(1976), BE16(250), BE16(2093), BE16(500)
-    }, 2450},
-    {"Maze: pellet munching", {
-        COMMAND_SEQUENCE, 4, BE16(3),
-        BE16(1600), BE16(40), BE16(900), BE16(40),
-        BE16(1900), BE16(40), BE16(0), BE16(40)
-    }, 680},
-    {"Maze: power pellet", {
-        COMMAND_SEQUENCE, 4, BE16(3),
-        BE16(1100), BE16(60), BE16(2200), BE16(60),
-        BE16(3300), BE16(60), BE16(0), BE16(20)
-    }, 800},
-    {"Maze: enemy captured", {
-        COMMAND_SWEEP, BE16(700), BE16(4200), BE16(240)
-    }, 440},
-    {"Bricks: paddle bounce", {
-        COMMAND_SEQUENCE, 2, BE16(1),
-        BE16(900), BE16(20), BE16(1400), BE16(35)
-    }, 255},
-    {"Bricks: wall bounce", {
-        COMMAND_SEQUENCE, 1, BE16(1),
-        BE16(2300), BE16(35)
-    }, 235},
-    {"Bricks: brick shattered", {
-        COMMAND_SEQUENCE, 3, BE16(1),
-        BE16(3800), BE16(25), BE16(2900), BE16(25),
-        BE16(1800), BE16(50)
-    }, 300},
-    {"Bricks: ball lost", {
-        COMMAND_CUE, BE16(1800), BE16(300), BE16(650), 255, 0, 0, 0
-    }, 850},
-    {"Invader footsteps: accelerating", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1100), BE16(70), BE16(0), BE16(230),
-        BE16(950), BE16(70), BE16(0), BE16(160),
-        BE16(800), BE16(60), BE16(0), BE16(90),
-        BE16(650), BE16(50), BE16(0), BE16(40)
-    }, 970},
-    {"UFO flyby", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1000), BE16(120), BE16(1800), BE16(120),
-        BE16(1400), BE16(120), BE16(2600), BE16(120),
-        BE16(2200), BE16(120), BE16(3200), BE16(120),
-        BE16(1800), BE16(120), BE16(900), BE16(120)
-    }, 1160},
-    {"Robot chatter", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(3200), BE16(35), BE16(0), BE16(20),
-        BE16(1100), BE16(55), BE16(4100), BE16(30),
-        BE16(0), BE16(25), BE16(1700), BE16(70),
-        BE16(3600), BE16(40), BE16(0), BE16(90)
-    }, 565},
-    {"Engine: accelerating", {
-        COMMAND_SWEEP, BE16(180), BE16(1600), BE16(900)
-    }, 1100},
-    {"Engine: high-speed warble", {
-        COMMAND_SIREN, BE16(1500), BE16(1900), BE16(30), BE16(30), BE16(800)
-    }, 1000},
-    {"Bomb countdown: accelerating", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(3000), BE16(40), BE16(0), BE16(300),
-        BE16(3000), BE16(40), BE16(0), BE16(180),
-        BE16(3000), BE16(40), BE16(0), BE16(90),
-        BE16(3600), BE16(40), BE16(0), BE16(40)
-    }, 970},
-    {"Explosion / player death: tonal crash", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(3600), BE16(25), BE16(1700), BE16(30),
-        BE16(2900), BE16(35), BE16(1100), BE16(40),
-        BE16(2100), BE16(45), BE16(650), BE16(60),
-        BE16(950), BE16(90), BE16(180), BE16(180)
-    }, 705},
-    {"Door unlocking: latch chirps", {
-        COMMAND_SEQUENCE, 6, BE16(1),
-        BE16(1800), BE16(50), BE16(0), BE16(50),
-        BE16(2400), BE16(50), BE16(0), BE16(50),
-        BE16(3000), BE16(50), BE16(0), BE16(50)
-    }, 500},
-    {"Door unlocking: open", {
-        COMMAND_SWEEP, BE16(1000), BE16(3200), BE16(300)
-    }, 500},
-    {"Radar / sonar ping", {
-        COMMAND_SEQUENCE, 2, BE16(2),
-        BE16(3800), BE16(100), BE16(0), BE16(700)
-    }, 1800},
-    {"Low-health heartbeat", {
-        COMMAND_SEQUENCE, 4, BE16(3),
-        BE16(250), BE16(120), BE16(0), BE16(60),
-        BE16(210), BE16(140), BE16(0), BE16(680)
-    }, 3200},
-    {"Combo multiplier: rising hit chain", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1200), BE16(40), BE16(1500), BE16(40),
-        BE16(1800), BE16(40), BE16(2200), BE16(40),
-        BE16(2600), BE16(40), BE16(3100), BE16(40),
-        BE16(3700), BE16(40), BE16(4400), BE16(160)
-    }, 640},
-    {"Treasure discovered", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1568), BE16(60), BE16(1976), BE16(60),
-        BE16(2349), BE16(60), BE16(3136), BE16(60),
-        BE16(1976), BE16(60), BE16(2349), BE16(60),
-        BE16(3136), BE16(60), BE16(3951), BE16(300)
-    }, 920},
-    {"Level complete", {
-        COMMAND_SEQUENCE, 8, BE16(1),
-        BE16(1760), BE16(100), BE16(2217), BE16(80),
-        BE16(2637), BE16(140), BE16(0), BE16(60),
-        BE16(2349), BE16(100), BE16(2637), BE16(100),
-        BE16(3520), BE16(180), BE16(4435), BE16(360)
-    }, 1320},
-    {"Primitive: smooth segmented engine envelope", {
-        COMMAND_SEGMENTS, 4, BE16(1), BE16(300),
-        BE16(1800), BE16(600), BE16(2600), BE16(200),
-        BE16(1400), BE16(200), BE16(3200), BE16(400)
-    }, 1600},
-    {"Primitive: repeating segmented ricochet", {
-        COMMAND_SEGMENTS, 3, BE16(3), BE16(4000),
-        BE16(1200), BE16(90), BE16(3000), BE16(60), BE16(800), BE16(150)
-    }, 1100},
-    {"Primitive: twelve accelerating countdown pulses", {
-        COMMAND_PULSES, 12, BE16(3000), BE16(40), BE16(240), BE16(20)
-    }, 2110},
-    {"Primitive: eight slowing radar pulses", {
-        COMMAND_PULSES, 8, BE16(3800), BE16(60), BE16(20), BE16(200)
-    }, 1450},
-    {"Primitive: rising UFO with vibrato", {
-        COMMAND_VIBRATO, BE16(1200), BE16(3200), BE16(1500), BE16(180), BE16(120)
-    }, 1700},
-    {"Primitive: descending engine with vibrato", {
-        COMMAND_VIBRATO, BE16(2400), BE16(700), BE16(1200), BE16(100), BE16(80)
-    }, 1400}
-};
+static uint8_t next_id;
+static uint8_t status[STATUS_BYTES];
+
+static uint8_t new_id(void) {
+    if (++next_id == 0)
+        ++next_id;
+    return next_id;
+}
 
 static bool send_command(const uint8_t *packet, size_t size) {
     int result = i2c_write_timeout_us(i2c0, ATTINY85_I2C_ADDRESS,
                                      packet, size, false, 50000);
     if (result != (int)size) {
-        printf("ERROR: command %02x: I2C result %d, expected %u bytes. "
-               "Check wiring, pull-ups and flashed firmware.\n",
+        printf("ERROR: command %02x I2C write %d, expected %u.\n",
                packet[0], result, (unsigned)size);
         return false;
     }
     return true;
 }
 
-static bool led(uint8_t command, uint8_t value) {
-    const uint8_t packet[] = {command, value};
-    return send_command(packet, sizeof(packet));
-}
-
-static bool tone(uint16_t frequency, uint16_t duration_ms) {
-    const uint8_t packet[] = {COMMAND_TONE, frequency >> 8, frequency & 0xff,
-                              duration_ms >> 8, duration_ms & 0xff};
-    return send_command(packet, sizeof(packet));
-}
-
-static bool stop(uint8_t channels) {
-    const uint8_t packet[] = {COMMAND_STOP, channels};
-    return send_command(packet, sizeof(packet));
-}
-
-static bool fade(uint8_t mask, uint8_t from, uint8_t to, uint16_t ms) {
-    const uint8_t packet[] = {COMMAND_FADE, mask, from, to, BE16(ms)};
-    return send_command(packet, sizeof(packet));
-}
-
-static bool sweep(uint16_t from, uint16_t to, uint16_t ms) {
-    const uint8_t packet[] = {COMMAND_SWEEP, BE16(from), BE16(to), BE16(ms)};
-    return send_command(packet, sizeof(packet));
-}
-
-static bool siren(uint16_t total_ms) {
-    const uint8_t packet[] = {
-        COMMAND_SIREN, BE16(1500), BE16(3500), BE16(300), BE16(500), BE16(total_ms)
-    };
-    return send_command(packet, sizeof(packet));
-}
-
-static bool blink(uint8_t mask, uint16_t repeats) {
-    const uint8_t packet[] = {
-        COMMAND_BLINK, mask, 255, BE16(120), BE16(180), BE16(repeats)
-    };
-    return send_command(packet, sizeof(packet));
-}
-
-static bool breathe(uint16_t total_ms) {
-    const uint8_t packet[] = {
-        COMMAND_BREATHE, CHANNEL_LEDS, 16, 255,
-        BE16(600), BE16(900), BE16(total_ms), 0
-    };
-    return send_command(packet, sizeof(packet));
-}
-
-static bool alternate(uint16_t repeats) {
-    const uint8_t packet[] = {
-        COMMAND_ALTERNATE, 255, BE16(200), BE16(300), BE16(repeats)
-    };
-    return send_command(packet, sizeof(packet));
-}
-
-static bool sequence(uint16_t repeats) {
-    const uint8_t packet[] = {
-        COMMAND_SEQUENCE, 4, BE16(repeats),
-        BE16(2000), BE16(180), BE16(0), BE16(100),
-        BE16(2500), BE16(180), BE16(3200), BE16(350)
-    };
-    return send_command(packet, sizeof(packet));
-}
-
-static bool test_led_channels(void) {
-    printf("LED-only check (tone OFF): red only, fully on for 1 second.\n");
-    if (!stop(CHANNEL_ALL) || !led(COMMAND_RED, 255)) {
+static bool read_status(void) {
+    int result = i2c_read_timeout_us(i2c0, ATTINY85_I2C_ADDRESS,
+                                    status, sizeof(status), false, 50000);
+    if (result != (int)sizeof(status)) {
+        printf("ERROR: status I2C read %d, expected %u.\n", result, (unsigned)sizeof(status));
         return false;
     }
-    sleep_ms(1000);
-    printf("LED-only check: blue only, fully on for 1 second.\n");
-    if (!led(COMMAND_RED, 0) || !led(COMMAND_BLUE, 255)) {
+    if (status[S_VERSION] != PROTOCOL_VERSION) {
+        printf("ERROR: status protocol %u, expected %u; check ATtiny firmware.\n",
+               status[S_VERSION], PROTOCOL_VERSION);
         return false;
     }
-    sleep_ms(1000);
-    printf("LED-only check: both fully on for 1 second; neither should flicker.\n");
-    if (!led(COMMAND_RED, 255)) {
-        return false;
-    }
-    sleep_ms(1000);
-    printf("LED-only check: autonomous fade up, then down; final level held.\n");
-    if (!fade(CHANNEL_LEDS, 0, 255, 1000)) {
-        return false;
-    }
-    sleep_ms(1200);
-    if (!fade(CHANNEL_LEDS, 255, 0, 1000)) {
-        return false;
-    }
-    sleep_ms(1200);
     return true;
 }
 
-static bool test_arcade_effects(void) {
-    for (unsigned i = 0; i < sizeof(arcade_effects) / sizeof(arcade_effects[0]); ++i) {
-        printf("Arcade effect: %s.\n", arcade_effects[i].name);
-        const uint8_t *packet = arcade_effects[i].packet;
-        size_t size = packet_length(packet);
-        if (!send_command(packet, size)) {
+static bool drain_events(void) {
+    bool overflow = (status[S_FLAGS] & STATUS_EVENT_OVERFLOW) != 0;
+    if (overflow) {
+        printf("ERROR: sound event overflow; playback counters may include lost events.\n");
+    }
+    for (unsigned count = 0; count < 32; ++count) {
+        if (!status[S_EVENT_TYPE])
+            return !overflow;
+        uint16_t sequence = read_be16(status + S_EVENT_SEQ_HI);
+        printf("  event=%u request=%u sequence=%u\n",
+               status[S_EVENT_TYPE], status[S_EVENT_ID], sequence);
+        const uint8_t ack[] = {COMMAND_ACK_EVENT, BE16(sequence)};
+        if (!send_command(ack, sizeof(ack)))
+            return false;
+        bool consumed = false;
+        for (unsigned retry = 0; retry < 50; ++retry) {
+            sleep_ms(2);
+            if (!read_status())
+                return false;
+            if (!(status[S_FLAGS] & STATUS_COMMAND_PENDING) &&
+                (!status[S_EVENT_TYPE] ||
+                 read_be16(status + S_EVENT_SEQ_HI) != sequence)) {
+                consumed = true;
+                break;
+            }
+        }
+        if (!consumed) {
+            printf("ERROR: sound event acknowledgement timed out.\n");
             return false;
         }
-        sleep_ms(arcade_effects[i].wait_ms);
+        if (status[S_FLAGS] & STATUS_EVENT_OVERFLOW) {
+            if (!overflow)
+                printf("ERROR: sound events overflowed while draining.\n");
+            overflow = true;
+        }
     }
-    return stop(CHANNEL_ALL);
+    printf("ERROR: sound events did not drain within the bounded read budget.\n");
+    return false;
 }
 
-static bool test_effects(void) {
-    printf("Autonomous descending laser, then ascending power-up.\n");
-    if (!sweep(4000, 1000, 300)) {
+static bool request(uint8_t *packet, size_t size, uint8_t expected) {
+    packet[1] = new_id();
+    if (!send_command(packet, size))
         return false;
+    for (unsigned retry = 0; retry < 50; ++retry) {
+        sleep_ms(2);
+        if (!read_status())
+            return false;
+        if (!(status[S_FLAGS] & STATUS_COMMAND_PENDING) &&
+            status[S_REQUEST_ID] == packet[1]) {
+            if (status[S_RESULT] != expected) {
+                printf("ERROR: request %u result %u, expected %u.\n",
+                       packet[1], status[S_RESULT], expected);
+                return false;
+            }
+            return drain_events();
+        }
     }
-    sleep_ms(500);
-    if (!sweep(1000, 4000, 600)) {
-        return false;
+    printf("ERROR: request %u execution timed out.\n", packet[1]);
+    return false;
+}
+
+static bool wait_idle(void) {
+    for (unsigned elapsed = 0; elapsed < 15000; elapsed += 10) {
+        if (!read_status() || !drain_events())
+            return false;
+        if (!(status[S_FLAGS] & STATUS_PLAYING) && !status[S_QUEUED])
+            return true;
+        sleep_ms(10);
     }
-    sleep_ms(800);
-    printf("Finite siren plus alternating LEDs; both finish automatically.\n");
-    if (!siren(2400) || !alternate(5)) {
-        return false;
-    }
-    sleep_ms(2700);
-    printf("Jingle with a rest, repeated twice; both LEDs breathe independently.\n");
-    if (!sequence(2) || !breathe(3000)) {
-        return false;
-    }
-    sleep_ms(3200);
-    printf("Red blinks three times while blue fades; sound is silent.\n");
-    if (!blink(CHANNEL_RED, 3) || !fade(CHANNEL_BLUE, 255, 0, 1200)) {
-        return false;
-    }
-    sleep_ms(1400);
-    printf("Single synchronized cue: rising pitch and opposing LED fades.\n");
-    const uint8_t cue[] = {
-        COMMAND_CUE, BE16(1500), BE16(4000), BE16(1200), 0, 255, 255, 0
+    printf("ERROR: sound did not complete within 15 seconds.\n");
+    return false;
+}
+
+static bool stop(void) {
+    uint8_t packet[] = {COMMAND_STOP, 0};
+    return request(packet, sizeof(packet), RESULT_STOPPED);
+}
+
+static bool preset(uint8_t effect, uint8_t priority, uint8_t flags,
+                   uint8_t pitch, uint8_t speed, uint8_t expected) {
+    uint8_t packet[] = {COMMAND_PLAY, 0, priority, flags, pitch, speed, FX_PRESET, effect};
+    return request(packet, sizeof(packet), expected);
+}
+
+static bool play_effect(const uint8_t *effect) {
+    uint8_t packet[COMMAND_MAX_BYTES] = {COMMAND_PLAY, 0, 2, 0, 100, 100};
+    memcpy(packet + 6, effect, effect_length(effect));
+    return request(packet, packet_length(packet), RESULT_ACCEPTED);
+}
+
+static bool test_primitives(void) {
+    static const struct {
+        const char *name;
+        uint8_t effect[36];
+    } effects[] = {
+        {"timed tone", {FX_TONE, BE16(2000), BE16(100)}},
+        {"power-up sweep", {FX_SWEEP, BE16(1000), BE16(4000), BE16(300)}},
+        {"finite siren", {FX_SIREN, BE16(1500), BE16(3500), BE16(100), BE16(150), BE16(750)}},
+        {"notes and rests", {FX_SEQUENCE, 4, BE16(2),
+            BE16(2000), BE16(80), BE16(0), BE16(60), BE16(2500), BE16(80), BE16(3200), BE16(120)}},
+        {"do re mi manual note sequence", {FX_SEQUENCE, 8, BE16(1),
+            BE16(1047), BE16(250), BE16(1175), BE16(250), BE16(1319), BE16(250),
+            BE16(1397), BE16(250), BE16(1568), BE16(250), BE16(1760), BE16(250),
+            BE16(1976), BE16(250), BE16(2093), BE16(500)}},
+        {"joined pitch envelope", {FX_SEGMENTS, 4, BE16(1), BE16(300),
+            BE16(1800), BE16(600), BE16(2600), BE16(200),
+            BE16(1400), BE16(200), BE16(3200), BE16(400)}},
+        {"accelerating countdown", {FX_PULSES, 12, BE16(3000), BE16(40), BE16(240), BE16(20)}},
+        {"slowing radar", {FX_PULSES, 8, BE16(3800), BE16(60), BE16(20), BE16(200)}},
+        {"rising UFO vibrato", {FX_VIBRATO, BE16(1200), BE16(3200), BE16(1500), BE16(180), BE16(120)}},
+        {"major arpeggio", {FX_ARPEGGIO, BE16(1047), BE16(100), BE16(1200), 0}},
+        {"minor arpeggio", {FX_ARPEGGIO, BE16(1047), BE16(100), BE16(1200), 1}},
+        {"gated machine-gun buzz", {FX_GATE, BE16(800), BE16(30), BE16(50), BE16(800)}}
     };
-    if (!send_command(cue, sizeof(cue))) {
-        return false;
+    for (unsigned i = 0; i < sizeof(effects) / sizeof(effects[0]); ++i) {
+        printf("Primitive: %s.\n", effects[i].name);
+        if (!play_effect(effects[i].effect) || !wait_idle())
+            return false;
+        sleep_ms(200);
     }
-    sleep_ms(1400);
-    printf("Indefinite siren/breathe; stop sound only, then red only.\n");
-    if (!siren(0) || !breathe(0)) {
-        return false;
-    }
-    sleep_ms(1200);
-    if (!stop(CHANNEL_SOUND)) {
-        return false;
-    }
-    sleep_ms(500);
-    if (!stop(CHANNEL_RED)) {
-        return false;
-    }
-    sleep_ms(500);
-    printf("Replace blue breathing with blink, then replace it with a fixed level.\n");
-    if (!blink(CHANNEL_BLUE, 0)) {
-        return false;
-    }
-    sleep_ms(1000);
-    if (!led(COMMAND_BLUE, 128) || !sequence(0)) {
-        return false;
-    }
-    sleep_ms(1000);
-    printf("Replace indefinite sequence with a timed tone, then explicit tone stop.\n");
-    if (!tone(4000, 300)) {
-        return false;
-    }
-    sleep_ms(500);
-    if (!tone(2000, 2000)) {
-        return false;
-    }
-    sleep_ms(100);
-    if (!tone(0, 0) || !alternate(0)) {
-        return false;
-    }
-    sleep_ms(700);
-    if (!stop(CHANNEL_LEDS) || !siren(0) || !blink(CHANNEL_LEDS, 0)) {
-        return false;
-    }
-    sleep_ms(500);
-    printf("All-stop: silence and both LEDs off.\n");
-    if (!stop(CHANNEL_ALL)) {
-        return false;
-    }
-    sleep_ms(1000);
     return true;
+}
+
+static bool test_feedback(void) {
+    printf("Priority: engine interrupted by alarm; low priority rejected; equal replaces.\n");
+    if (!preset(PRESET_ENGINE, 1, 0, 100, 100, RESULT_ACCEPTED) ||
+        !preset(PRESET_ALARM, 5, 0, 100, 100, RESULT_ACCEPTED) ||
+        !preset(PRESET_COIN, 1, 0, 100, 100, RESULT_PRIORITY) ||
+        !preset(PRESET_LASER, 5, 0, 100, 100, RESULT_ACCEPTED) || !wait_idle())
+        return false;
+
+    printf("Playback FIFO: queue two sounds behind alarm; reject third; wait for completion.\n");
+    uint16_t completed = read_be16(status + S_COMPLETED_HI);
+    if (!preset(PRESET_ALARM, 5, 0, 100, 100, RESULT_ACCEPTED) ||
+        !preset(PRESET_COIN, 1, PLAY_ENQUEUE, 100, 100, RESULT_QUEUED) ||
+        !preset(PRESET_LASER, 1, PLAY_ENQUEUE, 100, 100, RESULT_QUEUED) ||
+        !preset(PRESET_ROBOT, 1, PLAY_ENQUEUE, 100, 100, RESULT_QUEUE_FULL) ||
+        !wait_idle())
+        return false;
+    if ((uint16_t)(read_be16(status + S_COMPLETED_HI) - completed) != 3) {
+        printf("ERROR: playback FIFO did not complete three sounds.\n");
+        return false;
+    }
+
+    printf("Live engine: change pitch and speed without restarting playback.\n");
+    if (!preset(PRESET_ENGINE, 1, 0, 100, 100, RESULT_ACCEPTED))
+        return false;
+    uint8_t engine_id = status[S_ACTIVE_ID];
+    sleep_ms(500);
+    uint8_t update[] = {COMMAND_UPDATE, 0, engine_id, UPDATE_PITCH | UPDATE_SPEED,
+                        180, 160, 0, 0, 0, 0};
+    if (!request(update, sizeof(update), RESULT_UPDATED))
+        return false;
+    sleep_ms(700);
+    update[2] = engine_id == 255 ? 1 : engine_id + 1;
+    if (!request(update, sizeof(update), RESULT_NO_MATCH) ||
+        !preset(PRESET_COIN, 1, PLAY_ENQUEUE, 100, 100, RESULT_QUEUED))
+        return false;
+    uint8_t clear[] = {COMMAND_CLEAR_QUEUE, 0};
+    if (!request(clear, sizeof(clear), RESULT_CLEARED) || !stop())
+        return false;
+
+    printf("Live vibrato: change depth/period, preserving modulation phase.\n");
+    const uint8_t vibrato[] = {
+        FX_VIBRATO, BE16(1200), BE16(2400), BE16(3000), BE16(80), BE16(200)
+    };
+    if (!play_effect(vibrato))
+        return false;
+    uint8_t modulation[] = {COMMAND_UPDATE, 0, status[S_ACTIVE_ID],
+                            UPDATE_MODULATION, 0, 0, BE16(200), BE16(100)};
+    sleep_ms(800);
+    if (!request(modulation, sizeof(modulation), RESULT_UPDATED) || !wait_idle())
+        return false;
+
+    printf("Stop cancels active sound and queued playback.\n");
+    return preset(PRESET_HEARTBEAT, 1, 0, 100, 100, RESULT_ACCEPTED) &&
+           preset(PRESET_COIN, 1, PLAY_ENQUEUE, 100, 100, RESULT_QUEUED) &&
+           stop() && wait_idle();
 }
 
 static bool test_cycle(void) {
-    return test_led_channels() && test_arcade_effects() && test_effects();
+    if (!stop() || !test_primitives())
+        return false;
+    static const char *const names[] = {
+        "coin", "laser", "explosion", "engine", "alarm", "heartbeat",
+        "treasure", "level complete", "pellet munch", "ricochet", "robot",
+        "jump", "teleport", "shield", "extra life", "fanfare", "game over",
+        "power pellet", "enemy capture", "paddle bounce", "wall bounce", "brick shatter",
+        "ball lost", "invader footsteps", "UFO flyby", "countdown", "door unlock",
+        "sonar ping", "combo multiplier",
+        "player hit", "player death", "checkpoint", "item pickup",
+        "menu move", "menu confirm", "menu cancel", "pause", "resume",
+        "low health warning", "time running out", "enemy spawn", "enemy destroyed",
+        "weapon charge", "boss appears", "falling whistle",
+        "shield hit", "power-up expires", "empty weapon", "secret discovered",
+        "round start", "bomb armed", "reload", "springboard", "splash", "door slam",
+        "switch click", "landing thud", "skid", "warp failed", "magic cast", "freeze",
+        "bonus tally", "objective failed"
+    };
+    _Static_assert(sizeof(names) / sizeof(names[0]) == PRESET_COUNT - 1,
+                   "Every preset needs a demo label");
+    for (uint8_t effect = 1; effect < PRESET_COUNT; ++effect) {
+        printf("Flash preset: %s.\n", names[effect - 1]);
+        if (!preset(effect, 2, 0, 100, 100, RESULT_ACCEPTED))
+            return false;
+        if (effect == PRESET_ENGINE || effect == PRESET_HEARTBEAT ||
+            effect == PRESET_LOW_HEALTH || effect == PRESET_TIME_WARNING) {
+            sleep_ms(1200);
+            if (!stop())
+                return false;
+        } else if (!wait_idle()) {
+            return false;
+        }
+        sleep_ms(200);
+    }
+    printf("Scaled coin: lower/slower, then higher/faster.\n");
+    if (!preset(PRESET_COIN, 2, 0, 75, 75, RESULT_ACCEPTED) || !wait_idle() ||
+        !preset(PRESET_COIN, 2, 0, 150, 150, RESULT_ACCEPTED) || !wait_idle() ||
+        !test_feedback())
+        return false;
+    printf("Sound cycle complete; silence for one second.\n");
+    sleep_ms(1000);
+    return true;
 }
 
 int main(void) {
@@ -399,10 +275,10 @@ int main(void) {
     i2c_init(i2c0, 100000);
     gpio_set_function(PIN_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_SCL, GPIO_FUNC_I2C);
-    printf("\nStage 11 ATtiny85 test: I2C0 GP20 SDA, GP21 SCL, address 0x42.\n");
+    printf("\nStage 11 sound engine: I2C0 GP20 SDA, GP21 SCL, address 0x42.\n");
     for (;;) {
         if (!test_cycle()) {
-            printf("Test cycle failed. Retrying from the LED check in 1 second.\n");
+            printf("ERROR: sound cycle failed; retrying from stop in one second.\n");
             sleep_ms(1000);
         }
     }

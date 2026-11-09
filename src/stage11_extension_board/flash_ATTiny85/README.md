@@ -5,7 +5,7 @@
 
 This board is **only an ISP programmer**. Fit a dedicated Pico, an
 ATtiny85 DIP-8 socket (preferably ZIF), a RESET pull-up and a bypass
-capacitor. **Do not fit LEDs, a piezo or I2C connections to this board.**
+capacitor. **Do not fit a piezo or I2C connections to this board.**
 The testing hardware stays on the separate testing board.
 
 The [Pico programmer](main.c) flashes the compiled
@@ -79,7 +79,7 @@ Use an ATtiny85 configured for its internal 8 MHz RC oscillator.
 Factory-default low fuse `62` is suitable: the firmware removes the
 divide-by-eight clock prescaler at startup. `CKSEL=0010`, RESET and SPI
 must be enabled; debugWIRE, CKOUT and the always-on watchdog fuse must be
-disabled. CKOUT would take over the blue LED pin, and WDTON would force
+disabled. CKOUT would drive the otherwise unused PB4 pin, and WDTON would force
 periodic resets. The programmer checks the signature and these fuse
 requirements **before erasing**; it never writes fuses. An external-clock
 target without a clock, or one with RESET or SPI disabled, needs separate

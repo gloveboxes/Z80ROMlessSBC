@@ -9,18 +9,18 @@ Neither Pico is the Z80 supervisor. Do not use these pin assignments on a
 Pico still connected to the Z80 board. No existing CP/M images or supervisor
 firmware are changed by building this project.
 
-The target runs autonomous pitch sweeps, segmented pitch envelopes,
-accelerating/decelerating pulses, sweep-plus-vibrato, sirens, note/rest sequences, LED
-fades, blinking, breathing and alternating lights. Sound and both LED
-channels operate independently, with selective stop and a synchronized
-sound/light cue. See the [command protocol](test_ATTiny85/README.md#command-protocol-and-timers).
+The sound-only target runs autonomous sweeps, segmented envelopes, pulses,
+vibrato, sirens, note/rest sequences, arpeggios and gated tones. Flash presets,
+pitch/tempo scaling, priorities, a two-sound playback FIFO, live updates and
+readable status/events let games send events instead of timing sound steps.
+See the [command protocol](test_ATTiny85/README.md#command-protocol-and-timers).
 
 ## Separate board guides
 
 | Board | Guide | Fitted hardware |
 | --- | --- | --- |
-| Flashing | [Flash the ATtiny85](flash_ATTiny85/README.md) | Pico 2 W, ATtiny85 socket, ISP wires, RESET pull-up and bypass capacitor. No LEDs, piezo or I2C wiring. |
-| Testing | [Test the flashed ATtiny85](test_ATTiny85/README.md) | Pimoroni Pico Plus 2 W, ATtiny85 socket, I2C wires and pull-ups, RESET pull-up, bypass capacitor, LEDs and passive piezo. No ISP wiring. |
+| Flashing | [Flash the ATtiny85](flash_ATTiny85/README.md) | Pico 2 W, ATtiny85 socket, ISP wires, RESET pull-up and bypass capacitor. No piezo or I2C wiring. |
+| Testing | [Test the flashed ATtiny85](test_ATTiny85/README.md) | Pimoroni Pico Plus 2 W, ATtiny85 socket, I2C wires and pull-ups, RESET pull-up, bypass capacitor and passive piezo. PB3/PB4 unconnected. No ISP wiring. |
 
 Both boards use **3.3 V** from their own Pico and common ground within that
 board. Each socket needs its own 100 nF capacitor between ATtiny85 pins
@@ -40,10 +40,10 @@ rails or run wires between their ATtiny85 sockets.
 5. Move the ATtiny85 into the testing board's socket, checking the notch
    and pin 1 again. Never insert or remove it while either board is powered.
 6. Connect only the **testing Pico** by USB and run the test task. Observe
-   the LEDs and piezo as described in the testing guide.
+   the sound and status/events as described in the testing guide.
 
 To reprogram, power off both boards and move the chip back to the flashing
-socket. The LEDs and piezo stay on the testing board, so they cannot load
+socket. The piezo stays on the testing board, so it cannot load
 the programming signals.
 
 ## Build
@@ -97,7 +97,7 @@ Run **Tasks: Run Task** from the Command Palette:
 | Task | Action |
 | --- | --- |
 | **Build and run Pico - Stage 11 ATtiny85 ISP** | Compile the AVR firmware and Pico programmer, flash the flashing board's Pico, and open its USB console. Type **P** to program the ATtiny85. |
-| **Build and run Pico - Stage 11 ATtiny85 test** | Build and flash the testing board's Pico, then open its USB console to monitor the LED/tone test. The test starts automatically at power-up and retries after I2C errors. |
+| **Build and run Pico - Stage 11 ATtiny85 test** | Build and flash the testing board's Pico, then open its USB console to monitor sound/status. The test starts automatically at power-up and retries after errors. |
 
 The ISP task targets **Pico 2 W**; the test task targets **Pimoroni Pico
 Plus 2 W** (`pimoroni_pico_plus2_w_rp2350`). Neither targets the Z80
@@ -141,7 +141,7 @@ No extra external 5 V supply is needed for this isolated USB-powered setup.
 
 Keep each Pico on its own board and use its matching task. The tasks do
 not move the ATtiny85 or change wiring. USB output alone does not establish
-correct physical behavior; check the LEDs and piezo on the testing board.
+correct physical behavior; check the piezo on the testing board.
 
 ## Host regression checks
 
@@ -154,10 +154,10 @@ ctest --test-dir build/stage11-tests --output-on-failure
 Tests compile the actual programmer/target sources against small hardware
 fakes. They cover ISP byte/word/page boundaries, padding, full-flash
 verification, signature/fuse/transport/timeout failures and RESET release;
-USI receive states, partial packets, queue overflow, endian decoding,
-all LED brightness values, all nonzero 16-bit tone frequencies, effect
-boundaries, finite/indefinite repeats, rests, synchronized cues, independent
-replacement/cancellation, maximum packets and clock wrap. Pico tests check
-the demonstration packets and retry after timeout/short writes at every
-command. They do not simulate electrical USI edges or replace hardware
-acceptance testing.
+USI receive/transmit states, master ACK/NACK, partial/maximal packets,
+mailbox backpressure, coherent status reads, acknowledged events/overflow,
+all nonzero 16-bit frequencies, effect boundaries, repeats, rests, clock wrap,
+priority/FIFO policy, live updates and cancellation. The Pico test runs
+against the actual target state machine through fake I2C, including
+timeout/short writes at every command, failed reads and recovery.
+They do not simulate electrical USI edges or replace hardware acceptance testing.

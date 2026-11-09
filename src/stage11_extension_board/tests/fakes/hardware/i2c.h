@@ -7,4 +7,6 @@
 unsigned i2c_init(void *i2c, unsigned baud);
 int i2c_write_timeout_us(void *i2c, uint8_t address, const uint8_t *bytes,
                          size_t size, bool nostop, unsigned timeout_us);
+int i2c_read_timeout_us(void *i2c, uint8_t address, uint8_t *bytes,
+                        size_t size, bool nostop, unsigned timeout_us);
 #endif

@@ -131,8 +131,12 @@ class Stage11Tests(unittest.TestCase):
                     patch.object(stage11.shutil, "which", return_value="/bin/picocom"), \
                     patch.object(stage11.subprocess, "run") as run, \
                     patch.object(stage11, "wait_port", return_value="/dev/cu.rediscovered") as wait, \
-                    patch.object(stage11, "require_free_port") as free:
+                    patch.object(stage11, "require_free_port") as free, \
+                    redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(self.invoke(mode), 0)
+                if mode == "test":
+                    self.assertIn("sound/status test starts automatically at power-up",
+                                  output.getvalue())
                 self.assertEqual(run.call_count, 3)
                 build, flash, console = [call.args[0] for call in run.call_args_list]
                 self.assertIn("--source-dir", build)
