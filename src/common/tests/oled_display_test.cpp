@@ -29,20 +29,32 @@ struct test_pio {
   uint8_t device_address = 0x3c;  // Zero models an absent device.
   uint bits = 0;
   uint8_t byte = 0;
-  uint64_t cycles = 0, high_since = 0;
+  uint64_t cycles = 0, high_since = 0, low_since = 0, stop_since = 0;
+  bool stopped = false;
   uint64_t minimum_high = UINT64_MAX;
+  uint64_t minimum_low = UINT64_MAX, minimum_bus_free = UINT64_MAX;
+  uint64_t minimum_bit_period = UINT64_MAX, maximum_bit_period = 0;
 
   void pins(bool clock, bool data) {
     if (clock && scl && data != sda) {
       if (!data) {
+        if (stopped)
+          minimum_bus_free = std::min(minimum_bus_free, cycles - stop_since);
         transaction.clear();
         bits = 0;
         byte = 0;
       } else {
         transactions.push_back(transaction);
+        stopped = true;
+        stop_since = cycles;
       }
     }
     if (!scl && clock) {
+      minimum_low = std::min(minimum_low, cycles - low_since);
+      if (bits > 0 && bits < 8) {
+        minimum_bit_period = std::min(minimum_bit_period, cycles - high_since);
+        maximum_bit_period = std::max(maximum_bit_period, cycles - high_since);
+      }
       if (bits < 8) {
         byte = static_cast<uint8_t>((byte << 1) | data);
         ++bits;
@@ -56,6 +68,7 @@ struct test_pio {
       high_since = cycles;
     }
     if (scl && !clock && cycles > high_since) {
+      low_since = cycles;
       uint64_t high = cycles - high_since;
       if (high < minimum_high)
         minimum_high = high;
@@ -401,8 +414,11 @@ static void test_startup() {
       }
     }
     assert(configured && pages == 4 && panel_on);
-    // Standard-mode I2C: SCL HIGH for at least 4 us.
-    assert(machine.minimum_high * machine.config.divider / 120 >= 4.0);
+    assert(machine.minimum_bit_period == 12 && machine.maximum_bit_period == 12);
+    assert(120'000'000 / (12 * machine.config.divider) == 400'000);
+    assert(machine.minimum_high * machine.config.divider / 120 >= 0.6);
+    assert(machine.minimum_low * machine.config.divider / 120 >= 1.3);
+    assert(machine.minimum_bus_free * machine.config.divider / 120 >= 1.3);
     auto before = machine.transactions.size();
     service_once(false);
     now = 5'000'000;

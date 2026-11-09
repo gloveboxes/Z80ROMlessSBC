@@ -15,9 +15,9 @@ start_condition:
     jmp program_loop
 
 stop_condition:
-    set pindirs, 1 side 1 [1]
+    set pindirs, 1 side 1 [6]
     nop side 0 [5]
-    set pindirs, 0 side 0 [5]
+    set pindirs, 0 side 0 [6]
     mov isr, null
     push block
     jmp program_loop
@@ -25,11 +25,12 @@ stop_condition:
 write_byte:
     set x, 7 side 1
 bit_loop:
-    out pindirs, 1 side 1 [1]
-    nop side 0 [5]
+    ; 7 cycles LOW, 5 HIGH: Fast-mode tLOW >= 1.3 us at 400 kHz.
+    out pindirs, 1 side 1 [2]
+    nop side 0 [4]
     nop side 1 [1]
     jmp x-- bit_loop side 1 [1]
-    set pindirs, 0 side 1 [1]
+    set pindirs, 0 side 1 [2]
     nop side 0 [5]
     mov isr, null side 0
     in pins, 1 side 0

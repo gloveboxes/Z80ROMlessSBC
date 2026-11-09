@@ -63,7 +63,7 @@ bool initialize() {
   sm_config_set_out_shift(&config, false, false, 32);
   sm_config_set_in_shift(&config, false, false, 32);
   sm_config_set_clkdiv(&config, static_cast<float>(clock_get_hz(clk_sys)) /
-                                 (100'000 * 12));
+                                 (400'000 * 12));
   pio_sm_init(pio, state_machine, offset, &config);
   pio_sm_set_pins_with_mask(pio, state_machine, 0,
                            (1u << PIN_SCL) | (1u << PIN_SDA));
@@ -99,8 +99,8 @@ bool begin(uint8_t address, const uint8_t *data, size_t length) {
   for (size_t i = 0; i < result_count; ++i)
     results[i] = UINT32_MAX;
   active = true;
-  // 120 us per byte at 100 kHz, plus bounded scheduling/FIFO margin.
-  deadline = z80_time_us_64() + 5000 + (length + 1) * 120;
+  // 30 us per byte at 400 kHz, plus bounded scheduling/FIFO margin.
+  deadline = z80_time_us_64() + 5000 + (length + 1) * 30;
   auto rx = dma_channel_get_default_config(rx_dma);
   channel_config_set_transfer_data_size(&rx, DMA_SIZE_32);
   channel_config_set_read_increment(&rx, false);

@@ -233,12 +233,15 @@ and failures without periodic terminal logging.
 
     A display NACK disables the OLED and records the error. Unavailable PIO/DMA
     resources, missing ACK/STOP results, or a DMA timeout also release the
-    state machine, DMA channels and pins. The timeout is 5 ms plus 120 us per
-    transmitted byte, allowing a full 135-byte page transaction at 100 kHz.
+    state machine, DMA channels and pins. The timeout is 5 ms plus 30 us per
+    transmitted byte, allowing a full 135-byte page transaction at 400 kHz.
     No Z80 bus GPIO or core-0 handshake is used.
 
     [display_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.pio)
-    uses open-drain pins at nominal 100 kHz without clock stretching.
+    uses open-drain pins at nominal 400 kHz (I2C Fast-mode) without clock
+    stretching. Each data bit uses seven PIO cycles LOW and five HIGH,
+    giving nominal 1.46 us LOW and 1.04 us HIGH. Verify rise time at the
+    module is at most 300 ns with the fitted pull-ups and wiring.
 
     ```sh
     cmake --build build/host-control --target oled_display_test -j
@@ -246,7 +249,8 @@ and failures without periodic terminal logging.
     ```
 
     Native tests execute the assembled PIO program and verify both scanned
-    addresses, standard-mode SCL HIGH time, the 128x32 initialization
+    addresses, the 400 kHz data-bit rate, Fast-mode SCL HIGH/LOW and bus-free
+    timing, the 128x32 initialization
     (multiplex, COM pins, charge pump, contrast), initial RAM writes before
     display-on, single-transaction page writes, same-pass chaining, cached IP
     rendering, the idle fast path (one timer read, no lock, no status
