@@ -59,7 +59,7 @@ python3 src/cpm/test_http_ft.py --https
 ```
 
 The test requires `FT.ASM` from the sibling ESP32 Altair checkout (default:
-`../esp32/esp32-altair-8800/Apps/FT/FT.ASM`; override with `--ft-source`).
+`../esp32/esp32-altair-8800/Apps/disk-c-apps/FT/FT.ASM`; override with `--ft-source`).
 It assembles FT with CP/M MAC/LOAD, tests local HTTP binary/text transfers,
 empty files, error recovery, and prompted filenames. `--https` also downloads
 `LOVE.BAS` and runs it in MBASIC.

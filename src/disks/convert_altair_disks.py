@@ -132,6 +132,41 @@ def convert(source: bytes) -> bytes:
     return bytes(output)
 
 
+def encode(native: bytes, template: bytes) -> bytes:
+    """Write a native image's records into a framed Altair image.
+
+    `template` supplies the framing; payloads and checksums are rewritten.
+    Records beyond the framed tracks must be unused (0xE5).
+    """
+    if len(native) != OUTPUT_BYTES:
+        raise ValueError(f"unexpected native image size: {len(native)}")
+    validate_source(template)
+    framed_records = SOURCE_TRACKS * SECTORS_PER_TRACK * RECORD_BYTES
+    if native[framed_records:].count(0xE5) != len(native) - framed_records:
+        raise ValueError("native image uses records beyond the Altair tracks")
+    output = bytearray(template)
+    for track in range(SOURCE_TRACKS):
+        high_track = track >= TRACK_FORMAT_BOUNDARY
+        record_offset = RECORD_OFFSET_HIGH_TRACK if high_track else RECORD_OFFSET
+        for logical_sector, physical_sector in enumerate(SECTOR_TRANSLATION):
+            if high_track and logical_sector >= 16:
+                physical_sector = ((physical_sector - 1 + 16) % 32) + 1
+            sector = (track * SECTORS_PER_TRACK + physical_sector - 1) * PHYSICAL_SECTOR_BYTES
+            record = (track * SECTORS_PER_TRACK + logical_sector) * RECORD_BYTES
+            payload = native[record:record + RECORD_BYTES]
+            output[sector + record_offset:sector + record_offset + RECORD_BYTES] = payload
+            if high_track:
+                output[sector + 4] = (
+                    sum(payload) + output[sector + 2] + output[sector + 3]
+                    + output[sector + 5] + output[sector + 6]
+                ) & 0xFF
+            else:
+                output[sector + 132] = sum(payload) & 0xFF
+    result = bytes(output)
+    validate_source(result)
+    return result
+
+
 def main() -> None:
     disk_dir = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description=__doc__)

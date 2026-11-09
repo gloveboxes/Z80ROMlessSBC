@@ -48,6 +48,12 @@ The plain generated Drive A is an intermediate image: its system tracks still
 contain Altair-specific content, while its directory and file records from
 track 2 onward retain the original files, including the Altair-only AUTORUN.
 
+After rebuilding the banked-memory examples, run
+`python3 src/disks/refresh_drive_b.py` to install them into `bdsc-v1.60.dsk`
+(it removes the retired `SPREADS`/`SPRDHOST`/`LIBHOST` files and re-frames the
+records with `convert_altair_disks.encode`), then rerun the converter so
+`generated/` and `manifest.json` match.
+
 Run the CP/M image builder to replace those two system tracks with sequential
 CCP/BDOS records, the board-native BIOS, and a disabled native auto-run
 configuration record. The builder also replaces user 0's `AUTORUN.COM`

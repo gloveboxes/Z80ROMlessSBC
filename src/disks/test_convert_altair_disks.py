@@ -206,6 +206,28 @@ class ConvertAltairDisksTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "size"):
             convert_altair_disks.validate_source(source[:-1])
 
+    def test_encode_round_trips_sources_and_rewrites_checksums(self) -> None:
+        for source_name in convert_altair_disks.DISKS.values():
+            with self.subTest(source=source_name):
+                source = (DISK_DIR / "source-altair" / source_name).read_bytes()
+                native = convert_altair_disks.convert(source)
+                self.assertEqual(convert_altair_disks.encode(native, source), source)
+
+        source = (DISK_DIR / "source-altair" / "blank.dsk").read_bytes()
+        native = bytearray(convert_altair_disks.convert(source))
+        for record in (0, 5 * geometry.SECTORS_PER_TRACK + 3, 40 * geometry.SECTORS_PER_TRACK + 20):
+            native[record * geometry.RECORD_BYTES:(record + 1) * geometry.RECORD_BYTES] = bytes(range(128))
+        encoded = convert_altair_disks.encode(bytes(native), source)
+        convert_altair_disks.validate_source(encoded)
+        self.assertEqual(convert_altair_disks.convert(encoded), bytes(native))
+
+    def test_encode_rejects_records_beyond_the_framed_tracks(self) -> None:
+        source = (DISK_DIR / "source-altair" / "blank.dsk").read_bytes()
+        native = bytearray(convert_altair_disks.convert(source))
+        native[-1] = 0
+        with self.assertRaisesRegex(ValueError, "beyond"):
+            convert_altair_disks.encode(bytes(native), source)
+
 
 if __name__ == "__main__":
     unittest.main()

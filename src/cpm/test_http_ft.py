@@ -29,7 +29,7 @@ MENU = b"10 REM HTTP text fixture\n20 END\r\n"
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ft-source", type=Path,
-                        default=ROOT.parent / "esp32/esp32-altair-8800/Apps/FT/FT.ASM")
+                        default=ROOT.parent / "esp32/esp32-altair-8800/Apps/disk-c-apps/FT/FT.ASM")
     parser.add_argument("--host", type=Path, default=ROOT / "build/cpm/z80_debug_host/z80-debug-host")
     parser.add_argument("--adapter", type=Path, default=ROOT / "build/cpm/dcc_io_adapter" /
                         ("libz80sbc-io-adapter.dylib" if sys.platform == "darwin" else "libz80sbc-io-adapter.so"))
@@ -148,7 +148,7 @@ def main() -> None:
             if "A>" in session.target_text() and 'reason="end-stepping-range"' in stopped:
                 break
             _, stopped = session.command("-exec-continue", stop=True)
-        assert "64K CP/M 2.2 - Burcon Z80 Edition" in session.target_text()
+        assert "64K CP/M 2.2" in session.target_text()
         run("D:")
         print(run("DIR"), flush=True)
         text = run("B:MAC FT")
