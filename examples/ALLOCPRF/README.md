@@ -40,7 +40,7 @@ For a short emulator run, build from this folder with:
 Then run from the repository root:
 
 ```sh
-build/disk-emulator/bin/python src/common/tests/allocperf_z80_test.py
+python3.14 src/common/tests/allocperf_z80_test.py
 ```
 
 The emulator tests verify extent allocation, request sizes, scan positions,

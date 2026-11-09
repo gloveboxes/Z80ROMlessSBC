@@ -113,9 +113,9 @@ aliases disk command `0x10`, and `0xFF` aliases timer port `0x17`.
 A4 keeps console and disk registers distinct. This applies only to I/O;
 A3 still connects Z80 pin 33 to SRAM pin 9, not U7.
 
-Each register has 16 low-byte aliases. A historical Phase 9 `SURVEY` scan
-reported 111 active addresses for seven registers (112 aliases, excluding
-`0x00`), not 111 peripherals. Current services change that count. Scanning
+Each register has 16 low-byte aliases. Scanning the seven registers finds 111
+active addresses (112 aliases, excluding `0x00`), not 111 peripherals; the count
+changes as services are added. Scanning
 response ports can cause UNDERFLOW; RESET the shared channel afterward.
 Service group `0x30` is a command byte written to `0x02`, not a port address.
 
@@ -241,8 +241,8 @@ Phase 10 implements the framed ABI used by the ESP32 Altair dcc
 CHAT 1.7-c11 adds application-side thinking control as described below; earlier
 versions still work but leave thinking at the server default. Firmware builds
 do not install the application on a disk.
-Do not use the legacy physical chat ports 120-124: they alias unrelated
-peripherals with this board's address decoding.
+Do not use physical ports 120-124 for chat: this board's address decoding
+aliases them onto unrelated peripherals.
 
 All requests use group `0x50` through shared ports 2/3/4:
 
@@ -280,7 +280,7 @@ CHAT 1.7-c11 reads `CHAT_THINK` each turn for compatible/Ollama providers:
 `false` sends `reasoning_effort=none`, `true` sends `medium`, and `default`
 omits the field. Model/server support determines the effect. Missing/empty
 values default to `false`; invalid values fail submission. OpenAI requests
-omit this setting. Older CHAT binaries retain server defaults.
+omit this setting. CHAT binaries that do not send it retain server defaults.
 
 The USB shell also offers **Ctrl-] c → 3 Chat → 7 configure thinking**.
 `CHAT_PROVIDER=ollama` aliases `compatible`. Use an installed model name;
@@ -460,7 +460,7 @@ The ENV command parser is shared with the maintained host driver. It supports
 listing, `NAME`, `NAME=VALUE`, copying another variable, numeric addition/
 subtraction, `NAME+N`, `NAME-N`, `-I NAME=VALUE`, `-D NAME`, `-N`, `NOW`
 (uptime seconds), and `-H`/`HELP`/`?`. Numeric overflow is an explicit error.
-No additional physical ports expose the host's private legacy selectors.
+No additional physical ports expose the host's private selectors.
 
 The store supports at most 128 entries, subject to a **3,840-byte serialized
 snapshot limit**. Each entry consumes `key length + value length + 2` bytes.

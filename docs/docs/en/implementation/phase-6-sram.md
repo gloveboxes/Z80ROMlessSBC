@@ -421,21 +421,19 @@ functional soak evidence, not measured analogue timing qualification.
 ##### Host Validation
 
 Host controller tests simulate the exact hour/cycle boundary, counters,
-serial gating and fault stops. Optional independent instruction execution
-requires Python 3.10+ and the pinned host-only emulator:
+serial gating and fault stops. Optional Z80 instruction execution
+requires Python 3.10+ and the host-only C emulator
+([build steps](../system/firmware-testing.md#4-build-the-z80-emulator)):
 
 ```sh
-python3.14 -m venv build/math-soak-emulator
-build/math-soak-emulator/bin/python -m pip install \
-  -r src/common/tests/requirements-soak.txt
 cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DSOAK_EMULATOR_PYTHON="$PWD/build/math-soak-emulator/bin/python"
+  -DZ80_TEST_PYTHON="$(command -v python3.14)"
 cmake --build build/host-control --target math_soak_test math_soak_14h_test
 ctest --test-dir build/host-control -R '^math_soak_' --output-on-failure
 ```
 
 Substitute an available Python 3.10+ executable for `python3.14`. The
-independent core runs the actual image through two cycles and checks every
+emulator runs the actual image through two cycles and checks every
 work byte/reference-table boundary, plus injected arithmetic, flag,
 comparison, stack-guard and first/middle/last SRAM failures. This is host
 execution evidence, not an hour-long physical run.

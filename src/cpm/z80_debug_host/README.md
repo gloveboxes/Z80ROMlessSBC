@@ -24,9 +24,15 @@ Build it from the repository root:
 
 ```sh
 cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
 cmake --build build/cpm/z80_debug_host
 ```
+
+`--bank1-image FILE` loads a 64 KiB bank-1 image (built by
+`build_images.build_bank1_image`) and makes bank 1 available, as the firmware
+does after loading it; with `--direct-loader` the payload then runs banked.
+Without it, port 7 reports no bank 1 and bank selection is ignored. The MI
+debugger reads and writes only the active bank.
 
 Run the project end-to-end test with Python 3.10 or newer:
 
@@ -38,6 +44,6 @@ python3 src/cpm/test_z80_debug_host.py \
 
 The test builds a fresh CP/M image set, extracts and loads the 64 KiB payload
 from `z80boot.pkg`, attaches the project disk adapter, and exercises cold boot,
-`DIR`, transient execution, BIOS warm boot, multi-extent loading, and a
-cross-drive copy. The test host is an emulator, not electrical qualification
+`DIR`, transient execution, BIOS warm boot, multi-extent loading, a
+cross-drive copy, and a bank-1 allocate/write/read/free round trip. The test host is an emulator, not electrical qualification
 of the physical Pico/Z80 bus.

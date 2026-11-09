@@ -13,6 +13,10 @@ The pre-launch task builds the project’s Z80 host, I/O adapter, and images in
 `build/cpm`. The launcher loads the 64 KiB payload from `z80boot.pkg` and
 attaches Drives A–D. No Pico or external Altair checkout is needed.
 
+The session is banked: the launcher passes a generated bank-1 image
+(`z80bank1.img`) to the host, so applications can use the BIOS bank-1 gateway
+(`FF00h`–`FF10h`). The MI debugger shows only the active bank.
+
 ## Try the software path
 
 ```text
@@ -47,7 +51,7 @@ With curl development headers/libraries installed, build the host and adapter:
 
 ```sh
 cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
 cmake --build build/cpm/z80_debug_host
 cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter
 cmake --build build/cpm/dcc_io_adapter

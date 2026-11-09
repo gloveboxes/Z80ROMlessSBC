@@ -25,8 +25,7 @@ on reset without waiting for USB.
 
 **Pico firmware** supervises the board; **Z80 programs** execute from SRAM
 loaded through injected Z80 instructions. Build only the phase matching your
-installed circuit. Phase 0 is a checklist with no firmware target; the former
-Phase 7 fixture is now the Phase 6 bus-grant diagnostic.
+installed circuit. Phase 0 is a checklist with no firmware target.
 
 | Phase | Source directory | CMake target |
 | ---: | --- | --- |

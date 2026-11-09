@@ -34,7 +34,7 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 
 Disconnect external power and USB. Keep U3/U4 out of their sockets while
 wiring and checking the tables below. CPU, SRAM and later-phase devices
-also remain absent. Previously fitted Phase 0/1 connections need checking,
+also remain absent. Connections already fitted in Phases 0/1 need checking,
 not a second wire. The [buffer and gate reference](../hardware/output-buffer.md)
 explains the channel functions.
 

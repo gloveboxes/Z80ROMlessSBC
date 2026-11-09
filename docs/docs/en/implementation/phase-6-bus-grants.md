@@ -24,12 +24,10 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 6 loader and RAM prerequisites passed"> **Prerequisite:** Complete the loader and RAM checks in [Phase 6](phase-6-sram.md#full-memory-loader-qualification).
 **Install:** No additional chips; CPU was fitted in Phase 6.
 
-This diagnostic retains the unique bus-grant and receiving-pin measurement
-checks formerly in the separate Phase 7. Phase 6's arithmetic and SRAM tests
+This diagnostic provides the unique bus-grant and receiving-pin measurement
+checks. Phase 6's arithmetic and SRAM tests
 already provide much stronger execution coverage than this small loop, but
 they do not request/release the CPU bus or prove analogue reset/clock margins.
-There is no longer a separate Phase 7 page or firmware target; Phase 8-10
-keep their existing numbers.
 
 Do not flash this diagnostic during another running test. It is a separate,
 manual low-rate fixture, not a new mode in the arithmetic soak.

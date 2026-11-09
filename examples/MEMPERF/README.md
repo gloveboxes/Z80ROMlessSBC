@@ -38,7 +38,7 @@ current ABI and [ALLOCPRF](../ALLOCPRF/README.md) for allocator timing.
 
 ## Reproducible CPU-cycle measurements
 
-The independent Z80 emulator measures the actual linked checked C entry points,
+The C Z80 emulator measures the actual linked checked C entry points,
 not a replacement copy routine. Initialization, allocation and preparation
 are excluded; every measured call still queries the live allocation size.
 The adapter calls the BIOS checked entries, which read the live extent through
@@ -47,11 +47,11 @@ about 1,340 T-states beyond the 16-byte bursts.
 From the repository root, after building MEMPERF:
 
 ```sh
-PYTHONPATH=src/common/tests build/disk-emulator/bin/python \
+PYTHONPATH=src/common/tests python3.14 \
   src/common/tests/banked_sdk_benchmark.py
-PYTHONPATH=src/common/tests build/disk-emulator/bin/python \
+PYTHONPATH=src/common/tests python3.14 \
   src/common/tests/banked_transfer_benchmark.py
-PYTHONPATH=src/common/tests build/disk-emulator/bin/python \
+PYTHONPATH=src/common/tests python3.14 \
   src/common/tests/banked_sdk_benchmark.py --services
 ```
 

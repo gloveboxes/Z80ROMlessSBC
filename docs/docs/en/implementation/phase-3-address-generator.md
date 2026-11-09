@@ -23,7 +23,7 @@ result. Progress is saved in this browser; ticks are not automatic verification.
 
 <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 3 prerequisite passed"> **Prerequisite:** [Phase 2](phase-2-buffer-clock.md#pass-gate).
 **Install:** U7 SN74LVC244AN only; Z80/SRAM remain absent.
-The historical source-directory name is retained, but no address expander is fitted.
+No address expander is fitted.
 
 ## Wiring - Control and Port Monitor
 

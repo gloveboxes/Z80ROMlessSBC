@@ -252,19 +252,19 @@ duration criterion or live first-fault notification in this scope target.
 
 ## Host validation
 
-With the optional pinned emulator environment configured as in the
+With the C emulator built as in the
 [soak host-validation guide](20mhz-soak.md#host-validation):
 
 ```sh
 cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DSOAK_EMULATOR_PYTHON="$PWD/build/math-soak-emulator/bin/python"
+  -DZ80_TEST_PYTHON="$(command -v python3.14)"
 cmake --build build/host-control --target scope_test math_soak_test math_soak_14h_test
 ctest --test-dir build/host-control -R '^(scope_|math_soak_)' --output-on-failure
 ```
 
 Controller tests cover DTR/manual gating, verification, quiet RUN behavior,
 post-stop readback, disconnect/reconnect, invalid/torn mailboxes and failures.
-The independent Z80 core executes the actual scope image through two cycles
+The C emulator executes the actual scope image through two cycles
 and rejects **any IN or OUT**, including failure paths. It checks mailbox
 commit ordering, a 16-bit counter carry into the high word, all arithmetic
 failure stages, the stack guard and first/middle/last SRAM corruption.

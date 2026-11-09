@@ -64,7 +64,7 @@ USB error/status first. Do not bypass verification merely to get a prompt.
     50% configured duty** (`120 MHz / 6`). The Z80 clock frequency has been
     scope-measured at 20 MHz on the project prototype. This does not establish
     CP/M, disk-I/O or receiving-pin timing margins. I/O traps and flash writes
-    still pause execution. The replacement Phase 10 inherits this tested automatic-loader
+    still pause execution. Phase 10 inherits this tested automatic-loader
     application and its clock settings; combined network operation still
     requires acceptance testing.
 
@@ -429,7 +429,7 @@ Start with `DIR`, `DIR B:`, `DIR C:` and `DIR D:`; check the distinct sentinels
 listed below. Run `LS` and require a natural return through BIOS warm boot to
 the prompt. Only then test copies/writes on disposable contents. The file
 named `drive_d_blank.img` currently contains the documented `DOCTOR.COM`
-sentinel; its historical filename is not evidence that it is empty.
+sentinel; its filename does not indicate it is empty.
 
 The shared terminal queues hold 128 input and 512 output bytes. While a terminal
 is connected, output remains buffered for Z80 throughput: the BIOS waits only
@@ -710,9 +710,10 @@ ctest --test-dir build/host-control \
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 ```
 
-Use Python 3.11 or newer for the image tests. The independent-core test
-requires the existing `SOAK_EMULATOR_PYTHON` CMake setting and pinned
-`src/common/tests/requirements-soak.txt`; it does not prove physical
+Use Python 3.11 or newer for the image tests. The Z80 execution test
+requires the `Z80_TEST_PYTHON` CMake setting and the built C emulator
+([firmware testing](../system/firmware-testing.md#4-build-the-z80-emulator));
+it does not prove physical
 20 MHz I/O, setup/hold margins or real flash endurance. Bench checklist
 items remain unticked until measured.
 

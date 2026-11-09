@@ -168,13 +168,13 @@ remain available for byte-identical assembly tests, not native BIOS boot.
 
 ## Execution tests
 
-The independent core used by the SRAM soak can also execute the actual BIOS,
+The C emulator used by the SRAM soak can also execute the actual BIOS,
 all-drive directory reads, transient exit/warm boot, native AUTORUN menu and
 writes, all four auto-run modes, keyboard bypass, error paths, and the
 read-only Z80 disk diagnostic:
 
 ```sh
-build/math-soak-emulator/bin/python src/common/tests/cpm_boot_z80_test.py
+python3.14 src/common/tests/cpm_boot_z80_test.py
 ```
 
 This is host-model evidence, not physical 20 MHz or flash timing qualification.

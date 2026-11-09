@@ -358,7 +358,7 @@ The loader validates the `.LIB` header, loads at `0100h`, clears BSS, initialize
 
 Generated BANKLIB wrappers copy bounded arguments into a length-prefixed frame with `bank_bios_write()`, invoke LIB CONTROL CALL (E=8, action 3), then retrieve results with `bank_bios_read()`. Copied pointers are local to the frame, never bank-0 pointers. Typed-export, live-frame and generation/epoch checks precede dispatch; direct CALL does not replace them.
 
-[LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO) builds `DATATEST.COM` and `DATA.LIB`, with DCC-generated API/wrappers. It tests scalars, buffers, records, files, bank-owned blocks and lifecycle; [HOSTCHK.C](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/LIBDEMO/host/HOSTCHK.C) provides setup/reporting/cleanup. See the [library specification](../cpm-dcc/bank1-library-spec.md) for limits and [SPREADS](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SPREADS) for hand-written code.
+[LIBDEMO](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/LIBDEMO) builds `DATATEST.COM` and `DATA.LIB`, with DCC-generated API/wrappers. It tests scalars, buffers, records, files, bank-owned blocks and lifecycle; [HOSTCHK.C](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/examples/LIBDEMO/host/HOSTCHK.C) provides setup/reporting/cleanup. See the [library specification](../cpm-dcc/bank1-library-spec.md) for limits.
 
 ??? example "Bank-0 host: LIBDEMO/host/DATATEST.C"
 

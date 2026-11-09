@@ -39,7 +39,7 @@ Build the project-owned Z80 host, then run the end-to-end test with Python
 
 ```sh
 cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
 cmake --build build/cpm/z80_debug_host
 python3 src/cpm/test_z80_debug_host.py \
   --host build/cpm/z80_debug_host/z80-debug-host

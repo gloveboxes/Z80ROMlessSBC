@@ -643,8 +643,8 @@ disconnect, failure reporting, protocol/control faults and progress timeouts.
 Simulated time verifies the exact hour boundary, complete-cycle requirement
 and statistics without waiting a physical hour.
 
-The [independent instruction-execution test](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/tests/math_soak_z80_test.py)
-uses the pinned host-only `z80` package. It runs the actual generated resident
+The [instruction-execution test](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/tests/math_soak_z80_test.py)
+uses the host-only C Z80 emulator. It runs the actual generated resident
 image through two complete cycles: eight phases, 16,384 vector checks and
 all four SRAM patterns twice. It independently checks the final work bytes
 after each phase, reference-table preservation and the stack guard.
@@ -654,21 +654,20 @@ the stack guard, and the first/middle/last work addresses (`2000h`, `8000h`,
 `FFFFh`). These cases must produce the correct failure packet without a
 phase-success marker.
 
-To enable the independent core, use Python 3.10 or newer; substitute an
+To enable Z80 execution, use Python 3.10 or newer; substitute an
 available version for `python3.14`:
 
 ```sh
-python3.14 -m venv build/math-soak-emulator
-build/math-soak-emulator/bin/python -m pip install \
-  -r src/common/tests/requirements-soak.txt
 cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DSOAK_EMULATOR_PYTHON="$PWD/build/math-soak-emulator/bin/python"
+  -DZ80_TEST_PYTHON="$(command -v python3.14)"
 cmake --build build/host-control --target math_soak_test math_soak_14h_test
 ctest --test-dir build/host-control -R '^math_soak_' --output-on-failure
 ```
 
-Without `SOAK_EMULATOR_PYTHON`, the C controller test can still run when
-`z80asm` is present, but independent Z80 execution is explicitly disabled.
+Without `Z80_TEST_PYTHON`, the C controller test can still run when
+`z80asm` is present, but Z80 execution is explicitly disabled. The emulator
+library is built as described in
+[firmware testing](../../docs/docs/en/system/firmware-testing.md#4-build-the-z80-emulator).
 These checks do not access or interrupt a physical board.
 
 Host success is not a physical one-hour result. Likewise, a physical soak

@@ -56,7 +56,7 @@ The Z80 emulator regression runs the compiled COM with CP/M and the resident
 banking code:
 
 ```sh
-PYTHONPATH=src/common/tests build/disk-emulator/bin/python -m unittest \
+PYTHONPATH=src/common/tests python3.14 -m unittest \
   banked_heap_z80_test.BankedHeapExecution.test_compiled_direct_offset_primes
 ```
 

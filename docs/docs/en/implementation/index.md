@@ -62,8 +62,8 @@ For each phase:
 | [10 - WebSocket terminal](phase-10-websocket.md) | Final multicore network terminal and disk integration |
 | [Frequency qualification](frequency-qualification.md) | Measured operating limit and complete timing evidence |
 
-The former Phase 7 CPU checks are consolidated into Phase 6. There is no
-separate Phase 7 target; Phase 8-10 retain their numbers and target names.
+The Phase 6 bus-grant diagnostic covers the CPU bus-grant checks; Phase 8
+follows Phase 6.
 
 Build and test one functional block at a time. Do not install the next
 chip until the current phase passes. Use sockets for all DIP devices,

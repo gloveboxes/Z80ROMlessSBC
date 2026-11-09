@@ -10,7 +10,7 @@ testing remains a separate qualification step.
 | Layer | What runs | What it establishes |
 | --- | --- | --- |
 | Native C/C++ host tests | Maintained firmware logic compiled for the Mac or other host, with test SDK headers and functions | Software state transitions, bounds, error handling and scripted fault/interleaving cases |
-| Independent Z80 execution | Assembled Z80 programs, BIOS and CP/M in an instruction emulator, with modeled peripherals | Actual Z80 instruction behavior, console/disk protocol use, boot and warm-boot behavior |
+| Z80 execution | Assembled Z80 programs, BIOS and CP/M in an instruction emulator, with modeled peripherals | Actual Z80 instruction behavior, console/disk protocol use, boot and warm-boot behavior |
 | Pico cross-build | ARM compiler and linker with the real Pico SDK | Firmware compiles/links for Pico 2 W, SDK APIs are valid and artifacts fit the protected flash layout |
 | Physical bench qualification | Deployed firmware, real Pico, Z80, SRAM, buffers and flash | Actual USB behavior, multicore/interrupt operation, bus ownership, timing, electrical margins and sustained reliability |
 
@@ -103,35 +103,44 @@ ctest --test-dir build/host-control \
 The authoritative target/test list is
 [src/common/tests/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/tests/CMakeLists.txt).
 
-## 4. Add the independent Z80 instruction emulator
+## 4. Build the Z80 emulator
 
-This is an optional host-only dependency, separate from the Pico SDK.
-The environment name is shared with the existing arithmetic/SRAM soak tests.
-Create it once; reuse it if already configured:
+Execution tests run on the C Z80 emulator in `src/cpm/z80_debug_host`: the
+x80 core plus the two-bank SRAM model, exposed as `libz80sbc-emulator` and
+driven from Python 3.10+. It is host-only and separate from the Pico SDK.
 
 ```sh
-"$PYTHON" -m venv build/math-soak-emulator
-build/math-soak-emulator/bin/python -m pip install \
-  -r src/common/tests/requirements-soak.txt
+cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
+  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
+cmake --build build/cpm/z80_debug_host --target z80sbc-emulator
 ```
 
-The requirements pin `z80==1.0.0`. Register that interpreter with the native
-test project and rebuild:
+Register a Python 3.10+ interpreter with the native test project and rebuild.
+Set `Z80SBC_EMULATOR_LIBRARY` if the library is not under
+`build/cpm/z80_debug_host`:
 
 ```sh
 cmake -S src/common/tests -B build/host-control -G Ninja \
   -DCMAKE_C_COMPILER=cc \
   -DCMAKE_CXX_COMPILER=c++ \
-  -DSOAK_EMULATOR_PYTHON="$PWD/build/math-soak-emulator/bin/python"
+  -DZ80_TEST_PYTHON="$(command -v python3.14)"
 cmake --build build/host-control
 ctest --test-dir build/host-control -N \
-  -R '^(math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$'
+  -R '^(emulator_z80_unit|math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$'
 ```
 
-The listing must contain **all four named execution tests**. Without
-`SOAK_EMULATOR_PYTHON`, those tests are not registered; passing the remaining
+`emulator_z80_unit` (`emulator_z80_test.py`) tests the emulator itself:
+8/16-bit arithmetic flags against an independent Python model, block, stack,
+indexed and I/O instructions, breakpoints, and bank selection. Run it first and
+after any emulator change; add a regression there for each emulator bug.
+
+The listing must contain **all five named tests**. Without
+`Z80_TEST_PYTHON`, those tests are not registered; passing the remaining
 native suite does not imply they ran. `--no-tests=error` rejects an empty
 selection, but does not detect a partly missing selection: inspect the names.
+
+Each test also runs directly, for example
+`python3.14 src/common/tests/banked_allocator_z80_test.py`.
 
 Run the execution tests:
 
@@ -141,7 +150,7 @@ ctest --test-dir build/host-control \
   --output-on-failure --no-tests=error
 ```
 
-The math/scope and bank-transfer programs execute in the independent core.
+The math/scope and bank-transfer programs execute on the emulator.
 CP/M tests cover cold/warm boot, directories A–D, transients, AUTORUN, expanded
 disk writes, and the read-only disk diagnostic. Modeled peripherals establish
 instruction/protocol behavior, not Pico latency or hardware timing.
@@ -155,7 +164,7 @@ With Python 3.11+, `z80asm`, and `cpmtools` available:
 ```
 
 These image tests check packaging, CRCs, exact memory/disk geometry, BIOS
-jump-table compatibility and CP/M translation. They are not the independent
+jump-table compatibility and CP/M translation. They are not the
 instruction-execution tests above.
 
 The separate project-owned CP/M host also tests multi-extent programs and

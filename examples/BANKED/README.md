@@ -107,7 +107,7 @@ Build this finite test version from `examples/BANKED`, then run from the
 Z80ROMlessSBC root:
 
 ```sh
-build/disk-emulator/bin/python src/common/tests/banked_heap_z80_test.py \
+python3.14 src/common/tests/banked_heap_z80_test.py \
   --program examples/BANKED/build/emulator/BANKED.COM
 ```
 
