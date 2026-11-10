@@ -6,7 +6,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void z80_oled_core1_service(bool updates_allowed);
+/* Core 0 only: shares the I2C bus with the speaker bridge. */
+void z80_oled_service(bool updates_allowed);
 void z80_oled_print_status(void);
 #ifdef __cplusplus
 }

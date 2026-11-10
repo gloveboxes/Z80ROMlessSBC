@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1640" viewBox="0 0 1920 1640" role="img" aria-labelledby="title description">
   <title id="title">Z80 ROMless SBC: hardware and software architecture</title>
-  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi, WebSocket networking and the SSD1315 status OLED service. A DMA-fed PIO0 state machine generates 400 kHz Fast-mode I2C on GP26 SCL and GP22 SDA for the OLED. The 20 MHz Z80 clock comes from PWM or PIO1, depending on the active fast-path configuration. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives A0-A15 and writes SRAM, including during assisted loading. The 128 KiB SRAM is two 64 KiB banks selected on A16 by GP8 through U4. PIO1 accelerates OUT 07h bank-select cycles while preserving the 20 MHz Z80 clock. After verification, the Z80 executes CP/M directly from the 64 KiB window.</desc>
+  <desc id="description">Implementation-based Stage 10 architecture. The Raspberry Pi Pico 2 W is a multicore I/O controller. Core 0 generates the 20 MHz Z80 clock, scope-measured on the project prototype, injects boot instructions, verifies SRAM and handles Z80 I/O traps. Core 1 owns USB initialization, interrupts and endpoints, plus storage, Wi-Fi and WebSocket networking. Core 0 services the SSD1315 status OLED and the speaker bridge. A DMA-fed PIO0 state machine generates 400 kHz I2C on GP26 SCL and GP22 SDA for the OLED and speaker bridge. The 20 MHz Z80 clock comes from PWM or PIO1, depending on the active fast-path configuration. Core 1 starts before loading and participates in flash lockout during recovery. Fixed console rings, bounded supervisor commands, diagnostics and request/result mailboxes separate the cores. The Z80 alone drives A0-A15 and writes SRAM, including during assisted loading. The 128 KiB SRAM is two 64 KiB banks selected on A16 by GP8 through U4. PIO1 accelerates OUT 07h bank-select cycles while preserving the 20 MHz Z80 clock. After verification, the Z80 executes CP/M directly from the 64 KiB window.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -60,7 +60,7 @@
   <path d="M372 580H708" stroke="#b5cef2"/>
   <text x="372" y="597" class="subheading blue">Z80 supervisor + flash handshakes</text>
   <text x="372" y="627" class="body">Queued Z80 commands; no USB calls</text>
-  <text x="372" y="656" class="body">State publication + bounded diagnostics</text>
+  <text x="372" y="656" class="body">State publication; OLED + speaker I²C</text>
   <a href="https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c"><text x="372" y="682" class="source">Shared main.c; stdout queued to USB core</text></a>
   <rect x="370" y="707" width="340" height="62" rx="9" fill="#fff0dc" stroke="#e5b77c"/>
   <text x="540" y="733" class="subheading orange" text-anchor="middle">PIO0 clock generator</text>
@@ -135,7 +135,7 @@
   <text x="1620" y="593" class="body">Chat: OpenAI / compatible</text>
   <text x="1620" y="623" class="small muted">Async DNS / TCP / TLS; bounded data</text>
   <path d="M1530 575H1600" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>
-  <!-- Core 1 feeds PIO FIFOs; the PIO state machine generates the I2C signals. -->
+  <!-- Core 0 feeds PIO FIFOs; the PIO state machine generates the I2C signals. -->
   <path d="M1530 620H1545V834H1530" class="network" marker-end="url(#teal-arrow)"/>
   <rect x="1120" y="817" width="410" height="33" rx="8" fill="#eaf8f4" stroke="#aad8cd"/>
   <text x="1325" y="840" class="small teal" text-anchor="middle">PIO0: I²C display SM + Z80 clock SM</text>
@@ -144,7 +144,7 @@
   <text x="1620" y="710" class="section teal">STATUS OLED</text>
   <text x="1620" y="740" class="subheading">SSD1315 over 400 kHz I²C</text>
   <text x="1620" y="768" class="small">GP26: SCL; GP22: SDA</text>
-  <text x="1620" y="793" class="small">Core 1: DMA-fed, non-blocking</text>
+  <text x="1620" y="793" class="small">Serviced by core 0; DMA-fed</text>
   <text x="1620" y="816" class="small">IP, uptime; 1 s heartbeat</text>
   <text x="1620" y="839" class="source">oled_display.cpp / display_i2c.pio</text>
 

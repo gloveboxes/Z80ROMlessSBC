@@ -56,6 +56,10 @@ bool z80_cpu_release_reset_and_run(uint32_t clock_hz) {
   return true;
 }
 
+static void (*bus_wait_hook)(void);
+
+void z80_cpu_set_bus_wait_hook(void (*hook)(void)) { bus_wait_hook = hook; }
+
 bool z80_cpu_request_bus(uint32_t timeout_us) {
   absolute_time_t deadline = make_timeout_time_us(timeout_us);
   z80_isolate_buses();
@@ -65,7 +69,10 @@ bool z80_cpu_request_bus(uint32_t timeout_us) {
       gpio_put(PIN_BUSREQ_N, 1);
       return false;
     }
-    tight_loop_contents();
+    if (bus_wait_hook)
+      bus_wait_hook();
+    else
+      tight_loop_contents();
   }
   return true;
 }

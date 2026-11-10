@@ -14,8 +14,8 @@ extern "C" {
 void z80_speaker_out(uint8_t value);
 uint8_t z80_speaker_in(void);
 bool z80_speaker_read_ready(uint8_t port);
-/* Core 1: nonblocking shared-bus service. Complete in-flight work when paused. */
-void z80_speaker_core1_service(void);
+/* Core 0 main loop and bus-grant wait: nonblocking shared-bus service. */
+void z80_speaker_service(void);
 bool z80_speaker_quiescent(void);
 void z80_speaker_print_status(void);
 

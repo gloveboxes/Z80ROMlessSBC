@@ -57,7 +57,7 @@ void gpio_set_function(unsigned pin, unsigned function) {
     ++gpio_calls;
 }
 unsigned i2c_init(void *i2c, unsigned baud) {
-    assert(i2c == i2c0 && baud == 100000);
+    assert(i2c == i2c0 && baud == 400000);
     ++init_calls;
     return baud;
 }

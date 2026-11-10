@@ -272,7 +272,7 @@ static bool test_cycle(void) {
 
 int main(void) {
     stdio_init_all();
-    i2c_init(i2c0, 100000);
+    i2c_init(i2c0, 400000);
     gpio_set_function(PIN_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_SCL, GPIO_FUNC_I2C);
     printf("\nStage 11 sound engine: I2C0 GP20 SDA, GP21 SCL, address 0x42.\n");

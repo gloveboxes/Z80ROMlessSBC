@@ -14,4 +14,8 @@
 #define __not_in_flash_func(name) name
 #endif
 
+#ifndef __not_in_flash
+#define __not_in_flash(group)
+#endif
+
 #endif

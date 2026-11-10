@@ -12,11 +12,17 @@ constexpr size_t MAX_DATA_BYTES = 135;
 enum class Result : uint8_t { pending, complete, nack, failed };
 enum class Failure : uint8_t { none, program, state_machine, dma, timeout };
 
-// Core 1 only. Copies data; the transfer owns the bus until poll returns a result.
+// Each transfer picks its rate. The OLED and the ATtiny85 speaker both use
+// Fast-mode; Standard-mode is the default.
+enum class Speed : uint8_t { standard, fast };
+constexpr uint32_t STANDARD_BAUD = 100000;
+constexpr uint32_t FAST_BAUD = 400000;
+
+// Core 0 only. Copies data; the transfer owns the bus until poll returns a result.
 bool begin(uint8_t address, const uint8_t *data, size_t length,
-           uint32_t baud = 400000);
+           Speed speed = Speed::standard);
 bool begin_read(uint8_t address, uint8_t *data, size_t length,
-                uint32_t baud = 100000);
+                Speed speed = Speed::standard);
 bool busy();
 Result poll();
 Failure failure();

@@ -95,7 +95,7 @@ Status reports firmware state, not measured sound pressure or frequency. Check t
 
 ## Command protocol and timers
 
-The canonical definitions are [protocol.h](../flash_ATTiny85/target/protocol.h). Use **7-bit address 0x42, 100 kHz**, with a master that supports clock stretching. Send one complete command per write, followed by STOP. Read status directly: no register-pointer write is needed. A repeated START also begins a new address phase. For the SBC, use the [Stage 10 shared OLED-bus wiring](../../../docs/docs/en/implementation/phase-10-websocket.md#attiny85-speaker), not this standalone test's GP20/GP21 assignment.
+The canonical definitions are [protocol.h](../flash_ATTiny85/target/protocol.h). Use **7-bit address 0x42, up to 400 kHz**, with a master that supports clock stretching. Send one complete command per write, followed by STOP. Read status directly: no register-pointer write is needed. A repeated START also begins a new address phase. For the SBC, use the [Stage 10 shared OLED-bus wiring](../../../docs/docs/en/implementation/phase-10-websocket.md#attiny85-speaker), not this standalone test's GP20/GP21 assignment.
 
 All multibyte fields are **unsigned big-endian**. Times are milliseconds of effect time. IDs, priorities, flags, counts, percentages, kinds, pattern and preset IDs are single bytes. Request IDs are 1-255; do not reuse an ID while its sound is active or queued, or its terminal event is unacknowledged.
 

@@ -127,8 +127,8 @@ void z80_speaker_out(uint8_t value) {
   ++speaker_writes;
   speaker_value = value;
 }
-void z80_speaker_core1_service(void) {
-  assert(fake_core == 1 && disk_services && io_services);
+void z80_speaker_service(void) {
+  assert(fake_core == 0);
   ++speaker_services;
 }
 bool z80_speaker_quiescent(void) { return speaker_idle; }
@@ -170,8 +170,8 @@ void z80_network_core1_service(void) {
   assert(fake_core == 1 && disk_services && io_services);
   ++network_services;
 }
-void z80_oled_core1_service(bool updates_allowed) {
-  assert(fake_core == 1 && disk_services && io_services);
+void z80_oled_service(bool updates_allowed) {
+  assert(fake_core == 0);
   ++oled_services;
   oled_updates_allowed = updates_allowed;
 }
@@ -391,6 +391,8 @@ bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
   return load_ok;
 }
 void z80_flash_core0_service(void) {}
+static void (*bus_wait_hook)(void);
+void z80_cpu_set_bus_wait_hook(void (*hook)(void)) { bus_wait_hook = hook; }
 void z80_flash_core1_service(void) {
   assert(fake_core == 1);
   ++disk_services;
@@ -1060,32 +1062,68 @@ static void test_stop_and_failure(void) {
 }
 
 #ifdef Z80_STAGE10_NETWORK
-static void test_oled_running_gate(void) {
+static void test_stop_waits_for_speaker(void) {
   reset_fixture();
+  command('l');
+  command('g');
+  command('x');
+  flushes = 0;
+  quiescent = true;
+  speaker_idle = false;
+  flash_paused = 1;
+  service_run();
+  // Queued sound work is not abandoned by the stop: the Z80 resumes and retries.
+  assert(running && !held && flash_resuming && !flash_pause_request);
+  flash_paused = 0;
+  service_run();
+  speaker_idle = true;
+  flash_paused = 1;
+  service_run();
+  assert(held && !running);
+}
+
+static void test_core0_i2c_service_gate(void) {
+  reset_fixture();
+  // The bus belongs to core 0: core 1 never touches the OLED or the speaker.
+  workers_ready = 1;
   fake_core = 1;
   core1_service();
-  assert(!oled_services && !network_services);
-  workers_ready = 1;
-  const uint32_t states[] = {
-      0, CPU_RUNNING, CPU_RUNNING | CPU_STOPPING, CPU_STOPPING,
-      CPU_LOADING, CPU_RUNNING | CPU_LOADING, CPU_RUNNING,
-  };
-  for (unsigned i = 0; i < sizeof(states) / sizeof(states[0]); ++i) {
-    cpu_state = states[i];
-    core1_service();
-    assert(oled_services == i + 1 && network_services == i + 1);
-    assert(oled_updates_allowed == (states[i] == CPU_RUNNING));
-  }
-  unsigned polls = network_services;
-  unsigned display_calls = oled_services;
   flash_pause_request = 1;
   core1_service();
-  assert(network_services == polls && oled_services == display_calls + 1);
-  assert(!oled_updates_allowed && terminal_network_services == 1);
   core1_service();
-  assert(network_services == polls && oled_services == display_calls + 2);
-  assert(!oled_updates_allowed && terminal_network_services == 2);
   fake_core = 0;
+  assert(!oled_services && !speaker_services);
+  struct { bool running, stopping, loading, pause, allowed; } cases[] = {
+      {false, false, false, false, false}, {true, false, false, false, true},
+      {true, true, false, false, false},   {false, true, false, false, false},
+      {false, false, true, false, false},  {true, false, true, false, false},
+      {true, false, false, true, false},
+  };
+  for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+    running = cases[i].running;
+    stop_requested = cases[i].stopping;
+    loading = cases[i].loading;
+    flash_pause_request = cases[i].pause;
+    assert(i2c_updates_allowed() == cases[i].allowed);
+    core0_i2c_service(i2c_updates_allowed());
+    assert(oled_services == i + 1 && speaker_services == i + 1);
+    assert(oled_updates_allowed == cases[i].allowed);
+  }
+  // Waiting for BUSACK keeps finishing the speaker transfer and retries the
+  // deferred reply, without starting new OLED transfers.
+  running = true;
+  stop_requested = loading = false;
+  flash_pause_request = 0;
+  running = false;
+  image_verified = true;
+  start_cpm();
+  assert(bus_wait_hook);
+  unsigned services = speaker_services, drains = write_drains;
+  bus_parked = interrupts_disabled = true; // the stub drain models a parked bus
+  bus_wait_hook();
+  bus_parked = interrupts_disabled = false;
+  assert(speaker_services == services + 1 && write_drains == drains + 1);
+  assert(!oled_updates_allowed);
 }
 
 static void test_web_orderly_reboot(void) {
@@ -1480,14 +1518,7 @@ static void test_core1_lifecycle_and_pause(void) {
   assert(usb_services == 4);
 #ifdef Z80_STAGE10_NETWORK
   assert(network_services == 2);
-  assert(speaker_services == 3);
-  speaker_idle = false;
-  flash_pause_request = 1;
-  core1_service();
-  assert(!flash_paused && speaker_services == 4);
-  speaker_idle = true;
-  core1_service();
-  assert(flash_paused && speaker_services == 5);
+  assert(!oled_services && !speaker_services);
 #endif
   fake_core = 0;
 }
@@ -1559,7 +1590,8 @@ static void test_unallocated_port_dispatch(void) {
 int main(void) {
   test_unallocated_port_dispatch();
 #ifdef Z80_STAGE10_NETWORK
-  test_oled_running_gate();
+  test_core0_i2c_service_gate();
+  test_stop_waits_for_speaker();
   test_config_orderly_reboot();
   test_web_orderly_reboot();
 #endif

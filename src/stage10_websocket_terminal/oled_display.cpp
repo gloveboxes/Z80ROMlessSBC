@@ -2,6 +2,8 @@
 #include "display_i2c.h"
 #include "../common/io_service.h"
 #include "pico/stdlib.h"
+#include "z80sbc/cycle_stats.h"
+#include "z80sbc/ram_func.h"
 #include "z80sbc/ram_timer.h"
 #include "z80sbc/terminal.h"
 
@@ -15,6 +17,7 @@ enum class State : uint8_t {
   uninitialized, scanning, initialize, ready, page, enable, failed,
 };
 enum class Failure : uint8_t { none, no_device, nack, bus };
+constexpr display_i2c::Speed kBusSpeed = display_i2c::Speed::fast;
 constexpr unsigned WIDTH = 128;
 constexpr unsigned PAGES = 4;  // 128x32: four 8-pixel pages.
 constexpr uint8_t ALL_PAGES = (1u << PAGES) - 1;
@@ -41,8 +44,19 @@ uint8_t dirty_pages;
 uint8_t page;
 uint8_t first_column;
 uint8_t column_count;
+// Changed column range of each dirty page, found once when it is rendered.
+uint8_t diff_first[PAGES];
+uint8_t diff_last[PAGES];
 uint64_t next_tick_us;
+// Uptime is counted tick by tick, so a tick needs no 64-bit division.
+bool clock_started;
+uint64_t seconds;
+uint64_t clock_minute;
+uint8_t second_in_minute;
+// True while next_tick_us is known to be within the 32-bit timer window.
+bool gate_open;
 uint64_t uptime_minute = UINT64_MAX;
+z80_cycle_stats_t cpu_stats;
 char cached_ip[16];
 bool ip_valid;
 uint32_t seen_address_generation;
@@ -101,25 +115,63 @@ constexpr unsigned text_width(const char *value) {
   return x ? x - SCALE : 0;
 }
 
-// Draws scale-2 3x5 glyphs into a page-organized bitmap `stride` columns wide.
-constexpr void draw_text(uint8_t *pixels, unsigned stride, [[maybe_unused]] unsigned rows,
-                         unsigned x, unsigned y, const char *value) {
-  for (; *value; ++value) {
-    char c = *value;
-    unsigned columns = glyph_columns(c);
-    unsigned first = columns == 1 ? 1 : 0;
-    assert(x + columns * SCALE <= stride && y + 5 * SCALE <= rows);
-    uint16_t glyph_pixels = character(c);
-    for (unsigned row = 0; row < 5; ++row)
-      for (unsigned col = 0; col < columns; ++col)
-        if (glyph_pixels & (1u << (14 - row * 3 - first - col)))
+constexpr bool supported(unsigned c) {
+  return (c >= '0' && c <= '9') || c == 'E' || c == 'F' || c == 'I' ||
+         c == 'L' || c == 'N' || c == 'O' || c == 'P' || c == 'R' ||
+         c == 'U' || c == 'd' || c == ':' || c == '.' || c == ' ';
+}
+
+// Each glyph column pre-scaled to display pixels: bit n is pixel row n of a
+// SCALE-times-taller column, ready to shift into place and OR into two pages.
+struct Glyph {
+  uint8_t columns = 3;
+  uint16_t column[3] = {};
+};
+struct GlyphTable {
+  Glyph glyph[128] = {};
+};
+constexpr GlyphTable build_glyphs() {
+  GlyphTable table;
+  for (unsigned c = 0; c < 128; ++c) {
+    if (!supported(c))
+      continue;
+    Glyph &out = table.glyph[c];
+    out.columns = static_cast<uint8_t>(glyph_columns(static_cast<char>(c)));
+    unsigned first = out.columns == 1 ? 1 : 0;
+    uint16_t pixels = character(static_cast<char>(c));
+    for (unsigned col = 0; col < out.columns; ++col)
+      for (unsigned row = 0; row < 5; ++row)
+        if (pixels & (1u << (14 - row * 3 - first - col)))
           for (unsigned dy = 0; dy < SCALE; ++dy)
-            for (unsigned dx = 0; dx < SCALE; ++dx) {
-              unsigned py = y + row * SCALE + dy;
-              pixels[(py / 8) * stride + x + col * SCALE + dx] |=
-                  static_cast<uint8_t>(1u << (py % 8));
-            }
-    x += (columns + 1) * SCALE;
+            out.column[col] |= static_cast<uint16_t>(1u << (row * SCALE + dy));
+  }
+  return table;
+}
+// RAM-resident: drawing never waits on an XIP cache miss.
+constexpr GlyphTable GLYPHS __not_in_flash("oled_glyphs") = build_glyphs();
+
+// Draws scale-2 3x5 glyphs into a page-organized bitmap `stride` columns wide.
+void __not_in_flash_func(draw_text)(uint8_t *pixels, unsigned stride,
+                                    [[maybe_unused]] unsigned rows, unsigned x,
+                                    unsigned y, const char *value) {
+  const unsigned shift = y % 8;
+  assert(shift + 5 * SCALE <= 16);  // The glyph spans two pages.
+  uint8_t *low = pixels + (y / 8) * stride;
+  uint8_t *high = low + stride;
+  for (; *value; ++value) {
+    const Glyph &glyph = GLYPHS.glyph[static_cast<uint8_t>(*value) & 0x7f];
+    assert(x + glyph.columns * SCALE <= stride && y + 5 * SCALE <= rows);
+    for (unsigned col = 0; col < glyph.columns; ++col) {
+      uint32_t bits = static_cast<uint32_t>(glyph.column[col]) << shift;
+      uint8_t lower = static_cast<uint8_t>(bits);
+      uint8_t upper = static_cast<uint8_t>(bits >> 8);
+      for (unsigned dx = 0; dx < SCALE; ++dx, ++x) {
+        low[x] |= lower;
+        if (upper)
+          high[x] |= upper;
+      }
+    }
+    x += SCALE;
   }
 }
 
@@ -127,10 +179,25 @@ void text(unsigned y, const char *value, unsigned x = 0) {
   draw_text(framebuffer, WIDTH, PAGES * 8, x, y, value);
 }
 
-void clear_field(unsigned y) {
-  for (unsigned row = y; row < y + FIELD_ROWS; ++row)
-    for (unsigned x = 0; x < WIDTH; ++x)
-      framebuffer[(row / 8) * WIDTH + x] &= ~(1u << (row % 8));
+// Clears the field's rows with one masked pass per page, four columns at a time.
+void __not_in_flash_func(clear_field)(unsigned y) {
+  for (unsigned p = y / 8; p <= (y + FIELD_ROWS - 1) / 8; ++p) {
+    unsigned low = p * 8 > y ? 0 : y - p * 8;
+    unsigned high = y + FIELD_ROWS - p * 8 < 8 ? y + FIELD_ROWS - p * 8 : 8;
+    uint32_t mask = ((1u << high) - 1) & ~((1u << low) - 1);
+    uint8_t *row = framebuffer + p * WIDTH;
+    if (mask == 0xff) {
+      memset(row, 0, WIDTH);
+      continue;
+    }
+    uint32_t keep = ~(mask * 0x01010101u);
+    for (unsigned x = 0; x < WIDTH; x += 4) {
+      uint32_t word;
+      memcpy(&word, row + x, 4);
+      word &= keep;
+      memcpy(row + x, &word, 4);
+    }
+  }
 }
 
 constexpr unsigned UPTIME_PAGE = UPTIME_Y / 8;
@@ -139,7 +206,7 @@ static_assert(text_width("U: 99999999d 23:59") <= WIDTH);
 static_assert(text_width("999999999d 23:59") <= WIDTH);
 
 // Sets or clears one 2x2 dot in rows 30-31 without touching other bits.
-void set_dot(unsigned column, bool on) {
+void __not_in_flash_func(set_dot)(unsigned column, bool on) {
   for (unsigned x = column; x < column + 2; ++x) {
     if (on)
       framebuffer[3 * WIDTH + x] |= HEARTBEAT_BITS;
@@ -148,8 +215,93 @@ void set_dot(unsigned column, bool on) {
   }
 }
 
+// Appends `value` in decimal, zero-padded to `digits`; returns the end.
+char *__not_in_flash_func(put_number)(char *out, uint32_t value, unsigned digits) {
+  char reversed[10];
+  unsigned count = 0;
+  do {
+    reversed[count++] = static_cast<char>('0' + value % 10);
+    value /= 10;
+  } while (value);
+  for (; digits > count; --digits)
+    *out++ = '0';
+  while (count)
+    *out++ = reversed[--count];
+  return out;
+}
+
+char *__not_in_flash_func(put_text)(char *out, const char *value) {
+  while (*value)
+    *out++ = *value++;
+  return out;
+}
+
+// "U: HH:MM", or "U: Dd HH:MM" from one day, dropping the label only when
+// nine day digits need its space. `out` holds at least 24 characters.
+void __not_in_flash_func(format_uptime)(char *out, uint64_t minutes_total) {
+  // Hours exceed 32 bits only past 2^32 minutes, so the 64-bit divides stay
+  // off the usual path.
+  uint32_t days, hours, minutes;
+  if (minutes_total <= UINT32_MAX) {
+    uint32_t total = static_cast<uint32_t>(minutes_total);
+    hours = total / 60;
+    minutes = total % 60;
+    days = hours / 24;
+    hours %= 24;
+  } else {
+    uint64_t total_hours = minutes_total / 60;
+    minutes = static_cast<uint32_t>(minutes_total - total_hours * 60);
+    days = static_cast<uint32_t>(total_hours / 24);
+    hours = static_cast<uint32_t>(total_hours - uint64_t{days} * 24);
+  }
+  char *end = put_text(out, "U: ");
+  if (days) {
+    end = put_number(end, days, 1);
+    *end++ = 'd';
+    *end++ = ' ';
+  }
+  end = put_number(end, hours, 2);
+  *end++ = ':';
+  end = put_number(end, minutes, 2);
+  *end = '\0';
+  if (days && text_width(out) > WIDTH)
+    memmove(out, out + 3, static_cast<size_t>(end - out) - 2);
+}
+
+// Column of the first / last byte that differs between two pages, found four
+// bytes at a time. Callers know the pages differ.
+unsigned __not_in_flash_func(first_difference)(const uint8_t *a, const uint8_t *b) {
+  unsigned i = 0;
+  for (; i < WIDTH; i += 4) {
+    uint32_t x, y;
+    memcpy(&x, a + i, 4);
+    memcpy(&y, b + i, 4);
+    if (x != y)
+      break;
+  }
+  if (i == WIDTH)
+    return WIDTH;
+  while (a[i] == b[i])
+    ++i;
+  return i;
+}
+
+unsigned __not_in_flash_func(last_difference)(const uint8_t *a, const uint8_t *b) {
+  unsigned i = WIDTH;
+  for (; i >= 4; i -= 4) {
+    uint32_t x, y;
+    memcpy(&x, a + i - 4, 4);
+    memcpy(&y, b + i - 4, 4);
+    if (x != y)
+      break;
+  }
+  while (i && a[i - 1] == b[i - 1])
+    --i;
+  return i - 1;
+}
+
 // Redraws only fields whose text changed; unchanged pages are not compared.
-void render(uint64_t now_us) {
+void __not_in_flash_func(render)() {
   uint8_t changed_pages = valid_pages == ALL_PAGES ? 0 : ALL_PAGES;
   // The lock-free counter skips the address lock and copy while it is unchanged.
   uint32_t generation = z80_io_ports_network_address_generation();
@@ -161,33 +313,21 @@ void render(uint64_t now_us) {
     const char *ip_text = address_error ? "ERROR" : (ip_length ? ip : "OFFLINE");
     if (!ip_valid || strcmp(cached_ip, ip_text) != 0) {
       char line[24];
-      snprintf(line, sizeof(line), "IP: %s", ip_text);
+      put_text(put_text(line, "IP: "), ip_text)[0] = '\0';
       clear_field(IP_Y);
       text(IP_Y, line);
-      snprintf(cached_ip, sizeof(cached_ip), "%s", ip_text);
+      strncpy(cached_ip, ip_text, sizeof(cached_ip) - 1);
+      cached_ip[sizeof(cached_ip) - 1] = '\0';
       ip_valid = true;
       changed_pages |= 0x03;
     }
   }
-  uint64_t seconds = now_us / 1'000'000;
-  if (seconds / 60 != uptime_minute) {
+  if (clock_minute != uptime_minute) {
     char uptime[32];
-    uint64_t hours = seconds / 3600;
-    unsigned minutes = static_cast<unsigned>((seconds / 60) % 60);
-    // Drop the label only when nine day digits need its space.
-    if (hours < 24) {
-      snprintf(uptime, sizeof(uptime), "U: %02u:%02u",
-               static_cast<unsigned>(hours), minutes);
-    } else {
-      auto days = static_cast<unsigned long long>(hours / 24);
-      auto hour = static_cast<unsigned>(hours % 24);
-      snprintf(uptime, sizeof(uptime), "U: %llud %02u:%02u", days, hour, minutes);
-      if (text_width(uptime) > WIDTH)
-        snprintf(uptime, sizeof(uptime), "%llud %02u:%02u", days, hour, minutes);
-    }
+    format_uptime(uptime, clock_minute);
     clear_field(UPTIME_Y);
     text(UPTIME_Y, uptime);
-    uptime_minute = seconds / 60;
+    uptime_minute = clock_minute;
     changed_pages |= 0x0c;
   }
   bool dot = (seconds & 1u) != 0;
@@ -202,34 +342,37 @@ void render(uint64_t now_us) {
   set_dot(HEARTBEAT_COLUMN, heartbeat);
   set_dot(WEB_DOT_COLUMN, web_dot);
   dirty_pages = 0;
-  for (unsigned p = 0; p < PAGES; ++p)
-    if ((changed_pages & (1u << p)) &&
-        (!(valid_pages & (1u << p)) ||
-         memcmp(framebuffer + p * WIDTH, confirmed + p * WIDTH, WIDTH) != 0))
-      dirty_pages |= 1u << p;
+  for (unsigned p = 0; p < PAGES; ++p) {
+    if (!(changed_pages & (1u << p)))
+      continue;
+    const uint8_t *drawn = framebuffer + p * WIDTH;
+    const uint8_t *shown = confirmed + p * WIDTH;
+    if (!(valid_pages & (1u << p))) {
+      diff_first[p] = 0;
+      diff_last[p] = WIDTH - 1;
+    } else {
+      unsigned first = first_difference(drawn, shown);
+      if (first == WIDTH)
+        continue;
+      diff_first[p] = static_cast<uint8_t>(first);
+      diff_last[p] = static_cast<uint8_t>(last_difference(drawn, shown));
+    }
+    dirty_pages |= 1u << p;
+  }
 }
 
-void next_page() {
+void __not_in_flash_func(next_page)() {
   if (dirty_pages == 0) {
     state = enabled ? State::ready : State::enable;
     return;
   }
   for (page = 0; !(dirty_pages & (1u << page)); ++page) {}
-  first_column = 0;
-  unsigned last_column = WIDTH - 1;
-  if (valid_pages & (1u << page)) {
-    while (framebuffer[page * WIDTH + first_column] ==
-           confirmed[page * WIDTH + first_column])
-      ++first_column;
-    while (framebuffer[page * WIDTH + last_column] ==
-           confirmed[page * WIDTH + last_column])
-      --last_column;
-  }
-  column_count = last_column - first_column + 1;
+  first_column = diff_first[page];
+  column_count = diff_last[page] - first_column + 1;
   state = State::page;
 }
 
-void service(bool updates_allowed) {
+void __not_in_flash_func(service)(bool updates_allowed) {
   if (transfer_active) {
     auto result = display_i2c::poll();
     if (result == display_i2c::Result::pending)
@@ -274,15 +417,31 @@ void service(bool updates_allowed) {
     state = State::scanning;
   if (state == State::ready) {
     uint64_t now_us = z80_time_us_64();
-    if (now_us < next_tick_us)
+    if (now_us < next_tick_us) {
+      gate_open = true;
       return;
-    render(now_us);
+    }
     // One tick per uptime second: heartbeat toggle, IP check; uptime text per minute.
-    next_tick_us = (now_us / 1'000'000 + 1) * 1'000'000;
+    if (clock_started && now_us - next_tick_us < 1'000'000) {
+      ++seconds;
+      next_tick_us += 1'000'000;
+      if (++second_in_minute == 60) {
+        second_in_minute = 0;
+        ++clock_minute;
+      }
+    } else {
+      seconds = now_us / 1'000'000;
+      clock_minute = seconds / 60;
+      second_in_minute = static_cast<uint8_t>(seconds % 60);
+      next_tick_us = (seconds + 1) * 1'000'000;
+      clock_started = true;
+    }
+    gate_open = true;
+    render();
     next_page();
   }
   if (state == State::scanning) {
-    transfer_active = display_i2c::begin(address, nullptr, 0);
+    transfer_active = display_i2c::begin(address, nullptr, 0, kBusSpeed);
   } else if (state == State::initialize) {
     // SSD1315 128x32 with internal charge pump; the panel stays off until all
     // four RAM pages have confirmed contents.
@@ -291,20 +450,22 @@ void service(bool updates_allowed) {
         0x8d, 0x14, 0x20, 0x02, 0xa1, 0xc8, 0xda, 0x02, 0x81, CONTRAST,
         0xd9, 0xf1, 0xdb, 0x20, 0xa4, 0xa6,
     };
-    transfer_active = display_i2c::begin(address, setup, sizeof(setup));
+    transfer_active = display_i2c::begin(address, setup, sizeof(setup), kBusSpeed);
   } else if (state == State::page) {
     // Co=1 control bytes carry page/column commands, then 0x40 starts pixel data.
-    uint8_t data[display_i2c::MAX_DATA_BYTES] = {
-        0x80, static_cast<uint8_t>(0xb0 | page),
-        0x80, static_cast<uint8_t>(first_column & 0xf),
-        0x80, static_cast<uint8_t>(0x10 | (first_column >> 4)),
-        0x40,
-    };
+    uint8_t data[display_i2c::MAX_DATA_BYTES];
+    data[0] = 0x80;
+    data[1] = static_cast<uint8_t>(0xb0 | page);
+    data[2] = 0x80;
+    data[3] = static_cast<uint8_t>(first_column & 0xf);
+    data[4] = 0x80;
+    data[5] = static_cast<uint8_t>(0x10 | (first_column >> 4));
+    data[6] = 0x40;
     memcpy(data + 7, framebuffer + page * WIDTH + first_column, column_count);
-    transfer_active = display_i2c::begin(address, data, column_count + 7u);
+    transfer_active = display_i2c::begin(address, data, column_count + 7u, kBusSpeed);
   } else if (state == State::enable) {
     constexpr uint8_t command[] = {0x00, 0xaf};
-    transfer_active = display_i2c::begin(address, command, sizeof(command));
+    transfer_active = display_i2c::begin(address, command, sizeof(command), kBusSpeed);
   }
   // Other bus users have already been excluded above.
   if (!transfer_active && state != State::ready) {
@@ -313,13 +474,23 @@ void service(bool updates_allowed) {
   }
 }
 
-void publish(bool updates_allowed) {
-  // Idle fast path, taken on almost every core-1 pass: nothing in flight and
-  // no tick due, so nothing changes and the published status stays valid.
-  if (state == State::failed ||
-      (state == State::ready && !transfer_active &&
-       (!updates_allowed || z80_time_us_64() < next_tick_us)))
+void __not_in_flash_func(publish)(bool updates_allowed) {
+  // Idle fast path, taken on almost every core-0 pass: nothing in flight and
+  // no tick due, so nothing changes and the published status stays valid. The
+  // 32-bit compare is valid only while the timer has not wrapped since
+  // gate_open was set, so pausing updates closes the gate.
+  if (state == State::failed)
     return;
+  if (!updates_allowed) {
+    gate_open = false;
+    if (state == State::ready && !transfer_active)
+      return;
+  } else if (gate_open && state == State::ready && !transfer_active &&
+             static_cast<int32_t>(z80_time_us_32() -
+                                  static_cast<uint32_t>(next_tick_us)) < 0) {
+    return;
+  }
+  uint32_t start = z80_cycle_count();
   service(updates_allowed);
   uint32_t snapshot = static_cast<uint32_t>(state) |
                       (static_cast<uint32_t>(address) << 8) |
@@ -330,6 +501,7 @@ void publish(bool updates_allowed) {
     last_published_status = snapshot;
     __atomic_store_n(&published_status, snapshot, __ATOMIC_RELEASE);
   }
+  z80_cycle_stats_add(&cpu_stats, z80_cycle_count() - start);
 }
 
 void print_status() {
@@ -341,11 +513,15 @@ void print_status() {
   auto display_state = static_cast<State>(snapshot & 0xff);
   auto reason = static_cast<Failure>((snapshot >> 16) & 0xff);
   auto bus_reason = static_cast<display_i2c::Failure>((snapshot >> 24) & 0xf);
+  uint32_t passes, max_cycles;
+  z80_cycle_stats_take(&cpu_stats, &passes, &max_cycles);
   printf("[oled] driver=SSD1315 128x32 transport=PIO_I2C_DMA SCL=GP%u SDA=GP%u "
-         "state=%s address=0x%02x ip_check_ms=1000 uptime_interval_ms=60000 heartbeat_ms=1000\n",
+         "state=%s address=0x%02x ip_check_ms=1000 uptime_interval_ms=60000 heartbeat_ms=1000 "
+         "cpu_passes=%lu cpu_max_cycles=%lu\n",
          display_i2c::PIN_SCL, display_i2c::PIN_SDA,
          states[static_cast<unsigned>(display_state)],
-         static_cast<unsigned>((snapshot >> 8) & 0xff));
+         static_cast<unsigned>((snapshot >> 8) & 0xff),
+         static_cast<unsigned long>(passes), static_cast<unsigned long>(max_cycles));
   if (display_state == State::failed) {
     constexpr const char *reasons[] = {
         "none", "no OLED ACK at 0x3c or 0x3d", "SSD1315 write was not acknowledged",
@@ -361,7 +537,7 @@ void print_status() {
 }
 }
 
-extern "C" void z80_oled_core1_service(bool updates_allowed) {
+extern "C" void __not_in_flash_func(z80_oled_service)(bool updates_allowed) {
   oled_display::publish(updates_allowed);
 }
 

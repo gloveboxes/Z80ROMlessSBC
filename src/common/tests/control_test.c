@@ -67,6 +67,11 @@ void gpio_put(uint pin, bool value) {
     }
   }
 }
+static unsigned bus_wait_calls;
+static void bus_wait_hook(void) {
+  if (++bus_wait_calls == 3)
+    levels[PIN_BUSACK_N] = false;
+}
 bool gpio_get(uint pin) {
   if (pin == PIN_IORQ_N || pin == PIN_RD_N || pin == PIN_WR_N)
     ++individual_control_reads;
@@ -322,7 +327,11 @@ int main(void) {
   }
   fixture();
   assert(!z80_cpu_request_bus(10) && levels[PIN_BUSREQ_N]);
-  levels[PIN_BUSACK_N] = false;
+  // The waiting core keeps servicing I/O, e.g. a deferred IN reply, until BUSACK.
+  bus_wait_calls = 0;
+  z80_cpu_set_bus_wait_hook(bus_wait_hook);
+  assert(z80_cpu_request_bus(10) && bus_wait_calls == 3);
+  z80_cpu_set_bus_wait_hook(NULL);
   assert(z80_cpu_request_bus(10));
   assert(!z80_cpu_release_bus(10));
   assert(!levels[PIN_RESET_N] && !running);

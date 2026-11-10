@@ -31,6 +31,12 @@ static inline uint32_t z80_cycle_count(void) {
   return m33_hw->dwt_cyccnt;
 }
 
+/* One register read. Only valid for deadlines less than 35 minutes away,
+ * compared as a signed difference. */
+static inline uint32_t z80_time_us_32(void) {
+  return timer_hw->timerawl;
+}
+
 static inline uint64_t z80_time_us_64(void) {
   uint32_t high = timer_hw->timerawh;
   uint32_t low;
@@ -45,6 +51,7 @@ static inline uint64_t z80_time_us_64(void) {
 }
 #else
 #define z80_time_us_64() time_us_64()
+#define z80_time_us_32() ((uint32_t)time_us_64())
 #define z80_cycle_counter_enable() true
 /* Host fakes advance time_us_64; model 120 cycles per microsecond. */
 #define z80_cycle_count() ((uint32_t)(time_us_64() * 120u))

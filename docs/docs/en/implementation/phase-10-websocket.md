@@ -204,8 +204,22 @@ sends only the heartbeat: one 9-byte transaction
 carrying **two pixel-data bytes** (13 bytes carrying six when the web-terminal
 dot also changes). The dots sit in rows 30-31, below the
 uptime field, and change only their own pixel bits. When a page completes, the next page
-starts in the same core-1 pass. All display work runs on core 1; nothing is
-added to core 0 or the Z80 bus path.
+starts in the same core-0 pass. Core 0 owns the I2C bus, so display work never
+waits on network or flash work; it adds only a bounded check to the main loop
+and no work to the Z80 I/O path.
+
+The service code is kept short on core 0. The display and I2C service paths run
+from RAM, so an XIP cache miss never lengthens a pass. An idle pass makes one
+32-bit timer read (the speaker makes none) and returns. Glyphs are pre-scaled
+column masks that are shifted and OR-ed into two pages, fields clear with masked
+word writes, and numbers are formatted by hand. Uptime counts ticks, so the
+64-bit division runs only when the clock resynchronises. A page's changed
+column range is found once, four bytes at a time, when it is rendered. The I2C
+transfer configures its DMA channels once, starts with four register writes,
+checks only the RX channel and verifies every ACK with one OR-accumulated word.
+**Ctrl-] s** reports `cpu_passes` and `cpu_max_cycles` on the `[oled]` and
+`[speaker]` lines: the count and worst-case cycles of passes that did work since
+the previous report, at 120 cycles per microsecond.
 
 Every display write, from the address scan through page data, is asynchronous:
 it starts the transmit and receive DMA channels and returns, and a later pass
@@ -234,15 +248,16 @@ and failures without periodic terminal logging.
 
     A display NACK disables the OLED and records the error. Unavailable PIO/DMA
     resources, missing ACK/STOP results, or a DMA timeout also release the
-    state machine, DMA channels and pins. The timeout is 5 ms plus 30 us per
-    byte at 400 kHz or 120 us at 100 kHz, allowing a full 135-byte page
-    transaction at 400 kHz.
+    state machine, DMA channels and pins. The timeout is 5 ms plus 120 us per
+    byte, several times the 400 kHz byte time, so slave clock stretching and a full
+    135-byte page transaction fit.
     No Z80 bus GPIO or core-0 handshake is used.
 
     [display_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.pio)
-    uses open-drain pins with clock stretching, at 400 kHz for the OLED and
-    100 kHz for the speaker. Each data bit uses seven PIO cycles LOW and five HIGH,
-    giving nominal 1.46 us LOW and 1.04 us HIGH. Verify rise time at the
+    uses open-drain pins with clock stretching. Each transfer sets its own rate (100 kHz or 400 kHz); the OLED and
+    the speaker both use 400 kHz. Each data bit uses seven PIO cycles LOW and five HIGH,
+    giving nominal 5.83 us LOW and 4.17 us HIGH at 100 kHz and 1.46 us LOW and
+    1.04 us HIGH at 400 kHz. Verify rise time at the
     module is at most 300 ns with the fitted pull-ups and wiring.
 
     ```sh
@@ -301,23 +316,34 @@ external +5 V first and USB second; disconnect USB first.
 The [speaker bridge](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/speaker_io.cpp)
 implements [port `0x15`](../system/io-ports.md#speaker-port) with unchanged
 DXSVC packets. Core 0 collects bounded packets and reads latched RAM snapshots.
-Core 1 owns every I2C operation, after disk service, and checks that commands
-execute before releasing a waiting Z80 IN. PIO keeps WAIT asserted while
-the deferred reply is outstanding; neither core spins for the other.
+Core 0 owns every I2C operation, for the speaker and the OLED. Commands are
+fire and forget: each is written once, with no read-back, retry or fault, and
+writes are paced 500 µs apart because the ATtiny85 has a single command slot.
+A command it refuses (NACK) or that finds the bridge queue full is dropped and
+counted. A status request reads the device, re-reading while a command is still
+pending, and releases the waiting Z80 IN with that status. The transfers are PIO and
+DMA, so core 0 never blocks on them, and core 1's network and flash work cannot
+delay a deferred reply. PIO keeps WAIT asserted while the reply is outstanding. A reply
+still outstanding after 100 ms is released with an invalid status and sound is
+disabled with a `[speaker] FAIL: bridge service stalled` message, well inside
+the 500 ms I/O watchdog.
 
 The bus uses one shared PIO0 state machine and TX/RX DMA pair, with no IRQ
 flags. Its 26 instructions fit beside the four-instruction Z80 clock.
-Speaker transfers run at 100 kHz with slave clock stretching; OLED writes
-run at 400 kHz. Each service consumes only its own transfer completion,
+OLED and speaker transfers both run at 400 kHz with slave clock stretching. Each service consumes only its own transfer completion,
 and bus buffers remain owned through STOP. Pending speaker work drains
-before flash-pause acknowledgement. No device scan or periodic sound poll
+before a stop is accepted. Core 0 keeps servicing the speaker and the
+deferred IN reply while it waits for BUSACK; without that, a disk flush could
+wait on a Z80 cycle held for a reply that nothing was completing. A flush
+that locks core 0 out extends the transfer's deadline by the time lost. No device scan or periodic sound poll
 runs when sound is unused; a missing speaker does not prevent CP/M or OLED use.
 
 Build the Phase 10 target, then use the normal authorized firmware and disk
 deployment procedures. `B:SOUND` exercises all primitives, 63 presets and
 feedback through the same SDK used in the emulator. **Ctrl-] s** reports
-speaker fault and transfer counts. A transport/queue failure disables sound
-with an explicit diagnostic; restart firmware after correcting the fault.
+speaker fault, transfer and dropped-command counts. A bus failure, protocol
+mismatch or stalled bridge disables sound with an explicit diagnostic; restart
+firmware after correcting the fault.
 
 Native tests execute the PIO instructions (read ACK/NACK, timing and clock
 stretching), exercise bridge packets against the real ATtiny85 engine, and

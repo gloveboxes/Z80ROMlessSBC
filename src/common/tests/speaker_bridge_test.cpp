@@ -14,23 +14,24 @@ static uint8_t *bus_destination;
 static size_t bus_length;
 static std::vector<uint8_t> bus_packet;
 static display_i2c::Result bus_result;
-static unsigned reads, writes, pending_reads;
+static unsigned reads, writes, pending_reads, nacks_remaining;
 static bool wrong_version, never_execute;
 
-uint64_t time_us_64() { return now; }
+uint64_t time_reads;
+uint64_t time_us_64() { ++time_reads; return now; }
 
 namespace display_i2c {
 bool busy() { return bus_busy; }
-bool begin(uint8_t address, const uint8_t *data, size_t length, uint32_t baud) {
-  assert(address == ATTINY85_I2C_ADDRESS && baud == 100000 && !bus_busy);
+bool begin(uint8_t address, const uint8_t *data, size_t length, Speed speed) {
+  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy && speed == Speed::fast);
   bus_packet.assign(data, data + length);
   bus_busy = true;
   bus_read = false;
   ++writes;
   return true;
 }
-bool begin_read(uint8_t address, uint8_t *data, size_t length, uint32_t baud) {
-  assert(address == ATTINY85_I2C_ADDRESS && baud == 100000 && !bus_busy);
+bool begin_read(uint8_t address, uint8_t *data, size_t length, Speed speed) {
+  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy && speed == Speed::fast);
   assert(length == STATUS_BYTES);
   bus_destination = data;
   bus_length = length;
@@ -45,6 +46,10 @@ Result poll() {
   bus_busy = false;
   if (bus_result != Result::complete)
     return bus_result;
+  if (nacks_remaining) {
+    --nacks_remaining;
+    return Result::nack;
+  }
   if (!bus_read) {
     speaker_io_input();
     for (uint8_t byte : bus_packet)
@@ -71,18 +76,21 @@ static void reset() {
   cursor = STATUS_BYTES;
   discarding = latch = disabled = false;
   state = State::idle;
+  dropped = 0;
+  reported = deferring = false;
+  deferred_since = stall_state = stall_backlog = last_service = 0;
   memset(status, 0, sizeof(status));
   memset(transmit, 0, sizeof(transmit));
-  now = deadline = retry_at = 0;
+  now = deadline = retry_at = next_at = 0;
   bus_busy = bus_read = false;
   bus_result = display_i2c::Result::complete;
-  pending_reads = reads = writes = 0;
+  pending_reads = reads = writes = nacks_remaining = 0;
   wrong_version = never_execute = false;
 }
 
 static void settle() {
   for (unsigned i = 0; i < 1000 && !z80_speaker_quiescent(); ++i) {
-    z80_speaker_core1_service();
+    z80_speaker_service();
     now += 100;
   }
   assert(z80_speaker_quiescent());
@@ -123,7 +131,7 @@ static void test_packets_and_snapshots() {
   assert(z80_speaker_read_ready(0x10));
   pending_reads = 3;
   read_status(data);
-  assert(writes == 1 && reads == 6);
+  assert(writes == 1 && reads == 5);
   assert(data[S_REQUEST_ID] == 1 && data[S_RESULT] == RESULT_ACCEPTED);
   assert(data[S_ACTIVE_ID] == 1 && data[S_PRESET] == PRESET_COIN);
   tick(500);
@@ -230,14 +238,13 @@ static void test_framing_and_bounds() {
     assert(!position && !discarding);
     settle();
   }
-  // Raw bursts are bounded; overflow is explicit and releases deferred reads.
+  // Raw bursts are bounded; an overflowing request is dropped and counted.
   reset();
   for (unsigned i = 0; i < QUEUE_SIZE + 1; ++i)
     z80_speaker_out(0);
-  assert(fault == QUEUE_OVERFLOW && !z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  assert(!fault && dropped == 1 && produced == QUEUE_SIZE);
   settle();
-  assert(disabled && status[S_VERSION] == 0 && status[S_RESULT] == RESULT_INVALID);
-  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  assert(!disabled && dropped == 1 && reads == QUEUE_SIZE);
   reset();
   for (uint8_t id = 1; id <= QUEUE_SIZE; ++id) {
     z80_speaker_out(COMMAND_STOP);
@@ -255,32 +262,105 @@ static void test_framing_and_bounds() {
 
 static void test_failures_and_bus_sharing() {
   uint8_t data[STATUS_BYTES];
-  for (auto result : {display_i2c::Result::nack, display_i2c::Result::failed}) {
-    reset();
-    bus_result = result;
-    z80_speaker_out(0); settle();
-    assert(disabled && fault == (result == display_i2c::Result::nack
-                                 ? DEVICE_NACK : BUS_FAILURE));
-    read_status(data);
-    assert(data[S_VERSION] == 0 && !data[S_ACTIVE_ID]);
+  reset();
+  bus_result = display_i2c::Result::failed;
+  z80_speaker_out(0); settle();
+  assert(disabled && fault == BUS_FAILURE);
+  read_status(data);
+  assert(data[S_VERSION] == 0 && !data[S_ACTIVE_ID]);
+  // A NACKed command is dropped once, never retried, and the speaker stays up.
+  reset(); nacks_remaining = 1;
+  packet_out({COMMAND_STOP, 1}); settle();
+  assert(!fault && !disabled && writes == 1 && dropped == 1);
+  packet_out({COMMAND_STOP, 2});
+  read_status(data);
+  assert(!fault && data[S_REQUEST_ID] == 2 && data[S_RESULT] == RESULT_STOPPED);
+  // A NACKed status read is an invalid status, not a fault.
+  reset(); nacks_remaining = 1;
+  z80_speaker_out(0); settle();
+  assert(!fault && !disabled && dropped == 1 && status[S_RESULT] == RESULT_INVALID);
+  // Writes are paced so the device's single command slot can drain.
+  reset();
+  for (uint8_t id : {1, 2}) {
+    z80_speaker_out(COMMAND_STOP);
+    z80_speaker_out(id);
   }
+  z80_speaker_service();
+  assert(writes == 1);
+  z80_speaker_service(); // Completes the first write.
+  now += 1; z80_speaker_service();
+  assert(writes == 1);
+  now += WRITE_GAP_US; z80_speaker_service();
+  assert(writes == 2);
+  // A request published after fail() released the queue cannot strand an IN.
+  reset(); bus_result = display_i2c::Result::failed;
+  z80_speaker_out(0); settle();
+  assert(disabled);
+  produced = consumed + 1;
+  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT) && z80_speaker_quiescent());
+  // Core 0 is locked out during a disk flush; that time is not the device's.
+  reset(); pending_reads = 1; now = 1000;
+  z80_speaker_out(0);
+  for (unsigned i = 0; i < 20 && state != State::execute; ++i) {
+    z80_speaker_service();
+    now += 100;
+  }
+  assert(state == State::execute);
+  now += 300000;
+  settle();
+  assert(!fault && !disabled && !reported);
   reset(); wrong_version = true;
   z80_speaker_out(0); settle();
   assert(disabled && fault == PROTOCOL_MISMATCH);
+  // A device that stays busy past the deadline still returns its status.
   reset(); never_execute = true;
-  packet_out({COMMAND_STOP, 1}); settle();
-  assert(disabled && fault == EXECUTION_TIMEOUT);
+  z80_speaker_out(0); settle();
+  assert(!fault && !disabled && (status[S_FLAGS] & STATUS_COMMAND_PENDING));
+  // A bridge that cannot answer releases the deferred IN well before the 500 ms
+  // I/O watchdog, and a transfer left in flight is finished by core 1.
+  reset();
+  z80_speaker_out(0);
+  z80_speaker_service();
+  assert(bus_busy && !z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  now += DEFERRAL_LIMIT_US - 1;
+  assert(!z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  now += 1;
+  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT) && disabled && fault == SERVICE_STALL);
+  assert(status[S_RESULT] == RESULT_INVALID && z80_speaker_quiescent());
+  bus_result = display_i2c::Result::pending;
+  z80_speaker_service();
+  assert(bus_busy && state == State::read && reported);
+  bus_result = display_i2c::Result::complete;
+  z80_speaker_service();
+  assert(!bus_busy && state == State::idle);
   reset();
   bus_busy = true; // OLED owns the bus; speaker must yield without polling it.
   z80_speaker_out(0);
-  for (unsigned i = 0; i < 10; ++i) z80_speaker_core1_service();
+  for (unsigned i = 0; i < 10; ++i) z80_speaker_service();
   assert(!reads && state == State::idle);
   bus_busy = false;
   settle();
   assert(reads == 1 && !fault);
 }
 
+// An idle bridge with an empty queue costs no timer read, and a disabled one
+// stops after reporting.
+static void test_idle_pass_is_free() {
+  reset();
+  time_reads = 0;
+  for (unsigned i = 0; i < 100; ++i) z80_speaker_service();
+  assert(time_reads == 0 && reads == 0 && writes == 0);
+  packet_out({COMMAND_PLAY, 1, 2, 0, 100, 100, FX_PRESET, PRESET_COIN});
+  z80_speaker_service();
+  assert(time_reads > 0 && writes == 1);
+  settle();
+  time_reads = 0;
+  z80_speaker_service();
+  assert(time_reads == 0);
+}
+
 int main() {
+  test_idle_pass_is_free();
   test_packets_and_snapshots();
   test_presets_and_controls();
   test_manual_effects();

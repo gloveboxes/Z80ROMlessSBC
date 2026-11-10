@@ -12,4 +12,7 @@ inline void channel_config_set_transfer_data_size(dma_channel_config *, uint siz
 inline void channel_config_set_read_increment(dma_channel_config *c, bool b) { c->read_increment = b; }
 inline void channel_config_set_write_increment(dma_channel_config *c, bool b) { c->write_increment = b; }
 inline void channel_config_set_dreq(dma_channel_config *c, uint d) { c->dreq = d; }
-void dma_channel_configure(uint, const dma_channel_config *, volatile void *, const volatile void *, uint, bool);
+void dma_channel_set_config(uint, const dma_channel_config *, bool);
+void dma_channel_set_read_addr(uint, const volatile void *, bool);
+void dma_channel_set_write_addr(uint, volatile void *, bool);
+void dma_channel_set_transfer_count(uint, uint32_t, bool);

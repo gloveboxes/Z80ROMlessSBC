@@ -7,6 +7,7 @@
 #include "hardware/pio.h"
 #include "display_i2c.pio.h"
 #include "pico/stdlib.h"
+#include "z80sbc/ram_func.h"
 #include "z80sbc/ram_timer.h"
 
 namespace display_i2c {
@@ -23,7 +24,8 @@ volatile uint32_t results[MAX_DATA_BYTES + 2];
 size_t result_count;
 uint64_t deadline;
 uint8_t *read_data;
-uint32_t current_baud;
+float divider[2];
+Speed current_speed;
 
 void fail(Failure reason) {
   bus_failure = reason;
@@ -65,9 +67,11 @@ bool initialize() {
   sm_config_set_in_pins(&config, PIN_SDA);
   sm_config_set_out_shift(&config, false, false, 32);
   sm_config_set_in_shift(&config, false, false, 32);
-  current_baud = 400000;
-  sm_config_set_clkdiv(&config, static_cast<float>(clock_get_hz(clk_sys)) /
-                                 (current_baud * 12));
+  // 12 PIO cycles per bit.
+  divider[0] = static_cast<float>(clock_get_hz(clk_sys)) / (STANDARD_BAUD * 12);
+  divider[1] = static_cast<float>(clock_get_hz(clk_sys)) / (FAST_BAUD * 12);
+  current_speed = Speed::standard;
+  sm_config_set_clkdiv(&config, divider[0]);
   pio_sm_init(pio, state_machine, offset, &config);
   pio_sm_set_pins_with_mask(pio, state_machine, 0,
                            (1u << PIN_SCL) | (1u << PIN_SDA));
@@ -80,6 +84,22 @@ bool initialize() {
     fail(Failure::dma);
     return false;
   }
+  // Everything that does not change between transfers is written once. A
+  // transfer then needs only its counts and the two start addresses.
+  auto rx = dma_channel_get_default_config(rx_dma);
+  channel_config_set_transfer_data_size(&rx, DMA_SIZE_32);
+  channel_config_set_read_increment(&rx, false);
+  channel_config_set_write_increment(&rx, true);
+  channel_config_set_dreq(&rx, pio_get_dreq(pio, state_machine, false));
+  dma_channel_set_config(rx_dma, &rx, false);
+  dma_channel_set_read_addr(rx_dma, &pio->rxf[state_machine], false);
+  auto tx = dma_channel_get_default_config(tx_dma);
+  channel_config_set_transfer_data_size(&tx, DMA_SIZE_32);
+  channel_config_set_read_increment(&tx, true);
+  channel_config_set_write_increment(&tx, false);
+  channel_config_set_dreq(&tx, pio_get_dreq(pio, state_machine, true));
+  dma_channel_set_config(tx_dma, &tx, false);
+  dma_channel_set_write_addr(tx_dma, &pio->txf[state_machine], false);
   return true;
 }
 
@@ -88,66 +108,68 @@ uint32_t encode(uint8_t byte) {
 }
 }
 
-static bool start(uint8_t address, const uint8_t *data, uint8_t *read,
-                  size_t length, uint32_t baud) {
+static bool __not_in_flash_func(start)(uint8_t address, const uint8_t *data,
+                                       uint8_t *read, size_t length, Speed speed) {
   assert(address < 0x80 && length <= MAX_DATA_BYTES && (data || length == 0));
-  assert(baud == 100000 || baud == 400000);
   if (bus_failure != Failure::none || active)
     return false;
   if (state_machine < 0 && !initialize())
     return false;
-  if (baud != current_baud) {
-    pio_sm_set_clkdiv(pio, state_machine,
-                     static_cast<float>(clock_get_hz(clk_sys)) / (baud * 12));
-    current_baud = baud;
+  // The state machine is stalled between transfers, so the rate can change here.
+  if (speed != current_speed) {
+    pio_sm_set_clkdiv(pio, state_machine, divider[static_cast<unsigned>(speed)]);
+    current_speed = speed;
   }
   read_data = read;
-  commands[0] = 1u << 30;
-  commands[1] = encode(static_cast<uint8_t>((address << 1) | (read ? 1 : 0)));
-  for (size_t i = 0; i < length; ++i)
-    commands[i + 2] = read ? (i + 1 == length ? 0 : 1u << 21) : encode(data[i]);
-  commands[length + 2] = 2u << 30;
+  uint32_t *word = commands;
+  *word++ = 1u << 30;
+  *word++ = encode(static_cast<uint8_t>((address << 1) | (read ? 1 : 0)));
+  if (read) {
+    // ACK every byte but the last.
+    for (size_t i = 1; i < length; ++i)
+      *word++ = 1u << 21;
+    if (length)
+      *word++ = 0;
+  } else {
+    for (size_t i = 0; i < length; ++i)
+      *word++ = encode(data[i]);
+  }
+  *word = 2u << 30;
   result_count = length + 2;
-  for (size_t i = 0; i < result_count; ++i)
-    results[i] = UINT32_MAX;
+  // DMA writes every other result before RX goes idle; the last slot is the
+  // STOP result, so it alone needs a sentinel to certify completion.
+  results[result_count - 1] = UINT32_MAX;
   active = true;
-  deadline = z80_time_us_64() + 5000 + (length + 1) * (baud == 100000 ? 120 : 30);
-  auto rx = dma_channel_get_default_config(rx_dma);
-  channel_config_set_transfer_data_size(&rx, DMA_SIZE_32);
-  channel_config_set_read_increment(&rx, false);
-  channel_config_set_write_increment(&rx, true);
-  channel_config_set_dreq(&rx, pio_get_dreq(pio, state_machine, false));
-  dma_channel_configure(rx_dma, &rx, results, &pio->rxf[state_machine],
-                        result_count, true);
-  auto tx = dma_channel_get_default_config(tx_dma);
-  channel_config_set_transfer_data_size(&tx, DMA_SIZE_32);
-  channel_config_set_read_increment(&tx, true);
-  channel_config_set_write_increment(&tx, false);
-  channel_config_set_dreq(&tx, pio_get_dreq(pio, state_machine, true));
-  dma_channel_configure(tx_dma, &tx, &pio->txf[state_machine], commands,
-                        length + 3, true);
+  deadline = z80_time_us_64() + 5000 + (length + 1) * 120;
+  dma_channel_set_transfer_count(rx_dma, result_count, false);
+  dma_channel_set_write_addr(rx_dma, results, true);
+  dma_channel_set_transfer_count(tx_dma, length + 3, false);
+  dma_channel_set_read_addr(tx_dma, commands, true);
   return true;
 }
 
-bool begin(uint8_t address, const uint8_t *data, size_t length, uint32_t baud) {
-  return start(address, data, nullptr, length, baud);
+bool __not_in_flash_func(begin)(uint8_t address, const uint8_t *data, size_t length,
+                                Speed speed) {
+  return start(address, data, nullptr, length, speed);
 }
 
-bool begin_read(uint8_t address, uint8_t *data, size_t length, uint32_t baud) {
+bool __not_in_flash_func(begin_read)(uint8_t address, uint8_t *data, size_t length,
+                                     Speed speed) {
   assert(data && length);
-  return start(address, data, data, length, baud);
+  return start(address, data, data, length, speed);
 }
 
-bool busy() { return active; }
+bool __not_in_flash_func(busy)() { return active; }
 
-Result poll() {
+Result __not_in_flash_func(poll)() {
   if (bus_failure != Failure::none)
     return Result::failed;
   if (!active)
     return Result::pending;
-  // RX finishes last (it collects the STOP result), so test it first.
-  if (dma_channel_is_busy(rx_dma) || dma_channel_is_busy(tx_dma)) {
-    if (z80_time_us_64() < deadline)
+  // RX finishes last (it collects the STOP result), and TX has been consumed
+  // by then, so RX alone says whether the transfer is still running.
+  if (dma_channel_is_busy(rx_dma)) {
+    if (static_cast<int32_t>(z80_time_us_32() - static_cast<uint32_t>(deadline)) < 0)
       return Result::pending;
     fail(Failure::timeout);
     return Result::failed;
@@ -157,17 +179,22 @@ Result poll() {
     fail(Failure::timeout);
     return Result::failed;
   }
-  bool acknowledged = true;
-  for (size_t i = 0; i + 1 < result_count; ++i) {
-    uint32_t result = results[i];
-    if (result == UINT32_MAX) {
-      fail(Failure::timeout);
-      return Result::failed;
-    }
-    if (!read_data || i == 0)
-      acknowledged &= (result & 1u) == 0;
-    else
-      read_data[i - 1] = static_cast<uint8_t>(result >> 1);
+  // Every genuine result is the nine sampled bits; anything above is a slot
+  // that was never written.
+  uint32_t seen = 0;
+  for (size_t i = 0; i + 1 < result_count; ++i)
+    seen |= results[i];
+  if (seen >> 9) {
+    fail(Failure::timeout);
+    return Result::failed;
+  }
+  bool acknowledged;
+  if (read_data) {
+    acknowledged = (results[0] & 1u) == 0;
+    for (size_t i = 1; i + 1 < result_count; ++i)
+      read_data[i - 1] = static_cast<uint8_t>(results[i] >> 1);
+  } else {
+    acknowledged = (seen & 1u) == 0;
   }
   active = false;
   return acknowledged ? Result::complete : Result::nack;

@@ -572,17 +572,21 @@ every request starts with **IN `0x15`**. Programs use the `snd_*` API in
 [`examples/SOUND`](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SOUND)
 exercises every effect and preset.
 
-Stage 10 collects packets on core 0 without I2C work, allocation or waiting.
-Core 1 sends them at 100 kHz using the shared PIO/DMA transport, then checks
-execution status. An IN waits for prior commands or a requested snapshot by
-deferring the PIO reply; the IRQ handler returns immediately. Subsequent
-snapshot bytes are RAM reads. OUT `0x00` requests fresh status, not a stale
-background cache.
+Stage 10 collects packets in the PIO IRQ handler without I2C work, allocation
+or waiting. The core 0 main loop sends them at 400 kHz using the shared PIO/DMA
+transport, as the OLED on the same bus does. Commands are fire and
+forget: written once, paced 500 µs apart, with no read-back. An IN waits for
+prior commands or a requested snapshot by deferring the PIO reply; the IRQ
+handler returns immediately. Subsequent snapshot bytes are RAM reads. OUT `0x00`
+reads fresh status from the device, not a stale background cache, and waits for
+a command still executing so the status is current.
 
 The fixed bridge queue holds four packets, separate from the ATtiny85's
 two-sound playback queue. The SDK's initial IN serializes requests, so it
-does not fill the bridge queue. Raw clients must do the same. Queue overflow,
-I2C failure, protocol mismatch or a 50 ms command-execution timeout reports
+does not fill the bridge queue. Raw clients must do the same. A command that
+the ATtiny85 refuses, or that arrives with the queue full, is dropped and
+counted in `dropped` on the **Ctrl-] s** `[speaker]` line; it is not retried.
+I2C failure, protocol mismatch or a stalled bridge reports
 `[speaker] FAIL` and disables sound until reboot. Waiting reads are released
 with version 0, idle playback and result 9 (invalid); `snd_init()` fails.
 There is no background polling when sound is unused. Phase 9 leaves this

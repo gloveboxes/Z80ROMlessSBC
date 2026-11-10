@@ -241,12 +241,23 @@ void dma_channel_abort(uint c) { channels[c].busy = false; }
 void dma_channel_unclaim(uint c) { channels[c].claimed = false; }
 bool dma_channel_is_busy(uint c) { return channels[c].busy; }
 uint pio_get_dreq(PIO, uint, bool tx) { return tx ? 1 : 2; }
-void dma_channel_configure(uint c, const dma_channel_config *config,
-                           volatile void *write, const volatile void *read,
-                           uint count, bool start) {
+void dma_channel_set_config(uint c, const dma_channel_config *config, bool start) {
+  assert(!start && !channels[c].busy);
   channels[c].config = *config;
-  channels[c].write = write; channels[c].read = read;
-  channels[c].count = count; channels[c].busy = start;
+}
+void dma_channel_set_transfer_count(uint c, uint32_t count, bool start) {
+  assert(!start && !channels[c].busy);
+  channels[c].count = count;
+}
+void dma_channel_set_read_addr(uint c, const volatile void *read, bool start) {
+  assert(!channels[c].busy);
+  channels[c].read = read;
+  if (start) channels[c].busy = true;
+}
+void dma_channel_set_write_addr(uint c, volatile void *write, bool start) {
+  assert(!channels[c].busy);
+  channels[c].write = write;
+  if (start) channels[c].busy = true;
 }
 static void run_dma(bool stop_result = true) {
   auto &tx = channels[0]; auto &rx = channels[1];
@@ -329,6 +340,10 @@ static void reset() {
   oled_display::valid_pages = oled_display::dirty_pages = 0;
   oled_display::page = oled_display::first_column = oled_display::column_count = 0;
   oled_display::next_tick_us = 0;
+  oled_display::clock_started = oled_display::gate_open = false;
+  oled_display::seconds = oled_display::clock_minute = oled_display::second_in_minute = 0;
+  memset(oled_display::diff_first, 0, sizeof(oled_display::diff_first));
+  memset(oled_display::diff_last, 0, sizeof(oled_display::diff_last));
   oled_display::uptime_minute = UINT64_MAX;
   oled_display::ip_valid = oled_display::heartbeat = oled_display::web_dot = false;
   browser_connected = false;
@@ -345,7 +360,7 @@ static void reset() {
 static void service_once(bool allowed = true) {
   uint64_t before = now;
   uint operations = machine.fifo_operations;
-  z80_oled_core1_service(allowed);
+  z80_oled_service(allowed);
   assert(now - before <= 8);
   assert(machine.fifo_operations == operations);  // DMA feeds the PIO, not the CPU.
 }
@@ -495,6 +510,9 @@ static void test_minute_uptime_and_cached_ip() {
 
   // The longest IPv4 address and a multi-day uptime fit the 128-pixel width.
   set_ip("255.255.255.255");
+  // Core 0 passes never skip more than the 32-bit timer window while updates
+  // run; a pause closes the gate, as this multi-hour jump does.
+  service_once(false);
   now = 100ull * 3600 * 1'000'000; settle();
   assert(strcmp(oled_display::cached_ip, "255.255.255.255") == 0);
   // The longest line ends exactly at the right edge: ink in column 127, not beyond.
@@ -563,28 +581,106 @@ static void assert_uptime_line(const char *expected) {
   assert(memcmp(drawn.data(), oled_display::framebuffer + 2 * 128, drawn.size()) == 0);
 }
 
+// Independent per-pixel reference for the pre-scaled glyph table.
+static void reference_text(uint8_t *pixels, unsigned x, unsigned y, const char *value) {
+  for (; *value; ++value) {
+    uint16_t bits = oled_display::character(*value);
+    bool narrow = *value == '.' || *value == ':';
+    unsigned columns = narrow ? 1 : *value == ' ' ? 0 : 3;
+    for (unsigned row = 0; row < 5; ++row)
+      for (unsigned col = 0; col < columns; ++col) {
+        unsigned source = narrow ? 1 : col;
+        if (!(bits & (1u << (14 - row * 3 - source))))
+          continue;
+        for (unsigned dy = 0; dy < 2; ++dy)
+          for (unsigned dx = 0; dx < 2; ++dx) {
+            unsigned px = x + col * 2 + dx, py = y + row * 2 + dy;
+            pixels[(py / 8) * 128 + px] |= static_cast<uint8_t>(1u << (py % 8));
+          }
+      }
+    x += (columns + 1) * 2;
+  }
+}
+
+static void test_text_matches_reference() {
+  const char *samples[] = {"0123456789", "EFILNOPRUd", "U: 12:34", "IP: 255.255.255.255",
+                           "OFFLINE", "ERROR", "99999999d 23:59"};
+  for (unsigned y : {0u, 2u, 3u, 6u, 8u, 20u})
+    for (unsigned x : {0u, 1u, 5u})
+      for (const char *sample : samples) {
+        if (x + oled_display::text_width(sample) > 128) continue;
+        uint8_t fast[4 * 128] = {}, expected[4 * 128] = {};
+        oled_display::draw_text(fast, 128, 32, x, y, sample);
+        reference_text(expected, x, y, sample);
+        assert(memcmp(fast, expected, sizeof(fast)) == 0);
+      }
+  // clear_field clears exactly its ten rows, whatever the page alignment.
+  memset(oled_display::framebuffer, 0xff, sizeof(oled_display::framebuffer));
+  oled_display::clear_field(oled_display::UPTIME_Y);
+  for (unsigned y = 0; y < 32; ++y) {
+    bool field = y >= oled_display::UPTIME_Y && y < oled_display::UPTIME_Y + 10;
+    for (unsigned x = 0; x < 128; ++x)
+      assert(((oled_display::framebuffer[(y / 8) * 128 + x] >> (y % 8)) & 1) == !field);
+  }
+}
+
+static void test_format_uptime_matches_snprintf() {
+  const uint64_t cases[] = {0, 1, 59, 60, 61, 1439, 1440, 1441, 143999, 4294967295ull,
+                            4294967296ull, 307445734561ull, UINT64_MAX / 60 / 1'000'000};
+  for (uint64_t minutes : cases) {
+    char fast[32], expected[32];
+    oled_display::format_uptime(fast, minutes);
+    unsigned long long hours = minutes / 60, days = hours / 24;
+    if (days)
+      snprintf(expected, sizeof(expected), "U: %llud %02llu:%02llu", days, hours % 24, minutes % 60);
+    else
+      snprintf(expected, sizeof(expected), "U: %02llu:%02llu", hours, minutes % 60);
+    if (days && oled_display::text_width(expected) > 128)
+      memmove(expected, expected + 3, strlen(expected) - 2);
+    assert(strcmp(fast, expected) == 0);
+  }
+}
+
+// Counting ticks must land exactly where dividing the timer would.
+static void test_incremental_clock() {
+  reset(); settle();
+  for (uint64_t second = 1; second <= 3 * 60 + 5; ++second) {
+    now = second * 1'000'000; settle();
+    assert(oled_display::seconds == second);
+    assert(oled_display::clock_minute == second / 60);
+    assert(oled_display::second_in_minute == second % 60);
+    assert(oled_display::next_tick_us == (second + 1) * 1'000'000);
+  }
+  // A skipped tick resynchronises instead of drifting.
+  now = 500'500'000; settle();
+  assert(oled_display::seconds == 500 && oled_display::clock_minute == 8 &&
+         oled_display::second_in_minute == 20);
+}
+
 static void test_uptime_format() {
   constexpr uint64_t hour_us = 3600ull * 1'000'000;
   constexpr uint64_t minute_us = 60ull * 1'000'000;
   reset(); settle();
+  // Jumps beyond the 32-bit timer window follow a pause, which closes the gate.
+  auto jump = [](uint64_t time) { service_once(false); now = time; settle(); };
   assert_uptime_line("U: 00:00");
-  now = 23 * hour_us + 59 * minute_us; settle();
+  jump(23 * hour_us + 59 * minute_us);
   assert_uptime_line("U: 23:59");
-  now = 24 * hour_us; settle();
+  jump(24 * hour_us);
   assert_uptime_line("U: 1d 00:00");
-  now = (4 * 24 + 5) * hour_us + 23 * minute_us; settle();
+  jump((4 * 24 + 5) * hour_us + 23 * minute_us);
   assert_uptime_line("U: 4d 05:23");
-  now = (999ull * 24 + 23) * hour_us + 59 * minute_us; settle();
+  jump((999ull * 24 + 23) * hour_us + 59 * minute_us);
   assert_uptime_line("U: 999d 23:59");
-  now = (1000ull * 24 + 1) * hour_us + 2 * minute_us; settle();
+  jump((1000ull * 24 + 1) * hour_us + 2 * minute_us);
   assert_uptime_line("U: 1000d 01:02");
-  now = (99'999'999ull * 24 + 23) * hour_us + 59 * minute_us; settle();
+  jump((99'999'999ull * 24 + 23) * hour_us + 59 * minute_us);
   assert_uptime_line("U: 99999999d 23:59");
-  now = 100'000'000ull * 24 * hour_us; settle();
+  jump(100'000'000ull * 24 * hour_us);
   assert_uptime_line("100000000d 00:00");
-  now = 123'456'789ull * 24 * hour_us; settle();
+  jump(123'456'789ull * 24 * hour_us);
   assert_uptime_line("123456789d 00:00");
-  now = UINT64_MAX - 2'000'000; settle();
+  jump(UINT64_MAX - 2'000'000);
   assert_uptime_line("213503982d 08:01");
 }
 
@@ -774,11 +870,11 @@ static void test_shared_bus_reads() {
   machine.read_bytes = {0, 0xff, 0x80, 0x01, 0x55, 0xaa};
   machine.stretch_cycles = 20;
   uint8_t data[6] = {};
-  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
+  assert(display_i2c::begin_read(0x42, data, sizeof(data), display_i2c::Speed::fast));
   assert(display_i2c::busy());
   assert(!display_i2c::begin(0x3c, nullptr, 0));
   assert(machine.instructions.size() + 4 <= 32); // Alongside the Z80 clock.
-  assert(machine.config.divider == 100.0f);
+  assert(machine.config.divider == 25.0f);  // Fast-mode: 400 kHz.
   run_dma();
   assert(display_i2c::poll() == display_i2c::Result::complete);
   assert(std::equal(std::begin(data), std::end(data), machine.read_bytes.begin()));
@@ -788,12 +884,12 @@ static void test_shared_bus_reads() {
 
   // An absent speaker NACKs without poisoning the shared OLED bus.
   machine.device_address = 0;
-  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
+  assert(display_i2c::begin_read(0x42, data, sizeof(data), display_i2c::Speed::fast));
   run_dma();
   assert(display_i2c::poll() == display_i2c::Result::nack);
   machine.device_address = 0x3c;
   assert(display_i2c::begin(0x3c, nullptr, 0));
-  assert(machine.config.divider == 25.0f);
+  assert(machine.config.divider == 100.0f);  // The OLED returns to 100 kHz after a fast transfer.
   run_dma();
   assert(display_i2c::poll() == display_i2c::Result::complete);
 
@@ -819,6 +915,9 @@ int main() {
   test_minute_uptime_and_cached_ip();
   test_idle_fast_path();
   test_uptime_format();
+  test_text_matches_reference();
+  test_format_uptime_matches_snprintf();
+  test_incremental_clock();
   test_heartbeat_bits();
   test_web_terminal_dot();
   test_chaining_and_pause();

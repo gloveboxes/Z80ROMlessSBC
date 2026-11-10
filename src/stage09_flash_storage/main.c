@@ -216,12 +216,10 @@ static void core1_service(void) {
         z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
         z80_network_setup_core1_service();
-        z80_speaker_core1_service();
 #endif
         if (z80_flash_disk_quiescent() && z80_io_ports_quiescent()
 #ifdef Z80_STAGE10_NETWORK
             && z80_network_setup_quiescent()
-            && z80_speaker_quiescent()
 #endif
         )
           __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
@@ -232,7 +230,6 @@ static void core1_service(void) {
       z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
       z80_network_setup_core1_service();
-      z80_speaker_core1_service();
 #endif
     }
   }
@@ -245,14 +242,27 @@ static void core1_service(void) {
     else
       z80_network_core1_service();
   }
-  if (active) {
-    uint32_t state = __atomic_load_n(&cpu_state, __ATOMIC_ACQUIRE);
-    z80_oled_core1_service(
-        (state & (CPU_RUNNING | CPU_STOPPING | CPU_LOADING)) == CPU_RUNNING &&
-        !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE));
-  }
 #endif
 }
+
+#ifdef Z80_STAGE10_NETWORK
+// The shared I2C bus (OLED and speaker) is driven only from core 0, so a
+// deferred speaker IN never waits on core 1's network and flash work.
+static bool i2c_updates_allowed(void) {
+  return running && !stop_requested && !loading &&
+         !__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE);
+}
+
+static void core0_i2c_service(bool oled_updates) {
+  z80_speaker_service();
+  z80_oled_service(oled_updates);
+}
+
+static void core0_bus_wait(void) {
+  core0_i2c_service(false);
+  z80_io_trap_drain_writes();
+}
+#endif
 
 static void core1_main(void) {
   bool flash_ready = flash_safe_execute_core_init();
@@ -361,6 +371,9 @@ static void start_cpm(void) {
   z80_io_ports_init();
 #ifdef Z80_STAGE10_NETWORK
   z80_banked_pio_set_read_ready(z80_speaker_read_ready);
+  // Core 0 waiting for BUSACK must keep finishing the speaker transfer that a
+  // deferred IN is waiting for, and retrying that reply.
+  z80_cpu_set_bus_wait_hook(core0_bus_wait);
 #endif
   runtime_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
@@ -972,6 +985,9 @@ static void service_run(void) {
     uint32_t interrupts = save_and_disable_interrupts();
     z80_io_trap_drain_writes();
     bool quiescent = z80_flash_disk_quiescent();
+#ifdef Z80_STAGE10_NETWORK
+    quiescent = quiescent && z80_speaker_quiescent();
+#endif
     if (quiescent)
       hold_cpu();
     restore_interrupts(interrupts);
@@ -1052,8 +1068,13 @@ int main(void) {
   }
   publish_cpu_state();
   while (true) {
-    if (__atomic_load_n(&workers_ready, __ATOMIC_ACQUIRE))
+    if (__atomic_load_n(&workers_ready, __ATOMIC_ACQUIRE)) {
+#ifdef Z80_STAGE10_NETWORK
+      // Before the trap poll, so a finished transfer releases its IN this pass.
+      core0_i2c_service(i2c_updates_allowed());
+#endif
       z80_flash_core0_service();
+    }
     if (core1_started && z80_io_ports_reboot_requested()) {
       hold_cpu();
       watchdog_reboot(0, 0, 0);
