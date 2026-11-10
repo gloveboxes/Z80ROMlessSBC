@@ -6,6 +6,7 @@
 #include "PortDrivers/environment_io.h"
 #include "PortDrivers/host_files_io.h"
 #include "PortDrivers/host_http_io.h"
+#include "PortDrivers/speaker_io.h"
 #include "io_service.h"
 #include "PortDrivers/time_io.h"
 #include "PortDrivers/weather_io.h"
@@ -52,10 +53,13 @@ static uint8_t adapter_input(void *context, uint8_t port)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
     host_http_io_poll();
-    if (port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT)
+    if ((port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT) ||
+        port == IO_TIMER_PORT)
         return z80_io_port_in(port);
     if (sbc_disk_handles_port(port))
         return sbc_disk_input(&adapter->disk, port);
+    if (port == SPEAKER_IO_PORT)
+        return speaker_io_input();
     return io_port_in(port);
 }
 
@@ -63,12 +67,15 @@ static void adapter_output(void *context, uint8_t port, uint8_t data)
 {
     adapter_context_t *adapter = (adapter_context_t *)context;
     host_http_io_poll();
-    if (port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT) {
+    if ((port >= IO_SERVICE_COMMAND_PORT && port <= IO_SERVICE_RESPONSE_PORT) ||
+        port == IO_TIMER_PORT) {
         z80_io_port_out(port, data);
         return;
     }
     if (sbc_disk_handles_port(port))
         sbc_disk_output(&adapter->disk, port, data);
+    else if (port == SPEAKER_IO_PORT)
+        speaker_io_output(data);
     else
         io_port_out(port, data);
 }
@@ -97,6 +104,7 @@ static void adapter_close(void *context)
     if (!s_initialized)
         return;
     interrupt_timer_close();
+    speaker_io_close();
     weather_io_close();
     chat_io_close();
     host_http_io_close();
@@ -154,6 +162,7 @@ int dcc_debug_io_adapter_init(const dcc_debug_io_adapter_config_t *config,
     host_http_io_init();
     chat_io_init();
     weather_io_init();
+    speaker_io_init(SPEAKER_IO_CLOCK_AUDIO);
     time_reset();
     s_initialized = 1;
 

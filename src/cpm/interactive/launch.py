@@ -49,10 +49,27 @@ def find_dcc() -> Path | None:
     return None
 
 
+def find_dxsvc() -> Path | None:
+    common = Path("esp32-altair-8800") / "Apps" / "COMMON"
+    candidates = [os.environ.get("DXSVC_DIR"), root.parent / common,
+                  root.parent / "esp32" / common]
+    for candidate in candidates:
+        if candidate and (Path(candidate) / "DXSVC.C").is_file():
+            return Path(candidate)
+    return None
+
+
 def build_examples(dcc_dir: Path) -> None:
     environment = {**os.environ, "DCC_DIR": str(dcc_dir)}
     dccmake = str(dcc_dir / "dccmake")
-    for name, built, installed in EXAMPLE_BUILDS:
+    builds = list(EXAMPLE_BUILDS)
+    dxsvc_dir = find_dxsvc()
+    if dxsvc_dir is None:
+        print("DXSVC SDK not found (set DXSVC_DIR): using the existing SOUND.COM.")
+    else:
+        environment["DXSVC_DIR"] = str(dxsvc_dir)
+        builds.append(("SOUND", "build/SOUND.COM", "SOUND.COM"))
+    for name, built, installed in builds:
         example = root / "examples" / name
         print(f"+ dccmake {name}", flush=True)
         subprocess.run([dccmake], cwd=example, env=environment, check=True,

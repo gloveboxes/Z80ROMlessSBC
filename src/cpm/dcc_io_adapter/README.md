@@ -12,8 +12,10 @@ input support. The copied Altair sources retain their MIT license in
 
 Shared ports 2/3/4 run HTTP(S) FT group 70h using the production framing,
 mailbox and parser with a native async curl backend when libcurl is available.
-Other shared worker groups return UNAVAILABLE in this adapter. Its host-only
-loader activation byte A5h uses port 21. Local-file transfers use ports 60/61.
+Other shared worker groups return UNAVAILABLE in this adapter. Port 23 runs
+the firmware's independent timers. The host consumes the first A5h written to
+port 21 as loader activation; every later port-21 byte reaches the speaker.
+Local-file transfers use ports 60/61.
 The end-to-end [FT test](../../../docs/docs/en/cpm-dcc/interactive.md#optional-https-file-transfer-test)
 builds the assembly client with CP/M MAC/LOAD and verifies saved disk
 files and MBASIC execution before hardware deployment.
@@ -23,6 +25,22 @@ cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter
 cmake --build build/cpm/dcc_io_adapter
 ctest --test-dir build/cpm/dcc_io_adapter --output-on-failure
 ```
+
+The speaker compiles the Stage 11 ATtiny85 engine
+(`src/stage11_extension_board/flash_ATTiny85/target/main.c`) on the host and
+renders its Timer1 output at 48 kHz through
+[miniaudio](https://miniaud.io) 0.11.26, which CMake downloads with a
+pinned SHA-256. Engine time follows the audio clock. Options:
+
+- `-DZ80SBC_SPEAKER_AUDIO=OFF` builds without audio; the engine runs on wall
+  time and stays silent.
+- `-DMINIAUDIO_HEADER=/path/to/miniaudio.h` uses a local header instead of
+  the download.
+- `Z80SBC_SPEAKER=off` at run time silences an audio build.
+
+If no output device opens, the speaker reports this once on stderr and falls
+back to silent wall time. The `speaker-io` test drives the engine on a manual
+clock to check framing, status, events, pitch accuracy and every preset.
 
 The library is generated as:
 
@@ -42,7 +60,8 @@ the private file when present and otherwise copies the example to
 | Ports | Direction | Function |
 |---|---|---|
 | `0x10`-`0x14` | IN/OUT | SBC native disk command, drive, LBA, and record data |
-| `0x15` | OUT | SBC adapter activation |
+| `0x15` | IN/OUT | Speaker: ATtiny85 sound-engine packets and status |
+| `0x17` | IN/OUT | Independent countdown timers and stopwatches |
 | 24-31, 37-39, 41-44 | OUT | Altair time and timer requests |
 | 24-30 | IN | Altair time and timer values |
 | 45, 48, 49, 70 | OUT | Utility strings and host information |

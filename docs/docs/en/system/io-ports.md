@@ -37,11 +37,11 @@ aliases `0x00` and `0x18` aliases `0x10`. No additional wiring is required.
 | `0x12` | 18 | Disk sector address, low byte | Fixed |
 | `0x13` | 19 | Disk sector address, high byte | Fixed |
 | `0x14` | 20 | Disk data, IN/OUT | Fixed |
-| `0x15` | 21 | Available | Unallocated |
+| `0x15` | 21 | [Speaker sound engine](#speaker-port) packets (OUT) / status (IN) | Stage 10 and host emulator |
 | `0x16` | 22 | Available | Unallocated |
 | `0x17` | 23 | Independent countdown timers and stopwatches, IN/OUT | Implemented |
 
-This assigns or reserves **14 ports**, leaving two available. A port supports
+This assigns or reserves **15 ports**, leaving one available. A port supports
 both IN and OUT, so a command and its status can share one number.
 
 Bank select returns `B4h`/`B5h` when the loader verified banked SRAM, or `00h`
@@ -549,6 +549,48 @@ during parameter collection, or stopwatch over-read returns `0xFF` and
 requires recovery. To recover an unknown state, perform **IN `0x17`,
 then OUT `0x17`, `0x00`**. Multi-byte port-23 operations must not be
 interleaved with other users of that port.
+
+## Speaker port
+
+Port `0x15` carries the Stage 11 ATtiny85 sound-engine I2C command packets
+byte for byte. Stage 10 forwards complete packets to the ATtiny85 on the
+[shared OLED I2C bus](../implementation/phase-10-websocket.md#attiny85-speaker).
+The engine owns
+all timing: a game sends one packet per sound (tone, sweep, siren, sequence,
+segments, pulses, vibrato, arpeggio, gate or one of 63 presets) and keeps
+running.
+
+| Transfer | Meaning |
+| --- | --- |
+| OUT packet bytes | Submit the complete packet; invalid packets are dropped |
+| OUT `0x00` between packets | Latch the 19-byte status |
+| IN | Next latched status byte, then `0xFF`; also aborts a partial packet |
+
+An unknown command or bad count discards OUT bytes until the next IN, so
+every request starts with **IN `0x15`**. Programs use the `snd_*` API in
+[DXSVC](https://github.com/gloveboxes/esp32-altair-8800/tree/main/Apps/COMMON);
+[`examples/SOUND`](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/SOUND)
+exercises every effect and preset.
+
+Stage 10 collects packets on core 0 without I2C work, allocation or waiting.
+Core 1 sends them at 100 kHz using the shared PIO/DMA transport, then checks
+execution status. An IN waits for prior commands or a requested snapshot by
+deferring the PIO reply; the IRQ handler returns immediately. Subsequent
+snapshot bytes are RAM reads. OUT `0x00` requests fresh status, not a stale
+background cache.
+
+The fixed bridge queue holds four packets, separate from the ATtiny85's
+two-sound playback queue. The SDK's initial IN serializes requests, so it
+does not fill the bridge queue. Raw clients must do the same. Queue overflow,
+I2C failure, protocol mismatch or a 50 ms command-execution timeout reports
+`[speaker] FAIL` and disables sound until reboot. Waiting reads are released
+with version 0, idle playback and result 9 (invalid); `snd_init()` fails.
+There is no background polling when sound is unused. Phase 9 leaves this
+port unimplemented.
+
+The host emulator compiles the real ATtiny85 engine and plays its Timer1
+output through miniaudio on macOS, Linux and Windows; set
+`Z80SBC_SPEAKER=off` for silent wall-clock timing.
 
 ## Availability and validation
 

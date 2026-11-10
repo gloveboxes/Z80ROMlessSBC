@@ -34,6 +34,7 @@ bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
 #include "network_setup.h"
 #include "web_terminal.h"
 #include "oled_display.h"
+#include "speaker_io.h"
 #endif
 
 #ifndef Z80_STAGE09_AUTOBOOT
@@ -131,6 +132,10 @@ static uint8_t __not_in_flash_func(virtual_read)(uint8_t port, void *context) {
   case IO_SERVICE_RESPONSE_PORT:
   case IO_TIMER_PORT:
     return z80_io_port_in(port);
+#ifdef Z80_STAGE10_NETWORK
+  case Z80_SPEAKER_PORT:
+    return z80_speaker_in();
+#endif
   default:
     return 0xFF;
   }
@@ -192,6 +197,11 @@ static void __not_in_flash_func(virtual_write)(uint8_t port, uint8_t value,
   case IO_TIMER_PORT:
     z80_io_port_out(port, value);
     break;
+#ifdef Z80_STAGE10_NETWORK
+  case Z80_SPEAKER_PORT:
+    z80_speaker_out(value);
+    break;
+#endif
   default:
     break;
   }
@@ -206,10 +216,12 @@ static void core1_service(void) {
         z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
         z80_network_setup_core1_service();
+        z80_speaker_core1_service();
 #endif
         if (z80_flash_disk_quiescent() && z80_io_ports_quiescent()
 #ifdef Z80_STAGE10_NETWORK
             && z80_network_setup_quiescent()
+            && z80_speaker_quiescent()
 #endif
         )
           __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
@@ -220,6 +232,7 @@ static void core1_service(void) {
       z80_io_ports_core1_service();
 #ifdef Z80_STAGE10_NETWORK
       z80_network_setup_core1_service();
+      z80_speaker_core1_service();
 #endif
     }
   }
@@ -346,6 +359,9 @@ static void start_cpm(void) {
   bios_announced = ccp_announced = false;
   boot_timed_out = false;
   z80_io_ports_init();
+#ifdef Z80_STAGE10_NETWORK
+  z80_banked_pio_set_read_ready(z80_speaker_read_ready);
+#endif
   runtime_started = true;
   if (!z80_io_trap_enable(virtual_read, virtual_write, NULL) ||
       !z80_cpu_release_reset_and_run(RUN_CLOCK_HZ)) {
@@ -452,6 +468,7 @@ static void print_status(bool requested) {
     if (has_address)
       printf("[network] Terminal: http://%s/\n", address);
     z80_oled_print_status();
+    z80_speaker_print_status();
   }
   z80_web_terminal_stats_t web = z80_web_terminal_get_stats();
   printf("[web] retransmits=%lu flush_failures=%lu ack_timeouts=%lu "

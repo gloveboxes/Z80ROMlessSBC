@@ -10,13 +10,14 @@ program_loop:
     jmp x!=y stop_condition
 
 start_condition:
+    wait 1 gpio 26 side 0
     set pindirs, 1 side 0 [5]
     set pindirs, 1 side 1 [2]
     jmp program_loop
 
 stop_condition:
     set pindirs, 1 side 1 [6]
-    nop side 0 [5]
+    wait 1 gpio 26 side 0 [5]
     set pindirs, 0 side 0 [6]
     mov isr, null
     push block
@@ -25,15 +26,15 @@ stop_condition:
 write_byte:
     set x, 7 side 1
 bit_loop:
-    ; 7 cycles LOW, 5 HIGH: Fast-mode tLOW >= 1.3 us at 400 kHz.
+    ; 7 cycles LOW, 5 HIGH, extended by the slave's clock stretching.
     out pindirs, 1 side 1 [2]
-    nop side 0 [4]
-    nop side 1 [1]
-    jmp x-- bit_loop side 1 [1]
-    set pindirs, 0 side 1 [2]
-    nop side 0 [5]
-    mov isr, null side 0
+    wait 1 gpio 26 side 0 [3]
     in pins, 1 side 0
+    jmp x-- bit_loop side 1 [3]
+    ; Ninth output bit: release for write ACK/read NACK, drive for read ACK.
+    out pindirs, 1 side 1 [2]
+    wait 1 gpio 26 side 0 [4]
+    in pins, 1 side 0 [1]
     nop side 1 [1]
     push block side 1
     jmp program_loop

@@ -77,6 +77,7 @@ void pio_sm_init(PIO, uint, uint, const pio_sm_config *);
 void pio_sm_set_pins_with_mask(PIO, uint, uint32_t, uint32_t);
 void pio_sm_set_consecutive_pindirs(PIO, uint, uint, uint, bool);
 void pio_sm_set_enabled(PIO, uint, bool);
+void pio_sm_set_clkdiv(PIO, uint, float);
 bool pio_sm_is_tx_fifo_full(PIO, uint);
 bool pio_sm_is_rx_fifo_empty(PIO, uint);
 void pio_sm_put(PIO, uint, uint32_t);

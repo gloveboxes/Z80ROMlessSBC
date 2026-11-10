@@ -55,6 +55,20 @@ if(PIOASM)
 else()
   message(STATUS "Set PIOASM to enable the assembled PIO regressions")
 endif()
+add_executable(speaker_bridge_test speaker_bridge_test.cpp
+  ../../cpm/dcc_io_adapter/host/PortDrivers/speaker_io.c
+  ../../cpm/dcc_io_adapter/host/PortDrivers/speaker_audio.c)
+target_include_directories(speaker_bridge_test PRIVATE fakes ../include
+  ../../cpm/dcc_io_adapter/host
+  ../../stage11_extension_board/flash_ATTiny85
+  ../../stage11_extension_board/tests/fakes)
+target_compile_features(speaker_bridge_test PRIVATE c_std_11 cxx_std_17)
+target_compile_options(speaker_bridge_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+if(UNIX AND NOT APPLE)
+  target_link_libraries(speaker_bridge_test PRIVATE m)
+endif()
+add_test(NAME stage10_speaker_bridge COMMAND speaker_bridge_test)
+set_tests_properties(stage10_speaker_bridge PROPERTIES TIMEOUT 5)
 add_executable(io_ports_test io_ports_test.c ../io_ports.c ../io_service.c
   ../http_io.c ../http_stream.c
   ../chat.c ../chat_stream.c

@@ -216,6 +216,43 @@ static void test_disable(void) {
   assert(!interrupts_disabled);
 }
 
+static bool speaker_ready;
+static bool gate_read(uint8_t port) {
+  return port != 0x15 || speaker_ready;
+}
+
+static void test_deferred_read(void) {
+  assert(rearm());
+  z80_banked_pio_set_read_ready(gate_read);
+  unsigned reads = read_count, writes = write_count;
+  fake_push(fake_snapshot(false, true, 0x15, 0x10));
+  fake_push(fake_snapshot(true, false, 0x15, 0));
+  io_irq();
+  assert(write_count == writes + 1);
+  assert(deferred_read && read_count == reads && blocks[1].tx_count == 0);
+  for (unsigned i = 0; i < 10; ++i)
+    assert(z80_banked_pio_poll());
+  z80_banked_pio_drain();
+  assert(deferred_read && read_count == reads && blocks[1].tx_count == 0);
+  speaker_ready = true;
+  assert(z80_banked_pio_poll());
+  assert(!deferred_read && read_count == reads + 1 && read_ports[reads] == 0x15);
+  assert((fake_take_reply() >> 2 & 0xff) == (0xc0 | 0x15));
+  // Disable discards a deferred IN without reading it or emitting a late reply.
+  speaker_ready = false;
+  fake_push(fake_snapshot(true, false, 0x15, 0));
+  io_irq();
+  assert(deferred_read);
+  z80_banked_pio_disable();
+  assert(!deferred_read && blocks[1].tx_count == 0 && read_count == reads + 1);
+  assert(rearm());
+  speaker_ready = true;
+  z80_banked_pio_poll();
+  assert(blocks[1].tx_count == 0);
+  z80_banked_pio_set_read_ready(NULL);
+  z80_banked_pio_disable();
+}
+
 int main(void) {
   memset(levels, 1, sizeof(levels));
   levels[PIN_IO_RELEASE] = levels[PIN_MEMORY_BANK] = levels[PIN_CLK] = false;
@@ -228,6 +265,7 @@ int main(void) {
   test_invalid_strobes_fail_closed();
   test_poll_timeout();
   test_disable();
+  test_deferred_read();
   puts("PASS: PIO0 clock/PIO1 engine allocation, ownership, IN/OUT service order, faults, "
        "timeout and bus-grant rearm");
 }

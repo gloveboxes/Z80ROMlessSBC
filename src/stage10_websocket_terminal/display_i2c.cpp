@@ -10,6 +10,7 @@
 #include "z80sbc/ram_timer.h"
 
 namespace display_i2c {
+static_assert(PIN_SCL == 26, "PIO clock-stretch WAIT instructions use GPIO 26");
 namespace {
 PIO pio = pio0;
 int state_machine = -1;
@@ -21,6 +22,8 @@ uint32_t commands[MAX_DATA_BYTES + 3];
 volatile uint32_t results[MAX_DATA_BYTES + 2];
 size_t result_count;
 uint64_t deadline;
+uint8_t *read_data;
+uint32_t current_baud;
 
 void fail(Failure reason) {
   bus_failure = reason;
@@ -62,8 +65,9 @@ bool initialize() {
   sm_config_set_in_pins(&config, PIN_SDA);
   sm_config_set_out_shift(&config, false, false, 32);
   sm_config_set_in_shift(&config, false, false, 32);
+  current_baud = 400000;
   sm_config_set_clkdiv(&config, static_cast<float>(clock_get_hz(clk_sys)) /
-                                 (400'000 * 12));
+                                 (current_baud * 12));
   pio_sm_init(pio, state_machine, offset, &config);
   pio_sm_set_pins_with_mask(pio, state_machine, 0,
                            (1u << PIN_SCL) | (1u << PIN_SDA));
@@ -84,23 +88,30 @@ uint32_t encode(uint8_t byte) {
 }
 }
 
-bool begin(uint8_t address, const uint8_t *data, size_t length) {
+static bool start(uint8_t address, const uint8_t *data, uint8_t *read,
+                  size_t length, uint32_t baud) {
   assert(address < 0x80 && length <= MAX_DATA_BYTES && (data || length == 0));
+  assert(baud == 100000 || baud == 400000);
   if (bus_failure != Failure::none || active)
     return false;
   if (state_machine < 0 && !initialize())
     return false;
+  if (baud != current_baud) {
+    pio_sm_set_clkdiv(pio, state_machine,
+                     static_cast<float>(clock_get_hz(clk_sys)) / (baud * 12));
+    current_baud = baud;
+  }
+  read_data = read;
   commands[0] = 1u << 30;
-  commands[1] = encode(static_cast<uint8_t>(address << 1));
+  commands[1] = encode(static_cast<uint8_t>((address << 1) | (read ? 1 : 0)));
   for (size_t i = 0; i < length; ++i)
-    commands[i + 2] = encode(data[i]);
+    commands[i + 2] = read ? (i + 1 == length ? 0 : 1u << 21) : encode(data[i]);
   commands[length + 2] = 2u << 30;
   result_count = length + 2;
   for (size_t i = 0; i < result_count; ++i)
     results[i] = UINT32_MAX;
   active = true;
-  // 30 us per byte at 400 kHz, plus bounded scheduling/FIFO margin.
-  deadline = z80_time_us_64() + 5000 + (length + 1) * 30;
+  deadline = z80_time_us_64() + 5000 + (length + 1) * (baud == 100000 ? 120 : 30);
   auto rx = dma_channel_get_default_config(rx_dma);
   channel_config_set_transfer_data_size(&rx, DMA_SIZE_32);
   channel_config_set_read_increment(&rx, false);
@@ -117,6 +128,17 @@ bool begin(uint8_t address, const uint8_t *data, size_t length) {
                         length + 3, true);
   return true;
 }
+
+bool begin(uint8_t address, const uint8_t *data, size_t length, uint32_t baud) {
+  return start(address, data, nullptr, length, baud);
+}
+
+bool begin_read(uint8_t address, uint8_t *data, size_t length, uint32_t baud) {
+  assert(data && length);
+  return start(address, data, data, length, baud);
+}
+
+bool busy() { return active; }
 
 Result poll() {
   if (bus_failure != Failure::none)
@@ -142,7 +164,10 @@ Result poll() {
       fail(Failure::timeout);
       return Result::failed;
     }
-    acknowledged &= (result & 1u) == 0;
+    if (!read_data || i == 0)
+      acknowledged &= (result & 1u) == 0;
+    else
+      read_data[i - 1] = static_cast<uint8_t>(result >> 1);
   }
   active = false;
   return acknowledged ? Result::complete : Result::nack;

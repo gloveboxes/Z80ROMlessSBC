@@ -29,6 +29,11 @@ struct test_pio {
   uint8_t device_address = 0x3c;  // Zero models an absent device.
   uint bits = 0;
   uint8_t byte = 0;
+  uint byte_index = 0;
+  bool sampled_input = true;
+  std::vector<uint8_t> read_bytes;
+  std::vector<bool> read_acks;
+  uint stretch_cycles = 0;
   uint64_t cycles = 0, high_since = 0, low_since = 0, stop_since = 0;
   bool stopped = false;
   uint64_t minimum_high = UINT64_MAX;
@@ -43,6 +48,7 @@ struct test_pio {
         transaction.clear();
         bits = 0;
         byte = 0;
+        byte_index = 0;
       } else {
         transactions.push_back(transaction);
         stopped = true;
@@ -56,14 +62,28 @@ struct test_pio {
         maximum_bit_period = std::max(maximum_bit_period, cycles - high_since);
       }
       if (bits < 8) {
-        byte = static_cast<uint8_t>((byte << 1) | data);
+        sampled_input = data;
+        if (byte_index && (transaction.front() & 1) && data) {
+          assert(byte_index <= read_bytes.size());
+          sampled_input = (read_bytes[byte_index - 1] >> (7 - bits)) & 1;
+        }
+        byte = static_cast<uint8_t>((byte << 1) | sampled_input);
         ++bits;
         if (bits == 8)
           transaction.push_back(byte);
       } else {
-        assert(data);  // Master releases SDA during the ACK clock.
+        if (byte_index && (transaction.front() & 1)) {
+          read_acks.push_back(!data);
+          sampled_input = data;
+        } else {
+          assert(data);  // Master releases SDA during the write ACK clock.
+          sampled_input = !(acknowledge && transaction.size() != nack_byte &&
+                            device_address &&
+                            (transaction.front() >> 1) == device_address);
+        }
         bits = 0;
         byte = 0;
+        ++byte_index;
       }
       high_since = cycles;
     }
@@ -96,6 +116,9 @@ struct test_pio {
           return;
         osr = word;
         consumed = true;
+      } else if (operation == 1) {
+        assert(destination == 4 && value == 26);
+        cycles += stretch_cycles;
       } else if (operation == 3) {
         uint count = value ? value : 32;
         uint32_t output = config.out_right
@@ -133,11 +156,7 @@ struct test_pio {
         }
       } else if (operation == 2) {
         assert(destination == 0 && value == 1);
-        bool ack = acknowledge && transaction.size() != nack_byte &&
-                   !transaction.empty() &&
-                   device_address != 0 &&
-                   transaction.front() == device_address * 2;
-        uint32_t input = ack ? 0 : 1;
+        uint32_t input = sampled_input;
         isr = config.in_right ? (isr >> 1) | (input << 31)
                              : (isr << 1) | input;
       } else {
@@ -183,6 +202,7 @@ void pio_sm_set_consecutive_pindirs(PIO p, uint, uint pin, uint count,
   }
 }
 void pio_sm_set_enabled(PIO p, uint, bool enabled) { p->enabled = enabled; }
+void pio_sm_set_clkdiv(PIO p, uint, float divider) { p->config.divider = divider; }
 bool pio_sm_is_tx_fifo_full(PIO p, uint) { return p->tx_full; }
 bool pio_sm_is_rx_fifo_empty(PIO p, uint) {
   return p->rx_blocked || p->received.empty();
@@ -748,6 +768,52 @@ static void test_transport_failures() {
   assert_failed("no PIO state machine available", true);
 }
 
+static void test_shared_bus_reads() {
+  reset();
+  machine.device_address = 0x42;
+  machine.read_bytes = {0, 0xff, 0x80, 0x01, 0x55, 0xaa};
+  machine.stretch_cycles = 20;
+  uint8_t data[6] = {};
+  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
+  assert(display_i2c::busy());
+  assert(!display_i2c::begin(0x3c, nullptr, 0));
+  assert(machine.instructions.size() + 4 <= 32); // Alongside the Z80 clock.
+  assert(machine.config.divider == 100.0f);
+  run_dma();
+  assert(display_i2c::poll() == display_i2c::Result::complete);
+  assert(std::equal(std::begin(data), std::end(data), machine.read_bytes.begin()));
+  assert((machine.read_acks == std::vector<bool>{true, true, true, true, true, false}));
+  assert(machine.minimum_high >= 5 && machine.minimum_low >= 7);
+  assert(!display_i2c::busy());
+
+  // An absent speaker NACKs without poisoning the shared OLED bus.
+  machine.device_address = 0;
+  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
+  run_dma();
+  assert(display_i2c::poll() == display_i2c::Result::nack);
+  machine.device_address = 0x3c;
+  assert(display_i2c::begin(0x3c, nullptr, 0));
+  assert(machine.config.divider == 25.0f);
+  run_dma();
+  assert(display_i2c::poll() == display_i2c::Result::complete);
+
+  // OLED yields to a shared-bus read instead of consuming its DMA result.
+  reset(); settle();
+  machine.device_address = 0x42;
+  machine.read_bytes = {1};
+  assert(display_i2c::begin_read(0x42, data, 1));
+  now = 1'000'000;
+  service_once();
+  assert(!oled_display::transfer_active);
+  run_dma();
+  service_once();
+  assert(display_i2c::busy());
+  assert(display_i2c::poll() == display_i2c::Result::complete && data[0] == 1);
+  machine.device_address = 0x3c;
+  settle();
+  assert(oled_display::state == oled_display::State::ready);
+}
+
 int main() {
   test_startup();
   test_minute_uptime_and_cached_ip();
@@ -758,6 +824,7 @@ int main() {
   test_chaining_and_pause();
   test_device_failures();
   test_transport_failures();
+  test_shared_bus_reads();
   puts("PASS: SSD1315 128x32 PIO/DMA transport, merged page writes, same-pass chaining, "
        "cached IP, full-width minute-only uptime with days format, "
        "bit-safe heartbeat and web-terminal dot, idle fast path, pause gating and failures");

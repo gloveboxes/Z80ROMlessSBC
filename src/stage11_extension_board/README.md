@@ -19,8 +19,8 @@ See the [command protocol](test_ATTiny85/README.md#command-protocol-and-timers).
 
 | Board | Guide | Fitted hardware |
 | --- | --- | --- |
-| Flashing | [Flash the ATtiny85](flash_ATTiny85/README.md) | Pico 2 W, ATtiny85 socket, ISP wires, RESET pull-up and bypass capacitor. No piezo or I2C wiring. |
-| Testing | [Test the flashed ATtiny85](test_ATTiny85/README.md) | Pimoroni Pico Plus 2 W, ATtiny85 socket, I2C wires and pull-ups, RESET pull-up, bypass capacitor and passive piezo. PB3/PB4 unconnected. No ISP wiring. |
+| Flashing | [Flash the ATtiny85](flash_ATTiny85/README.md) | Pico 2 W, ATtiny85 socket, ISP wires, RESET pull-up and bypass capacitor. No speaker or I2C wiring. |
+| Testing | [Test the flashed ATtiny85](test_ATTiny85/README.md) | Pimoroni Pico Plus 2 W, ATtiny85 socket, I2C/RESET pull-ups, bypass capacitors and 8 ohm speaker with current-limited 2N3904 driver and flyback diode. PB3/PB4 unconnected. No ISP wiring. |
 
 Both boards use **3.3 V** from their own Pico and common ground within that
 board. Each socket needs its own 100 nF capacitor between ATtiny85 pins
@@ -43,7 +43,7 @@ rails or run wires between their ATtiny85 sockets.
    the sound and status/events as described in the testing guide.
 
 To reprogram, power off both boards and move the chip back to the flashing
-socket. The piezo stays on the testing board, so it cannot load
+socket. The speaker driver stays on the testing board, so it cannot load
 the programming signals.
 
 ## Build
@@ -141,7 +141,7 @@ No extra external 5 V supply is needed for this isolated USB-powered setup.
 
 Keep each Pico on its own board and use its matching task. The tasks do
 not move the ATtiny85 or change wiring. USB output alone does not establish
-correct physical behavior; check the piezo on the testing board.
+correct physical behavior; check the speaker on the testing board.
 
 ## Host regression checks
 

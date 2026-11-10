@@ -15,7 +15,6 @@ typedef struct sbc_disk_context
     uint8_t status;
     uint8_t record[128];
     size_t record_index;
-    int active;
 } sbc_disk_context_t;
 
 int sbc_disk_init(sbc_disk_context_t *context, const char *environment_file,

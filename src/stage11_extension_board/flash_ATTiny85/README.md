@@ -5,7 +5,7 @@
 
 This board is **only an ISP programmer**. Fit a dedicated Pico, an
 ATtiny85 DIP-8 socket (preferably ZIF), a RESET pull-up and a bypass
-capacitor. **Do not fit a piezo or I2C connections to this board.**
+capacitor. **Do not fit a speaker driver or I2C connections to this board.**
 The testing hardware stays on the separate testing board.
 
 The [Pico programmer](main.c) flashes the compiled

@@ -268,6 +268,8 @@ void service(bool updates_allowed) {
   }
   if (!updates_allowed)
     return;
+  if (!transfer_active && display_i2c::busy())
+    return;
   if (state == State::uninitialized)
     state = State::scanning;
   if (state == State::ready) {
@@ -304,7 +306,7 @@ void service(bool updates_allowed) {
     constexpr uint8_t command[] = {0x00, 0xaf};
     transfer_active = display_i2c::begin(address, command, sizeof(command));
   }
-  // begin() only refuses after a transport failure: this is the bus's sole user.
+  // Other bus users have already been excluded above.
   if (!transfer_active && state != State::ready) {
     failure = Failure::bus;
     state = State::failed;

@@ -493,11 +493,12 @@ void x80_invoke_out(uint8_t port)
             cpu->term_out(reg.a);
         break;
     case 0x15:
-        // Native-loader activation is sticky until reset. Port 21 also carries
-        // the board's FT commands (1/3/4), which must retain SBC disk routing.
-        if (reg.a == 0xa5)
+        // Native-loader activation (A5h) is sticky until reset. In SBC mode
+        // port 21 is the speaker, so every byte goes to the I/O adapter.
+        if (!sbc_mode && reg.a == 0xa5)
             sbc_mode = true;
-        cpu->io_port_out_handler(port, reg.a);
+        else
+            cpu->io_port_out_handler(port, reg.a);
         break;
     default:
         cpu->io_port_out_handler(port, reg.a);

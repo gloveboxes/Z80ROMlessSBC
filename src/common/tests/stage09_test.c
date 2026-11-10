@@ -106,6 +106,36 @@ static bool setup_reboot_request;
 static unsigned oled_services;
 static unsigned oled_status_requests;
 static bool oled_updates_allowed;
+static unsigned speaker_services, speaker_reads, speaker_writes;
+static uint8_t speaker_value;
+static bool speaker_idle = true;
+static bool (*speaker_gate)(uint8_t);
+void z80_banked_pio_set_read_ready(bool (*ready)(uint8_t)) {
+  assert(fake_core == 0);
+  speaker_gate = ready;
+}
+bool z80_speaker_read_ready(uint8_t port) {
+  return port != Z80_SPEAKER_PORT || speaker_idle;
+}
+uint8_t z80_speaker_in(void) {
+  assert(fake_core == 0);
+  ++speaker_reads;
+  return 0x85;
+}
+void z80_speaker_out(uint8_t value) {
+  assert(fake_core == 0);
+  ++speaker_writes;
+  speaker_value = value;
+}
+void z80_speaker_core1_service(void) {
+  assert(fake_core == 1 && disk_services && io_services);
+  ++speaker_services;
+}
+bool z80_speaker_quiescent(void) { return speaker_idle; }
+void z80_speaker_print_status(void) {
+  assert(fake_core == 0);
+  firmware_printf("[speaker] test status\n");
+}
 static const char *network_address = "";
 size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
   int length = snprintf(address, capacity, "%s", network_address);
@@ -459,6 +489,9 @@ static void reset_fixture(void) {
   config_reboot_after_stop = config_reboot_ready = config_reboot_queue_full = false;
   oled_services = oled_status_requests = 0;
   oled_updates_allowed = false;
+  speaker_services = speaker_reads = speaker_writes = 0;
+  speaker_idle = true;
+  speaker_gate = NULL;
   network_address = "";
 #endif
 }
@@ -477,6 +510,9 @@ static void test_control_and_terminal(void) {
   command('g');
   assert(running && !held && start_calls == 1 && workers_ready);
   assert(requested_clock == 20000000);
+#ifdef Z80_STAGE10_NETWORK
+  assert(speaker_gate == z80_speaker_read_ready);
+#endif
   command('l');
   assert(load_calls == 1 && running);
   receive_usb_byte('s');
@@ -571,6 +607,14 @@ static void test_direct_port_dispatch(void) {
   virtual_write(1, 0, NULL);
   assert(service_reads == reads && service_writes == writes);
   assert(disk_writes == disk_count);
+#ifdef Z80_STAGE10_NETWORK
+  assert(virtual_read(Z80_SPEAKER_PORT, NULL) == 0x85);
+  virtual_write(Z80_SPEAKER_PORT, 0x10, NULL);
+  assert(speaker_reads == 1 && speaker_writes == 1 && speaker_value == 0x10);
+  assert(service_reads == reads && service_writes == writes);
+#else
+  assert(virtual_read(0x15, NULL) == 0xff);
+#endif
 }
 
 static void test_usb_backpressure_and_disconnect(void) {
@@ -1436,6 +1480,14 @@ static void test_core1_lifecycle_and_pause(void) {
   assert(usb_services == 4);
 #ifdef Z80_STAGE10_NETWORK
   assert(network_services == 2);
+  assert(speaker_services == 3);
+  speaker_idle = false;
+  flash_pause_request = 1;
+  core1_service();
+  assert(!flash_paused && speaker_services == 4);
+  speaker_idle = true;
+  core1_service();
+  assert(flash_paused && speaker_services == 5);
 #endif
   fake_core = 0;
 }
@@ -1483,7 +1535,12 @@ static void test_supervisor_queue_ownership(void) {
 static void test_unallocated_port_dispatch(void) {
   reset_fixture();
   unsigned disks = disk_writes;
-  const uint8_t ports[] = {21, 22};
+  const uint8_t ports[] = {
+#ifndef Z80_STAGE10_NETWORK
+      21,
+#endif
+      22,
+  };
   const uint8_t values[] = {1, 'L', 'O', 'V', 'E', '.', 'B', 'A', 'S', 0, 3, 4};
   for (size_t i = 0; i < sizeof(ports); ++i) {
     for (size_t j = 0; j < sizeof(values); ++j) {

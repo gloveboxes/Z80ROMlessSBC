@@ -13,7 +13,6 @@ enum
     DISK_LBA_LOW = 0x12,
     DISK_LBA_HIGH = 0x13,
     DISK_DATA = 0x14,
-    ADAPTER_ACTIVATE = 0x15,
     DISK_READ = 1,
     DISK_FLUSH = 5,
     DISK_READY = 0x01,
@@ -167,7 +166,7 @@ void sbc_disk_close(sbc_disk_context_t *context)
 
 int sbc_disk_handles_port(uint8_t port)
 {
-    return port >= DISK_COMMAND && port <= ADAPTER_ACTIVATE;
+    return port >= DISK_COMMAND && port <= DISK_DATA;
 }
 
 uint8_t sbc_disk_input(sbc_disk_context_t *context, uint8_t port)
@@ -223,9 +222,6 @@ void sbc_disk_output(sbc_disk_context_t *context, uint8_t port, uint8_t data)
                         context->status = DISK_READY;
                 }
             }
-            break;
-        case ADAPTER_ACTIVATE:
-            context->active = data == 0xa5;
             break;
         default:
             break;

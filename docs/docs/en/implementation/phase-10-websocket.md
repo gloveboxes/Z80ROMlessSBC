@@ -9,7 +9,8 @@
 
 - <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 9 passed"> **Start here:** complete the [Phase 9 automatic CP/M loader](phase-9-flash-storage.md).
 - **Unchanged:** 120 MHz Pico clock, 20 MHz scope-measured Z80 clock, BIOS and disk layout.
-- **Hardware:** onboard Wi-Fi plus the [3.3 V SSD1315 status OLED](#ssd1315-status-oled). PCB changes remain deferred.
+- **Hardware:** onboard Wi-Fi, the [3.3 V SSD1315 status OLED](#ssd1315-status-oled)
+  and optional [ATtiny85 speaker](#attiny85-speaker). PCB changes remain deferred.
 
 ## First connection and USB provisioning
 
@@ -227,19 +228,20 @@ and failures without periodic terminal logging.
     encoded command words to PIO; the second collects each byte ACK and the
     final STOP result. No heap allocation, DMA interrupt, per-byte CPU service
     or busy-wait is used. A new transaction cannot start, and the persistent
-    command/result buffers cannot be reused, until the display consumes the
+    command/result buffers cannot be reused, until the owning service consumes the
     completion result. TX completion alone does not confirm STOP; RX must also
     finish and contain the STOP result.
 
     A display NACK disables the OLED and records the error. Unavailable PIO/DMA
     resources, missing ACK/STOP results, or a DMA timeout also release the
     state machine, DMA channels and pins. The timeout is 5 ms plus 30 us per
-    transmitted byte, allowing a full 135-byte page transaction at 400 kHz.
+    byte at 400 kHz or 120 us at 100 kHz, allowing a full 135-byte page
+    transaction at 400 kHz.
     No Z80 bus GPIO or core-0 handshake is used.
 
     [display_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.pio)
-    uses open-drain pins at nominal 400 kHz (I2C Fast-mode) without clock
-    stretching. Each data bit uses seven PIO cycles LOW and five HIGH,
+    uses open-drain pins with clock stretching, at 400 kHz for the OLED and
+    100 kHz for the speaker. Each data bit uses seven PIO cycles LOW and five HIGH,
     giving nominal 1.46 us LOW and 1.04 us HIGH. Verify rise time at the
     module is at most 300 ns with the fitted pull-ups and wiring.
 
@@ -266,6 +268,62 @@ and failures without periodic terminal logging.
     initialization and every page write, and displayed the IP address and
     uptime. Host tests do not qualify physical waveform margins, module
     electrical compatibility, or core-0 latency.
+
+## ATtiny85 speaker
+
+The optional Stage 11 ATtiny85 sound engine shares the OLED bus at 7-bit
+address **0x42**. It generates tones on PB1 independently of the Pico and
+Z80; it is not an audio waveform streaming interface.
+
+With **all power disconnected**, connect the programmed ATtiny85 DIP-8:
+
+| ATtiny85 pin | Connection |
+| --- | --- |
+| 1 / PB5 RESET | 10 kohm pull-up to 3.3 V |
+| 4 / GND | SBC common ground |
+| 5 / PB0 SDA | GP22 (Pico physical 29), OLED SDA / J2 pin 1 |
+| 6 / PB1 OC1A | 1 kohm to 2N3904 base; use the current-limited speaker driver linked below |
+| 7 / PB2 SCL | GP26 (Pico physical 31), OLED SCL / J2 pin 2 |
+| 8 / VCC | Pico 3V3(OUT); 100 nF bypass to pin 4 close to the chip |
+
+Leave PB3/PB4 unconnected. Use **3.3 V power and SDA/SCL pull-ups only**.
+The OLED module provides bus pull-ups; if absent, fit 4.7 kohm from each bus
+line to 3.3 V. Do not copy the standalone test's GP20/GP21 assignment: those
+are Z80 address inputs on the SBC. Never connect an 8 ohm speaker or magnetic
+buzzer directly to PB1. Use the
+[Stage 11 current-limited speaker driver](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage11_extension_board/test_ATTiny85/README.md#current-limited-dynamic-speaker-driver):
+8 ohm / 0.25 W speaker, 200 ohm series resistor, 2N3904, 1 kohm base
+resistor, 10 kohm base pull-down, 1N4148 flyback diode and supply bypass.
+The speaker supply is 3.3 V, not 5 V; PB3 / pin 2 stays unconnected.
+Restore SBC power with
+external +5 V first and USB second; disconnect USB first.
+
+The [speaker bridge](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/speaker_io.cpp)
+implements [port `0x15`](../system/io-ports.md#speaker-port) with unchanged
+DXSVC packets. Core 0 collects bounded packets and reads latched RAM snapshots.
+Core 1 owns every I2C operation, after disk service, and checks that commands
+execute before releasing a waiting Z80 IN. PIO keeps WAIT asserted while
+the deferred reply is outstanding; neither core spins for the other.
+
+The bus uses one shared PIO0 state machine and TX/RX DMA pair, with no IRQ
+flags. Its 26 instructions fit beside the four-instruction Z80 clock.
+Speaker transfers run at 100 kHz with slave clock stretching; OLED writes
+run at 400 kHz. Each service consumes only its own transfer completion,
+and bus buffers remain owned through STOP. Pending speaker work drains
+before flash-pause acknowledgement. No device scan or periodic sound poll
+runs when sound is unused; a missing speaker does not prevent CP/M or OLED use.
+
+Build the Phase 10 target, then use the normal authorized firmware and disk
+deployment procedures. `B:SOUND` exercises all primitives, 63 presets and
+feedback through the same SDK used in the emulator. **Ctrl-] s** reports
+speaker fault and transfer counts. A transport/queue failure disables sound
+with an explicit diagnostic; restart firmware after correcting the fault.
+
+Native tests execute the PIO instructions (read ACK/NACK, timing and clock
+stretching), exercise bridge packets against the real ATtiny85 engine, and
+check deferred replies, queue bounds, snapshot consistency, bus sharing and
+flash-pause routing. These are host results: shared-bus electrical margins,
+audible playback and Z80 wait latency require bench validation.
 
 ## Network time and CLOCK services
 

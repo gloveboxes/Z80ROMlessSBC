@@ -20,6 +20,9 @@ bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port),
                           void (*fault_handler)(uint32_t controls));
 /* Service queued cycles now; for paths that must observe every completed OUT. */
 void z80_banked_pio_drain(void);
+/* Optional core-0 readiness gate. False defers the IN reply until poll/drain;
+ * it must not block. Configure before rearm; NULL makes every read ready. */
+void z80_banked_pio_set_read_ready(bool (*ready)(uint8_t port));
 void z80_banked_pio_disable(void);
 bool z80_banked_pio_clock_start(uint32_t hz);
 void z80_banked_pio_clock_stop(void);
@@ -33,9 +36,9 @@ typedef struct {
 } z80_banked_pio_status_t;
 void z80_banked_pio_note_io(uint8_t port, bool read, uint8_t value);
 /* Core-0 service cost in clk_sys cycles since the previous call (which
- * resets the window): per IN from taking the request to queuing the reply,
+ * resets the window): per IN service work from request to reply,
  * per OUT to apply it. PIO-to-IRQ entry latency and the Z80's own wait
- * states are not included. */
+ * states, deferred readiness polling and worker wait time are not included. */
 typedef struct {
   bool available;
   uint32_t in_count, in_max_cycles, out_count, out_max_cycles;
