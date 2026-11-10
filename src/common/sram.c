@@ -12,9 +12,22 @@
 #include "z80sbc/pins.h"
 #include "z80sbc/supervisor.h"
 
+/* Re-read a mismatching byte: a value that changes between reads is a noisy
+ * read; the same wrong value every time is a write that did not take. */
+static void print_rereads(uint16_t address) {
+  printf("[boot] re-read %04x:", address);
+  for (unsigned i = 0; i < 4; ++i) {
+    uint8_t value = 0;
+    if (z80_sram_read_byte(address, &value))
+      printf(" %02x", value);
+  }
+  printf("\n");
+}
+
 static bool report_failure(uint16_t address, uint8_t expected,
                            uint8_t actual) {
   printf("FAIL %04x expected=%02x actual=%02x\n", address, expected, actual);
+  print_rereads(address);
   z80_isolate_buses();
   return false;
 }
@@ -121,6 +134,7 @@ void z80_sram_prepare_banked_memory(const uint8_t *base_image) {
     if (actual != expected) {
       printf("[boot] bank 1 SRAM verify FAIL: address=%04x expected=%02x actual=%02x\n",
              address, expected, actual);
+      print_rereads(address);
       goto finish_bank;
     }
   }
