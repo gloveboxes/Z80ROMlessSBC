@@ -11,7 +11,11 @@ from pathlib import Path
 def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("usage: embed_html.py INPUT.html OUTPUT.h")
-    source = Path(sys.argv[1]).read_bytes()
+    page = Path(sys.argv[1])
+    source = page.read_bytes().replace(
+        b'<script src="graphics.js"></script>',
+        b"<script>\n" + page.with_name("graphics.js").read_bytes() + b"\n</script>",
+    )
     compressed = gzip.compress(source, compresslevel=9, mtime=0)
     rows = []
     for offset in range(0, len(compressed), 12):

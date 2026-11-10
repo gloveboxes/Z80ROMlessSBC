@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.19.0/lib/addon-webgl.js"></script>
+  <script src="graphics.js"></script>
 
   <style>
     /* Inlined modern.css */
@@ -84,6 +85,19 @@
       margin: 0 auto;
       overflow: auto;
       background-color: #000;
+    }
+
+    #graphics_panel {
+      width: min(640px, calc(100vw - 40px));
+      margin: 12px auto;
+    }
+
+    #graphics_canvas {
+      display: block;
+      width: 100%;
+      image-rendering: pixelated;
+      border: 2px solid white;
+      box-sizing: border-box;
     }
 
     /* Keep xterm's overlay scrollbar in the 12 px strip beside the 80-column
@@ -366,6 +380,9 @@
         connected: false,
         online: navigator.onLine,
         term: null,
+        graphics: null,
+        graphicsStopHandler: null,
+        graphicsFocusHandler: null,
         reconnectAttempts: 0,
         pasteHandler: null,
         bellHandler: null,
@@ -561,6 +578,13 @@
       }
 
       function resetProtocol(reportPending = false) {
+        if (state.graphics) {
+          const graphics = state.graphics;
+          graphics.cancel();
+          // Cancel an incomplete escape sequence after queued output drains,
+          // without clearing the user's text or scrollback on reconnect.
+          state.term.write('\x18', () => graphics.reset());
+        }
         if (state.inputTimer !== null) clearTimeout(state.inputTimer);
         if (reportPending && state.inputBuffer.length) {
           showError(`Connection closed with ${state.inputBuffer.length} input bytes unconfirmed; they will not be replayed.`);
@@ -976,6 +1000,18 @@
 
           state.term.open(elements.terminal);
           loadGpuRenderer(state.term);
+          state.graphics = new Z80GraphicsAddon(
+            document.getElementById('graphics_panel'),
+            document.getElementById('graphics_canvas'), queueInput, showError);
+          state.term.loadAddon(state.graphics);
+          state.graphicsStopHandler = () => {
+            queueInput('q');
+            state.graphics.cancel(true);
+            state.term.focus();
+          };
+          state.graphicsFocusHandler = () => state.term.focus();
+          document.getElementById('graphics_stop').addEventListener('click', state.graphicsStopHandler);
+          document.getElementById('graphics_canvas').addEventListener('pointerdown', state.graphicsFocusHandler);
 
           document.addEventListener('keydown', unlockAudio, true);
           document.addEventListener('pointerdown', unlockAudio, true);
@@ -1468,6 +1504,10 @@
        * Cleanup function for page unload
        */
       function cleanup() {
+        document.getElementById('graphics_stop')?.removeEventListener('click', state.graphicsStopHandler);
+        document.getElementById('graphics_canvas')?.removeEventListener('pointerdown', state.graphicsFocusHandler);
+        state.graphicsStopHandler = null;
+        state.graphicsFocusHandler = null;
         if (state.rebootTimer !== null) clearTimeout(state.rebootTimer);
         // Cancel any pending reconnection
         cancelReconnect();
@@ -1488,6 +1528,7 @@
           }
           state.term = null;
         }
+        state.graphics = null;
       }
 
       /**
@@ -1713,6 +1754,10 @@
 
 
   <div id="terminal"></div>
+  <section id="graphics_panel" aria-label="Z80 WebGL graphics" hidden>
+    <canvas id="graphics_canvas" width="320" height="240" aria-label="Z80 game canvas"></canvas>
+    <button id="graphics_stop" class="altair-btn">Stop game (Q)</button>
+  </section>
 
   <div id="keypad" role="group" aria-label="On-screen keys" title="Drag the panel to move it" hidden>
     <div class="keypad-handle" aria-hidden="true"></div>

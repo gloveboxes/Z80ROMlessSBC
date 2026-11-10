@@ -83,6 +83,19 @@ flushing disks cannot save unsaved application RAM.
 - The browser needs Internet access on first use to load xterm.js dependencies.
 - Reload the terminal page after firmware updates.
 
+### Z80 WebGL graphics
+
+**`B:STARFALL`** is a paddle-and-catching game controlled by the Z80 and rendered
+in a separate browser WebGL canvas. Use A/D, Left/Right or the on-screen arrows;
+Q, Esc, Ctrl+C or **Stop game (Q)** exits. Green bars count catches and red bars
+show remaining lives.
+
+The xterm.js graphics addon accepts bounded private OSC 777 commands over the
+existing acknowledged console stream. Normal VT100 output is unchanged.
+Graphics requires WebGL and a matching terminal page; open negotiates support
+before the game starts. Restart the game after reconnect or WebGL context loss.
+See the [STARFALL build, C API and protocol guide](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/examples/STARFALL).
+
 ## Unified system configuration
 
 **Ctrl-] c** opens setup over USB, even while a browser owns the terminal.

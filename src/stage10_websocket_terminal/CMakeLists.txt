@@ -18,7 +18,7 @@ add_custom_command(
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/embed_html.py
           ${CMAKE_CURRENT_LIST_DIR}/Terminal/index.html
           ${stage10_generated_dir}/static_html_hex.h
-  DEPENDS Terminal/index.html embed_html.py
+  DEPENDS Terminal/index.html Terminal/graphics.js embed_html.py
   VERBATIM
 )
 add_custom_target(z80_terminal_html

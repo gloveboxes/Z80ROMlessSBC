@@ -421,7 +421,35 @@ test('version 1/2/3 handshakes are rejected and reconnect attempts really stop a
   assert.equal(input.timers.size, 5);
 });
 
-test('embedded gzip is deterministic and decompresses to the exact copied terminal page', () => {
+test('disconnect cancels partial graphics commands after queued output, preserving terminal text', () => {
+  const input = terminal();
+  let resets = 0;
+  input.api.state.graphics = { cancel() { ++resets; }, reset() { ++resets; } };
+  input.deferOutput();
+  input.receive(frame(1, 1, new TextEncoder().encode('\x1b]777;Z80G;1;op')));
+  input.api.resetProtocol();
+  assert.equal(resets, 1, 'hide graphics immediately');
+  assert.equal(input.written[1].join(''), '\x18', 'CAN follows queued output and aborts its parser sequence');
+  input.finishOutput();
+  assert.deepEqual(input.sent, [], 'old output cannot acknowledge in a new session');
+  input.finishOutput();
+  assert.equal(resets, 2, 'queued graphics cannot survive disconnect');
+});
+
+test('repeated page cleanup does not write into a disposed terminal', () => {
+  const input = terminal();
+  let disposed = 0;
+  input.api.state.term.dispose = () => { ++disposed; };
+  input.api.state.ws.close = () => {};
+  input.api.state.graphics = { cancel() {}, reset() {} };
+  input.api.cleanup();
+  input.api.cleanup();
+  assert.equal(disposed, 1);
+  assert.equal(input.api.state.term, null);
+  assert.equal(input.api.state.graphics, null);
+});
+
+test('embedded gzip is deterministic and includes the graphics addon without another HTTP request', () => {
   const temporary = mkdtempSync(join(tmpdir(), 'z80-terminal-'));
   try {
     const output = join(temporary, 'static_html_hex.h');
@@ -436,7 +464,9 @@ test('embedded gzip is deterministic and decompresses to the exact copied termin
     assert.equal(header, run());
     const bytes = Buffer.from([...header.matchAll(/0x([0-9a-f]{2})/g)]
       .map(match => parseInt(match[1], 16)));
-    assert.equal(gunzipSync(bytes).toString('utf8'), html);
+    const graphics = readFileSync(new URL('./Terminal/graphics.js', import.meta.url), 'utf8');
+    assert.equal(gunzipSync(bytes).toString('utf8'),
+                 html.replace('<script src="graphics.js"></script>', `<script>\n${graphics}\n</script>`));
     assert.match(header, new RegExp(`static_html_gz_len = ${bytes.length}u`));
   } finally {
     rmSync(temporary, { recursive: true });

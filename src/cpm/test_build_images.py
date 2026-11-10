@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import binascii
+import importlib.util
 import os
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import build_images
 import disassemble_cpm64
@@ -240,6 +243,7 @@ class BuildImagesTest(unittest.TestCase):
         )
         files = build_images.example_files()
         self.assertIn("MEMPERF.COM", files)
+        self.assertIn("STARFALL.COM", files)
         fresh = build_images.install_files(
             stale, files, build_images.EXAMPLE_REMOVED_FILES, cpmcp
         )
@@ -264,6 +268,33 @@ class BuildImagesTest(unittest.TestCase):
             )
             self.assertEqual((temporary / "out.com").read_bytes(),
                              files["MEMPERF.COM"])
+
+    def test_selective_example_refresh_preserves_other_files(self) -> None:
+        cpmcp = shutil.which("cpmcp")
+        if cpmcp is None:
+            self.skipTest("cpmtools is required")
+        spec = importlib.util.spec_from_file_location(
+            "refresh_drive_b", build_images.REPO_ROOT / "src/disks/refresh_drive_b.py"
+        )
+        self.assertIsNotNone(spec)
+        assert spec is not None and spec.loader is not None
+        refresh = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(refresh)
+        selected = {"STARFALL.COM": build_images.example_files()["STARFALL.COM"]}
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "drive.img"
+            original = build_images.install_files(
+                self.native_drive, {"SPREADS.COM": b"preserve"}, (), cpmcp
+            )
+            image.write_bytes(original)
+            with patch.object(refresh, "IMAGE", image), patch.object(
+                sys, "argv", ["refresh_drive_b.py", "--program", "STARFALL.COM",
+                              "--cpmcp", cpmcp]
+            ):
+                refresh.main()
+            self.assertEqual(
+                image.read_bytes(), build_images.install_files(original, selected, (), cpmcp)
+            )
 
     def test_cpm_and_disk_geometry(self) -> None:
         self.assertEqual(

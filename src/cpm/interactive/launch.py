@@ -33,6 +33,7 @@ EXAMPLE_BUILDS = (
     ("BANKED", "build/BANKED.COM", "BANKED.COM"),
     ("MEMPERF", "build/MEMPERF.COM", "MEMPERF.COM"),
     ("PRIMEBK1", "build/PRIMEBK1.COM", "PRIMEBK1.COM"),
+    ("STARFALL", "build/STARFALL.COM", "STARFALL.COM"),
 )
 
 

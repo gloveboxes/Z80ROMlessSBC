@@ -85,7 +85,7 @@ OUTPUT_DISK_NAMES = (
     *SOURCE_DISK_NAMES[1:],
 )
 
-# Banked-memory example binaries kept current on drive B. DATA.LIB and
+# Example binaries kept current on drive B. DATA.LIB and
 # DATATEST.COM are staged together, and only when both are built.
 EXAMPLE_PROGRAMS = (
     "ALLOCPRF/ALLOCPRF.COM",
@@ -93,6 +93,7 @@ EXAMPLE_PROGRAMS = (
     "MEMPERF/MEMPERF.COM",
     "PRIMEBK1/PRIMEBK1.COM",
     "SOUND/SOUND.COM",
+    "STARFALL/STARFALL.COM",
 )
 EXAMPLE_LIBRARY_PAIR = (
     "LIBDEMO/lib/DATA.LIB",

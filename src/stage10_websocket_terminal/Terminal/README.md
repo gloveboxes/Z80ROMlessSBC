@@ -41,11 +41,25 @@ The browser therefore needs Internet access on first use; the Pico serves the
 HTML, not those external assets. The copied favicon is retained as an asset;
 the current embedded HTTP handler only serves `/`.
 
+## Z80 graphics
+
+The private OSC 777 addon in [graphics.js](graphics.js) renders a separate
+WebGL game canvas through the same xterm console stream. It provides bounded
+rectangles, lines and retained solid sprites; ordinary terminal output and
+key mappings are unchanged. WebGL graphics requires its own context, independent
+of the text renderer. Errors are visible; there is no software graphics renderer.
+
+Build/run the [STARFALL game and reusable C API](../../../examples/STARFALL/README.md)
+using its guide, which defines the wire protocol and limits. Graphics open
+negotiates availability; stop, close, disconnect and terminal reset release the
+scene. Restart the application after reconnect or context loss.
+
 ## Updating
 
-Edit [index.html](index.html), then build `z80_stage10_websocket_terminal`.
+Edit [index.html](index.html) or [graphics.js](graphics.js), then build `z80_stage10_websocket_terminal`.
 CMake automatically runs [embed_html.py](../embed_html.py), producing a
-deterministic gzip byte array in the build directory. Do not commit that
+single HTML page with the local graphics script inlined, then a deterministic
+gzip byte array in the build directory. Do not commit that
 generated header.
 
 The [update_static_html.sh](update_static_html.sh) tool retains the ESP32
@@ -56,5 +70,5 @@ deterministic generator. Do not copy the ESP32 generated header into the build:
 ./src/stage10_websocket_terminal/Terminal/update_static_html.sh
 # Optional explicit output:
 ./src/stage10_websocket_terminal/Terminal/update_static_html.sh /tmp/static_html_hex.h
-node --test src/stage10_websocket_terminal/terminal.test.mjs
+node --test src/stage10_websocket_terminal/terminal.test.mjs src/stage10_websocket_terminal/graphics.test.mjs
 ```
