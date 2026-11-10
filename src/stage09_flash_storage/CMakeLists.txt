@@ -10,7 +10,8 @@ target_link_libraries(z80_flash_disk_20mhz PUBLIC
   z80_runtime_20mhz pico_flash pico_multicore pico_util hardware_flash
   hardware_watchdog)
 
-set_source_files_properties(ansi_input.c PROPERTIES
+set_source_files_properties(core0.c core1.c core_coordination.c status_report.c
+  ansi_input.c PROPERTIES
   COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 include(disk_diagnostic_build.cmake)
 foreach(stage09_target IN ITEMS
@@ -18,7 +19,8 @@ foreach(stage09_target IN ITEMS
   add_z80_stage(${stage09_target} main.c
     z80_io_services z80_flash_disk_20mhz z80_terminal_queue pico_multicore
     pico_cyw43_arch_none)
-  target_sources(${stage09_target} PRIVATE ansi_input.c usb_console.c "${diagnostic_header}"
+  target_sources(${stage09_target} PRIVATE core0.c core1.c core_coordination.c
+    status_report.c ansi_input.c usb_console.c "${diagnostic_header}"
     ../common/onboard_led.c)
   target_include_directories(${stage09_target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}")

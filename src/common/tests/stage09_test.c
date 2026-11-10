@@ -14,6 +14,10 @@ static bool connected;
 #define receive_usb_byte firmware_receive_usb_byte
 #define printf firmware_printf
 #define main stage09_firmware_main
+#include "../../stage09_flash_storage/core_coordination.c"
+#include "../../stage09_flash_storage/status_report.c"
+#include "../../stage09_flash_storage/core0.c"
+#include "../../stage09_flash_storage/core1.c"
 #include "../../stage09_flash_storage/main.c"
 #undef main
 #undef printf
@@ -1428,7 +1432,7 @@ static void test_autoboot_failures(void) {
     connected = true;
     service_usb();
     assert(strstr(output, "FAIL: automatic CP/M boot stopped"));
-    assert(strstr(output, boot_error_name(errors[index])));
+    assert(strstr(output, status_boot_error_name(errors[index])));
     assert(strstr(output, "phase=2 completed=4096"));
     service_run();
     service_usb();

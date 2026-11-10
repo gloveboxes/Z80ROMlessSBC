@@ -187,7 +187,7 @@ current budget. Disconnect power safely before rewiring. PCB migration remains
 deferred.
 
 [oled_display.cpp](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/oled_display.cpp)
-runs on core 1 after network work and scans only `0x3c` and `0x3d`; this
+runs on core 0 after speaker service and scans only `0x3c` and `0x3d`; this
 module answers at `0x3c`. Do not attach another device at either address. The
 SSD1315 uses the SSD1306 command set: initialization selects a 32-row
 multiplex, sequential COM pins and the internal charge pump. The panel stays
@@ -442,7 +442,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 
 ??? info "Core responsibilities and terminal ownership"
 
-    - **Core 0:** Z80 GPIO/clock/traps, journal recovery, validated SRAM loading, queued supervisor requests and flash quiescence. No USB endpoint calls.
+    - **Core 0:** Z80 GPIO/clock/traps, journal recovery, validated SRAM loading, queued supervisor requests, shared OLED/speaker I2C and flash quiescence. No USB endpoint calls.
     - **Core 1:** USB, runtime storage, ENV, services, Wi-Fi and HTTP/WebSocket. Disk work runs before network work; networking uses `pico_cyw43_arch_lwip_poll`.
     - **Queues:** 128-byte console RX, 512-byte TX, four supervisor entries and a 4 KiB diagnostic ring (128-byte drain/pass). Short locks and atomic state publication separate cores.
     - **Ownership:** one browser replaces ordinary USB I/O; USB supervisor/setup stays available. Last connection wins: a new WebSocket disconnects the previous browser and starts a fresh protocol session. Switching transports or browsers clears queued input/output; old output and unconfirmed input are not replayed. Wi-Fi changes alone do not clear USB-owned queues.
@@ -577,15 +577,23 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 
 Phase 10 compiles the Phase 9 application with `Z80_STAGE09_AUTOBOOT=1` and
 `Z80_STAGE10_NETWORK=1`; it does not maintain a separate loader.
+The [Phase 9 source layout](phase-9-flash-storage.md#maintained-source)
+separates core-0 control, core-1 workers and their coordination boundary.
 
 - [Phase 10 build configuration](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/CMakeLists.txt)
 - [Browser page and update tool](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/stage10_websocket_terminal/Terminal) (CMake compresses changes automatically)
 - [WebSocket server fork](https://github.com/gloveboxes/pico-ws-server) (publish submodule changes to the fork before updating the parent gitlink)
 
-??? example "Automatic loader shared with Phase 9"
+??? example "Core 0 - automatic loader and I2C scheduling"
 
     ```c
-    {% include "../../../../src/stage09_flash_storage/main.c" %}
+    {% include "../../../../src/stage09_flash_storage/core0.c" %}
+    ```
+
+??? example "Core 1 - USB, storage and network scheduling"
+
+    ```c
+    {% include "../../../../src/stage09_flash_storage/core1.c" %}
     ```
 
 ??? example "Shared terminal queues and transport handover"

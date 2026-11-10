@@ -74,10 +74,18 @@ target_link_libraries(z80_terminal PUBLIC
   pico_lwip_mbedtls hardware_clocks hardware_pio hardware_dma)
 
 # Compile the tested automatic-loader application, not a parallel implementation.
+set_source_files_properties(
+  ../stage09_flash_storage/core0.c ../stage09_flash_storage/core1.c
+  ../stage09_flash_storage/core_coordination.c
+  ../stage09_flash_storage/status_report.c
+  PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror")
 include(../stage09_flash_storage/disk_diagnostic_build.cmake)
 add_z80_stage(z80_stage10_websocket_terminal ../stage09_flash_storage/main.c
   z80_io_services z80_flash_disk_20mhz z80_terminal pico_multicore)
 target_sources(z80_stage10_websocket_terminal PRIVATE
+  ../stage09_flash_storage/core0.c ../stage09_flash_storage/core1.c
+  ../stage09_flash_storage/core_coordination.c
+  ../stage09_flash_storage/status_report.c
   ../stage09_flash_storage/ansi_input.c ../stage09_flash_storage/usb_console.c
   ../common/onboard_led.c
   "${diagnostic_header}")

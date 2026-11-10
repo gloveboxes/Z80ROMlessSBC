@@ -464,7 +464,16 @@ complete journal data sector and header page. A failed journal program
 therefore leaves the old target intact and latches a storage error. Target
 readback and header-clear checks remain required after programming.
 
-**Application source:** [src/stage09_flash_storage/main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c),
+**Application source:** [main.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/main.c)
+enters [core0.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/core0.c),
+which owns startup, Z80 control and the disk self-test.
+[status_report.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/status_report.c)
+formats the Ctrl-] `s`/`h` reports from a read-only state snapshot.
+[core1.c](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/core1.c)
+owns USB parsing and runtime storage/service scheduling.
+[core_coordination.h](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/core_coordination.h)
+declares the shared atomic publication words and supervisor queue; all other
+application state stays private to its owning core. Input mapping uses
 the [ANSI input mapper](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/ansi_input.c)
 and its [interface](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage09_flash_storage/ansi_input.h),
 with the shared [disk device](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/disk_device.c),
@@ -495,10 +504,22 @@ using those same [storage ownership rules](../system/operation.md#63-onboard-fla
 These complete files are included from the repository at documentation build
 time, not copied into this page.
 
-??? example "Phase 9 application - src/stage09_flash_storage/main.c"
+??? example "Core 0 - startup, Z80 control and disk self-test"
 
     ```c
-    {% include "../../../../src/stage09_flash_storage/main.c" %}
+    {% include "../../../../src/stage09_flash_storage/core0.c" %}
+    ```
+
+??? example "Core 0 - status and help reports"
+
+    ```c
+    {% include "../../../../src/stage09_flash_storage/status_report.c" %}
+    ```
+
+??? example "Core 1 - USB and runtime workers"
+
+    ```c
+    {% include "../../../../src/stage09_flash_storage/core1.c" %}
     ```
 
 ??? example "ANSI keyboard mapper - src/stage09_flash_storage/ansi_input.c"
