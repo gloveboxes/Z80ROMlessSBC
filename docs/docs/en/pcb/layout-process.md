@@ -1,8 +1,9 @@
 # PCB Layout
 
-PCB design is an iterative process shared by the user and agent. Agree on the
-board's goals, components and constraints first; then generate, route and review
-the layout against those criteria before preparing manufacturing files.
+For this Z80 SBC, a breadboard layout was built first to prove the hardware
+and software design. The PCB process carries that proven design onto a
+manufacturable board, with the user and agent agreeing on goals, components
+and constraints before generating, routing and reviewing the layout.
 
 1. **Define goals.** The user describes what the board should do and how it
    will be used.
