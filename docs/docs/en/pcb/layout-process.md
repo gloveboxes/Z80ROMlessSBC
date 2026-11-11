@@ -1,4 +1,8 @@
-# How the PCB layout is made
+# PCB Layout
+
+PCB design is an iterative process shared by the user and agent. Agree on the
+board's goals, components and constraints first; then generate, route and review
+the layout against those criteria before preparing manufacturing files.
 
 1. **Define goals.** The user describes what the board should do and how it
    will be used.
