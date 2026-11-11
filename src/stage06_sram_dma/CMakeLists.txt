@@ -7,7 +7,7 @@ set_source_files_properties(full_memory_test.c
 add_z80_stage(z80_stage06_pwm_memory pwm_memory_test.c z80_io_trap)
 
 # Compile the clock/CPU/trap chain separately; normal stages stay at 8 MHz.
-# This PWM/GPIO-trap variant screens the 20 MHz rate without PIO1.
+# This PWM/GPIO-trap variant screens the 20 MHz rate without PIO.
 add_library(z80_pwm_20mhz STATIC
   ../common/clock.c
   ../common/sram.c

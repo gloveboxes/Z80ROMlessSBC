@@ -1,5 +1,5 @@
-/* Instrumented two-block PIO HAL for banked_pio.c host tests: PIO1 runs the
- * clock SM, PIO2 the I/O engine. Include after "../banked_pio.c"; the test
+/* Instrumented two-block PIO HAL for banked_pio.c host tests: PIO0 runs the
+ * clock SM, PIO1 the I/O engine. Include after "../banked_pio.c"; the test
  * defines the GPIO fakes and may read the block state below. */
 #ifndef TEST_PIO_BLOCKS_H
 #define TEST_PIO_BLOCKS_H

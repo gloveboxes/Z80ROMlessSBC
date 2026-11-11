@@ -31,7 +31,7 @@ _Static_assert(PIN_PORT_A0 - PIN_DATA_0 == 8, "OUT snapshot layout changed");
 _Static_assert(PIN_DATA_DOWN_OE_N == PIN_DATA_UP_OE_N + 1 &&
                    PIN_IO_RELEASE == PIN_MEMORY_BANK + 1 &&
                    PIN_DATA_0 == PIN_MEMORY_BANK + 2,
-               "PIO2 SET/OUT pin windows changed");
+               "PIO1 SET/OUT pin windows changed");
 
 /* PIO0 runs the Z80 clock beside the status OLED's I2C; PIO1 runs the whole I/O
  * engine and holds the clock through PIO0 IRQ 1 with IRQ PREV. The CYW43 SPI

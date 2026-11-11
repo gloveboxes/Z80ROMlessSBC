@@ -21,7 +21,8 @@ typedef struct {
 
 z80_io_trap_reset_fault_t z80_io_trap_take_reset_fault(void);
 /* Z80_BANKED_PIO builds route every cycle through PIO1 and fail (returning
- * false) when PIO1 cannot be allocated; other builds use the IORQ GPIO IRQ. */
+ * false) when the PIO0 clock or PIO1 engine cannot be allocated; other builds
+ * use the IORQ GPIO IRQ. */
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         z80_io_write_handler_t write_handler,
                         void *context);

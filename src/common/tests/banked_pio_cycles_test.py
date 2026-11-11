@@ -1,10 +1,10 @@
-"""Execute the assembled PIO words: the PIO1 clock SM and the PIO2 I/O SM.
+"""Execute the assembled PIO words: the PIO0 clock SM and the PIO1 I/O SM.
 
 This is a digital protocol model, not RP2350 firmware execution or electrical
 qualification. A Z80 bus model reacts to CLK edges (T2 asserts IORQ#, TW
 samples WAIT#, T3's falling edge samples IN data and ends the cycle, the next
-opcode fetch lowers RD#). Inputs pass a two-stage synchronizer and PIO2's
-IRQ PREV reaches PIO1 after a configurable latency. It checks instruction
+opcode fetch lowers RD#). Inputs pass a two-stage synchronizer and PIO1's
+IRQ PREV reaches PIO0 after a configurable latency. It checks instruction
 encodings, clock phase guards, port routing, OUT snapshots, IN replies, bus
 turnaround and FIFO backpressure without assuming the assembly is right.
 """
@@ -92,7 +92,7 @@ class StateMachine:
             else:
                 assert destination == 2
                 self.y = value
-        elif opcode == 6:  # IRQ PREV SET / CLEAR from PIO2 to PIO1
+        elif opcode == 6:  # IRQ PREV SET / CLEAR from PIO1 to PIO0
             assert not self.clock and arg & 0x38 == 0x08 and not arg & 0x20
             m.raise_clock_flag(arg & 7, not arg & 0x40)
         elif opcode == 7:  # SET

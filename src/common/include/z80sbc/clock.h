@@ -6,7 +6,7 @@
 
 enum {
 #if defined(Z80_BANKED_PIO)
-  /* PIO1 generates exactly 20 MHz from the 120 MHz supervisor clock. */
+  /* PIO0 generates exactly 20 MHz from the 120 MHz supervisor clock. */
   Z80_CLOCK_MIN_HZ = 20000000,
   Z80_CLOCK_MAX_HZ = 20000000,
 #elif defined(Z80_CLOCK_20MHZ)

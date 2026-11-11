@@ -120,7 +120,7 @@ static void __not_in_flash_func(service_stopped_io)(void) {
 #endif
 
 #if defined(Z80_BANKED_PIO)
-/* PIO2 completes every cycle; these run from its IRQ in bus order. */
+/* PIO1 completes every cycle; these run from its IRQ in bus order. */
 static void __not_in_flash_func(apply_pio_write)(uint8_t port, uint8_t value) {
   z80_banked_pio_note_io(port, false, value);
   if (application_write != NULL)
