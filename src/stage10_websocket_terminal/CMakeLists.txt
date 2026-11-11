@@ -35,9 +35,7 @@ target_include_directories(lwipopts_provider INTERFACE
 add_library(z80_pico_ws_server STATIC
   ${ws_source}/src/client_connection.cpp
   ${ws_source}/src/http_handler.cpp
-  ${ws_source}/src/web_socket_frame_builder.cpp
   ${ws_source}/src/web_socket_handler.cpp
-  ${ws_source}/src/web_socket_message_builder.cpp
   ${ws_source}/src/web_socket_server.cpp
   ${ws_source}/src/web_socket_server_internal.cpp)
 add_dependencies(z80_pico_ws_server z80_terminal_html)

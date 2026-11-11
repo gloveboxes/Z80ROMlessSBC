@@ -410,9 +410,7 @@ if(TARGET weather_mbedcrypto)
     "${ws_source}/src/web_socket_server_internal.cpp"
     "${ws_source}/src/client_connection.cpp"
     "${ws_source}/src/http_handler.cpp"
-    "${ws_source}/src/web_socket_handler.cpp"
-    "${ws_source}/src/web_socket_message_builder.cpp"
-    "${ws_source}/src/web_socket_frame_builder.cpp")
+    "${ws_source}/src/web_socket_handler.cpp")
   target_include_directories(websocket_transport_test PRIVATE
     fakes/websocket "${ws_source}/src" "${ws_source}/include")
   target_link_libraries(websocket_transport_test PRIVATE weather_mbedcrypto)
@@ -420,7 +418,7 @@ if(TARGET weather_mbedcrypto)
   target_compile_definitions(websocket_transport_test PRIVATE DEBUG_PRINT=0)
   target_compile_options(websocket_transport_test PRIVATE
     -Wall -Wextra -Werror -UNDEBUG)
-  foreach(case send flush receive limits invalid lifecycle http disconnects diagnostics)
+  foreach(case send flush receive limits invalid lifecycle http disconnects diagnostics allocations)
     add_test(NAME websocket_${case} COMMAND websocket_transport_test ${case})
     set_tests_properties(websocket_${case} PROPERTIES TIMEOUT 5)
   endforeach()

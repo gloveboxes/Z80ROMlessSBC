@@ -147,6 +147,10 @@ Follow maintained sources rather than creating parallel transport abstractions:
 - `src/stage10_websocket_terminal/web_terminal.cpp` owns HTTP/WebSocket,
   protocol sequencing, heartbeat, consumption ACKs and session teardown.
   It consumes published network state, not Wi-Fi configuration internals.
+  Its WebSocket callbacks run on core 1 inside the lwIP receive callback and
+  only record state; `service_session()` does all the sending. Core 0 reads
+  only the reboot status and the published statistics, never the server or
+  session state.
 - `src/stage10_websocket_terminal/network_services.c` orchestrates independent
   services. Weather/TLS must not become terminal or trap dependencies.
 - `src/common/terminal_queue.c` owns console rings and atomic ownership handover.
@@ -205,13 +209,21 @@ Follow maintained sources rather than creating parallel transport abstractions:
 - Keep each frame's TCP enqueue atomic. With `TCP_WRITE_FLAG_COPY`, temporary
   frame buffers can be released after acceptance; zero-copy requires a separately
   proven ACK/abort lifetime. TCP acceptance, output and browser consumption are
-  different states. Retry `tcp_output` without re-enqueueing accepted frames;
-  application consumption retransmits remain governed by protocol ACKs.
+  different states. Retry `tcp_output` without re-enqueueing accepted frames.
+  TCP delivers an accepted frame once and in order, so the terminal protocol
+  never retransmits: keep only the frame TCP has not yet accepted, and treat a
+  repeated or out-of-order frame as a protocol error.
 - Batch terminal output within the bounded window and flush once per burst.
   Preserve immediate interactive/control sends and configured TCP_NODELAY.
   A successful flush does not prove the browser rendered or consumed anything.
+- Never transmit application data from an lwIP receive callback. While
+  `cyw43_sdpcm_send_common` waits for transmit credit it reads and discards
+  received data frames, so a send made before `cyw43_arch_poll()` has drained
+  the chip loses the peer's next frames until TCP retransmits them. Record
+  state in the callback and send from the service pass. Host tests and a
+  loopback browser check cannot show this; it needs the board.
 - Avoid repeated pbuf-chain traversal, header decoding, payload copies and
-  per-frame heap/list allocations. Prefer span processing, moved buffers and
+  per-frame heap/list allocations. Prefer span processing, reused buffers and
   fixed rings where they preserve masking, fragmentation, control interleaving,
   ordering and the text callback's NUL-termination contract.
 - Budget total memory, not just payload bytes: include partial frames, vector

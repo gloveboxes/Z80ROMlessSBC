@@ -8,201 +8,108 @@
 #include "pico/stdlib.h"
 #include "pico_ws_server/web_socket_server.h"
 #include "web_terminal.h"
-#include "z80sbc/io_ports.h"
 #include "z80sbc/terminal.h"
 
+// Core 1 owns this module. The WebSocket callbacks run inside
+// cyw43_arch_poll() or z80_web_terminal_poll(), never in an interrupt. Only
+// the reboot status and the published statistics are shared with core 0.
+//
+// Callbacks only record state; service_session() does all the sending, after
+// cyw43_arch_poll() has drained the radio. A frame sent from the receive path
+// can run the CYW43 driver out of transmit credit while received frames are
+// still queued in the chip, and the driver discards the frames it reads while
+// it waits for credit. The browser then stalls until TCP retransmits them.
 namespace {
 constexpr uint16_t SERVER_PORT = Z80_WEB_TERMINAL_PORT;
 constexpr uint32_t SERVER_CONNECTIONS = 4;
-constexpr uint32_t SERVER_RETRY_MS = 5000;
+constexpr uint64_t SERVER_RETRY_US = 5u * 1000000u;
 constexpr size_t FRAME_BYTES = Z80_WEB_TERMINAL_FRAME_BYTES;
 constexpr size_t INPUT_BYTES = 64;
 constexpr size_t HEADER_BYTES = 5;
-constexpr size_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
-constexpr uint32_t OUTPUT_COALESCE_US = 1000;
-constexpr uint32_t PROTOCOL_VERSION = 4;
-constexpr uint32_t FRAME_RETRY_MS = 250;
-constexpr uint32_t REBOOT_DEADLINE_MS = 35000;
-constexpr uint32_t HEARTBEAT_MS = 30u * 1000u;
-constexpr uint32_t PONG_TIMEOUT_MS = 20u * 1000u;
+constexpr uint32_t OUTPUT_WINDOW = Z80_WEB_TERMINAL_OUTPUT_WINDOW;
+constexpr uint64_t OUTPUT_COALESCE_US = 1000;
+constexpr uint32_t PROTOCOL_VERSION = 5;
+constexpr uint64_t REBOOT_DEADLINE_US = 35u * 1000000u;
+constexpr uint64_t HEARTBEAT_US = 30u * 1000000u;
+constexpr uint64_t PONG_TIMEOUT_US = 20u * 1000000u;
+constexpr uint64_t PING_RETRY_US = 250u * 1000u;
 // Tolerate two misses; disconnect on the third consecutive miss.
 constexpr uint8_t MAX_MISSED_PONGS = 2;
 // xterm ACKs output only after its write callback runs; allow a backgrounded
-// or busy browser to drain the bounded output window before restoring USB.
-constexpr uint32_t OUTPUT_ACK_TIMEOUT_MS = 5u * 60u * 1000u;
+// or busy browser to drain the output window before restoring USB.
+constexpr uint64_t OUTPUT_ACK_TIMEOUT_US = 5u * 60u * 1000000ull;
 enum : uint8_t {
   OUTPUT = 1, INPUT = 2, OUTPUT_ACK = 3, INPUT_ACK = 4,
   HELLO = 5, READY = 6, REBOOT = 7, REBOOT_STATUS = 8,
 };
 
-struct OutputFrame {
-  uint8_t data[HEADER_BYTES + FRAME_BYTES];
-  size_t length;
-  absolute_time_t retry;
-  absolute_time_t deadline;
-  bool sent;
-};
-OutputFrame output_frames[OUTPUT_WINDOW];
-size_t output_head;
-size_t output_count;
-size_t retained_output_bytes;
-size_t staged_output_length;
-absolute_time_t output_batch_deadline = nil_time;
-z80_web_terminal_stats_t terminal_stats;
-uint8_t pending_input[INPUT_BYTES];
-size_t pending_input_length;
-uint32_t output_sequence;
-uint32_t input_sequence;
-bool input_ack_pending;
-bool protocol_ready;
-std::atomic<uint32_t> reboot_status{Z80_WEB_REBOOT_IDLE};
-uint32_t reported_reboot_status = UINT32_MAX;
-// Core 1 owns this deadline. Keep it across browser disconnects so core 0
-// cannot leave a request looking active forever if its main loop stalls.
-absolute_time_t reboot_deadline;
-bool reboot_deadline_active;
 WebSocketServer *server;
 bool server_started;
-absolute_time_t server_retry_deadline = nil_time;
-std::atomic<int32_t> active_connection{-1};
-// Retain the closing session's identity until its deferred diagnostics arrive.
-std::atomic<int32_t> last_disconnected_connection{-1};
-std::atomic<bool> pending_connected{false};
-std::atomic<bool> pending_disconnected{false};
-std::atomic<uint32_t> pending_ws_close_reason{
-    (uint32_t)WebSocketServer::CloseReason::unknown};
-std::atomic<int32_t> pending_ws_transport_error{0};
-absolute_time_t hello_retry;
-absolute_time_t ping_retry;
-absolute_time_t pong_deadline;
+uint64_t server_retry_deadline;
+int32_t active_connection = -1;
+// A session this module ended; its transport close reason is still to come.
+int32_t closing_connection = -1;
+uint32_t session_network_generation;
+bool network_online;
+
+bool protocol_ready;
+bool hello_pending;
+// TCP owns each frame once it accepts it, so only the next frame is held.
+uint8_t staged[HEADER_BYTES + FRAME_BYTES];
+size_t staged_length;
+// Sequences start at 1; output_acked is the last one the browser consumed.
+uint32_t output_sequence = 1;
+uint32_t output_acked;
+uint64_t output_batch_deadline;
+uint64_t output_ack_deadline;
+uint8_t pending_input[INPUT_BYTES];
+size_t pending_input_length;
+uint32_t input_sequence = 1;
+bool input_ack_pending;
+
+uint64_t ping_deadline;
+uint64_t pong_deadline;
 uint32_t ping_sequence;
 uint8_t ping_payload[4];
 bool awaiting_pong;
 bool activity_since_ping;
 uint8_t missed_pongs;
-uint32_t session_network_generation;
-bool network_online;
 
-void increment_stat(uint32_t &counter, uint32_t amount = 1) {
-  __atomic_fetch_add(&counter, amount, __ATOMIC_RELAXED);
+std::atomic<uint32_t> reboot_status{Z80_WEB_REBOOT_IDLE};
+uint32_t reported_reboot_status = UINT32_MAX;
+// Core 1 owns this deadline. Keep it across browser disconnects so core 0
+// cannot leave a request looking active forever if its main loop stalls.
+uint64_t reboot_deadline;
+bool reboot_deadline_active;
+
+z80_web_terminal_stats_t terminal_stats;
+
+template <typename T> void publish(T &field, T value) {
+  __atomic_store_n(&field, value, __ATOMIC_RELAXED);
 }
 
-void set_disconnect_reason(z80_web_terminal_disconnect_reason_t reason) {
-  __atomic_store_n(&terminal_stats.last_disconnect_reason, (uint32_t)reason,
-                   __ATOMIC_RELAXED);
+template <typename T> T published(const T &field) {
+  return __atomic_load_n(&field, __ATOMIC_RELAXED);
 }
 
-const char *ws_close_reason_name(WebSocketServer::CloseReason reason) {
-  switch (reason) {
-  case WebSocketServer::CloseReason::peer_tcp_closed: return "peer-tcp-closed";
-  case WebSocketServer::CloseReason::peer_websocket_close: return "peer-ws-close";
-  case WebSocketServer::CloseReason::invalid_websocket_input: return "invalid-ws-input";
-  case WebSocketServer::CloseReason::receive_queue_message_limit: return "receive-queue-message-limit";
-  case WebSocketServer::CloseReason::receive_queue_byte_limit: return "receive-queue-byte-limit";
-  case WebSocketServer::CloseReason::pong_backpressure: return "pong-backpressure";
-  case WebSocketServer::CloseReason::tcp_write_error: return "tcp-write-error";
-  case WebSocketServer::CloseReason::tcp_output_error: return "tcp-output-error";
-  case WebSocketServer::CloseReason::tcp_error: return "tcp-error";
-  case WebSocketServer::CloseReason::close_timeout: return "close-timeout";
-  case WebSocketServer::CloseReason::server_abort: return "server-abort";
-  case WebSocketServer::CloseReason::local_close: return "local-close";
-  default: return "unknown";
-  }
+void count(uint32_t &counter) { publish(counter, published(counter) + 1); }
+
+uint32_t frames_in_flight() { return output_sequence - output_acked - 1; }
+
+void publish_output_usage() {
+  uint32_t frames = frames_in_flight();
+  publish(terminal_stats.window_frames, frames);
+  publish(terminal_stats.staged_bytes, (uint32_t)staged_length);
+  if (frames > published(terminal_stats.window_frames_peak))
+    publish(terminal_stats.window_frames_peak, frames);
 }
 
-uint32_t ws_close_reason_code(WebSocketServer::CloseReason reason) {
-  switch (reason) {
-  case WebSocketServer::CloseReason::peer_tcp_closed: return Z80_WEB_TERMINAL_WS_CLOSE_PEER_TCP_CLOSED;
-  case WebSocketServer::CloseReason::peer_websocket_close: return Z80_WEB_TERMINAL_WS_CLOSE_PEER_WEBSOCKET_CLOSE;
-  case WebSocketServer::CloseReason::invalid_websocket_input: return Z80_WEB_TERMINAL_WS_CLOSE_INVALID_INPUT;
-  case WebSocketServer::CloseReason::receive_queue_message_limit: return Z80_WEB_TERMINAL_WS_CLOSE_RECEIVE_QUEUE_MESSAGE_LIMIT;
-  case WebSocketServer::CloseReason::receive_queue_byte_limit: return Z80_WEB_TERMINAL_WS_CLOSE_RECEIVE_QUEUE_BYTE_LIMIT;
-  case WebSocketServer::CloseReason::pong_backpressure: return Z80_WEB_TERMINAL_WS_CLOSE_PONG_BACKPRESSURE;
-  case WebSocketServer::CloseReason::tcp_write_error: return Z80_WEB_TERMINAL_WS_CLOSE_TCP_WRITE_ERROR;
-  case WebSocketServer::CloseReason::tcp_output_error: return Z80_WEB_TERMINAL_WS_CLOSE_TCP_OUTPUT_ERROR;
-  case WebSocketServer::CloseReason::tcp_error: return Z80_WEB_TERMINAL_WS_CLOSE_TCP_ERROR;
-  case WebSocketServer::CloseReason::close_timeout: return Z80_WEB_TERMINAL_WS_CLOSE_TIMEOUT;
-  case WebSocketServer::CloseReason::server_abort: return Z80_WEB_TERMINAL_WS_CLOSE_SERVER_ABORT;
-  case WebSocketServer::CloseReason::local_close: return Z80_WEB_TERMINAL_WS_CLOSE_LOCAL_CLOSE;
-  default: return Z80_WEB_TERMINAL_WS_CLOSE_UNKNOWN;
-  }
-}
-
-void on_close_details(WebSocketServer &, uint32_t connection,
-                      WebSocketServer::CloseReason reason, int transport_error,
-                      size_t queued_messages, size_t queued_bytes,
-                      size_t peak_queued_messages, size_t peak_queued_bytes,
-                      size_t queue_message_limit, size_t queue_byte_limit) {
-  int32_t active = active_connection.load(std::memory_order_acquire);
-  if (active != (int32_t)connection &&
-      last_disconnected_connection.load(std::memory_order_acquire) !=
-          (int32_t)connection)
-    return;
-  last_disconnected_connection.store((int32_t)connection,
-                                      std::memory_order_release);
-  pending_ws_close_reason.store((uint32_t)reason, std::memory_order_release);
-  pending_ws_transport_error.store(transport_error, std::memory_order_release);
-  __atomic_store_n(&terminal_stats.last_ws_close_reason, ws_close_reason_code(reason),
-                   __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_transport_error, transport_error,
-                   __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_messages,
-                   (uint32_t)queued_messages, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_bytes,
-                   (uint32_t)queued_bytes, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_peak_messages,
-                   (uint32_t)peak_queued_messages, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_peak_bytes,
-                   (uint32_t)peak_queued_bytes, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_message_limit,
-                   (uint32_t)queue_message_limit, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.last_ws_queue_byte_limit,
-                   (uint32_t)queue_byte_limit, __ATOMIC_RELAXED);
-  // A previous session may finish closing after its replacement connects.
-  if (active >= 0 && active != (int32_t)connection)
-    return;
-  __atomic_store_n(&terminal_stats.rx_queue_messages,
-                   active >= 0 ? (uint32_t)queued_messages : 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_bytes,
-                   active >= 0 ? (uint32_t)queued_bytes : 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_peak_messages,
-                   (uint32_t)peak_queued_messages, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_peak_bytes,
-                   (uint32_t)peak_queued_bytes, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_message_limit,
-                   (uint32_t)queue_message_limit, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_byte_limit,
-                   (uint32_t)queue_byte_limit, __ATOMIC_RELAXED);
-}
-
-void record_peak(uint32_t &counter, uint32_t value) {
-  if (value > __atomic_load_n(&counter, __ATOMIC_RELAXED))
-    __atomic_store_n(&counter, value, __ATOMIC_RELAXED);
-}
-
-void publish_buffer_usage() {
-  uint32_t frames = (uint32_t)output_count;
-  uint32_t bytes = (uint32_t)(retained_output_bytes + staged_output_length);
-  __atomic_store_n(&terminal_stats.window_frames, frames, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.retained_bytes, bytes, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.staged_bytes, (uint32_t)staged_output_length,
-                   __ATOMIC_RELAXED);
-  record_peak(terminal_stats.window_frames_peak, frames);
-  record_peak(terminal_stats.retained_bytes_peak, bytes);
-}
-
-void reset_receive_queue_usage() {
-  __atomic_store_n(&terminal_stats.rx_queue_messages, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_bytes, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_peak_messages, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_peak_bytes, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_message_limit, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_byte_limit, 0, __ATOMIC_RELAXED);
-}
-
-void clear_receive_queue_current() {
-  __atomic_store_n(&terminal_stats.rx_queue_messages, 0, __ATOMIC_RELAXED);
-  __atomic_store_n(&terminal_stats.rx_queue_bytes, 0, __ATOMIC_RELAXED);
+void publish_close(uint32_t disconnect_reason, WebSocketServer::CloseReason reason,
+                   int transport_error) {
+  if (disconnect_reason != Z80_WEB_TERMINAL_DISCONNECT_NONE)
+    publish(terminal_stats.last_disconnect_reason, disconnect_reason);
+  publish(terminal_stats.last_ws_close_reason, (uint32_t)reason);
+  publish(terminal_stats.last_ws_transport_error, (int32_t)transport_error);
 }
 
 uint32_t read_sequence(const uint8_t *data) {
@@ -216,64 +123,39 @@ void write_sequence(uint8_t *data, uint32_t value) {
 }
 
 void reset_session() {
-  protocol_ready = false;
+  protocol_ready = hello_pending = input_ack_pending = false;
   reported_reboot_status = UINT32_MAX;
   input_sequence = output_sequence = 1;
-  output_head = output_count = pending_input_length = 0;
-  input_ack_pending = false;
-  staged_output_length = 0;
-  retained_output_bytes = 0;
-  publish_buffer_usage();
-  output_batch_deadline = nil_time;
-  hello_retry = nil_time;
-  ping_retry = nil_time;
-  awaiting_pong = false;
-  activity_since_ping = false;
+  output_acked = 0;
+  staged_length = pending_input_length = 0;
+  output_batch_deadline = 0;
+  awaiting_pong = activity_since_ping = false;
   missed_pongs = 0;
-  pong_deadline = nil_time;
-}
-
-void note_browser_activity() {
-  missed_pongs = 0;
-  if (awaiting_pong)
-    activity_since_ping = true;
-}
-
-void close_connection(WebSocketServer &websocket, uint32_t connection) {
-  if (!websocket.close(connection))
-    printf("[network] Close frame not sent; connection scheduled for cleanup.\n");
+  publish_output_usage();
 }
 
 void disconnect_client(z80_web_terminal_disconnect_reason_t reason) {
-  int32_t connection = active_connection.exchange(-1, std::memory_order_acq_rel);
-  if (connection >= 0) {
-    last_disconnected_connection.store(connection, std::memory_order_release);
-    set_disconnect_reason(reason);
-    // Do not pair this new disconnect with a previous session's close details.
-    __atomic_store_n(&terminal_stats.last_ws_close_reason,
-                     Z80_WEB_TERMINAL_WS_CLOSE_UNKNOWN, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_transport_error, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_messages, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_bytes, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_peak_messages, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_peak_bytes, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_message_limit, 0, __ATOMIC_RELAXED);
-    __atomic_store_n(&terminal_stats.last_ws_queue_byte_limit, 0, __ATOMIC_RELAXED);
-    clear_receive_queue_current();
-  }
-  if (connection >= 0 && server != nullptr && !server->abort((uint32_t)connection))
+  if (active_connection < 0)
+    return;
+  closing_connection = active_connection;
+  active_connection = -1;
+  // Do not pair this disconnect with an earlier session's close details.
+  publish_close(reason, WebSocketServer::CloseReason::unknown, 0);
+  if (!server->abort((uint32_t)closing_connection))
     printf("[network] Terminal connection already removed during teardown.\n");
-  pending_connected.store(false, std::memory_order_release);
-  pending_disconnected.store(false, std::memory_order_release);
   z80_terminal_browser_disconnect();
   reset_session();
+}
+
+void protocol_error(const char *problem) {
+  printf("[network] FAIL: %s; reload the terminal page.\n", problem);
+  disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
 }
 
 bool send_control(uint8_t type, uint32_t sequence) {
   uint8_t frame[HEADER_BYTES] = {type};
   write_sequence(frame + 1, sequence);
-  return server->sendMessage((uint32_t)active_connection.load(), frame,
-                             sizeof(frame));
+  return server->sendMessage((uint32_t)active_connection, frame, sizeof(frame));
 }
 
 void check_reboot_deadline() {
@@ -282,7 +164,7 @@ void check_reboot_deadline() {
   uint32_t status = reboot_status.load(std::memory_order_acquire);
   while (status == Z80_WEB_REBOOT_REQUESTED || status == Z80_WEB_REBOOT_FLUSHING ||
          status == Z80_WEB_REBOOT_RESTARTING) {
-    if (!time_reached(reboot_deadline))
+    if (time_us_64() < reboot_deadline)
       return;
     if (reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_TIMEOUT,
                                              std::memory_order_acq_rel)) {
@@ -294,147 +176,184 @@ void check_reboot_deadline() {
   reboot_deadline_active = false;
 }
 
+void request_reboot() {
+  uint32_t status = reboot_status.load(std::memory_order_acquire);
+  // Repeated commands cannot restart an active operation. Failure can be
+  // retried, but only core 0 decides whether it is safe to proceed.
+  while (status != Z80_WEB_REBOOT_REQUESTED &&
+         status != Z80_WEB_REBOOT_FLUSHING &&
+         status != Z80_WEB_REBOOT_RESTARTING &&
+         status != Z80_WEB_REBOOT_TIMEOUT) {
+    if (reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_REQUESTED,
+                                             std::memory_order_acq_rel)) {
+      reboot_deadline = time_us_64() + REBOOT_DEADLINE_US;
+      reboot_deadline_active = true;
+      break;
+    }
+  }
+  reported_reboot_status = UINT32_MAX;
+}
+
 void report_reboot_status() {
   uint32_t status = reboot_status.load(std::memory_order_acquire);
-  if (protocol_ready && status != reported_reboot_status && send_control(REBOOT_STATUS, status)) {
+  if (protocol_ready && status != reported_reboot_status &&
+      send_control(REBOOT_STATUS, status)) {
     reported_reboot_status = status;
     // A watchdog reset sends no TCP FIN. Close explicitly while the network is
     // still alive so the browser can reconnect without waiting for TCP timeout.
-    if (status == Z80_WEB_REBOOT_RESTARTING)
-      close_connection(*server, (uint32_t)active_connection.load());
+    if (status == Z80_WEB_REBOOT_RESTARTING &&
+        !server->close((uint32_t)active_connection))
+      printf("[network] Close frame not sent; connection scheduled for cleanup.\n");
   }
 }
 
-void retry_input_ack() {
-  if (input_ack_pending && send_control(INPUT_ACK, input_sequence - 1))
-    input_ack_pending = false;
-}
-
-void accept_pending_input() {
-  if (!pending_input_length ||
-      !z80_terminal_browser_try_receive(pending_input, pending_input_length))
+// ACK means queued for the Z80. A full RX queue holds the one frame the
+// browser may send until there is room; nothing is evicted to make space.
+void receive_input(const uint8_t *data, size_t length) {
+  if (!z80_terminal_browser_try_receive(data, length)) {
+    if (data != pending_input)
+      memcpy(pending_input, data, length);
+    pending_input_length = length;
     return;
+  }
   pending_input_length = 0;
   ++input_sequence;
   input_ack_pending = true;
-  retry_input_ack();
+}
+
+void pump_output(uint64_t now) {
+  bool sent = false;
+  bool changed = false;
+  for (;;) {
+    size_t supplied = z80_terminal_supply(staged + HEADER_BYTES + staged_length,
+                                          FRAME_BYTES - staged_length);
+    staged_length += supplied;
+    changed |= supplied != 0;
+    if (!staged_length || frames_in_flight() == OUTPUT_WINDOW)
+      break;
+    // Send a full frame now; let a partial one gather bytes for a moment.
+    if (staged_length < FRAME_BYTES && now < output_batch_deadline)
+      break;
+    staged[0] = OUTPUT;
+    write_sequence(staged + 1, output_sequence);
+    auto result = server->enqueueMessage((uint32_t)active_connection, staged,
+                                         HEADER_BYTES + staged_length);
+    if (result == WebSocketServer::SendResult::would_block)
+      break;
+    if (result != WebSocketServer::SendResult::queued) {
+      printf("[network] FAIL: terminal output enqueue (%u); restoring USB.\n",
+             (unsigned)result);
+      disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_SEND_ERROR);
+      return;
+    }
+    output_ack_deadline = now + OUTPUT_ACK_TIMEOUT_US;
+    ++output_sequence;
+    staged_length = 0;
+    output_batch_deadline = now + OUTPUT_COALESCE_US;
+    sent = changed = true;
+  }
+  if (changed)
+    publish_output_usage();
+  if (sent && !server->flush((uint32_t)active_connection))
+    count(terminal_stats.flush_failures);
+}
+
+void acknowledge_output(uint32_t sequence) {
+  uint32_t consumed = sequence - output_acked;
+  if (!consumed || consumed > frames_in_flight()) {
+    protocol_error("unexpected terminal output acknowledgement");
+    return;
+  }
+  output_acked = sequence;
+  output_ack_deadline = time_us_64() + OUTPUT_ACK_TIMEOUT_US;
+  publish_output_usage();
+}
+
+void note_browser_activity() {
+  missed_pongs = 0;
+  if (awaiting_pong)
+    activity_since_ping = true;
 }
 
 void on_connect(WebSocketServer &websocket, uint32_t connection) {
-  int32_t previous = active_connection.exchange((int32_t)connection,
-                                                 std::memory_order_acq_rel);
-  if (previous >= 0) {
-    last_disconnected_connection.store(previous, std::memory_order_release);
-    // Deferred abort reclaims the old slot without waiting for a close reply.
-    if (!websocket.abort((uint32_t)previous))
+  if (active_connection >= 0) {
+    // Last connection wins. The abort reclaims the old slot without waiting
+    // for a close reply.
+    closing_connection = active_connection;
+    if (!websocket.abort((uint32_t)closing_connection))
       printf("[network] Previous terminal connection already removed.\n");
     printf("[network] New browser replaced the previous terminal connection.\n");
   }
-  reset_receive_queue_usage();
-  pending_connected.store(true, std::memory_order_release);
+  active_connection = (int32_t)connection;
+  reset_session();
+  z80_terminal_browser_connect();
+  hello_pending = true;
 }
 
-void on_close(WebSocketServer &, uint32_t connection) {
-  int32_t expected = (int32_t)connection;
-  if (active_connection.compare_exchange_strong(
-          expected, -1, std::memory_order_acq_rel)) {
-    last_disconnected_connection.store((int32_t)connection,
-                                        std::memory_order_release);
-    set_disconnect_reason(Z80_WEB_TERMINAL_DISCONNECT_SOCKET_CLOSED);
-    clear_receive_queue_current();
-    pending_disconnected.store(true, std::memory_order_release);
+void on_close(WebSocketServer &, uint32_t connection,
+              WebSocketServer::CloseReason reason, int transport_error) {
+  if ((int32_t)connection == closing_connection) {
+    closing_connection = -1;
+    publish_close(Z80_WEB_TERMINAL_DISCONNECT_NONE, reason, transport_error);
+    return;
   }
+  if ((int32_t)connection != active_connection)
+    return;
+  active_connection = -1;
+  publish_close(Z80_WEB_TERMINAL_DISCONNECT_SOCKET_CLOSED, reason, transport_error);
+  printf("[network] Terminal connection closed: %s",
+         z80_web_terminal_ws_close_name((uint32_t)reason));
+  if (transport_error)
+    printf(" (lwIP error=%d)", transport_error);
+  printf("; restoring USB.\n");
+  z80_terminal_browser_disconnect();
+  reset_session();
 }
 
 void on_message(WebSocketServer &, uint32_t connection,
                 const void *data, size_t length) {
-  if (active_connection.load(std::memory_order_acquire) != (int32_t)connection)
+  if ((int32_t)connection != active_connection)
     return;
   const uint8_t *frame = static_cast<const uint8_t *>(data);
   if (length < HEADER_BYTES) {
-    printf("[network] FAIL: invalid terminal protocol; reload the terminal page.\n");
-    disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
+    protocol_error("invalid terminal protocol");
     return;
   }
-  uint32_t sequence = read_sequence(frame + 1);
-  if (frame[0] == READY && length == HEADER_BYTES &&
-      sequence == PROTOCOL_VERSION) {
-    protocol_ready = true;
-    report_reboot_status();
-    if (ping_retry == nil_time)
-      ping_retry = make_timeout_time_ms(HEARTBEAT_MS);
-    note_browser_activity();
-  } else if (frame[0] == REBOOT && protocol_ready &&
-             length == HEADER_BYTES && sequence == 0) {
-    note_browser_activity();
-    uint32_t status = reboot_status.load(std::memory_order_acquire);
-    // Repeated commands cannot restart an active operation. Failure can be
-    // retried, but only core 0 decides whether it is safe to proceed.
-    while (status != Z80_WEB_REBOOT_REQUESTED &&
-           status != Z80_WEB_REBOOT_FLUSHING &&
-           status != Z80_WEB_REBOOT_RESTARTING &&
-           status != Z80_WEB_REBOOT_TIMEOUT) {
-      if (reboot_status.compare_exchange_weak(status, Z80_WEB_REBOOT_REQUESTED,
-                                               std::memory_order_acq_rel)) {
-        reboot_deadline = make_timeout_time_ms(REBOOT_DEADLINE_MS);
-        reboot_deadline_active = true;
-        break;
-      }
+  note_browser_activity();
+  const uint8_t type = frame[0];
+  const uint32_t sequence = read_sequence(frame + 1);
+  const size_t payload = length - HEADER_BYTES;
+  if (type == READY && !payload && sequence == PROTOCOL_VERSION) {
+    if (!protocol_ready) {
+      protocol_ready = true;
+      ping_deadline = time_us_64() + HEARTBEAT_US;
     }
-    reported_reboot_status = UINT32_MAX;
-  } else if (frame[0] == OUTPUT_ACK && protocol_ready &&
-             length == HEADER_BYTES) {
-    note_browser_activity();
-    for (size_t i = 0; i < output_count; ++i) {
-      const OutputFrame &candidate = output_frames[(output_head + i) % OUTPUT_WINDOW];
-      if (candidate.sent && read_sequence(candidate.data + 1) == sequence) {
-        for (size_t j = 0; j <= i; ++j)
-          retained_output_bytes -=
-              output_frames[(output_head + j) % OUTPUT_WINDOW].length - HEADER_BYTES;
-        output_head = (output_head + i + 1) % OUTPUT_WINDOW;
-        output_count -= i + 1;
-        publish_buffer_usage();
-        break;
-      }
-    }
-  } else if (frame[0] == INPUT && protocol_ready &&
-             length > HEADER_BYTES && length <= HEADER_BYTES + INPUT_BYTES) {
-    note_browser_activity();
-    if (sequence == input_sequence) {
-      size_t bytes = length - HEADER_BYTES;
-      if (pending_input_length &&
-          (pending_input_length != bytes ||
-           memcmp(pending_input, frame + HEADER_BYTES, bytes) != 0)) {
-        printf("[network] FAIL: changed pending terminal input; disconnecting.\n");
-        disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
-        return;
-      }
-      memcpy(pending_input, frame + HEADER_BYTES, bytes);
-      pending_input_length = bytes;
-      accept_pending_input();
-    } else if (sequence == input_sequence - 1) {
-      input_ack_pending = true;
-      retry_input_ack();
-    } else {
-      printf("[network] FAIL: out-of-order terminal input; disconnecting.\n");
-      disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
-    }
+  } else if (!protocol_ready) {
+    protocol_error("terminal frame before the handshake");
+  } else if (type == REBOOT && !payload && sequence == 0) {
+    request_reboot();
+  } else if (type == OUTPUT_ACK && !payload) {
+    acknowledge_output(sequence);
+  } else if (type == INPUT && payload && payload <= INPUT_BYTES) {
+    // The browser sends one frame at a time and waits for its ACK.
+    if (sequence != input_sequence || pending_input_length || input_ack_pending)
+      protocol_error("out-of-order terminal input");
+    else
+      receive_input(frame + HEADER_BYTES, payload);
   } else {
-    printf("[network] FAIL: invalid terminal frame; reload the terminal page.\n");
-    disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PROTOCOL_ERROR);
+    protocol_error("invalid terminal frame");
   }
 }
 
 void on_pong(WebSocketServer &, uint32_t connection,
              const void *data, size_t length) {
-  if (active_connection.load() != (int32_t)connection)
+  if ((int32_t)connection != active_connection)
     return;
   if (awaiting_pong && length == sizeof(ping_payload) &&
       memcmp(data, ping_payload, length) == 0) {
     awaiting_pong = false;
     missed_pongs = 0;
     activity_since_ping = false;
-    pong_deadline = nil_time;
   } else {
     // Even a late PONG proves the peer is responsive and can satisfy a
     // newer ping's liveness check through note_browser_activity().
@@ -442,261 +361,136 @@ void on_pong(WebSocketServer &, uint32_t connection,
   }
 }
 
-void process_events() {
-  if (pending_disconnected.exchange(false, std::memory_order_acq_rel)) {
-    auto reason = (WebSocketServer::CloseReason)pending_ws_close_reason.load(
-        std::memory_order_acquire);
-    int transport_error = pending_ws_transport_error.load(std::memory_order_acquire);
-    printf("[network] WebSocket server closed connection: %s",
-           ws_close_reason_name(reason));
-    if (transport_error)
-      printf(" (lwIP error=%d)", transport_error);
-    printf("; queue=%lu/%lu messages, peak=%lu/%lu; bytes=%lu/%lu, peak=%lu/%lu.\n",
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_messages,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_message_limit,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_peak_messages,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_message_limit,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_bytes,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_byte_limit,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_peak_bytes,
-                                          __ATOMIC_RELAXED),
-           (unsigned long)__atomic_load_n(&terminal_stats.last_ws_queue_byte_limit,
-                                          __ATOMIC_RELAXED));
-    z80_terminal_browser_disconnect();
-    reset_session();
-  }
-  if (pending_connected.exchange(false, std::memory_order_acq_rel) &&
-      active_connection.load(std::memory_order_acquire) >= 0) {
-    reset_session();
-    z80_terminal_browser_connect();
-  }
-}
-
 bool ensure_server() {
   if (server_started)
     return true;
-  if (!time_reached(server_retry_deadline))
+  uint64_t now = time_us_64();
+  if (now < server_retry_deadline)
     return false;
   if (server == nullptr) {
     server = new (std::nothrow) WebSocketServer(SERVER_CONNECTIONS);
     if (server == nullptr) {
       printf("[network] FAIL: server allocation; retry in 5 seconds.\n");
-      server_retry_deadline = make_timeout_time_ms(SERVER_RETRY_MS);
+      server_retry_deadline = now + SERVER_RETRY_US;
       return false;
     }
     server->setConnectCallback(on_connect);
     server->setCloseCallback(on_close);
-    server->setCloseDetailsCallback(on_close_details);
     server->setMessageCallback(on_message);
     server->setPongCallback(on_pong);
     server->setTcpNoDelay(true);
-    // ACK/PONG control messages are tiny but can arrive in a burst within one
-    // CYW43 poll. Give the queue room to absorb that burst, then drain more of
-    // it on each application poll; the byte cap still bounds payload storage.
-    if (!server->setReceiveLimits({HEADER_BYTES + INPUT_BYTES, 1024, 64, 32})) {
-      printf("[network] FAIL: terminal receive limits; retry in 5 seconds.\n");
+    if (!server->setMaxMessageSize(HEADER_BYTES + INPUT_BYTES)) {
+      printf("[network] FAIL: terminal message limit; retry in 5 seconds.\n");
       delete server;
       server = nullptr;
-      server_retry_deadline = make_timeout_time_ms(SERVER_RETRY_MS);
+      server_retry_deadline = now + SERVER_RETRY_US;
       return false;
     }
   }
   server_started = server->startListening(SERVER_PORT);
   if (!server_started) {
     printf("[network] FAIL: HTTP/WebSocket listen; retry in 5 seconds.\n");
-    server_retry_deadline = make_timeout_time_ms(SERVER_RETRY_MS);
+    server_retry_deadline = now + SERVER_RETRY_US;
   }
   return server_started;
 }
 
-void poll_output() {
-  int32_t connection = active_connection.load(std::memory_order_acquire);
-  if (connection < 0)
-    return;
-  if (output_count && time_reached(output_frames[output_head].deadline)) {
-    increment_stat(terminal_stats.ack_timeouts);
+// False when the browser missed too many heartbeats and was disconnected.
+bool service_heartbeat(uint64_t now) {
+  if (awaiting_pong) {
+    if (now < pong_deadline)
+      return true;
+    awaiting_pong = false;
+    if (activity_since_ping) {
+      missed_pongs = 0;
+    } else {
+      count(terminal_stats.pong_timeouts);
+      if (++missed_pongs > MAX_MISSED_PONGS) {
+        printf("[network] Terminal client missed too many PONGs; restoring USB.\n");
+        disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PONG_TIMEOUT);
+        return false;
+      }
+    }
+    activity_since_ping = false;
+  }
+  if (now >= ping_deadline) {
+    write_sequence(ping_payload, ++ping_sequence);
+    if (server->sendPing((uint32_t)active_connection, ping_payload,
+                         sizeof(ping_payload))) {
+      awaiting_pong = true;
+      activity_since_ping = false;
+      ping_deadline = now + HEARTBEAT_US;
+      pong_deadline = now + PONG_TIMEOUT_US;
+    } else {
+      ping_deadline = now + PING_RETRY_US;
+    }
+  }
+  return true;
+}
+
+void service_session() {
+  const uint64_t now = time_us_64();
+  // A control stays pending until TCP takes it.
+  if (hello_pending)
+    hello_pending = !send_control(HELLO, PROTOCOL_VERSION);
+  if (pending_input_length)
+    receive_input(pending_input, pending_input_length);
+  if (input_ack_pending)
+    input_ack_pending = !send_control(INPUT_ACK, input_sequence - 1);
+  report_reboot_status();
+  if (frames_in_flight() && now >= output_ack_deadline) {
+    count(terminal_stats.ack_timeouts);
     printf("[network] Terminal client timed out; restoring USB.\n");
     disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_ACK_TIMEOUT);
     return;
   }
-  if (awaiting_pong && time_reached(pong_deadline)) {
-    awaiting_pong = false;
-    pong_deadline = nil_time;
-    if (activity_since_ping) {
-      missed_pongs = 0;
-    } else {
-      increment_stat(terminal_stats.pong_timeouts);
-      ++missed_pongs;
-      if (missed_pongs > MAX_MISSED_PONGS) {
-        printf("[network] Terminal client missed too many PONGs; restoring USB.\n");
-        disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_PONG_TIMEOUT);
-        return;
-      }
-    }
-    activity_since_ping = false;
-    // Keep the 30-second send cadence; enqueue backpressure is retried on the
-    // normal short retry cadence.
-  }
-  if (protocol_ready && !awaiting_pong && time_reached(ping_retry)) {
-    write_sequence(ping_payload, ++ping_sequence);
-    if (server->sendPing((uint32_t)connection, ping_payload,
-                         sizeof(ping_payload))) {
-      awaiting_pong = true;
-      activity_since_ping = false;
-      // A queued ping is outstanding until its matching PONG or the client
-      // timeout. Do not retransmit it every poll; retry only failed enqueues.
-      ping_retry = make_timeout_time_ms(HEARTBEAT_MS);
-      pong_deadline = make_timeout_time_ms(PONG_TIMEOUT_MS);
-    } else {
-      ping_retry = make_timeout_time_ms(FRAME_RETRY_MS);
-    }
-  }
-  if (!protocol_ready) {
-    if (time_reached(hello_retry)) {
-      send_control(HELLO, PROTOCOL_VERSION);
-      hello_retry = make_timeout_time_ms(FRAME_RETRY_MS);
-    }
-    return;
-  }
-  bool output_changed = false;
-  while (output_count < OUTPUT_WINDOW) {
-    OutputFrame &frame = output_frames[(output_head + output_count) % OUTPUT_WINDOW];
-    // ACKs advance head and reduce count together, preserving this staging slot.
-    size_t supplied = z80_terminal_supply(
-        frame.data + HEADER_BYTES + staged_output_length,
-        FRAME_BYTES - staged_output_length);
-    staged_output_length += supplied;
-    output_changed |= supplied != 0;
-    if (!staged_output_length)
-      break;
-    if (staged_output_length < FRAME_BYTES && !time_reached(output_batch_deadline))
-      break;
-    frame.data[0] = OUTPUT;
-    write_sequence(frame.data + 1, output_sequence++);
-    frame.length = HEADER_BYTES + staged_output_length;
-    frame.retry = nil_time;
-    frame.deadline = make_timeout_time_ms(OUTPUT_ACK_TIMEOUT_MS);
-    frame.sent = false;
-    retained_output_bytes += staged_output_length;
-    ++output_count;
-    output_changed = true;
-    staged_output_length = 0;
-    output_batch_deadline = make_timeout_time_us(OUTPUT_COALESCE_US);
-  }
-  if (output_changed)
-    publish_buffer_usage();
-  bool queued = false;
-  for (size_t i = 0; i < output_count; ++i) {
-    OutputFrame &frame = output_frames[(output_head + i) % OUTPUT_WINDOW];
-    if (time_reached(frame.retry)) {
-      auto result = server->enqueueMessage((uint32_t)connection, frame.data, frame.length);
-      if (result == WebSocketServer::SendResult::would_block)
-        break;
-      if (result != WebSocketServer::SendResult::queued) {
-        printf("[network] FAIL: terminal output enqueue (%u); restoring USB.\n",
-               (unsigned)result);
-        disconnect_client(Z80_WEB_TERMINAL_DISCONNECT_OUTPUT_SEND_ERROR);
-        return;
-      }
-      queued = true;
-      if (frame.sent)
-        increment_stat(terminal_stats.retransmits);
-      frame.sent = true;
-      frame.retry = make_timeout_time_ms(FRAME_RETRY_MS);
-    }
-    if (!frame.sent)
-      break;
-  }
-  if (queued && !server->flush((uint32_t)connection))
-    increment_stat(terminal_stats.flush_failures);
+  if (protocol_ready && service_heartbeat(now))
+    pump_output(now);
 }
 }  // namespace
 
 extern "C" z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
-  z80_web_terminal_stats_t stats = {};
-  stats.retransmits =
-      __atomic_load_n(&terminal_stats.retransmits, __ATOMIC_RELAXED);
-  stats.flush_failures =
-      __atomic_load_n(&terminal_stats.flush_failures, __ATOMIC_RELAXED);
-  stats.ack_timeouts =
-      __atomic_load_n(&terminal_stats.ack_timeouts, __ATOMIC_RELAXED);
-  stats.pong_timeouts =
-      __atomic_load_n(&terminal_stats.pong_timeouts, __ATOMIC_RELAXED);
-  stats.window_frames =
-      __atomic_load_n(&terminal_stats.window_frames, __ATOMIC_RELAXED);
-  stats.window_frames_peak =
-      __atomic_load_n(&terminal_stats.window_frames_peak, __ATOMIC_RELAXED);
-  stats.retained_bytes =
-      __atomic_load_n(&terminal_stats.retained_bytes, __ATOMIC_RELAXED);
-  stats.retained_bytes_peak =
-      __atomic_load_n(&terminal_stats.retained_bytes_peak, __ATOMIC_RELAXED);
-  stats.staged_bytes =
-      __atomic_load_n(&terminal_stats.staged_bytes, __ATOMIC_RELAXED);
-  stats.last_disconnect_reason =
-      __atomic_load_n(&terminal_stats.last_disconnect_reason, __ATOMIC_RELAXED);
-  stats.last_ws_close_reason =
-      __atomic_load_n(&terminal_stats.last_ws_close_reason, __ATOMIC_RELAXED);
-  stats.last_ws_transport_error =
-      __atomic_load_n(&terminal_stats.last_ws_transport_error, __ATOMIC_RELAXED);
-  stats.last_ws_queue_messages =
-      __atomic_load_n(&terminal_stats.last_ws_queue_messages, __ATOMIC_RELAXED);
-  stats.last_ws_queue_bytes =
-      __atomic_load_n(&terminal_stats.last_ws_queue_bytes, __ATOMIC_RELAXED);
-  stats.last_ws_queue_peak_messages =
-      __atomic_load_n(&terminal_stats.last_ws_queue_peak_messages,
-                      __ATOMIC_RELAXED);
-  stats.last_ws_queue_peak_bytes =
-      __atomic_load_n(&terminal_stats.last_ws_queue_peak_bytes, __ATOMIC_RELAXED);
-  stats.last_ws_queue_message_limit =
-      __atomic_load_n(&terminal_stats.last_ws_queue_message_limit,
-                      __ATOMIC_RELAXED);
-  stats.last_ws_queue_byte_limit =
-      __atomic_load_n(&terminal_stats.last_ws_queue_byte_limit, __ATOMIC_RELAXED);
-  stats.rx_queue_messages =
-      __atomic_load_n(&terminal_stats.rx_queue_messages, __ATOMIC_RELAXED);
-  stats.rx_queue_bytes =
-      __atomic_load_n(&terminal_stats.rx_queue_bytes, __ATOMIC_RELAXED);
-  stats.rx_queue_peak_messages =
-      __atomic_load_n(&terminal_stats.rx_queue_peak_messages, __ATOMIC_RELAXED);
-  stats.rx_queue_peak_bytes =
-      __atomic_load_n(&terminal_stats.rx_queue_peak_bytes, __ATOMIC_RELAXED);
-  stats.rx_queue_message_limit =
-      __atomic_load_n(&terminal_stats.rx_queue_message_limit, __ATOMIC_RELAXED);
-  stats.rx_queue_byte_limit =
-      __atomic_load_n(&terminal_stats.rx_queue_byte_limit, __ATOMIC_RELAXED);
-
-  int32_t connection = active_connection.load(std::memory_order_acquire);
-  if (server != nullptr && connection >= 0) {
-    WebSocketServer::ReceiveQueueStats queue;
-    if (server->getReceiveQueueStats((uint32_t)connection, queue)) {
-      stats.rx_queue_active = 1;
-      stats.rx_queue_messages = (uint32_t)queue.queuedMessages;
-      stats.rx_queue_bytes = (uint32_t)queue.queuedBytes;
-      stats.rx_queue_peak_messages = (uint32_t)queue.peakQueuedMessages;
-      stats.rx_queue_peak_bytes = (uint32_t)queue.peakQueuedBytes;
-      stats.rx_queue_message_limit = (uint32_t)queue.messageLimit;
-      stats.rx_queue_byte_limit = (uint32_t)queue.byteLimit;
-      __atomic_store_n(&terminal_stats.rx_queue_messages,
-                       stats.rx_queue_messages, __ATOMIC_RELAXED);
-      __atomic_store_n(&terminal_stats.rx_queue_bytes,
-                       stats.rx_queue_bytes, __ATOMIC_RELAXED);
-      __atomic_store_n(&terminal_stats.rx_queue_peak_messages,
-                       stats.rx_queue_peak_messages, __ATOMIC_RELAXED);
-      __atomic_store_n(&terminal_stats.rx_queue_peak_bytes,
-                       stats.rx_queue_peak_bytes, __ATOMIC_RELAXED);
-      __atomic_store_n(&terminal_stats.rx_queue_message_limit,
-                       stats.rx_queue_message_limit, __ATOMIC_RELAXED);
-      __atomic_store_n(&terminal_stats.rx_queue_byte_limit,
-                       stats.rx_queue_byte_limit, __ATOMIC_RELAXED);
-    }
-  }
+  z80_web_terminal_stats_t stats;
+  stats.flush_failures = published(terminal_stats.flush_failures);
+  stats.ack_timeouts = published(terminal_stats.ack_timeouts);
+  stats.pong_timeouts = published(terminal_stats.pong_timeouts);
+  stats.window_frames = published(terminal_stats.window_frames);
+  stats.window_frames_peak = published(terminal_stats.window_frames_peak);
+  stats.staged_bytes = published(terminal_stats.staged_bytes);
+  stats.last_disconnect_reason = published(terminal_stats.last_disconnect_reason);
+  stats.last_ws_close_reason = published(terminal_stats.last_ws_close_reason);
+  stats.last_ws_transport_error = published(terminal_stats.last_ws_transport_error);
   return stats;
+}
+
+extern "C" const char *z80_web_terminal_disconnect_name(uint32_t reason) {
+  static const char *const names[] = {
+      "none", "socket-closed", "network-lost", "output-ack-timeout",
+      "pong-timeout", "protocol-error", "output-send-error",
+  };
+  return reason < sizeof(names) / sizeof(names[0]) ? names[reason] : "none";
+}
+
+extern "C" const char *z80_web_terminal_ws_close_name(uint32_t reason) {
+  using Reason = WebSocketServer::CloseReason;
+  static const char *const names[] = {
+      "unknown", "peer-tcp-closed", "peer-ws-close", "invalid-ws-input",
+      "pong-backpressure", "tcp-write-error", "tcp-output-error", "tcp-error",
+      "close-timeout", "server-abort", "local-close",
+  };
+  static_assert((unsigned)Reason::unknown == 0 &&
+                (unsigned)Reason::peer_tcp_closed == 1 &&
+                (unsigned)Reason::peer_websocket_close == 2 &&
+                (unsigned)Reason::invalid_websocket_input == 3 &&
+                (unsigned)Reason::pong_backpressure == 4 &&
+                (unsigned)Reason::tcp_write_error == 5 &&
+                (unsigned)Reason::tcp_output_error == 6 &&
+                (unsigned)Reason::tcp_error == 7 &&
+                (unsigned)Reason::close_timeout == 8 &&
+                (unsigned)Reason::server_abort == 9 &&
+                (unsigned)Reason::local_close == 10 &&
+                sizeof(names) / sizeof(names[0]) == 11);
+  return reason < sizeof(names) / sizeof(names[0]) ? names[reason] : "unknown";
 }
 
 extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
@@ -713,18 +507,13 @@ extern "C" void z80_web_terminal_poll(bool online, uint32_t generation) {
     session_network_generation = generation;
   }
   network_online = online;
-  if (online && ensure_server()) {
-    process_events();
-    server->popMessages();
-    process_events();
-    accept_pending_input();
-    retry_input_ack();
-    report_reboot_status();
-    poll_output();
-  } else if (server != nullptr) {
-    server->popMessages();
-    process_events();
-  }
+  if (online)
+    ensure_server();
+  // Also runs offline, to reclaim the connection just disconnected.
+  if (server != nullptr)
+    server->poll();
+  if (active_connection >= 0)
+    service_session();
   cyw43_arch_lwip_end();
 }
 

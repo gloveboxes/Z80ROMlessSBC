@@ -74,9 +74,10 @@ tests omitted is not equivalent to exercising the complete server.
 
 - Queue changes: test full/empty bounds, order, concurrent producer/consumer
   progress, non-nested locking, and O(1) ownership handover without stale bytes.
-- Protocol changes: test cumulative/wrapping ACKs, ACKs for never-enqueued data,
-  pending-input admission on the next service pass, duplicate handling, reconnect,
-  stale callbacks, heartbeat timeout, and USB fallback.
+- Protocol changes: test cumulative/wrapping ACKs, ACKs for never-sent data,
+  pending-input admission on the next service pass, rejection of repeated and
+  out-of-order frames, reconnect, stale callbacks, heartbeat timeout, and USB
+  fallback.
 - Transport changes: count accepted `tcp_write` calls separately from output
   attempts. Verify a four-frame terminal burst uses four 521-byte frame writes
   and one flush, while single interactive/control messages flush promptly.
@@ -84,9 +85,11 @@ tests omitted is not equivalent to exercising the complete server.
   accepted writes. These sizes describe the current protocol, not universal
   WebSocket limits; update assertions if framing is intentionally changed.
 - Receive/lifetime changes: test split/chained pbufs, empty frames, masking,
-  fragmented/control interleaving, malformed input, message/queue bounds, fair
-  dispatch budgets, PONG backpressure, callback reentrancy, close deadline wrap,
-  slot reuse, disconnect/error races, destructor cleanup and HTTP final ACKs.
+  fragmented/control interleaving, malformed input, the message size limit,
+  several frames in one span, PONG backpressure, send/close/abort from inside
+  a callback, close deadline wrap, slot reuse, disconnect/error races,
+  destructor cleanup, HTTP final ACKs and zero steady-state allocations.
+  The terminal tests must also fail if a terminal callback transmits.
 - Run the changed WebSocket lifetime/parser tests under AddressSanitizer and
   UndefinedBehaviorSanitizer in a separate native build when supported by the
   host compiler. Sanitizer success is not a substitute for actual SDK builds.

@@ -129,14 +129,14 @@ discards do not increment the terminal overflow counter.
 Phase 10 also clears queued input/output on browser/USB handover and rejects
 additional browser sessions without changing the active owner.
 Wi-Fi-only events leave USB-owned queues intact. The Phase 10 browser and
-firmware use a [sequenced, acknowledged binary protocol](../implementation/phase-10-websocket.md#acknowledged-terminal-protocol-version-4):
-up to four 512-byte output frames are retained in flight and cumulatively acknowledged
-after xterm consumes them. Output survives temporary send failures without
-duplication. One pending browser input frame waits for RX-queue space and is
-admitted on the next service pass rather than waiting for retransmission or
-evicting older bytes. The terminal sends a ping every five minutes. A missing
-pong is counted at the next five-minute heartbeat; a fifth miss releases the
-browser to USB. A stalled output ACK still times out after 15 seconds.
+firmware use a [sequenced, acknowledged binary protocol](../implementation/phase-10-websocket.md#acknowledged-terminal-protocol-version-5):
+up to four 512-byte output frames are in flight and cumulatively acknowledged
+after xterm consumes them. TCP backpressure delays output without loss or
+reordering. One pending browser input frame waits for RX-queue space and is
+admitted on a later service pass rather than evicting older bytes. The
+terminal sends a ping every 30 seconds; the third consecutive missed pong
+without other browser activity releases the browser to USB, as does five
+minutes without output-ACK progress.
 
 This is enough for ROM monitors, BASIC, CP/M console glue, and small
 diagnostics. If later software needs modem-control style signals, add

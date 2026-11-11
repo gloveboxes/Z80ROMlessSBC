@@ -22,17 +22,19 @@ the toolbar. Ctrl+C sends byte 3 and Ctrl+O sends byte 15. Tab is available from
 a physical keyboard, not the pad. Ctrl-M sends carriage
 return, and Page Up/Down match Phase 9's CP/M mappings.
 
-The page speaks the version-4 acknowledged binary terminal protocol described
+The page speaks the version-5 acknowledged binary terminal protocol described
 in the [Phase 10 guide](../../../docs/docs/en/implementation/phase-10-websocket.md).
 It is not a raw-byte WebSocket client. Output is acknowledged after xterm
-consumes it, using cumulative ACKs and at most four queued output frames
-(1,024 bytes). Input is sent in 64-byte frames only as the Pico acknowledges
-queue acceptance; a full Pico RX queue retains one pending frame and admits
-it as soon as space is available. Retries use the same sequence number to prevent duplicate
-input/output. Up to 64 KiB of unconfirmed input is buffered; excess new input
-is rejected with a visible error. Unconfirmed bytes are cleared, never replayed,
-on disconnect. Reload the page after updating the firmware; version-1 pages
-are not compatible. Browser reconnect attempts are capped at five.
+consumes it: at most four output frames (2,048 bytes) are queued, and frames
+parsed in the same task share one cumulative ACK. Input is sent in 64-byte
+frames, one at a time, as the Pico acknowledges queue acceptance; a full Pico
+RX queue holds that frame and admits it as soon as space is available. TCP
+delivers each frame once, so nothing is resent and a repeated or out-of-order
+frame closes the connection. Up to 64 KiB of unconfirmed input is buffered;
+excess new input is rejected with a visible error. Unconfirmed bytes are
+cleared, never replayed, on disconnect. Reload the page after updating the
+firmware; a page speaking another protocol version is rejected. Browser
+reconnect attempts are capped at five.
 
 The page loads `@xterm/xterm` 6.0.0 and `@xterm/addon-webgl` 0.19.0 from the
 jsDelivr CDN and renders with WebGL, falling back to the DOM renderer if WebGL

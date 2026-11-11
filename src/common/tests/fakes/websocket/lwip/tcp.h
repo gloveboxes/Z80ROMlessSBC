@@ -9,7 +9,8 @@ using err_t = int;
 using u16_t = uint16_t;
 constexpr err_t ERR_OK = 0, ERR_MEM = -1, ERR_BUF = -2, ERR_RTE = -4,
                 ERR_ABRT = -13, ERR_ARG = -16;
-constexpr unsigned TCP_SND_BUF = 4 * 1460;
+constexpr unsigned TCP_MSS = 1460;
+constexpr unsigned TCP_SND_BUF = 4 * TCP_MSS;
 constexpr unsigned TCP_WRITE_FLAG_COPY = 1;
 constexpr unsigned TF_ACK_NOW = 0x02U;  // Same value as lwIP: immediate ACK.
 constexpr int IPADDR_TYPE_ANY = 0;
@@ -24,6 +25,9 @@ struct tcp_pcb {
   err_t write_result = ERR_OK, output_result = ERR_OK, close_result = ERR_OK;
   unsigned outputs = 0, recved = 0, available = TCP_SND_BUF, poll_interval = 0;
   bool aborted = false, closed = false, nodelay = false;
+  // Clear to count writes without storing them (storing allocates).
+  bool record = true;
+  unsigned write_count = 0;
   unsigned flags = 0;
   std::vector<std::vector<uint8_t>> writes;
 };
@@ -51,8 +55,10 @@ inline err_t tcp_write(tcp_pcb* p, const void* data, u16_t size, unsigned flags)
   if (size > p->available)
     return ERR_MEM;
   p->available -= size;
+  ++p->write_count;
   auto bytes = static_cast<const uint8_t*>(data);
-  p->writes.emplace_back(bytes, bytes + size);
+  if (p->record)
+    p->writes.emplace_back(bytes, bytes + size);
   return ERR_OK;
 }
 inline err_t tcp_output(tcp_pcb* p) {

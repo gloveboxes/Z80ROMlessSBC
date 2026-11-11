@@ -5,44 +5,29 @@
 class WebSocketServer {
 public:
   enum class SendResult { queued, would_block, closed, invalid, too_large, no_memory, error };
-  struct ReceiveLimits {
-    size_t messageBytes = 64000, queuedBytes = 64000, queuedMessages = 16, dispatchMessages = 8;
-  };
-  struct ReceiveQueueStats {
-    size_t queuedMessages = 0, queuedBytes = 0, peakQueuedMessages = 0,
-           peakQueuedBytes = 0, messageLimit = 0, byteLimit = 0;
-  };
   enum class CloseReason : uint8_t {
     unknown, peer_tcp_closed, peer_websocket_close, invalid_websocket_input,
-    receive_queue_message_limit, receive_queue_byte_limit, pong_backpressure,
-    tcp_write_error, tcp_output_error, tcp_error, close_timeout, server_abort, local_close
+    pong_backpressure, tcp_write_error, tcp_output_error, tcp_error,
+    close_timeout, server_abort, local_close
   };
   using ConnectCallback = void (*)(WebSocketServer &, uint32_t);
-  using CloseCallback = ConnectCallback;
-  using CloseDetailsCallback = void (*)(WebSocketServer &, uint32_t, CloseReason,
-                                      int, size_t, size_t, size_t, size_t,
-                                      size_t, size_t);
+  using CloseCallback = void (*)(WebSocketServer &, uint32_t, CloseReason, int);
   using MessageCallback = void (*)(WebSocketServer &, uint32_t, const void *, size_t);
   using PongCallback = MessageCallback;
   explicit WebSocketServer(uint32_t) {}
-  ReceiveLimits receive_limits;
-  ReceiveQueueStats receive_queue_stats;
+  size_t max_message_size = 0;
   uint16_t listening_port = 0;
-  CloseDetailsCallback close_details_callback = nullptr;
   void setConnectCallback(ConnectCallback) {}
   void setCloseCallback(CloseCallback) {}
-  void setCloseDetailsCallback(CloseDetailsCallback cb) { close_details_callback = cb; }
   void setMessageCallback(MessageCallback) {}
   void setPongCallback(PongCallback) {}
   void setTcpNoDelay(bool) {}
-  bool setReceiveLimits(const ReceiveLimits& limits) {
-    receive_limits = limits;
-    return limits.messageBytes == 69 && limits.queuedBytes == 1024 &&
-           limits.queuedMessages == 64 && limits.dispatchMessages == 32;
+  bool setMaxMessageSize(size_t bytes) {
+    max_message_size = bytes;
+    return bytes == 69;
   }
-  bool getReceiveQueueStats(uint32_t, ReceiveQueueStats&);
   bool startListening(uint16_t port) { listening_port = port; return true; }
-  void popMessages();
+  void poll();
   bool close(uint32_t);
   bool abort(uint32_t);
   SendResult enqueueMessage(uint32_t, const void *, size_t);

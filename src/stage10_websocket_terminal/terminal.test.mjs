@@ -29,6 +29,7 @@ function terminal(location = { hostname: '192.0.2.1', port: '', search: '' }) {
   let deferWrite = false;
   const written = [];
   const timers = new Map();
+  const microtasks = [];
   let nextTimer = 1;
   const errors = [];
   const term = {
@@ -48,6 +49,7 @@ function terminal(location = { hostname: '192.0.2.1', port: '', search: '' }) {
     document: { getElementById() { return null; } },
     setTimeout(callback) { const id = nextTimer++; timers.set(id, callback); return id; },
     clearTimeout(id) { timers.delete(id); },
+    queueMicrotask(callback) { microtasks.push(callback); },
     window: { location, confirm() { return true; } },
     localStorage: {
       data: new Map(),
@@ -65,19 +67,15 @@ function terminal(location = { hostname: '192.0.2.1', port: '', search: '' }) {
   // Use the actual error display, capturing its console notification.
   context.console = { ...console, error(...args) { errors.push(args.join(' ')); } };
   const receive = bytes => api.handleProtocolFrame(bytes.buffer, api.state.ws);
-  receive(frame(5, 4));
+  receive(frame(5, 5));
   sent.length = 0;
   return {
     api, context, sent, written, errors, timers, receive, type: data => onData(data),
     acknowledge() { receive(frame(4, api.state.inputSequence)); },
-    retry() {
-      const callback = timers.get(api.state.inputTimer);
-      timers.delete(api.state.inputTimer);
-      assert.ok(callback);
-      callback();
-    },
     deferOutput() { deferWrite = true; },
     finishOutput() { writeCallbacks.shift()(); },
+    // Runs what the browser would run when the current task ends.
+    endTask() { while (microtasks.length) microtasks.shift()(); },
     press(key, keyCode, modifiers = {}) {
       return keydown({ type: 'keydown', key, keyCode, ...modifiers });
     },
@@ -171,17 +169,17 @@ test('on-screen keypad sends CP/M cursor codes, repeats while held and never foc
     listeners.get(`${key}:pointerup`)();
   }
 
-  // Holding a key repeats it until release; the repeat timer is the only one besides input retry.
+  // Holding a key repeats it until release; the repeat timer is the only timer.
   press('right');
   input.acknowledge();
-  const repeatId = [...input.timers.keys()].find(id => id !== input.api.state.inputTimer);
+  const [repeatId] = input.timers.keys();
   const fire = input.timers.get(repeatId);
   input.timers.delete(repeatId);
   fire();
   assert.deepEqual(input.sent.at(-1).slice(5), [4]);
   input.acknowledge();
   listeners.get('right:pointerup')();
-  assert.equal([...input.timers.keys()].filter(id => id !== input.api.state.inputTimer).length, 0);
+  assert.equal(input.timers.size, 0);
   assert.equal(focused, 0, 'keypad must not raise the tablet keyboard');
 
   input.api.elements.keypadBtn.onclick();
@@ -256,45 +254,58 @@ test('ESP32 terminal layout keeps 80 columns and a separate scrollbar strip', ()
   assert.match(html, /id="terminal_error" role="alert"/);
 });
 
-test('1024-byte paste waits for queue credits and retries without advancing', () => {
+test('1024-byte paste sends one frame per acknowledgement and never resends', () => {
   const input = terminal();
   const paste = Array.from({ length: 1024 }, (_, i) => i & 127);
   input.type(Uint8Array.from(paste));
   assert.equal(input.sent.length, 1);
   assert.equal(input.sent[0].length, 69);
-  const first = input.sent[0];
-  input.retry();
-  assert.deepEqual(input.sent[1], first);
-  input.receive(frame(4, 99));
-  assert.equal(input.api.state.inputSequence, 1);
+  // TCP delivers the frame; no timer exists to send it again.
+  assert.equal(input.timers.size, 0);
+  input.type('more');
+  assert.equal(input.sent.length, 1);
   const delivered = [];
-  for (let i = 0; i < 16; ++i) {
+  for (let i = 0; i < 17; ++i) {
+    assert.equal(input.sent.length, i + 1);
     const next = input.sent.at(-1);
     assert.equal(new DataView(Uint8Array.from(next).buffer).getUint32(1, true), i + 1);
     delivered.push(...next.slice(5));
     input.acknowledge();
   }
-  assert.deepEqual(delivered, paste);
+  assert.deepEqual(delivered, [...paste, 109, 111, 114, 101]);
+  assert.equal(input.sent.length, 17);
   assert.equal(input.api.state.inputBuffer.length, 0);
+  assert.equal(input.api.state.inputSequence, 18);
   assert.equal(input.timers.size, 0);
-  input.receive(frame(4, 16));
-  assert.equal(input.api.state.inputSequence, 17);
 });
 
-test('output is rendered once; duplicates are ACKed only after xterm consumes it', () => {
+test('an acknowledgement for anything but the frame in flight is a protocol error', () => {
+  const idle = terminal();
+  assert.throws(() => idle.receive(frame(4, 1)), /Unexpected terminal input acknowledgement/);
+  const input = terminal();
+  input.type('A');
+  assert.throws(() => input.receive(frame(4, 99)), /Unexpected terminal input acknowledgement/);
+  input.acknowledge();
+  assert.throws(() => input.receive(frame(4, 1)), /Unexpected terminal input acknowledgement/);
+});
+
+test('output is ACKed only after xterm consumes it; a repeated frame is a protocol error', () => {
   const input = terminal();
   input.deferOutput();
   const output = frame(1, 1, [27, 91, 72, 65]);
   input.receive(output);
-  input.receive(output);
+  input.endTask();
   assert.deepEqual(input.written, [[27, 91, 72, 65]]);
   assert.equal(input.sent.length, 0);
   input.finishOutput();
-  assert.deepEqual(input.sent.at(-1), [3, 1, 0, 0, 0]);
-  input.receive(output);
-  assert.equal(input.written.length, 1);
-  assert.deepEqual(input.sent.at(-1), [3, 1, 0, 0, 0]);
+  assert.equal(input.sent.length, 0);
+  input.endTask();
+  assert.deepEqual(input.sent, [[3, 1, 0, 0, 0]]);
+  input.endTask();
+  assert.equal(input.sent.length, 1);
+  assert.throws(() => input.receive(output), /Out-of-order/);
   assert.throws(() => input.receive(frame(1, 4, [66])), /Out-of-order/);
+  assert.equal(input.written.length, 1);
 });
 
 test('input limit rejects the whole new paste and reconnect never replays pending input', () => {
@@ -312,7 +323,7 @@ test('input limit rejects the whole new paste and reconnect never replays pendin
   assert.equal(input.timers.size, 0);
   input.type('not ready');
   assert.equal(input.api.state.inputBuffer.length, 0);
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   input.type('N');
   assert.deepEqual(input.sent.at(-1), [2, 1, 0, 0, 0, 78]);
 });
@@ -323,11 +334,26 @@ test('an old xterm callback cannot acknowledge bytes on a replacement connection
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
   input.api.state.ws = { readyState: 1, send(data) { input.sent.push([...data]); } };
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   const count = input.sent.length;
   input.finishOutput();
+  input.endTask();
   assert.equal(input.sent.length, count);
   assert.equal(input.api.state.outputSequence, 1);
+});
+
+test('an ACK queued before a reset is not sent on the new session', () => {
+  const input = terminal();
+  input.receive(frame(1, 1, [65]));
+  input.api.resetProtocol();
+  input.receive(frame(5, 5));
+  const count = input.sent.length;
+  input.endTask();
+  assert.equal(input.sent.length, count);
+  input.receive(frame(1, 1, [66]));
+  input.endTask();
+  assert.deepEqual(input.sent.at(-1), [3, 1, 0, 0, 0]);
+  assert.equal(input.sent.length, count + 1);
 });
 
 test('protocol readiness is required and sequence counters wrap at uint32', () => {
@@ -336,8 +362,8 @@ test('protocol readiness is required and sequence counters wrap at uint32', () =
   input.type('A');
   assert.equal(input.sent.length, 0);
   assert.match(input.api.elements.error.textContent, /handshake/);
-  input.receive(frame(5, 4));
-  assert.deepEqual(input.sent.shift(), [6, 4, 0, 0, 0]);
+  input.receive(frame(5, 5));
+  assert.deepEqual(input.sent.shift(), [6, 5, 0, 0, 0]);
 
   input.api.state.inputSequence = 0xffffffff;
   input.type('AB'.repeat(64));
@@ -348,36 +374,49 @@ test('protocol readiness is required and sequence counters wrap at uint32', () =
   assert.equal(input.api.state.inputBuffer.length, 0);
   assert.equal(input.timers.size, 0);
 
+  input.sent.length = 0;
   input.api.state.outputSequence = 0xffffffff;
-  input.api.state.outputReceivedSequence = 0xffffffff;
+  input.api.state.outputConsumed = 0xfffffffe;
+  input.api.state.outputAcked = 0xfffffffe;
   input.receive(frame(1, 0xffffffff, [65]));
-  input.receive(frame(1, 0xffffffff, [65]));
+  input.endTask();
   input.receive(frame(1, 0, [66]));
+  input.endTask();
   assert.deepEqual(input.written, [[65], [66]]);
+  assert.deepEqual(input.sent, [[3, 255, 255, 255, 255], [3, 0, 0, 0, 0]]);
   assert.equal(input.api.state.outputSequence, 1);
 });
 
-test('four output frames enter xterm before any consumption ACK; duplicates do not render', () => {
+test('four frames enter xterm before any ACK; frames parsed in one task share one cumulative ACK', () => {
   const input = terminal();
   input.deferOutput();
   for (let sequence = 1; sequence <= 4; ++sequence) {
     const payload = Array(512).fill(64 + sequence);
     input.receive(frame(1, sequence, payload));
-    input.receive(frame(1, sequence, payload));
     assert.deepEqual(input.written[sequence - 1], payload);
   }
+  input.endTask();
   assert.equal(input.written.length, 4);
   assert.equal(input.sent.length, 0);
   assert.equal(input.api.state.outputPending, 4);
   assert.throws(() => input.receive(frame(1, 5, [69])), /window exceeded/);
-  for (let sequence = 1; sequence <= 4; ++sequence) {
-    input.finishOutput();
-    assert.deepEqual(input.sent.at(-1), [3, sequence, 0, 0, 0]);
-  }
-  input.receive(frame(1, 1, [65]));
-  assert.deepEqual(input.sent.at(-1), [3, 4, 0, 0, 0]);
-  assert.equal(input.written.length, 4);
+  // xterm parses two frames, yields, then parses the other two.
+  input.finishOutput();
+  input.finishOutput();
+  assert.equal(input.sent.length, 0);
+  input.endTask();
+  assert.deepEqual(input.sent, [[3, 2, 0, 0, 0]]);
+  input.finishOutput();
+  input.finishOutput();
+  input.endTask();
+  assert.deepEqual(input.sent, [[3, 2, 0, 0, 0], [3, 4, 0, 0, 0]]);
   assert.equal(input.api.state.outputPending, 0);
+  // A whole window consumed in one task costs one ACK frame, not four.
+  for (let sequence = 5; sequence <= 8; ++sequence) input.receive(frame(1, sequence, [70]));
+  for (let i = 0; i < 4; ++i) input.finishOutput();
+  input.endTask();
+  assert.deepEqual(input.sent.at(-1), [3, 8, 0, 0, 0]);
+  assert.equal(input.sent.length, 3);
 });
 
 test('512-byte output limit agrees with firmware and rejects oversized or empty payloads', () => {
@@ -399,19 +438,20 @@ test('protocol reset invalidates callbacks even if the socket object is unchange
   input.deferOutput();
   input.receive(frame(1, 1, [65]));
   input.api.resetProtocol();
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   const count = input.sent.length;
   input.finishOutput();
+  input.endTask();
   assert.equal(input.sent.length, count);
   assert.equal(input.api.state.outputPending, 0);
   assert.equal(input.api.state.outputSequence, 1);
 });
 
-test('version 1/2/3 handshakes are rejected and reconnect attempts really stop at five', () => {
+test('earlier protocol versions are rejected and reconnect attempts really stop at five', () => {
   const input = terminal();
-  assert.throws(() => input.receive(frame(5, 1)), /Unsupported/);
-  assert.throws(() => input.receive(frame(5, 2)), /Unsupported/);
-  assert.throws(() => input.receive(frame(5, 3)), /Unsupported/);
+  for (const version of [1, 2, 3, 4, 6]) {
+    assert.throws(() => input.receive(frame(5, version)), /Unsupported/);
+  }
   input.api.state.connected = false;
   for (let attempt = 0; attempt < 7; ++attempt) {
     input.api.state.reconnectTimer = null;
@@ -471,7 +511,7 @@ test('reboot bypasses terminal input, requires confirmation, and suppresses dupl
   assert.equal(input.api.state.rebootPending, true);
   input.api.state.rebootDisconnected = true;
   input.api.resetProtocol();
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   assert.equal(input.api.state.rebootPending, false);
   assert.equal(input.api.elements.rebootStatus.textContent, '');
   input.receive(frame(8, 7));
@@ -538,7 +578,7 @@ test('reconnect clears reboot progress without claiming the reboot was confirmed
   input.api.elements.rebootBtn.onclick();
   input.api.state.rebootDisconnected = true;
   input.api.resetProtocol();
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   input.receive(frame(8, 7));
   assert.equal(input.api.elements.rebootStatus.textContent, '');
 });
@@ -574,7 +614,7 @@ test('a server timeout survives reconnect and blocks repeated reboot requests', 
   input.api.elements.rebootBtn.onclick();
   assert.equal(input.sent.filter(f => f[0] === 7).length, 0);
   input.api.resetProtocol();
-  input.receive(frame(5, 4));
+  input.receive(frame(5, 5));
   input.receive(frame(8, 5));
   assert.match(input.api.elements.rebootStatus.textContent, /timed out/);
   assert.equal(input.api.elements.rebootBtn.disabled, true);

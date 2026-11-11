@@ -414,7 +414,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 - <input type="checkbox" data-checklist-id="tx-order-overflow" aria-label="Ordered output and bounded queues tested"> **Traffic:** sustain output and paste over 128 bytes. Check order, zero drops/faults and no duplicate output when ACKs pause.
 - <input type="checkbox" data-checklist-id="rx-ready-controls" aria-label="CP/M keys and status tested"> **Keys:** test Ctrl+C, Ctrl+Z, Ctrl+M/Enter, ESC, arrows, Insert/Delete and Page Up/Down. Ctrl+M is carriage return. On a tablet, test the **Keys** pad: the arrows send the same WordStar cursor codes (Ctrl-E/S/D/X), held keys repeat, taps do not raise the on-screen keyboard, and the floating pad can be dragged by any non-key part of the panel and keeps its position after rotation.
 - <input type="checkbox" data-checklist-id="cpm-storage-acceptance" aria-label="Combined terminal and disk operations tested"> **Disks:** repeat [Phase 9 sentinel, A-D, warm-boot and copy tests](phase-9-flash-storage.md#pass-gate) through the browser.
-- <input type="checkbox" data-checklist-id="reconnect-races" aria-label="USB fallback and Wi-Fi recovery tested"> **Recovery:** disconnect browser/Wi-Fi during output and writes; verify USB fallback and no stale replay. Suspend the browser computer; verify missed-pong counting and fallback after the fifth missed response. Without a browser, Wi-Fi changes must preserve USB queues.
+- <input type="checkbox" data-checklist-id="reconnect-races" aria-label="USB fallback and Wi-Fi recovery tested"> **Recovery:** disconnect browser/Wi-Fi during output and writes; verify USB fallback and no stale replay. Suspend the browser computer; verify missed-pong counting and fallback after the third consecutive missed response. Without a browser, Wi-Fi changes must preserve USB queues.
 - **Settings:** reboot and verify persistence. Reject invalid/overlong values, hide secrets and report failed saves.
 - **Weather:** run CLOCK with Wi-Fi/time ready; verify conditions, units and forecast while typing and using disks. Drop Wi-Fi: cached values remain readable with increasing age. Test invalid/missing keys and recovery without reboot.
 - **Performance:** compare CLOCK redraws and active-play BREAKOUT response. Record bytes/second, key-to-echo latency and maximum network-poll gaps during reads, cached writes and flash commits.
@@ -422,8 +422,8 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
 ??? info "What host tests establish"
 
     - Console tests cover concurrent 256 KiB transfers, handover and queue bounds.
-    - Terminal tests cover last-connection-wins takeover, stale callbacks, ordering, duplicate suppression, sequence wrap, backpressure, ACK retries, 1 ms batching and the four-frame window.
-    - With `PICO_SDK_PATH`, WebSocket tests use the actual server with fake lwIP and real Mbed TLS; weather tests also verify the firmware TLS configuration and bundled CA.
+    - Terminal tests cover last-connection-wins takeover, stale callbacks, ordering, rejection of repeated or out-of-order frames, sequence wrap, backpressure without retransmission, cumulative ACKs, 1 ms batching and the four-frame window.
+    - With `PICO_SDK_PATH`, WebSocket tests use the actual server with fake lwIP and real Mbed TLS, including callbacks that send, close or abort and the absence of per-message heap use; weather tests also verify the firmware TLS configuration and bundled CA.
     - Weather tests cover all 15 fields, caching, cancellation, malformed responses and failures.
     - These prove software behavior, not wireless throughput or hardware latency. See [firmware testing](../system/firmware-testing.md).
 
@@ -466,18 +466,21 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     retries. IPv4 publication refreshes once per second. Chat never touches
     terminal queues, USB input or Z80 GPIO.
 
-### Acknowledged terminal protocol, version 4
+### Acknowledged terminal protocol, version 5
 
 ??? info "Protocol and buffer limits"
 
-    Use the served browser page, not a raw-byte WebSocket client. Version 1/2/3
-    pages are rejected. Messages start with a one-byte type and four-byte
-    little-endian sequence; data sequences start at 1 and wrap modulo 2^32.
+    Use the served browser page, not a raw-byte WebSocket client. A page
+    speaking any other version is rejected. Messages start with a one-byte type
+    and four-byte little-endian sequence; data sequences start at 1 and wrap
+    modulo 2^32. TCP delivers every frame once and in order, so nothing is
+    retransmitted: a repeated, skipped or unexpected frame is a protocol error
+    that disconnects the browser.
 
     | Type | Direction | Sequence / payload |
     | --- | --- | --- |
-    | 5 HELLO | Pico to browser | Version 4 / none |
-    | 6 READY | Browser to Pico | Version 4 / none |
+    | 5 HELLO | Pico to browser | Version 5 / none |
+    | 6 READY | Browser to Pico | Version 5 / none |
     | 1 OUTPUT | Pico to browser | Output sequence / 1-512 bytes |
     | 3 OUTPUT_ACK | Browser to Pico | Last consumed output sequence / none |
     | 2 INPUT | Browser to Pico | Input sequence / 1-64 bytes |
@@ -519,46 +522,35 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     Status codes: 0 idle, 1 requested, 2 flushing, 3 restarting, 4 storage error,
     5 timeout, 6 rejected (busy/stopped/storage failure), 7 CP/M ready.
     Requests during an active reboot are idempotent. Controls require the active
-    connection and completed version-4 handshake. Update firmware and any
+    connection and completed version-5 handshake. Update firmware and any
     separately hosted terminal page together.
 
-    - **Output:** four frames retain at most 2 KiB. ACKs are cumulative, after xterm consumes bytes; duplicates are not rendered twice. Retry after 250 ms; oldest-frame timeout is 5 minutes.
-    - **Batching:** isolated/full frames send immediately. Later partial frames wait up to a fixed 1 ms deadline, then the next service pass. Flash pauses may delay service. Accepted TCP writes are not duplicated after failed flushes.
-    - **Input:** one frame waits for RX space; admission/rejected ACKs retry each pass. ACK means queued, not executed. The browser caps pending input at 64 KiB, rejects an overflowing paste entirely and warns when disconnect discards input.
-    - **Bounds:** 69-byte incoming messages; queued payload at most 1,024 bytes/16 messages; dispatch at most eight per connection/pass. Overflow disconnects.
-    - **Memory:** maximum build buffer 521 bytes; four frames use 2,084 of 5,840 TCP send-buffer bytes. Core-1 stack is 8 KiB in main RAM. These are not total memory-use measurements.
-    - **Latency:** every received segment is ACKed immediately (`TF_ACK_NOW`) rather than on lwIP's 250 ms delayed-ACK timer, so a browser that coalesces small writes never holds a keystroke behind an unacknowledged `OUTPUT_ACK`. Nagle is disabled for sends. The page uses xterm.js 6.0.0 and renders with its WebGL addon and falls back to the DOM renderer if WebGL is unavailable or its context is lost.
+    - **Output:** at most four frames (2 KiB) are in flight. The browser ACKs after xterm consumes bytes, with one cumulative ACK for all frames parsed in the same task. TCP owns a frame once it accepts it; the Pico holds only the next frame, which keeps filling to 512 bytes while the window is full. An ACK frees the window and the same service pass refills it. No ACK progress for 5 minutes releases the browser.
+    - **Batching:** isolated/full frames send immediately. Later partial frames wait up to a fixed 1 ms deadline, then the next service pass. Flash pauses may delay service. A burst is flushed once; a failed flush is retried by the transport without queueing the frames again.
+    - **Input:** the browser sends one frame and waits for its ACK. ACK means queued, not executed. A frame that does not fit waits for RX space and is admitted on a later service pass; an ACK that TCP cannot take is offered again each pass. The browser caps pending input at 64 KiB, rejects an overflowing paste entirely and warns when disconnect discards input.
+    - **Dispatch:** the server calls the terminal from the lwIP receive callback on core 1. Those callbacks only record state: input is queued for the Z80 at once, and every frame is sent by the service pass that follows `cyw43_arch_poll()` in the same core-1 loop. Sending from the receive path can exhaust the CYW43 driver's transmit credit while received frames are still queued in the chip, and the driver discards frames it reads while waiting for credit. Incoming messages are limited to 69 bytes; a larger one disconnects.
+    - **Memory:** one 517-byte staged frame; the server reuses one frame buffer and one message buffer per connection, with no heap use per message. Four frames use 2,084 of 5,840 TCP send-buffer bytes. Core-1 stack is 8 KiB in main RAM. These are not total memory-use measurements.
+    - **Latency:** every received segment is ACKed immediately (`TF_ACK_NOW`) rather than on lwIP's 250 ms delayed-ACK timer, so a browser that coalesces small writes never holds a keystroke behind an unacknowledged frame. Nagle is disabled for sends. The page uses xterm.js 6.0.0 and renders with its WebGL addon and falls back to the DOM renderer if WebGL is unavailable or its context is lost.
     - **Cleanup:** one-second close grace; callback-safe abort also runs offline. Heartbeat pings every 30 seconds with a 20-second pong timeout; the third consecutive miss without browser activity releases ownership.
 
-### Terminal performance diagnostics
+### Terminal diagnostics
 
 ??? info "Read the Ctrl-] s counters"
 
     | Fields | Meaning |
     | --- | --- |
-    | `frames`, `bytes` | Original TCP-accepted output; excludes retries and headers |
-    | `retransmits`, `write_blocks`, `flush_failures` | Application retries, enqueue backpressure and explicit burst-flush failures |
-    | `timeouts` | Sessions released by heartbeat/output timeout |
-    | `window_full_polls`, `window_wait_max_us` | Full-window service passes and longest full interval |
-    | `ack_max_us` | Longest first-enqueue to consumption-ACK interval; includes transport and browser scheduling |
-    | `net_poll_gap_max_us` | Longest gap between CYW43 polls, including storage/USB work and pauses |
-    | `[webbuf] frames`, `retained`, `staged`, `peak` | Finalized frames, retained/staged payload and high-water marks |
-    | `[webbatch] avg_bytes`, `max_bytes`, `small_le16`, `full` | Original-frame sizes/counts; excludes retries |
+    | `[web] flush_failures` | Burst flushes the transport had to retry |
+    | `[web] ack_timeouts`, `pong_timeouts` | Sessions released by stalled output, and missed heartbeats |
+    | `[web] last_disconnect` | Why the terminal last released the browser |
+    | `[webclose] reason`, `lwip_error` | The transport's reason for the last socket close, when it gave one |
+    | `[webbuf] out_frames`, `peak` | Output frames in flight and their high-water mark |
+    | `[webbuf] staged` | Output bytes waiting to be framed |
     | `[consolebuf] rx`, `tx`, `peak` | Console occupancy, capacity and high-water marks |
 
-    Compare deltas for the same workload. Small frames are not inherently a
-    fault; full windows plus high ACK age suggest consumer/transport pressure.
-    `bytes / frames` measures batching, not throughput.
-
-    Occupancy clears on handover; peaks survive it. Web counters reset on
-    reboot; console peaks reset on initialization. Counters wrap modulo 2^32;
-    microsecond maxima saturate at `UINT32_MAX`. Fields are individual atomic
-    snapshots, not one transaction.
-
-    **Pre-batching baseline, 22 Oct 2026:** CLOCK delivered 19 redraws in
-    20 seconds (97.5 ms median, 926.2 ms maximum; longest internal gap 863.5 ms).
-    Median payload was 7 bytes; browser consumption was 0.3 ms at p95.
-    This is not evidence of a post-change speedup.
+    A full window with a rising `staged` count means the browser or network is
+    slower than the Z80's output. Occupancy clears on handover; peaks survive
+    it. Web counters reset on reboot; console peaks reset on initialization.
+    Fields are individual atomic snapshots, not one transaction.
 
 ## Required Integration Order
 

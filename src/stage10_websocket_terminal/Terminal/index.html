@@ -375,13 +375,14 @@
         reconnectTimer: null,
         connectTimeout: null,
         userInitiatedDisconnect: false,
-        inputBuffer: [],
-        inputTimer: null,
+        inputBuffer: new Uint8Array(0),
         inputSequence: 1,
-        inputFrame: null,
+        inputPending: 0,
         outputSequence: 1,
-        outputReceivedSequence: 1,
         outputPending: 0,
+        outputConsumed: 0,
+        outputAcked: 0,
+        ackQueued: false,
         protocolGeneration: 0,
         protocolReady: false,
         rebootPending: false,
@@ -401,8 +402,7 @@
         XTERM_COLS: 80,
         INPUT_FRAME_BYTES: 64,
         MAX_PENDING_INPUT: 65536,
-        INPUT_RETRY_MS: 250,
-        PROTOCOL_VERSION: 4,
+        PROTOCOL_VERSION: 5,
         OUTPUT_FRAME_BYTES: 512,
         OUTPUT_WINDOW: 4,
         STORAGE_THEME_KEY: 'altair_theme',
@@ -444,6 +444,18 @@
       };
       const KEYPAD_CODES = {
         ...CURSOR_CODES, esc: 27, ctrlc: ctrlCode('C'), ctrlo: ctrlCode('O'), space: 32, enter: 13
+      };
+      // Physical keys, by keyCode, that send a CP/M control code.
+      const KEY_CODES = {
+        39: CURSOR_CODES.right,
+        37: CURSOR_CODES.left,
+        38: CURSOR_CODES.up,
+        40: CURSOR_CODES.down,
+        45: ctrlCode('O'), // insert -> ctrl O
+        46: ctrlCode('G'), // delete -> ctrl G
+        33: ctrlCode('R'), // page up -> ctrl R
+        34: ctrlCode('V'), // page down -> ctrl V
+        8: ctrlCode('H')   // backspace -> ctrl H
       };
 
       function sendToServer(data) {
@@ -528,9 +540,7 @@
           state.rebootDisconnected = false;
           state.rebootSteps = [];
           // Discard unsent keystrokes; retain the in-flight frame until its ACK.
-          if (state.inputTimer !== null) clearTimeout(state.inputTimer);
-          state.inputTimer = null;
-          state.inputBuffer = state.inputFrame ? state.inputBuffer.slice(0, state.inputFrame.length - 5) : [];
+          state.inputBuffer = state.inputBuffer.subarray(0, state.inputPending);
           updateRebootButton();
           rebootMessage('Requesting orderly reboot...');
           if (!sendToServer(protocolFrame(PROTOCOL.REBOOT, 0))) {
@@ -561,34 +571,30 @@
       }
 
       function resetProtocol(reportPending = false) {
-        if (state.inputTimer !== null) clearTimeout(state.inputTimer);
         if (reportPending && state.inputBuffer.length) {
           showError(`Connection closed with ${state.inputBuffer.length} input bytes unconfirmed; they will not be replayed.`);
         }
-        state.inputTimer = null;
-        state.inputBuffer = [];
-        state.inputFrame = null;
+        state.inputBuffer = new Uint8Array(0);
+        state.inputPending = 0;
         state.inputSequence = 1;
         state.outputSequence = 1;
-        state.outputReceivedSequence = 1;
         state.outputPending = 0;
+        state.outputConsumed = 0;
+        state.outputAcked = 0;
         state.protocolGeneration++;
         state.protocolReady = false;
         updateRebootButton();
       }
 
+      // One input frame is in flight at a time. TCP delivers it; the Pico
+      // acknowledges it once the bytes are queued for the Z80.
       function pumpInput() {
-        if (!state.protocolReady || !state.connected || state.rebootPending || !state.inputBuffer.length) return;
-        if (state.inputTimer !== null) clearTimeout(state.inputTimer);
-        if (!state.inputFrame) {
-          state.inputFrame = protocolFrame(PROTOCOL.INPUT, state.inputSequence,
-            Uint8Array.from(state.inputBuffer.slice(0, CONFIG.INPUT_FRAME_BYTES)));
+        if (state.inputPending || !state.protocolReady || !state.connected ||
+            state.rebootPending || !state.inputBuffer.length) return;
+        const payload = state.inputBuffer.subarray(0, CONFIG.INPUT_FRAME_BYTES);
+        if (sendToServer(protocolFrame(PROTOCOL.INPUT, state.inputSequence, payload))) {
+          state.inputPending = payload.length;
         }
-        sendToServer(state.inputFrame);
-        state.inputTimer = setTimeout(() => {
-          state.inputTimer = null;
-          pumpInput();
-        }, CONFIG.INPUT_RETRY_MS);
       }
 
       function queueInput(data) {
@@ -598,13 +604,31 @@
           return;
         }
         const bytes = typeof data === "string" ? state.encoder.encode(data) : data;
-        if (!(bytes instanceof Uint8Array)) return;
-        if (state.inputBuffer.length + bytes.length > CONFIG.MAX_PENDING_INPUT) {
+        if (!(bytes instanceof Uint8Array) || !bytes.length) return;
+        const queued = state.inputBuffer.length;
+        if (queued + bytes.length > CONFIG.MAX_PENDING_INPUT) {
           showError("Input queue full (64 KiB); this input was not accepted. Wait for the paste to finish.");
           return;
         }
-        for (const byte of bytes) state.inputBuffer.push(byte);
-        if (!state.inputFrame) pumpInput();
+        if (queued) {
+          const joined = new Uint8Array(queued + bytes.length);
+          joined.set(state.inputBuffer);
+          joined.set(bytes, queued);
+          state.inputBuffer = joined;
+        } else {
+          state.inputBuffer = bytes;
+        }
+        pumpInput();
+      }
+
+      // xterm parses several queued frames in one task; acknowledge them
+      // together afterwards with a single cumulative ACK.
+      function sendOutputAck() {
+        state.ackQueued = false;
+        if (state.outputAcked === state.outputConsumed) return;
+        if (sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, state.outputConsumed))) {
+          state.outputAcked = state.outputConsumed;
+        }
       }
 
       function handleProtocolFrame(data, socket) {
@@ -617,43 +641,38 @@
           if (state.rebootPending && state.rebootDisconnected) finishReboot('');
           updateRebootButton();
           sendToServer(protocolFrame(PROTOCOL.READY, CONFIG.PROTOCOL_VERSION));
-          if (!state.inputFrame) pumpInput();
+          pumpInput();
         } else if (frame[0] === PROTOCOL.REBOOT_STATUS && state.protocolReady && frame.length === 5 && sequence <= 7) {
           handleRebootStatus(sequence);
         } else if (frame[0] === PROTOCOL.INPUT_ACK && frame.length === 5) {
-          if (state.inputFrame && sequence === state.inputSequence) {
-            state.inputBuffer.splice(0, state.inputFrame.length - 5);
-            state.inputFrame = null;
-            state.inputSequence = (state.inputSequence + 1) >>> 0;
-            if (state.inputTimer !== null) clearTimeout(state.inputTimer);
-            state.inputTimer = null;
-            pumpInput();
+          if (!state.inputPending || sequence !== state.inputSequence) {
+            throw new Error("Unexpected terminal input acknowledgement; reconnect.");
           }
+          state.inputBuffer = state.inputBuffer.subarray(state.inputPending);
+          state.inputPending = 0;
+          state.inputSequence = (state.inputSequence + 1) >>> 0;
+          pumpInput();
         } else if (frame[0] === PROTOCOL.OUTPUT && state.protocolReady &&
                    frame.length > 5 && frame.length <= 5 + CONFIG.OUTPUT_FRAME_BYTES) {
-          if (sequence === state.outputReceivedSequence) {
-            if (state.outputPending >= CONFIG.OUTPUT_WINDOW) {
-              throw new Error("Terminal output window exceeded; reconnect.");
-            }
-            state.outputReceivedSequence = (sequence + 1) >>> 0;
-            state.outputPending++;
-            const generation = state.protocolGeneration;
-            // Keep at most four writes queued, and ACK only consumed bytes.
-            state.term.write(frame.slice(5), () => {
-              if (socket !== state.ws || generation !== state.protocolGeneration) return;
-              state.outputPending--;
-              state.outputSequence = (state.outputSequence + 1) >>> 0;
-              sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, sequence));
-            });
-          } else {
-            const consumed = (state.outputSequence - sequence) >>> 0;
-            const pending = (state.outputReceivedSequence - sequence) >>> 0;
-            if (consumed > 0 && consumed < 0x80000000) {
-              sendToServer(protocolFrame(PROTOCOL.OUTPUT_ACK, (state.outputSequence - 1) >>> 0));
-            } else if (pending === 0 || pending > CONFIG.OUTPUT_WINDOW) {
-              throw new Error("Out-of-order terminal output; reconnect.");
-            }
+          if (sequence !== state.outputSequence) {
+            throw new Error("Out-of-order terminal output; reconnect.");
           }
+          if (state.outputPending >= CONFIG.OUTPUT_WINDOW) {
+            throw new Error("Terminal output window exceeded; reconnect.");
+          }
+          state.outputSequence = (sequence + 1) >>> 0;
+          state.outputPending++;
+          const generation = state.protocolGeneration;
+          // Keep at most four writes queued, and ACK only consumed bytes.
+          state.term.write(frame.subarray(5), () => {
+            if (socket !== state.ws || generation !== state.protocolGeneration) return;
+            state.outputPending--;
+            state.outputConsumed = sequence;
+            if (!state.ackQueued) {
+              state.ackQueued = true;
+              queueMicrotask(sendOutputAck);
+            }
+          });
         } else {
           throw new Error("Unsupported terminal protocol; reload this page.");
         }
@@ -902,6 +921,7 @@
           console.log('Connection restored');
           state.online = true;
           showMessage('Network connection restored');
+          pumpInput();
           // Attempt to reconnect if not currently connected and not user-disconnected
           if (!state.connected && !state.userInitiatedDisconnect) {
             // Reset reconnect attempts when network comes back
@@ -1036,21 +1056,8 @@
             return false;
           }
 
-          // Special Altair character mappings
-          const keyMappings = {
-            39: CURSOR_CODES.right,
-            37: CURSOR_CODES.left,
-            38: CURSOR_CODES.up,
-            40: CURSOR_CODES.down,
-            45: ctrlCode('O'), // insert -> ctrl O
-            46: ctrlCode('G'), // delete -> ctrl G
-            33: ctrlCode('R'), // page up -> ctrl R
-            34: ctrlCode('V'), // page down -> ctrl V
-            8: ctrlCode('H')   // backspace -> ctrl H
-          };
-
-          if (keyMappings[ev.keyCode]) {
-            sendControlCharacter(keyMappings[ev.keyCode]);
+          if (KEY_CODES[ev.keyCode]) {
+            sendControlCharacter(KEY_CODES[ev.keyCode]);
             return false; // Stop xterm from sending its own sequence
           }
 
@@ -1118,11 +1125,6 @@
         osc.start(start);
         osc.stop(start + 0.22);
       }
-
-      // No longer used, logic moved to attachCustomKeyEventHandler
-      /*
-      function handleKeyPress(key, ev) { ... }
-      */
 
       /**
        * Cancel any pending reconnection attempt
@@ -1537,7 +1539,7 @@
       };
     })();
 
-    // Global functions for HTML onclick handlers (maintained for compatibility)
+    // Global functions for HTML onclick handlers
     function toggleTheme() {
       AltairTerminal.toggleTheme();
     }

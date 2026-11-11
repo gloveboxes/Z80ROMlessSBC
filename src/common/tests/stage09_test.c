@@ -182,16 +182,22 @@ void z80_oled_print_status(void) {
   ++oled_status_requests;
   firmware_printf("[oled] test status\n");
 }
-static bool web_rx_active = true;
+static uint32_t web_close_reason;
 z80_web_terminal_stats_t z80_web_terminal_get_stats(void) {
   return (z80_web_terminal_stats_t){
-      .retransmits = 1, .flush_failures = 3, .ack_timeouts = 6,
-      .pong_timeouts = 2,
-      .window_frames = 2, .window_frames_peak = 4,
-      .retained_bytes = 1039, .retained_bytes_peak = 2048, .staged_bytes = 15,
-      .rx_queue_active = web_rx_active,
-      .rx_queue_message_limit = 64, .rx_queue_byte_limit = 1024,
+      .flush_failures = 3, .ack_timeouts = 6, .pong_timeouts = 2,
+      .window_frames = 2, .window_frames_peak = 4, .staged_bytes = 15,
+      .last_disconnect_reason = web_close_reason ? 1 : 0,
+      .last_ws_close_reason = web_close_reason,
+      .last_ws_transport_error = web_close_reason ? -14 : 0,
   };
+}
+const char *z80_web_terminal_disconnect_name(uint32_t reason) {
+  return reason ? "socket-closed" : "none";
+}
+const char *z80_web_terminal_ws_close_name(uint32_t reason) {
+  assert(reason == 7);
+  return "tcp-error";
 }
 #endif
 
@@ -807,20 +813,19 @@ static void test_browser_usb_routing(void) {
   command('s');
   assert(strstr(output, "browser=1 setup=0 ip=192.0.2.42"));
   assert(strstr(output, "[network] Terminal: http://192.0.2.42/"));
-  assert(strstr(output, "[web] retransmits=1 flush_failures=3 ack_timeouts=6 "
-                        "pong_timeouts=2"));
-  assert(strstr(output, "[webbuf] in_msgs=0/64 peak=0 in_bytes=0/1024 peak=0"));
-  assert(strstr(output, "[webbuf] out_frames=2/4 peak=4 retained=1039/2048 "
-                        "peak=2048 staged=15/512"));
+  assert(strstr(output, "[web] flush_failures=3 ack_timeouts=6 pong_timeouts=2 "
+                        "last_disconnect=none\n"));
+  assert(strstr(output, "[webclose]") == NULL);
+  assert(strstr(output, "[webbuf] out_frames=2/4 peak=4 staged=15/512\n"));
   assert(strstr(output, "[consolebuf] rx="));
   assert(strstr(output, "/128 peak=") && strstr(output, "/512 peak="));
   network_address = "";
   output_length = 0;
   output[0] = '\0';
-  web_rx_active = false;
+  web_close_reason = 7;
   command('s');
-  assert(strstr(output, "[webbuf] in=inactive"));
-  assert(strstr(output, "in_msgs=") == NULL);
+  assert(strstr(output, "last_disconnect=socket-closed\n"));
+  assert(strstr(output, "[webclose] reason=tcp-error lwip_error=-14\n"));
   assert(strstr(output, "ip=unavailable"));
   assert(strstr(output, "192.0.2.42") == NULL);
   assert(strstr(output, "[network] Terminal:") == NULL);
