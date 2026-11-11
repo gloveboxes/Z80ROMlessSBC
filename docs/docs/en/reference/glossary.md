@@ -66,7 +66,7 @@ means it is safe to connect that node to an arbitrary supply.
 | --- | --- | --- |
 | GPIO | General-purpose input/output | Individually programmable Pico pins used for clocks, controls, buses, and status. |
 | PWM | Pulse-width modulation hardware | Pico peripheral generating the Z80 clock in non-PIO builds. |
-| PIO | Programmable I/O hardware in the RP2350 | PIO1 generates the Phase 10 20 MHz clock and handles SRAM bank-select writes; PIO0 drives the status OLED's I2C. |
+| PIO | Programmable I/O hardware in the RP2350 | In Phases 9 and 10, PIO0 generates the 20 MHz Z80 clock and the status OLED/speaker I2C; PIO1 completes every Z80 I/O cycle, including SRAM bank selects. |
 | SIO | Single-cycle I/O block in the RP2350 | Direct Pico GPIO hardware used for static levels and manual clock stepping; not Z80 serial I/O. |
 | IRQ | Interrupt request | Hardware event that diverts Pico execution to the I/O trap handler. |
 | ISR / handler | Interrupt service routine | Time-critical Pico function that freezes and services a trapped Z80 cycle. |
@@ -167,7 +167,7 @@ The fitted IC references below match the current schematic and
 | `RUN` | Pico reset input | Left open; pulling it LOW resets the RP2350. |
 | `VBUS` | USB connector's nominal 5 V node | Must not be tied to the external 5 V rail. |
 | `VSYS` | Pico system power input | Receives external 5 V only through the 1N5819 and USB power through Pico's onboard diode. |
-| Core 0 / Core 1 | The two RP2350 processor cores | Core 0 owns timing and buses; core 1 owns networking and runtime flash writes. |
+| Core 0 / Core 1 | The two RP2350 processor cores | Core 0 owns timing and buses; core 1 owns USB, networking and runtime flash writes. |
 | FIFO | First-in, first-out queue | Ordered communication buffer; the multicore FIFO is reserved by Pico flash lockout support. |
 
 ## Software, Network, File, and Test Abbreviations
@@ -180,7 +180,7 @@ The fitted IC references below match the current schematic and
 | CI | Continuous integration | Automated build/test environment that can reject boundary or artifact failures. |
 | USB | Universal Serial Bus | Programs the Pico, carries diagnostics, and connects test instruments to the Mac. |
 | UART | Universal asynchronous receiver/transmitter | Common serial protocol supported by decoders; the Z80 terminal itself is virtual, not a UART chip. |
-| I2C / I²C | Inter-Integrated Circuit | Two-wire serial protocol supported by instruments but not used for the CPU/SRAM interface. |
+| I2C / I²C | Inter-Integrated Circuit | Two-wire serial protocol connecting the Phase 10 status OLED and optional speaker to the Pico; not used for the CPU/SRAM interface. |
 | TCP/IP | Transmission Control Protocol / Internet Protocol | Networking foundation used by HTTP and WebSocket traffic. |
 | HTTP | Hypertext Transfer Protocol | Serves the browser terminal page from Pico default port 80, shared with WebSocket. |
 | HTML | Hypertext Markup Language | Source format of the embedded browser terminal interface. |

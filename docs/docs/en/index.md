@@ -46,8 +46,9 @@ the implementation and hardware checks.
 ## System architecture
 
 The Pico 2 W is a multicore I/O controller: core 0 configures the nominal
-20 MHz Z80 clock and owns assisted SRAM loading and Z80 I/O. Phase 10 uses
-PIO for clock generation and SRAM bank-select writes. Core 1
+20 MHz Z80 clock and owns assisted SRAM loading and Z80 I/O. Phases 9 and 10
+generate the clock and complete every Z80 I/O cycle in PIO, including SRAM
+bank selects. Core 1
 owns USB, runtime storage, Wi-Fi and network clients. Bounded console rings
 and request/result mailboxes separate the two cores. The Z80 itself writes
 SRAM during loading and executes CP/M directly from SRAM after verification

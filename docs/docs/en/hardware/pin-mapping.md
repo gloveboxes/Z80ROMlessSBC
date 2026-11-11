@@ -85,8 +85,8 @@ Use the maintained wiring checklists:
 
 See [Phase 2 output-buffer and fixed-logic wiring](../implementation/phase-2-buffer-clock.md#wiring-output-buffer-and-fixed-logic)
 and [Phase 5 supplies, directions, and enables](../implementation/phase-5-data-bus.md#supplies-directions-and-enables).
-The [PIO bank-select backend](address-interface.md#pio-acceleration) controls
-GP7/GP8/GP9 during bank writes.
+The [PIO I/O engine](address-interface.md#pio-acceleration) owns GP6-GP17
+while CP/M runs in Phases 9 and 10.
 
 ## Power and Fixed Pins
 

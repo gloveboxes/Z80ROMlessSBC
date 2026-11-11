@@ -27,9 +27,10 @@ before changing direction, waits at least 1 us before driving, and preloads
 output data or configures inputs before enabling a path. This is software
 exclusion: driving GP6 and GP7 LOW together is prohibited.
 
-Software-serviced I/O steps the clock until the strobes release, isolates
-both paths, and rearms WAIT before resuming execution. PIO handles SRAM
-bank-select writes directly; see [bank switching](address-interface.md#pio-acceleration).
+In Phases 6-8, software-serviced I/O steps the clock until the strobes
+release, isolates both paths, and rearms WAIT before resuming execution.
+Phases 9 and 10 complete every I/O cycle in PIO, including SRAM bank-select
+writes; see [PIO acceleration](address-interface.md#pio-acceleration).
 RD# gating alone does not prevent contention if GP6 remains asserted into
 a later memory read.
 

@@ -15,9 +15,9 @@ Phases 9/10 switch to 120 MHz before USB initialization and run the Z80 at
 20 MHz after SRAM loading/verification. Other phases retain their own clock
 limits and defaults. See [frequency qualification](../implementation/frequency-qualification.md).
 
-Phase 10 enables PIO clock/bank switching by default after a successful
-second-bank probe. Without bank hardware or PIO resources, runtime banking is
-unavailable; other I/O retains PWM/software handling. The diagnostic Phase 9
+Phases 9 and 10 generate the Z80 clock and complete every I/O cycle in PIO.
+Without PIO resources, CP/M start fails closed. Without verified bank
+hardware, I/O continues but runtime banking is unavailable. The diagnostic Phase 9
 image starts CP/M on command; its automatic-loader variant and Phase 10 start
 on reset without waiting for USB.
 
@@ -237,7 +237,7 @@ full provisioning replaces them.
 
 ### Phase 10 PIO banking
 
-**Build and flash Pico - Phase 10 firmware** now includes the board-validated
+**Build and flash Pico - Phase 10 firmware** includes the board-validated
 PIO banking path at 20 MHz. It writes firmware only and preserves the matching
 CP/M boot package, disks and ENV. To build without flashing:
 
@@ -246,7 +246,7 @@ CP/M boot package, disks and ENV. To build without flashing:
   --target z80_stage10_websocket_terminal
 ```
 
-Phases 9 and 10 always link the PIO1 20 MHz run-time library
+Phases 9 and 10 always link the PIO 20 MHz run-time library
 (`z80_runtime_20mhz`); there is no PWM or software-trap build option for them.
 
 See the [board verification notes](../hardware/address-interface.md#board-verification-and-recovery).
