@@ -3,15 +3,21 @@
 This directory contains the standalone `z80-debug-host` sources used by the
 CP/M end-to-end test and interactive debugger. Its debugger protocol and Z80
 engine derive from DCC, but the project-specific host and process use the Z80
-name. The Z80 engine files are direct copies from the sibling DCC checkout:
+name. The Z80 engine files come from the sibling DCC checkout:
 
 - `x80.cxx`
 - `x80.hxx`
 - `z80.h`
 
+`x80.hxx` and `z80.h` are direct copies. `x80.cxx` additionally counts
+documented Z80 T-states; [timing/README.md](timing/README.md) describes that
+accounting, the evidence for it and how it differs from the DCC copy.
+
 The engine is kept in this project so the test does not silently use a
-different installed emulator. Update these files only by copying the matching
-current versions from `dcc/src/dcc_debug_host/` and verify them with `cmp`.
+different installed emulator. Update `x80.hxx` and `z80.h` only by copying the
+matching current versions from `dcc/src/dcc_debug_host/` and verify them with
+`cmp`. When taking a newer `x80.cxx` from DCC, carry the T-state accounting
+across and rerun `src/common/tests/emulator_z80_test.py`.
 `cpu_x80_adapter.cpp` is the project-specific bridge around that engine. It
 adds the native SBC console/disk routing and loader activation on port 21.
 Activation is sticky until CPU reset so the FT commands on port 21 do not

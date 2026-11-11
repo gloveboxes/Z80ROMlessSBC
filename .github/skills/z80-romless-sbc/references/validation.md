@@ -36,7 +36,7 @@ Mbed TLS 3's SHA-512 option does not imply SHA-384 support.
 Z80 execution results come from the C emulator in `src/cpm/z80_debug_host`.
 Run `python3.14 src/common/tests/emulator_z80_test.py` first and after any
 emulator change (`x80.cxx`, `sbc_*.c*`, bank model); it tests flags,
-instructions and banking against an independent reference. Each emulator bug
+instructions, T-state counts and banking against an independent reference. Each emulator bug
 gets a regression there. Emulator tests do not qualify hardware timing.
 
 Run host image tests from the repository root with discovery:

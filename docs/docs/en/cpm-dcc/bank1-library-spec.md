@@ -58,7 +58,7 @@ DE8Eh  | Loader, search, request and |  library request record at DF20h,
 E000h  | Library loader              |  validates the header, copies image
 E300h  | Export table, capability    |  capability record at E360h,
        | record, descriptor helpers  |  descriptor helpers at E390h
-E400h  | DMA buffer, FCB staging,    |  call token at E4D6h, library FCB
+E400h  | Search record, FCB staging, |  call token at E4D6h, library FCB
        | mailboxes, service stacks   |  at E500h, private stacks to E5FFh
 E600h  | Dispatcher, allocator       |  dispatcher at E640h, tables at
        | tables, context hooks       |  E700h, context hooks at E780h
@@ -236,10 +236,12 @@ for bounded call frames; close and failed open release it. Successful
 steady-state calls perform no allocations/frees. Generated wrappers retain one
 four-byte binding per export, checking its complete canonical signature once
 per module generation. Raw `blcall` still validates the signature every time.
-Invalidation/reload advances generation; RESET advances pool epoch. The SDK
-queries both before writing a cached frame, and resident CALL validates them
-again. Stale ownership returns `BL_STALE` and never frees or overwrites a
-possibly reassigned extent. Metadata is immutable while loaded: raw debug
+Invalidation/reload advances generation; RESET advances pool epoch. Before
+writing a cached frame the SDK compares its bank-0 count of pool resets with
+the value recorded at open, and resident CALL validates generation and epoch.
+Stale ownership returns `BL_STALE` and never frees or overwrites a possibly
+reassigned extent. Applications reset the pool only through the SDK
+(`bank_memory_reset` or `bank_bios_reset`), which maintains that count. Metadata is immutable while loaded: raw debug
 writes require invalidate/reload.
 
 A two-byte frame-length prefix lets the generated adapter reject malformed
@@ -295,8 +297,13 @@ identifiers, memory addresses, or a security boundary.
 
 ## BDOS and bank switching
 
-The bank-0 shim copies FCBs and DMA records through resident staging buffers,
-returns CP/M results, and mirrors pointer-returned disk tables in bank 0.
+The bank-0 shim passes each disk call to the proxy in registers (C=function,
+HL=argument, IY=DMA) and receives the BDOS result in HL. It copies only FCBs
+and directory-search records through resident staging buffers, and mirrors
+pointer-returned disk tables in bank 0. For sequential and random reads and
+writes the proxy sets the BIOS flag at `FC37h`: the mirrored BIOS then selects
+bank 0 around its `INIR`/`OTIR`, moving the 128-byte record directly between
+the disk and the caller's DMA, while the BDOS directory buffer stays in bank 1.
 Bank 1 retains the authoritative allocation vectors. A bank-0 directory
 search can continue after a bank-1 library file operation; the proxy keeps a
 separate search continuation snapshot. Calls are sequential; the gateway
@@ -317,6 +324,7 @@ Library `exit`, `abort`, program chaining, and transient-program startup
 paths are outside the supported runtime subset. The host must call its
 unload export before invalidating a library with open files. Direct bank-0
 BIOS disk calls bypass the BDOS shim; ordinary CP/M applications use BDOS.
-The emulator covers cold/warm boot, bank-0 directory and file reads, a bank-1
-file read, interrupted directory search, header rejection, and restoration of
+The emulator covers cold/warm boot, bank-0 directory searches, direct record
+reads and writes across extents, a bank-1 file read, interrupted directory
+search, header rejection, and restoration of
 bank 0 after calls. Physical board validation remains necessary.

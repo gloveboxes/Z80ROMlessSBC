@@ -118,8 +118,11 @@ Preserve separate `lib/`, `host/`, generated-contract, and build directories.
   addresses, persistent identifiers, or a security boundary.
 - Use SDK generation/epoch checks. Reload/invalidation or pool RESET can
   invalidate cached state; `BL_STALE` must not free or overwrite reassigned
-  extents. Tokens are not reused during the resident runtime's lifetime;
-  propagate `BL_EXHAUSTED` rather than wrapping or recycling them.
+  extents. Reset the pool only with `bank_memory_reset` or `bank_bios_reset`:
+  BANKLIB detects a recycled call frame from the SDK's bank-0 reset count, so
+  a raw gateway RESET is unsupported. Tokens are not reused during the
+  resident runtime's lifetime; propagate `BL_EXHAUSTED` rather than wrapping
+  or recycling them.
 - Use automatic SDK `onload`/`onunload` lifecycle handling. Release outstanding
   files and objects on unload and leave no committed DCC heap. Do not bypass
   cleanup by directly invalidating a live module.

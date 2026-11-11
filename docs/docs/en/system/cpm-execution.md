@@ -44,8 +44,8 @@ The `FF00h` gateway and `FB40h` trampoline have matching code in both banks, so 
 ### BDOS selects files; BIOS transfers records
 
 1. Bank-0 `CALL 0005h` enters the BDOS shim at `EE06h`.
-2. Console calls stay local; disk/file calls copy File Control Blocks (FCBs) and software DMA buffers to bank 1 using the private `F600h`-`F7FFh` stack.
-3. Bank-1 BDOS selects files and records, then calls BIOS at `FC00h`. Libraries reach it through their own `0005h` vector.
+2. Console calls stay local; disk/file calls pass their request in registers and copy only File Control Blocks (FCBs) and directory-search records to and from bank 1, using the private `F600h`-`F7FFh` stack.
+3. Bank-1 BDOS selects files and records, then calls BIOS at `FC00h`. For a bank-0 read or write, BIOS selects bank 0 around the block transfer so the record moves directly to or from the caller's DMA. Libraries reach BDOS through their own `0005h` vector.
 4. BIOS emits port I/O; PIO1 completes the bus cycle, core 0 supplies device data, and core 1 handles queued storage/transport work.
 
 Disk BIOS uses ports `10h`-`14h`, computes `track * 32 + sector`, polls status and transfers 128 bytes with `INIR`/`OTIR`. Normal, directory and unallocated-write commands remain distinct; `SETDMA` sets a software buffer, not hardware DMA. Console I/O uses ports `00h`-`01h`.
@@ -301,7 +301,7 @@ The 237-byte gateway uses two bank-select OUTs per 16-byte burst and bookkeeping
 | 3 | AVAILABLE | Returns free bytes, initially 5,632 |
 | 4 | RESET | Invalidates general-pool handles and restores the free extent |
 | 5 | CALL | HL=live code handle, BC=distinct live stack handle, IX=entry offset, IY=context; returns code's HL |
-| 6 | BDOS proxy | Resident bank-0 BDOS shim service |
+| 6 | BDOS proxy | Resident bank-0 BDOS shim service: C=function, HL=argument, IY=DMA, B nonzero for a bank-0 record DMA; returns the BDOS HL |
 | 7 | CAPABILITIES | Returns bank-1 address of a 48-byte versioned descriptor, or zero |
 | 8 | LIB CONTROL | HL=discovered request address; returns status independently of results |
 | 9 | LAST STATUS | Returns last resident-service status without clearing it |
@@ -326,7 +326,7 @@ After INFO, `bank_bios_query()` discovers this 24-word little-endian descriptor;
 | 16-19 | Call-token address, maximum body bytes, exports and signature characters |
 | 20-23 | Call revision (1), checked READ/WRITE entries, one reserved zero word |
 
-Feature bits 0-5 advertise byte transfers, library control, detailed status, DMA/search contexts, generation/epoch validation and checked transfers. `bank_bios_library_control()` copies this request to the discovered address, dispatches operation 8 and retrieves the response (16-bit words):
+Feature bits 0-5 advertise byte transfers, library control, detailed status, DMA/search contexts, generation/epoch validation and checked transfers. `bank_bios_library_control()` copies this request to the discovered address, dispatches operation 8 and retrieves the response (16-bit words). `bank_bios_library_invoke()` does the same for CALL but takes only the status the gateway returns, because CALL results come back in the frame:
 
 | Byte offset | Meaning |
 | --- | --- |

@@ -1,6 +1,8 @@
 ; Bank-0 CP/M 2.2 entry. Bank 1 owns the BDOS disk state.
-; The bank-0 shim keeps console calls local and copies FCB/DMA arguments
-; through the mirrored bank transfer API before invoking HEAP operation 7.
+; The bank-0 shim keeps console calls local. Disk calls enter gateway
+; service 6 with the request in registers; only FCBs and search results are
+; copied through the mirrored bank transfer API. Data records move directly
+; between the disk and the caller's DMA inside the bank-1 BIOS.
 ; It occupies the old EE00h..FB3Fh BDOS slot; FB80h..FBFFh stays reserved
 ; for the BIOS directory buffer.
 ; CCP's stack starts at ED3Eh, just above executable CCP bytes. Use a private
@@ -36,12 +38,11 @@ forward_result_ready:
         jp z,return_disk_params
         call fcb_copy_back_if_needed
         jp c,forward_error
-        call dma_copy_back_if_needed
+        call search_copy_back_if_needed
         jp c,forward_error
-        ld a,(response+7)
-        ld b,a
-        ld hl,(response+8)
-        ld a,(response+6)
+        ld hl,(result)
+        ld a,l
+        ld b,h
         pop iy
         pop ix
         ld sp,(caller_sp)
@@ -67,44 +68,37 @@ set_dma:
         ld sp,(caller_sp)
         ret
 
-; Carry indicates a failed bank transfer. Request and response are 16 bytes.
+; Carry indicates a failed bank transfer. The gateway carries the request in
+; registers: C=function, HL=argument, IY=DMA, and B nonzero when IY is the
+; caller's own DMA for a data record. HL returns the BDOS result (A=L, B=H).
 forward_request:
-        ld a,(function_number)
-        ld (response),a
-        ld de,(original_arg)
-        ld (response+2),de
         call fcb_copy_in_if_needed
         ret c
-        call dma_copy_in_if_needed
-        ret c
-        ld hl,response
-        ld de,0e4b0h
-        ld bc,16
-        call 0ff03h
-        ret c
+        ld iy,0e400h
+        ld b,0
+        call is_record_function
+        jr nc,forward_call
+        ld iy,(base_dma)
+        inc b
+forward_call:
+        ld a,(function_number)
+        ld c,a
         ld e,6
-        ld hl,0e4b0h
         call 0ff10h
-        ld hl,response
-        ld de,0e4b0h
-        ld bc,16
-        call 0ff00h
+        ld (result),hl
+        or a
         ret
 
-; The FCB lives in the caller's bank. Stage 36 bytes into a padded 48-byte
-; bank-0 buffer, then copy that complete buffer to the stable bank-1 FCB.
+; The FCB lives in the caller's bank. Stage its 36 bytes in a 48-byte bank-0
+; buffer, then copy that complete buffer to the stable bank-1 FCB. The 12
+; spare bytes only round the transfer up to whole bursts; nothing reads them.
+; HL returns the argument for bank 1: that FCB, or the caller's DE unchanged.
 fcb_copy_in_if_needed:
+        ld hl,(original_arg)
         call is_fcb_function
         ret nc
-        ld hl,(original_arg)
         ld de,fcb_buffer
         ld bc,36
-        ldir
-        xor a
-        ld hl,fcb_buffer+36
-        ld (hl),a
-        ld de,fcb_buffer+37
-        ld bc,11
         ldir
         ld hl,fcb_buffer
         ld de,0e480h
@@ -112,7 +106,6 @@ fcb_copy_in_if_needed:
         call 0ff03h
         ret c
         ld hl,0e480h
-        ld (response+2),hl
         or a
         ret
 fcb_copy_back_if_needed:
@@ -135,62 +128,55 @@ fcb_copy_back_if_needed:
 is_fcb_function:
         ld a,(function_number)
         cp 15
-        jr c,no_fcb
+        jr c,function_differs
         cp 18
-        jr c,yes_fcb
+        jr c,function_matches
         cp 19
-        jr z,yes_fcb
+        jr z,function_matches
         cp 20
-        jr c,no_fcb
+        jr c,function_differs
         cp 24
-        jr c,yes_fcb
+        jr c,function_matches
         cp 30
-        jr z,yes_fcb
+        jr z,function_matches
         cp 33
-        jr c,no_fcb
+        jr c,function_differs
         cp 37
-        jr c,yes_fcb
+        jr c,function_matches
         cp 40
-        jr z,yes_fcb
-no_fcb:
+        jr z,function_matches
+function_differs:
         or a
         ret
-yes_fcb:
+function_matches:
         scf
         ret
 
-dma_copy_in_if_needed:
+; Sequential and random reads and writes: the bank-1 BIOS moves the 128-byte
+; record directly to or from the caller's DMA.
+is_record_function:
         ld a,(function_number)
+        cp 20
+        jr z,function_matches
         cp 21
-        jr z,copy_dma_in
+        jr z,function_matches
+        cp 33
+        jr z,function_matches
         cp 34
-        jr z,copy_dma_in
+        jr z,function_matches
         cp 40
-        jr nz,no_dma_in
-copy_dma_in:
-        ld hl,(base_dma)
-        ld de,dma_buffer
-        ld bc,128
-        ldir
-        ld hl,dma_buffer
-        ld de,0e400h
-        ld bc,128
-        call 0ff03h
-        ret
-no_dma_in:
+        jr z,function_matches
         or a
         ret
-dma_copy_back_if_needed:
+
+; Search first/next leave the matching directory record at bank-1 E400h.
+search_copy_back_if_needed:
         ld a,(function_number)
         cp 17
-        jr z,copy_dma_out
+        jr z,copy_search_out
         cp 18
-        jr z,copy_dma_out
-        cp 20
-        jr z,copy_dma_out
-        cp 33
-        jr nz,no_dma_out
-copy_dma_out:
+        jr nz,no_search_out
+copy_search_out:
         ld hl,dma_buffer
         ld de,0e400h
         ld bc,128
@@ -200,9 +186,7 @@ copy_dma_out:
         ld de,(base_dma)
         ld bc,128
         ldir
-        or a
-        ret
-no_dma_out:
+no_search_out:
         or a
         ret
 
@@ -210,7 +194,7 @@ no_dma_out:
 ; Mirror their public byte ranges into stable bank-0 storage.
 return_alloc_vector:
         ld hl,alloc_vector_mirror
-        ld de,(response+8)
+        ld de,(result)
         ld bc,32
         call 0ff00h
         jp c,forward_error
@@ -223,7 +207,7 @@ return_alloc_vector:
         ret
 return_disk_params:
         ld hl,disk_params_mirror
-        ld de,(response+8)
+        ld de,(result)
         ld bc,16
         call 0ff00h
         jp c,forward_error
@@ -382,10 +366,10 @@ base_dma: dw 0080h
 line_count_address: dw 0
 line_cursor: dw 0
 caller_sp: dw 0
+result: dw 0
         defs 0f400h-$,0
 dma_buffer: defs 128,0
 fcb_buffer: defs 48,0
-response: defs 16,0
         defs 0f500h-$,0
 alloc_vector_mirror: defs 32,0
 disk_params_mirror: defs 16,0

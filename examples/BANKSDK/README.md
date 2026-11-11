@@ -79,12 +79,18 @@ allocation-backed buffers. Raw BIOS calls require a successful
   query. Applications do not inspect private resident signatures or tables.
   `bank_bios_query()` discovers pool geometry, byte-copy entries and the
   structured library service. `bank_bios_library_control()` submits its
-  versioned 32-byte request without exposing loader-private mailboxes.
+  versioned 32-byte request without exposing loader-private mailboxes and
+  reads the response back. `bank_bios_library_invoke()` submits a CALL, whose
+  status returns from the gateway and whose results return in the call frame,
+  without reading the record back.
   Initialization does not reset the pool, so memory and library APIs can be
   initialized in either order without destroying the current app's leases.
 - Memory operations return zero on failure; allocation returns a nonzero
   handle, while size/available report bytes. `bank_memory_free(0)` succeeds.
   `bank_memory_reset()` is destructive to every allocation in the shared pool.
+  Reset the pool only with it or `bank_bios_reset()`: both advance
+  `bank_bios_reset_count`, which pool owners in bank 0 compare to detect a
+  recycled extent. A raw gateway RESET is not counted and is unsupported.
   `bank_memory_last_error()` reports a `BANK_BIOS_*` status, including argument,
   invalid-handle, pinned-release and out-of-memory errors. Raw BIOS wrappers
   expose `bank_bios_last_error()` independently of a function's ordinary result;
@@ -123,16 +129,19 @@ Frame setup clears alignment padding, not the copied body.
 Generated typed wrappers use a four-byte `bank_library_binding_t` per function.
 They compare the complete canonical signature once per module generation, then
 reuse its export index. Native counters verify twenty consecutive bound calls
-perform zero additional signature reads, allocations or frees; reload forces
-rebinding. Raw `bank_library_call()` still compares the full signature each time.
+perform zero additional signature reads, library queries, allocations or frees;
+reload forces rebinding. Raw `bank_library_call()` still compares the full signature each time.
 Do not reuse one binding for different name/signature pairs or mutate loaded
 metadata through raw writes. No hardware latency improvement is claimed.
 
-Before writing a reused frame, the runtime queries module generation and pool
-epoch. Resident dispatch checks both again. Invalidation/reload makes old bindings
-stale; pool RESET makes old frame ownership stale. The runtime never writes or
-frees an old frame after its epoch changes, because another owner may now hold
-the same address. `BL_STALE` reports this explicitly; close and reopen to recover.
+Before writing a reused frame, the runtime compares `bank_bios_reset_count`
+with the value recorded at open, so a steady-state call enters bank 1 once: the
+frame and the CALL record out, one request and the frame back. Resident
+dispatch validates module generation and pool epoch. Invalidation/reload makes
+old bindings stale;
+pool RESET makes old frame ownership stale. After a reset the runtime never
+writes or frees the old frame, because another owner may now hold the same
+address. `BL_STALE` reports this explicitly; close and reopen to recover.
 
 Host and library DMA/search continuations are separate. Search Next reloads the
 shared directory sector before resuming, so interleaved searches across drives

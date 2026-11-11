@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1480" height="1480" viewBox="0 0 1480 1480" role="img" aria-labelledby="title description">
   <title id="title">How CP/M calls reach the PIO I/O engine</title>
-  <desc id="description">Bank-0 application disk calls pass through the BDOS shim and copied gateway requests to bank-1 BDOS, which calls BIOS. All of this runs on the Z80. BIOS emits IN and OUT instructions. Hardware HCT32 asserts WAIT; PIO1 holds PIO0's clock LOW, exchanges ordered snapshots and replies with core 0, and completes the bus cycle. Core 1 owns queued USB, WebSocket, network and flash work. An OUT queues a snapshot before resuming, except OUT 07h selects A16 directly. An IN waits for the reply, runs two clocks, isolates the output buffer and then resumes instruction fetching. The four disk images are 512 KiB each with 128-byte records.</desc>
+  <desc id="description">Bank-0 application disk calls pass through the BDOS shim, which forwards each request in registers and copies only FCBs and directory-search records, to bank-1 BDOS, which calls BIOS. BIOS moves each data record directly to or from the caller's bank-0 DMA. All of this runs on the Z80. BIOS emits IN and OUT instructions. Hardware HCT32 asserts WAIT; PIO1 holds PIO0's clock LOW, exchanges ordered snapshots and replies with core 0, and completes the bus cycle. Core 1 owns queued USB, WebSocket, network and flash work. An OUT queues a snapshot before resuming, except OUT 07h selects A16 directly. An IN waits for the reply, runs two clocks, isolates the output buffer and then resumes instruction fetching. The four disk images are 512 KiB each with 128-byte records.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -38,8 +38,8 @@
   <rect x="410" y="160" width="300" height="145" rx="12" fill="#fff2e5" stroke="#e7bb8d"/>
   <text x="430" y="193" class="heading">Bank-0 BDOS shim</text>
   <text x="430" y="225" class="body">Entry EE06h</text>
-  <text x="430" y="254" class="body">Private stack; copied</text>
-  <text x="430" y="283" class="body">FCB / DMA requests</text>
+  <text x="430" y="254" class="body">Private stack; register</text>
+  <text x="430" y="283" class="body">requests, copied FCBs</text>
   <rect x="770" y="160" width="300" height="145" rx="12" fill="#e9f6f3" stroke="#8cc5ba"/>
   <text x="790" y="193" class="heading teal">Bank-1 BDOS</text>
   <text x="790" y="225" class="body">Files and directories</text>

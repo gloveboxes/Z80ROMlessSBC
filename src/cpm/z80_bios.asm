@@ -22,6 +22,7 @@ DISK_READY:     equ 01h
 DISK_DATA_READY: equ 02h
 DISK_DATA_ROOM: equ 04h
 DISK_ERROR:     equ 80h
+BANK_SELECT:    equ 07h
 
                 org BIOS_BASE
 
@@ -46,7 +47,15 @@ reader_input_entry:
                 jp write_record
                 jp list_status
                 jp translate_sector
-                db "ZAR1"
+autorun_magic:
+                dw AUTORUN_MAGIC_LOW,AUTORUN_MAGIC_HIGH
+; Fixed at FC37h for the bank-1 resident services. The BDOS proxy sets it in
+; bank 1's copy of the BIOS while it serves a bank-0 record call, so data
+; records move directly to or from the caller's DMA in bank 0. Bank 0's copy
+; stays zero.
+                defs BIOS_BASE+37h-$,0
+bank0_records:
+                db 0
 
 cold_boot:
                 ld a,0b0h
@@ -63,7 +72,7 @@ warm_boot:
                 ; This BIOS is mirrored in both banks. A BDOS exit can enter
                 ; here with bank 1 selected, but the CCP lives only in bank 0.
                 xor a
-                out (7),a
+                out (BANK_SELECT),a
                 ld sp,0080h
                 call flush_disk
                 or a
@@ -94,7 +103,7 @@ warm_boot_loop:
                 ld a,2
 
 enter_cpm:
-                push af
+                ld e,a
                 ld a,0c3h
                 ld (0000h),a
                 ld (0005h),a
@@ -102,7 +111,6 @@ enter_cpm:
                 ld (0001h),hl
                 ld hl,BDOS_ENTRY
                 ld (0006h),hl
-                pop af
                 call load_autorun
                 ld hl,0080h
                 ld (dma_address),hl
@@ -112,12 +120,12 @@ enter_cpm:
                 out (BOOT_REPORT),a
                 jp CCP_BASE
 
+; E=1 after a cold boot and 2 after a warm boot. READ preserves HL, which
+; then walks the validated record.
 load_autorun:
-                ld e,a
                 xor a
                 ld (CCP_BASE+7),a
                 ld (disk_drive),a
-autorun_read:
                 ld hl,AUTORUN_TRACK
                 ld (disk_track),hl
                 ld hl,AUTORUN_SECTOR
@@ -127,10 +135,9 @@ autorun_read:
                 call read_record
                 or a
                 jr nz,autorun_error
-                ld a,(directory_buffer)
+                ld a,(hl)
                 cp 0e5h
                 ret z
-                ld hl,directory_buffer
                 ld b,128
                 xor a
 autorun_checksum:
@@ -139,21 +146,23 @@ autorun_checksum:
                 djnz autorun_checksum
                 or a
                 jr nz,autorun_error
-                ld hl,(directory_buffer)
-                ld bc,AUTORUN_MAGIC_LOW
-                or a
-                sbc hl,bc
+                ld hl,directory_buffer
+                ld bc,autorun_magic
+                ld d,4
+autorun_signature:
+                ld a,(bc)
+                cp (hl)
                 jr nz,autorun_error
-                ld hl,(directory_buffer+2)
-                ld bc,AUTORUN_MAGIC_HIGH
-                or a
-                sbc hl,bc
-                jr nz,autorun_error
-                ld a,(directory_buffer+4)
+                inc hl
+                inc bc
+                dec d
+                jr nz,autorun_signature
+                ld a,(hl)
                 cp 4
                 jr nc,autorun_error
                 ld c,a
-                ld a,(directory_buffer+5)
+                inc hl
+                ld a,(hl)
                 cp AUTORUN_MAX_COMMAND+1
                 jr nc,autorun_error
                 ld a,c
@@ -161,17 +170,14 @@ autorun_checksum:
                 ret z
                 call console_status
                 or a
-                jr z,autorun_command
-                call console_input
-                ret
-autorun_command:
-                ld a,(directory_buffer+5)
+                jp nz,console_input
+                ld a,(hl)
                 or a
                 jr z,autorun_error
                 ld (CCP_BASE+7),a
                 ld c,a
                 ld b,0
-                ld hl,directory_buffer+6
+                inc hl
                 ld de,CCP_BASE+8
                 ldir
                 ld a,b
@@ -249,7 +255,7 @@ select_disk:
                 rlca
                 rlca
                 ld e,a
-                ld d,0
+                ld d,h
                 ld hl,disk_parameter_headers
                 add hl,de
                 ret
@@ -296,23 +302,32 @@ read_wait:
                 jr c,disk_io_error
                 bit 2,a
                 jr z,read_wait
-                ld hl,(dma_address)
-                ld bc,128*256+DISK_DATA
+                call record_target
+                jr nz,read_bank0
                 inir
+read_done:
                 xor a
                 jr disk_io_done
+read_bank0:
+                ; This code is identical in both banks and INIR keeps its
+                ; state in registers; A stays zero across it.
+                xor a
+                out (BANK_SELECT),a
+                inir
+                inc a
+                out (BANK_SELECT),a
+                jr read_done
 
 write_record:
                 ; C selects DISK_WRITE_NORMAL/DIRECTORY/UNALLOCATED and must
-                ; be read from the caller's BC before EXX banks it away;
-                ; stash the computed command byte in memory since A is not
-                ; preserved across the prepare_disk_io call that follows.
+                ; be read from the caller's BC before EXX banks it away. The
+                ; command byte waits in B, which prepare_disk_io leaves alone.
                 ld a,c
                 add a,DISK_WRITE_NORMAL
-                ld (write_command),a
                 exx
+                ld b,a
                 call prepare_disk_io
-                ld a,(write_command)
+                ld a,b
                 out (DISK_COMMAND),a
 write_room_wait:
                 in a,(DISK_COMMAND)
@@ -320,8 +335,8 @@ write_room_wait:
                 jr c,disk_io_error
                 bit 3,a
                 jr z,write_room_wait
-                ld hl,(dma_address)
-                ld bc,128*256+DISK_DATA
+                call record_target
+                jr nz,write_bank0
                 otir
 write_done_wait:
                 in a,(DISK_COMMAND)
@@ -332,19 +347,34 @@ write_done_wait:
                 xor a
                 jr disk_io_done
 
+write_bank0:
+                xor a
+                out (BANK_SELECT),a
+                otir
+                inc a
+                out (BANK_SELECT),a
+                jr write_done_wait
+
+; A=0 when the pending writes are committed, as for a written record.
 flush_disk:
+                exx
                 ld a,DISK_FLUSH
                 out (DISK_COMMAND),a
-flush_wait:
-                in a,(DISK_COMMAND)
-                rlca
-                jr c,flush_error
-                bit 1,a
-                jr z,flush_wait
-                xor a
-                ret
-flush_error:
-                ld a,1
+                jr write_done_wait
+
+; HL=DMA address, B=128 and C=data port for INIR/OTIR. NZ when the record
+; belongs to bank 0; the BDOS directory buffer always stays in this bank.
+record_target:
+                ld hl,(dma_address)
+                ld bc,128*256+DISK_DATA
+                ld a,(bank0_records)
+                or a
+                ret z
+                ld a,h
+                cp directory_buffer/256
+                ret nz
+                ld a,l
+                cp directory_buffer&255
                 ret
 
 disk_io_error:
@@ -379,8 +409,6 @@ disk_sector:
                 dw 0
 dma_address:
                 dw 0080h
-write_command:
-                db 0
 
 directory_buffer: equ BIOS_DIRECTORY_BUFFER
 allocation_0:

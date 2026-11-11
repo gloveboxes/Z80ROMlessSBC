@@ -38,7 +38,8 @@ class BankOneBdos(unittest.TestCase):
         cls.loader = assemble("src/common/bank1_library_loader.asm")
 
     def run_bank_one_payload(self, payload: bytes, operation: int = 5,
-                             request: bytes = b"", lib_file: bytes | None = None
+                             bdos: tuple[int, int] = (0, 0),
+                             lib_file: bytes | None = None
                              ) -> tuple[cpm_boot_z80_test.CpmBootExecution, bytearray]:
         case = cpm_boot_z80_test.CpmBootExecution()
         case.setUp()
@@ -68,7 +69,6 @@ class BankOneBdos(unittest.TestCase):
             extra[0xDE9F] = 1
         if lib_file is not None:
             extra[0x100:0xC800] = b"\xA5" * (0xC800 - 0x100)
-        extra[0xE4B0:0xE4B0 + len(request)] = request
         extra[0x100:0x100 + len(payload)] = payload
         for bank in (base, extra):
             bank[0xFF00:0xFF00 + len(self.transfer)] = self.transfer
@@ -78,11 +78,11 @@ class BankOneBdos(unittest.TestCase):
                                    else case.read_port(port))
         machine.set_breakpoint(0x1003)
 
-        def gateway(operation: int, hl: int, bc: int = 0) -> int:
+        def gateway(operation: int, hl: int, bc: int = 0, iy: int = 0) -> int:
             machine.select_bank(0)
             machine.bank(0)[0x1000:0x1003] = bytes((0xCD, 0x10, 0xFF))
             machine.pc, machine.sp, machine.hl, machine.e = 0x1000, 0xD000, hl, operation
-            machine.bc, machine.ix, machine.iy = bc, 0, 0
+            machine.bc, machine.ix, machine.iy = bc, 0, iy
             machine.ticks_to_stop = 5_000_000
             for _ in range(100):
                 if machine.run() & machine._BREAKPOINT_HIT:
@@ -103,6 +103,9 @@ class BankOneBdos(unittest.TestCase):
                 request[offset:offset + 2] = value.to_bytes(2, "little")
             extra[0xDF20:0xDF40] = request
             gateway(8, 0xDF20)
+        elif operation == 6:
+            # BDOS proxy: C=function, HL=argument, B=0 with the staged DMA in IY.
+            gateway(6, bdos[1], bdos[0], 0xE400)
         else:
             gateway(operation, 0x0100, 0xC000)
         return case, extra
@@ -124,13 +127,11 @@ class BankOneBdos(unittest.TestCase):
         self.assertEqual(bank[0x200:0x280], case.autorun[:128])
 
     def test_gateway_bdos_proxy_returns_registers(self) -> None:
-        case, bank = self.run_bank_one_payload(b"", operation=6,
-                                               request=bytes((12, 0, 0, 0)))
-        self.assertEqual(bank[0xE4B6], 0x22)
-        self.assertEqual(case.machine.pc, 0x1003)
-        case, bank = self.run_bank_one_payload(b"", operation=6,
-                                               request=bytes((32, 0, 0xFF, 0x00)))
-        self.assertEqual(case.machine.pc, 0x1003)
+        case, bank = self.run_bank_one_payload(b"", operation=6, bdos=(12, 0))
+        self.assertEqual((case.machine.hl, case.machine.pc), (0x0022, 0x1003))
+        self.assertEqual(bank[0xFC37], 0)
+        case, bank = self.run_bank_one_payload(b"", operation=6, bdos=(32, 0xFF))
+        self.assertEqual((case.machine.hl, case.machine.pc), (0, 0x1003))
 
     def test_resident_loader_reads_and_verifies_library(self) -> None:
         code = bytes((0x21, 0xEF, 0xBE, 0xC9))

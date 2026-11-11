@@ -11,8 +11,17 @@
 static unsigned char bank[65536];
 static unsigned int extent_live, calls, cleanup_calls, allocations, frees;
 static unsigned int signature_reads, module_loaded, mock_generation, mock_epoch = 1;
-static unsigned int mock_status, load_status;
-static int fail_read, fail_write, fail_free, fail_load_reply, fail_query;
+static unsigned int mock_status, load_status, queries;
+static int fail_read, fail_write, fail_free, fail_load_reply, fail_query, invoking;
+
+unsigned int bmrcnt;
+
+/* The SDK reset adapter counts every reset the resident allocator accepts. */
+static void sdk_reset(void)
+{
+    ++mock_epoch;
+    ++bmrcnt;
+}
 
 static void set_word(unsigned char *p, unsigned int offset, unsigned int value)
 {
@@ -137,6 +146,7 @@ int bmctrl(unsigned int address, void *buffer)
     }
     else if (action == BANK_LIBRARY_QUERY)
     {
+        ++queries;
         if (fail_query)
             mock_status = BANK_BIOS_IO;
         else
@@ -144,14 +154,20 @@ int bmctrl(unsigned int address, void *buffer)
     }
     else
     {
-        assert(action == BANK_LIBRARY_INVOKE && module_loaded && extent_live);
-        assert(word_at(p + 8) == mock_generation &&
-               word_at(p + 30) == mock_epoch &&
-               word_at(p + 12) == TEST_FRAME);
-        set_word(bank, BL_TOKEN_ADDRESS, word_at(p + 14));
-        ++calls;
+        /* CALL is submitted without a read-back; see bminvk. */
+        assert(action == BANK_LIBRARY_INVOKE && invoking && module_loaded && extent_live);
+        assert(word_at(p + 12) == TEST_FRAME);
         index = word_at(p + 10);
         length = word_at(frame);
+        /* Resident dispatch rejects a stale generation or epoch itself. */
+        if (word_at(p + 8) != mock_generation || word_at(p + 30) != mock_epoch)
+        {
+            set_word(p, 6, BANK_BIOS_STALE);
+            mock_status = BANK_BIOS_STALE;
+            return 0;
+        }
+        set_word(bank, BL_TOKEN_ADDRESS, word_at(p + 14));
+        ++calls;
         if (index == 1)
         {
             assert(length == 2);
@@ -170,11 +186,25 @@ int bmctrl(unsigned int address, void *buffer)
     return mock_status == 0;
 }
 
+/* The resident service updates its own copy; the caller's record is not
+ * read back, so only the status reaches the caller. */
+int bminvk(unsigned int address, void *buffer)
+{
+    unsigned char resident[BANK_LIBRARY_REQUEST_BYTES];
+    int result;
+    memcpy(resident, buffer, sizeof(resident));
+    invoking = 1;
+    result = bmctrl(address, resident);
+    invoking = 0;
+    return result;
+}
+
 int main(void)
 {
     unsigned char frame[4] = {0xA5, 0xA5, 5, 0}, maximum_frame[256];
     char name[9], signature[256];
     unsigned int before, before_reads, before_allocations, before_frees, i;
+    unsigned int before_queries;
     bank_library_binding_t binding = {0, 0};
     unsigned int statuses[] = {BANK_BIOS_FORMAT, BANK_BIOS_IO};
     unsigned int errors[] = {BL_FORMAT, BL_IO};
@@ -224,17 +254,18 @@ int main(void)
     before_reads = signature_reads;
     before_allocations = allocations;
     before_frees = frees;
+    before_queries = queries;
+    /* Steady-state calls stay in bank 0 until the frame is written. */
+    fail_query = 1;
     for (i = 0; i < 20; ++i)
         assert(bank_library_call_bound(&binding, "ADD", "u16(u16)", frame, sizeof(frame)) &&
                blerr() == BL_OK && frame[0] == 12);
     assert(signature_reads == before_reads && allocations == before_allocations &&
-           frees == before_frees);
+           frees == before_frees && queries == before_queries);
     assert(word_at(bank + BL_TOKEN_ADDRESS) == serial);
-    fail_query = 1;
-    before = calls;
-    assert(!blcall("ADD", "u16(u16)", frame, sizeof(frame)) &&
-           blerr() == BL_IO && calls == before && extent_live);
+    assert(!blchk() && blerr() == BL_IO && queries == before_queries + 1 && extent_live);
     fail_query = 0;
+    assert(blchk() && blerr() == BL_OK);
     fail_free = 1;
     assert(!blclos() && blerr() == BL_CLEANUP && extent_live && !module_loaded);
     fail_free = 0;
@@ -244,17 +275,36 @@ int main(void)
     assert(bank_library_call_bound(&binding, "ADD", "u16(u16)", frame, sizeof(frame)));
     assert(signature_reads == before_reads + 1 && binding.generation == mock_generation);
     before_frees = frees;
-    ++mock_epoch;
+    before = calls;
+    /* An SDK pool reset gives the frame's address to another owner: nothing
+     * may be written or freed there, by either kind of call or by close. */
+    sdk_reset();
     memset(bank + TEST_FRAME, 0x5A, 512);
     assert(!blcall("ADD", "u16(u16)", frame, sizeof(frame)) &&
            blerr() == BL_STALE && !workspace);
-    assert(!blclos() && blerr() == BL_STALE && frees == before_frees);
+    assert(!bank_library_call_bound(&binding, "ADD", "u16(u16)", frame, sizeof(frame)) &&
+           blerr() == BL_STALE);
+    assert(!blclos() && blerr() == BL_STALE && frees == before_frees && calls == before);
     for (i = 0; i < 512; ++i)
         assert(bank[TEST_FRAME + i] == 0x5A);
     extent_live = 0;
+    /* Reopening records the current reset count. */
+    assert(blopen("DATA") && blcall("ADD", "u16(u16)", frame, sizeof(frame)));
+    assert(blclos() && blerr() == BL_OK && !extent_live);
     assert(blopen("DATA"));
+    /* A reset that bypasses the SDK is still refused by resident dispatch. */
+    before = calls;
+    before_frees = frees;
+    ++mock_epoch;
+    assert(!blcall("ADD", "u16(u16)", frame, sizeof(frame)) &&
+           blerr() == BL_STALE && calls == before);
+    assert(!blclos() && blerr() == BL_STALE && frees == before_frees && !workspace);
+    extent_live = 0;
+    assert(blopen("DATA"));
+    before = calls;
     ++mock_generation;
-    assert(!blcall("ADD", "u16(u16)", frame, sizeof(frame)) && blerr() == BL_STALE);
+    assert(!blcall("ADD", "u16(u16)", frame, sizeof(frame)) &&
+           blerr() == BL_STALE && calls == before);
     assert(!blclos() && blerr() == BL_STALE && !extent_live && module_loaded);
     module_loaded = 0;
     assert(blopen("DATA"));

@@ -202,7 +202,10 @@ invalid_pool:
         defs 0ed88h-$,0
 application_start:
         ; The CCP has replaced the transient: no previous app state is live.
+        ; A BDOS error exit skips the proxy's return, so also clear the BIOS
+        ; bank-0 record flag before this app's bank-1 code can use the disk.
         xor a
+        ld (0fc37h),a
         ld (0de9fh),a
         ld (0e4d2h),a
         ld hl,0

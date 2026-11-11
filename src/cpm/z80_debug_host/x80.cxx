@@ -46,7 +46,6 @@ void x80_trace_instructions( bool t ) { if ( t ) g_State |= stateTraceInstructio
 void x80_end_emulation() { g_State |= stateEndEmulation; }
 
 enum z80_value_source { vs_register, vs_memory, vs_indexed }; // this impacts how Z80 undocumented Y and X flags are updated
-const uint8_t cyclesnt = 6;  // cycles not taken when a conditional call, jump, or return isn't taken
 
 // instructions starting with '*' are Z80-specific, generally multi-byte, and handled separately.
 // instructions listed here are the overlap with 8080 but with the Z80 naming.
@@ -84,27 +83,6 @@ static const char z80_instructions[ 256 ][ 16 ] =
     /*e8*/ "ret pe",     "jp (hl)",    "jp pe, a16",   "ex de, hl",   "call pe, a16", "*",          "xor d8",      "rst 5",
     /*f0*/ "ret p",      "pop af",     "jp p, a16",    "di",          "call p, a16",  "push af",    "or d8",       "rst 6",
     /*f8*/ "ret m",      "ld sp, hl",  "jp m, a16",    "ei",          "call m, a16",  "*",          "cp d8",       "rst 7",
-};
-
-typedef uint8_t acycles_t[ 256 ];
-static const acycles_t z80_cycles =
-{
-    /*00*/  4, 10,  7,  6,  4,  4,  7,  4,    4, 11,  7,  6,  4,  4,  7,  4,
-    /*10*/  0, 10,  7,  6,  4,  4,  7,  4,    0, 11,  7,  6,  4,  4,  7,  4,
-    /*20*/  0, 10, 16,  6,  4,  4,  7,  4,    0, 11, 20,  6,  4,  4,  7,  4,
-    /*30*/  0, 10, 13,  6, 11, 11, 10,  4,    0, 11, 13,  6,  4,  4,  7,  4,
-    /*40*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*50*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*60*/  4,  4,  4,  4,  0,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*70*/  7,  7,  7,  7,  7,  7,  4,  7,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*80*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*90*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*a0*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*b0*/  4,  4,  4,  4,  4,  4,  7,  4,    4,  4,  4,  4,  4,  4,  7,  4,
-    /*c0*/ 11, 10, 10, 10, 17, 11,  7, 11,   11, 10, 10,  0, 17, 17,  7, 11,
-    /*d0*/ 11, 10, 10, 11, 17, 11,  7, 11,   11,  0, 10, 11, 17,  0,  7, 11,
-    /*e0*/ 11, 10, 10, 19, 17, 11,  7, 11,   11,  4, 10,  4, 17,  0,  7, 11,
-    /*f0*/ 11, 10, 10,  4, 17, 11,  7, 11,   11,  5, 10,  4, 17,  0,  7, 11,
 };
 
 static uint8_t pcbyte( uint16_t & pc ) { return memory[ pc++ ]; }
@@ -390,7 +368,7 @@ void z80_ni( uint8_t op, uint8_t op2 )
 } //z80_ni
 
 bool check_conditional( uint8_t op ); // defined below; needed by z80_execute_unprefixed
-uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp ); // defined below; needed by z80_execute_unprefixed
+void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp ); // defined below; needed by z80_execute_unprefixed
 
 // On real Z80 hardware, a DD/FD prefix has no effect on the operands or
 // semantics of any instruction that doesn't reference H, L, or (HL): the
@@ -419,9 +397,8 @@ uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp ); // defined bel
 // correctly handled by the pre-existing register-substitution case above --
 // the debug-hook convention is deliberately unprefixed-opcode-only and has
 // no bearing on that form.
-uint16_t z80_execute_unprefixed( uint8_t op, uint8_t op2, uint16_t & pc, uint16_t & sp )
+void z80_execute_unprefixed( uint8_t op, uint8_t op2, uint16_t & pc, uint16_t & sp )
 {
-    uint16_t cycles = z80_cycles[ op2 ];
     switch ( op2 )
     {
         case 0x00: break; // nop
@@ -508,12 +485,11 @@ uint16_t z80_execute_unprefixed( uint8_t op, uint8_t op2, uint16_t & pc, uint16_
         // if unprefixed by reusing the existing, already-tested handler; ED
         // in particular is documented to always ignore a preceding DD/FD.
         case 0x08: case 0x10: case 0x18: case 0x20: case 0x28: case 0x30: case 0x38: case 0xd9: case 0xed:
-            cycles = z80_emulate( op2, pc, sp );
+            z80_emulate( op2, pc, sp );
             break;
         default:
             z80_ni( op, op2 );
     }
-    return cycles;
 } //z80_execute_unprefixed
 
 void z80_op_bit( uint8_t val, uint8_t bit, z80_value_source vs )
@@ -712,14 +688,13 @@ void z80_op_srl( uint8_t * pval )
     *pval = val;
 } //z80_op_srl
 
-X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // this is just for instructions that aren't shared with 8080
+X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // this is just for instructions that aren't shared with 8080
 {
     uint16_t opaddress = pc - 1;
     uint8_t op2 = memory[ pc ];
     uint8_t op3 = memory[ pc + 1 ];
     uint8_t op4 = memory[ pc + 2 ];
     int op3int = (int) (int8_t) op3;
-    uint16_t cycles = 4; // general-purpose default
 
     switch ( op )
     {
@@ -739,10 +714,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             {
                 pc = opaddress + 2 + (int16_t) (int8_t) offset;
                 reg.z80_set_memptr( pc );
-                cycles = 3;
             }
-            else
-                cycles = 2;
             break;
         }
         case 0x18: // jr n
@@ -750,7 +722,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             uint8_t offset = pcbyte( pc );
             pc = opaddress + 2 + (int16_t) (int8_t) offset;
             reg.z80_set_memptr( pc );
-            cycles = 3;
             break;
         }
         case 0x20: // jr nz, n
@@ -760,10 +731,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             {
                 pc = opaddress + 2 + (int16_t) (int8_t) offset;
                 reg.z80_set_memptr( pc );
-                cycles = 3;
             }
-            else
-                cycles = 2;
             break;
         }
         case 0x28: // jr z, n
@@ -773,10 +741,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             {
                 pc = opaddress + 2 + (int16_t) (int8_t) offset;
                 reg.z80_set_memptr( pc );
-                cycles = 3;
             }
-            else
-                cycles = 2;
             break;
         }
         case 0x30: // jr nc, n
@@ -786,10 +751,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             {
                 pc = opaddress + 2 + (int16_t) (int8_t) offset;
                 reg.z80_set_memptr( pc );
-                cycles = 3;
             }
-            else
-                cycles = 2;
             break;
         }
         case 0x38: // jr c, n
@@ -799,10 +761,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             {
                 pc = opaddress + 2 + (int16_t) (int8_t) offset;
                 reg.z80_set_memptr( pc );
-                cycles = 3;
             }
-            else
-                cycles = 2;
             break;
         }
         case 0xcb: // rotate / bits
@@ -811,19 +770,13 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
 
             if ( 0x20 == ( op2 & 0xf8 ) ) // sla
             {
-                cycles = 3;
                 uint8_t rm = op2 & 0x7;
-                if ( 6 == rm )
-                    cycles += 2;
                 uint8_t * pdst = dst_address_rm( rm );
                 z80_op_sla( pdst );
             }
             else if ( 0x28 == ( op2 & 0xf8 ) ) // sra
             {
-                cycles = 3;
                 uint8_t rm = op2 & 0x7;
-                if ( 6 == rm )
-                    cycles += 2;
                 uint8_t * pdst = dst_address_rm( rm );
                 z80_op_sra( pdst );
             }
@@ -838,19 +791,13 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x38 == ( op2 & 0xf8 ) ) // srl r = shift right logical
             {
-                cycles = 3;
                 uint8_t rm = op2 >> 4;
-                if ( 6 == rm )
-                    cycles += 2;
                 uint8_t * pdst = dst_address_rm( rm );
                 z80_op_srl( pdst );
             }
             else if ( op2 >= 0x40 && op2 <= 0x7f ) // bit #, rm
             {
-                cycles = 3;
                 uint8_t rm = op2 & 0x7;
-                if ( 6 == rm )
-                    cycles += 4;
                 uint8_t bit = ( op2 >> 3 ) & 0x7;
                 uint8_t val = src_value_rm( rm );
                 if ( 6 == rm )
@@ -859,10 +806,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( op2 >= 0x80 && op2 <= 0xbf ) // res bit #, rm  AKA reset
             {
-                cycles = 3;
                 uint8_t rm = op2 & 0x7;
-                if ( 6 == rm )
-                    cycles += 7;
                 uint8_t bit = ( op2 >> 3 ) & 0x7;
                 uint8_t val = src_value_rm( rm );
                 uint8_t mask = ~ ( 1 << bit );
@@ -871,10 +815,7 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( op2 >= 0xc0 && op2 <= 0xff ) // set bit #, rm
             {
-                cycles = 8;
                 uint8_t rm = op2 & 0x7;
-                if ( 6 == rm )
-                    cycles += 7;
                 uint8_t bit = ( op2 >> 3 ) & 0x7;
                 uint8_t val = src_value_rm( rm );
                 uint8_t mask = 1 << bit;
@@ -883,12 +824,9 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( op2 <= 0x1f ) // rlc, rrc, rl, rr on rm
             {
-                cycles = 8;
                 uint8_t mod = op2;
                 uint8_t rot = ( mod >> 3 ) & 0x3;
                 uint8_t rm = mod & 0x7;
-                if ( 6 == rm )
-                    cycles += 2;
                 uint8_t * pval = dst_address_rm( rm );
                 if ( 0 == rot )
                     z80_op_rlc( pval );
@@ -964,7 +902,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x23 == op2 ) // inc ix/iy     no flags are affected
             {
-                cycles = 10;
                 if ( 0xdd == op )
                     reg.ix++;
                 else
@@ -989,7 +926,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 * reg.z80_getIndexByteAddress( op, 1 ) = pcbyte( pc );
             else if ( 0x34 == op2 ) // inc (i + index)
             {
-                cycles = 6;
                 uint16_t i = reg.z80_getIndex( op ) + (int16_t) (int8_t) pcbyte( pc );
                 reg.z80_set_memptr( i );
                 uint8_t x = memory[ i ];
@@ -997,7 +933,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x35 == op2 ) // dec (i + index)
             {
-                cycles = 6;
                 uint16_t i = reg.z80_getIndex( op ) + (int16_t) (int8_t) pcbyte( pc );
                 reg.z80_set_memptr( i );
                 uint8_t x = memory[ i ];
@@ -1005,7 +940,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x36 == op2 )  // ld (ix/iy + index), immediate byte
             {
-                cycles = 5;
                 uint16_t i = reg.z80_getIndex( op ) + (int16_t) (int8_t) pcbyte( pc );
                 reg.z80_set_memptr( i );
                 uint8_t val = pcbyte( pc );
@@ -1045,7 +979,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                                                 // wrongly also matches the ALU-immediate opcodes
                                                 // 0xc6/ce/d6/de/e6/ee/f6/fe (adi/aci/sui/sbi/ani/xri/ori/cpi)
             {
-                cycles = 5;
                 pcbyte( pc ); // consume op3
                 uint16_t address = reg.z80_getIndex( op ) + (uint16_t) op3int;
                 reg.z80_set_memptr( address );
@@ -1053,7 +986,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x70 == ( op2 & 0xf8 ) )  // ld (i+#), r/#
             {
-                cycles = 5;
                 pcbyte( pc ); // consume op3
 
                 // if 6, there is an op4 for the index (not hl-indexed memory); otherwise use a register value
@@ -1074,7 +1006,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x86 == ( op2 & 0xc7 ) ) // math on [ ix/iy + index ]
             {
-                cycles = 5;
                 uint16_t x = reg.z80_getIndex( op );
                 x += (int16_t) (int8_t) pcbyte( pc );
                 reg.z80_set_memptr( x );
@@ -1123,7 +1054,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 }
                 else if ( op4 <= 0x3f ) // bit shift on memory
                 {
-                    cycles = 8; // this is a guess -- it's undocumented
                     uint8_t offset = pcbyte( pc );
                     pcbyte( pc );
                     uint16_t index = reg.z80_getIndex( op );
@@ -1153,7 +1083,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 }
                 else if ( ( ( op4 & 0xf ) == 0xe ) || ( ( op4 & 0xf ) == 0x6 ) ) // bit/res/set b, (ix/iy + d)
                 {
-                    cycles = 8;
                     uint8_t index = pcbyte( pc );
                     uint8_t mod = pcbyte( pc );
                     uint8_t bit = ( mod >> 3 ) & 0x7;
@@ -1165,7 +1094,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
 
                     if ( 0x40 == top2bits ) // bit
                     {
-                        cycles++;
                         z80_op_bit( val, bit, vs_indexed );
                     }
                     else if ( 0x80 == top2bits ) // reset
@@ -1198,13 +1126,11 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0xe1 == op2 ) // pop ix/iy
             {
-                cycles = 14;
                 uint16_t val = popword( sp );
                 reg.z80_setIndex( op, val );
             }
             else if ( 0xe3 == op2 ) // ex (sp), ix/iy
             {
-                cycles = 23;
                 uint16_t val = reg.z80_getIndex( op );
                 reg.z80_setIndex( op, mword( sp ) );
                 setmword( sp, val );
@@ -1212,24 +1138,21 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0xe5 == op2 )  // push ix/iy
             {
-                cycles = 15;
                 uint16_t val = reg.z80_getIndex( op );
                 pushword( sp, val );
             }
             else if ( 0xe9 == op2 ) // jp (ix/iy) // the Z80 name makes it look indirect. It's not.
             {
-                cycles = 8;
                 pc = reg.z80_getIndex( op );
             }
             else if ( 0xf9 == op2 ) // ld sp, ix/iy
             {
-                cycles = 10;
                 sp = reg.z80_getIndex( op );
             }
             else
                 // 0x76 and 0x64 are already excluded above, before any of the
                 // masks in this chain could misclassify them.
-                cycles = z80_execute_unprefixed( op, op2, pc, sp );
+                z80_execute_unprefixed( op, op2, pc, sp );
             break;
         }
         case 0xed: // 16-bit load/store and i/o operations
@@ -1251,7 +1174,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x43 == ( op2 & 0xcf ) ) // ld (mw), rp AKA ld (nn), dd
             {
-                cycles = 8;
                 uint8_t rp = ( op2 >> 4 ) & 3;
                 uint16_t addr = pcword( pc );
                 setmword( addr, ( 3 == rp ) ? sp : reg.rpValue( rp ) );
@@ -1259,7 +1181,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x4b == ( op2 & 0xcf ) ) // ld rp, (nn) AKA ld dd, (nn)
             {
-                cycles = 8;
                 uint8_t rp = ( op2 >> 4 ) & 3;
                 uint16_t addr = pcword( pc );
                 uint16_t value = mword( addr );
@@ -1271,7 +1192,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0x44 == ( op2 & 0xc7 ) ) // neg and undocumented aliases
             {
-                cycles = 8;
                 uint8_t prior = reg.a;
                 reg.a = 0 - reg.a;
                 set_sign_zero( reg.a );
@@ -1341,7 +1261,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0xa0 == op2 ) // ldi
             {
-                cycles = 4;
                 uint16_t hl = reg.H();
                 uint16_t de = reg.D();
                 uint16_t bc = reg.B() - 1;
@@ -1359,7 +1278,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             else if ( 0xa1 == op2 ) // cpi
             {
                 bool oldCarry = reg.fCarry;
-                cycles = 4;
                 uint16_t hl = reg.H();
                 uint16_t bc = reg.B() - 1;
                 uint8_t memval = memory[ hl ];
@@ -1375,7 +1293,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             }
             else if ( 0xa8 == op2 ) // ldd
             {
-                cycles = 4;
                 uint16_t hl = reg.H();
                 uint16_t de = reg.D();
                 uint16_t bc = reg.B() - 1;
@@ -1392,7 +1309,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
             else if ( 0xa9 == op2 ) // cpd
             {
                 bool oldCarry = reg.fCarry;
-                cycles = 4;
                 uint16_t hl = reg.H();
                 uint16_t bc = reg.B() - 1;
                 uint8_t memval = memory[ hl ];
@@ -1424,11 +1340,8 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 if ( 0 != bc )
                 {
                     reg.z80_set_memptr( pc - 1 );
-                    cycles = 5;
                     pc -= 2;
                 }
-                else
-                    cycles = 4;
             }
             else if ( 0xb1 == op2 ) // cpir
             {
@@ -1447,13 +1360,11 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 if ( !reg.fZero && ( 0 != bc ) )
                 {
                     reg.z80_set_memptr( pc - 1 );
-                    cycles = 5;
                     pc -= 2;
                 }
                 else
                 {
                     reg.z80_set_memptr( reg.memptr + 1 );
-                    cycles = 4;
                 }
             }
             else if ( 0xb8 == op2 ) // lddr
@@ -1473,11 +1384,8 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 if ( 0 != bc )
                 {
                     reg.z80_set_memptr( pc - 1 );
-                    cycles = 5;
                     pc -= 2;
                 }
-                else
-                    cycles = 4;
             }
             else if ( 0xb9 == op2 ) // cpdr
             {
@@ -1496,13 +1404,11 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 if ( !reg.fZero && ( 0 != bc ) )
                 {
                     reg.z80_set_memptr( pc - 1 );
-                    cycles = 5;
                     pc -= 2;
                 }
                 else
                 {
                     reg.z80_set_memptr( reg.memptr - 1 );
-                    cycles = 4;
                 }
             }
             else if ( 0xa2 == op2 || 0xaa == op2 || // ini / ind
@@ -1530,7 +1436,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                     reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
                 reg.fZero = ( 0 == reg.b );
                 reg.fWasSubtract = true;
-                cycles = 4;
             }
             else if ( 0xb2 == op2 || 0xba == op2 || // inir / indr
                       0xb3 == op2 || 0xbb == op2 )   // otir / otdr
@@ -1559,15 +1464,11 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
                 reg.fWasSubtract = true;
                 if ( 0 != reg.b )
                 {
-                    cycles = 5;
                     pc -= 2;
                 }
-                else
-                    cycles = 4;
             }
             else if ( 0x42 == ( op2 & 0xcf ) ) // sbc hl, rp AKA sbc hl, ss
             {
-                cycles = 15;
                 uint8_t rp = ( op2 >> 4 ) & 3;
                 uint16_t val = ( 3 == rp ) ? sp : reg.rpValue( rp );
                 uint16_t oldH = reg.H();
@@ -1581,8 +1482,6 @@ X80_HOT_CODE uint16_t z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )   
         default:
             z80_ni( op, op2 );
     }
-
-    return cycles;
 } //z80_emulate
 
 void z80_renderByteReg( char * acfrom, uint8_t op, uint8_t fromval )
@@ -1969,8 +1868,115 @@ not_inlined bool handle_state() // this code exists to reduce what would be mult
     return false;
 } //handle_state
 
-// Keep cycle-accurate stepping without charging production instruction batches
-// for cycle-table loads and cycle-limit checks on every emulated instruction.
+// Documented Z80 T-states of an unprefixed opcode. taken selects the longer
+// form of DJNZ, JR cc, RET cc and CALL cc.
+static uint8_t z80_main_tstates( uint8_t op, bool taken )
+{
+    const uint8_t x = op >> 6, y = ( op >> 3 ) & 7, z = op & 7;
+    static const uint8_t accumulator_loads[ 8 ] = { 7, 7, 7, 7, 16, 16, 13, 13 };
+    static const uint8_t returns[ 4 ] = { 10, 4, 4, 6 };            // ret, exx, jp (hl), ld sp,hl
+    static const uint8_t controls[ 8 ] = { 10, 4, 11, 11, 19, 4, 4, 4 }; // jp, cb, out, in, ex (sp),hl, ex de,hl, di, ei
+
+    if ( 1 == x )
+        return ( 0x76 != op && ( 6 == y || 6 == z ) ) ? 7 : 4;
+    if ( 2 == x )
+        return ( 6 == z ) ? 7 : 4;
+    if ( 0 == x )
+    {
+        switch ( z )
+        {
+            case 0: return ( y < 2 ) ? 4 : ( 2 == y ) ? ( taken ? 13 : 8 ) : ( 3 == y || taken ) ? 12 : 7;
+            case 1: return ( y & 1 ) ? 11 : 10;
+            case 2: return accumulator_loads[ y ];
+            case 3: return 6;
+            case 4: case 5: return ( 6 == y ) ? 11 : 4;
+            case 6: return ( 6 == y ) ? 10 : 7;
+            default: return 4;
+        }
+    }
+    switch ( z )
+    {
+        case 0: return taken ? 11 : 5;
+        case 1: return ( y & 1 ) ? returns[ y >> 1 ] : 10;
+        case 2: return 10;
+        case 3: return controls[ y ];
+        case 4: return taken ? 17 : 10;
+        case 5: return ( y & 1 ) ? 17 : 11;
+        case 6: return 7;
+        default: return 11;
+    }
+} //z80_main_tstates
+
+// Documented Z80 T-states of the instruction at pc, decided from the CPU state
+// before it executes. A repeating block instruction is one iteration.
+static uint8_t z80_tstates( uint16_t pc )
+{
+    uint8_t prefixes = 0;
+    uint8_t op = memory[ pc ];
+    while ( 0xdd == op || 0xfd == op )
+    {
+        const uint8_t next = memory[ (uint16_t) ( pc + 1 ) ];
+        if ( 0xdd != next && 0xed != next && 0xfd != next )
+            break;
+        prefixes += 4; // an overridden index prefix costs one opcode fetch
+        op = next;
+        pc++;
+    }
+    const uint8_t op2 = memory[ (uint16_t) ( pc + 1 ) ];
+
+    if ( 0xcb == op )
+        return prefixes + ( ( 6 != ( op2 & 7 ) ) ? 8 : ( 1 == ( op2 >> 6 ) ) ? 12 : 15 );
+
+    if ( 0xed == op )
+    {
+        const uint8_t x = op2 >> 6, y = ( op2 >> 3 ) & 7, z = op2 & 7;
+        static const uint8_t accumulator[ 8 ] = { 9, 9, 9, 9, 18, 18, 8, 8 }; // ld i/r, rrd, rld
+        static const uint8_t table[ 8 ] = { 12, 12, 15, 20, 8, 14, 8, 0 };
+        if ( 1 == x )
+            return prefixes + ( ( 7 == z ) ? accumulator[ y ] : table[ z ] );
+        if ( 2 != x || z > 3 || y < 4 )
+            return prefixes + 8;
+        bool repeats = false;
+        if ( y >= 6 )
+        {
+            if ( z >= 2 )                                   // inir, indr, otir, otdr
+                repeats = ( 1 != reg.b );
+            else                                            // ldir, lddr, cpir, cpdr
+                repeats = ( 1 != reg.B() ) && ( 0 == z || reg.a != memory[ reg.H() ] );
+        }
+        return prefixes + ( repeats ? 21 : 16 );
+    }
+
+    bool taken = false;
+    const uint8_t conditional = ( 0xdd == op || 0xfd == op ) ? op2 : op;
+    if ( 0x10 == conditional )
+        taken = ( 1 != reg.b );
+    else if ( 0x20 == ( conditional & 0xe7 ) )
+        taken = check_conditional( 0xc0 | ( conditional & 0x18 ) );
+    else if ( 0xc0 == ( conditional & 0xc7 ) || 0xc4 == ( conditional & 0xc7 ) )
+        taken = check_conditional( conditional );
+
+    if ( 0xdd != op && 0xfd != op )
+        return prefixes + z80_main_tstates( op, taken );
+
+    if ( 0xcb == op2 )
+        return prefixes + ( ( 1 == ( memory[ (uint16_t) ( pc + 3 ) ] >> 6 ) ) ? 20 : 23 );
+    const uint8_t x = op2 >> 6, y = ( op2 >> 3 ) & 7, z = op2 & 7;
+    if ( ( 1 == x && 0x76 != op2 && ( 6 == y || 6 == z ) ) || ( 2 == x && 6 == z ) || 0x36 == op2 )
+        return prefixes + 19;                               // (ix+d) operand
+    switch ( op2 )
+    {
+        case 0x34: case 0x35: case 0xe3: return prefixes + 23;
+        case 0x22: case 0x2a: return prefixes + 20;
+        case 0x09: case 0x19: case 0x29: case 0x39: case 0xe5: return prefixes + 15;
+        case 0x21: case 0xe1: return prefixes + 14;
+        case 0x23: case 0x2b: case 0xf9: return prefixes + 10;
+        default: return prefixes + 4 + z80_main_tstates( op2, taken );
+    }
+} //z80_tstates
+
+// Count T-states only when stepping against a budget, so production
+// instruction batches pay for neither the timing decode nor the limit check.
 template<bool track_cycles>
 static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions )
 {
@@ -1980,7 +1986,6 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
     uint16_t sp = reg.sp;
     uint16_t last_sp_before = sp;
     uint8_t op = OPCODE_NOP;
-    const acycles_t & acycles = z80_cycles;
 
     // with the Watcom compiler for real-mode DOS, the cycle check, cycle addition, and trace check consume 17% of runtime
 
@@ -1998,10 +2003,10 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
         }
 #endif
 
+        if constexpr ( track_cycles )
+            cycles += z80_tstates( pc );
         op = memory[ pc ];              // 1% of runtime
         pc++;                           // 7% of runtime
-        if constexpr ( track_cycles )
-            cycles += acycles[ op ];
         instructions_remaining--;
 
         switch ( op )                   // 50% of runtime is completing cycle addition & setting up for the jump table jump
@@ -2121,8 +2126,6 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
                 op = x80_invoke_hook();
                 pc = reg.pc;
                 sp = reg.sp;
-                if constexpr ( track_cycles )
-                    cycles += acycles[ op ];
                 if ( OPCODE_HLT == op ) // treat each possible return opcode separately to avoid a jump to restart for performance
                     goto _op_hlt;
                 else if ( OPCODE_NOP == op )
@@ -2149,9 +2152,6 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
                     pc = popword( sp );
                     reg.z80_set_memptr( pc );
                 }
-                else
-                    if constexpr ( track_cycles )
-                        cycles -= cyclesnt;
                 break;
             }
             case 0xc1: case 0xd1: case 0xe1: { last_sp_before = sp; reg.setRpValueFromOp( op, popword( sp ) ); break; } // pop rp
@@ -2161,9 +2161,6 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
                 reg.z80_set_memptr( address );
                 if ( check_conditional( op ) )
                     pc = address;
-                else
-                    if constexpr ( track_cycles )
-                        cycles -= cyclesnt;
                 break;
             }
             case 0xc3: { uint16_t address = pcword( pc ); reg.z80_set_memptr( address ); pc = address; break; } // jmp a16
@@ -2177,9 +2174,6 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
                     pushword( sp, pc );
                     pc = address;
                 }
-                else
-                    if constexpr ( track_cycles )
-                        cycles -= cyclesnt;
                 break;
             }
             case 0xc5: case 0xd5: case 0xe5: { last_sp_before = sp; pushword( sp, reg.rpValueFromOp( op ) ); break; } // push rp
@@ -2217,10 +2211,7 @@ static uint32_t x80_emulate_budget( uint32_t maxcycles, uint16_t maxinstructions
             default:
             {
                 last_sp_before = sp;
-                if constexpr ( track_cycles )
-                    cycles += z80_emulate( op, pc, sp );
-                else
-                    z80_emulate( op, pc, sp );
+                z80_emulate( op, pc, sp );
             } //default
         } //switch
 
