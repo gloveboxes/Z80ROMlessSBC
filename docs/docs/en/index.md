@@ -6,21 +6,15 @@
 
 ## Overview
 
-The project breadboard runs the specified Z84C0020PEC Z80 at its rated
-20 MHz clock speed. It pairs a Z80 processor with a Raspberry Pi Pico 2 W to run
+Z80-Nexus pairs a Z80 processor with a Raspberry Pi Pico 2 W to run
 CP/M without a ROM chip.
 
-The Z80 runs from 64 KiB of SRAM (plus 64 KiB of banked SRAM). The Pico
-handles clocking, boot loading and verification, terminal and disk I/O, random
-numbers, and timers. Phase 10 also provides network services.
-Four persistent CP/M drives live in the Pico's onboard flash. Phase 9 uses a
-USB terminal; Phase 10 adds a browser-based WebSocket terminal.
-After bring-up, the [Phase 9 automatic loader](implementation/phase-9-flash-storage.md#automatic-cpm-loader)
-starts CP/M on Pico reset, ready for a later picocom connection.
+### Who this project is for
 
-This guide covers the hardware, firmware, and phased tests needed to reproduce
-the build. Validate your own wiring and operation as you go; clock-rate
-qualification and timing margins require measurements on your build.
+For retro-computing enthusiasts who want to learn how agentic AI can support
+hardware and software design. Explore the full process: building and testing
+a computer, developing firmware and CP/M applications, and designing a PCB
+for manufacturing.
 
 ## Start building
 
