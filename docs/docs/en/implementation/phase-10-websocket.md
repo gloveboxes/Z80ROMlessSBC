@@ -254,11 +254,11 @@ and failures without periodic terminal logging.
     No Z80 bus GPIO or core-0 handshake is used.
 
     [display_i2c.pio](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/stage10_websocket_terminal/display_i2c.pio)
-    uses open-drain pins with clock stretching. Each transfer sets its own rate (100 kHz or 400 kHz); the OLED and
-    the speaker both use 400 kHz. Each data bit uses seven PIO cycles LOW and five HIGH,
-    giving nominal 5.83 us LOW and 4.17 us HIGH at 100 kHz and 1.46 us LOW and
-    1.04 us HIGH at 400 kHz. Verify rise time at the
-    module is at most 300 ns with the fitted pull-ups and wiring.
+    uses open-drain pins with clock stretching. The bus has one fixed rate,
+    400 kHz Fast-mode, for the OLED and the speaker. Each data bit uses seven
+    PIO cycles LOW and five HIGH, giving nominal 1.46 us LOW and 1.04 us HIGH.
+    Verify rise time at the module is at most 300 ns with the fitted pull-ups
+    and wiring.
 
     ```sh
     cmake --build build/host-control --target oled_display_test -j

@@ -59,13 +59,13 @@ void restore_interrupts(uint32_t state) { interrupts_disabled = state; }
 static uint8_t read_port(uint8_t port, void *context) {
   (void)context;
   /* PIO1 completes the cycle; core 0 only supplies the byte. */
-  assert(port == 1 && io_active && blocks[1].enabled[io_sm] && clock_running);
+  assert(port == 1 && io_active && blocks[1].enabled[IO_SM] && clock_running);
   ++reads;
   return 2;
 }
 static void write_port(uint8_t port, uint8_t value, void *context) {
   (void)context;
-  assert(io_active && blocks[1].enabled[io_sm] && clock_running);
+  assert(io_active && blocks[1].enabled[IO_SM] && clock_running);
   assert((port == 5 && value == 0xB0) || (port == 0 && value == 'X'));
   ++writes;
 }

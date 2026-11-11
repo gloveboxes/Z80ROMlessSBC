@@ -5,7 +5,6 @@
 #include "z80sbc/clock.h"
 #include "z80sbc/cpu.h"
 #include "z80sbc/pins.h"
-#include "z80sbc/supervisor.h"
 #if defined(Z80_BANKED_PIO)
 #include "z80sbc/banked_pio.h"
 #else
@@ -120,22 +119,19 @@ static void __not_in_flash_func(service_stopped_io)(void) {
 #endif
 
 #if defined(Z80_BANKED_PIO)
-/* PIO1 completes every cycle; these run from its IRQ in bus order. */
-static void __not_in_flash_func(apply_pio_write)(uint8_t port, uint8_t value) {
-  z80_banked_pio_note_io(port, false, value);
-  if (application_write != NULL)
-    application_write(port, value, application_context);
+/* PIO1 completes every cycle and calls the application handlers directly
+ * from its IRQ, in bus order. */
+static uint8_t __not_in_flash_func(unhandled_read)(uint8_t port, void *context) {
+  (void)port;
+  (void)context;
+  return 0xFF;
 }
 
-static uint8_t __not_in_flash_func(apply_pio_read)(uint8_t port) {
-  uint8_t value;
-  if (port == 0x07)
-    value = (uint8_t)z80_memory_bank_status();
-  else
-    value = application_read == NULL ? 0xFF
-              : application_read(port, application_context);
-  z80_banked_pio_note_io(port, true, value);
-  return value;
+static void __not_in_flash_func(unhandled_write)(uint8_t port, uint8_t value,
+                                                 void *context) {
+  (void)port;
+  (void)value;
+  (void)context;
 }
 
 static void apply_pio_fault(uint32_t controls) {
@@ -147,7 +143,10 @@ bool z80_io_trap_rearm(void) {
   gpio_init(PIN_IORQ_N);
   gpio_set_dir(PIN_IORQ_N, GPIO_IN);
   gpio_disable_pulls(PIN_IORQ_N);
-  return z80_banked_pio_rearm(apply_pio_read, apply_pio_write, apply_pio_fault);
+  return z80_banked_pio_rearm(
+      application_read != NULL ? application_read : unhandled_read,
+      application_write != NULL ? application_write : unhandled_write,
+      application_context, apply_pio_fault);
 }
 
 void z80_io_trap_drain_writes(void) {

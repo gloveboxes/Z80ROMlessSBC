@@ -142,12 +142,13 @@ Core 0 services the FIFO from the PIO1 IRQ, linked into SRAM with
 `__not_in_flash_func` so XIP cache misses caused by core-1 networking cannot
 stretch a Z80 wait:
 
-- The FIFO service, `apply_pio_read`/`apply_pio_write` and the shared
-  Phase 9/10 `virtual_read`/`virtual_write` dispatch.
+- The FIFO service, which calls the shared Phase 9/10
+  `virtual_read`/`virtual_write` dispatch directly and answers `IN 07h`
+  itself.
 - Terminal, disk, extended service/timer and HTTP port handlers, the
   service mailbox submit/poll and `z80_flash_backend_read_record`.
-- Timer polls use an inlined copy of the SDK `timer_time_us_64` loop from
-  `z80sbc/ram_timer.h`.
+- Timer polls, including the fail-closed watchdog poll, use an inlined copy
+  of the SDK `timer_time_us_64` loop from `z80sbc/ram_timer.h`.
 
 Bus timing is entirely in PIO. Do not reintroduce core-0 settling waits or
 stepped completion for Phase 9/10 cycles; the Phase 6-8 GPIO trap keeps its
@@ -160,7 +161,14 @@ The fast paths also avoid avoidable work in the handlers:
   holds the Z80 in WAIT. The fail-closed poll treats serviced cycles as
   progress.
 - **INs:** core 0 only computes the reply byte and queues it; PIO drives and
-  turns the bus around.
+  turns the bus around. The reply is queued before any bookkeeping, and only
+  the speaker port consults its readiness gate.
+- **IRQ state:** everything the handler touches is one object reached from a
+  single base address. The read and write totals are the only per-cycle
+  counters; the watchdog's progress and the `[iolat]` counts derive from them.
+- **Main loop:** core 0 peeks its command and flash-service queues without
+  their locks and takes a lock only to remove an entry, so an idle pass never
+  masks the PIO1 IRQ.
 - **Disk writes:** the Z80 fills the shared 128-byte record directly. A
   single-slot mailbox publishes it to core 1; BUSY blocks every further disk
   port write, so the record crosses cores without copies or a queue lock.
@@ -194,7 +202,7 @@ relax BUSACK/IRQ/multicore lockout.
 
 #### Build verification
 
-Initialized SRAM `.data` (including SRAM code) is 19,440 bytes for Phase 10;
+Initialized SRAM `.data` (including SRAM code) is 29,672 bytes for Phase 10;
 the read-ahead slots add about 1.1 KiB of BSS. Check placement and audit
 SRAM-to-flash veneers rather than relying on addresses alone:
 

@@ -113,14 +113,12 @@ static bool oled_updates_allowed;
 static unsigned speaker_services, speaker_reads, speaker_writes;
 static uint8_t speaker_value;
 static bool speaker_idle = true;
-static bool (*speaker_gate)(uint8_t);
-void z80_banked_pio_set_read_ready(bool (*ready)(uint8_t)) {
-  assert(fake_core == 0);
+static bool (*speaker_gate)(void);
+void z80_banked_pio_set_read_gate(uint8_t port, bool (*ready)(void)) {
+  assert(fake_core == 0 && port == Z80_SPEAKER_PORT);
   speaker_gate = ready;
 }
-bool z80_speaker_read_ready(uint8_t port) {
-  return port != Z80_SPEAKER_PORT || speaker_idle;
-}
+bool z80_speaker_read_ready(void) { return speaker_idle; }
 uint8_t z80_speaker_in(void) {
   assert(fake_core == 0);
   ++speaker_reads;

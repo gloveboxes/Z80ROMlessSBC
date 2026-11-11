@@ -75,6 +75,10 @@ int pio_claim_unused_sm(PIO pio, bool required) {
     }
   return -1;
 }
+void pio_sm_claim(PIO pio, uint sm) {
+  assert(!block(pio)->claimed[sm]);
+  block(pio)->claimed[sm] = true;
+}
 bool pio_sm_is_claimed(PIO pio, uint sm) { return block(pio)->claimed[sm]; }
 void pio_sm_unclaim(PIO pio, uint sm) { block(pio)->claimed[sm] = false; }
 void pio_gpio_init(PIO pio, uint pin) {
@@ -124,7 +128,7 @@ void pio_sm_set_consecutive_pindirs(PIO pio, uint sm, uint first, uint count, bo
   block(pio)->dirs |= ((1u << count) - 1u) << first;
 }
 bool pio_sm_is_rx_fifo_empty(PIO pio, uint sm) {
-  assert(pio == pio1 && sm == (uint)io_sm);
+  assert(pio == pio1 && sm == IO_SM);
   return blocks[1].rx_count == 0;
 }
 uint32_t pio_sm_get(PIO pio, uint sm) {
@@ -134,7 +138,7 @@ uint32_t pio_sm_get(PIO pio, uint sm) {
   return value;
 }
 void pio_sm_put(PIO pio, uint sm, uint32_t value) {
-  assert(pio == pio1 && sm == (uint)io_sm && blocks[1].tx_count < 4);
+  assert(pio == pio1 && sm == IO_SM && blocks[1].tx_count < 4);
   blocks[1].tx[blocks[1].tx_count++] = value;
 }
 bool pio_interrupt_get(PIO pio, uint index) {
@@ -146,7 +150,7 @@ void pio_interrupt_clear(PIO pio, uint index) {
   block(pio)->flags &= ~(1u << index);
 }
 void pio_set_irq0_source_enabled(PIO pio, uint source, bool enable) {
-  assert(pio == pio1 && source == pis_sm0_rx_fifo_not_empty + (uint)io_sm);
+  assert(pio == pio1 && source == pis_sm0_rx_fifo_not_empty + IO_SM);
   blocks[1].rx_irq = enable;
 }
 

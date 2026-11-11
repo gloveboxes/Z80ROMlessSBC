@@ -17,7 +17,6 @@ enum class State : uint8_t {
   uninitialized, scanning, initialize, ready, page, enable, failed,
 };
 enum class Failure : uint8_t { none, no_device, nack, bus };
-constexpr display_i2c::Speed kBusSpeed = display_i2c::Speed::fast;
 constexpr unsigned WIDTH = 128;
 constexpr unsigned PAGES = 4;  // 128x32: four 8-pixel pages.
 constexpr uint8_t ALL_PAGES = (1u << PAGES) - 1;
@@ -441,7 +440,7 @@ void __not_in_flash_func(service)(bool updates_allowed) {
     next_page();
   }
   if (state == State::scanning) {
-    transfer_active = display_i2c::begin(address, nullptr, 0, kBusSpeed);
+    transfer_active = display_i2c::begin(address, nullptr, 0);
   } else if (state == State::initialize) {
     // SSD1315 128x32 with internal charge pump; the panel stays off until all
     // four RAM pages have confirmed contents.
@@ -450,7 +449,7 @@ void __not_in_flash_func(service)(bool updates_allowed) {
         0x8d, 0x14, 0x20, 0x02, 0xa1, 0xc8, 0xda, 0x02, 0x81, CONTRAST,
         0xd9, 0xf1, 0xdb, 0x20, 0xa4, 0xa6,
     };
-    transfer_active = display_i2c::begin(address, setup, sizeof(setup), kBusSpeed);
+    transfer_active = display_i2c::begin(address, setup, sizeof(setup));
   } else if (state == State::page) {
     // Co=1 control bytes carry page/column commands, then 0x40 starts pixel data.
     uint8_t data[display_i2c::MAX_DATA_BYTES];
@@ -462,10 +461,10 @@ void __not_in_flash_func(service)(bool updates_allowed) {
     data[5] = static_cast<uint8_t>(0x10 | (first_column >> 4));
     data[6] = 0x40;
     memcpy(data + 7, framebuffer + page * WIDTH + first_column, column_count);
-    transfer_active = display_i2c::begin(address, data, column_count + 7u, kBusSpeed);
+    transfer_active = display_i2c::begin(address, data, column_count + 7u);
   } else if (state == State::enable) {
     constexpr uint8_t command[] = {0x00, 0xaf};
-    transfer_active = display_i2c::begin(address, command, sizeof(command), kBusSpeed);
+    transfer_active = display_i2c::begin(address, command, sizeof(command));
   }
   // Other bus users have already been excluded above.
   if (!transfer_active && state != State::ready) {

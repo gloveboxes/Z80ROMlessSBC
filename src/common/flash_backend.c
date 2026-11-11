@@ -345,8 +345,11 @@ static bool request_core0(uint8_t operation) {
 
 void z80_flash_backend_core0_service(void) {
   z80_io_trap_poll();
+  /* Peek without the queue lock, which would mask the PIO1 IRQ on every pass.
+   * Core 0 is the only consumer, so a racing add is seen on the next pass. */
   service_request_t request;
-  if (!queue_try_remove(&service_request_queue, &request))
+  if (queue_get_level_unsafe(&service_request_queue) == 0 ||
+      !queue_try_remove(&service_request_queue, &request))
     return;
 
   bool result = false;

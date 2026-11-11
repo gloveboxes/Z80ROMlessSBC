@@ -202,7 +202,6 @@ void pio_sm_set_consecutive_pindirs(PIO p, uint, uint pin, uint count,
   }
 }
 void pio_sm_set_enabled(PIO p, uint, bool enabled) { p->enabled = enabled; }
-void pio_sm_set_clkdiv(PIO p, uint, float divider) { p->config.divider = divider; }
 bool pio_sm_is_tx_fifo_full(PIO p, uint) { return p->tx_full; }
 bool pio_sm_is_rx_fifo_empty(PIO p, uint) {
   return p->rx_blocked || p->received.empty();
@@ -870,7 +869,7 @@ static void test_shared_bus_reads() {
   machine.read_bytes = {0, 0xff, 0x80, 0x01, 0x55, 0xaa};
   machine.stretch_cycles = 20;
   uint8_t data[6] = {};
-  assert(display_i2c::begin_read(0x42, data, sizeof(data), display_i2c::Speed::fast));
+  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
   assert(display_i2c::busy());
   assert(!display_i2c::begin(0x3c, nullptr, 0));
   assert(machine.instructions.size() + 4 <= 32); // Alongside the Z80 clock.
@@ -884,12 +883,12 @@ static void test_shared_bus_reads() {
 
   // An absent speaker NACKs without poisoning the shared OLED bus.
   machine.device_address = 0;
-  assert(display_i2c::begin_read(0x42, data, sizeof(data), display_i2c::Speed::fast));
+  assert(display_i2c::begin_read(0x42, data, sizeof(data)));
   run_dma();
   assert(display_i2c::poll() == display_i2c::Result::nack);
   machine.device_address = 0x3c;
   assert(display_i2c::begin(0x3c, nullptr, 0));
-  assert(machine.config.divider == 100.0f);  // The OLED returns to 100 kHz after a fast transfer.
+  assert(machine.config.divider == 25.0f);  // Every device shares the 400 kHz rate.
   run_dma();
   assert(display_i2c::poll() == display_i2c::Result::complete);
 

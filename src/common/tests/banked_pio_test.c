@@ -50,13 +50,14 @@ void z80_clock_prepare_stepping(void) {
   io_bank0_hw->io[PIN_CLK].ctrl = GPIO_FUNC_SIO;
 }
 
-static uint8_t record_read(uint8_t port) {
-  assert(read_count < 16);
+static int handler_context;
+static uint8_t record_read(uint8_t port, void *context) {
+  assert(read_count < 16 && context == &handler_context);
   read_ports[read_count++] = port;
   return (uint8_t)(0xC0 | port);
 }
-static void record_write(uint8_t port, uint8_t value) {
-  assert(write_count < 16);
+static void record_write(uint8_t port, uint8_t value, void *context) {
+  assert(write_count < 16 && context == &handler_context);
   write_ports[write_count] = port;
   write_values[write_count++] = value;
 }
@@ -65,7 +66,8 @@ static void record_fault(uint32_t controls) {
   longjmp(fault_exit, 1);
 }
 static bool rearm(void) {
-  return z80_banked_pio_rearm(record_read, record_write, record_fault);
+  return z80_banked_pio_rearm(record_read, record_write, &handler_context,
+                              record_fault);
 }
 
 static void assert_sio_idle(unsigned bank) {
@@ -114,7 +116,7 @@ static void test_configuration(void) {
   levels[PIN_MEMORY_BANK] = true;
   assert(rearm() && io_active && io_irq_enabled && blocks[1].rx_irq && bank_driver);
   const pio_sm_config *clock = &blocks[0].configs[clock_sm];
-  const pio_sm_config *io = &blocks[1].configs[io_sm];
+  const pio_sm_config *io = &blocks[1].configs[IO_SM];
   assert(clock->wrap_bottom == 1 + banked_clock_wrap_target);
   assert(clock->wrap_top == 1 + banked_clock_wrap && clock->set_base == PIN_CLK);
   assert(io->wrap_bottom == 2 + banked_io_wrap_target && io->wrap_top == 2 + banked_io_wrap);
@@ -123,7 +125,7 @@ static void test_configuration(void) {
   assert(io->side_base == PIN_IO_RELEASE && io->jmp_pin == PIN_RD_N);
   assert(io->right_shift && io->autopush && io->push_threshold == 32);
   assert(io->fifo_join == PIO_FIFO_JOIN_NONE); /* TX carries IN replies */
-  assert(blocks[1].pcs[io_sm] == 2 + banked_io_offset_io_start);
+  assert(blocks[1].pcs[IO_SM] == 2 + banked_io_offset_io_start);
   /* Idle hand-off: buffers isolated, WAIT armed, A16 kept, D0-D7 inputs. */
   uint32_t control = (1u << PIN_DATA_UP_OE_N) | (1u << PIN_DATA_DOWN_OE_N) |
                      (1u << PIN_MEMORY_BANK) | (1u << PIN_IO_RELEASE);
@@ -150,16 +152,23 @@ static void test_service_order(void) {
   assert(reply == ((uint32_t)(0xC0 | 0x17) << 2 | 1u | 0x3FFu << 10 | 0x003u << 20));
   /* A16 in the reply follows the current bank; GP9 bit stays LOW. */
   bank_driver(0);
-  assert(!gpio_get(PIN_MEMORY_BANK) && blocks[1].pcs[io_sm] == 2 + banked_io_offset_io_start);
+  assert(!gpio_get(PIN_MEMORY_BANK) && blocks[1].pcs[IO_SM] == 2 + banked_io_offset_io_start);
+  /* IN 07h is the engine's own bank status, not a handler read. */
   fake_push(fake_snapshot(true, false, 0x07, 0));
   io_irq();
   reply = fake_take_reply();
-  assert((reply & 3u) == 0 && (reply >> 2 & 0xFF) == (0xC0 | 0x07));
-  assert(clock_running && blocks[1].enabled[io_sm]);
+  assert((reply & 3u) == 0 && (reply >> 2 & 0xFF) == 0xB4 && read_count == 1);
+  bank_available = false;
+  fake_push(fake_snapshot(true, false, 0x07, 0));
+  io_irq();
+  assert((fake_take_reply() >> 2 & 0xFF) == 0 && read_count == 1);
+  bank_available = true;
+  assert(clock_running && blocks[1].enabled[IO_SM]);
   z80_banked_pio_status_t status = z80_banked_pio_status();
   assert(status.io_pc == banked_io_offset_io_start && status.active && status.running);
   z80_banked_pio_latency_t l = z80_banked_pio_take_latency();
-  assert(l.available && l.in_count == 2 && l.out_count == 2);
+  assert(l.available && l.in_count == 3 && l.out_count == 2);
+  assert(status.reads == 3 && status.writes == 2 && status.read && status.port == 0x07);
   l = z80_banked_pio_take_latency();
   assert(l.available && l.in_count == 0 && l.out_count == 0 && l.in_cycles == 0);
 }
@@ -173,7 +182,7 @@ static void test_invalid_strobes_fail_closed(void) {
       assert(false);
     }
     assert(fault_controls == snapshot << PIN_DATA_0);
-    in_service = false; /* the real handler never returns */
+    engine.faulted = false; /* the real handler never returns */
   }
 }
 
@@ -217,39 +226,46 @@ static void test_disable(void) {
 }
 
 static bool speaker_ready;
-static bool gate_read(uint8_t port) {
-  return port != 0x15 || speaker_ready;
+static unsigned gate_calls;
+static bool gate_read(void) {
+  ++gate_calls;
+  return speaker_ready;
 }
 
 static void test_deferred_read(void) {
   assert(rearm());
-  z80_banked_pio_set_read_ready(gate_read);
+  z80_banked_pio_set_read_gate(0x15, gate_read);
+  /* Only the gated port consults the gate. */
+  fake_push(fake_snapshot(true, false, 0x14, 0));
+  io_irq();
+  assert(gate_calls == 0 && !engine.deferred_read);
+  assert((fake_take_reply() >> 2 & 0xff) == (0xc0 | 0x14));
   unsigned reads = read_count, writes = write_count;
   fake_push(fake_snapshot(false, true, 0x15, 0x10));
   fake_push(fake_snapshot(true, false, 0x15, 0));
   io_irq();
-  assert(write_count == writes + 1);
-  assert(deferred_read && read_count == reads && blocks[1].tx_count == 0);
+  assert(write_count == writes + 1 && gate_calls == 1);
+  assert(engine.deferred_read && read_count == reads && blocks[1].tx_count == 0);
   for (unsigned i = 0; i < 10; ++i)
     assert(z80_banked_pio_poll());
   z80_banked_pio_drain();
-  assert(deferred_read && read_count == reads && blocks[1].tx_count == 0);
+  assert(engine.deferred_read && read_count == reads && blocks[1].tx_count == 0);
   speaker_ready = true;
   assert(z80_banked_pio_poll());
-  assert(!deferred_read && read_count == reads + 1 && read_ports[reads] == 0x15);
+  assert(!engine.deferred_read && read_count == reads + 1 && read_ports[reads] == 0x15);
   assert((fake_take_reply() >> 2 & 0xff) == (0xc0 | 0x15));
   // Disable discards a deferred IN without reading it or emitting a late reply.
   speaker_ready = false;
   fake_push(fake_snapshot(true, false, 0x15, 0));
   io_irq();
-  assert(deferred_read);
+  assert(engine.deferred_read);
   z80_banked_pio_disable();
-  assert(!deferred_read && blocks[1].tx_count == 0 && read_count == reads + 1);
+  assert(!engine.deferred_read && blocks[1].tx_count == 0 && read_count == reads + 1);
   assert(rearm());
   speaker_ready = true;
   z80_banked_pio_poll();
   assert(blocks[1].tx_count == 0);
-  z80_banked_pio_set_read_ready(NULL);
+  z80_banked_pio_set_read_gate(0x15, NULL);
   z80_banked_pio_disable();
 }
 

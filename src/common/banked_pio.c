@@ -15,6 +15,9 @@
 
 enum {
   IO_HOLD_IRQ = 1, CPU_HOLD_IRQ = 2,
+  IO_SM = 0, /* PIO1 is exclusive, so its engine is always state machine 0 */
+  BANK_PORT = 0x07, /* OUT is completed by PIO; IN reports the bank status */
+  NO_PORT = 0xFF, /* never decoded: ports alias into Z80_PORT_ADDRESS_MASK */
   SNAPSHOT_PORT_SHIFT = PIN_PORT_A0 - PIN_DATA_0,
   SNAPSHOT_RD = 1u << (PIN_RD_N - PIN_DATA_0),
   SNAPSHOT_WR = 1u << (PIN_WR_N - PIN_DATA_0),
@@ -38,24 +41,33 @@ _Static_assert(PIN_DATA_DOWN_OE_N == PIN_DATA_UP_OE_N + 1 &&
  * driver claims PIO2. Core 0 owns the clock SM and all of PIO1. */
 static PIO const clock_engine = pio0;
 static PIO const io_engine = pio1;
-static int clock_sm = -1, io_sm = -1;
+static int clock_sm = -1;
 static uint clock_offset, io_offset;
-static volatile bool allocated, io_active, clock_running, in_service;
+static volatile bool allocated, io_active, clock_running;
 static uint64_t pending_since;
-static volatile uint32_t progress;
 static uint32_t polled_progress;
-static uint8_t (*service_read)(uint8_t port);
-static void (*service_write)(uint8_t port, uint8_t value);
-static void (*service_fault)(uint32_t controls);
-static bool (*read_ready)(uint8_t port);
-static volatile bool deferred_read;
-static uint8_t deferred_port;
-static uint32_t deferred_cycles;
-static volatile z80_banked_pio_status_t diagnostics;
-static z80_banked_pio_latency_t latency;
+/* Everything the PIO1 IRQ touches is one object, so the service path reaches
+ * it from a single base address. */
+static struct {
+  uint8_t (*read)(uint8_t port, void *context);
+  void (*write)(uint8_t port, uint8_t value, void *context);
+  void *context;
+  void (*fault)(uint32_t controls);
+  bool (*read_gate)(void);
+  /* The only per-cycle counters: the watchdog's progress and the latency
+   * window's counts both derive from them. */
+  volatile uint32_t reads, writes;
+  uint32_t window_reads, window_writes, in_max_cycles, out_max_cycles;
+  uint32_t deferred_cycles;
+  uint64_t in_cycles, out_cycles;
+  uint8_t gated_port, deferred_port, last_port, last_value;
+  volatile bool deferred_read;
+  bool last_read, faulted, cycle_counter;
+} engine = {.gated_port = NO_PORT};
 
-void z80_banked_pio_set_read_ready(bool (*ready)(uint8_t port)) {
-  read_ready = ready;
+void z80_banked_pio_set_read_gate(uint8_t port, bool (*ready)(void)) {
+  engine.read_gate = ready;
+  engine.gated_port = ready ? port : NO_PORT;
 }
 
 void __not_in_flash_func(z80_banked_pio_clock_stop)(void) {
@@ -122,78 +134,82 @@ static void sio_controls(unsigned bank) {
 static void __not_in_flash_func(select_bank)(unsigned bank) {
   /* Only reset and the loader call this hook; every OUT 07h is PIO-only. */
   uint32_t interrupts = save_and_disable_interrupts();
-  pio_sm_set_enabled(io_engine, (uint)io_sm, false);
+  pio_sm_set_enabled(io_engine, IO_SM, false);
   gpio_put(PIN_MEMORY_BANK, bank);
-  pio_sm_set_pins_with_mask(io_engine, (uint)io_sm,
+  pio_sm_set_pins_with_mask(io_engine, IO_SM,
                             (1u << PIN_DATA_UP_OE_N) | (1u << PIN_DATA_DOWN_OE_N) |
                             (bank << PIN_MEMORY_BANK),
                             CONTROL_MASK);
   pio_interrupt_clear(clock_engine, IO_HOLD_IRQ);
-  pio_sm_restart(io_engine, (uint)io_sm);
-  pio_sm_exec(io_engine, (uint)io_sm,
+  pio_sm_restart(io_engine, IO_SM);
+  pio_sm_exec(io_engine, IO_SM,
               pio_encode_jmp(io_offset + banked_io_offset_io_start));
-  pio_sm_set_enabled(io_engine, (uint)io_sm, true);
+  pio_sm_set_enabled(io_engine, IO_SM, true);
   restore_interrupts(interrupts);
 }
 
 /* Apply PIO1's snapshots in bus order: OUTs PIO already completed, then at
  * most one IN that is waiting, with WAIT held, for its reply. Every path that
  * must observe all prior OUTs (an IN, bus grant, disable, stop) runs this.
- * Core 0 only, never reentered: IRQ context or interrupts masked. */
+ * Core 0 only, never reentered: IRQ context or interrupts masked. The reply
+ * is queued before any bookkeeping, which the Z80 does not wait for. */
 static void __not_in_flash_func(service_fifo)(bool reply) {
-  in_service = true;
-  if (deferred_read) {
-    if (!reply || (read_ready && !read_ready(deferred_port))) {
-      in_service = false;
+  for (;;) {
+    uint32_t started = z80_cycle_count();
+    uint8_t port = engine.deferred_port;
+    if (!engine.deferred_read) {
+      if (pio_sm_is_rx_fifo_empty(io_engine, IO_SM))
+        return;
+      uint32_t snapshot = pio_sm_get(io_engine, IO_SM);
+      port = z80_port_decode(snapshot >> SNAPSHOT_PORT_SHIFT);
+      bool read = !(snapshot & SNAPSHOT_RD);
+      if (read == !(snapshot & SNAPSHOT_WR)) {
+        /* The handler disables the engine, which must not service again. */
+        engine.faulted = true;
+        engine.fault(snapshot << PIN_DATA_0);
+      }
+      if (!read) {
+        engine.write(port, (uint8_t)snapshot, engine.context);
+        uint32_t cycles = z80_cycle_count() - started;
+        engine.last_port = port;
+        engine.last_value = (uint8_t)snapshot;
+        engine.last_read = false;
+        ++engine.writes;
+        engine.out_cycles += cycles;
+        if (cycles > engine.out_max_cycles)
+          engine.out_max_cycles = cycles;
+        continue;
+      }
+    }
+    /* PIO is stalled on this IN, so nothing can follow it in the FIFO. */
+    if (!reply)
+      return;
+    if (port == engine.gated_port && !engine.read_gate()) {
+      if (!engine.deferred_read) {
+        engine.deferred_port = port;
+        engine.deferred_cycles = z80_cycle_count() - started;
+        engine.deferred_read = true;
+      }
       return;
     }
-    uint32_t started = z80_cycle_count();
-    uint32_t value = service_read(deferred_port);
-    pio_sm_put(io_engine, (uint)io_sm,
-               value << REPLY_DATA_SHIFT | gpio_get(PIN_MEMORY_BANK) |
+    uint8_t value = port == BANK_PORT ? (uint8_t)z80_memory_bank_status()
+                                      : engine.read(port, engine.context);
+    pio_sm_put(io_engine, IO_SM,
+               (uint32_t)value << REPLY_DATA_SHIFT | gpio_get(PIN_MEMORY_BANK) |
                    REPLY_DRIVE_DIRS | REPLY_IDLE_DIRS);
-    deferred_read = false;
-    ++progress;
-    uint32_t cycles = deferred_cycles + z80_cycle_count() - started;
-    ++latency.in_count;
-    latency.in_cycles += cycles;
-    if (cycles > latency.in_max_cycles)
-      latency.in_max_cycles = cycles;
-  }
-  while (!pio_sm_is_rx_fifo_empty(io_engine, (uint)io_sm)) {
-    uint32_t started = z80_cycle_count();
-    uint32_t snapshot = pio_sm_get(io_engine, (uint)io_sm);
-    uint8_t port = z80_port_decode(snapshot >> SNAPSHOT_PORT_SHIFT);
-    bool read = !(snapshot & SNAPSHOT_RD);
-    if (read == !(snapshot & SNAPSHOT_WR))
-      service_fault(snapshot << PIN_DATA_0);
-    ++progress;
-    if (!read) {
-      service_write(port, (uint8_t)snapshot);
-      uint32_t cycles = z80_cycle_count() - started;
-      ++latency.out_count;
-      latency.out_cycles += cycles;
-      if (cycles > latency.out_max_cycles)
-        latency.out_max_cycles = cycles;
-    } else if (reply) {
-      if (read_ready && !read_ready(port)) {
-        deferred_port = port;
-        deferred_cycles = z80_cycle_count() - started;
-        deferred_read = true;
-        break;
-      }
-      uint32_t value = service_read(port);
-      pio_sm_put(io_engine, (uint)io_sm,
-                 value << REPLY_DATA_SHIFT | gpio_get(PIN_MEMORY_BANK) |
-                     REPLY_DRIVE_DIRS | REPLY_IDLE_DIRS);
-      uint32_t cycles = z80_cycle_count() - started;
-      ++latency.in_count;
-      latency.in_cycles += cycles;
-      if (cycles > latency.in_max_cycles)
-        latency.in_max_cycles = cycles;
+    uint32_t cycles = z80_cycle_count() - started;
+    if (engine.deferred_read) {
+      cycles += engine.deferred_cycles;
+      engine.deferred_read = false;
     }
+    engine.last_port = port;
+    engine.last_value = value;
+    engine.last_read = true;
+    ++engine.reads;
+    engine.in_cycles += cycles;
+    if (cycles > engine.in_max_cycles)
+      engine.in_max_cycles = cycles;
   }
-  in_service = false;
 }
 
 void __not_in_flash_func(z80_banked_pio_drain)(void) {
@@ -210,11 +226,11 @@ static void __not_in_flash_func(io_irq_handler)(void) {
 
 static void stop_io(void) {
   pio_set_irq0_source_enabled(
-      io_engine, pio_get_rx_fifo_not_empty_interrupt_source((uint)io_sm), false);
-  pio_sm_set_enabled(io_engine, (uint)io_sm, false);
+      io_engine, pio_get_rx_fifo_not_empty_interrupt_source(IO_SM), false);
+  pio_sm_set_enabled(io_engine, IO_SM, false);
   /* Apply completed OUTs. An IN still waiting is not answered: the engine is
    * stopped, so it could never complete, and its read may have side effects. */
-  if (io_active && !in_service)
+  if (io_active && !engine.faulted)
     service_fifo(false);
 }
 
@@ -231,7 +247,7 @@ void __not_in_flash_func(z80_banked_pio_disable)(void) {
   z80_memory_bank_set_driver(NULL);
   pio_interrupt_clear(clock_engine, IO_HOLD_IRQ);
   io_active = false;
-  deferred_read = false;
+  engine.deferred_read = false;
   pending_since = 0;
   if (resume)
     z80_banked_pio_clock_resume();
@@ -257,17 +273,11 @@ static bool allocate_engine(void) {
       irq_has_shared_handler(PIO1_IRQ_0))
     return false;
   clock_sm = pio_claim_unused_sm(clock_engine, false);
-  io_sm = pio_claim_unused_sm(io_engine, false);
-  if (clock_sm < 0 || io_sm < 0) {
-    if (clock_sm >= 0)
-      pio_sm_unclaim(clock_engine, (uint)clock_sm);
-    if (io_sm >= 0)
-      pio_sm_unclaim(io_engine, (uint)io_sm);
-    clock_sm = io_sm = -1;
+  if (clock_sm < 0)
     return false;
-  }
+  pio_sm_claim(io_engine, IO_SM);
   z80_clock_prepare_stepping();
-  latency.available = z80_cycle_counter_enable();
+  engine.cycle_counter = z80_cycle_counter_enable();
   clock_offset = pio_add_program(clock_engine, &banked_clock_program);
   io_offset = pio_add_program(io_engine, &banked_io_program);
   pio_sm_config clock_config =
@@ -284,8 +294,10 @@ static bool allocate_engine(void) {
   return true;
 }
 
-bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port),
-                          void (*write_handler)(uint8_t port, uint8_t value),
+bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port, void *context),
+                          void (*write_handler)(uint8_t port, uint8_t value,
+                                                void *context),
+                          void *context,
                           void (*fault_handler)(uint32_t controls)) {
   uint32_t interrupts = save_and_disable_interrupts();
   if (!allocate_engine()) {
@@ -309,13 +321,13 @@ bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port),
   sm_config_set_jmp_pin(&config, PIN_RD_N);
   sm_config_set_out_shift(&config, true, false, 32);
   sm_config_set_in_shift(&config, true, true, 32);
-  pio_sm_init(io_engine, (uint)io_sm,
+  pio_sm_init(io_engine, IO_SM,
               io_offset + banked_io_offset_io_start, &config);
-  pio_sm_set_pins_with_mask(io_engine, (uint)io_sm,
+  pio_sm_set_pins_with_mask(io_engine, IO_SM,
                             (1u << PIN_DATA_UP_OE_N) | (1u << PIN_DATA_DOWN_OE_N) |
                             (bank << PIN_MEMORY_BANK),
                             CONTROL_MASK);
-  pio_sm_set_pindirs_with_mask(io_engine, (uint)io_sm, CONTROL_MASK,
+  pio_sm_set_pindirs_with_mask(io_engine, IO_SM, CONTROL_MASK,
                                CONTROL_MASK | IO_DATA_MASK);
   pio_gpio_init(io_engine, PIN_DATA_UP_OE_N);
   pio_gpio_init(io_engine, PIN_DATA_DOWN_OE_N);
@@ -325,17 +337,18 @@ bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port),
   if (banked)
     pio_gpio_init(io_engine, PIN_MEMORY_BANK);
   pio_interrupt_clear(clock_engine, IO_HOLD_IRQ);
-  service_read = read_handler;
-  service_write = write_handler;
-  service_fault = fault_handler;
-  deferred_read = false;
+  engine.read = read_handler;
+  engine.write = write_handler;
+  engine.context = context;
+  engine.fault = fault_handler;
+  engine.deferred_read = false;
   pending_since = 0;
-  polled_progress = progress;
+  polled_progress = engine.reads + engine.writes;
   io_active = true;
   z80_memory_bank_set_driver(banked ? select_bank : NULL);
   pio_set_irq0_source_enabled(
-      io_engine, pio_get_rx_fifo_not_empty_interrupt_source((uint)io_sm), true);
-  pio_sm_set_enabled(io_engine, (uint)io_sm, true);
+      io_engine, pio_get_rx_fifo_not_empty_interrupt_source(IO_SM), true);
+  pio_sm_set_enabled(io_engine, IO_SM, true);
   if (resume)
     z80_banked_pio_clock_resume();
   restore_interrupts(interrupts);
@@ -347,12 +360,12 @@ bool z80_banked_pio_rearm(uint8_t (*read_handler)(uint8_t port),
 bool __not_in_flash_func(z80_banked_pio_poll)(void) {
   if (!io_active)
     return true;
-  if (deferred_read) {
+  if (engine.deferred_read) {
     uint32_t interrupts = save_and_disable_interrupts();
     service_fifo(true);
     restore_interrupts(interrupts);
   }
-  uint32_t seen = progress;
+  uint32_t seen = engine.reads + engine.writes;
   if (seen != polled_progress ||
       (!gpio_get(PIN_IO_RELEASE) &&
        !pio_interrupt_get(clock_engine, IO_HOLD_IRQ))) {
@@ -360,29 +373,22 @@ bool __not_in_flash_func(z80_banked_pio_poll)(void) {
     pending_since = 0;
     return true;
   }
-  uint64_t now = time_us_64();
+  uint64_t now = z80_time_us_64();
   if (!pending_since)
     pending_since = now + 1;
   return now < pending_since || now - pending_since < 500000u;
 }
 
-void __not_in_flash_func(z80_banked_pio_note_io)(uint8_t port, bool read, uint8_t value) {
-  diagnostics.port = port;
-  diagnostics.read = read;
-  diagnostics.value = value;
-  if (read) ++diagnostics.reads;
-  else ++diagnostics.writes;
-}
-
 z80_banked_pio_status_t z80_banked_pio_status(void) {
   uint32_t interrupts = save_and_disable_interrupts();
-  z80_banked_pio_status_t result = diagnostics;
-  result.active = io_active;
-  result.running = clock_running;
-  result.pins = gpio_get_all();
+  z80_banked_pio_status_t result = {
+    .reads = engine.reads, .writes = engine.writes, .pins = gpio_get_all(),
+    .port = engine.last_port, .value = engine.last_value,
+    .active = io_active, .running = clock_running, .read = engine.last_read,
+  };
   if (allocated) {
     result.clock_pc = pio_sm_get_pc(clock_engine, (uint)clock_sm) - clock_offset;
-    result.io_pc = pio_sm_get_pc(io_engine, (uint)io_sm) - io_offset;
+    result.io_pc = pio_sm_get_pc(io_engine, IO_SM) - io_offset;
     for (unsigned irq = IO_HOLD_IRQ; irq <= CPU_HOLD_IRQ; ++irq)
       result.irqs |= (unsigned)pio_interrupt_get(clock_engine, irq) << irq;
   }
@@ -392,8 +398,18 @@ z80_banked_pio_status_t z80_banked_pio_status(void) {
 
 z80_banked_pio_latency_t z80_banked_pio_take_latency(void) {
   uint32_t interrupts = save_and_disable_interrupts();
-  z80_banked_pio_latency_t result = latency;
-  latency = (z80_banked_pio_latency_t){.available = result.available};
+  z80_banked_pio_latency_t result = {
+    .available = engine.cycle_counter,
+    .in_count = engine.reads - engine.window_reads,
+    .in_max_cycles = engine.in_max_cycles,
+    .out_count = engine.writes - engine.window_writes,
+    .out_max_cycles = engine.out_max_cycles,
+    .in_cycles = engine.in_cycles, .out_cycles = engine.out_cycles,
+  };
+  engine.window_reads = engine.reads;
+  engine.window_writes = engine.writes;
+  engine.in_max_cycles = engine.out_max_cycles = 0;
+  engine.in_cycles = engine.out_cycles = 0;
   restore_interrupts(interrupts);
   return result;
 }

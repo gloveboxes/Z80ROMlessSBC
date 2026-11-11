@@ -68,6 +68,7 @@ static inline uint16_t pio_encode_sideset_opt(uint bits, uint value) {
 }
 bool pio_can_add_program(PIO, const struct pio_program *);
 int pio_claim_unused_sm(PIO, bool);
+void pio_sm_claim(PIO, uint);
 bool pio_sm_is_claimed(PIO, uint);
 void pio_sm_unclaim(PIO, uint);
 uint pio_add_program(PIO, const struct pio_program *);

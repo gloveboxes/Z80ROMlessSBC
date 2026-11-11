@@ -80,16 +80,14 @@ void fail(uint32_t reason) {
 }
 
 bool __not_in_flash_func(start_read)() {
-  if (display_i2c::begin_read(ATTINY85_I2C_ADDRESS, fetched, sizeof(fetched),
-                                 display_i2c::Speed::fast))
+  if (display_i2c::begin_read(ATTINY85_I2C_ADDRESS, fetched, sizeof(fetched)))
     return true;
   fail(BUS_FAILURE);
   return false;
 }
 
 bool __not_in_flash_func(start_write)(const Request &request) {
-  if (display_i2c::begin(ATTINY85_I2C_ADDRESS, request.bytes, request.size,
-                         display_i2c::Speed::fast))
+  if (display_i2c::begin(ATTINY85_I2C_ADDRESS, request.bytes, request.size))
     return true;
   fail(BUS_FAILURE);
   return false;
@@ -134,8 +132,8 @@ extern "C" void __not_in_flash_func(z80_speaker_out)(uint8_t value) {
   }
 }
 
-extern "C" bool __not_in_flash_func(z80_speaker_read_ready)(uint8_t port) {
-  if (port != Z80_SPEAKER_PORT || __atomic_load_n(&disabled, __ATOMIC_ACQUIRE))
+extern "C" bool __not_in_flash_func(z80_speaker_read_ready)(void) {
+  if (__atomic_load_n(&disabled, __ATOMIC_ACQUIRE))
     return true;
   uint32_t backlog = produced - __atomic_load_n(&consumed, __ATOMIC_ACQUIRE);
   if (!backlog) {
@@ -287,7 +285,7 @@ extern "C" void z80_speaker_print_status(void) {
   z80_cycle_stats_take(&cpu_stats, &passes, &max_cycles);
   printf("[speaker] port=15h address=42h SDA=GP22 SCL=GP26 baud=%lu "
          "fault=%lu transfers=%lu dropped=%lu cpu_passes=%lu cpu_max_cycles=%lu\n",
-         (unsigned long)display_i2c::FAST_BAUD,
+         (unsigned long)display_i2c::BAUD,
          (unsigned long)__atomic_load_n(&fault, __ATOMIC_ACQUIRE),
          (unsigned long)__atomic_load_n(&transfers, __ATOMIC_RELAXED),
          (unsigned long)__atomic_load_n(&dropped, __ATOMIC_RELAXED),

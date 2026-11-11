@@ -274,7 +274,7 @@ static void start_cpm(void) {
   boot_timed_out = false;
   z80_io_ports_init();
 #ifdef Z80_STAGE10_NETWORK
-  z80_banked_pio_set_read_ready(z80_speaker_read_ready);
+  z80_banked_pio_set_read_gate(Z80_SPEAKER_PORT, z80_speaker_read_ready);
   // Core 0 waiting for BUSACK must keep finishing the speaker transfer that a
   // deferred IN is waiting for, and retrying that reply.
   z80_cpu_set_bus_wait_hook(core0_bus_wait);
@@ -429,8 +429,11 @@ static void service_control(void) {
     return;
   }
 #endif
+  /* Peek without the queue lock, which would mask the PIO1 IRQ on every pass.
+   * Core 0 is the only consumer, so a racing add is seen on the next pass. */
   uint16_t command;
-  if (queue_try_remove(&control_commands, &command)) {
+  if (queue_get_level_unsafe(&control_commands) != 0 &&
+      queue_try_remove(&control_commands, &command)) {
 #ifdef Z80_STAGE10_NETWORK
     if (command == USB_CONFIG_REBOOT) {
       if (!running || diagnostic_active || z80_flash_disk_has_fatal_error()) {

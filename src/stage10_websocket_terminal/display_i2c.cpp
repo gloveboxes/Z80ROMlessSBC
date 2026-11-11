@@ -22,10 +22,8 @@ bool active;
 uint32_t commands[MAX_DATA_BYTES + 3];
 volatile uint32_t results[MAX_DATA_BYTES + 2];
 size_t result_count;
-uint64_t deadline;
+uint32_t deadline;
 uint8_t *read_data;
-float divider[2];
-Speed current_speed;
 
 void fail(Failure reason) {
   bus_failure = reason;
@@ -68,10 +66,8 @@ bool initialize() {
   sm_config_set_out_shift(&config, false, false, 32);
   sm_config_set_in_shift(&config, false, false, 32);
   // 12 PIO cycles per bit.
-  divider[0] = static_cast<float>(clock_get_hz(clk_sys)) / (STANDARD_BAUD * 12);
-  divider[1] = static_cast<float>(clock_get_hz(clk_sys)) / (FAST_BAUD * 12);
-  current_speed = Speed::standard;
-  sm_config_set_clkdiv(&config, divider[0]);
+  sm_config_set_clkdiv(&config,
+                       static_cast<float>(clock_get_hz(clk_sys)) / (BAUD * 12));
   pio_sm_init(pio, state_machine, offset, &config);
   pio_sm_set_pins_with_mask(pio, state_machine, 0,
                            (1u << PIN_SCL) | (1u << PIN_SDA));
@@ -109,17 +105,12 @@ uint32_t encode(uint8_t byte) {
 }
 
 static bool __not_in_flash_func(start)(uint8_t address, const uint8_t *data,
-                                       uint8_t *read, size_t length, Speed speed) {
+                                       uint8_t *read, size_t length) {
   assert(address < 0x80 && length <= MAX_DATA_BYTES && (data || length == 0));
   if (bus_failure != Failure::none || active)
     return false;
   if (state_machine < 0 && !initialize())
     return false;
-  // The state machine is stalled between transfers, so the rate can change here.
-  if (speed != current_speed) {
-    pio_sm_set_clkdiv(pio, state_machine, divider[static_cast<unsigned>(speed)]);
-    current_speed = speed;
-  }
   read_data = read;
   uint32_t *word = commands;
   *word++ = 1u << 30;
@@ -140,7 +131,7 @@ static bool __not_in_flash_func(start)(uint8_t address, const uint8_t *data,
   // STOP result, so it alone needs a sentinel to certify completion.
   results[result_count - 1] = UINT32_MAX;
   active = true;
-  deadline = z80_time_us_64() + 5000 + (length + 1) * 120;
+  deadline = z80_time_us_32() + 5000 + (length + 1) * 120;
   dma_channel_set_transfer_count(rx_dma, result_count, false);
   dma_channel_set_write_addr(rx_dma, results, true);
   dma_channel_set_transfer_count(tx_dma, length + 3, false);
@@ -148,15 +139,13 @@ static bool __not_in_flash_func(start)(uint8_t address, const uint8_t *data,
   return true;
 }
 
-bool __not_in_flash_func(begin)(uint8_t address, const uint8_t *data, size_t length,
-                                Speed speed) {
-  return start(address, data, nullptr, length, speed);
+bool __not_in_flash_func(begin)(uint8_t address, const uint8_t *data, size_t length) {
+  return start(address, data, nullptr, length);
 }
 
-bool __not_in_flash_func(begin_read)(uint8_t address, uint8_t *data, size_t length,
-                                     Speed speed) {
+bool __not_in_flash_func(begin_read)(uint8_t address, uint8_t *data, size_t length) {
   assert(data && length);
-  return start(address, data, data, length, speed);
+  return start(address, data, data, length);
 }
 
 bool __not_in_flash_func(busy)() { return active; }
@@ -169,7 +158,7 @@ Result __not_in_flash_func(poll)() {
   // RX finishes last (it collects the STOP result), and TX has been consumed
   // by then, so RX alone says whether the transfer is still running.
   if (dma_channel_is_busy(rx_dma)) {
-    if (static_cast<int32_t>(z80_time_us_32() - static_cast<uint32_t>(deadline)) < 0)
+    if (static_cast<int32_t>(z80_time_us_32() - deadline) < 0)
       return Result::pending;
     fail(Failure::timeout);
     return Result::failed;

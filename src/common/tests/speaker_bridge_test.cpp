@@ -22,16 +22,16 @@ uint64_t time_us_64() { ++time_reads; return now; }
 
 namespace display_i2c {
 bool busy() { return bus_busy; }
-bool begin(uint8_t address, const uint8_t *data, size_t length, Speed speed) {
-  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy && speed == Speed::fast);
+bool begin(uint8_t address, const uint8_t *data, size_t length) {
+  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy);
   bus_packet.assign(data, data + length);
   bus_busy = true;
   bus_read = false;
   ++writes;
   return true;
 }
-bool begin_read(uint8_t address, uint8_t *data, size_t length, Speed speed) {
-  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy && speed == Speed::fast);
+bool begin_read(uint8_t address, uint8_t *data, size_t length) {
+  assert(address == ATTINY85_I2C_ADDRESS && !bus_busy);
   assert(length == STATUS_BYTES);
   bus_destination = data;
   bus_length = length;
@@ -97,7 +97,7 @@ static void settle() {
 }
 
 static void packet_out(std::initializer_list<uint8_t> bytes) {
-  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  assert(z80_speaker_read_ready());
   z80_speaker_in();
   for (uint8_t byte : bytes)
     z80_speaker_out(byte);
@@ -107,7 +107,7 @@ static void read_status(uint8_t *data) {
   settle(); // The first IN is a barrier for the previous command.
   z80_speaker_in();
   z80_speaker_out(0);
-  assert(!z80_speaker_read_ready(Z80_SPEAKER_PORT) || disabled);
+  assert(!z80_speaker_read_ready() || disabled);
   settle();
   for (unsigned i = 0; i < STATUS_BYTES; ++i)
     data[i] = z80_speaker_in();
@@ -127,8 +127,7 @@ static void test_packets_and_snapshots() {
   assert(data[S_VERSION] == PROTOCOL_VERSION && !data[S_ACTIVE_ID]);
   // Neither core-0 packet collection nor its readiness gate performs I2C.
   packet_out({COMMAND_PLAY, 1, 2, 0, 100, 100, FX_PRESET, PRESET_COIN});
-  assert(writes == 0 && !z80_speaker_read_ready(Z80_SPEAKER_PORT));
-  assert(z80_speaker_read_ready(0x10));
+  assert(writes == 0 && !z80_speaker_read_ready());
   pending_reads = 3;
   read_status(data);
   assert(writes == 1 && reads == 5);
@@ -297,7 +296,7 @@ static void test_failures_and_bus_sharing() {
   z80_speaker_out(0); settle();
   assert(disabled);
   produced = consumed + 1;
-  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT) && z80_speaker_quiescent());
+  assert(z80_speaker_read_ready() && z80_speaker_quiescent());
   // Core 0 is locked out during a disk flush; that time is not the device's.
   reset(); pending_reads = 1; now = 1000;
   z80_speaker_out(0);
@@ -321,11 +320,11 @@ static void test_failures_and_bus_sharing() {
   reset();
   z80_speaker_out(0);
   z80_speaker_service();
-  assert(bus_busy && !z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  assert(bus_busy && !z80_speaker_read_ready());
   now += DEFERRAL_LIMIT_US - 1;
-  assert(!z80_speaker_read_ready(Z80_SPEAKER_PORT));
+  assert(!z80_speaker_read_ready());
   now += 1;
-  assert(z80_speaker_read_ready(Z80_SPEAKER_PORT) && disabled && fault == SERVICE_STALL);
+  assert(z80_speaker_read_ready() && disabled && fault == SERVICE_STALL);
   assert(status[S_RESULT] == RESULT_INVALID && z80_speaker_quiescent());
   bus_result = display_i2c::Result::pending;
   z80_speaker_service();
