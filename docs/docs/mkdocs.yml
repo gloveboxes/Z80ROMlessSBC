@@ -33,6 +33,7 @@ nav:
       - RIGOL DHO814 oscilloscope: en/hardware/oscilloscope.md
       - DSLogic Plus logic analyzer: en/hardware/logic-analyzer.md
   - PCB design:
+      - How the PCB layout is made: en/pcb/layout-process.md
       - Choose a PCB: en/pcb/variants.md
       - DIP / through-hole PCB:
           - Overview and fabrication: en/pcb/index.md
