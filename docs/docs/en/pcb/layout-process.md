@@ -13,7 +13,11 @@ and constraints before generating, routing and reviewing the layout.
    quantity and budget. The agent explains trade-offs before the user approves
    the design criteria.
 3. **Generate the layout.** The agent directs KiCad's Python tools to create
-   the schematic, component placement, board shape and routing rules.
+   the schematic, component placement, board shape and routing rules. These
+   reflect electrical needs and manufacturer capabilities; for example, on
+   the partial-SMT board, tracks must stay at least 0.155 mm from solder-mask
+   openings they do not connect to, matching JLCPCB's design-for-manufacturing
+   (DFM) feedback.
 4. **Route the connections.** The agent gives the placed design to Freerouting,
    which searches for copper paths and returns them for KiCad to import. The
    router does not choose component locations.
