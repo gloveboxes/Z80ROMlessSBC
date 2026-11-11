@@ -219,9 +219,10 @@ Choose the target for your hardware's current phase from the
 
 ## Python packages and USB console
 
-Install `pyserial` (import name: `serial`) in a project environment.
+Create `.venv-flash` and install `pyserial` (import name: `serial`) using the
+commands below before running the VS Code flash tasks. The tasks activate this
+environment automatically on Linux/macOS, but do not create it.
 Use your Pico's actual serial port: **115200 baud, 8N1, flow control disabled**.
-VS Code flash tasks activate the Linux/macOS environment automatically.
 
 === "Linux"
 
@@ -261,7 +262,8 @@ for discovery, flashing and the required power sequence.
 
 ## VS Code builds and final checks
 
-On macOS/Linux, choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware**
+After completing [Python packages and USB console](#python-packages-and-usb-console),
+on macOS/Linux choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware**
 to deploy while preserving disks and ENV. `pico_build.py` checks runtimes and
 searches `ARM_GNU_TOOLCHAIN_BIN`, the cached compiler, `PATH`, then
 `~/.local/share/arm-gnu-toolchain*/bin`. Set an override before starting VS Code

@@ -7,6 +7,15 @@ reference implementation for a ROMless Z80 computer supervised by a Raspberry
 Pi Pico 2 W. The design has not yet been physically built or qualified; treat
 all electrical and timing claims as proposed until the staged bench tests pass.
 
+## Clone the project
+
+```sh
+git clone --recurse-submodules https://github.com/gloveboxes/Z80ROMlessSBC.git
+```
+
+On Windows, enable Developer Mode and run `git config --global core.symlinks true`
+before cloning. Then open the `Z80ROMlessSBC` directory in a terminal or VS Code.
+
 ## Documentation
 
 - [Browse the MkDocs source](docs/docs/en/index.md)
@@ -69,8 +78,12 @@ cmake -S . -B build -G Ninja \
 cmake --build build --target z80_cpm_images -j
 ```
 
-Initialize the WebSocket library with `git submodule update --init --recursive`
-before configuring. Phase 10 builds on the Phase 9 automatic loader.
+In VS Code, open the repository folder and select **Terminal → Run Task** to
+choose a build or build-and-flash task for your hardware's current phase. See
+the [VS Code deployment options](docs/docs/en/system/firmware-build.md#vs-code-deployment-options)
+and [toolchain setup](docs/docs/en/toolchain.md) for prerequisites and flash safety.
+
+Phase 10 builds on the Phase 9 automatic loader.
 Wi-Fi credentials and the remote-FS server address are provisioned over USB
 with Ctrl-] n and stored in ENV, not compiled into firmware. The browser
 terminal takes over CP/M while connected and returns it to USB on disconnect.
