@@ -5,12 +5,13 @@ and software design. The PCB process carries that proven design onto a
 manufacturable board, with the user and agent agreeing on goals, components
 and constraints before generating, routing and reviewing the layout.
 
-1. **Define goals.** The user describes what the board should do and how it
-   will be used.
-2. **Agree on components and constraints.** The user and agent settle key parts,
-   electrical needs, connectors, component locations, board size, assembly,
-   quantity and budget. The agent explains trade-offs; the user confirms the
-   design criteria before implementation.
+1. **Choose the PCB implementation.** Adapt the proven circuit to a board:
+   choose packages and PCB-specific details such as resistor arrays or
+   individual resistors, connectors, and which parts are factory assembled.
+2. **Agree on components and constraints.** The user and agent confirm the
+   parts, component locations, board size, electrical needs, assembly,
+   quantity and budget. The agent explains trade-offs before the user approves
+   the design criteria.
 3. **Generate the layout.** The agent directs KiCad's Python tools to create
    the schematic, component placement, board shape and routing rules.
 4. **Route the connections.** The agent gives the placed design to Freerouting,
@@ -26,7 +27,7 @@ and constraints before generating, routing and reviewing the layout.
 
 ```mermaid
 flowchart TD
-    A["1. User defines board goals"]
+    A["1. Choose PCB implementation<br/>packages, resistor arrays or individuals,<br/>connectors and assembly"]
     B["2. User and agent agree components,<br/>locations and design constraints"]
     C["3. Agent directs KiCad Python tools<br/>to generate placement and routing inputs"]
     D["4. Freerouting finds copper paths;<br/>KiCad imports the returned routes"]
