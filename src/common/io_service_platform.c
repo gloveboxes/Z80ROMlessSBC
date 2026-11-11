@@ -104,6 +104,10 @@ size_t z80_service_info(uint8_t selector, char *text, size_t capacity) {
   return get_cached_hostname(text, capacity);
 }
 
+bool z80_network_time_synced(void) {
+  return unix_seconds != 0;
+}
+
 time_t z80_network_time(time_t *result) {
   uint32_t saved = save_and_disable_interrupts();
   uint32_t seconds = unix_seconds;
@@ -116,16 +120,26 @@ time_t z80_network_time(time_t *result) {
   return now;
 }
 
-bool z80_service_clock(uint8_t operation, char *text, size_t capacity) {
-  time_t now = z80_network_time(NULL);
-  if (now == 0)
-    return false;
+/* The C library parses TZ in tzset(); repeat that only after an ENV commit. */
+static bool apply_timezone(void) {
+  static uint32_t applied_generation;
+  uint32_t generation = environment_io_generation();
+  if (generation == applied_generation)
+    return true;
   char timezone[256];
   if (!environment_io_get("TZ", timezone, sizeof(timezone)))
     memcpy(timezone, "UTC0", 5);
   if (setenv("TZ", timezone, 1) != 0)
     return false;
   tzset();
+  applied_generation = generation;
+  return true;
+}
+
+bool z80_service_clock(uint8_t operation, char *text, size_t capacity) {
+  time_t now = z80_network_time(NULL);
+  if (now == 0 || !apply_timezone())
+    return false;
   struct tm *calendar = operation == 1 ? gmtime(&now) : localtime(&now);
   if (calendar == NULL)
     return false;

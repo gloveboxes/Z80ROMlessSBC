@@ -3,7 +3,12 @@
  * @brief Shared environment command parser and backend entry points.
  *
  * The host uses a text file and mutex. Z80_ENV_FLASH builds use the Pico's
- * durable snapshots and are called only by the core-1 service worker.
+ * durable snapshots and are called only from core 1.
+ *
+ * The store is read once, on first use. Every lookup and command then works
+ * on the in-memory entries, which a commit keeps identical to storage, so
+ * callers never reload: they check environment_io_load_status() and cache
+ * derived settings against environment_io_generation().
  *
  * Private legacy selectors (not physical Pico ports):
  *   OUT 71, 0      reset request buffer
@@ -42,6 +47,18 @@ void environment_io_close(void);
  * value/value_length is non-NULL.
  */
 bool environment_io_get(const char *key, char *value, size_t value_length);
+
+/**
+ * Status of reading the store, loading it on first use: 0 when the entries
+ * are usable, otherwise the ENV status code of the failed read.
+ */
+int environment_io_load_status(void);
+
+/**
+ * Change counter for the stored environment: starts at 1 and advances on
+ * every commit, so a cached setting needs reloading only when it differs.
+ */
+uint32_t environment_io_generation(void);
 
 size_t environment_output(int port, uint8_t data, char *buffer, size_t buffer_length);
 uint8_t environment_input(uint8_t port);

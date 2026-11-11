@@ -170,9 +170,7 @@ static http_target_result_t load_target(const char *name) {
   if (!strncasecmp(name, "http://", 7) || !strncasecmp(name, "https://", 8))
     return z80_http_url_parse(name, &target) ? HTTP_TARGET_OK : HTTP_TARGET_INVALID;
   char base[256];
-  environment_io_close();
-  environment_io_init(NULL);
-  if (environment_input(ENVIRONMENT_PORT_COMMAND)) return HTTP_TARGET_INVALID;
+  if (environment_io_load_status()) return HTTP_TARGET_INVALID;
   if (!environment_io_get("HTTP_BASE_URL", base, sizeof(base)) || !base[0])
     return HTTP_TARGET_MISSING_BASE_URL;
   if (!z80_http_url_parse(base, &target) || strchr(target.path, '?'))

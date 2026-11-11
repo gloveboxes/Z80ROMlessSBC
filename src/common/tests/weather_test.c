@@ -7,7 +7,8 @@
 #include "../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 
 static uint64_t now;
-static unsigned starts, cancels;
+static unsigned starts, cancels, config_reads;
+static uint32_t env_generation = 1;
 static uint8_t env_error;
 static bool can_start = true;
 static const char *key = "test-key", *location = "New York,US", *units;
@@ -22,12 +23,11 @@ static const char forecast[] =
   "\"description\":\"light rain\"}],\"main\":{\"temp\":4.5,"
   "\"feels_like\":1.2},\"dt_txt\":\"2026-10-22 03:00:00\"}]}";
 
-uint64_t z80_service_millis(void) { return now; }
-void environment_io_init(const char *path) { (void)path; }
-void environment_io_close(void) {}
-uint8_t environment_input(uint8_t port) {
-  assert(port == ENVIRONMENT_PORT_COMMAND);
-  return env_error;
+uint64_t z80_service_micros(void) { return now * 1000; }
+uint32_t environment_io_generation(void) { return env_generation; }
+int environment_io_load_status(void) {
+  ++config_reads;
+  return (int8_t)env_error;
 }
 bool environment_io_get(const char *name, char *value, size_t capacity) {
   const char *text = strcmp(name, "OWM_KEY") == 0 ? key :
@@ -66,6 +66,11 @@ static void advance(uint64_t ms) {
   now += ms;
   z80_weather_poll(true);
 }
+/* An ENV commit, then the poll that re-reads the settings. */
+static void reload(void) {
+  ++env_generation;
+  advance(1000);
+}
 
 static void test_engine(void) {
   uint8_t request[] = {1, 0};
@@ -74,6 +79,7 @@ static void test_engine(void) {
   z80_weather_poll(false);
   assert(state() == Z80_WEATHER_NONE && starts == 0);
   z80_weather_poll(true);
+  assert(config_reads == 1);
   advance(4999);
   assert(starts == 0);
   advance(1);
@@ -93,7 +99,8 @@ static void test_engine(void) {
     field(i, expected[i]);
   unsigned before = starts;
   advance(1199999);
-  assert(starts == before);
+  /* Settings are read once; later polls re-read only after an ENV commit. */
+  assert(starts == before && config_reads == 1);
   field(10, "1199");
   advance(1);
   assert(state() == Z80_WEATHER_FETCHING && starts == before + 1);
@@ -110,7 +117,7 @@ static void test_engine(void) {
   field(12, "Invalid weather JSON fields");
 
   units = "imperial";
-  advance(1000);
+  reload();
   assert(state() == Z80_WEATHER_NONE);
   field(11, "F");
   advance(5000);
@@ -124,7 +131,7 @@ static void test_engine(void) {
   field(12, "Forecast: Weather HTTPS request timed out");
 
   location = "lat=-33.8&lon=151.2";
-  advance(1000);
+  reload();
   advance(5000);
   assert(strstr(requested, "lat=-33.8&lon=151.2&appid="));
   before = cancels;
@@ -134,30 +141,30 @@ static void test_engine(void) {
   assert(state() == Z80_WEATHER_NONE);
   location = "lat=91&lon=10";
   z80_weather_poll(true);
-  advance(1000);
+  reload();
   advance(5000);
   assert(state() == Z80_WEATHER_ERROR);
   field(12, "Invalid OWM_LOCATION; use a city or lat=...&lon=...");
 
   location = "London,UK";
   units = "kelvin";
-  advance(1000);
+  reload();
   assert(state() == Z80_WEATHER_ERROR);
   field(12, "OWM_UNITS must be metric, imperial or standard");
   units = "standard";
   key = NULL;
-  advance(1000);
+  reload();
   field(11, "K");
   field(12, "Set OWM_KEY and OWM_LOCATION in ENV");
   key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-  advance(1000);
+  reload();
   field(12, "OWM_KEY is too long");
   key = "key&injected=1";
   env_error = 253;
-  advance(1000);
+  reload();
   field(12, "Cannot read weather ENV settings");
   env_error = 0;
-  advance(1000);
+  reload();
   can_start = false;
   advance(5000);
   assert(strstr(requested, "appid=key%26injected%3D1"));

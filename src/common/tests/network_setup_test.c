@@ -31,30 +31,6 @@ static int setup_printf(const char *format, ...) {
   return count;
 }
 
-void queue_init(queue_t *queue, unsigned size, unsigned capacity) {
-  free(queue->data);
-  queue->data = calloc(capacity, size);
-  assert(queue->data);
-  queue->element_size = size;
-  queue->capacity = capacity;
-  queue->count = 0;
-}
-bool queue_try_add(queue_t *queue, const void *item) {
-  if (queue->count == queue->capacity)
-    return false;
-  memcpy(queue->data + queue->count++ * queue->element_size,
-         item, queue->element_size);
-  return true;
-}
-bool queue_try_remove(queue_t *queue, void *item) {
-  if (!queue->count)
-    return false;
-  memcpy(item, queue->data, queue->element_size);
-  --queue->count;
-  memmove(queue->data, queue->data + queue->element_size,
-          queue->count * queue->element_size);
-  return true;
-}
 int z80_env_snapshot_load(uint8_t *data, size_t capacity, size_t *length) {
   assert(on_core1 && snapshot_length <= capacity);
   if (read_error)
@@ -308,13 +284,16 @@ int main(void) {
   assert(!z80_network_setup_active() && z80_network_setup_quiescent());
   assert(strstr(output, "CP/M is stopping or stopped"));
 
+  /* ENV is read once per boot: closing it models a restart. */
   read_error = -2;
+  environment_io_close();
   open_shell();
   assert(!settings_loaded && !z80_network_config());
   before = writes;
   type("1c");
   assert(step == SETUP_MENU && writes == before);
   read_error = 0;
+  environment_io_close();
   open_shell();
   type("1cRecoveredWiFi\rRecoveredSecret\r");
   write_error = -3;

@@ -119,7 +119,7 @@ polarity against the exact datasheet and current placement table, not memory.
 - CMake builds CP/M images from the 512 KiB images in `src/disks/native/` and tracks their changes; the emulator and flash slots use the same format.
 - Cold boot recovers journals, validates CRCs, injects instructions to load/verify SRAM, resets again and starts only on success. BUSACK is used for flash quiescence, never cold loading.
 - Core0 owns GPIO, clock, injection and trapping; core1 owns USB, networking and runtime flash writes. Stages 9/10 launch core1 before journal recovery; both cores participate in SDK flash lockout. Never enable `PICO_FLASH_ASSUME_CORE1_SAFE` with the USB core running. Flash offsets, journal and geometry are unchanged.
-- Stage 10 uses `pico_cyw43_arch_lwip_poll` on core1, not core0 network timers or a background architecture. USB provisioning passes requests/results through queues; core1 alone accesses ENV. A browser owns CP/M exclusively while connected, with USB fallback on disconnect. `FS_SERVER` is stored only; remote-FS I/O is deferred.
+- Stage 10 uses `pico_cyw43_arch_lwip_poll` on core1, not core0 network timers or a background architecture. The USB provisioning shell and the gated ENV worker both run on core1 and exchange one request and result at a time; core1 alone accesses ENV. A browser owns CP/M exclusively while connected, with USB fallback on disconnect. `FS_SERVER` is stored only; remote-FS I/O is deferred.
 - Runtime writes keep trapping armed until BUSACK# LOW and re-arm it before BUSACK# HIGH. Non-`PICO_OK` flash-safe results fail closed through watchdog reboot.
 - Wi-Fi polling is bounded and nonblocking. Core 1 services disk writes before network work on every loop.
 - Phase 10 weather uses asynchronous verified HTTPS on core1, with an explicit
@@ -228,6 +228,14 @@ Follow maintained sources rather than creating parallel transport abstractions:
   RAM placement alone is insufficient without checking callees and data access.
 - Rate-limit diagnostics and keep formatting/blocking logging out of hot paths
   and shared locks. Observability must not create the stall being measured.
+- Keep core 1's idle service pass free of locks, text formatting and 64-bit
+  divisions: read published counts atomically and compare raw microsecond
+  deadlines.
+- ENV is a core-1 system service read from flash once, on first use. Lookups
+  and commands use its in-memory entries; only a failed commit reads flash
+  again. Check `environment_io_load_status()` before use, never close/reopen
+  it to reload, and refresh a cached setting only when
+  `environment_io_generation()` changes.
 - Fast disk reads and cached writes are not evidence that commits interfere
   with networking, or that they cannot. Measure flash commits and network-poll
   gaps separately before changing storage scheduling, journaling or geometry.

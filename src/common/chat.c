@@ -91,9 +91,7 @@ static bool parse_endpoint(const char *url) {
 static bool load_settings(void) {
   char provider[16], url[256];
   memset(&endpoint, 0, sizeof(endpoint));
-  environment_io_close();
-  environment_io_init(NULL);
-  if (environment_input(ENVIRONMENT_PORT_COMMAND) != 0) {
+  if (environment_io_load_status() != 0) {
     z80_chat_error("Cannot read CHAT ENV settings");
     return false;
   }

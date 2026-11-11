@@ -185,14 +185,13 @@ extern "C" mbedtls_ms_time_t mbedtls_ms_time(void) {
   return (mbedtls_ms_time_t)(time_us_64() / 1000);
 }
 
-extern "C" void z80_weather_network_poll(void) {
+extern "C" void z80_weather_network_poll(bool online) {
   if (!initialized) {
     z80_weather_init(start, cancel);
     initialized = true;
   }
-  char address[16];
-  bool online = z80_io_ports_get_network_address(address, sizeof(address)) != 0 &&
-                z80_network_time(nullptr) != 0;
+  // TLS certificate validation needs the SNTP clock as well as the link.
+  online = online && z80_network_time_synced();
   if (active && (!online || time_reached(deadline))) {
     cyw43_arch_lwip_begin();
     release_client(true);

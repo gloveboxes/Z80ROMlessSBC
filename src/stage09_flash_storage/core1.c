@@ -27,6 +27,15 @@ static bool browser_was_connected;
 static bool config_reboot_queue_full;
 #endif
 
+/* USB owns the CP/M terminal unless the setup shell or a browser has it. */
+static bool usb_owns_terminal(void) {
+#ifdef Z80_STAGE10_NETWORK
+  return !z80_network_setup_active() && !z80_terminal_browser_connected();
+#else
+  return true;
+#endif
+}
+
 static void forward_terminal_byte(uint8_t value) {
   if (value == 0)
     return;
@@ -124,7 +133,8 @@ static void service_usb(void) {
     }
   }
 #else
-  z80_terminal_set_connected(connected);
+  if (connected != usb_was_connected)
+    z80_terminal_set_connected(connected);
 #endif
   __atomic_store_n(&usb_state, (connected ? USB_CONNECTED : 0)
 #ifdef Z80_STAGE10_NETWORK
@@ -144,24 +154,16 @@ static void service_usb(void) {
   usb_was_connected = connected;
   if (!connected)
     return;
-  for (unsigned int count = 0; count < 32; ++count) {
-    int input = getchar_timeout_us(0);
-    if (input < 0)
-      break;
-    receive_usb_byte((uint8_t)input);
-  }
-  if ((state & CPU_RUNNING) && !command_pending
-#ifdef Z80_STAGE10_NETWORK
-      && !z80_network_setup_active() && !z80_terminal_browser_connected()
-#endif
-  )
+  uint8_t input[32];
+  size_t received = z80_usb_console_read(input, sizeof(input));
+  for (size_t index = 0; index < received; ++index)
+    receive_usb_byte(input[index]);
+  /* Only a lone Escape waits on the clock; other passes skip the time read. */
+  if (ansi_input_escape_pending() && (state & CPU_RUNNING) &&
+      !command_pending && usb_owns_terminal())
     forward_terminal_byte(
         ansi_input_process(0, to_ms_since_boot(get_absolute_time())));
-  if (connected && z80_terminal_output_pending()
-#ifdef Z80_STAGE10_NETWORK
-      && !z80_network_setup_active() && !z80_terminal_browser_connected()
-#endif
-  ) {
+  if (z80_terminal_output_pending() && usb_owns_terminal()) {
     uint8_t data[64];
     size_t capacity = tud_cdc_write_available();
     if (capacity > sizeof(data))
@@ -183,41 +185,45 @@ static void service_usb(void) {
   }
 }
 
+static void run_workers(void) {
+  z80_flash_core1_service();
+  z80_io_ports_core1_service();
+#ifdef Z80_STAGE10_NETWORK
+  z80_network_setup_core1_service();
+#endif
+}
+
+static bool workers_quiescent(void) {
+  return z80_flash_disk_quiescent() && z80_io_ports_quiescent()
+#ifdef Z80_STAGE10_NETWORK
+         && z80_network_setup_quiescent()
+#endif
+      ;
+}
+
+/* Disk and service workers run first, then USB, then the network. A pause
+ * request lets the workers drain, then holds them until core 0 withdraws it. */
 static void core1_service(void) {
   bool active = __atomic_load_n(&workers_ready, __ATOMIC_ACQUIRE);
-  if (active) {
-    if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE)) {
-      if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
-        z80_flash_core1_service();
-        z80_io_ports_core1_service();
-#ifdef Z80_STAGE10_NETWORK
-        z80_network_setup_core1_service();
-#endif
-        if (z80_flash_disk_quiescent() && z80_io_ports_quiescent()
-#ifdef Z80_STAGE10_NETWORK
-            && z80_network_setup_quiescent()
-#endif
-        )
-          __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
-      }
-    } else {
-      __atomic_store_n(&flash_paused, 0, __ATOMIC_RELEASE);
-      z80_flash_core1_service();
-      z80_io_ports_core1_service();
-#ifdef Z80_STAGE10_NETWORK
-      z80_network_setup_core1_service();
-#endif
+  bool pausing =
+      active && __atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE);
+  if (pausing) {
+    if (!__atomic_load_n(&flash_paused, __ATOMIC_ACQUIRE)) {
+      run_workers();
+      if (workers_quiescent())
+        __atomic_store_n(&flash_paused, 1, __ATOMIC_RELEASE);
     }
+  } else if (active) {
+    __atomic_store_n(&flash_paused, 0, __ATOMIC_RELEASE);
+    run_workers();
   }
   z80_usb_console_service();
   service_usb();
 #ifdef Z80_STAGE10_NETWORK
-  if (active) {
-    if (__atomic_load_n(&flash_pause_request, __ATOMIC_ACQUIRE))
-      z80_network_terminal_core1_service();
-    else
-      z80_network_core1_service();
-  }
+  if (pausing)
+    z80_network_terminal_core1_service();
+  else if (active)
+    z80_network_core1_service();
 #endif
 }
 

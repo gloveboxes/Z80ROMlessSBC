@@ -29,12 +29,8 @@ void cyw43_arch_lwip_end() { assert(lock_depth); --lock_depth; }
 uint64_t time_us_64(void) { return now; }
 absolute_time_t make_timeout_time_ms(uint32_t delay) { return now + delay * 1000ull; }
 bool time_reached(absolute_time_t time) { return now >= time; }
-time_t z80_network_time(time_t *) { return synchronized ? 1704067200 : 0; }
-size_t z80_io_ports_get_network_address(char *address, size_t capacity) {
-  assert(capacity >= 10);
-  strcpy(address, wifi ? "192.0.2.1" : "");
-  return strlen(address);
-}
+bool z80_network_time_synced(void) { return synchronized; }
+static void poll_network(void) { z80_weather_network_poll(wifi); }
 void z80_weather_init(bool (*start_fn)(const char *), void (*cancel_fn)(void)) {
   engine_start = start_fn;
   engine_cancel = cancel_fn;
@@ -124,19 +120,19 @@ static void eof(void) {
   cyw43_arch_lwip_begin();
   pcb.recv(pcb.arg, &pcb, nullptr, ERR_OK);
   cyw43_arch_lwip_end();
-  z80_weather_network_poll();
+  poll_network();
 }
 
 int main(void) {
   synchronized = false;
-  z80_weather_network_poll();
+  poll_network();
   assert(!engine_online && results == 0);
   synchronized = true;
-  z80_weather_network_poll();
+  poll_network();
   assert(engine_online);
   configured = false;
   assert(engine_start("/test?appid=dummy"));
-  z80_weather_network_poll();
+  poll_network();
   assert(results == 1 && result_error == "Weather TLS configuration failed");
   configured = true;
   assert(engine_start("/test?appid=dummy"));
@@ -173,13 +169,13 @@ int main(void) {
   assert(client != nullptr);
   cyw43_arch_lwip_end();
   now += TIMEOUT_MS * 1000ull;
-  z80_weather_network_poll();
+  poll_network();
   assert(result_error == "Weather HTTPS request timed out" && aborts == 1);
 
   assert(engine_start("/test"));
   stale = dns_args.back();
   now += TIMEOUT_MS * 1000ull;
-  z80_weather_network_poll();
+  poll_network();
   cyw43_arch_lwip_begin();
   dns_callback(HOST, &ip, stale);
   cyw43_arch_lwip_end();
@@ -187,19 +183,19 @@ int main(void) {
   defer_dns = false;
   allocate = false;
   assert(engine_start("/test"));
-  z80_weather_network_poll();
+  poll_network();
   assert(result_error == "Weather TLS allocation failed");
   allocate = true;
   assert(engine_start("/test"));
   handshake();
   assert(fragment(std::string(16385, 'X')) == ERR_ABRT);
-  z80_weather_network_poll();
+  poll_network();
   assert(result_error == "Weather response too large or receive failed");
 
   assert(engine_start("/test"));
   handshake();
   wifi = false;
-  z80_weather_network_poll();
+  poll_network();
   assert(!engine_online && result_error == "Weather network/time unavailable");
   wifi = true;
   assert(engine_start("/test"));

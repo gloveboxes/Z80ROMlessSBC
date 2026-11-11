@@ -5,6 +5,7 @@
 #include <pthread.h>
 typedef struct {
   bool initialized;
+  unsigned entries; /* counted under the mutex, for lock-free-path tests */
   pthread_mutex_t mutex;
 } critical_section_t;
 static inline bool critical_section_is_initialized(critical_section_t *section) {
@@ -16,6 +17,7 @@ static inline void critical_section_init(critical_section_t *section) {
 }
 static inline void critical_section_enter_blocking(critical_section_t *section) {
   assert(pthread_mutex_lock(&section->mutex) == 0);
+  ++section->entries;
 }
 static inline void critical_section_exit(critical_section_t *section) {
   assert(pthread_mutex_unlock(&section->mutex) == 0);

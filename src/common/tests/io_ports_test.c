@@ -8,6 +8,7 @@
 #include "../http_io.h"
 #include "hardware/flash.h"
 #include "z80sbc/environment.h"
+#include "../../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 #include "z80sbc/flash_layout.h"
 
 uint8_t test_flash[PICO_FLASH_SIZE_BYTES];
@@ -529,6 +530,46 @@ static void test_environment(void) {
   error(IO_SERVICE_ENVIRONMENT, list, 1, IO_SERVICE_CAPACITY);
 }
 
+/* ENV is read from flash once per boot; closing it models a restart. */
+static void test_environment_loaded_once(void) {
+  uint8_t *flash = test_flash + Z80_FLASH_ENV_OFFSET;
+  static uint8_t saved[Z80_FLASH_ENV_BYTES];
+  uint8_t set[] = {3, 2, 'T', 'Z', 3, 0, 'U', 'T', 'C'};
+  uint8_t get[] = {2, 2, 'T', 'Z'};
+  uint8_t initialize[] = {1};
+  memset(flash, 0xff, Z80_FLASH_ENV_BYTES);
+  environment_io_close();
+  call(IO_SERVICE_ENVIRONMENT, set, sizeof(set), IO_SERVICE_COMPLETE);
+
+  /* A failed write reads storage back, so memory never runs ahead of it. */
+  uint32_t generation = environment_io_generation();
+  memcpy(set + 6, "AES", 3);
+  cut_after = 0;
+  error(IO_SERVICE_ENVIRONMENT, set, sizeof(set), IO_SERVICE_STORAGE_WRITE);
+  cut_after = -1;
+  assert(environment_io_generation() != generation);
+  call(IO_SERVICE_ENVIRONMENT, get, sizeof(get), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 3 && memcmp(reply, "UTC", 3) == 0);
+
+  /* Requests are served from memory: storage is not read again. */
+  generation = environment_io_generation();
+  memcpy(saved, flash, sizeof(saved));
+  memset(flash, 0, Z80_FLASH_ENV_BYTES);
+  call(IO_SERVICE_ENVIRONMENT, get, sizeof(get), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 3 && memcmp(reply, "UTC", 3) == 0);
+  call(IO_SERVICE_ENVIRONMENT, initialize, 1, IO_SERVICE_COMPLETE);
+  assert(environment_io_generation() == generation);
+
+  /* The next boot reads storage and reports that it is unreadable. */
+  environment_io_close();
+  error(IO_SERVICE_ENVIRONMENT, get, sizeof(get), IO_SERVICE_STORAGE_READ);
+  error(IO_SERVICE_ENVIRONMENT, initialize, 1, IO_SERVICE_STORAGE_READ);
+  memcpy(flash, saved, sizeof(saved));
+  environment_io_close();
+  call(IO_SERVICE_ENVIRONMENT, get, sizeof(get), IO_SERVICE_RESPONSE_READY);
+  assert(reply_length == 3 && memcmp(reply, "UTC", 3) == 0);
+}
+
 static void test_power_loss(void) {
   uint8_t old[32], recovered[32];
   size_t length;
@@ -575,6 +616,7 @@ static void cancel_weather(void) {}
 
 static void test_weather_port_abi(void) {
   memset(test_flash + Z80_FLASH_ENV_OFFSET, 0xff, Z80_FLASH_ENV_BYTES);
+  environment_io_close();
   cli("OWM_KEY=testkey", IO_SERVICE_RESPONSE_READY);
   cli("OWM_LOCATION=Sydney,AU", IO_SERVICE_RESPONSE_READY);
   z80_weather_init(start_weather, cancel_weather);
@@ -775,6 +817,7 @@ int main(void) {
   test_timers();
   test_led();
   test_environment();
+  test_environment_loaded_once();
   uint8_t operation[] = {0};
   call(IO_SERVICE_UTILITY, operation, 1, IO_SERVICE_RESPONSE_READY);
   assert(reply_length == 2 && reply[0] == 0x34 && reply[1] == 0x12);

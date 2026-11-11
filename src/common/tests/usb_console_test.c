@@ -70,10 +70,13 @@ uint32_t tud_cdc_write_flush(void) {
   ++flush_calls;
   return 0;
 }
+static const char *pending_input = "";
 static int usb_input(char *data, int length) {
   assert(core == 1 && length > 0);
-  data[0] = 'K';
-  return 1;
+  int count = 0;
+  while (count < length && *pending_input)
+    data[count++] = *pending_input++;
+  return count ? count : -1;
 }
 stdio_driver_t stdio_usb = {
   .out_chars = usb_write,
@@ -176,10 +179,20 @@ int main(void) {
   assert(!strcmp(output + ready_start,
                  "[boot] bank 1 ready: extent allocator and resident page\r\n"));
   write_limit = UINT32_MAX;
-  char key;
-  assert(registered->in_chars(&key, 1) == 1 && key == 'K');
+  /* Input bypasses stdio: one endpoint read takes every waiting byte. */
+  uint8_t keys[4];
+  assert(registered->in_chars == NULL);
+  assert(z80_usb_console_read(keys, sizeof(keys)) == 0);
+  pending_input = "KEYS!";
+  assert(z80_usb_console_read(keys, sizeof(keys)) == 4 &&
+         !memcmp(keys, "KEYS", 4));
+  assert(z80_usb_console_read(keys, sizeof(keys)) == 1 && keys[0] == '!');
+  /* An idle pass and the terminal write path stay off the log lock. */
+  unsigned locks = log_lock.entries;
+  z80_usb_console_service();
+  assert(z80_usb_console_log_drops() == 1 && log_lock.entries == locks);
   assert(z80_usb_console_write((const uint8_t *)"Z", 1) == 1);
-  assert(output[written - 1] == 'Z');
+  assert(output[written - 1] == 'Z' && log_lock.entries == locks);
   registered->out_chars("stale", 5);
   connected = false;
   z80_usb_console_service();

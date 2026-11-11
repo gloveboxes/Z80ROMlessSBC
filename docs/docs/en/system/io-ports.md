@@ -322,7 +322,7 @@ HTTPS, a DNS name/IPv4 address, and an optional port 1-65535. User-info,
 fragments, whitespace and control characters are rejected. Limits are 95
 host bytes, 103 authority bytes, 159 path bytes, and 255 key bytes.
 
-Core 1 reloads provider/endpoint/key from durable ENV on each submission.
+Core 1 reads provider/endpoint/key from ENV on each submission.
 CHATC11 owns the JSON model, history, system prompt, token count, temperature
 and thinking parameter; restart CHAT after changing model/token/temperature
 settings. Thinking/provider changes are read at the next turn by CHAT 1.7-c11.
@@ -399,7 +399,7 @@ literal insert mode for coordinates or names containing these characters:
 `ENV -I OWM_LOCATION=lat=-33.8&lon=151.2`.
 Units are `metric` (default), `imperial`, or `standard`. Missing keys or invalid
 settings produce an explanatory error; no request is sent. Settings are
-reloaded at most once per second. Changing them cancels an in-flight request,
+re-read after each ENV commit. Changing them cancels an in-flight request,
 clears data belonging to the old configuration, and starts a new fetch without
 rebooting. ENV remains plaintext onboard flash; do not publish its contents.
 Firmware diagnostics never print the key, request URL or provider response body.
@@ -448,6 +448,12 @@ For example, write `21h` to port `02h`, then `02h,00h,04h,01h` to port `03h`
 success or drain and acknowledge the error.
 
 ### Persistent environment API
+
+ENV is a core-1 system service. Flash is read and CRC-checked once, on first
+use; every lookup and command then uses the in-memory entries, which each
+commit keeps identical to flash. A change counter advances on every commit,
+so services that cache a setting, such as weather and the parsed `TZ`, refresh
+it only then. Operation 1 reports whether that first read succeeded.
 
 Keys are case-insensitive, stored uppercase, and contain 1-16 non-NUL bytes.
 Values contain 0-255 non-NUL bytes. Empty and absent values are distinct:

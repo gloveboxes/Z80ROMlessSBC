@@ -39,12 +39,7 @@ absolute_time_t make_timeout_time_ms(uint32_t ms) { return test_now + ms * 1000u
 bool time_reached(absolute_time_t t) { return test_now >= t; }
 time_t z80_network_time(time_t *) { return test_time ? 1792627200 : 0; }
 void mbedtls_platform_zeroize(void *p, size_t n) { memset(p, 0, n); }
-void environment_io_init(const char *) {}
-void environment_io_close() {}
-uint8_t environment_input(uint8_t port) {
-  assert(port == ENVIRONMENT_PORT_COMMAND);
-  return test_env_error;
-}
+int environment_io_load_status() { return (int8_t)test_env_error; }
 bool environment_io_get(const char *key, char *out, size_t capacity) {
   auto found = test_env.find(key);
   if (found == test_env.end()) { out[0] = '\0'; return false; }

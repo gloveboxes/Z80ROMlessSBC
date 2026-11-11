@@ -117,11 +117,12 @@ ring lock over USB calls. Connected overflow is reported as `log_drops`;
 disconnected logs are discarded and not replayed. CP/M output retains its
 separate 512-byte terminal ring. The SDK stdout mutex is disabled for these
 targets, so core 0 never waits on USB output serialization.
-CP/M USB output submits at most 32 bytes in one nonblocking CDC write per pass,
-with one flush attempt when bytes are accepted. It peeks at the terminal ring
+CP/M USB output submits at most 64 bytes in one nonblocking CDC write per pass;
+a newline flushes at once and other output within 250 us. It peeks at the terminal ring
 and removes only the accepted prefix, leaving short or rejected writes queued
 for a later pass. No terminal lock is held during endpoint calls, and single
 interactive characters are submitted immediately without a batching delay.
+USB input is one endpoint read of at most 32 bytes per pass.
 USB remains serviced while stopped or draining for a stop. Flash programming
 can temporarily suspend it through SDK lockout. Real enumeration, concurrent
 network traffic and timing still require bench acceptance.
@@ -169,6 +170,10 @@ The fast paths also avoid avoidable work in the handlers:
 - **Main loop:** core 0 peeks its command and flash-service queues without
   their locks and takes a lock only to remove an entry, so an idle pass never
   masks the PIO1 IRQ.
+- **Core 1 idle pass:** takes no cross-core lock and does no text formatting
+  or 64-bit division. The log ring count is read atomically, the Escape timer
+  is polled only while a lone Escape is pending, and services compare raw
+  microsecond deadlines.
 - **Disk writes:** the Z80 fills the shared 128-byte record directly. A
   single-slot mailbox publishes it to core 1; BUSY blocks every further disk
   port write, so the record crosses cores without copies or a queue lock.
@@ -182,8 +187,10 @@ The fast paths also avoid avoidable work in the handlers:
   writer; if core 0 sees a slot mid-rewrite it reads flash as before, so a
   race costs time but never returns wrong data. Core 1 invalidates the slot
   for every record it writes before publishing READY, and fills through the
-  backend read, which checks the write sector first. Misses use a word copy
-  in SRAM, not newlib `memcpy`. **Ctrl-] s** reports
+  backend read, which checks the write sector first. Core 1 remembers the
+  hint whose window is filled, so later passes skip the slot scan until the
+  next READ or invalidation. Misses use a word copy in SRAM, not newlib
+  `memcpy`. **Ctrl-] s** reports
   `[disk] readahead hits=... misses=...`.
 - **Terminal status:** ring counts are stored atomically under the lock and
   read lock-free by the status poll. Core 0 is the only RX consumer and TX

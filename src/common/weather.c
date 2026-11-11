@@ -10,8 +10,7 @@
 
 enum {
   FIELD_COUNT = 15, FIELD_BYTES = 96,
-  CONFIG_MS = 1000, SETTLE_MS = 5000,
-  RETRY_MS = 120000, REFRESH_MS = 1200000,
+  SETTLE_MS = 5000, RETRY_MS = 120000, REFRESH_MS = 1200000,
 };
 typedef struct {
   char key[41], location[65], units[12], error[64];
@@ -23,17 +22,23 @@ static bool enabled, have_data, was_online;
 static uint8_t status;
 static unsigned phase;
 static unsigned startup_retries;
-static uint64_t config_due, fetch_due, last_fetch;
+static uint32_t config_generation;
+/* Microseconds, so each poll compares the raw timer without a division. */
+static uint64_t fetch_due, last_fetch;
 static bool (*start_request)(const char *);
 static void (*cancel_request)(void);
 static char path[512];
+
+static uint64_t after_ms(uint32_t delay) {
+  return z80_service_micros() + (uint64_t)delay * 1000;
+}
 
 static void fail(const char *message) {
   snprintf(fields[12], FIELD_BYTES, "%s", message);
   status = Z80_WEATHER_ERROR;
   phase = 0;
-  fetch_due = z80_service_millis() +
-              (!have_data && startup_retries++ < 5 ? RETRY_MS : REFRESH_MS);
+  fetch_due =
+      after_ms(!have_data && startup_retries++ < 5 ? RETRY_MS : REFRESH_MS);
   printf("[weather] %s\n", fields[12]);
 }
 
@@ -51,9 +56,7 @@ static void read_setting(const char *key, char *dst, size_t capacity,
 
 static bool load_config(void) {
   weather_config_t next = {0};
-  environment_io_close();
-  environment_io_init(NULL);
-  if (environment_input(ENVIRONMENT_PORT_COMMAND) != 0) {
+  if (environment_io_load_status() != 0) {
     snprintf(next.error, sizeof(next.error), "Cannot read weather ENV settings");
   } else {
     read_setting("OWM_KEY", next.key, sizeof(next.key), &next);
@@ -141,10 +144,11 @@ void z80_weather_init(bool (*start)(const char *), void (*cancel)(void)) {
 void z80_weather_poll(bool online) {
   if (!enabled)
     return;
-  uint64_t now = z80_service_millis();
-  bool changed = false;
-  if (now >= config_due) {
-    config_due = now + CONFIG_MS;
+  /* ENV changes only through a commit, so settings are re-read only then. */
+  uint32_t generation = environment_io_generation();
+  bool changed = generation != config_generation;
+  if (changed) {
+    config_generation = generation;
     changed = load_config();
   }
   if (!online) {
@@ -158,9 +162,10 @@ void z80_weather_poll(bool online) {
     return;
   }
   if (!was_online || changed)
-    fetch_due = now + SETTLE_MS;
+    fetch_due = after_ms(SETTLE_MS);
   was_online = true;
-  if (config.error[0] || (phase != 0 && phase != 2) || now < fetch_due)
+  if (config.error[0] || (phase != 0 && phase != 2) ||
+      z80_service_micros() < fetch_due)
     return;
   bool forecast = phase == 2;
   if (!build_path(forecast)) {
@@ -236,7 +241,7 @@ void z80_weather_result(unsigned http_status, const char *body, size_t length,
       return;
     }
     phase = 2;
-    fetch_due = z80_service_millis();
+    fetch_due = 0;
     return;
   }
   if (message[0]) {
@@ -248,10 +253,10 @@ void z80_weather_result(unsigned http_status, const char *body, size_t length,
   }
   memcpy(fields, pending, sizeof(fields));
   have_data = true;
-  last_fetch = z80_service_millis();
+  last_fetch = z80_service_micros();
   status = Z80_WEATHER_READY;
   phase = 0;
-  fetch_due = last_fetch + REFRESH_MS;
+  fetch_due = last_fetch + (uint64_t)REFRESH_MS * 1000;
 }
 
 io_service_error_t z80_weather_service(const uint8_t *request, size_t length,
@@ -275,7 +280,8 @@ io_service_error_t z80_weather_service(const uint8_t *request, size_t length,
     return IO_SERVICE_UNAVAILABLE;
   if (field == 10)
     snprintf(fields[10], FIELD_BYTES, "%llu",
-             (unsigned long long)((z80_service_millis() - last_fetch) / 1000));
+             (unsigned long long)((z80_service_micros() - last_fetch) /
+                                  1000000));
   result->length = strlen(fields[field]);
   memcpy(result->data, fields[field], result->length);
   return IO_SERVICE_OK;

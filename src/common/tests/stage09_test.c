@@ -280,9 +280,14 @@ uint32_t tud_cdc_write_available(void) {
   assert(fake_core == 1);
   return usb_room;
 }
-int getchar_timeout_us(uint32_t timeout) {
-  assert(fake_core == 1 && timeout == 0);
-  return input_index < input_length ? input[input_index++] : -1;
+static unsigned usb_reads;
+size_t z80_usb_console_read(uint8_t *data, size_t capacity) {
+  assert(fake_core == 1 && connected && capacity == 32);
+  ++usb_reads;
+  size_t count = 0;
+  while (count < capacity && input_index < input_length)
+    data[count++] = input[input_index++];
+  return count;
 }
 int putchar_raw(int value) {
   assert(fake_core == 1);
@@ -363,7 +368,11 @@ void restore_interrupts(uint32_t state) {
 absolute_time_t make_timeout_time_ms(uint32_t delay) {
   return now + (uint64_t)delay * 1000;
 }
-absolute_time_t get_absolute_time(void) { return now; }
+static unsigned core1_clock_reads;
+absolute_time_t get_absolute_time(void) {
+  core1_clock_reads += fake_core;
+  return now;
+}
 bool time_reached(absolute_time_t deadline) { return now >= deadline; }
 void sleep_ms(uint32_t delay) { now += delay * 1000u; }
 void busy_wait_us_32(uint32_t delay) { now += delay; }
@@ -915,13 +924,16 @@ static void test_ansi_terminal_input(void) {
 
   usb_input("\x1b");
   now = (ANSI_INPUT_ESC_GRACE_MS - 1u) * 1000;
+  unsigned clock_reads = core1_clock_reads;
   usb_input("");
   assert(!(virtual_read(1, NULL) & 1u));
   now += 1000;
   usb_input("");
   assert(virtual_read(0, NULL) == 0x1b);
+  /* Only a lone Escape polls the clock; an idle pass does not read it. */
+  assert(core1_clock_reads == clock_reads + 2);
   usb_input("");
-  assert(!(virtual_read(1, NULL) & 1u));
+  assert(!(virtual_read(1, NULL) & 1u) && core1_clock_reads == clock_reads + 2);
 
   usb_input("\x1b");
   now += 1000;
@@ -935,8 +947,10 @@ static void test_ansi_terminal_input(void) {
   memcpy(input + 31, "\x1b[A", 3);
   input_index = 0;
   input_length = 34;
+  unsigned reads = usb_reads;
   service_usb();
-  assert(input_index == 32);
+  /* One endpoint read per pass takes at most 32 bytes. */
+  assert(input_index == 32 && usb_reads == reads + 1);
   for (unsigned index = 0; index < 31; ++index)
     assert(virtual_read(0, NULL) == 'a');
   assert(!(virtual_read(1, NULL) & 1u));

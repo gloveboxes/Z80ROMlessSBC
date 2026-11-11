@@ -68,6 +68,8 @@ typedef struct {
 
 static prefetch_slot_t prefetch[PREFETCH_SLOTS];
 static uint32_t prefetch_hint;
+/* Core 1: the hint whose window is already filled, so idle passes skip it. */
+static uint32_t prefetch_filled;
 static uint32_t prefetch_hits;
 static uint32_t prefetch_misses;
 
@@ -102,14 +104,16 @@ static void prefetch_publish(prefetch_slot_t *slot, uint32_t key,
 
 static void prefetch_invalidate(unsigned int drive, uint16_t lba) {
   prefetch_slot_t *slot = &prefetch[lba & (PREFETCH_SLOTS - 1)];
-  if (__atomic_load_n(&slot->key, __ATOMIC_RELAXED) == record_key(drive, lba))
+  if (__atomic_load_n(&slot->key, __ATOMIC_RELAXED) == record_key(drive, lba)) {
     prefetch_publish(slot, 0, NULL);
+    prefetch_filled = 0;
+  }
 }
 
 /* Bounded: at most PREFETCH_SLOTS record copies per call, usually one. */
 static void prefetch_service(void) {
   uint32_t hint = __atomic_load_n(&prefetch_hint, __ATOMIC_ACQUIRE);
-  if (hint == 0)
+  if (hint == 0 || hint == prefetch_filled)
     return;
   unsigned int drive = (hint >> 16) & 0xFFu;
   uint32_t lba = hint & 0xFFFFu;
@@ -125,6 +129,7 @@ static void prefetch_service(void) {
     z80_flash_backend_read_record(drive, (uint16_t)next, (uint8_t *)words);
     prefetch_publish(slot, key, words);
   }
+  prefetch_filled = hint;
 }
 
 static uint32_t __not_in_flash_func(disk_status_load)(void) {
@@ -275,6 +280,7 @@ bool z80_flash_storage_init_observed(z80_boot_observer_t observer,
   __atomic_store_n(&disk_pending, 0, __ATOMIC_RELEASE);
   __atomic_store_n(&supervisor_flush, 0, __ATOMIC_RELEASE);
   __atomic_store_n(&prefetch_hint, 0, __ATOMIC_RELEASE);
+  prefetch_filled = 0;
   for (unsigned int slot = 0; slot < PREFETCH_SLOTS; ++slot)
     prefetch_publish(&prefetch[slot], 0, NULL);
   __atomic_store_n(&prefetch_hits, 0, __ATOMIC_RELAXED);

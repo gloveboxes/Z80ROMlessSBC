@@ -89,10 +89,12 @@ static size_t s_count = 0;
 static char s_request[ENV_REQUEST_SIZE];
 static size_t s_request_len = 0;
 static int8_t s_status = ENV_STATUS_OK;
+static int8_t s_load_status = ENV_STATUS_OK;
 #ifndef Z80_ENV_FLASH
 static char s_file_path[ENV_PATH_SIZE] = "altair_env.txt";
 #endif
 static bool s_initialized = false;
+static uint32_t s_generation = 1;
 #ifndef Z80_ENV_FLASH
 static time_t s_start_time = 0;
 #endif
@@ -166,7 +168,7 @@ void environment_io_init(const char *file_path)
 #ifdef Z80_ENV_FLASH
     (void)file_path;
     env_reset_request();
-    s_status = (int8_t)env_load_file();
+    s_load_status = s_status = (int8_t)env_load_file();
     s_initialized = true;
 #else
     if (file_path && file_path[0] != '\0')
@@ -198,6 +200,7 @@ void environment_io_close(void)
     s_count = 0;
     env_reset_request();
     s_status = ENV_STATUS_OK;
+    s_load_status = ENV_STATUS_OK;
     s_initialized = false;
     env_mutex_unlock(&s_lock);
 }
@@ -261,6 +264,30 @@ bool environment_io_get(const char *key, char *value, size_t value_length)
     return rc == ENV_STATUS_OK;
 }
 
+int environment_io_load_status(void)
+{
+    int status;
+
+    if (!s_initialized)
+    {
+        environment_io_init(NULL);
+    }
+    env_mutex_lock(&s_lock);
+    status = s_load_status;
+    env_mutex_unlock(&s_lock);
+    return status;
+}
+
+uint32_t environment_io_generation(void)
+{
+    uint32_t generation;
+
+    env_mutex_lock(&s_lock);
+    generation = s_generation;
+    env_mutex_unlock(&s_lock);
+    return generation;
+}
+
 static void env_reset_request(void)
 {
     memset(s_request, 0, sizeof(s_request));
@@ -295,11 +322,7 @@ static size_t env_execute_command(uint8_t command, char *buffer, size_t buffer_l
     switch (command)
     {
     case ENV_COMMAND_INIT:
-#ifdef Z80_ENV_FLASH
-        rc = env_load_file();
-#else
-        rc = ENV_STATUS_OK;
-#endif
+        rc = s_load_status;
         break;
 
     case ENV_COMMAND_GET:
@@ -538,9 +561,16 @@ static int env_save_file(void)
 static int env_commit(void)
 {
     int status = env_save_file();
+    /* Count failed commits too: the entries may have changed. */
+    ++s_generation;
 #ifdef Z80_ENV_FLASH
-    if (status != ENV_STATUS_OK && env_load_file() != ENV_STATUS_OK)
-        return ENV_STATUS_READ;
+    /* A failed write leaves the entries ahead of storage: read it back. */
+    if (status != ENV_STATUS_OK)
+    {
+        s_load_status = (int8_t)env_load_file();
+        if (s_load_status != ENV_STATUS_OK)
+            return ENV_STATUS_READ;
+    }
 #endif
     return status;
 }

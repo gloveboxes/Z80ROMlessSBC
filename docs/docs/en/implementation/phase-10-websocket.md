@@ -397,7 +397,7 @@ and timezone rules.
 
 - **USB menu:** exiting after saved changes safely reboots; save CP/M work first.
 - **C:ENV Wi-Fi settings:** reboot or reload the configuration shell.
-- **C:ENV timezone/weather:** timezone applies on the next request; weather reloads within one second, without reboot.
+- **C:ENV timezone/weather:** timezone applies on the next request; weather reloads on the ENV commit, without reboot.
 - **C:ENV chat settings:** provider/endpoint/key and CHAT 1.7-c11 thinking settings apply on the next request/turn; restart CHAT after changing model, token limit or temperature.
 
 Weather needs Wi-Fi and synchronized time; missing settings do not stop CP/M.

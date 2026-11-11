@@ -19,6 +19,8 @@ void ansi_input_reset(void) {
   esc_start = 0;
 }
 
+bool ansi_input_escape_pending(void) { return key_state == KEY_STATE_ESC; }
+
 uint8_t ansi_input_process(uint8_t ch, uint32_t now_ms) {
   switch (key_state) {
     case KEY_STATE_NORMAL:

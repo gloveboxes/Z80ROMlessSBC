@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pico/util/queue.h"
 #include "../common/chat_endpoint.h"
 #include "../cpm/dcc_io_adapter/host/PortDrivers/environment_io.h"
 
@@ -37,7 +36,7 @@ enum {
   TIMEZONE,
   FIELD_COUNT
 };
-enum { REQUEST_LOAD, REQUEST_SAVE };
+enum { REQUEST_NONE, REQUEST_LOAD, REQUEST_SAVE };
 
 static const struct {
   const char *key;
@@ -61,10 +60,13 @@ static const struct {
     {"TZ", "POSIX timezone (e.g. AEST-10 or UTC0)", 255, false},
 };
 
-static queue_t requests;
-static queue_t results;
+/* The shell and the ENV worker both run on core 1. The shell posts one
+ * request and waits in LOADING/SAVING for the worker's result, so a single
+ * slot each way is enough. */
+static unsigned request;
+static bool result_ready;
+static int result_status;
 static uint32_t settings_state;
-static uint32_t save_pending;
 static z80_network_config_t config;
 static unsigned step, menu, edit_count, edit_position;
 static unsigned edit_fields[3];
@@ -247,21 +249,15 @@ static void show_settings(void) {
                                 : values[i]);
 }
 
-static bool submit(unsigned request, unsigned state) {
-  if (!queue_try_add(&requests, &request)) {
-    printf("\n[config] FAIL: settings queue busy; retry Ctrl-] c.\n");
-    return false;
-  }
+static void submit(unsigned work, unsigned state) {
+  request = work;
   step = state;
-  __atomic_store_n(&save_pending, 1, __ATOMIC_RELEASE);
-  return true;
 }
 
 void z80_network_setup_init(void) {
-  queue_init(&requests, sizeof(unsigned), 1);
-  queue_init(&results, sizeof(int), 1);
+  request = REQUEST_NONE;
+  result_ready = false;
   __atomic_store_n(&settings_state, SETTINGS_UNKNOWN, __ATOMIC_RELEASE);
-  __atomic_store_n(&save_pending, 0, __ATOMIC_RELEASE);
   step = SETUP_IDLE;
   auto_prompted = false;
   settings_loaded = changed = reboot_requested = false;
@@ -291,8 +287,9 @@ bool z80_network_setup_reboot_requested(void) { return reboot_requested; }
 void z80_network_setup_reboot_queued(void) { reboot_requested = false; }
 
 void z80_network_setup_usb_service(bool connected, bool running) {
-  int result;
-  if (queue_try_remove(&results, &result)) {
+  if (result_ready) {
+    result_ready = false;
+    int result = result_status;
     bool saved = step == SETUP_SAVING;
     clear_edit();
     step = SETUP_MENU;
@@ -363,13 +360,8 @@ static void begin_edit(unsigned first, unsigned count, unsigned position) {
 }
 
 static void save_edits(void) {
-  if (submit(REQUEST_SAVE, SETUP_SAVING))
-    printf("\n[config] Saving to ENV...\n");
-  else {
-    clear_edit();
-    step = SETUP_MENU;
-    print_menu();
-  }
+  submit(REQUEST_SAVE, SETUP_SAVING);
+  printf("\n[config] Saving to ENV...\n");
 }
 
 static void menu_command(int command) {
@@ -502,10 +494,8 @@ bool z80_network_setup_input(uint8_t value) {
   return true;
 }
 
-static int reload_config(void) {
-  environment_io_close();
-  environment_io_init(NULL);
-  int status = (int8_t)environment_input(ENVIRONMENT_PORT_COMMAND);
+static int read_config(void) {
+  int status = environment_io_load_status();
   memset(&config, 0, sizeof(config));
   if (status == 0) {
     char value[256];
@@ -556,14 +546,13 @@ static int delete_value(const char *key) {
 
 void z80_network_setup_core1_service(void) {
   if (__atomic_load_n(&settings_state, __ATOMIC_ACQUIRE) == SETTINGS_UNKNOWN) {
-    int status = reload_config();
+    int status = read_config();
     if (status != 0)
       printf("[config] FAIL: ENV read status=%d\n", status);
   }
-  unsigned request;
-  if (!queue_try_remove(&requests, &request))
+  if (request == REQUEST_NONE)
     return;
-  int status = reload_config();
+  int status = read_config();
   if (request == REQUEST_SAVE && status == 0) {
     for (unsigned i = 0; i < edit_count && status == 0; ++i) {
       unsigned field = edit_fields[i];
@@ -580,7 +569,7 @@ void z80_network_setup_core1_service(void) {
       if (status == 0)
         changed = true;
     }
-    int read_status = reload_config();
+    int read_status = read_config();
     if (status == 0)
       status = read_status;
   }
@@ -589,14 +578,12 @@ void z80_network_setup_core1_service(void) {
     for (unsigned i = 0; i < FIELD_COUNT; ++i)
       environment_io_get(fields[i].key, values[i], sizeof(values[i]));
   clear_edit();
-  if (!queue_try_add(&results, &status))
-    printf("[config] FAIL: result queue full; ENV status=%d\n", status);
-  __atomic_store_n(&save_pending, 0, __ATOMIC_RELEASE);
+  result_status = status;
+  result_ready = true;
+  request = REQUEST_NONE;
 }
 
-bool z80_network_setup_quiescent(void) {
-  return !__atomic_load_n(&save_pending, __ATOMIC_ACQUIRE);
-}
+bool z80_network_setup_quiescent(void) { return request == REQUEST_NONE; }
 
 const z80_network_config_t *z80_network_config(void) {
   return __atomic_load_n(&settings_state, __ATOMIC_ACQUIRE) == SETTINGS_READY

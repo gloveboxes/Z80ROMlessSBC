@@ -10,9 +10,7 @@ static unsigned starts, cancels;
 static uint8_t output[100000];
 static size_t output_length;
 
-void environment_io_init(const char *path) { (void)path; }
-void environment_io_close(void) {}
-uint8_t environment_input(uint8_t address) { (void)address; return 0; }
+int environment_io_load_status(void) { return 0; }
 bool environment_io_get(const char *key, char *value, size_t capacity) {
   assert(!strcmp(key, "HTTP_BASE_URL"));
   if (!base) return false;

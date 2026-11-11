@@ -25,8 +25,12 @@ void pico_get_unique_board_id_string(char *text, size_t capacity) {
   ++board_id_reads;
   memcpy(text, "0123456789ABCDEF", 17);
 }
+static uint32_t env_generation = 1;
+static unsigned timezone_reads;
+uint32_t environment_io_generation(void) { return env_generation; }
 bool environment_io_get(const char *key, char *value, size_t capacity) {
   assert(strcmp(key, "TZ") == 0);
+  ++timezone_reads;
   if (configured_timezone == NULL)
     return false;
   assert(strlen(configured_timezone) < capacity);
@@ -65,19 +69,26 @@ int main(void) {
   assert(!z80_service_clock(1, text, sizeof(text)));
   time_t timestamp = -1;
   assert(z80_network_time(&timestamp) == 0 && timestamp == 0);
+  assert(!z80_network_time_synced());
   now = 0x100000000ull * 1000; /* beyond the 32-bit millisecond rollover */
   z80_io_ports_set_unix_time(1704067200);
+  assert(z80_network_time_synced());
   now += 2000000;
   assert(z80_network_time(&timestamp) == 1704067202 && timestamp == 1704067202);
   assert(z80_service_clock(1, text, sizeof(text)));
   assert(strcmp(text, "2024-01-01T00:00:02Z") == 0);
+  /* TZ is read and parsed once, then again only after an ENV commit. */
   configured_timezone = "AEST-10";
+  assert(z80_service_clock(2, text, sizeof(text)));
+  assert(strcmp(text, "2024-01-01T00:00:02") == 0 && timezone_reads == 1);
+  ++env_generation;
   assert(z80_service_clock(2, text, sizeof(text)));
   assert(strcmp(text, "2024-01-01T10:00:02") == 0);
   assert(z80_service_clock(3, text, sizeof(text)));
   assert(strcmp(text, "Monday, 01 January 2024") == 0);
   assert(z80_service_clock(4, text, sizeof(text)));
   assert(strcmp(text, "Mon 01/01/2024 10:00:02") == 0);
+  assert(timezone_reads == 2);
   z80_io_ports_set_network_address("");
   assert(z80_service_info(1, text, sizeof(text)) == 0);
   assert(z80_io_ports_get_network_address(text, sizeof(text)) == 0);

@@ -71,6 +71,11 @@ static io_service_error_t env_status(uint8_t status) {
   }
 }
 
+/* ENV is read from flash once; a request only checks that the read worked. */
+static io_service_error_t env_load_error(void) {
+  return env_status((uint8_t)environment_io_load_status());
+}
+
 static io_service_error_t environment_service(void) {
   uint8_t operation = request.data[0];
   bool has_key = operation == 2 || operation == 3 ||
@@ -112,11 +117,7 @@ static io_service_error_t environment_service(void) {
     return IO_SERVICE_INVALID_LENGTH;
   }
 
-  /* Reload the durable snapshot for each request, including after failures. */
-  environment_io_close();
-  environment_io_init(NULL);
-  io_service_error_t error =
-      env_status(environment_input(ENVIRONMENT_PORT_COMMAND));
+  io_service_error_t error = env_load_error();
   if (error != IO_SERVICE_OK)
     return error;
   environment_output(ENVIRONMENT_PORT_COMMAND, 0, NULL, 0);
@@ -151,10 +152,7 @@ static io_service_error_t clock_service(void) {
     if (length < 0 || (size_t)length >= sizeof(result.data))
       return IO_SERVICE_CAPACITY;
   } else {
-    environment_io_close();
-    environment_io_init(NULL);
-    io_service_error_t error =
-        env_status(environment_input(ENVIRONMENT_PORT_COMMAND));
+    io_service_error_t error = env_load_error();
     if (error != IO_SERVICE_OK)
       return error;
     if (!z80_service_clock(operation, (char *)result.data, sizeof(result.data)))

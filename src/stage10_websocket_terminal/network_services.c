@@ -16,7 +16,7 @@ void z80_network_terminal_core1_service(void) {
 
 void z80_network_core1_service(void) {
   bool online = service_terminal();
-  z80_weather_network_poll();
+  z80_weather_network_poll(online);
   z80_chat_network_service(online, z80_network_generation());
   z80_http_network_service(online, z80_network_generation());
 }

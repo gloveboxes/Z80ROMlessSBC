@@ -34,9 +34,7 @@ extern "C" mbedtls_ms_time_t mbedtls_ms_time(void) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::steady_clock::now().time_since_epoch()).count();
 }
-extern "C" void environment_io_init(const char *) {}
-extern "C" void environment_io_close(void) {}
-extern "C" uint8_t environment_input(uint8_t) { return 0; }
+extern "C" int environment_io_load_status(void) { return 0; }
 extern "C" bool environment_io_get(const char *, char *, size_t) { return false; }
 
 static int random_bytes(void *, unsigned char *data, size_t n) {
