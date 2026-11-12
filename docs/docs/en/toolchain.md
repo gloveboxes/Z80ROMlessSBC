@@ -264,6 +264,9 @@ for discovery, flashing and the required power sequence.
 
 ## VS Code builds and final checks
 
+The [VS Code task reference](system/firmware-build.md#vs-code-deployment-options)
+describes every task, its outputs, and whether it changes disks or hardware.
+
 After completing [Python packages and USB console](#python-packages-and-usb-console),
 on macOS/Linux choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware**
 to deploy while preserving disks and ENV. `pico_build.py` checks runtimes and

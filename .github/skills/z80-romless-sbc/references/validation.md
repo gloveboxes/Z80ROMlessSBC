@@ -2,6 +2,30 @@
 
 Run focused checks first, then broaden according to impact. Use terminal CMake; the VS Code CMake Tools extension is unreliable in this repository.
 
+## VS Code task selection
+
+Treat `.vscode/tasks.json` as the executable source of truth. The complete
+user-facing task catalog is in
+[firmware build](../../../../docs/docs/en/system/firmware-build.md#vs-code-deployment-options).
+Check the selected task's command, dependencies, inputs and output paths before
+running it; a name containing "Build" does not mean build-only.
+
+| Task family | Workflow |
+| --- | --- |
+| `Build Pico - ...` | Host firmware cross-build only; phase selection must match the circuit. |
+| `Flash Pico - ...`, `Build and flash Pico - ...` | Authorized deployment; use [firmware flashing](firmware-flashing.md), or [disk-only deployment](../../flash-cpm-disks/references/deployment.md) for selected disks. |
+| `Build and run Pico - Stage 11 ...` | Flash a separate ISP/test Pico and open its console; use the Stage 11 section in [firmware flashing](firmware-flashing.md#stage-11-separate-pico-tasks). |
+| `Refresh CP/M container and session disks` | Build container/audio, assemble current checkout CP/M/BDOS/BIOS and replace `build/cpm-session/` from native sources; does not launch CP/M. |
+| `Run interactive CP/M emulator` | Perform that same refresh, then launch CP/M; stop/save the session before rerunning either task. |
+| `Test Z80 execution in Apple container` | Host DCC fixtures plus isolated container regressions; session disks are unchanged. |
+| `Import Altair disks - ...` | Stage, prepare, or explicitly install native disk sources as described below; none flashes hardware. |
+| `Build KiCad - SMT JLCPCB fabrication and assembly` | Use [JLCPCB manufacturing](../../jlcpcb-gerbers/SKILL.md) and [KiCad tooling](../../kicad-pcb/references/tooling.md); close KiCad first. Does not order boards. |
+
+Refreshing SBC session disks uses this checkout's sources mounted in the
+container, not just the container's bundled SBC snapshot. Verify the generated
+files and manifest in `build/cpm-session/`; a successful container image build
+alone does not establish that the current BIOS/BDOS was installed in the session.
+
 ## Firmware and CP/M Build
 
 On Apple silicon macOS, use Apple Container and initialize the shared submodule.
@@ -26,6 +50,17 @@ Disk staging and preparation validate the Altair source and use the container;
 confirmation. Drive A gets current system records and AUTORUN; B–D are copied
 unchanged. Stop the interactive emulator and save wanted session changes before
 `python3 scripts/z80_container.py prepare` replaces session disks.
+
+- `disk stage`: read `src/disks/source-altair/` and validate/stage A-D in
+  `build/altair-disks/`; leave native sources unchanged.
+- `disk prepare`: revalidate staging and build flash-ready images and boot
+  package in `build/cpm-disk-update/`; leave native sources and hardware unchanged.
+- `disk install --drive D --confirm "Replace selected native disk"`: replace
+  exactly the selected native source from validated staging. Selecting D
+  replaces its database; selecting A rebuilds its system records and AUTORUN.
+- `Flash Pico - All disks (A-D)` uses prepared staged imports and a matching
+  boot package; individual-drive flash tasks use native sources. Import alone
+  does not deploy. Resolve the user's desired destination before choosing a task.
 
 For firmware and DCC-generated code debugging, use `z80dasm` to inspect
 linked machine code and `z80asm` for compatible minimal Z80 repros. Set the

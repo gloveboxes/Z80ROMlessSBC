@@ -49,6 +49,8 @@ Build the target in the table for your phase. Its UF2 is written to
 
 Open **Tasks: Run Task**. Task names below match
 [.vscode/tasks.json](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.vscode/tasks.json).
+This section covers every task, grouped by function. Build-only tasks do not
+deploy; tasks containing **Flash** or **Build and run Pico** access hardware.
 
 ### Phase diagnostics
 
@@ -96,10 +98,55 @@ Disk and full-flash replacements create no backups.
 
 ### Host emulator
 
-The shared Apple container runs CP/M without accessing the Pico. The
-**Interactive CP/M emulator** Run and Debug configuration and the **Run
-interactive CP/M emulator** task prepare session disks from this checkout;
-see the [interactive test](../cpm-dcc/interactive.md).
+These tasks use Apple Container on Apple silicon macOS and do not access the
+Pico. DCC builds run on the host; Z80 tools and execution run in the container.
+
+| Task | Effect |
+| --- | --- |
+| **Refresh CP/M container and session disks** | Build the shared container and host audio client; assemble this checkout's CP/M, BDOS and BIOS; replace emulator disks in `build/cpm-session/`. Does not start CP/M. |
+| **Run interactive CP/M emulator** | Perform the same refresh, then start CP/M with console/browser I/O and audio. Ctrl+C stops it. |
+| **Test Z80 execution in Apple container** | Build required fixtures with host DCC and run Z80 regressions in an isolated workspace. Does not replace interactive session disks. |
+
+Stop the emulator and save wanted session changes before refreshing or starting:
+both replace session disks from `src/disks/native/`. Drive A gets current system
+records and AUTORUN; other application files come from the native sources.
+The container image's bundled sources alone are not the current SBC system.
+See [interactive use and C debugging](../cpm-dcc/interactive.md) and
+[execution-test requirements](firmware-testing.md#4-z80-execution-tests).
+
+### Altair disk import
+
+These container tasks do not access the Pico. They read the four 512 KiB clones
+in `src/disks/source-altair/`; see the [Altair workflow](../related-projects.md#altair-8800-ai-edition).
+
+| Task | Effect |
+| --- | --- |
+| **Import Altair disks - validate and stage images** | Validate the clones and stage A-D in `build/altair-disks/`. Native sources are unchanged. |
+| **Import Altair disks - prepare Pico images** | Revalidate staged inputs and write flash-ready images plus the current boot package to `build/cpm-disk-update/`. Rebuild A's system records and AUTORUN; copy B-D unchanged. Does not install native sources or flash. |
+| **Import Altair disks - install selected native drive** | Confirm a drive and replace its image in `src/disks/native/` from validated staging. Rebuild A's system records and AUTORUN when selecting A; selecting D replaces its database. Does not flash. |
+
+### Stage 11 sound-engine boards
+
+These tasks build, flash and open the USB console on a **separate Pico**, not
+the Z80 supervisor. They interrupt its running firmware after confirmation.
+Identify the board and check wiring/power before accepting the prompt.
+
+| Task | Effect |
+| --- | --- |
+| **Build and run Pico - Stage 11 ATtiny85 ISP** | Deploy the Pico 2 W ISP programmer; type `P` in its console to program the connected ATtiny85. |
+| **Build and run Pico - Stage 11 ATtiny85 test** | Deploy the Pimoroni Pico Plus 2 W I2C test; the sound/status test starts automatically. Do not attach ISP wiring to this board. |
+
+Follow the maintained [ISP wiring and programming procedure](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/stage11_extension_board/flash_ATTiny85)
+and [sound-test procedure](https://github.com/gloveboxes/Z80ROMlessSBC/tree/main/src/stage11_extension_board/test_ATTiny85).
+
+### PCB fabrication
+
+| Task | Effect |
+| --- | --- |
+| **Build KiCad - SMT JLCPCB fabrication and assembly** | Validate the partial-SMT board (ERC, netlist, DRC, route lengths and silk) and rebuild the Gerber ZIP, JLC BOM and CPL in `hardware/kicad-smt/fabrication/`. Does not change the DIP board or submit an order. |
+
+Save and close the SMT project in KiCad first. See the
+[SMT build procedure](../pcb/smt.md).
 
 ## 7.1 Firmware and CP/M Build
 
@@ -137,7 +184,7 @@ The `z80_cpm_images` target builds Phase 10 and writes these files to `build/cpm
 | `z80boot.pkg` | Header, CRCs, and reset-ready 64 KiB Z80 image |
 | `drive_a_cpm63k-z80.img` | Native CP/M system disk with the Z80 SBC BIOS and native AUTORUN |
 | `AUTORUN.COM` | Native auto-run configuration utility, also installed on drive A |
-| `drive_b_bdsc.img` through `drive_d_blank.img` | Converted 512 KiB disks |
+| `drive_b_bdsc.img` through `drive_d_blank.img` | Unchanged copies of the 512 KiB native source disks |
 | `z80romless-flash.bin` | Complete 4 MiB initial-provisioning image |
 | `manifest.json` | Geometry, addresses, sizes, and SHA-256 values |
 
@@ -157,11 +204,8 @@ For firmware alone, use **Build and flash Pico - Phase 9 firmware** and
 select **Automatic loader**. The manual variant’s Ctrl+] `t` disk test requires a reboot and fresh load before
 CP/M. See the [Phase 9 workflows](../implementation/phase-9-flash-storage.md#controlled-usb-workflow).
 
-Run the host regression checks with:
-
-```sh
-python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
-```
+Run the [CP/M image-construction checks](firmware-testing.md#5-validate-cpm-image-construction)
+inside the container on macOS, or with installed host tools on other platforms.
 
 ### macOS console with picocom
 

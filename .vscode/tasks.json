@@ -306,7 +306,7 @@
 				"cwd": "${workspaceFolder}"
 			},
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 				"focus": false,
 				"panel": "dedicated",
 				"showReuseMessage": false,

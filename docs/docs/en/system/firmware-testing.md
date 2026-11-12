@@ -136,7 +136,16 @@ instruction/protocol behavior, not Pico latency or hardware timing.
 
 ## 5. Validate CP/M image construction
 
-With Python 3.11+, `z80asm`, and `cpmtools` available:
+On Apple silicon macOS, run against this checkout inside the shared container:
+
+```sh
+python3 scripts/z80_container.py image
+container run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
+  --entrypoint python3 z80-cpm:local \
+  -m unittest discover -s /workspace/src/cpm -p 'test_*.py' -v
+```
+
+With Python 3.11+, `z80asm`, and `cpmtools` installed on another host:
 
 ```sh
 "$PYTHON" -m unittest discover -s src/cpm -p 'test_*.py' -v

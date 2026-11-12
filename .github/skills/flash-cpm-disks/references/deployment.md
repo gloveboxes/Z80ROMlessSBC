@@ -97,6 +97,17 @@ container run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
 The container tests do not access the Pico. Flashing remains on the host and
 requires the virtual-environment preflight above.
 
+For VS Code tasks, individual `Flash Pico - Drive A/B/C/D` tasks read native
+sources (A's system tracks are rebuilt); importing clones alone does not update
+those sources. `Import Altair disks - install selected native drive` changes
+one native source with explicit confirmation but does not deploy.
+`Flash Pico - All disks (A-D)` instead prepares validated staged imports and
+replaces the boot package as well as A-D; use the CP/M system workflow in
+[firmware build](../../../../docs/docs/en/system/firmware-build.md#system-and-storage-deployment)
+for that operation, not the disk-only command below. VS Code flash tasks use
+`--force`: finish and save running work before authorizing them; the command's
+default clean-stop behavior described below does not apply to those tasks.
+
 Inputs must be exactly 524,288 bytes. The tool
 checks every selected input before disconnecting/stopping hardware and logs each
 resulting image's SHA-256. Duplicate or invalid drive assignments are rejected.

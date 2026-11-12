@@ -53,7 +53,7 @@ python scripts/pico_flash.py firmware \
 - Flash success means the firmware bytes were programmed and read-back verified.
   The flash command does not inspect USB reappearance, a CP/M prompt, banners or
   supervisor health after reboot. It supports non-CP/M phase firmware too.
-  Do not add boot checks to routine flashing or pass the removed `--check-boot`.
+  Do not add boot checks to routine flashing.
   Use standalone supervisor boot/status checks only when separately requested.
 - `pico_supervisor.py help`, `status`, and `stop` are standalone Stage 9
   commands. They refuse occupied ports rather than disconnecting terminals.
@@ -71,3 +71,19 @@ python scripts/pico_flash.py firmware \
 python -c 'import sys, serial; print("Using", sys.executable)' &&
 python -m unittest discover -s scripts -p 'test_pico*.py' -v
 ```
+
+## Stage 11 separate Pico tasks
+
+`Build and run Pico - Stage 11 ATtiny85 ISP` and
+`Build and run Pico - Stage 11 ATtiny85 test` use `scripts/pico_stage11.py`,
+not the supervisor firmware deployment flow. Read the selected board's
+`src/stage11_extension_board/flash_ATTiny85/README.md` or
+`src/stage11_extension_board/test_ATTiny85/README.md` for wiring and power.
+
+Obtain authorization to interrupt the separate board, identify it by discovery
+and serial when multiple Picos are present, and never select the Z80 supervisor.
+Keep the `.venv-flash` import preflight in the same shell as the invocation.
+The ISP target is a Pico 2 W; its console requires `P` to program the ATtiny85.
+The I2C test target is a Pimoroni Pico Plus 2 W; its test starts automatically
+and must not have ISP wiring. A build-and-run task flashes the Pico and opens
+its USB console; it is not a build-only check.

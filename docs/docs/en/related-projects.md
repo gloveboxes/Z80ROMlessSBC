@@ -71,15 +71,6 @@ following workflow to bring applications across from the Altair project.
 1. In the Altair project's `Apps` directory, run
    `pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/source-altair`
    to build the applications and clone the four disks.
-2. In VS Code, run **Tasks: Run Task → Import Altair disks - validate and stage
-   images** to validate and copy the clones into `build/altair-disks/`. Run
-   **Import Altair disks - prepare Pico images** to prepare A–D and the current
-   boot package without flashing. The all-disks
-   flash task uses these staged images. For individual-drive flash tasks, run
-   **Import Altair disks - install selected native drive** for each drive. Follow the
-   [disk media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md#importing-altair-application-disks)
-   to select which disks replace native sources. Importing drive D
-   replaces its DOCTOR/DOCGEN database.
 
 ### In the Z80ROMlessSBC project
 
@@ -88,13 +79,21 @@ first bringing up Phase 9, use its
 [USB CP/M and flash storage instructions](implementation/phase-9-flash-storage.md)
 and complete its tests before moving on to Phase 10.
 
-1. Open the **Z80ROMlessSBC project folder in VS Code**. Choose
-   **Terminal → Run Task** and select one of the disk deployment tasks listed
-   below. The task automatically prepares the copied disk images and installs
-   them into the Pico's flash storage.
-2. After deploying the disks, choose **Terminal → Run Task → Build and flash Pico - Phase 10 firmware** to build and deploy the Pico firmware for
-   the Z80 boot process. This task preserves the disks you just installed.
-3. With both the disks and Pico firmware deployed, boot CP/M on the real Z80
+1. Open the **Z80ROMlessSBC project folder in VS Code**. Run
+   **Import Altair disks - validate and stage images** to validate and copy the
+   clones into `build/altair-disks/`. Run **Import Altair disks - prepare Pico images**
+   to prepare A-D and the current boot package without flashing. For
+   individual-drive flash tasks, first run
+   **Import Altair disks - install selected native drive** for each selected drive.
+   This replaces its native source image; selecting D replaces its database.
+2. Deploy **Build and flash Pico - Phase 10 firmware** from the same checkout
+   before flashing the matching CP/M disks and boot package. Firmware-only
+   deployment preserves storage.
+3. Choose **Terminal → Run Task** and one of the disk deployment tasks below.
+   The all-disks task uses validated staged imports; individual-drive tasks
+   use native source images. Follow the
+   [deployment requirements](system/firmware-build.md#deployment-task-requirements).
+4. With both the disks and Pico firmware deployed, boot CP/M on the real Z80
    and access the installed applications on the
    configured drives **A:** through **D:**.
 
