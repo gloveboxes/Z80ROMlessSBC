@@ -2,7 +2,7 @@
 
 `native/` holds the four checked-in drive images. Each is exactly 524,288
 bytes (128 tracks of 32 records of 128 bytes), the same format the Pico flash
-slots and the host emulator use, so no conversion step exists.
+slots and the host emulator use.
 
 | Flash drive | Image | Contents |
 | ---: | --- | --- |
@@ -21,31 +21,100 @@ The CP/M files originate from the Altair 8800 disk archive at
 `native/LICENSE`. Drive A's system tracks still carry Altair-specific content,
 so provision `build/cpm/drive_a_cpm63k-z80.img`, never the checked-in image.
 
+## Importing Altair application disks
+
+From the ESP32 Altair project's `Apps` directory, build its applications and
+clone the four disks into this project's existing `source-altair/` directory:
+
+```sh
+pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/source-altair
+```
+
+Use `-CloneOnly -c ...` to copy the current disks without rebuilding them.
+Stop the emulator before rebuilding or copying the disks. The cloned `.img`
+files are local inputs and are not tracked by Git.
+
+In VS Code, run **Tasks: Run Task → Import Altair disks - validate and stage
+images**. This validates and copies all four clones into `build/altair-disks/`,
+leaving native sources and Pico flash untouched. Validation and image
+preparation use `fsck.cpm`, `cpmtools` and `z80asm` in the cached Apple
+container. Alternatively, run from the Z80ROMlessSBC root:
+
+```sh
+python3 scripts/z80_container.py disk stage
+```
+
+The staging tool verifies the exact 524,288-byte size and runs `fsck.cpm -n`
+on each image using the native CP/M geometry. It records source and staged
+SHA-256 hashes in `manifest.json`. If any check fails, the task fails and leaves
+existing staged images and manifest unchanged; those files then represent the
+last successful import, not the failed one. Filesystem validation does not
+test application behavior.
+Use `--drive B` (repeat for other drives) to stage selected disks;
+`--source-dir` and `--staged-dir` select other directories.
+
+| Drive | Cloned source | Staged image |
+| --- | --- | --- |
+| A | `drive_a_cpm63k.img` | `drive_a_cpm63k.img` |
+| B | `drive_b_bdsc.img` | `drive_b_bdsc.img` |
+| C | `drive_c_escape.img` | `drive_c_escape.img` |
+| D | `drive_d_blank.img` | `drive_d_blank.img` |
+
+Run **Tasks: Run Task → Import Altair disks - install selected native drive**,
+select the drive, and confirm replacement. Repeat for each desired drive.
+The task checks that the staged image matches its current clone and manifest
+and rechecks the filesystem before writing. Importing A also rebuilds its
+system tracks and `AUTORUN.COM` from the current sources. Individual-drive flash tasks use
+the native sources. Alternatively, to import C from the terminal:
+
+```sh
+python3 scripts/z80_container.py disk install --drive C --confirm "Replace selected native disk"
+```
+
+This overwrites the selected native image. In particular, importing D replaces
+the DOCTOR/DOCGEN database. Build the board-native A image and matching boot
+package before provisioning it.
+The image builder also replaces A's `AUTORUN.COM`. Applications that depend on
+specific hardware or services need a board-compatible build.
+
+Run **Import Altair disks - prepare Pico images** to prepare without flashing,
+or run `python3 scripts/z80_container.py disk prepare`. It rechecks the staged
+images against their current clones, regenerates A's CP/M, BDOS, BIOS and
+matching boot package, and validates the resulting filesystems. Outputs are
+written to `build/cpm-disk-update/`; B–D are byte-for-byte copies.
+
+**Flash Pico - All disks (A-D)** instead uses all four staged imports directly:
+it revalidates the clone, manifest, and filesystems, then builds the native
+boot package and A image. It preserves B–D byte-for-byte from the same validated
+snapshot.
+It replaces the Pico's A-D and boot package without backups, including its D
+database, and leaves the checked-in native sources unchanged. The task
+requires explicit confirmation and safe power sequencing.
+
 ## Building images
 
 Run the CP/M image builder to replace Drive A's two system tracks with
 sequential CCP/BDOS records, the board-native BIOS, and a disabled native
 auto-run configuration record. The builder also replaces user 0's `AUTORUN.COM`
-with the native utility; it requires Python 3.9+, `z80asm`, and `cpmtools`
-(`cpmcp` and `cpmrm`):
+with the native utility. On macOS, the cached Apple container supplies
+`z80asm` and `cpmtools` (`cpmcp` and `cpmrm`):
 
 ```sh
-python3 src/cpm/build_images.py --output-dir build/cpm
+python3 scripts/z80_container.py images --output-dir build/cpm
 ```
 
-Drives C and D are copied unchanged. Drive B receives the current
-banked-memory example binaries (`ALLOCPRF`, `BANKED`, `MEMPERF`, `PRIMEBK1`,
-and `DATA.LIB`/`DATATEST.COM` when both are built). Supplying Stage 10's
-firmware binary also creates a complete fixed-layout flash image:
+Drives B, C and D are copied unchanged. Supplying Stage 10's firmware binary
+also creates a complete fixed-layout flash image:
 
 ```sh
-python3 src/cpm/build_images.py \
+python3 scripts/z80_container.py images \
   --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin \
   --output-dir build/cpm
 ```
 
-CMake runs the same builder and rebuilds the CP/M images when any `native/`
-image, the builder, or the geometry changes.
+On macOS CMake runs the image builder in Apple Container. Other hosts require
+Python 3.9+, `z80asm` and `cpmtools`. CMake rebuilds the CP/M images when
+any `native/` image, the builder, or the geometry changes.
 
 Native auto-run settings occupy only drive A's final reserved system record
 (LBA 63, image offset `0x1F80`), outside the filesystem and boot code.
@@ -55,17 +124,11 @@ format, and boot-time recovery bypass.
 
 ## Keeping the checked-in images current
 
-Interactive emulator sessions write to `build/cpm/drive_*.img`, which
-`build_images.py` regenerates from `native/`. After the session ends, run
+Interactive emulator sessions write to `build/cpm-session/drive_*.img`, which
+the container launcher regenerates from `native/`. After the session ends, run
 `python3 src/disks/save_session_disk.py D` (or `A`, `B`, `C`) to store the
 modified image in `native/`, then commit it. Drive A keeps only its file
 changes, because its system tracks are rebuilt.
-
-After rebuilding the banked-memory examples, run
-`python3 src/disks/refresh_drive_b.py` to install them into
-`native/drive_b_bdsc.img` and remove the retired `SPREADS`, `SPRDHOST` and
-`LIBHOST` files. `test_native_disks.py` fails if drive B and the examples
-differ.
 
 ## Selective flashing without backups
 

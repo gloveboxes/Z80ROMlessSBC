@@ -5,8 +5,23 @@
 			"name": "Interactive CP/M emulator",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "python3 src/cpm/interactive/launch.py",
+			"command": "python3 scripts/z80_container.py start",
 			"cwd": "${workspaceFolder}"
+		},
+		{
+			"name": "DCC CP/M: Debug active C file in Apple container",
+			"type": "cppdbg",
+			"request": "launch",
+			"preLaunchTask": "Refresh CP/M container and session disks",
+			"program": "${fileDirname}/build/${fileBasenameNoExtension}.COM",
+			"cwd": "${fileDirname}",
+			"MIMode": "gdb",
+			"miDebuggerPath": "${workspaceFolder}/external/z80-cpm-container/docker/debug_proxy.py",
+			"miDebuggerArgs": "--workspace \"${workspaceFolder}\" --sbc-root \"${workspaceFolder}\" --disk-dir \"${workspaceFolder}/build/cpm-session\" --program \"${fileDirname}/build/${fileBasenameNoExtension}.COM\"",
+			"targetArchitecture": "x86",
+			"stopAtEntry": false,
+			"launchCompleteCommand": "exec-continue",
+			"externalConsole": false
 		}
 	]
 }

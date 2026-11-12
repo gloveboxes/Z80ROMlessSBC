@@ -82,11 +82,11 @@ Each entry has both **Build Pico - …** (build only) and **Flash Pico - …**
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replace all flash, including disks and ENV |
 | **Build and flash Pico - Phase 10 firmware and disks** | Replace all flash, including disks and ENV |
 | **Build and flash Pico - CP/M system and Drive A** | Rebuild and replace matching boot package and Drive A; preserve firmware, B–D, journal, and ENV |
-| **Flash Pico - All disks (A-D)** | Regenerate/convert all four disks; validate and replace matching boot package and A–D; preserve firmware and ENV |
+| **Flash Pico - All disks (A-D)** | Validate staged Altair A–D; replace all disks and matching boot package; preserve firmware and ENV |
 | **Flash Pico - Drive A** | Regenerate native system disk; check installed boot compatibility; replace A only |
-| **Flash Pico - Drive B** | Convert BDS C source disk and replace B only |
-| **Flash Pico - Drive C** | Convert Escape source disk and replace C only |
-| **Flash Pico - Drive D** | Convert blank source disk and replace D only |
+| **Flash Pico - Drive B** | Replace B from the native BDS C disk |
+| **Flash Pico - Drive C** | Replace C from the native Escape disk |
+| **Flash Pico - Drive D** | Replace D from the native blank disk |
 
 Firmware-only tasks preserve the boot package, disks, journal, and ENV.
 Deployment tasks force entry without a running-firmware stop handshake;
@@ -96,11 +96,9 @@ Disk and full-flash replacements create no backups.
 
 ### Host emulator
 
-`python3 src/cpm/interactive/launch.py` builds the host, adapter, banked
-examples (with `dccmake` when a dcc checkout is found), BIOS and images, then
-starts the emulator without accessing the Pico. The **Interactive CP/M
-emulator** Run and Debug configuration, the **Run interactive CP/M emulator**
-task and **Prepare interactive CP/M emulator** (`--prepare-only`) all use it;
+The shared Apple container runs CP/M without accessing the Pico. The
+**Interactive CP/M emulator** Run and Debug configuration and the **Run
+interactive CP/M emulator** task prepare session disks from this checkout;
 see the [interactive test](../cpm-dcc/interactive.md).
 
 ## 7.1 Firmware and CP/M Build
@@ -127,6 +125,10 @@ From the configured repository root:
 ```sh
 cmake --build build --target z80_cpm_images -j
 ```
+
+On macOS, CMake uses Apple Container for Z80 assembly and CP/M image tools;
+the Pico SDK and Arm compiler run on the host. Other hosts require `z80asm`
+and `cpmtools` on the host.
 
 The `z80_cpm_images` target builds Phase 10 and writes these files to `build/cpm/`:
 
@@ -264,9 +266,12 @@ See the [board verification notes](../hardware/address-interface.md#board-verifi
 
 ### Storage update checks
 
-Disk tasks regenerate native Drive A and flash B–D from the 512 KiB images in `src/disks/native/`.
-They do not compile applications; update the native disk images first. The CP/M system
-task assembles current `.asm` files without regenerating them through
+The all-disks task validates the staged Altair images and builds the flash
+inputs from them. Individual-drive tasks use `src/disks/native/`. Image
+preparation for the system, drives A and B, and full provisioning runs in the
+shared Apple container; firmware builds and flashing run on the host. These
+tasks do not compile applications. Drive B is copied unchanged. The CP/M
+system task assembles current `.asm` files without regenerating them through
 `disassemble_cpm64.py`; outputs go to `build/cpm-system-update/`.
 
 Selective updates check installed layout metadata, boot/Drive A compatibility,

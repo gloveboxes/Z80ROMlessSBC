@@ -20,8 +20,8 @@ target_link_libraries(z80_pwm_20mhz PUBLIC
   z80_bus hardware_pwm hardware_clocks hardware_watchdog)
 add_z80_stage(z80_stage06_pwm_memory_20mhz pwm_memory_test.c z80_pwm_20mhz)
 
-find_program(SOAK_Z80ASM z80asm)
-if(SOAK_Z80ASM)
+include(../common/z80_assembler.cmake)
+if(Z80_ASSEMBLER_AVAILABLE)
   include(math_soak_build.cmake)
   add_z80_stage(z80_stage06_math_soak_20mhz math_soak_test.c z80_pwm_20mhz)
   target_sources(z80_stage06_math_soak_20mhz PRIVATE "${soak_header}")

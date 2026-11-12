@@ -85,8 +85,7 @@ OUTPUT_DISK_NAMES = (
     *SOURCE_DISK_NAMES[1:],
 )
 
-# Banked-memory example binaries kept current on drive B. DATA.LIB and
-# DATATEST.COM are staged together, and only when both are built.
+# Files used by the explicit Drive B example refresh utility.
 EXAMPLE_PROGRAMS = (
     "ALLOCPRF/ALLOCPRF.COM",
     "BANKED/BANKED.COM",
@@ -512,13 +511,9 @@ def main() -> None:
         (args.disk_dir / name).read_bytes() for name in SOURCE_DISK_NAMES
     ]
     native = build_native_drive(generated[0], cpm_system, bios)
-    examples_drive = install_files(
-        generated[1], example_files(), EXAMPLE_REMOVED_FILES, args.cpmcp
-    )
     disks = [
         install_autorun(native, utility, args.cpmcp),
-        examples_drive,
-        *generated[2:],
+        *generated[1:],
     ]
     if any(len(disk) != DISK_IMAGE_BYTES for disk in disks):
         raise ValueError("all disk images must be exactly 512 KiB")

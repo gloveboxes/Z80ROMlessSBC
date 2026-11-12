@@ -17,8 +17,9 @@ testing remains a separate qualification step.
 ## 2. Prerequisites
 
 Follow [Toolchain](../toolchain.md) for checkout and installation. Native tests
-need host C/C++ compilers, CMake, Ninja, Python 3.11+, and `z80asm`;
-CP/M images also need `cpmtools`. Set `PYTHON` to your installed interpreter:
+need host C/C++ compilers, CMake, Ninja and Python 3.11+. On macOS their
+Z80 assembly runs in Apple Container; other hosts need `z80asm`. Set `PYTHON`
+to your installed interpreter:
 
 ```sh
 export PYTHON=python3
@@ -103,52 +104,30 @@ ctest --test-dir build/host-control \
 The authoritative target/test list is
 [src/common/tests/CMakeLists.txt](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/common/tests/CMakeLists.txt).
 
-## 4. Build the Z80 emulator
+## 4. Z80 execution tests
 
-Execution tests run on the C Z80 emulator in `src/cpm/z80_debug_host`: the
-x80 core plus the two-bank SRAM model, exposed as `libz80sbc-emulator` and
-driven from Python 3.10+. It is host-only and separate from the Pico SDK.
-
-```sh
-cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-cmake --build build/cpm/z80_debug_host --target z80sbc-emulator
-```
-
-Register a Python 3.10+ interpreter with the native test project and rebuild.
-Set `Z80SBC_EMULATOR_LIBRARY` if the library is not under
-`build/cpm/z80_debug_host`:
+The shared Apple container runs the C Z80 emulator.
+Install Apple Container, Python and CMake on macOS and initialize the
+submodules. For the full suite, install DCC on the host PATH or set `DCC_DIR`
+to its tool directory. Set `Z80_FT_SOURCE` if the FT assembly source is not
+in the sibling ESP32 Altair checkout.
 
 ```sh
-cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DCMAKE_C_COMPILER=cc \
-  -DCMAKE_CXX_COMPILER=c++ \
-  -DZ80_TEST_PYTHON="$(command -v python3.14)"
-cmake --build build/host-control
-ctest --test-dir build/host-control -N \
-  -R '^(emulator_z80_unit|math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$'
+python3 scripts/z80_container.py test
 ```
 
-`emulator_z80_unit` (`emulator_z80_test.py`) tests the emulator itself:
-8/16-bit arithmetic flags against an independent Python model, block, stack,
-indexed and I/O instructions, breakpoints, and bank selection. Run it first and
-after any emulator change; add a regression there for each emulator bug.
-
-The listing must contain **all five named tests**. Without
-`Z80_TEST_PYTHON`, those tests are not registered; passing the remaining
-native suite does not imply they ran. `--no-tests=error` rejects an empty
-selection, but does not detect a partly missing selection: inspect the names.
-
-Each test also runs directly, for example
-`python3.14 src/common/tests/banked_allocator_z80_test.py`.
-
-Run the execution tests:
+The suite uses an isolated workspace and runs the emulator
+instruction and bank regressions first. The test container image is reused
+until its build inputs change. To rebuild it explicitly, add `--rebuild`.
+Required example and test programs are compiled with host DCC in the temporary
+workspace. Focused BIOS and emulator tests do not require DCC. Select a test
+with, for example:
 
 ```sh
-ctest --test-dir build/host-control \
-  -R '^(math_soak_z80_execution|scope_z80_execution|banked_memory_z80_execution|cpm_bios_z80_execution)$' \
-  --output-on-failure --no-tests=error
+python3 scripts/z80_container.py test --test banked_allocator_z80_test.py
 ```
+
+Add an independently checked regression for each emulator bug.
 
 The math/scope and bank-transfer programs execute on the emulator.
 CP/M tests cover cold/warm boot, directories A–D, transients, AUTORUN, expanded
@@ -167,10 +146,9 @@ These image tests check packaging, CRCs, exact memory/disk geometry, BIOS
 jump-table compatibility and CP/M translation. They are not the
 instruction-execution tests above.
 
-The separate project-owned CP/M host also tests multi-extent programs and
-cross-drive writes; see the
-[end-to-end CP/M procedure](../cpm-dcc/end-to-end.md) for its build and run
-commands. Neither host model replaces the Pico/physical-board gate.
+The container's CP/M host also tests multi-extent programs and cross-drive
+writes; see the [end-to-end CP/M procedure](../cpm-dcc/end-to-end.md).
+Neither host model replaces the Pico/physical-board gate.
 
 ## 6. Cross-compile the real Pico firmware
 

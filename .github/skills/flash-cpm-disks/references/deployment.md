@@ -6,8 +6,7 @@ constants or tools contradict this skill, stop and investigate the discrepancy.
 Firmware, BIOS, geometry, or hardware changes are outside this workflow.
 
 Run commands from the repository root. The disk command snapshots selected
-inputs and converts them in a temporary directory, then cleans up automatically.
-It never modifies the source files.
+inputs before writing and never modifies the source files.
 
 Use `scripts/pico_flash.py disks` for the complete deployment. Do not write
 fresh inline serial clients, conversion snippets, journal readers or manual
@@ -26,7 +25,7 @@ Every tool call starts a fresh shell: activation in an earlier call does not
 carry over. For **every** flash, preparation, journal or supervisor invocation,
 activate `.venv-flash`, check `serial` imports and run the tool in the **same
 shell command**, joined with `&&`, as shown below. Do not rely on the terminal
-prompt, a previously activated environment, or another Python interpreter.
+prompt, an environment activated in another shell, or another Python interpreter.
 The printed interpreter must be inside the repository's `.venv-flash`.
 
 If the preflight fails, do not touch hardware. Diagnose the interpreter and
@@ -84,13 +83,19 @@ workflow rather than inventing BIOS/build steps here.
 
 ## 2. Prepare and Validate Native Images
 
-Run the disk-image tests:
+On Apple silicon macOS, prepare CP/M images and stage/import Altair disks using
+the container commands in [firmware validation](../../z80-romless-sbc/references/validation.md).
+For disk-image tests, run the main image with the checkout read-only:
 
 ```sh
-. .venv-flash/bin/activate &&
-python -c 'import sys, serial; print("Using", sys.executable)' &&
-python -m unittest discover -s src/disks -p 'test_*.py' -v
+python3 scripts/z80_container.py image
+container run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
+  --entrypoint python3 z80-cpm:local \
+  -m unittest discover -s /workspace/src/disks -p 'test_*.py' -v
 ```
+
+The container tests do not access the Pico. Flashing remains on the host and
+requires the virtual-environment preflight above.
 
 Inputs must be exactly 524,288 bytes. The tool
 checks every selected input before disconnecting/stopping hardware and logs each
@@ -159,8 +164,8 @@ it can contain recoverable writes for unselected drives.
 
 ## 5. Program Only Selected Slots and Verify
 
-For B and C, using the exact supplied image paths. `src/cpm/build_images.py`
-installs the current banked examples onto Drive B:
+For B and C, using the exact supplied image paths. The image builder copies
+both source images unchanged:
 
 ```sh
 . .venv-flash/bin/activate &&

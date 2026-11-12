@@ -4,7 +4,49 @@ Run focused checks first, then broaden according to impact. Use terminal CMake; 
 
 ## Firmware and CP/M Build
 
-Prerequisites include CMake, Ninja, Python 3, `picotool`, `z80asm`, and a complete Arm GNU bare-metal toolchain with Newlib.
+On Apple silicon macOS, use Apple Container and initialize the shared submodule.
+The main image supplies `z80asm`, `z80dasm` and `cpmtools` (`cpmcp`, `cpmrm`,
+`fsck.cpm`); the cached test image adds Ninja. CMake uses the container for
+Phase 6/9/10 assembly and CP/M image builds. Pico C/C++ builds, the Arm GNU
+toolchain, DCC compilation and flashing remain on the host. Linux and Windows
+CMake builds use host `z80asm` and `cpmtools`.
+
+Use the maintained launcher from the repository root; it checks the cached
+image and builds it when needed:
+
+```sh
+python3 scripts/z80_container.py image
+python3 scripts/z80_container.py images --output-dir build/cpm
+python3 scripts/z80_container.py disk stage
+python3 scripts/z80_container.py disk prepare
+```
+
+Disk staging and preparation validate the Altair source and use the container;
+`disk install` modifies a selected native image and requires its explicit
+confirmation. Drive A gets current system records and AUTORUN; B–D are copied
+unchanged. Stop the interactive emulator and save wanted session changes before
+`python3 scripts/z80_container.py prepare` replaces session disks.
+
+For firmware and DCC-generated code debugging, use `z80dasm` to inspect
+linked machine code and `z80asm` for compatible minimal Z80 repros. Set the
+correct load origin and distinguish embedded data from instructions; DCC's
+host assembler accepts its own syntax.
+
+For manual read-only Z80 disassembly, set `INPUT_DIR` to the input file's
+absolute parent directory and `INPUT_FILE` to its basename, then:
+
+```sh
+python3 scripts/z80_container.py image
+container run --rm --mount "type=bind,source=$INPUT_DIR,target=/input,readonly" \
+  --entrypoint z80dasm z80-cpm:local "/input/$INPUT_FILE"
+```
+
+Disassembly is printed on the host; redirect it to a chosen host file if
+needed. The host `disassemble_cpm64.py` is a separate standard-library audit
+tool.
+
+Firmware prerequisites include CMake, Ninja, Python 3, `picotool`, and a
+complete Arm GNU bare-metal toolchain with Newlib:
 
 ```sh
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
@@ -33,19 +75,23 @@ Configure native tests with `-DPICO_SDK_PATH=/path/to/pico-sdk` to include
 and CA, not fake TLS APIs. Keep SHA-384 enabled for the USERTrust RSA root;
 Mbed TLS 3's SHA-512 option does not imply SHA-384 support.
 
-Z80 execution results come from the C emulator in `src/cpm/z80_debug_host`.
-Run `python3.14 src/common/tests/emulator_z80_test.py` first and after any
-emulator change (`x80.cxx`, `sbc_*.c*`, bank model); it tests flags,
-instructions, T-state counts and banking against an independent reference. Each emulator bug
-gets a regression there. Emulator tests do not qualify hardware timing.
+Z80 execution tests run with `python3 scripts/z80_container.py test`.
+Host DCC builds required fixtures; the container runs the emulator's instruction,
+flag, T-state and bank regressions first. Add an independently checked
+regression for each emulator bug. Emulator tests do not qualify hardware timing.
 
-Run host image tests from the repository root with discovery:
+Run CP/M image tests against this checkout inside the main image, with the
+checkout mounted read-only:
 
 ```sh
-python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+python3 scripts/z80_container.py image
+container run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
+  --entrypoint python3 z80-cpm:local \
+  -m unittest discover -s /workspace/src/cpm -p 'test_*.py' -v
 ```
 
-If invoking `test_build_images` directly instead of discovery, change into `src/cpm` first because it imports `build_images` as a top-level module.
+These are image-builder unit tests, not the Z80 execution suite above. Host
+discovery requires host `z80asm` and `cpmtools` and may skip checks if absent.
 
 ## Firmware Boundaries, Concurrency, and Performance
 

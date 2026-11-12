@@ -12,5 +12,6 @@ node_modules/
 src/cpm/*.lab
 src/cpm/*.lst
 src/cpm/interactive/terminal.endpoint
+src/disks/source-altair/*.dsk
 docs/site/
 docs/docs/.venv/

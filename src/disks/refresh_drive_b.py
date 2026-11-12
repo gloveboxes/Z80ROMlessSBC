@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Install the current banked-memory examples into the native drive B image.
 
-Run this after rebuilding the examples. build_images.py applies the same
-install at build time, so this only keeps the checked-in image current.
+Run explicitly to update the checked-in image after rebuilding the examples.
 """
 
 from __future__ import annotations

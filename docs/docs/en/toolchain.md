@@ -13,8 +13,8 @@ Run commands from the repository root. Select **Linux**, **macOS**, or
 | Python 3.11+ with `pip` and `venv` | Build helpers, browser terminal embedding and CP/M images |
 | Pico SDK with submodules | RP2350, USB and Wi-Fi libraries |
 | `picotool` | RP2350 firmware outputs and USB programming/verification |
-| NonGNU `z80asm` | Required at CMake configuration for every firmware phase |
-| `cpmtools` (`cpmcp`, `cpmrm`) | CP/M image generation |
+| Apple Container | Z80 assembly and CP/M images on Apple silicon macOS |
+| NonGNU `z80asm`, `cpmtools` | Z80 assembly and CP/M images on Linux and Windows |
 | `picocom` or a Windows serial terminal | USB console |
 | `pyserial`; `lsof` and `ps` on Linux/macOS | Project USB utilities and serial ownership checks |
 | `z80dasm` | Optional Z80 disassembly/audit checks |
@@ -49,11 +49,13 @@ Run commands from the repository root. Select **Linux**, **macOS**, or
 
     ```sh
     xcode-select --install
-    brew install git cmake ninja python picotool picocom z80asm cpmtools
+    brew install git cmake ninja python picotool picocom
     ```
 
     - Install the complete Arm toolchain below, including Newlib and C++ runtimes.
-    - For optional disassembly, run `brew install z80dasm`.
+    - Install and start [Apple Container](https://github.com/apple/container) on
+      Apple silicon for Z80 assembly and CP/M image generation.
+    - The container includes `z80dasm` for optional disassembly.
 
 === "Windows"
 
@@ -89,9 +91,9 @@ Run commands from the repository root. Select **Linux**, **macOS**, or
 
 ## Z80 assembly and disassembly tools
 
-- Use [NonGNU `z80asm`](https://www.nongnu.org/z80asm/) (tested: **1.8**),
-  and install it before configuring any firmware phase.
-- Install `cpmtools` for CP/M image generation.
+- On Apple silicon macOS the container supplies `z80asm`, `z80dasm` and `cpmtools`.
+  On Linux and Windows, install [NonGNU `z80asm`](https://www.nongnu.org/z80asm/)
+  (tested: **1.8**) and `cpmtools` for CP/M image generation.
 - Use [`z80dasm`](https://www.tablix.org/~avian/blog/articles/z80dasm/)
   for optional binary inspection and round-trip audit checks.
 - For CP/M listings, Z80 source and audit reports, run the bundled
@@ -296,10 +298,10 @@ git --version
 cmake --version
 ninja --version
 picotool version
-z80asm --version
 ```
 
-For CP/M images, also check `cpmcp` and `cpmrm` are available.
+On Linux and Windows, also check `z80asm --version`, `cpmcp` and `cpmrm`.
+On macOS, check `container system status`.
 If installed, check `z80dasm --help`.
 
 Continue with [firmware build and provisioning](system/firmware-build.md),

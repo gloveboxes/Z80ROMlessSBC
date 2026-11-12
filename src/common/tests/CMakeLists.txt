@@ -221,8 +221,8 @@ target_compile_options(pwm_memory_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME pwm_memory_screening COMMAND pwm_memory_test)
 set_tests_properties(pwm_memory_screening PROPERTIES TIMEOUT 15)
 
-find_program(SOAK_Z80ASM z80asm)
-if(SOAK_Z80ASM)
+include(../z80_assembler.cmake)
+if(Z80_ASSEMBLER_AVAILABLE)
   include(../../stage06_sram_dma/math_soak_build.cmake)
   add_executable(math_soak_test math_soak_test.c "${soak_header}")
   target_include_directories(math_soak_test PRIVATE fakes ../include
@@ -251,51 +251,6 @@ if(SOAK_Z80ASM)
   add_test(NAME scope_controller COMMAND scope_test)
   set_tests_properties(scope_controller PROPERTIES TIMEOUT 15)
 
-  set(Z80_TEST_PYTHON "" CACHE FILEPATH "Python 3.10+ that runs the Z80 execution tests")
-  set(Z80SBC_EMULATOR_LIBRARY "" CACHE FILEPATH
-    "libz80sbc-emulator built from src/cpm/z80_debug_host (default: build/cpm/z80_debug_host)")
-  if(Z80_TEST_PYTHON)
-    execute_process(COMMAND "${Z80_TEST_PYTHON}" -c
-      "import sys; assert sys.version_info >= (3, 10)"
-      RESULT_VARIABLE z80_python_result ERROR_VARIABLE z80_python_error)
-    if(NOT z80_python_result EQUAL 0)
-      message(FATAL_ERROR "Z80_TEST_PYTHON must be Python 3.10 or newer: ${z80_python_error}")
-    endif()
-    set(z80_test_environment "")
-    if(Z80SBC_EMULATOR_LIBRARY)
-      set(z80_test_environment "Z80SBC_EMULATOR=${Z80SBC_EMULATOR_LIBRARY}")
-    endif()
-    add_test(NAME math_soak_z80_execution COMMAND "${Z80_TEST_PYTHON}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/math_soak_z80_test.py"
-      --image-builder "$<TARGET_FILE:math_soak_test>")
-    set_tests_properties(math_soak_z80_execution PROPERTIES TIMEOUT 60)
-    add_test(NAME scope_z80_execution COMMAND "${Z80_TEST_PYTHON}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/math_soak_z80_test.py"
-      --image-builder "$<TARGET_FILE:scope_test>" --scope)
-    set_tests_properties(scope_z80_execution PROPERTIES TIMEOUT 60)
-    add_test(NAME emulator_z80_unit COMMAND "${Z80_TEST_PYTHON}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/emulator_z80_test.py")
-    set_tests_properties(emulator_z80_unit PROPERTIES TIMEOUT 10)
-    add_test(NAME banked_memory_z80_execution COMMAND "${Z80_TEST_PYTHON}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/banked_memory_z80_test.py")
-    set_tests_properties(banked_memory_z80_execution PROPERTIES TIMEOUT 10)
-    foreach(bank_test IN ITEMS banked_allocator_z80_test bank1_bdos_z80_test bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test)
-      add_test(NAME ${bank_test} COMMAND "${Z80_TEST_PYTHON}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/${bank_test}.py")
-      set_tests_properties(${bank_test} PROPERTIES TIMEOUT 60)
-    endforeach()
-    add_test(NAME cpm_bios_z80_execution COMMAND "${Z80_TEST_PYTHON}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/cpm_boot_z80_test.py")
-    set_tests_properties(cpm_bios_z80_execution PROPERTIES TIMEOUT 60)
-    if(z80_test_environment)
-      set_tests_properties(emulator_z80_unit math_soak_z80_execution
-        scope_z80_execution banked_memory_z80_execution banked_allocator_z80_test bank1_bdos_z80_test
-        bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test
-        cpm_bios_z80_execution PROPERTIES ENVIRONMENT "${z80_test_environment}")
-    endif()
-  else()
-    message(STATUS "Z80 execution tests disabled; set Z80_TEST_PYTHON")
-  endif()
 else()
   message(STATUS "z80asm not found; math soak host tests unavailable")
 endif()

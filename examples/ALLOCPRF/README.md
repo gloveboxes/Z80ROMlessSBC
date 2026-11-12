@@ -31,16 +31,10 @@ export DCC_DIR=/Users/dave/GitHub/dcc
 cp build/ALLOCPRF.COM ALLOCPRF.COM
 ```
 
-For a short emulator run, build from this folder with:
+For a short emulator run, from the repository root:
 
 ```sh
-"$DCC_DIR/dccmake" dcc-define=ITERATIONS=4 dcc-build-dir=build/emulator
-```
-
-Then run from the repository root:
-
-```sh
-python3.14 src/common/tests/allocperf_z80_test.py
+python3 scripts/z80_container.py test --test allocperf_z80_test.py
 ```
 
 The emulator tests verify extent allocation, request sizes, scan positions,

@@ -30,7 +30,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ft-source", type=Path,
                         default=ROOT.parent / "esp32/esp32-altair-8800/Apps/disk-c-apps/FT/FT.ASM")
-    parser.add_argument("--host", type=Path, default=ROOT / "build/cpm/z80_debug_host/z80-debug-host")
+    parser.add_argument("--host", type=Path, default=Path("/opt/altair/build/bin/z80-debug-host"))
     parser.add_argument("--adapter", type=Path, default=ROOT / "build/cpm/dcc_io_adapter" /
                         ("libz80sbc-io-adapter.dylib" if sys.platform == "darwin" else "libz80sbc-io-adapter.so"))
     parser.add_argument("--output-dir", type=Path, default=ROOT / "build/cpm-http-ft")
@@ -157,7 +157,7 @@ def main() -> None:
                                   "cpm_bytes": len(actual), "sha256": hashlib.sha256(actual).hexdigest()})
         print(f"PASS: CP/M {name}: all {len(expected)} bytes and record padding match", flush=True)
 
-    try:
+    def boot() -> None:
         session.command(f'-file-exec-and-symbols "{smoke}"')
         session.command("-break-insert -t *0x100")
         session.command("-exec-run", stop=True)
@@ -172,6 +172,19 @@ def main() -> None:
             _, stopped = session.command("-exec-continue", stop=True)
         assert "64K CP/M 2.2" in session.target_text()
         run("D:")
+
+    def restart_with_environment(text: str) -> None:
+        nonlocal session
+        run("SYNC")
+        session.close()
+        env_path.write_text(text)
+        session = MISession(args.host.resolve(), ["--direct-loader", "--io-adapter", str(args.adapter.resolve()),
+                                                 "--env-file", str(env_path),
+                                                 "--bank1-image", str(bank1_path)])
+        boot()
+
+    try:
+        boot()
         print(run("DIR"), flush=True)
         text = run("B:MAC FT")
         print(text, flush=True)
@@ -213,19 +226,19 @@ def main() -> None:
         assert "Downloading 'MiXeD.Bas'" in text, text
         check_file("MIXED.BAS", mixed.replace(b"\r", b"").replace(b"\n", b"\r\n") + b"\x1a")
         configured_env = env_path.read_text()
-        env_path.write_text("".join(line for line in configured_env.splitlines(keepends=True)
-                                    if not line.startswith("HTTP_BASE_URL=")))
+        restart_with_environment("".join(line for line in configured_env.splitlines(keepends=True)
+                                         if not line.startswith("HTTP_BASE_URL=")))
         text = run("FT -GB EMPTY.BIN")
         assert "Missing HTTP_BASE_URL in ENV." in text, text
         assert "Run ENV, choose A to add or its number to edit." in text, text
         run_prompted(base + "EMPTY.BIN", "Done (0 bytes)")
         print("PASS: absolute HTTP URL works without HTTP_BASE_URL", flush=True)
-        env_path.write_text(configured_env)
+        restart_with_environment(configured_env)
         assert "Done (0 bytes)" in run("FT -GB EMPTY.BIN")
         if args.https:
             with urllib.request.urlopen(LOVE_BASE + "LOVE.BAS", timeout=20) as response:
                 love = response.read()
-            env_path.write_text(env_path.read_text().replace(f"HTTP_BASE_URL={base}", f"HTTP_BASE_URL={LOVE_BASE}"))
+            restart_with_environment(configured_env.replace(f"HTTP_BASE_URL={base}", f"HTTP_BASE_URL={LOVE_BASE}"))
             text = run("FT -G LOVE.BAS")
             assert f"Done ({len(love)} bytes)" in text, text
             text_bytes = love.replace(b"\r", b"").replace(b"\n", b"\r\n") + b"\x1a"

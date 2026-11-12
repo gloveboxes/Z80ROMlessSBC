@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -176,30 +177,11 @@ class BankSdkExecution(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         root = Path(__file__).resolve().parents[3]
-        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
-        if not (dcc / "dccmake").is_file():
-            raise unittest.SkipTest("sibling DCC toolchain is unavailable")
         bank1_system_boot_z80_test.BankOneSystemBoot.setUpClass()
         temporary = tempfile.TemporaryDirectory(prefix="banksdk-check-")
         cls.addClassCleanup(temporary.cleanup)
         cls.folder = Path(temporary.name)
-        sdk = root / "examples/BANKSDK"
-        (cls.folder / "CHECK.C").write_text(SOURCE)
-        (cls.folder / "dccmake.txt").write_text(
-            f"dcc-input=CHECK.C,{sdk / 'BANKMEM.C'},{sdk / 'BIOSBANK.C'}\n"
-            "dcc-output=SDKCHECK\ndcc-build-dir=build\ndcc-stack-bytes=512\n"
-            f"dcc-include-directory={dcc},{sdk}\n"
-            f"dcc-runtime={dcc / 'DCCRTL.MAC'}\n"
-            f"dcc-tool={dcc / 'dcc'}\ndccpeep-tool={dcc / 'dccpeep'}\n"
-            f"dccrtlstrip-tool={dcc / 'dccrtlstrip'}\n"
-            f"m80c-tool={dcc / 'm80c'}\nl80c-tool={dcc / 'l80c'}\n")
-        subprocess.run([str(dcc / "dccmake")], cwd=cls.folder, check=True,
-                       capture_output=True, text=True)
-        subprocess.run(
-            [str(dcc / "dccmake"),
-             f"dcc-input={root / 'examples/MEMPERF/MEMPERF.C'},{sdk / 'BANKMEM.C'},{sdk / 'BIOSBANK.C'}",
-             "dcc-output=MEMPERF"],
-            cwd=cls.folder, check=True, capture_output=True, text=True)
+        shutil.copytree(root / "build/z80-fixtures/sdk/build", cls.folder / "build")
 
     def test_initialization_and_memory_boundaries(self):
         system = bank1_system_boot_z80_test.BankOneSystemBoot(
@@ -292,10 +274,7 @@ class BankSdkExecution(unittest.TestCase):
         machine.set_output_callback(output)
         machine.set_input_callback(input_byte)
         root = Path(__file__).resolve().parents[3]
-        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
         example = root / "examples/LIBDEMO"
-        subprocess.run([str(dcc / "dccmake")], cwd=example, check=True,
-                       capture_output=True, env={**os.environ, "DCC_DIR": str(dcc)})
         for name, artifact in (
                 ("MEMPERF.COM", self.folder / "build/MEMPERF.COM"),
                 ("DATATEST.COM", example / "host/build/DATATEST.COM"),

@@ -107,7 +107,7 @@ the destructive work-area sweeps; this is not full-64-KiB pattern coverage.
 ## Build without deploying
 
 From the repository root, with the
-[firmware toolchain](../system/firmware-build.md) and `z80asm` available:
+[firmware toolchain](../system/firmware-build.md) configured:
 
 ```sh
 export PATH="$HOME/.local/share/arm-gnu-toolchain-15.3.rel1/bin:$PATH"
@@ -252,14 +252,14 @@ duration criterion or live first-fault notification in this scope target.
 
 ## Host validation
 
-With the C emulator built as in the
-[soak host-validation guide](20mhz-soak.md#host-validation):
+Run controller tests natively and execution tests in the
+[Apple container](../system/firmware-testing.md#4-z80-execution-tests):
 
 ```sh
-cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DZ80_TEST_PYTHON="$(command -v python3.14)"
+cmake -S src/common/tests -B build/host-control -G Ninja
 cmake --build build/host-control --target scope_test math_soak_test math_soak_14h_test
 ctest --test-dir build/host-control -R '^(scope_|math_soak_)' --output-on-failure
+python3 scripts/z80_container.py test
 ```
 
 Controller tests cover DTR/manual gating, verification, quiet RUN behavior,

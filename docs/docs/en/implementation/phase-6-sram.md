@@ -269,8 +269,9 @@ cmake --build build --target z80_stage06_math_soak_20mhz
 ```
 
 UF2: `build/src/stage06_sram_dma/z80_stage06_math_soak_20mhz.uf2`.
-The existing build directory must first be configured as above. `z80asm`
-is required; the build assembles `math_soak.asm` and embeds its exact bytes.
+The existing build directory must first be configured as above. The build
+assembles `math_soak.asm` and embeds its exact bytes using the
+[firmware build tools](../system/firmware-build.md#building-the-full-image-set).
 The isolated 20 MHz clock/CPU/trap chain selects **120 MHz Pico clk_sys**
 before USB initialization with Z80 reset asserted, using the same PLL and
 50%-duty PWM configuration as the 20 MHz frequency screen. Normal targets
@@ -421,19 +422,17 @@ functional soak evidence, not measured analogue timing qualification.
 ##### Host Validation
 
 Host controller tests simulate the exact hour/cycle boundary, counters,
-serial gating and fault stops. Optional Z80 instruction execution
-requires Python 3.10+ and the host-only C emulator
-([build steps](../system/firmware-testing.md#4-build-the-z80-emulator)):
+serial gating and fault stops. Run the Z80 instruction execution suite in the
+[Apple container](../system/firmware-testing.md#4-z80-execution-tests):
 
 ```sh
-cmake -S src/common/tests -B build/host-control -G Ninja \
-  -DZ80_TEST_PYTHON="$(command -v python3.14)"
+cmake -S src/common/tests -B build/host-control -G Ninja
 cmake --build build/host-control --target math_soak_test math_soak_14h_test
 ctest --test-dir build/host-control -R '^math_soak_' --output-on-failure
+python3 scripts/z80_container.py test
 ```
 
-Substitute an available Python 3.10+ executable for `python3.14`. The
-emulator runs the actual image through two cycles and checks every
+The emulator runs the actual image through two cycles and checks every
 work byte/reference-table boundary, plus injected arithmetic, flag,
 comparison, stack-guard and first/middle/last SRAM failures. This is host
 execution evidence, not an hour-long physical run.

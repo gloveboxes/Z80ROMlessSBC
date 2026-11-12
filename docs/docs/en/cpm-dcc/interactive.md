@@ -1,84 +1,42 @@
 # D.9 Interactive CP/M Test
 
-Run the optimized CP/M image and board BIOS with host-backed console and disk
-I/O. Requires CMake, a C/C++ compiler, Python 3.10+, `z80asm`, and `cpmtools`.
-
-## Start in VS Code
-
-1. Open **Run and Debug**, select **Interactive CP/M emulator**, and press **Start**.
-2. Wait for `64K CP/M 2.2` and the `A>` prompt.
-3. Enter CP/M commands. Press `Ctrl+]` to stop the session.
-
-Starting rebuilds the project's Z80 host, I/O adapter, banked examples, CP/M,
-BIOS and images in `build/cpm`. Examples are rebuilt with `dccmake` from
-`$DCC_DIR` or a sibling `dcc` checkout; without one, the checked-in binaries
-are used. Every launch replaces `build/cpm/drive_*.img` from `src/disks/native/`, so
-session changes are discarded unless saved with
-`python3 src/disks/save_session_disk.py <drive>`.
-Use `--prepare-only` to build without starting, and `--skip-examples` to skip
-`dccmake`. The launcher loads the 64 KiB payload from `z80boot.pkg` and
-attaches Drives A–D. No Pico or external Altair checkout is needed.
-
-The session is banked: the launcher passes a generated bank-1 image
-(`z80bank1.img`) to the host, so applications can use the BIOS bank-1 gateway
-(`FF00h`–`FF10h`). The MI debugger shows only the active bank.
-
-## Try the software path
-
-```text
-A>CLEAR
-A>DIR
-A>LS
-A>C:
-C>ATTNC11
-C>A:PIP D:ATTNC11.COM=C:ATTNC11.COM
-C>A:PIP D:ATTN.WTS=C:ATTN.WTS
-C>D:
-D>DIR
-```
-
-This exercises console output, directories, transient loading and exit,
-BIOS warm reload, multi-extent programs, and cross-drive writes.
-
-Disk changes are saved to the generated files in `build/cpm`. The preparation
-task regenerates them on the next launch; copy out results you want to retain.
-
-The terminal maps arrow keys to Ctrl-E/X/D/S, Insert/Delete to Ctrl-O/G,
-Page Up/Down to Ctrl-R/V, and Backspace to Ctrl-H. Standalone Escape uses a
-30 ms grace period to distinguish it from ANSI key sequences.
-
-## Optional HTTP(S) file-transfer test
-
-The host adapter also emulates Altair file-transfer, time/timer, utility,
-weather, environment-variable, and chat ports. Network features require curl
-support and relevant configuration; they do not establish Pico support.
-
-With curl development headers/libraries installed, build the host and adapter:
+The shared [Z80 CP/M container](https://github.com/gloveboxes/z80-cpm-container)
+provides a banked emulator, browser terminal, audio and VS Code C debugging.
+Apple silicon macOS, the Apple `container` CLI, CMake, Python 3 and the VS Code
+C/C++ extension are required. Initialize submodules and start the container
+service:
 
 ```sh
-cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-cmake --build build/cpm/z80_debug_host
-cmake -S src/cpm/dcc_io_adapter -B build/cpm/dcc_io_adapter
-cmake --build build/cpm/dcc_io_adapter
-python3 src/cpm/test_http_ft.py --https
+git submodule update --init --recursive
+container system start
 ```
 
-The test requires `FT.ASM` from the sibling ESP32 Altair checkout (default:
-`../esp32/esp32-altair-8800/Apps/disk-c-apps/FT/FT.ASM`; override with `--ft-source`).
-It assembles FT with CP/M MAC/LOAD, tests local HTTP binary/text transfers,
-empty files, redirects, chunked/truncated bodies, error recovery, and prompted
-filenames. `--https` also downloads
-`LOVE.BAS` and runs it in MBASIC.
+In VS Code, select **Interactive CP/M emulator** under Run and Debug, or run
+**Run interactive CP/M emulator**. The equivalent command is:
 
-Artifacts, hashes, and transcripts go to `build/cpm-http-ft`; ordinary
-`build/cpm` disks remain unchanged. The adapter uses the production HTTP
-shared-service framing, HTTP mailbox/parser and a native curl transport.
-FT uses group `0x70` on ports 2/3/4; its binary is assembled from that source.
+```sh
+python3 scripts/z80_container.py start
+```
 
-When using cpmtools directly, use `build_images.cpm_diskdefs()`: its explicit
-`logicalextents 1` is required for files larger than 16 KiB.
+Run the VS Code task **Refresh CP/M container and session disks** to rebuild
+the container and session disks without starting CP/M. The launcher also
+prepares them when starting an interactive or debugging session. Preparation
+generates disks in `build/cpm-session/` from `src/disks/native/` and this
+checkout's CP/M and BIOS. Drive A's system records and AUTORUN are updated;
+all other application files are preserved. It replaces the session disks: stop
+the emulator first and save any changes you want to keep with
+`python3 src/disks/save_session_disk.py D`, substituting A–D.
 
-These are emulator tests. Pico loading, flash journaling and power-loss
-recovery, electrical behavior, and bus timing require
-[hardware qualification](validation.md#required-hardware-qualification).
+Open <http://127.0.0.1:8080/> for the browser terminal. Press Ctrl+C to stop.
+
+## Debug a DCC application
+
+Run `dccmake -g` in the active C file's application directory so that its
+`.COM` and `.DBG` are in its `build/` directory. Select **DCC CP/M: Debug
+active C file in Apple container** and press F5. The debugger installs the
+program into a private copy of drive B and uses this checkout's CP/M and BIOS.
+Use <http://127.0.0.1:8081/> for target output and keyboard input; continue
+execution before entering input. Breakpoints and stepping use VS Code. MI
+memory operations address the active bank.
+
+These are emulator tests, not physical hardware qualification.

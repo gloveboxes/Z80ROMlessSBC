@@ -61,20 +61,25 @@ for the runtime environment provided by the Z80 ROMless SBC.
 includes a collection of CP/M/Z80 applications in its
 [`Apps` folder](https://github.com/gloveboxes/Altair-8800-AI-Edition/tree/main/Apps).
 The collection includes C applications built with DCC and tooling to package
-applications into Altair 88-DCDD disk images. These images can also supply
-applications for the Z80 ROMless SBC.
+applications into 512 KiB CP/M disk images for the Z80 ROMless SBC.
 
 Once the earlier bring-up tests pass and you reach Phases 9–10, use the
 following workflow to bring applications across from the Altair project.
 
 ### In the ESP32 Altair 8800 AI Edition project
 
-1. Build the desired C application in the Altair project's `Apps` collection
-   using its DCC build instructions to produce its `.COM` file.
-2. Copy the `.COM` onto the target 512 KiB image in
-   `Z80ROMlessSBC/src/disks/native/` with `cpmcp`, or install it in an
-   interactive emulator session and save the drive with
-   `src/disks/save_session_disk.py`.
+1. In the Altair project's `Apps` directory, run
+   `pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/source-altair`
+   to build the applications and clone the four disks.
+2. In VS Code, run **Tasks: Run Task → Import Altair disks - validate and stage
+   images** to validate and copy the clones into `build/altair-disks/`. Run
+   **Import Altair disks - prepare Pico images** to prepare A–D and the current
+   boot package without flashing. The all-disks
+   flash task uses these staged images. For individual-drive flash tasks, run
+   **Import Altair disks - install selected native drive** for each drive. Follow the
+   [disk media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md#importing-altair-application-disks)
+   to select which disks replace native sources. Importing drive D
+   replaces its DOCTOR/DOCGEN database.
 
 ### In the Z80ROMlessSBC project
 
@@ -94,20 +99,19 @@ and complete its tests before moving on to Phase 10.
    configured drives **A:** through **D:**.
 
 The Pico serves the flash-backed disks while the Z80 executes CP/M and its
-applications. Disk conversion and provisioning are handled by the dedicated
-VS Code disk deployment tasks; no manual conversion commands are required. See
+applications. See
 the [disk provisioning details](system/firmware-build.md#72-flash-provisioning)
-for how this works. The firmware uses native 524,288-byte images rather than
-the original 88-DCDD sector framing.
+for how this works. The firmware uses native 524,288-byte images.
 
 ### VS Code disk deployment tasks
 
 The tasks in [`.vscode/tasks.json`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.vscode/tasks.json)
-use the following 512 KiB images from `src/disks/native/`:
+use the staged Altair images for all-disk deployment and `src/disks/native/`
+for individual drives:
 
 | Task | Disks replaced | Source image |
 | --- | --- | --- |
-| **Flash Pico - All disks (A-D)** | A: through D: | All four images listed below |
+| **Flash Pico - All disks (A-D)** | A: through D: | Four validated images in `build/altair-disks/` |
 | **Flash Pico - Drive A** | A: | `drive_a_cpm63k.img` (system tracks rebuilt) |
 | **Flash Pico - Drive B** | B: | `drive_b_bdsc.img` |
 | **Flash Pico - Drive C** | C: | `drive_c_escape.img` |
@@ -124,9 +128,9 @@ Follow the task's confirmation prompt before deployment.
 
 Drive **A:** also contains the boot system and needs the board-native BIOS
 and matching boot package. Drives **B:** through **D:** can hold application
-disks converted from validated Altair images. See
+disks copied from validated Altair images. See
 [Phase 9: USB CP/M and flash storage](implementation/phase-9-flash-storage.md)
 for the storage design and the
 [disk media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md)
-for conversion commands, the default source-image mapping, and selective
+for validation commands, the default source-image mapping, and selective
 installation of application disks.

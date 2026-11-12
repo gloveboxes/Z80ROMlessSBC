@@ -595,9 +595,9 @@ No erase, program, blocking queue, or flash-safe call runs inside
 The native image builder assembles
 [`autorun.asm`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/cpm/autorun.asm)
 and replaces the Altair-only `AUTORUN.COM` in user 0 of generated drive A.
-Building images requires Python 3.10+, `z80asm`, and `cpmtools` (`cpmcp` and
-`cpmrm`). Install a matching boot package and native drive A image for this
-feature; a utility-only copy does not update the BIOS.
+Build images with the [firmware build tools](../system/firmware-build.md).
+Install a matching boot package and native drive A image for this feature; a
+utility-only copy does not update the BIOS.
 
 Run `AUTORUN`, choose `1` for cold-only, `2` for warm-only, `3` for both, or
 `4` to disable, and enter a printable command of up to 80 characters, such
@@ -741,15 +741,15 @@ reads and transient/warm boot, plus the complete read-only disk diagnostic:
 ```sh
 cmake --build build/host-control --target flash_backend_test stage09_test stage09_autoboot_test disk_test
 ctest --test-dir build/host-control \
-  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol|cpm_bios_z80_execution)$' \
+  -R '^(flash_backend_recovery|stage09_usb_cpm|stage09_autoboot_cpm|disk_protocol)$' \
   --output-on-failure
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
+python3 scripts/z80_container.py test --test cpm_boot_z80_test.py
 ```
 
-Use Python 3.11 or newer for the image tests. The Z80 execution test
-requires the `Z80_TEST_PYTHON` CMake setting and the built C emulator
-([firmware testing](../system/firmware-testing.md#4-build-the-z80-emulator));
-it does not prove physical
+Use Python 3.11 or newer for the image tests. The
+[container execution test](../system/firmware-testing.md#4-z80-execution-tests)
+does not prove physical
 20 MHz I/O, setup/hold margins or real flash endurance. Bench checklist
 items remain unticked until measured.
 

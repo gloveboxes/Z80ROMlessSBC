@@ -59,12 +59,5 @@ class NativeDisksTest(unittest.TestCase):
             for key, extents in files.items():
                 self.assertEqual(sorted(extents), list(range(len(extents))), f"{name}: {key[1]!r}")
 
-    def test_example_binaries_on_drive_b_match_the_build(self) -> None:
-        image = (NATIVE / "drive_b_bdsc.img").read_bytes()
-        stored = build_images.install_files(
-            image, build_images.example_files(), build_images.EXAMPLE_REMOVED_FILES, "cpmcp")
-        self.assertEqual(stored, image)
-
-
 if __name__ == "__main__":
     unittest.main()

@@ -174,44 +174,25 @@ writes, all four auto-run modes, keyboard bypass, error paths, and the
 read-only Z80 disk diagnostic:
 
 ```sh
-python3.14 src/common/tests/cpm_boot_z80_test.py
+python3 scripts/z80_container.py test --test cpm_boot_z80_test.py
 ```
 
 This is host-model evidence, not physical 20 MHz or flash timing qualification.
 
-To run the end-to-end test with the project-owned `z80-debug-host`:
+To run the complete container execution suite:
 
 ```sh
-python3 src/cpm/test_z80_debug_host.py \
-  --host build/cpm/z80_debug_host/z80-debug-host
+python3 scripts/z80_container.py test
 ```
 
-For a self-contained test that uses the vendored current DCC Z80 engine, build
-the local host described in
-[`z80_debug_host/README.md`](z80_debug_host/README.md), then pass its executable
-with `--host`. The Python test extracts the SRAM payload from `z80boot.pkg`
-instead of loading a separate boot-image artifact.
+The suite builds required fixtures with host DCC and uses the emulator in the
+shared container.
 
 To interact with CP/M in the emulator, select **Interactive CP/M emulator** in
-VS Code's **Run and Debug** view and press Start. `launch.py` first builds the
-local host, banked examples and CP/M images; it then loads the payload
-from `z80boot.pkg` and connects the integrated terminal to the emulated CP/M
-console. Wait for `A>`, then type commands normally; `DIR`, `LS`, `C:`,
-`ATTNC11`, and cross-drive `PIP` copies provide progressively broader checks of
-CCP, BDOS, BIOS warm boot, multi-extent loading, and disk writes. `Ctrl+]`
-detaches from the terminal and stops the session.
-
-The pre-launch task builds the complete project-owned
-[`dcc_io_adapter/`](dcc_io_adapter/) shared library and the debug configuration
-always loads it. In addition to the SBC disk ports, it mirrors all active ports
-in the ESP32 Altair `port_drivers` dispatcher for time, utility, weather,
-interrupt timer, file transfer, environment, chat, and shared response data.
-Its terminal pipeline translates cursor, Insert/Delete, and Page Up/Page Down
-ANSI sequences to the CP/M control keys, maps Backspace/Delete to Ctrl-H, and
-preserves standalone Escape after a 30 ms sequence timeout. See
-[interactive-test documentation](../../docs/docs/en/cpm-dcc/interactive.md) for the
-complete procedure, expected results, and the boundary between emulator
-coverage and Pico/physical-board qualification.
+VS Code's **Run and Debug** view and press Start. The shared Apple container
+uses CP/M and BIOS built from this checkout and disposable session disks.
+See the [interactive-test documentation](../../docs/docs/en/cpm-dcc/interactive.md)
+for terminal, debugging and disk-saving instructions.
 
 The project `z80-debug-host` must implement DD/FD-prefixed opcodes that don't
 reference `H`/`L`/`(HL)` as executing exactly as if unprefixed (the real Z80

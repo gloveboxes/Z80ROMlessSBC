@@ -105,11 +105,17 @@ add_subdirectory(stage09_flash_storage)
 add_subdirectory(stage10_websocket_terminal)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-find_program(Z80ASM_EXECUTABLE z80asm)
-if(Z80ASM_EXECUTABLE)
+include(common/z80_assembler.cmake)
+if(Z80_ASSEMBLER_AVAILABLE)
   set(cpm_disk_dir ${CMAKE_CURRENT_LIST_DIR}/disks/native)
   function(add_cpm_images target firmware directory)
   set(cpm_output_dir ${CMAKE_BINARY_DIR}/${directory})
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    set(image_command "${Python3_EXECUTABLE}" "${Z80_CONTAINER_LAUNCHER}" images)
+  else()
+    set(image_command "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/cpm/build_images.py"
+      --assembler "${Z80_HOST_ASSEMBLER}" --disk-dir "${cpm_disk_dir}")
+  endif()
   add_custom_command(
     OUTPUT ${cpm_output_dir}/manifest.json
     BYPRODUCTS
@@ -122,15 +128,12 @@ if(Z80ASM_EXECUTABLE)
       ${cpm_output_dir}/drive_c_escape.img
       ${cpm_output_dir}/drive_d_blank.img
       ${cpm_output_dir}/z80romless-flash.bin
-    COMMAND ${Python3_EXECUTABLE}
-      ${CMAKE_CURRENT_LIST_DIR}/cpm/build_images.py
-      --assembler ${Z80ASM_EXECUTABLE}
-      --disk-dir ${cpm_disk_dir}
+    COMMAND ${image_command}
       --firmware
         $<TARGET_FILE_DIR:${firmware}>/${firmware}.bin
       --output-dir ${cpm_output_dir}
     DEPENDS
-      ${firmware}
+      ${firmware} ${Z80_ASSEMBLER_DEPENDENCIES}
       cpm/z80_bios.asm
       cpm/autorun.asm
       cpm/cpm64_z80.asm

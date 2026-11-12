@@ -159,6 +159,16 @@ API changes. Inspect generated contracts and linker output for actual image,
 BSS, heap, stack, signature, and frame limits; do not guess free memory.
 Report missing tools or build errors explicitly, not as successful generation.
 
+For DCC code-generation debugging, inspect compiler-generated assembly and
+linker symbols alongside the `.COM` or `.LIB` bytes. The container's
+`z80dasm` can disassemble linked machine code; set the correct load origin
+and distinguish code from embedded data. Use its `z80asm` to assemble a
+minimal Z80 repro or compatible instruction sequence, then compare the
+bytes and exercise the behavior in the emulator. DCC uses its own host
+assembler/linker; do not assume its generated assembly is accepted by
+`z80asm` or replace the DCC build with it. See
+[container tool commands](../../z80-romless-sbc/references/validation.md).
+
 ## 4. Validate the Application
 
 1. Run contract generation and the actual application build. Contract generation
@@ -174,47 +184,27 @@ Report missing tools or build errors explicitly, not as successful generation.
    same drive, ensure its `A:AUTORUN.COM` fixture has at least 128 bytes, then run
    `DATATEST`. Require all eight numbered checks to report PASS.
    For a new application, provide equivalent explicit acceptance checks.
-5. The one emulator is the C Z80 emulator in `src/cpm/z80_debug_host`
-   (`libz80sbc-emulator`: x80 core plus two-bank SRAM), driven by Python 3.10+
-   tests in `src/common/tests/`. The VS Code "Interactive CP/M emulator" runs the
-   same banked system through `z80-debug-host --bank1-image`;
-   `src/cpm/interactive/launch.py` first rebuilds the emulator, examples (via
-   `dccmake`) and images, replacing the session drives.
-   For tests, build the emulator once if
-   `build/cpm/z80_debug_host/libz80sbc-emulator.*` is missing (`z80asm` must be
-   on `PATH`):
-
-   ```sh
-   cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-     -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-   cmake --build build/cpm/z80_debug_host --target z80sbc-emulator
-   ```
-
-   Run `python3.14 src/common/tests/emulator_z80_test.py` first: it unit-tests
-   the emulator's flags, instructions and bank model, so a failing application
-   test is not blamed on, or hidden by, an emulator defect. Fix emulator bugs
-   with a regression there, checked against an independent reference.
-
-   Run the banked suite from the repository root
+5. The shared Apple container provides the C emulator, banked system and
+   Z80/CP/M tools; host DCC builds execution-test fixtures. The VS Code
+   "Interactive CP/M emulator" builds session drives from this checkout; see
+   [interactive testing](../../../../docs/docs/en/cpm-dcc/interactive.md).
+   Run the execution suite from the repository root
    ([examples/BANKED/TESTING.md](../../../../examples/BANKED/TESTING.md) is the
    authoritative list):
 
    ```sh
-   export PYTHONPATH=src/common/tests DCC_DIR=/path/to/dcc
-   python3.14 -m unittest \
-     banked_memory_z80_test banked_allocator_z80_test bank1_bdos_z80_test \
-     bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test \
-     banked_heap_z80_test memperf_z80_test allocperf_z80_test
+   python3 scripts/z80_container.py test
    ```
 
-   To run only the maintained LIBDEMO end-to-end:
+   The runner tests emulator flags, instructions and the bank model first.
+   For a focused banked-system run:
 
    ```sh
-   DCC_DIR=/path/to/dcc python3.14 src/common/tests/bank1_system_boot_z80_test.py \
-     BankOneSystemBoot.test_dcc_library_loaded_and_called_from_bank_zero
+   python3 scripts/z80_container.py test --test bank1_system_boot_z80_test.py
    ```
 
-   Replace the DCC path with the actual checkout. The test builds a CP/M/BIOS
+   Use `dccmake` from PATH or set `DCC_DIR`; the full suite also requires the
+   FT source (set `Z80_FT_SOURCE` if needed). The focused test builds a CP/M/BIOS
    image, installs `DATA.LIB` and `DATATEST.COM` into its test disk, and runs
    all eight client checks against modeled bank switching. This integration
    test is specific to LIBDEMO; `banked_heap_z80_test.py` is for
@@ -222,14 +212,9 @@ Report missing tools or build errors explicitly, not as successful generation.
    physical-board timing. For a new application, extend or create
    an equivalent emulator test rather than treating either sample fixture as
    a generic COM/LIB runner.
-6. If changing CP/M images, loader, or ABI, also run the existing repository-root
-   host suite and the engineering skill's affected build checks:
-
-   ```sh
-   python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
-   ```
-
-   These tests cover image/ABI/emulator behavior, not physical board timing.
+6. If changing CP/M images, loader, or ABI, run the image tests and affected
+   build checks in [firmware validation](../../z80-romless-sbc/references/validation.md).
+   These tests cover image/ABI behavior, not physical board timing.
    Do not flash firmware for an ordinary application-only change. ABI changes
    require matching firmware and CP/M system images, deployed only with
    authorization.

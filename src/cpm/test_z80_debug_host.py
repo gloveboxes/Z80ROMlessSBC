@@ -17,7 +17,7 @@ import time
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LOCAL_HOST = REPO_ROOT / "build" / "cpm" / "z80_debug_host" / "z80-debug-host"
+LOCAL_HOST = Path("/opt/altair/build/bin/z80-debug-host")
 
 
 class MISession:
@@ -109,7 +109,8 @@ def build_adapter(dcc_root: Path, output: Path) -> None:
     source = REPO_ROOT / "src" / "cpm" / "dcc_io_adapter"
     build = REPO_ROOT / "build" / "cpm" / "dcc_io_adapter"
     subprocess.run(
-        [cmake, "-S", str(source), "-B", str(build), "-DBUILD_TESTING=OFF"],
+        [cmake, "-S", str(source), "-B", str(build), "-DBUILD_TESTING=OFF",
+         "-DZ80SBC_SPEAKER_AUDIO=OFF"],
         check=True,
     )
     subprocess.run([cmake, "--build", str(build)], check=True)

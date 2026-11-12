@@ -119,13 +119,7 @@ A standalone Escape is emitted after a 30 ms grace period so it can be
 distinguished from the start of an ANSI sequence. These mappings are adapter
 policy; a generic host without this adapter passes terminal bytes through.
 
-## Direct use
+## Execution
 
-```sh
-./build/cpm/z80_debug_host/z80-debug-host --interpreter=mi \
-  --io-adapter ./build/cpm/dcc_io_adapter/libz80sbc-io-adapter.dylib \
-  --env-file ./path/to/session.env
-```
-
-Omit `--io-adapter` to run the generic debugger with unmapped input ports
-returning zero and output ports ignored.
+The shared Apple container provides the interactive debugger. See
+[interactive CP/M testing](../../../docs/docs/en/cpm-dcc/interactive.md).

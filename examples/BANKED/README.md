@@ -94,26 +94,15 @@ capacity `1600h`. See [BIOS-ABI.md](BIOS-ABI.md)
 for HEAP operations, contracts and the extent table layout.
 
 Another CP/M host needs its own implementation of this BIOS extension and
-extra memory; copying this C app does not install that backend. The stock
-interactive debugger has flat memory; use the dedicated banked emulator
-fixture for this app:
+extra memory; copying this C app does not install that backend. Run the
+banked emulator fixture from the Z80ROMlessSBC root:
 
 ```sh
-DCC_DIR=/Users/dave/GitHub/dcc /Users/dave/GitHub/dcc/dccmake \
-  dcc-define=BANKED_ONE_CYCLE dcc-build-dir=build/emulator
-```
-
-Build this finite test version from `examples/BANKED`, then run from the
-Z80ROMlessSBC root:
-
-```sh
-python3.14 src/common/tests/banked_heap_z80_test.py \
-  --program examples/BANKED/build/emulator/BANKED.COM
+python3 scripts/z80_container.py test --test banked_heap_z80_test.py
 ```
 
 This executes the compiled COM under the real CP/M/BIOS image and bank-1
 resident code with modeled A16 switching. It checks software behavior; 20 MHz
 electrical timing and throughput require the physical board.
 
-See [TESTING.md](TESTING.md) for verification results and the corrected host
-test fixtures. The full host-control suite passes all 78 tests.
+See [TESTING.md](TESTING.md) for the full verification workflow.

@@ -408,17 +408,13 @@ class BankOneSystemBoot(unittest.TestCase):
         self.assertEqual(self.active, 0)
 
     def install_dcc_library(self, drive: int, stack: int = 512) -> tuple[int, int]:
-        """Build LIBDEMO and place its library and client on a drive."""
+        """Place the prepared library and client on a drive."""
         root = Path(__file__).resolve().parents[3]
         example = root / "examples/LIBDEMO"
-        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
-        if not (dcc / "dcc").exists() or not (dcc / "dccmake").exists():
-            self.skipTest("sibling DCC toolchain is unavailable")
-        env = {**os.environ, "DCC_DIR": str(dcc)}
-        subprocess.run([str(dcc / "dccmake"), f"dcc-stack-bytes={stack}"],
-                       cwd=example,
-                       check=True, env=env, capture_output=True)
-        library = (example / "lib/build/DATA.LIB").read_bytes()
+        env = os.environ.copy()
+        library_path = (root / "build/z80-fixtures/libdemo-1024/DATA.LIB" if stack == 1024
+                        else example / "lib/build/DATA.LIB")
+        library = library_path.read_bytes()
         heap_start = int.from_bytes(library[24:26], "little")
         stack_bytes = int.from_bytes(library[16:18], "little")
         self.assertEqual(stack_bytes, stack)
@@ -433,7 +429,7 @@ class BankOneSystemBoot(unittest.TestCase):
             disk = folder / "drive.img"
             disk.write_bytes(self.case.disks[drive])
             for name in ("DATA.LIB", "DATATEST.COM"):
-                artifact = (example / "lib/build" / name if name.endswith(".LIB")
+                artifact = (library_path if name.endswith(".LIB")
                             else example / "host/build" / name)
                 build = cpm_boot_z80_test.build_images
                 stem, suffix = name.split(".")

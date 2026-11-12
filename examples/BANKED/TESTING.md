@@ -26,13 +26,10 @@ The allocator check covers rounding, small and large allocations,
 end-of-block transfers, fragmentation, reuse, complete exhaustion and the
 final pool byte.
 
-For a finite emulator run, build one complete 24-pattern cycle into a
-separate directory:
+The container builds a finite one-cycle variant for the emulator test:
 
 ```sh
-cd examples/BANKED
-DCC_DIR=/path/to/dcc "$DCC_DIR/dccmake" \
-  dcc-define=BANKED_ONE_CYCLE dcc-build-dir=build/emulator
+python3 scripts/z80_container.py test --test banked_heap_z80_test.py
 ```
 
 `banked_heap_z80_test.py` boots the production CP/M image with the bank-0
@@ -55,23 +52,10 @@ package; firmware mirrors all 256 bytes into bank 1 and verifies them.
 
 ## Commands
 
-From the Z80ROMlessSBC repository root, build the emulator library once
-(the tests load `build/cpm/z80_debug_host/libz80sbc-emulator`):
+From the Z80ROMlessSBC repository root, run the isolated execution suite:
 
 ```sh
-cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-cmake --build build/cpm/z80_debug_host --target z80sbc-emulator
-```
-
-Then run the suite with Python 3.10+ and `z80asm` on `PATH`:
-
-```sh
-export PYTHONPATH=src/common/tests DCC_DIR=/path/to/dcc
-python3.14 -m unittest \
-  banked_memory_z80_test banked_allocator_z80_test bank1_bdos_z80_test \
-  bank0_bdos_shim_z80_test bank1_system_boot_z80_test bank_sdk_z80_test \
-  banked_heap_z80_test memperf_z80_test allocperf_z80_test
+python3 scripts/z80_container.py test
 python3 -m unittest discover -s src/cpm -p 'test_*.py'
 ```
 

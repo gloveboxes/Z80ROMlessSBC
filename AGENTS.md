@@ -22,13 +22,10 @@ extension is unreliable here, so its failures are not build evidence.
   then `cmake --build build --target z80_cpm_images -j`
 - CP/M host tests: `python3 -m unittest discover -s src/cpm -p 'test_*.py' -v`
 - Z80 control/native tests: `npm run test:control`
-- Z80 execution tests use the single C emulator (x80 plus two-bank SRAM):
-  `cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF`
-  then build target `z80sbc-emulator`; run `python3.14 src/common/tests/<name>_z80_test.py`
-  (Python 3.10+, `z80asm` on `PATH`)
-- Every Z80 result depends on the emulator: run `emulator_z80_test.py` first and
-  after any change to `x80.cxx`, `sbc_*.c*` or the bank model. Add a regression
-  there for each emulator bug, checked against an independent reference.
+- Z80 execution tests: `python3 scripts/z80_container.py test`; host DCC builds
+  required fixtures and the container runs `emulator_z80_test.py` first. Use
+  `--test <name>_z80_test.py` to select one execution test.
+  Add an independently checked regression for each emulator bug.
 - Disks: the only sources are the 512 KiB images in `src/disks/native/`, the same
   format the emulator and Pico flash use. Keep changes with
   `src/disks/save_session_disk.py` (emulator session) or `refresh_drive_b.py`.

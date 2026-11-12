@@ -6,24 +6,28 @@ See [image provenance](image-provenance.md) and the [memory map](../system/cpm-e
 
 ## Build images
 
-Requires Python 3, `z80asm`, `cpmtools`, and the disk images in
+On Apple silicon macOS, use Apple Container and the disk images in
 `src/disks/native/`. Run from the repository root:
 
 ```sh
-python3 src/cpm/build_images.py --output-dir build/cpm
+python3 scripts/z80_container.py images --output-dir build/cpm
 ```
 
 Outputs include `bios.bin`, the 64 KiB `z80boot.img`, CRC-protected
 `z80boot.pkg`, `AUTORUN.COM`, four 512 KiB disk images, and `manifest.json`.
 Drive A receives the native system tracks and AUTORUN utility/configuration;
-Drive B also receives the current banked examples; Drives C and D are unchanged copies of `src/disks/native/`.
+other application files are preserved. Drives B, C and D are unchanged copies
+of `src/disks/native/`.
 
 To also create a complete 4 MiB `z80romless-flash.bin`, supply Phase 10 firmware:
 
 ```sh
-python3 src/cpm/build_images.py --output-dir build/cpm \
+python3 scripts/z80_container.py images --output-dir build/cpm \
   --firmware build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin
 ```
+
+For host builds on Linux or Windows, run `src/cpm/build_images.py` with
+Python 3, `z80asm` and `cpmtools`.
 
 ## Run tests
 
@@ -34,15 +38,10 @@ disk construction, and flash-region boundaries:
 python3 -m unittest discover -s src/cpm -p 'test_*.py' -v
 ```
 
-Build the project-owned Z80 host, then run the end-to-end test with Python
-3.10 or newer:
+Run the Z80 execution and end-to-end tests in the Apple container:
 
 ```sh
-cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-  -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-cmake --build build/cpm/z80_debug_host
-python3 src/cpm/test_z80_debug_host.py \
-  --host build/cpm/z80_debug_host/z80-debug-host
+python3 scripts/z80_container.py test
 ```
 
 The test builds fresh images and executes the board BIOS through emulated

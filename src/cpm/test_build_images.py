@@ -5,6 +5,7 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -227,6 +228,50 @@ class BuildImagesTest(unittest.TestCase):
         self.assertEqual(
             build_images.install_autorun(installed, utility, cpmcp), installed
         )
+
+    def test_image_builder_preserves_application_files_on_all_drives(self) -> None:
+        if shutil.which("cpmcp") is None:
+            self.skipTest("cpmtools is required")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root / "source", root / "output"
+            source.mkdir()
+            originals = {}
+            for index, name in enumerate(build_images.SOURCE_DISK_NAMES):
+                image = bytearray(b"\xe5" * build_images.DISK_IMAGE_BYTES)
+                entry = bytearray(32)
+                entry[0] = 0
+                entry[1:12] = b"KEEP    COM"
+                entry[15] = 1
+                entry[16] = 1
+                image[build_images.SYSTEM_BYTES:build_images.SYSTEM_BYTES + 32] = entry
+                start = build_images.SYSTEM_BYTES + (build_images.RECORD_BYTES << build_images.DPB_BSH)
+                payload = bytes([index + 1]) * build_images.RECORD_BYTES
+                image[start:start + len(payload)] = payload
+                originals[name] = bytes(image)
+                (source / name).write_bytes(image)
+            result = subprocess.run(
+                [sys.executable, str(build_images.REPO_ROOT / "src/cpm/build_images.py"),
+                 "--disk-dir", str(source), "--output-dir", str(output)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            for name in build_images.SOURCE_DISK_NAMES[1:]:
+                self.assertEqual((output / name).read_bytes(), originals[name])
+            drive_a = (output / build_images.OUTPUT_DISK_NAMES[0]).read_bytes()
+            original_a = originals[build_images.SOURCE_DISK_NAMES[0]]
+            self.assertEqual(drive_a[build_images.SYSTEM_BYTES:build_images.SYSTEM_BYTES + 32],
+                             original_a[build_images.SYSTEM_BYTES:build_images.SYSTEM_BYTES + 32])
+            self.assertEqual(drive_a[start:start + build_images.RECORD_BYTES],
+                             original_a[start:start + build_images.RECORD_BYTES])
+            boot = (output / "z80boot.img").read_bytes()
+            self.assertEqual(drive_a[:build_images.CPM_SYSTEM_BYTES],
+                             boot[build_images.CCP_BASE:build_images.BIOS_BASE])
+            directory_data = drive_a[build_images.SYSTEM_BYTES:
+                                     build_images.SYSTEM_BYTES + (build_images.DPB_DRM + 1) * 32]
+            self.assertIn(b"AUTORUN COM", directory_data)
+            for name, image in originals.items():
+                self.assertEqual((source / name).read_bytes(), image)
 
     def test_example_install_replaces_stale_and_removes_retired_files(self) -> None:
         cpmcp = shutil.which("cpmcp")

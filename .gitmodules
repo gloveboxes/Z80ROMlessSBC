@@ -1,3 +1,6 @@
 [submodule "src/stage10_websocket_terminal/lib/pico-ws-server"]
 	path = src/stage10_websocket_terminal/lib/pico-ws-server
 	url = https://github.com/gloveboxes/pico-ws-server.git
+[submodule "external/z80-cpm-container"]
+	path = external/z80-cpm-container
+	url = https://github.com/gloveboxes/z80-cpm-container.git

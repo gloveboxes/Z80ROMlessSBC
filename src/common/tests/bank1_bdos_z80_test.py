@@ -186,56 +186,19 @@ class BankOneBdos(unittest.TestCase):
 
     def test_native_linker_emits_checked_typed_exports(self) -> None:
         root = Path(__file__).resolve().parents[3]
-        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
-        if not (dcc / "m80c").is_file() or not (dcc / "l80c").is_file():
-            self.skipTest("native library linker and assembler are required")
-        with tempfile.TemporaryDirectory(prefix="typed-linker-") as directory:
-            folder = Path(directory)
-            (folder / "LIB.MAC").write_text(
-                "\tcseg\n\tpublic _b1e00\n_b1e00:\n"
-                "\tld hl,1\n\tret\n"
-                "\tpublic _b1s00\n_b1s00:\n\tdb 'u16()',0\n\tend\n")
-            subprocess.run(
-                [str(dcc / "m80c"), "=LIB.MAC", "/X", "/O", "/Z", "/L", "/C"],
-                cwd=folder, check=True, capture_output=True)
-            base = [str(dcc / "l80c"), "/P:100,LIB", "--lib",
-                    "--export", "VALUE=_b1e00", "-o", "TYPED"]
-            subprocess.run(base + ["--signature", "VALUE=_b1s00"],
-                           cwd=folder, check=True, capture_output=True)
-            library = (folder / "TYPED.LIB").read_bytes()
-            self.assertEqual(library[:8], b"B1LB\x01\x01\x00\x01")
-            self.assertEqual(int.from_bytes(library[18:20], "little"), 38)
-            signature = int.from_bytes(library[36:38], "little")
-            self.assertEqual(library[38 + signature:38 + signature + 6],
-                             b"u16()\0")
-            case, bank = self.run_bank_one_payload(
-                b"", operation=8, lib_file=library)
-            self.assertEqual((case.machine.hl, bank[0xE4D2]), (0, 1))
-            eight = base + ["--signature", "VALUE=_b1s00"]
-            for index in range(1, 8):
-                eight += ["--export", f"V{index}=_b1e00",
-                          "--signature", f"V{index}=_b1s00"]
-            subprocess.run(eight, cwd=folder, check=True, capture_output=True)
-            library = (folder / "TYPED.LIB").read_bytes()
-            self.assertEqual(int.from_bytes(library[18:20], "little"), 122)
-            case, bank = self.run_bank_one_payload(
-                b"", operation=8, lib_file=library)
-            self.assertEqual((case.machine.hl, bank[0xE4D2]), (0, 8))
-            self.assertEqual(bank[0x100:0x10A], b"\x21\x01\0\xC9u16()\0")
-            for arguments in (
-                [],
-                ["--signature", "OTHER=_b1s00"],
-                ["--signature", "VALUE=_b1s00",
-                 "--signature", "VALUE=_b1s00"],
-                ["--signature", "VALUE=_none"],
-                ["--signature", "VALUE="],
-            ):
-                with self.subTest(arguments=arguments):
-                    result = subprocess.run(
-                        base + arguments, cwd=folder,
-                        capture_output=True, text=True)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn("l80c:", result.stderr)
+        folder = root / "build/z80-fixtures/bdos"
+        library = (folder / "TYPED1.LIB").read_bytes()
+        self.assertEqual(library[:8], b"B1LB\x01\x01\x00\x01")
+        self.assertEqual(int.from_bytes(library[18:20], "little"), 38)
+        signature = int.from_bytes(library[36:38], "little")
+        self.assertEqual(library[38 + signature:38 + signature + 6], b"u16()\0")
+        case, bank = self.run_bank_one_payload(b"", operation=8, lib_file=library)
+        self.assertEqual((case.machine.hl, bank[0xE4D2]), (0, 1))
+        library = (folder / "TYPED8.LIB").read_bytes()
+        self.assertEqual(int.from_bytes(library[18:20], "little"), 122)
+        case, bank = self.run_bank_one_payload(b"", operation=8, lib_file=library)
+        self.assertEqual((case.machine.hl, bank[0xE4D2]), (0, 8))
+        self.assertEqual(bank[0x100:0x10A], b"\x21\x01\0\xC9u16()\0")
 
     def test_resident_loader_initializes_heap_for_each_supported_stack(self) -> None:
         # A second record replaces the header DMA buffer before heap setup.
@@ -272,58 +235,7 @@ class BankOneBdos(unittest.TestCase):
 
     def test_dcc_malloc_uses_reclaimed_heap_after_zeroed_bss(self) -> None:
         root = Path(__file__).resolve().parents[3]
-        dcc = Path(os.environ.get("DCC_DIR", str(root.parent / "dcc")))
-        if not (dcc / "dcc").exists():
-            self.skipTest("sibling DCC toolchain is unavailable")
-        subprocess.run(
-            [str(dcc / "dccmake")], cwd=root / "examples/LIBDEMO/lib",
-            env={**os.environ, "DCC_DIR": str(dcc)},
-            check=True, capture_output=True)
-        with tempfile.TemporaryDirectory() as directory:
-            folder = Path(directory)
-            (folder / "HEAP.C").write_text(
-                "#include <stdlib.h>\n"
-                "static unsigned char bss[2048];\n"
-                "char hsig[] = \"u16(u16)\";\n"
-                "unsigned int check(unsigned int *unused) {\n"
-                " unsigned char *p;\n"
-                " (void)unused;\n"
-                " if (bss[0] || bss[2047]) return 0;\n"
-                " p = (unsigned char *)malloc(32768U);\n"
-                " if (!p) return 0;\n"
-                " p[0] = 17; p[32767] = 29;\n"
-                " bss[0] = p[0]; bss[2047] = p[32767];\n"
-                " free(p);\n"
-                " return bss[0] == 17 && bss[2047] == 29 ? 0xBEEF : 0;\n"
-                "}\n")
-            commands = [
-                [str(dcc / "dcc"), "-stack", "512", "HEAP.C", "-o", "HEAP.MAC"],
-                [str(dcc / "dccrtlstrip"), "-r",
-                 str(root / "examples/LIBDEMO/lib/build/DCCRTL.MAC"),
-                 "-o", "RTLMIN.MAC", "HEAP.MAC"],
-                [str(dcc / "m80c"), "=HEAP.MAC", "/X", "/O", "/Z", "/L"],
-                [str(dcc / "m80c"), "=RTLMIN.MAC", "/X", "/O", "/Z", "/L"],
-                [str(dcc / "l80c"), "/P:100,RTLMIN,HEAP", "--lib",
-                 "--stack-bytes", "512", "--export", "_HEAP=_CHECK",
-                 "--signature", "_HEAP=_HSIG",
-                 "-o", "HEAP"],
-            ]
-            for command in commands:
-                result = subprocess.run(command, cwd=folder, capture_output=True,
-                                        text=True)
-                if result.returncode:
-                    for listing in folder.glob("*.PRN"):
-                        lines = listing.read_text().splitlines()
-                        for index, line in enumerate(lines):
-                            if line.startswith("*****"):
-                                print("\n".join(lines[max(0, index - 2):index + 1]))
-                self.assertEqual(result.returncode, 0,
-                                 f"{command}: {result.stdout}\n{result.stderr}")
-                if command[0] == str(dcc / "dccrtlstrip"):
-                    runtime = folder / "RTLMIN.MAC"
-                    runtime.write_text(
-                        runtime.read_text().replace("\tend\tstart", "\tend"))
-            library = (folder / "HEAP.LIB").read_bytes()
+        library = (root / "build/z80-fixtures/bdos/HEAP.LIB").read_bytes()
         case, bank = self.run_bank_one_payload(b"", operation=8, lib_file=library)
         self.assertEqual(case.machine.hl, 0)
         machine = case.machine

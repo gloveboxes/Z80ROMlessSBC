@@ -44,15 +44,12 @@ are excluded; every measured call still queries the live allocation size.
 The adapter calls the BIOS checked entries, which read the live extent through
 a mirrored helper instead of the allocator service, so each checked call costs
 about 1,340 T-states beyond the 16-byte bursts.
-From the repository root, after building MEMPERF:
+From the repository root:
 
 ```sh
-PYTHONPATH=src/common/tests python3.14 \
-  src/common/tests/banked_sdk_benchmark.py
-PYTHONPATH=src/common/tests python3.14 \
-  src/common/tests/banked_transfer_benchmark.py
-PYTHONPATH=src/common/tests python3.14 \
-  src/common/tests/banked_sdk_benchmark.py --services
+python3 scripts/z80_container.py test --benchmark sdk
+python3 scripts/z80_container.py test --benchmark transfer
+python3 scripts/z80_container.py test --benchmark services
 ```
 
 For 4 KiB total, with maskable interrupts disabled:

@@ -1,9 +1,4 @@
-"""ctypes front end to the project's C Z80 emulator (libz80sbc-emulator).
-
-Build the library with:
-    cmake -S src/cpm/z80_debug_host -B build/cpm/z80_debug_host \
-        -DZ80_DEBUG_HOST_BUILD_EXAMPLES=OFF
-    cmake --build build/cpm/z80_debug_host --target z80sbc-emulator
+"""ctypes front end to the shared container's C Z80 emulator.
 
 The library holds one machine per process: constructing Z80Machine resets it.
 Bank selection is modeled in C; see machine.bank() and machine.active_bank.
@@ -13,20 +8,15 @@ from __future__ import annotations
 
 import ctypes
 import os
-import sys
 from pathlib import Path
-
-_REPO = Path(__file__).resolve().parents[3]
-_SUFFIX = {"darwin": ".dylib", "win32": ".dll"}.get(sys.platform, ".so")
-_PREFIX = "" if sys.platform == "win32" else "lib"
-
 
 def _load() -> ctypes.CDLL:
     override = os.environ.get("Z80SBC_EMULATOR")
-    path = Path(override) if override else (
-        _REPO / "build/cpm/z80_debug_host" / f"{_PREFIX}z80sbc-emulator{_SUFFIX}")
+    if not override:
+        raise ImportError("Run Z80 execution tests with python3 scripts/z80_container.py test")
+    path = Path(override)
     if not path.exists():
-        raise ImportError(f"{path} not found; build the z80sbc-emulator CMake target")
+        raise ImportError(f"Z80 emulator library not found: {path}")
     return ctypes.CDLL(str(path))
 
 

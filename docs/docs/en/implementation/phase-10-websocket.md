@@ -31,13 +31,14 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 | --- | --- | --- |
 | Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
 | CP/M system | **Build and flash Pico - CP/M system and Drive A** | Rebuilds CP/M; replaces boot package and Drive A; preserves firmware, B-D and ENV |
-| All disks | **Flash Pico - All disks (A-D)** | Rebuilds and validates matching boot package and A; replaces boot package and A-D; preserves firmware and ENV |
+| All disks | **Flash Pico - All disks (A-D)** | Uses staged Altair A-D; replaces boot package and A-D, including D's database; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
 | BDS C disk | **Flash Pico - Drive B** | Replaces B only |
 | Escape disk | **Flash Pico - Drive C** | Replaces C only |
 | Blank disk | **Flash Pico - Drive D** | Replaces D only |
 
-- Firmware confirmation: **Proceed**. Disk confirmation: **Replace selected disks**. Both default to **Cancel**.
+- Firmware confirmation: **Proceed**. Single-disk confirmation: **Replace selected disks**.
+  All-disks confirmation: **Replace all disks from Altair**. All default to **Cancel**.
 - CP/M system confirmation: **Replace CP/M and drive A**, default **Cancel**.
   Use this after changing the CP/M assembly; it updates cold-boot and warm-boot
   images together. All Drive A files are replaced without backups.

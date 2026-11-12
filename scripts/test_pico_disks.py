@@ -27,7 +27,7 @@ class DiskFlashTaskTests(unittest.TestCase):
                     "Build and flash Pico - CP/M system and Drive A")
         stages = [shlex.split(stage.strip()) for stage in task["command"].split("&&")]
         self.assertEqual(stages[-2], [
-            "python", "src/cpm/build_images.py",
+            "python", "scripts/z80_container.py", "images",
             "--output-dir", "build/cpm-system-update",
         ])
         self.assertEqual(stages[-1], [
@@ -62,19 +62,59 @@ class DiskFlashTaskTests(unittest.TestCase):
                     for index, argument in enumerate(arguments) if argument == "--drive"
                 ]
                 drives = "ABCD" if label == labels[0] else label[-1]
+                expected_images = source_images
                 if label == labels[0]:
                     self.assertEqual(arguments[arguments.index("--boot-package") + 1],
                                      "build/cpm-disk-update/z80boot.pkg")
+                    expected_images = {
+                        drive: f"build/cpm-disk-update/drive_{drive.lower()}_{suffix}.img"
+                        for drive, suffix in (("A", "cpm63k-z80"), ("B", "bdsc"),
+                                              ("C", "escape"), ("D", "blank"))
+                    }
                 self.assertEqual(
-                    assignments, [f"{drive}={source_images[drive]}" for drive in drives]
+                    assignments, [f"{drive}={expected_images[drive]}" for drive in drives]
                 )
                 self.assertEqual(flash_index, len(stages) - 1)
                 self.assertEqual(command.count("scripts/pico_flash.py disks"), 1)
-                if "A" in drives or "B" in drives:
+                if label == labels[0]:
                     self.assertEqual(stages[flash_index - 1], [
-                        "python", "src/cpm/build_images.py",
+                        "python", "scripts/z80_container.py", "disk", "prepare",
+                    ])
+                elif "A" in drives or "B" in drives:
+                    self.assertEqual(stages[flash_index - 1], [
+                        "python", "scripts/z80_container.py", "images",
                         "--output-dir", "build/cpm-disk-update",
                     ])
+
+    def test_full_provision_builds_firmware_natively_then_images_in_container(self) -> None:
+        tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
+        task = next(t for t in tasks if t["label"] ==
+                    "Build and flash Pico - Phase 10 firmware and disks")
+        command = task["command"]
+        stages = [shlex.split(stage.strip()) for stage in command.split("&&")]
+        self.assertIn("${input:picoProvisionSafety}", command)
+        self.assertEqual(stages[2], [
+            "python", "scripts/pico_build.py", "--build-dir", "build", "--target",
+            "z80_stage10_websocket_terminal",
+        ])
+        self.assertEqual(stages[3], [
+            "python", "scripts/z80_container.py", "images",
+            "--output-dir", "build/cpm-layout-upgrade", "--firmware",
+            "build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.bin",
+        ])
+        self.assertEqual(stages[5][:2], ["picotool", "load"])
+
+    def test_phase9_provision_uses_selected_firmware_for_container_images(self) -> None:
+        tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
+        task = next(t for t in tasks if t["label"] ==
+                    "Build and flash Pico - Phase 9 firmware and disks")
+        command = task["command"]
+        self.assertIn('${input:picoProvisionSafety}" != "Replace all flash"', command)
+        self.assertIn('python3 scripts/pico_build.py --build-dir build --target "$phase9_target"', command)
+        self.assertIn('python3 scripts/z80_container.py images --output-dir "build/$phase9_output" '
+                      '--firmware "build/src/stage09_flash_storage/$phase9_target.bin"', command)
+        self.assertIn('picotool load --ser "${input:picoUsbSerial}" -v '
+                      '"build/$phase9_output/z80romless-flash.bin"', command)
 
 
 class DiskFlashTests(unittest.TestCase):
