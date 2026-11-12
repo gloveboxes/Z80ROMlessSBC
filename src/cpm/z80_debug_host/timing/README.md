@@ -23,9 +23,8 @@ the evidence:
 - Only on the budgeted path, `x80_emulate()`, which `sbc_run()` calls once per
   instruction. `x80_emulate_instructions()`, the batch path the debug host
   uses, does not compute timing.
-- An opcode the engine cannot execute stops the machine. This includes the
-  documented `IN r,(C)` and `OUT (C),r` (`ED 40`-`ED 79`) and 180 undocumented
-  `ED` encodings; no timing claim is made for them.
+- Prefixed `HALT` (`DD 76`, `FD 76`) is the one encoding the engine cannot
+  execute; it stops the machine and no timing claim is made for it.
 
 ## Timing rules
 
@@ -43,6 +42,8 @@ prefixes and the state-dependent forms.
 | `ED` block step (`LDI`, `CPI`, `INI`, `OUTI` and decrementing forms) | 16 |
 | `ED` block repeat (`LDIR`, `CPIR`, `INIR`, `OTIR` and decrementing forms) | 21 per repeating iteration, 16 for the last |
 | `ADC HL,rp`, `SBC HL,rp` | 15 |
+| `IN r,(C)`, `OUT (C),r` (`ED 40`-`ED 79`, including `ED 70` and `ED 71`) | 12 |
+| Undefined `ED` opcode (acts as two `NOP`s) | 8 |
 | `LD (nn),rp`, `LD rp,(nn)` (`ED` forms) | 20 |
 | `NEG`, `IM n` / `RETN`, `RETI` | 8 / 14 |
 | `LD I,A`, `LD R,A`, `LD A,I`, `LD A,R` / `RRD`, `RLD` | 9 / 18 |
@@ -62,7 +63,8 @@ figures, for example `LD HL,(nn)` 16, `LD SP,HL` 6 and `EX AF,AF'` 4.
 ## Difference from the DCC copy
 
 `x80.hxx` and `z80.h` are identical to the DCC copy. `x80.cxx` differs from
-`dcc/src/dcc_debug_host/x80.cxx` only in this accounting:
+`dcc/src/dcc_debug_host/x80.cxx` in this accounting and in the instruction
+semantics listed under [Undocumented behavior](../README.md#undocumented-behavior):
 
 - **Only in the DCC copy:** the `z80_cycles` opcode table, the `cyclesnt`
   adjustment, and `cycles` bookkeeping inside `z80_emulate()` and
@@ -70,7 +72,7 @@ figures, for example `LD HL,(nn)` 16, `LD SP,HL` 6 and `EX AF,AF'` 4.
 - **Only here:** `z80_main_tstates()` and `z80_tstates()`, called from the
   budgeted loop in `x80_emulate_budget()` before each opcode fetch.
 
-Instruction semantics, flags and the disassembler are identical. Copying
+The disassembler is identical. Copying
 `x80.cxx` from DCC replaces this accounting with the DCC copy's; the
 `Z80Timing` tests below fail when that happens.
 
@@ -98,16 +100,15 @@ taken (or block instruction repeating) and once not taken: every unprefixed,
   engine built from the DCC copy of `x80.cxx` and saved as
   `dcc_copy_counts.json`. 1,243 encodings report a different count in at least
   one case: 25 unprefixed, 164 `CB`, 50 `ED`, 246 each for `DD` and `FD`, and
-  all 256 each for `DD CB d` and `FD CB d`. 194 `ED` encodings are not executed
-  by either build.
-- **Engine against CH.** 1,410 table entries: 1,394 compared, 16 not executed
-  by the engine (`IN r,(C)`, `OUT (C),r` and the undocumented `ED 70`,
-  `ED 71`), **0 differ**. This covers the undocumented `IXH`/`IXL`/`IYH`/`IYL`
-  and `DD CB d` register forms that UM does not list.
-- **Engine against ZI.** 319 entries: 305 compared, 14 not executed
-  (`IN r,(C)`, `OUT (C),r`), **1 differs**: ZI lists `LD HL,(NN)` (`2A`) as
-  20, where UM p. 102 and CH give 16. 20 is the figure for the `ED`-prefixed
-  `LD dd,(nn)` (UM p. 103).
+  all 256 each for `DD CB d` and `FD CB d`. A further 194 `ED` encodings
+  (`IN r,(C)`, `OUT (C),r` and the undefined opcodes) are not executed by the
+  DCC copy.
+- **Engine against CH.** 1,410 table entries, all compared, **0 differ**. This
+  covers the undocumented `IXH`/`IXL`/`IYH`/`IYL` and `DD CB d` register forms
+  that UM does not list.
+- **Engine against ZI.** 319 entries, all compared, **1 differs**: ZI lists
+  `LD HL,(NN)` (`2A`) as 20, where UM p. 102 and CH give 16. 20 is the figure
+  for the `ED`-prefixed `LD dd,(nn)` (UM p. 103).
 
 ### Each difference
 
@@ -173,9 +174,8 @@ These forms report the same count in both builds and match UM: `RET cc`
 
 - The references give documented timings. Nothing here was measured on a
   physical Z80, and a host count does not qualify hardware timing.
-- `IN r,(C)` and `OUT (C),r` are documented at 12 T-states (UM p. 296,
-  p. 307) but the engine does not execute them, so they are excluded from the
-  tests and comparisons.
+- The undefined `ED` opcodes are counted as 8 T-states, two `NOP`s. No
+  published table lists them.
 - The two rows marked "CH comparison only" have no regression test.
 
 ## Effect on measurements
@@ -205,10 +205,12 @@ opcode decoding, and fails if a stepped instruction stops the machine:
 
 - every unprefixed opcode, with its condition met and not met;
 - all 256 `CB` opcodes;
-- the documented `ED` opcodes the engine executes, and each block-repeat form
-  while repeating, on its last iteration and, for `CPIR`/`CPDR`, on a match;
+- the documented `ED` opcodes, the undefined `ED` opcodes, and each
+  block-repeat form while repeating, on its last iteration and, for
+  `CPIR`/`CPDR`, on a match;
 - the documented `IX` and `IY` forms, including `DD CB d` and `FD CB d`;
-- the extra fetch for an index prefix on other instructions;
+- the extra fetch for an index prefix, and for each repeated or mixed prefix, on
+  other instructions;
 - whole-routine totals for `LDIR`, `INIR`, `DJNZ` and a stack-burst sequence.
 
 Run it before any other Z80 test and after every engine change:

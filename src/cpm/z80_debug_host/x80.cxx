@@ -1,7 +1,8 @@
 // Z80-only emulator for dcc_debug_host.
 // Derived from ntvcm x80.cxx by David Lee, CC0 1.0 Universal.
-// Source lineage includes ntvcm through commit dce7246 (2026-08-09),
-// specialized to Z80 and adapted for the debugger hardware API.
+// Source lineage includes ntvcm through commit a3b2357 (2026-11-09) except its
+// optional Z80_ZILOG_SCF_CCF mode, specialized to Z80 and adapted for the
+// debugger hardware API.
 // This debugger-local copy intentionally contains no Intel 8080 mode.
 // Symbols that start with z80_ are Z80-specific helpers.
 // Validated 100% pass for Z80 with zexall.com, zexdoc.com, and cputest.com in Z80 mode.
@@ -492,6 +493,51 @@ void z80_execute_unprefixed( uint8_t op, uint8_t op2, uint16_t & pc, uint16_t & 
     }
 } //z80_execute_unprefixed
 
+// The flags INI, IND, OUTI and OUTD leave, as do INIR, INDR, OTIR and OTDR after each pass,
+// per Sean Young's "The Undocumented Z80 Documented": S, Z, Y and X as DEC B gives them; N is bit 7
+// of the byte moved; and with k the byte plus L after the move (OUTI, OUTD) or C + 1 or C - 1
+// (INI, IND), H and C are set if k > 255 and P/V is the parity of ( k & 7 ) ^ B.
+void z80_block_io_flags( uint8_t value, uint8_t other )
+{
+    unsigned k = (unsigned) value + other;
+    reg.fSign = ( 0 != ( reg.b & 0x80 ) );
+    reg.fZero = ( 0 == reg.b );
+    reg.z80_assignYX( reg.b );
+    reg.fWasSubtract = ( 0 != ( value & 0x80 ) );
+    reg.fAuxCarry = reg.fCarry = ( k > 0xff );
+    set_parity( (uint8_t) ( ( k & 7 ) ^ reg.b ) );
+} //z80_block_io_flags
+
+// A pass of LDIR, LDDR, CPIR or CPDR that will repeat takes Y and X from bits 13 and 11 of the
+// instruction's address while it rewinds PC (David Banks, "Undocumented Flags", Z80Decoder wiki).
+void z80_block_repeat_yx( uint16_t address )
+{
+    reg.z80_assignYX( (uint8_t) ( address >> 8 ) );
+} //z80_block_repeat_yx
+
+// A repeating pass of INIR, INDR, OTIR or OTDR does the same and also adjusts H and P/V from B,
+// the carry and bit 7 of the byte moved (same source). Call it after z80_block_io_flags().
+void z80_block_io_repeat_flags( uint8_t value, uint16_t address )
+{
+    z80_block_repeat_yx( address );
+    uint8_t b = reg.b;
+    if ( reg.fCarry )
+    {
+        if ( 0 != ( value & 0x80 ) )
+        {
+            b--;
+            reg.fAuxCarry = ( 0x00 == ( reg.b & 0x0f ) );
+        }
+        else
+        {
+            b++;
+            reg.fAuxCarry = ( 0x0f == ( reg.b & 0x0f ) );
+        }
+    }
+    if ( !is_parity_even8( b & 7 ) )
+        reg.fParityEven_Overflow = !reg.fParityEven_Overflow;
+} //z80_block_io_repeat_flags
+
 void z80_op_bit( uint8_t val, uint8_t bit, z80_value_source vs )
 {
     assert( bit <= 7 );
@@ -766,6 +812,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
         }
         case 0xcb: // rotate / bits
         {
+            reg.z80_bump_r(); // the opcode after the cb prefix is a second M1 fetch
             pcbyte( pc ); // get past op2
 
             if ( 0x20 == ( op2 & 0xf8 ) ) // sla
@@ -800,8 +847,6 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 uint8_t rm = op2 & 0x7;
                 uint8_t bit = ( op2 >> 3 ) & 0x7;
                 uint8_t val = src_value_rm( rm );
-                if ( 6 == rm )
-                    reg.z80_set_memptr( reg.H() + 1 );
                 z80_op_bit( val, bit, ( 6 == rm ) ? vs_memory : vs_register );
             }
             else if ( op2 >= 0x80 && op2 <= 0xbf ) // res bit #, rm  AKA reset
@@ -854,7 +899,21 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
         case 0xdd: case 0xfd: // ix & iy operations
         {
             reg.z80_bump_r();
-            pcbyte( pc ); // consume op2: the dd or fd
+            pcbyte( pc ); // consume op2
+
+            // DD and FD prefixes may be repeated or mixed. Each extra prefix is
+            // another M1 cycle that bumps R, and the last one selects IX or IY.
+            // Memory holding nothing but prefixes has no instruction to reach.
+            for ( uint32_t extra = 0; ( 0xdd == op2 || 0xfd == op2 ) && extra < 0x10000; extra++ )
+            {
+                op = op2;
+                reg.z80_bump_r();
+                op2 = memory[ pc ];
+                op3 = memory[ pc + 1 ];
+                op4 = memory[ pc + 2 ];
+                op3int = (int) (int8_t) op3;
+                pcbyte( pc );
+            }
 
             // Prefixed HALT (DD 76 / FD 76) executes as plain HALT with the
             // DD/FD prefix ignored: opcode 0x76 occupies the otherwise
@@ -881,7 +940,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
             // the true match 0x46 does, purely by bit-pattern coincidence,
             // and would otherwise be silently misinterpreted as a load from
             // (IX+d) into (HL) instead of ever reaching this check.
-            if ( 0x76 == op2 )
+            if ( 0x76 == op2 || 0xdd == op2 || 0xfd == op2 )
             {
                 z80_ni( op, op2 );
                 break;
@@ -1035,9 +1094,8 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 reg.z80_setIndex( op, newval );
                 reg.z80_set_memptr( oldval + 1 );
             }
-            else if ( 0xcb == op2 ) // bit operations
+            else if ( 0xcb == op2 ) // bit operations; the displacement and final opcode are not M1 fetches
             {
-                reg.z80_bump_r();
                 if ( 0x26 == op4 || 0x2e == op4 || 0x3e == op4 ) // sla, sra, srl [ix/iy + offset]
                 {
                     uint8_t offset = pcbyte( pc ); // the op3
@@ -1081,10 +1139,11 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                     if ( 6 != rm )          // no write to memory variant
                         * dst_address_rm( rm ) = memory[ index ];
                 }
-                else if ( ( ( op4 & 0xf ) == 0xe ) || ( ( op4 & 0xf ) == 0x6 ) ) // bit/res/set b, (ix/iy + d)
+                else if ( op4 >= 0x40 ) // bit/res/set b, (ix/iy + d), including undocumented register destinations
                 {
                     uint8_t index = pcbyte( pc );
                     uint8_t mod = pcbyte( pc );
+                    uint8_t rm = mod & 0x7;
                     uint8_t bit = ( mod >> 3 ) & 0x7;
                     uint8_t mask = 1 << bit;
                     uint8_t top2bits = mod & 0xc0;
@@ -1098,30 +1157,18 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                     }
                     else if ( 0x80 == top2bits ) // reset
                     {
-                        mask = ~mask;
-                        val &= mask;
+                        val &= (uint8_t) ~mask;
                         memory[ offset ] = val;
+                        if ( 6 != rm )
+                            * dst_address_rm( rm ) = val;
                     }
-                    else if ( 0xc0 == top2bits ) // set
+                    else // set
                     {
                         val |= mask;
                         memory[ offset ] = val;
+                        if ( 6 != rm )
+                            * dst_address_rm( rm ) = val;
                     }
-                    else if ( 0x00 == top2bits ) // rlc/rl/rrc/rr rotate of (i + index)
-                    {
-                        if ( 0x06 == mod )
-                            z80_op_rlc( & memory[ offset ] );
-                        else if ( 0x16 == mod )
-                            z80_op_rl( & memory[ offset ] );
-                        else if ( 0x0e == mod )
-                            z80_op_rrc( & memory[ offset ] );
-                        else if ( 0x1e == mod )
-                            z80_op_rr( & memory[ offset ] );
-                        else
-                            z80_ni( op, op2 );
-                    }
-                    else
-                        z80_ni( op, op2 );
                 }
             }
             else if ( 0xe1 == op2 ) // pop ix/iy
@@ -1216,9 +1263,9 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
             }
             else if ( 0x5f == op2 ) // ld a,r
             {
-                reg.a = ( 0x7f & reg.r ); // the high bit is always 0 on Z80
+                reg.a = reg.r; // bit 7 is sticky from the last ld r,a; only bits 0-6 auto-increment
                 set_sign_zero( reg.a );
-                reg.fParityEven_Overflow = false; // no iff2
+                reg.fParityEven_Overflow = reg.fINTE2;
                 reg.fWasSubtract = false;
                 reg.fAuxCarry = false;
                 reg.z80_assignYX( reg.a );
@@ -1341,6 +1388,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 {
                     reg.z80_set_memptr( pc - 1 );
                     pc -= 2;
+                    z80_block_repeat_yx( pc );
                 }
             }
             else if ( 0xb1 == op2 ) // cpir
@@ -1361,6 +1409,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 {
                     reg.z80_set_memptr( pc - 1 );
                     pc -= 2;
+                    z80_block_repeat_yx( pc );
                 }
                 else
                 {
@@ -1385,6 +1434,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 {
                     reg.z80_set_memptr( pc - 1 );
                     pc -= 2;
+                    z80_block_repeat_yx( pc );
                 }
             }
             else if ( 0xb9 == op2 ) // cpdr
@@ -1405,6 +1455,7 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 {
                     reg.z80_set_memptr( pc - 1 );
                     pc -= 2;
+                    z80_block_repeat_yx( pc );
                 }
                 else
                 {
@@ -1418,24 +1469,26 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 bool decrement = ( 0 != ( op2 & 8 ) );
                 uint16_t hl = reg.H();
                 uint8_t old_a = reg.a;
+                uint8_t value;
                 if ( input )
                 {
                     reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
-                    x80_invoke_in( reg.c );
-                    memory[ hl ] = reg.a;
+                    x80_invoke_in( reg.c ); // the port address carries B before the decrement
+                    value = reg.a;
+                    memory[ hl ] = value;
+                    reg.b--;
                 }
                 else
                 {
-                    reg.a = memory[ hl ];
+                    value = memory[ hl ];
+                    reg.b--; // the port address carries B after the decrement
+                    reg.a = value;
                     x80_invoke_out( reg.c );
+                    reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
                 }
                 reg.a = old_a;
                 reg.SetH( decrement ? hl - 1 : hl + 1 );
-                reg.b--;
-                if ( !input )
-                    reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
-                reg.fZero = ( 0 == reg.b );
-                reg.fWasSubtract = true;
+                z80_block_io_flags( value, input ? (uint8_t) ( reg.c + ( decrement ? -1 : 1 ) ) : reg.l );
             }
             else if ( 0xb2 == op2 || 0xba == op2 || // inir / indr
                       0xb3 == op2 || 0xbb == op2 )   // otir / otdr
@@ -1444,27 +1497,30 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 bool decrement = ( 0 != ( op2 & 8 ) );
                 uint16_t hl = reg.H();
                 uint8_t old_a = reg.a;
+                uint8_t value;
                 if ( input )
                 {
                     reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
-                    x80_invoke_in( reg.c );
-                    memory[ hl ] = reg.a;
+                    x80_invoke_in( reg.c ); // the port address carries B before the decrement
+                    value = reg.a;
+                    memory[ hl ] = value;
+                    reg.b--;
                 }
                 else
                 {
-                    reg.a = memory[ hl ];
+                    value = memory[ hl ];
+                    reg.b--; // the port address carries B after the decrement
+                    reg.a = value;
                     x80_invoke_out( reg.c );
+                    reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
                 }
                 reg.a = old_a;
                 reg.SetH( decrement ? hl - 1 : hl + 1 );
-                reg.b--;
-                if ( !input )
-                    reg.z80_set_memptr( reg.B() + ( decrement ? -1 : 1 ) );
-                reg.fZero = ( 0 == reg.b );
-                reg.fWasSubtract = true;
+                z80_block_io_flags( value, input ? (uint8_t) ( reg.c + ( decrement ? -1 : 1 ) ) : reg.l );
                 if ( 0 != reg.b )
                 {
                     pc -= 2;
+                    z80_block_io_repeat_flags( value, pc );
                 }
             }
             else if ( 0x42 == ( op2 & 0xcf ) ) // sbc hl, rp AKA sbc hl, ss
@@ -1475,8 +1531,30 @@ X80_HOT_CODE void z80_emulate( uint8_t op, uint16_t & pc, uint16_t & sp )    // 
                 reg.SetH( z80_op_sub_16( oldH, val, reg.fCarry ) );
                 reg.z80_set_memptr( oldH + 1 );
             }
-            else
-                z80_ni( op, op2 );
+            else if ( 0x40 == ( op2 & 0xc7 ) ) // in r,(c); rm==6 is the undocumented flags-only variant
+            {
+                uint8_t old_a = reg.a;
+                x80_invoke_in( reg.c );
+                uint8_t val = reg.a;
+                reg.a = old_a;
+                uint8_t rm = 7 & ( op2 >> 3 );
+                if ( 6 != rm )
+                    * dst_address_rm( rm ) = val;
+                set_sign_zero_parity( val );
+                reg.clearHN();
+                reg.z80_assignYX( val );
+                reg.z80_set_memptr( reg.B() + 1 );
+            }
+            else if ( 0x41 == ( op2 & 0xc7 ) ) // out (c),r; rm==6 is the undocumented variant that writes 0
+            {
+                uint8_t rm = 7 & ( op2 >> 3 );
+                uint8_t old_a = reg.a;
+                reg.a = ( 6 == rm ) ? 0 : * dst_address_rm( rm );
+                x80_invoke_out( reg.c );
+                reg.a = old_a;
+                reg.z80_set_memptr( reg.B() + 1 );
+            }
+            // any other ed-prefixed byte is undefined and acts as two nops
             break;
         }
         default:
@@ -1909,11 +1987,11 @@ static uint8_t z80_main_tstates( uint8_t op, bool taken )
 
 // Documented Z80 T-states of the instruction at pc, decided from the CPU state
 // before it executes. A repeating block instruction is one iteration.
-static uint8_t z80_tstates( uint16_t pc )
+static uint32_t z80_tstates( uint16_t pc )
 {
-    uint8_t prefixes = 0;
+    uint32_t prefixes = 0;
     uint8_t op = memory[ pc ];
-    while ( 0xdd == op || 0xfd == op )
+    for ( uint32_t extra = 0; ( 0xdd == op || 0xfd == op ) && extra < 0x10000; extra++ )
     {
         const uint8_t next = memory[ (uint16_t) ( pc + 1 ) ];
         if ( 0xdd != next && 0xed != next && 0xfd != next )

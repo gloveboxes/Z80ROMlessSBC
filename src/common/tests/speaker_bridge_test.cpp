@@ -1,12 +1,29 @@
 #include <cassert>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 
 extern "C" {
 #include "../../cpm/dcc_io_adapter/host/PortDrivers/speaker_io.h"
 }
+
+static std::string diagnostic_output;
+static int speaker_printf(const char *format, ...) {
+  char buffer[512];
+  va_list args;
+  va_start(args, format);
+  int length = vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+  assert(length >= 0 && static_cast<size_t>(length) < sizeof(buffer));
+  diagnostic_output += buffer;
+  return length;
+}
+
+#define printf speaker_printf
 #include "../../stage10_websocket_terminal/speaker_io.cpp"
+#undef printf
 
 static uint64_t now;
 static bool bus_busy, bus_read;
@@ -70,6 +87,7 @@ Result poll() {
 }
 
 static void reset() {
+  diagnostic_output.clear();
   speaker_io_init(SPEAKER_IO_CLOCK_MANUAL);
   produced = consumed = fault = transfers = 0;
   position = expected = 0;
@@ -358,8 +376,20 @@ static void test_idle_pass_is_free() {
   assert(time_reads == 0);
 }
 
+static void test_print_status() {
+  reset();
+  for (unsigned i = 0; i < QUEUE_SIZE + 1; ++i)
+    z80_speaker_out(0);
+  settle();
+  z80_speaker_print_status();
+  assert(diagnostic_output ==
+         "[speaker] address=42h baud=400000 "
+         "fault=0 transfers=4 dropped=1\n");
+}
+
 int main() {
   test_idle_pass_is_free();
+  test_print_status();
   test_packets_and_snapshots();
   test_presets_and_controls();
   test_manual_effects();

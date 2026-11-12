@@ -13,6 +13,35 @@ name. The Z80 engine files come from the sibling DCC checkout:
 documented Z80 T-states; [timing/README.md](timing/README.md) describes that
 accounting, the evidence for it and how it differs from the DCC copy.
 
+## Undocumented behavior
+
+`x80.cxx` also carries the undocumented Z80 behavior of the ntvcm engine, which
+the DCC copy lacks. `emulator_z80_test.py` checks each item against an
+independent reference:
+
+- `IN r,(C)` and `OUT (C),r` (`ED 40`-`ED 79`) go through the port hooks with
+  `B:C` as the address; `ED 70` sets only the flags and `ED 71` writes 0.
+- Undefined `ED` opcodes are two `NOP`s.
+- Repeated or mixed `DD`/`FD` prefixes: the last one selects `IX` or `IY`, and
+  each extra prefix is one more fetch. Memory holding only prefixes stops the
+  machine.
+- `DD CB d` and `FD CB d` with a register in the low three bits operate on
+  `(IX+d)` and copy the result to that register; `BIT` ignores the register.
+- `INI`, `IND`, `OUTI`, `OUTD` and their repeating forms set every flag from the
+  byte moved, `B` and `L` or `C`. The port address carries `B` before the
+  decrement for input and after it for output.
+- A block-instruction pass that repeats takes `Y` and `X` from bits 13 and 11
+  of the instruction's address; for `INIR`, `INDR`, `OTIR` and `OTDR` it also
+  adjusts `H` and P/V.
+- `BIT b,(HL)` takes `Y` and `X` from MEMPTR and leaves MEMPTR unchanged.
+- `R` counts opcode fetches: one for an unprefixed instruction, two for `CB`,
+  `ED`, `DD`, `FD`, `DD CB d` and `FD CB d` forms, one more for each extra
+  prefix, and two for each pass of a repeating block instruction.
+- `LD A,R` returns bit 7 as last written by `LD R,A`.
+
+`SCF` and `CCF` follow the NEC rule (`Y` and `X` from `A`); the Zilog rule that
+ntvcm offers behind `Z80_ZILOG_SCF_CCF` is not implemented.
+
 The engine is kept in this project so the test does not silently use a
 different installed emulator. Update `x80.hxx` and `z80.h` only by copying the
 matching current versions from `dcc/src/dcc_debug_host/` and verify them with

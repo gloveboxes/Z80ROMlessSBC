@@ -217,9 +217,6 @@ word writes, and numbers are formatted by hand. Uptime counts ticks, so the
 column range is found once, four bytes at a time, when it is rendered. The I2C
 transfer configures its DMA channels once, starts with four register writes,
 checks only the RX channel and verifies every ACK with one OR-accumulated word.
-**Ctrl-] s** reports `cpu_passes` and `cpu_max_cycles` on the `[oled]` and
-`[speaker]` lines: the count and worst-case cycles of passes that did work since
-the previous report, at 120 cycles per microsecond.
 
 Every display write, from the address scan through page data, is asynchronous:
 it starts the transmit and receive DMA channels and returns, and a later pass
@@ -232,8 +229,9 @@ binary IPv4 address each second and formats text only when it changes.
 New transactions require a running CPU and no flash pause. An in-flight
 transfer is drained through STOP while paused, but further pages wait until
 updates are allowed. Missed ticks coalesce to the current status; the service
-does not queue a catch-up burst. **Ctrl-] s** reports the OLED address, state
-and failures without periodic terminal logging.
+does not queue a catch-up burst. **Ctrl-] s** reports the OLED address, baud,
+fault, and transfers without periodic terminal logging.
+`transfers` counts acknowledged I2C transactions.
 
 ??? info "PIO/DMA I2C transport and host test"
 

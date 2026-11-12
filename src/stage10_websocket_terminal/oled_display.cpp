@@ -2,7 +2,6 @@
 #include "display_i2c.h"
 #include "../common/io_service.h"
 #include "pico/stdlib.h"
-#include "z80sbc/cycle_stats.h"
 #include "z80sbc/ram_func.h"
 #include "z80sbc/ram_timer.h"
 #include "z80sbc/terminal.h"
@@ -55,7 +54,6 @@ uint8_t second_in_minute;
 // True while next_tick_us is known to be within the 32-bit timer window.
 bool gate_open;
 uint64_t uptime_minute = UINT64_MAX;
-z80_cycle_stats_t cpu_stats;
 char cached_ip[16];
 bool ip_valid;
 uint32_t seen_address_generation;
@@ -64,6 +62,7 @@ bool web_dot;
 uint32_t published_status;
 uint32_t last_published_status = UINT32_MAX;
 bool address_error;
+uint32_t transfers;
 
 constexpr uint16_t glyph(unsigned a, unsigned b, unsigned c, unsigned d, unsigned e) {
   return (a << 12) | (b << 9) | (c << 6) | (d << 3) | e;
@@ -377,6 +376,8 @@ void __not_in_flash_func(service)(bool updates_allowed) {
     if (result == display_i2c::Result::pending)
       return;
     transfer_active = false;
+    if (result == display_i2c::Result::complete)
+      __atomic_fetch_add(&transfers, 1u, __ATOMIC_RELAXED);
     if (result == display_i2c::Result::failed) {
       failure = Failure::bus;
       state = State::failed;
@@ -489,7 +490,6 @@ void __not_in_flash_func(publish)(bool updates_allowed) {
                                   static_cast<uint32_t>(next_tick_us)) < 0) {
     return;
   }
-  uint32_t start = z80_cycle_count();
   service(updates_allowed);
   uint32_t snapshot = static_cast<uint32_t>(state) |
                       (static_cast<uint32_t>(address) << 8) |
@@ -500,27 +500,19 @@ void __not_in_flash_func(publish)(bool updates_allowed) {
     last_published_status = snapshot;
     __atomic_store_n(&published_status, snapshot, __ATOMIC_RELEASE);
   }
-  z80_cycle_stats_add(&cpu_stats, z80_cycle_count() - start);
 }
 
 void print_status() {
-  constexpr const char *states[] = {
-      "uninitialized", "scanning", "initializing", "ready",
-      "page", "enabling", "failed",
-  };
   uint32_t snapshot = __atomic_load_n(&published_status, __ATOMIC_ACQUIRE);
   auto display_state = static_cast<State>(snapshot & 0xff);
   auto reason = static_cast<Failure>((snapshot >> 16) & 0xff);
   auto bus_reason = static_cast<display_i2c::Failure>((snapshot >> 24) & 0xf);
-  uint32_t passes, max_cycles;
-  z80_cycle_stats_take(&cpu_stats, &passes, &max_cycles);
-  printf("[oled] driver=SSD1315 128x32 transport=PIO_I2C_DMA SCL=GP%u SDA=GP%u "
-         "state=%s address=0x%02x ip_check_ms=1000 uptime_interval_ms=60000 heartbeat_ms=1000 "
-         "cpu_passes=%lu cpu_max_cycles=%lu\n",
-         display_i2c::PIN_SCL, display_i2c::PIN_SDA,
-         states[static_cast<unsigned>(display_state)],
+  printf("[oled] address=%02xh baud=%lu "
+         "fault=%u transfers=%lu\n",
          static_cast<unsigned>((snapshot >> 8) & 0xff),
-         static_cast<unsigned long>(passes), static_cast<unsigned long>(max_cycles));
+         static_cast<unsigned long>(display_i2c::BAUD),
+         static_cast<unsigned>(reason),
+         static_cast<unsigned long>(__atomic_load_n(&transfers, __ATOMIC_RELAXED)));
   if (display_state == State::failed) {
     constexpr const char *reasons[] = {
         "none", "no OLED ACK at 0x3c or 0x3d", "SSD1315 write was not acknowledged",

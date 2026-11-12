@@ -1,7 +1,6 @@
 #include "speaker_io.h"
 #include "display_i2c.h"
 #include "../stage11_extension_board/flash_ATTiny85/target/protocol.h"
-#include "z80sbc/cycle_stats.h"
 #include "z80sbc/ram_func.h"
 #include "z80sbc/ram_timer.h"
 
@@ -35,7 +34,6 @@ uint64_t deadline, retry_at, next_at, deferred_since;
 uint32_t stall_state, stall_backlog;
 uint64_t last_service;
 uint32_t transfers, dropped;
-z80_cycle_stats_t cpu_stats;
 // Commands are fire and forget. The ATtiny85 has one command slot and NACKs a
 // byte while it is full, so writes are paced; a command it still refuses, or
 // that arrives with the queue full, is dropped and counted.
@@ -263,16 +261,14 @@ static void __not_in_flash_func(service_pass)() {
 }
 
 // Core 0 calls this every pass. An idle bridge with an empty queue returns
-// before any timer read; only a pass that has work is counted and timed.
+// before any timer read.
 extern "C" void __not_in_flash_func(z80_speaker_service)(void) {
   if (state == State::idle &&
       (disabled ? reported
                 : !__atomic_load_n(&fault, __ATOMIC_RELAXED) &&
                       consumed == __atomic_load_n(&produced, __ATOMIC_ACQUIRE)))
     return;
-  uint32_t start = z80_cycle_count();
   service_pass();
-  z80_cycle_stats_add(&cpu_stats, z80_cycle_count() - start);
 }
 
 extern "C" bool z80_speaker_quiescent(void) {
@@ -281,13 +277,10 @@ extern "C" bool z80_speaker_quiescent(void) {
 }
 
 extern "C" void z80_speaker_print_status(void) {
-  uint32_t passes, max_cycles;
-  z80_cycle_stats_take(&cpu_stats, &passes, &max_cycles);
-  printf("[speaker] port=15h address=42h SDA=GP22 SCL=GP26 baud=%lu "
-         "fault=%lu transfers=%lu dropped=%lu cpu_passes=%lu cpu_max_cycles=%lu\n",
+  printf("[speaker] address=42h baud=%lu "
+         "fault=%lu transfers=%lu dropped=%lu\n",
          (unsigned long)display_i2c::BAUD,
          (unsigned long)__atomic_load_n(&fault, __ATOMIC_ACQUIRE),
          (unsigned long)__atomic_load_n(&transfers, __ATOMIC_RELAXED),
-         (unsigned long)__atomic_load_n(&dropped, __ATOMIC_RELAXED),
-         (unsigned long)passes, (unsigned long)max_cycles);
+         (unsigned long)__atomic_load_n(&dropped, __ATOMIC_RELAXED));
 }

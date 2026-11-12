@@ -14,6 +14,7 @@ import unittest
 import z80
 
 S, Z, H, PV, N, C = 0x80, 0x40, 0x10, 0x04, 0x02, 0x01
+Y, X = 0x20, 0x08
 DOCUMENTED = S | Z | H | PV | N | C
 CODE = 0x0100
 EDGE8 = (0x00, 0x01, 0x02, 0x0F, 0x10, 0x7F, 0x80, 0x81, 0x8F, 0xF0, 0xFF)
@@ -65,6 +66,24 @@ def sbc16(a: int, b: int, borrow: int) -> tuple[int, int]:
     flags |= H if (a & 0xFFF) - (b & 0xFFF) - borrow < 0 else 0
     flags |= PV if (a ^ b) & (a ^ result) & 0x8000 else 0
     return result, flags | (C if total < 0 else 0)
+
+
+def block_io_flags(value: int, other: int, b: int) -> int:
+    """INI/IND/OUTI/OUTD flags from Sean Young's "The Undocumented Z80 Documented"."""
+    k = value + other
+    flags = (b & (S | Y | X)) | (Z if not b else 0) | (N if value & 0x80 else 0)
+    flags |= (H | C) if k > 0xFF else 0
+    return flags | (PV if bin((k & 7) ^ b).count("1") % 2 == 0 else 0)
+
+
+def block_io_repeat_flags(flags: int, value: int, b: int, address: int) -> int:
+    """What a repeating INIR/INDR/OTIR/OTDR pass changes (David Banks, Z80Decoder wiki, "Undocumented Flags")."""
+    flags = (flags & ~(Y | X)) | ((address >> 8) & (Y | X))
+    adjusted = b
+    if flags & C:
+        adjusted = b - 1 if value & 0x80 else b + 1
+        flags = (flags & ~H) | (H if (b & 0x0F) == (0x00 if value & 0x80 else 0x0F) else 0)
+    return flags ^ (PV if bin(adjusted & 7).count("1") % 2 else 0)
 
 
 class Z80Flags(unittest.TestCase):
@@ -188,6 +207,165 @@ class Z80Execution(unittest.TestCase):
         self.assertEqual(seen, [(0x21, 0x99)])
         self.assertEqual(self.machine.a, 0x62)
 
+    def test_in_out_c_use_bc_and_set_flags(self) -> None:
+        reads, writes = [], []
+        self.machine.set_input_callback(lambda port: reads.append(port) or 0x80)
+        self.machine.set_output_callback(lambda port, value: writes.append((port, value)))
+        self.machine.bc, self.machine.a, self.machine.f = 0x1234, 0x55, C | N | H
+        run(self.machine, b"\xED\x40")                              # in b,(c)
+        self.assertEqual((self.machine.b, self.machine.a, reads), (0x80, 0x55, [0x1234]))
+        self.assertEqual(self.machine.f & 0xD7, S | C)                # H and N cleared, odd parity, C kept
+        self.machine.f = C | Z
+        run(self.machine, b"\xED\x70")                              # undocumented: flags only
+        self.assertEqual((self.machine.b, self.machine.f & 0xD7), (0x80, S | C))
+        run(self.machine, b"\xED\x79\xED\x71")                      # out (c),a ; out (c),0
+        self.assertEqual(writes, [(0x8034, 0x55), (0x8034, 0x00)])
+        self.assertEqual(self.machine.a, 0x55)
+
+    def test_undefined_ed_opcodes_are_nops(self) -> None:
+        for op in (0x00, 0x3F, 0x77, 0x7F, 0x80, 0xA4, 0xBF, 0xC0, 0xFF):
+            with self.subTest(op=op):
+                self.machine.af, self.machine.bc, self.machine.hl = 0x12D7, 0x3456, 0x789A
+                run(self.machine, bytes((0xED, op)))
+                self.assertEqual((self.machine.af, self.machine.bc, self.machine.hl), (0x12D7, 0x3456, 0x789A))
+                self.assertEqual(self.machine.pc, CODE + 3)
+
+    def test_repeated_index_prefixes_use_the_last_one(self) -> None:
+        self.machine.ix, self.machine.iy = 0x1111, 0x2222
+        run(self.machine, b"\xDD\xDD\x21\x34\x12")
+        self.assertEqual((self.machine.ix, self.machine.iy), (0x1234, 0x2222))
+        self.machine.ix = self.machine.iy = 0
+        run(self.machine, b"\xDD\xFD\x21\x78\x56\xFD\xDD\x21\xBC\x9A")
+        self.assertEqual((self.machine.ix, self.machine.iy), (0x9ABC, 0x5678))
+        self.machine.hl, self.machine.ix = 0x1111, 0x2222
+        run(self.machine, b"\xDD\xFD\x23")                          # inc iy
+        self.assertEqual((self.machine.hl, self.machine.ix, self.machine.iy), (0x1111, 0x2222, 0x5679))
+
+    def test_indexed_bit_operations_copy_to_register(self) -> None:
+        registers = {0: "b", 1: "c", 2: "d", 3: "e", 4: "h", 5: "l", 7: "a"}
+        operations = ((0x00, lambda v: ((v << 1) | (v >> 7)) & 0xFF),   # rlc (ix+5),r
+                      (0x90, lambda v: v & ~0x04),                      # res 2,(ix+5),r
+                      (0xE8, lambda v: v | 0x20))                       # set 5,(ix+5),r
+        for rm, name in registers.items():
+            for base, model in operations:
+                with self.subTest(register=name, op=base):
+                    self.machine.ix = 0x2000
+                    self.machine.memory[0x2005] = 0x81
+                    self.machine.af = self.machine.bc = self.machine.de = self.machine.hl = 0
+                    run(self.machine, bytes((0xDD, 0xCB, 0x05, base | rm)))
+                    self.assertEqual(self.machine.pc, CODE + 5)
+                    expected = model(0x81)
+                    self.assertEqual(self.machine.memory[0x2005], expected)
+                    self.assertEqual(getattr(self.machine, name), expected)
+        self.machine.memory[0x2005] = 0x80
+        self.machine.bc = 0x0055
+        run(self.machine, b"\xDD\xCB\x05\x79")                      # bit 7,(ix+5) through the c slot leaves c alone
+        self.assertEqual((self.machine.c, self.machine.memory[0x2005]), (0x55, 0x80))
+        self.assertFalse(self.machine.f & Z)
+
+    def test_bit_hl_takes_xy_from_memptr_and_leaves_it_alone(self) -> None:
+        self.machine.memory[0x2800] = 0x00
+        self.machine.hl = 0x0100
+        run(self.machine, b"\x3A\x00\x28\xCB\x46")                  # ld a,(2800h) sets memptr to 2801h; bit 0,(hl)
+        self.assertEqual(self.machine.f & (Y | X), Y | X)
+        run(self.machine, b"\xCB\x46")                                # a second bit sees the same memptr
+        self.assertEqual(self.machine.f & (Y | X), Y | X)
+
+    def test_ld_a_r_keeps_the_sticky_bit_7(self) -> None:
+        self.machine.a = 0x85
+        run(self.machine, b"\xED\x4F\xED\x5F")                      # ld r,a ; ld a,r
+        self.assertEqual(self.machine.a, 0x87)                        # bits 0-6 count the two fetches of ld a,r
+
+    def test_ld_a_i_and_ld_a_r_copy_iff2_to_parity(self) -> None:
+        for opcode, iff2 in itertools.product((0x57, 0x5F), (False, True)):
+            with self.subTest(opcode=opcode, iff2=iff2):
+                self.machine.iff2, self.machine.f = iff2, 0xFF
+                run(self.machine, bytes((0xED, opcode)))
+                self.assertEqual(self.machine.f & (PV | H | N | C), (PV if iff2 else 0) | C)
+
+    def test_r_counts_opcode_fetches(self) -> None:
+        cases = ((b"\x00", 1), (b"\xCB\x00", 2), (b"\xED\x44", 2), (b"\xED\x00", 2),
+                 (b"\xDD\x21\x34\x12", 2), (b"\xDD\xDD\x21\x34\x12", 3), (b"\xDD\xFD\xDD\x23", 4),
+                 (b"\xDD\xCB\x05\x06", 2), (b"\xFD\xCB\x05\x46", 2), (b"\xDD\xED\x44", 3),
+                 (b"\x01\x03\x00\xED\xB0", 1 + 3 * 2))                # ld bc,3 ; ldir fetches ED B0 on each pass
+        for code, fetches in cases:
+            with self.subTest(code=code.hex()):
+                self.machine.a = 0
+                self.machine.ix = self.machine.iy = 0x2000
+                self.machine.hl, self.machine.de = 0x3000, 0x4000
+                run(self.machine, b"\xED\x4F" + code + b"\xED\x5F")   # ld r,a ; code ; ld a,r
+                self.assertEqual(self.machine.a, fetches + 2)
+
+    def step_at(self, address: int, code: bytes) -> None:
+        self.machine.memory[address:address + len(code)] = code
+        self.machine.halted = False
+        self.machine.pc = address
+        self.machine.ticks_to_stop = 1000
+        self.machine.step_over_breakpoint()
+
+    def test_repeating_block_copy_and_compare_take_xy_from_pc(self) -> None:
+        # LDx leaves Y and X from (HL) + A, CPx from A - (HL) - H; a pass that repeats overrides both.
+        for address, (opcode, done) in itertools.product((0x0100, 0x0800, 0x2000, 0x2800),
+                                                         ((0xB0, Y | X), (0xB8, Y | X), (0xB1, Y), (0xB9, Y))):
+            with self.subTest(address=address, opcode=opcode):
+                self.machine.memory[0x400F:0x4012] = b"\x09\x09\x09"
+                self.machine.a, self.machine.f = 0x01, 0
+                self.machine.hl, self.machine.de, self.machine.bc = 0x4010, 0x5010, 2
+                self.step_at(address, bytes((0xED, opcode)))
+                self.assertEqual((self.machine.pc, self.machine.f & (Y | X)), (address, (address >> 8) & (Y | X)))
+                self.machine.step_over_breakpoint()
+                self.assertEqual((self.machine.pc, self.machine.f & (Y | X)), (address + 2, done))
+
+    def test_block_io_port_address_high_byte(self) -> None:
+        reads, writes = [], []
+        self.machine.set_input_callback(lambda port: reads.append(port) or 0)
+        self.machine.set_output_callback(lambda port, value: writes.append(port))
+        for opcode in (0xA2, 0xB2, 0xA3, 0xB3):                       # ini inir outi otir
+            self.machine.bc, self.machine.hl = 0x0340, 0x5000
+            run(self.machine, bytes((0xED, opcode)))
+        self.assertEqual(reads, [0x0340, 0x0340, 0x0240, 0x0140])     # B before the decrement
+        self.assertEqual(writes, [0x0240, 0x0240, 0x0140, 0x0040])    # B after the decrement
+
+    def test_memory_of_only_prefixes_stops(self) -> None:
+        self.machine.memory[0:0x10000] = b"\xDD\xFD" * 0x8000
+        self.machine.pc = CODE
+        self.machine.ticks_to_stop = 1000
+        self.machine.run()
+        self.assertTrue(self.machine.halted)
+
+    def test_block_io_flags(self) -> None:
+        for value, port_low, b, l in itertools.product((0x00, 0x01, 0x7F, 0x80, 0xFF), (0x00, 0x7F, 0xFF), (1, 2, 0x81), (0x00, 0x80, 0xFF)):
+            with self.subTest(value=value, c=port_low, b=b, l=l):
+                self.machine.set_input_callback(lambda port, value=value: value)
+                for opcode, increment, reads in ((0xA2, 1, True), (0xAA, -1, True), (0xA3, 1, False), (0xAB, -1, False)):
+                    self.machine.f = 0
+                    self.machine.hl = 0x2000 | l
+                    self.machine.bc = b << 8 | port_low
+                    self.machine.memory[self.machine.hl] = 0x00 if reads else value
+                    run(self.machine, bytes((0xED, opcode)))
+                    other = (port_low + increment) & 0xFF if reads else (l + increment) & 0xFF
+                    self.assertEqual(self.machine.f, block_io_flags(value, other, b - 1))
+                    self.assertEqual(self.machine.b, b - 1)
+
+    def test_repeating_block_io_flags(self) -> None:
+        cases = itertools.product((0x00, 0x7F, 0x80, 0xFF), (0x00, 0xFF), (1, 2, 0x10, 0x11, 0x81), (0x00, 0xFF),
+                                  (0x0100, 0x2800))
+        for value, port_low, b, l, address in cases:
+            with self.subTest(value=value, c=port_low, b=b, l=l, address=address):
+                self.machine.set_input_callback(lambda port, value=value: value)
+                for opcode, increment, reads in ((0xB2, 1, True), (0xBA, -1, True), (0xB3, 1, False), (0xBB, -1, False)):
+                    self.machine.f = 0
+                    self.machine.hl = 0x4000 | l
+                    self.machine.bc = b << 8 | port_low
+                    self.machine.memory[self.machine.hl] = 0x00 if reads else value
+                    self.step_at(address, bytes((0xED, opcode)))
+                    other = (port_low + increment) & 0xFF if reads else (l + increment) & 0xFF
+                    expected = block_io_flags(value, other, b - 1)
+                    if b - 1:                                         # the pass repeats
+                        expected = block_io_repeat_flags(expected, value, b - 1, address)
+                    self.assertEqual(self.machine.f, expected)
+                    self.assertEqual(self.machine.pc, address if b - 1 else address + 2)
+
     def test_tick_limit_halt_and_breakpoint(self) -> None:
         self.machine.memory[CODE:CODE + 4] = b"\x00\x00\x00\x76"
         self.machine.pc = CODE
@@ -250,14 +428,18 @@ def documented_main() -> dict[int, tuple[int, int]]:
     return table
 
 
-# IN r,(C) and OUT (C),r are absent: the engine does not implement them.
 DOCUMENTED_ED = {
+    **dict.fromkeys(range(0x40, 0x80, 8), 12),                       # IN r,(C), including the flags-only ED 70
+    **dict.fromkeys(range(0x41, 0x80, 8), 12),                       # OUT (C),r, including ED 71 (writes 0)
     **dict.fromkeys((0x42, 0x52, 0x62, 0x72, 0x4A, 0x5A, 0x6A, 0x7A), 15),  # SBC/ADC HL,rp
     **dict.fromkeys((0x43, 0x53, 0x63, 0x73, 0x4B, 0x5B, 0x6B, 0x7B), 20),  # LD (nn),rp and back
     0x44: 8, 0x45: 14, 0x4D: 14, 0x46: 8, 0x56: 8, 0x5E: 8,         # NEG RETN RETI IM
     0x47: 9, 0x4F: 9, 0x57: 9, 0x5F: 9, 0x67: 18, 0x6F: 18,         # LD I/R; RRD; RLD
     **dict.fromkeys((0xA0, 0xA1, 0xA2, 0xA3, 0xA8, 0xA9, 0xAA, 0xAB), 16),  # LDI CPI INI OUTI ...
 }
+# Every other ED opcode is undefined and acts as two NOPs.
+UNDEFINED_ED = (*range(0x00, 0x40), 0x77, 0x7F, *range(0x80, 0xA0), 0xA4, 0xA5, 0xA6, 0xA7, 0xAC, 0xAD, 0xAE, 0xAF,
+                0xB4, 0xB5, 0xB6, 0xB7, 0xBC, 0xBD, 0xBE, 0xBF, *range(0xC0, 0x100))
 BLOCK_REPEATS = (0xB0, 0xB1, 0xB2, 0xB3, 0xB8, 0xB9, 0xBA, 0xBB)   # 21 repeating, 16 when done
 DOCUMENTED_INDEX = {
     **dict.fromkeys((0x09, 0x19, 0x29, 0x39), 15),                  # ADD IX,rp
@@ -318,6 +500,11 @@ class Z80Timing(unittest.TestCase):
             with self.subTest(opcode=f"ED {opcode:02X}"):
                 self.assertEqual(self.step(bytes([0xED, opcode])), expected)
 
+    def test_undefined_extended_instructions(self) -> None:
+        for opcode in UNDEFINED_ED:
+            with self.subTest(opcode=f"ED {opcode:02X}"):
+                self.assertEqual(self.step(bytes([0xED, opcode])), 8)
+
     def test_block_repeat_instructions(self) -> None:
         for opcode in BLOCK_REPEATS:
             # Copies and compares count in BC; the I/O forms count in B.
@@ -346,6 +533,9 @@ class Z80Timing(unittest.TestCase):
         self.assertEqual(self.step(b"\xDD\x10", b=2), 17)           # DJNZ taken
         self.assertEqual(self.step(b"\xDD\x10", b=1), 12)
         self.assertEqual(self.step(b"\xDD\xED\xB0", bc=2), 25)      # LDIR repeating
+        for prefixes in (b"\xDD\xDD", b"\xDD\xFD", b"\xFD\xDD"):
+            self.assertEqual(self.step(prefixes + b"\x21"), 18)      # each extra prefix is one fetch
+        self.assertEqual(self.step(b"\xDD\xDD\xFD\x23"), 18)
 
     def test_run_totals_whole_routines(self) -> None:
         machine = self.machine

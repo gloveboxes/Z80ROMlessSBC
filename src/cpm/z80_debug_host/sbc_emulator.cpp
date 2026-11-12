@@ -33,10 +33,14 @@ void x80_invoke_halt(void)
     g_halted = true;
 }
 
-// The Z80 drives A15-A8 from B for ED-prefixed I/O and from A otherwise.
+// The Z80 drives A15-A8 from B for ED-prefixed I/O and from A otherwise. DD and
+// FD prefixes before an ED are ignored.
 static uint16_t io_address(uint8_t port)
 {
-    const uint8_t high = memory[g_instruction_pc] == 0xED ? reg.b : reg.a;
+    uint16_t pc = g_instruction_pc;
+    while (memory[pc] == 0xDD || memory[pc] == 0xFD)
+        pc++;
+    const uint8_t high = memory[pc] == 0xED ? reg.b : reg.a;
     return (uint16_t)(high << 8 | port);
 }
 
@@ -47,10 +51,11 @@ void x80_invoke_in(uint8_t port)
 
 void x80_invoke_out(uint8_t port)
 {
+    const uint16_t address = io_address(port); // decoded before a bank switch replaces the instruction
     if (sbc_bank_port_matches(port))
         sbc_bank_select(reg.a & 1);
     if (g_out)
-        g_out(io_address(port), reg.a, g_context);
+        g_out(address, reg.a, g_context);
 }
 
 void x80_hard_exit(const char *, uint8_t, uint8_t)

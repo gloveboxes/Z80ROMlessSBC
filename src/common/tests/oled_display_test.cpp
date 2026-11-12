@@ -352,6 +352,7 @@ static void reset() {
   address_generation = 0;
   oled_display::published_status = 0;
   oled_display::address_error = false;
+  oled_display::transfers = 0;
   address_reads = 0;
   snprintf(fake_ip, sizeof(fake_ip), "192.168.1.123");
 }
@@ -391,7 +392,7 @@ static void assert_failed(const char *reason, bool bus_released) {
   assert(machine.transactions.size() == before);
   diagnostic_output.clear();
   z80_oled_print_status();
-  assert(diagnostic_output.find("state=failed") != std::string::npos);
+  assert(diagnostic_output.find("[oled] FAIL: ") != std::string::npos);
   assert(diagnostic_output.find(reason) != std::string::npos);
   if (bus_released) {
     assert(!machine.enabled && machine.scl && machine.sda);
@@ -414,6 +415,14 @@ static void test_startup() {
     settle();
     assert(oled_display::enabled && oled_display::address == oled_address);
     assert(oled_display::valid_pages == 0x0f);
+    char expected[256];
+    snprintf(expected, sizeof(expected),
+             "[oled] address=%02xh baud=400000 "
+             "fault=0 transfers=7\n",
+             static_cast<unsigned>(oled_address));
+    diagnostic_output.clear();
+    z80_oled_print_status();
+    assert(diagnostic_output == expected);
     assert(memcmp(oled_display::framebuffer, oled_display::confirmed,
                   sizeof(oled_display::confirmed)) == 0);
     for (unsigned page = 0; page < 4; ++page)
@@ -795,6 +804,7 @@ static void test_device_failures() {
   run_until_failed();
   assert(!oled_display::enabled);
   assert_failed("SSD1315 write was not acknowledged", false);
+  assert(diagnostic_output.find("fault=2 transfers=2") != std::string::npos);
 
   // A NACK on any byte of a maximum-length write is reported, not a bus failure.
   for (unsigned byte = 1; byte <= display_i2c::MAX_DATA_BYTES + 1; ++byte) {
