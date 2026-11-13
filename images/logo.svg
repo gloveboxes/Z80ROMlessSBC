@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="180" viewBox="0 0 760 180" role="img" aria-labelledby="title desc">
+  <title id="title">Z80 ROMless SBC</title>
+  <desc id="desc">A Z80 chip and clock pulse beside the project name. Real Z80. Pico powered. ROM free.</desc>
+  <rect width="760" height="180" rx="24" fill="#f5f7fb"/>
+  <g transform="translate(14 10)">
+  <rect x="24" y="24" width="112" height="112" rx="22" fill="#172c46"/>
+  <g fill="none" stroke="#008f87" stroke-width="8" stroke-linecap="round">
+    <path d="M8 52h16M8 80h16M8 108h16M136 52h16M136 80h16M136 108h16M52 8v16M80 8v16M108 8v16M52 136v16M80 136v16M108 136v16"/>
+  </g>
+  <text x="80" y="86" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">Z80</text>
+  <path d="M44 109h17V97h18v12h18V97h19" fill="none" stroke="#5ce0cd" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+  <text x="202" y="83" fill="#172c46" font-family="Arial, Helvetica, sans-serif" font-size="49" font-weight="700" letter-spacing="-1.5">Z80 <tspan fill="#007f79">ROMless</tspan> SBC</text>
+  <text x="205" y="123" fill="#536780" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="0.4">Real Z80. Pico powered. ROM free.</text>
+</svg>
