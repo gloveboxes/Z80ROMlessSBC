@@ -20,8 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.cpm import build_images as cpm_images
 
 from pico_supervisor import (
-    FlashError, disconnect_picocom, open_supervisor, positive_seconds,
-    require_free_port, resolve_device, stop,
+    FlashError, disconnect_picocom, discover_bootsel_serial, open_supervisor,
+    pico_ports, positive_seconds, require_free_port, resolve_device, stop,
 )
 
 FLASH_BASE = 0x10000000
@@ -133,6 +133,12 @@ def prepare_target(args: argparse.Namespace) -> str:
         if not args.serial:
             raise FlashError("BOOTSEL requires explicit --serial to select the intended Pico")
         return args.serial
+    if getattr(args, "force", False) and args.port is None and not pico_ports(args.serial):
+        device = discover_bootsel_serial(args.serial)
+        if device is not None:
+            args.bootsel = True
+            print(f"Using Pico {device} already in BOOTSEL", flush=True)
+            return device
     port, device = resolve_device(args.port, args.serial)
     print(f"Using Pico {device} on {port}", flush=True)
     if not args.no_disconnect:
@@ -367,7 +373,7 @@ def main() -> int:
     firmware.add_argument("--no-reboot", action="store_true")
     firmware.add_argument(
         "--force", action="store_true",
-        help="skip the Phase 9 stop/flush handshake and force picotool into BOOTSEL",
+        help="skip stop/flush; discover a BOOTSEL Pico or force the running Pico into BOOTSEL",
     )
     disks = commands.add_parser(
         "disks", help="flash one or more selected disk slots without backups",

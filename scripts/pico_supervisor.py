@@ -23,6 +23,55 @@ class FlashError(RuntimeError):
     pass
 
 
+def discover_bootsel_serial(serial: str | None = None) -> str | None:
+    command = ["picotool", "info", "--device"]
+    if serial:
+        command.extend(["--ser", serial])
+    try:
+        result = subprocess.run(
+            command, capture_output=True,
+            text=True, timeout=15, check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise FlashError("BOOTSEL discovery timed out; no reset or flash performed") from error
+    if result.returncode:
+        details = (result.stdout + result.stderr).strip()
+        # ERROR_NO_DEVICE is -7 (249 as a POSIX exit status). Only a reported
+        # reset-capable RP2350 permits runtime discovery; access errors stay fatal.
+        summary = " ".join(details.split())
+        if (
+            result.returncode in (-7, 249)
+            and summary.startswith("No accessible RP-series devices in BOOTSEL mode")
+            and re.search(
+                r"RP2350 device at bus \d+, address \d+ "
+                r"appears to have a USB serial connection, so",
+                summary,
+            )
+            and "appears to be in BOOTSEL mode" not in summary
+            and "unable to connect" not in summary
+        ):
+            return None
+        raise FlashError(
+            "BOOTSEL discovery failed. Hold BOOTSEL (BOOT on Pimoroni) while "
+            f"connecting the intended board's USB cable. No device was reset.\n{details}"
+        )
+    fields = [line.strip().partition(":") for line in result.stdout.splitlines()]
+    types = [value.strip() for key, _, value in fields if key == "type"]
+    if types != ["RP2350"]:
+        raise FlashError(
+            f"Expected exactly one RP2350 device in BOOTSEL; found {len(types)} "
+            f"device(s): {', '.join(types) or 'none'}. "
+            "Disconnect other BOOTSEL devices or use --serial SERIAL."
+        )
+    identifiers = [value.strip() for key, _, value in fields if key == "chipid"]
+    match = re.fullmatch(r"(?:0x)?([0-9a-fA-F]{16})", identifiers[0]) \
+        if len(identifiers) == 1 else None
+    if match is None:
+        raise FlashError("picotool did not report one valid RP2350 chip ID; no flash performed")
+    # RP2350 BOOTSEL and SDK USB serials use the same 16-digit chip ID.
+    return match.group(1).upper()
+
+
 def pico_ports(device: Optional[str] = None) -> list[ListPortInfo]:
     return [
         port for port in list_ports.comports()

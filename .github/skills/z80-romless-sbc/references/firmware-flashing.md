@@ -47,6 +47,10 @@ python scripts/pico_flash.py firmware \
   firmware with Stage 9 commands.
 - For an already-BOOTSEL device, use `--bootsel --stopped --serial DEVICE_SERIAL`;
   the clean stop must have been confirmed before entering BOOTSEL.
+- Force-flash tasks also discover a unique RP2350 already in BOOTSEL when no
+  matching serial port is present, including a new Pico with no firmware.
+  Multiple BOOTSEL devices require `--serial DEVICE_SERIAL`; `--port` selects
+  running USB serial firmware only.
 - The tool rejects malformed UF2s and payloads outside the firmware region.
   It uses verified picotool loading, preserves the disks/boot/journal/ENV, and
   never reboots after a failed write or verification.

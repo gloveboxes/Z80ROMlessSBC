@@ -205,6 +205,67 @@ class FlashTests(unittest.TestCase):
             )
         tool.assert_called_once_with(["load", "-v", str(self.image)], "TEST")
 
+    def test_force_discovers_new_bootsel_pico_without_serial_access(self) -> None:
+        info = "Device Information\n type: RP2350\n chipid: 0x0123456789abcdef\n"
+        with (
+            patch.object(flash, "pico_ports", return_value=[]),
+            patch.object(flash.subprocess, "run", return_value=subprocess.CompletedProcess(
+                [], 0, info, "",
+            )) as run,
+            patch.object(flash, "resolve_device") as resolve,
+            patch.object(flash, "disconnect_picocom") as disconnect,
+            patch.object(flash, "open_supervisor") as connection,
+            patch.object(flash.sys, "argv", [
+                "pico_flash.py", "firmware", str(self.image),
+                "--power-confirmed", "--force",
+            ]),
+        ):
+            self.assertEqual(flash.main(), 0)
+        self.assertEqual([call.args[0] for call in run.call_args_list], [
+            ["picotool", "info", "--device"],
+            ["picotool", "load", "-v", str(self.image), "--ser", "0123456789ABCDEF"],
+            ["picotool", "reboot", "--ser", "0123456789ABCDEF"],
+        ])
+        resolve.assert_not_called()
+        disconnect.assert_not_called()
+        connection.assert_not_called()
+
+    def test_force_bootsel_discovery_failure_prevents_writes(self) -> None:
+        info = "Device Information\n type: RP2350\n chipid: 0x0123456789abcdef\n"
+        for output, code in (
+            (info * 2, 0), (info.replace("RP2350", "RP2040"), 0),
+            ("No accessible RP-series devices in BOOTSEL mode were found.", 249),
+            ("USB access denied", 1),
+        ):
+            with (
+                self.subTest(output=output),
+                patch.object(flash, "pico_ports", return_value=[]),
+                patch.object(flash.subprocess, "run", return_value=subprocess.CompletedProcess(
+                    [], code, output, "",
+                )) as run,
+                patch.object(flash, "picotool") as tool,
+            ):
+                with self.assertRaises(supervisor.FlashError):
+                    flash.flash_firmware(self.arguments(force=True, port=None, serial=None))
+            run.assert_called_once()
+            tool.assert_not_called()
+
+    def test_force_retains_running_device_and_explicit_port_selection(self) -> None:
+        for port, candidates in ((None, [MagicMock()]), ("/dev/cu.test", [])):
+            with (
+                self.subTest(port=port),
+                patch.object(flash, "pico_ports", return_value=candidates),
+                patch.object(flash, "discover_bootsel_serial") as discover,
+                patch.object(flash, "disconnect_picocom"),
+                patch.object(flash, "require_free_port"),
+                patch.object(flash, "open_supervisor") as connection,
+                patch.object(flash, "picotool") as tool,
+            ):
+                flash.flash_firmware(self.arguments(force=True, port=port))
+            discover.assert_not_called()
+            connection.assert_not_called()
+            tool.assert_any_call(["load", "-v", "-F", str(self.image)], "TEST")
+
     def test_picotool_selection_and_failure(self) -> None:
         with patch.object(
             flash.subprocess, "run",

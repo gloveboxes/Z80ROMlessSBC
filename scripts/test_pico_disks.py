@@ -10,7 +10,7 @@ import subprocess
 import struct
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pico_flash as flash
 from pico_supervisor import FlashError
@@ -202,6 +202,7 @@ class DiskFlashTests(unittest.TestCase):
 
     def test_force_skips_firmware_handshake_but_checks_journal(self) -> None:
         with (
+            patch.object(flash, "pico_ports", return_value=[MagicMock()]),
             patch.object(flash, "resolve_device", return_value=("PORT", "TEST")),
             patch.object(flash, "disconnect_picocom"),
             patch.object(flash, "require_free_port"),

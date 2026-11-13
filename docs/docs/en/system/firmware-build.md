@@ -306,6 +306,9 @@ See the [board verification notes](../hardware/address-interface.md#board-verifi
   disconnect USB before removing +5 V. Program Phase 1 off-board initially.
 - If USB BOOTSEL entry fails, hold BOOTSEL while connecting the Pico as directed
   by the phase guide. Build tasks do not access hardware.
+- A new Pico has no firmware serial port. Force-flash tasks discover a unique
+  RP2350 already in BOOTSEL by chip ID; select `--serial SERIAL` when multiple
+  devices are connected. An explicit `--port` requires running USB serial firmware.
 - Flash tasks verify bytes and reboot; verification does not prove CP/M boots.
   Disk/full-flash replacement creates no backups.
 
