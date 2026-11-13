@@ -1,18 +1,19 @@
-"""Exercise disk import with disposable images through Apple Container."""
+"""Verify emulator and flash disks through Apple Container without hardware."""
 
-import json
 import hashlib
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src/disks"))
 from src.cpm import build_images
-from test_stage_altair_disks import filesystem_disk
+sys.path.insert(0, str(ROOT / "scripts"))
+import z80_container as launcher
 
 DISKS = ("drive_a_cpm63k.img", "drive_b_bdsc.img",
          "drive_c_escape.img", "drive_d_blank.img")
@@ -48,6 +49,12 @@ class ContainerDiskIntegration(unittest.TestCase):
                 self.assertEqual((output / name).stat().st_size, build_images.DISK_IMAGE_BYTES)
             for name in DISKS[1:]:
                 self.assertEqual((output / name).read_bytes(), (source / name).read_bytes())
+            session = root / "session"
+            with mock.patch.object(launcher, "SESSION", session):
+                launcher.prepare()
+            for image, session_name in launcher.DISKS:
+                self.assertEqual((session / session_name).read_bytes(), (output / image).read_bytes())
+            self.assertEqual((session / "z80boot.pkg").read_bytes(), package)
             invoke("--firmware", str(firmware))
             complete = (output / "z80romless-flash.bin").read_bytes()
             self.assertEqual(len(complete), build_images.FLASH_BYTES)
@@ -60,53 +67,6 @@ class ContainerDiskIntegration(unittest.TestCase):
                                  (output / name).read_bytes())
             self.assertEqual(original, {name: hashlib.sha256((source / name).read_bytes()).digest()
                                         for name in DISKS})
-
-    def test_import_prepares_matching_boot_and_preserves_failed_outputs(self):
-        with tempfile.TemporaryDirectory(prefix="z80-disk-container-test-") as directory:
-            root = Path(directory)
-            source, staged, native, output = (root / name for name in
-                                               ("source", "staged", "native", "output"))
-            source.mkdir()
-            native.mkdir()
-            for name in DISKS:
-                (source / name).write_bytes(filesystem_disk())
-                (native / name).write_bytes((source / name).read_bytes())
-
-            def invoke(operation, *options, succeeds=True):
-                result = subprocess.run(
-                    [sys.executable, str(ROOT / "scripts/z80_container.py"), "disk", operation,
-                     "--source-dir", str(source), "--staged-dir", str(staged), *options],
-                    cwd=ROOT, capture_output=True, text=True)
-                self.assertEqual(result.returncode == 0, succeeds, result.stdout + result.stderr)
-                return result
-
-            invoke("stage")
-            for name in DISKS:
-                self.assertEqual((staged / name).read_bytes(), (source / name).read_bytes())
-            manifest = json.loads((staged / "manifest.json").read_text())
-            self.assertEqual(len(manifest["images"]), 4)
-            invoke("prepare", "--output-dir", str(output))
-            for name in DISKS[1:]:
-                self.assertEqual((output / name).read_bytes(), (source / name).read_bytes())
-            boot = (output / "z80boot.img").read_bytes()
-            drive_a = (output / "drive_a_cpm63k-z80.img").read_bytes()
-            self.assertEqual(drive_a[:build_images.CPM_SYSTEM_BYTES],
-                             boot[build_images.CCP_BASE:build_images.BIOS_BASE])
-            self.assertEqual((output / "z80boot.pkg").read_bytes(),
-                             build_images.build_boot_package(boot))
-            invoke("install", "--drive", "A", "--confirm", "Replace selected native disk",
-                   "--native-dir", str(native))
-            self.assertEqual((native / DISKS[0]).read_bytes(), drive_a)
-            for name in DISKS[1:]:
-                self.assertEqual((native / name).read_bytes(), (source / name).read_bytes())
-            old_boot = (output / "z80boot.pkg").read_bytes()
-            (source / DISKS[2]).write_bytes(b"invalid")
-            failed = invoke("prepare", "--output-dir", str(output), succeeds=False)
-            self.assertIn("run the staging task again", failed.stderr)
-            self.assertEqual((output / "z80boot.pkg").read_bytes(), old_boot)
-            failed = invoke("stage", succeeds=False)
-            self.assertIn("expected 524288 bytes", failed.stderr)
-            self.assertEqual((staged / DISKS[2]).stat().st_size, 524288)
 
 
 if __name__ == "__main__":

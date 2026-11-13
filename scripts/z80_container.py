@@ -156,65 +156,6 @@ def build_images(arguments: list[str]) -> None:
             *firmware_args)
 
 
-def run_disk_import(arguments: list[str]) -> None:
-    parser = argparse.ArgumentParser(description="Validate and prepare Altair disks in the container")
-    parser.add_argument("operation", choices=("stage", "prepare", "install"))
-    parser.add_argument("--source-dir", type=Path, default=ROOT / "src/disks/source-altair")
-    parser.add_argument("--staged-dir", type=Path, default=ROOT / "build/altair-disks")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "build/cpm-disk-update")
-    parser.add_argument("--native-dir", type=Path, default=ROOT / "src/disks/native")
-    parser.add_argument("--drive", choices="ABCD", action="append")
-    parser.add_argument("--confirm")
-    args = parser.parse_args(arguments)
-
-    if args.operation == "install":
-        if not args.drive or len(args.drive) != 1:
-            parser.error("install requires exactly one --drive")
-        if args.confirm != "Replace selected native disk":
-            raise SystemExit("Import cancelled; native disks were not changed.")
-    elif args.confirm is not None or (args.operation == "prepare" and args.drive):
-        parser.error("--confirm is for install; --drive is for stage or install")
-
-    mounts = []
-
-    def mount(path: Path, target: str, *, writable: bool = False, create: bool = False) -> None:
-        path = path.expanduser().resolve()
-        if "," in str(path):
-            raise SystemExit(f"Mount path cannot contain commas: {path}")
-        if create:
-            path.mkdir(parents=True, exist_ok=True)
-        if not path.is_dir():
-            raise SystemExit(f"Disk directory not found: {path}")
-        mounts.extend(["--mount", f"type=bind,source={path},target={target}"
-                       + ("" if writable else ",readonly")])
-
-    mount(args.source_dir, "/disk-source")
-    if args.operation == "stage":
-        mount(args.staged_dir, "/disk-staged", writable=True, create=True)
-        script = "stage_altair_disks.py"
-        script_args = ["--source-dir", "/disk-source", "--output-dir", "/disk-staged"]
-        for drive in args.drive or []:
-            script_args += ["--drive", drive]
-    else:
-        mount(args.staged_dir, "/disk-staged")
-        script_args = ["--source-dir", "/disk-source", "--staged-dir", "/disk-staged"]
-        if args.operation == "prepare":
-            mount(args.output_dir, "/disk-output", writable=True, create=True)
-            script = "prepare_altair_flash.py"
-            script_args += ["--output-dir", "/disk-output"]
-        else:
-            mount(args.native_dir, "/disk-native", writable=True)
-            script = "install_altair_disk.py"
-            script_args = [args.drive[0], "--confirm", args.confirm, *script_args,
-                           "--native-dir", "/disk-native"]
-
-    image = ensure_test_image()
-    command("container", "run", "--rm",
-            "--mount", f"type=bind,source={ROOT},target=/workspace,readonly",
-            *mounts, "--entrypoint", "python3", image,
-            f"/workspace/src/disks/{script}", *script_args)
-
-
 def run_tests(arguments: list[str]) -> None:
     parser = argparse.ArgumentParser(description="Run container Z80 regressions")
     parser.add_argument("--rebuild", action="store_true")
@@ -272,7 +213,7 @@ def run_tests(arguments: list[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "start", "test", "disk", "images",
+    parser.add_argument("action", choices=("prepare", "start", "test", "images",
                                            "assemble", "image"))
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args()
@@ -288,8 +229,6 @@ def main() -> None:
                 "--sbc-root", str(ROOT), *args.arguments)
     elif args.action == "test":
         run_tests(args.arguments)
-    elif args.action == "disk":
-        run_disk_import(args.arguments)
     elif args.action == "images":
         build_images(args.arguments)
     elif args.action == "assemble":

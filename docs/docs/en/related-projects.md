@@ -68,9 +68,31 @@ following workflow to bring applications across from the Altair project.
 
 ### In the ESP32 Altair 8800 AI Edition project
 
-1. In the Altair project's `Apps` directory, run
-   `pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/source-altair`
-   to build the applications and clone the four disks.
+1. Run **Run interactive CP/M emulator** in that project to edit its
+   writable `disks/512kb/` base images. These are also the build-all input/output
+   disks. File edits persist directly; finish the application and stop with
+   Ctrl+C before running a host build or copy.
+2. Stop the SBC emulator and save any wanted session changes too. In the
+   Altair project's `Apps` directory, choose:
+
+   ```sh
+   # Build/install applications, then copy A-D.
+   pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/native
+
+   # Copy current CP/M disk contents without rebuilding applications.
+   pwsh ./build-all.ps1 -CloneOnly -c /path/to/Z80ROMlessSBC/src/disks/native
+   ```
+
+   Build-and-copy replaces built application files but preserves unrelated
+   files. Copy-only keeps current file contents without rebuilding.
+   The existing destination directory is overwritten, including D's database.
+   Equivalent ESP32 tasks are **Altair: Build apps and copy disks to Z80 SBC**
+   and **Altair: Copy current disks to Z80 SBC**; they prompt for that directory.
+
+Copying is one-way. Changes in SBC session disks do not automatically update
+the ESP32 base disks. ESP32 F5 debugging uses private snapshots; use its normal
+start task for persistent CP/M edits. See the
+[ESP32 editing and copy guide](https://gloveboxes.github.io/Altair-8800-AI-Edition/en/90-appendices/10-build-and-install-cpm-apps/#edit-base-disks-and-copy-to-the-z80-sbc).
 
 ### In the Z80ROMlessSBC project
 
@@ -79,19 +101,17 @@ first bringing up Phase 9, use its
 [USB CP/M and flash storage instructions](implementation/phase-9-flash-storage.md)
 and complete its tests before moving on to Phase 10.
 
-1. Open the **Z80ROMlessSBC project folder in VS Code**. Run
-   **Import Altair disks - validate and stage images** to validate and copy the
-   clones into `build/altair-disks/`. Run **Import Altair disks - prepare Pico images**
-   to prepare A-D and the current boot package without flashing. For
-   individual-drive flash tasks, first run
-   **Import Altair disks - install selected native drive** for each selected drive.
-   This replaces its native source image; selecting D replaces its database.
-2. Deploy **Build and flash Pico - Phase 10 firmware** from the same checkout
+1. Open the **Z80ROMlessSBC project folder in VS Code** and run
+   **Run interactive CP/M emulator** to use the copied disks. The launcher
+   validates them and patches A with this checkout's CP/M, BDOS, BIOS and AUTORUN.
+   B-D are copied unchanged. No import step is needed.
+2. For hardware deployment, use **Build and flash Pico - Phase 10 firmware** from the same checkout
    before flashing the matching CP/M disks and boot package. Firmware-only
    deployment preserves storage.
 3. Choose **Terminal → Run Task** and one of the disk deployment tasks below.
-   The all-disks task uses validated staged imports; individual-drive tasks
-   use native source images. Follow the
+   All tasks use `src/disks/native/`, the same source as the emulator. The
+   all-disks task validates A-D and rebuilds A plus the matching boot package.
+   Follow the
    [deployment requirements](system/firmware-build.md#deployment-task-requirements).
 4. With both the disks and Pico firmware deployed, boot CP/M on the real Z80
    and access the installed applications on the
@@ -105,31 +125,30 @@ for how this works. The firmware uses native 524,288-byte images.
 ### VS Code disk deployment tasks
 
 The tasks in [`.vscode/tasks.json`](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/.vscode/tasks.json)
-use the staged Altair images for all-disk deployment and `src/disks/native/`
-for individual drives:
+use `src/disks/native/` for all-disk and individual-drive deployment:
 
 | Task | Disks replaced | Source image |
 | --- | --- | --- |
-| **Flash Pico - All disks (A-D)** | A: through D: | Four validated images in `build/altair-disks/` |
+| **Flash Pico - All disks (A-D)** | A: through D: | A-D from `src/disks/native/`; A's system tracks rebuilt |
 | **Flash Pico - Drive A** | A: | `drive_a_cpm63k.img` (system tracks rebuilt) |
 | **Flash Pico - Drive B** | B: | `drive_b_bdsc.img` |
 | **Flash Pico - Drive C** | C: | `drive_c_escape.img` |
 | **Flash Pico - Drive D** | D: | `drive_d_blank.img` |
 
-Copy an updated disk image using the filename expected by its task, or update
-the task's source path to select a different application image. The A: tasks
+With both emulators stopped, copy updated images into `src/disks/native/`
+using the filenames above. The A: tasks
 regenerate the board-native boot disk; the B:–D: tasks flash the selected
-images directly. The tasks replace the selected disks without
-backups and preserve firmware and ENV settings. **All disks (A-D)** also
+prepared images with unchanged B-D contents. Every disk task validates source
+and prepared filesystems before deployment. The tasks replace selected disks
+without backups and preserve firmware and ENV settings. **All disks (A-D)** also
 validates and installs the newly built boot package with Drive A. Individual
 drive tasks preserve the installed boot package; Drive A checks compatibility.
 Follow the task's confirmation prompt before deployment.
 
 Drive **A:** also contains the boot system and needs the board-native BIOS
 and matching boot package. Drives **B:** through **D:** can hold application
-disks copied from validated Altair images. See
+disks copied from the ESP32 project. See
 [Phase 9: USB CP/M and flash storage](implementation/phase-9-flash-storage.md)
 for the storage design and the
 [disk media README](https://github.com/gloveboxes/Z80ROMlessSBC/blob/main/src/disks/README.md)
-for validation commands, the default source-image mapping, and selective
-installation of application disks.
+for validation commands and the shared source-image mapping.

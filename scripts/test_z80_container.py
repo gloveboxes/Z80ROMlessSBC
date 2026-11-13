@@ -115,33 +115,18 @@ class ContainerLauncherTest(unittest.TestCase):
         build.assert_not_called()
         self.assertNotIn("--ft-source", command.call_args.args)
 
-    def test_disk_import_mounts_only_required_paths(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            for name in ("source", "staged", "native"):
-                (root / name).mkdir()
-            options = ["--source-dir", str(root / "source"),
-                       "--staged-dir", str(root / "staged")]
-            with mock.patch.object(launcher, "ensure_test_image", return_value="test:image"), \
-                 mock.patch.object(launcher, "command") as command:
-                launcher.run_disk_import(["stage", *options, "--drive", "B"])
-                stage = command.call_args.args
-                self.assertIn(f"type=bind,source={root / 'source'},target=/disk-source,readonly", stage)
-                self.assertIn(f"type=bind,source={root / 'staged'},target=/disk-staged", stage)
-                self.assertIn("/workspace/src/disks/stage_altair_disks.py", stage)
-                launcher.run_disk_import(["prepare", *options, "--output-dir", str(root / "output")])
-                prepare = command.call_args.args
-                self.assertIn(f"type=bind,source={root / 'staged'},target=/disk-staged,readonly", prepare)
-                self.assertIn(f"type=bind,source={root / 'output'},target=/disk-output", prepare)
-                launcher.run_disk_import(["install", *options, "--native-dir", str(root / "native"),
-                                          "--drive", "C", "--confirm", "Replace selected native disk"])
-                install = command.call_args.args
-                self.assertIn(f"type=bind,source={root / 'native'},target=/disk-native", install)
-                self.assertIn("Replace selected native disk", install)
-                command.reset_mock()
-                with self.assertRaisesRegex(SystemExit, "Import cancelled"):
-                    launcher.run_disk_import(["install", *options, "--drive", "C", "--confirm", "Cancel"])
-                command.assert_not_called()
+    def test_all_disk_flash_builds_from_same_sources_as_emulator(self):
+        configuration = json.loads((launcher.ROOT / ".vscode/tasks.json").read_text())
+        task = next(task for task in configuration["tasks"]
+                    if task["label"] == "Flash Pico - All disks (A-D)")
+        command = task["command"]
+        self.assertIn("scripts/z80_container.py images --output-dir build/cpm-disk-update", command)
+        self.assertIn(" && python scripts/pico_flash.py disks", command)
+        self.assertIn("--boot-package build/cpm-disk-update/z80boot.pkg", command)
+        for drive, (image, _) in zip("ABCD", launcher.DISKS):
+            self.assertIn(f"--drive {drive}=build/cpm-disk-update/{image}", command)
+        self.assertTrue(all(not task["label"].startswith("Import ")
+                            for task in configuration["tasks"]))
 
     def test_image_builder_mounts_output_and_firmware_without_writing_source(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -169,6 +154,20 @@ class ContainerLauncherTest(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "cannot contain commas"):
                     launcher.build_images(["--output-dir", str(root / "bad,path")])
                 command.assert_not_called()
+
+    def test_individual_disk_tasks_validate_before_flashing_prepared_images(self):
+        configuration = json.loads((launcher.ROOT / ".vscode/tasks.json").read_text())
+        for drive, (image, _) in zip("ABCD", launcher.DISKS):
+            with self.subTest(drive=drive):
+                task = next(task for task in configuration["tasks"]
+                            if task["label"] == f"Flash Pico - Drive {drive}")
+                command = task["command"]
+                self.assertIn(
+                    "scripts/z80_container.py images --output-dir build/cpm-disk-update"
+                    " && python scripts/pico_flash.py disks",
+                    command,
+                )
+                self.assertIn(f"--drive {drive}=build/cpm-disk-update/{image}", command)
 
     def test_images_action_dispatches_arguments(self):
         with mock.patch.object(launcher, "require_container"), \

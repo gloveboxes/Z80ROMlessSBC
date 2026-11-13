@@ -1,6 +1,6 @@
 ---
 name: z80-romless-sbc
-description: 'Use for Pico 2 W/RP2350 firmware, VS Code build/test/emulator/import tasks, Stage 11 ATtiny85 ISP/test Picos, multicore/IRQ ownership, USB/Wi-Fi/WebSocket performance, CP/M BIOS/images/flash layout, UF2 flashing, assisted SRAM loading, HCT32/voltage/pin/BOM changes, staged bring-up, and DSLogic timing qualification. For MkDocs documentation use the mkdocs-docs skill.'
+description: 'Use for Pico 2 W/RP2350 firmware, VS Code build/test/emulator tasks, shared ESP32/SBC application disks, Stage 11 ATtiny85 ISP/test Picos, multicore/IRQ ownership, USB/Wi-Fi/WebSocket performance, CP/M BIOS/images/flash layout, UF2 flashing, assisted SRAM loading, HCT32/voltage/pin/BOM changes, staged bring-up, and DSLogic timing qualification. For MkDocs documentation use the mkdocs-docs skill.'
 argument-hint: 'Describe the hardware, firmware or validation task'
 user-invocable: true
 ---
@@ -13,7 +13,7 @@ user-invocable: true
 | --- | --- |
 | Firmware, concurrency, performance, hardware, pins, power or timing | [Architecture invariants](./references/architecture.md) |
 | Builds, tests, image generation or qualification | [Validation workflows](./references/validation.md) |
-| VS Code task selection, emulator refresh or Altair import | [Task selection](./references/validation.md#vs-code-task-selection) |
+| VS Code task selection, emulator refresh or shared application disks | [Task selection](./references/validation.md#vs-code-task-selection) |
 | Stage 11 separate Pico ISP or I2C test deployment | [Stage 11 flashing](./references/firmware-flashing.md#stage-11-separate-pico-tasks) |
 | Authorized firmware deployment or USB supervisor access | [Flashing procedure](./references/firmware-flashing.md) |
 

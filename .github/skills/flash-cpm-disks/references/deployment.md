@@ -83,7 +83,7 @@ workflow rather than inventing BIOS/build steps here.
 
 ## 2. Prepare and Validate Native Images
 
-On Apple silicon macOS, prepare CP/M images and stage/import Altair disks using
+On Apple silicon macOS, prepare CP/M images from the shared native sources using
 the container commands in [firmware validation](../../z80-romless-sbc/references/validation.md).
 For disk-image tests, run the main image with the checkout read-only:
 
@@ -97,12 +97,18 @@ container run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
 The container tests do not access the Pico. Flashing remains on the host and
 requires the virtual-environment preflight above.
 
-For VS Code tasks, individual `Flash Pico - Drive A/B/C/D` tasks read native
-sources (A's system tracks are rebuilt); importing clones alone does not update
-those sources. `Import Altair disks - install selected native drive` changes
-one native source with explicit confirmation but does not deploy.
-`Flash Pico - All disks (A-D)` instead prepares validated staged imports and
-replaces the boot package as well as A-D; use the CP/M system workflow in
+The ESP32 `Apps/build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/native`
+command copies all four disks directly to the shared source directory. It
+replaces its files, including D's database; stop both emulators and save wanted
+work before copying. There is no separate import step.
+Use `-CloneOnly -c ...` to copy CP/M file edits without rebuilding applications.
+ESP32's normal interactive task edits base disks directly; SBC interactive
+edits are in session copies and must be saved to native sources before refresh.
+The copy overwrites native sources and does not synchronize changes back to ESP32.
+For VS Code tasks, individual `Flash Pico - Drive A/B/C/D` tasks read those
+same native sources. A's system tracks are rebuilt before deployment.
+`Flash Pico - All disks (A-D)` validates them and rebuilds A plus the matching
+boot package, then replaces the boot package as well as A-D; use the CP/M system workflow in
 [firmware build](../../../../docs/docs/en/system/firmware-build.md#system-and-storage-deployment)
 for that operation, not the disk-only command below. VS Code flash tasks use
 `--force`: finish and save running work before authorizing them; the command's

@@ -84,7 +84,7 @@ Each entry has both **Build Pico - …** (build only) and **Flash Pico - …**
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replace all flash, including disks and ENV |
 | **Build and flash Pico - Phase 10 firmware and disks** | Replace all flash, including disks and ENV |
 | **Build and flash Pico - CP/M system and Drive A** | Rebuild and replace matching boot package and Drive A; preserve firmware, B–D, journal, and ENV |
-| **Flash Pico - All disks (A-D)** | Validate staged Altair A–D; replace all disks and matching boot package; preserve firmware and ENV |
+| **Flash Pico - All disks (A-D)** | Validate `src/disks/native/`, rebuild A's current system, and replace all disks plus matching boot package; preserve firmware and ENV |
 | **Flash Pico - Drive A** | Regenerate native system disk; check installed boot compatibility; replace A only |
 | **Flash Pico - Drive B** | Replace B from the native BDS C disk |
 | **Flash Pico - Drive C** | Replace C from the native Escape disk |
@@ -114,16 +114,17 @@ The container image's bundled sources alone are not the current SBC system.
 See [interactive use and C debugging](../cpm-dcc/interactive.md) and
 [execution-test requirements](firmware-testing.md#4-z80-execution-tests).
 
-### Altair disk import
+### Shared application disks
 
-These container tasks do not access the Pico. They read the four 512 KiB clones
-in `src/disks/source-altair/`; see the [Altair workflow](../related-projects.md#altair-8800-ai-edition).
-
-| Task | Effect |
-| --- | --- |
-| **Import Altair disks - validate and stage images** | Validate the clones and stage A-D in `build/altair-disks/`. Native sources are unchanged. |
-| **Import Altair disks - prepare Pico images** | Revalidate staged inputs and write flash-ready images plus the current boot package to `build/cpm-disk-update/`. Rebuild A's system records and AUTORUN; copy B-D unchanged. Does not install native sources or flash. |
-| **Import Altair disks - install selected native drive** | Confirm a drive and replace its image in `src/disks/native/` from validated staging. Rebuild A's system records and AUTORUN when selecting A; selecting D replaces its database. Does not flash. |
+The emulator and all Pico image/flash tasks use `src/disks/native/`. Follow the
+[ESP32 edit, stop and copy workflow](../related-projects.md#in-the-esp32-altair-8800-ai-edition-project)
+to build-and-copy applications or copy current CP/M edits without rebuilding.
+Copying replaces A-D, including D's database. Then run
+**Run interactive CP/M emulator** or
+**Flash Pico - All disks (A-D)**; no import step is needed. Both validate the
+disks and rebuild A with this checkout's current CP/M, BDOS, BIOS and AUTORUN;
+B-D are unchanged copies. Prepared outputs live in `build/cpm-session/` for
+the emulator and `build/cpm-disk-update/` for disk flashing.
 
 ### Stage 11 sound-engine boards
 
@@ -310,9 +311,9 @@ See the [board verification notes](../hardware/address-interface.md#board-verifi
 
 ### Storage update checks
 
-The all-disks task validates the staged Altair images and builds the flash
-inputs from them. Individual-drive tasks use `src/disks/native/`. Image
-preparation for the system, drives A and B, and full provisioning runs in the
+All disk tasks use `src/disks/native/`, matching the interactive emulator.
+The all-disks task validates those images and builds the flash inputs from them. Image
+preparation for the system, every disk task, and full provisioning runs in the
 shared Apple container; firmware builds and flashing run on the host. These
 tasks do not compile applications. Drive B is copied unchanged. The CP/M
 system task assembles current `.asm` files without regenerating them through

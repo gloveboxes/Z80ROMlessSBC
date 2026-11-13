@@ -27,6 +27,16 @@ all other application files are preserved. It replaces the session disks: stop
 the emulator first and save any changes you want to keep with
 `python3 src/disks/save_session_disk.py D`, substituting A–D.
 
+The Pico flash tasks use the same `src/disks/native/` sources. Copy ESP32
+application disks directly there with its `build-all.ps1 -c` option; see
+[shared application disks](../system/firmware-build.md#shared-application-disks).
+The emulator and all-disks flash task both validate the filesystems and rebuild
+Drive A's current system before use.
+
+Unlike the ESP32 project's writable base disks, this project's emulator edits
+only `build/cpm-session/`. Saving a session disk does not synchronize edits to
+the ESP32 project; copying from ESP32 replaces the SBC native sources.
+
 Open <http://127.0.0.1:8080/> for the browser terminal. Press Ctrl+C to stop.
 
 ## Debug a DCC application

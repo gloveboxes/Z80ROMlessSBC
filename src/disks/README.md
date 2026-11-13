@@ -18,78 +18,35 @@ session images and save them with `save_session_disk.py`.
 
 The CP/M files originate from the Altair 8800 disk archive at
 <https://github.com/companje/Altair8800/tree/master/data>; its license is in
-`native/LICENSE`. Drive A's system tracks still carry Altair-specific content,
-so provision `build/cpm/drive_a_cpm63k-z80.img`, never the checked-in image.
+`native/LICENSE`. Drive A's system tracks are rebuilt from this checkout before
+use; provision `build/cpm/drive_a_cpm63k-z80.img`, never the checked-in image.
 
-## Importing Altair application disks
+## Copying ESP32 application disks
 
 From the ESP32 Altair project's `Apps` directory, build its applications and
-clone the four disks into this project's existing `source-altair/` directory:
+copy the four disks directly into this project's `native/` directory:
 
 ```sh
-pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/source-altair
+pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/native
 ```
 
 Use `-CloneOnly -c ...` to copy the current disks without rebuilding them.
-Stop the emulator before rebuilding or copying the disks. The cloned `.img`
-files are local inputs and are not tracked by Git.
+The destination directory must exist. Copying replaces all four checked-in
+images, including D's database; keep wanted file changes before copying.
+Stop the ESP32 and SBC emulators before building or copying disks.
 
-In VS Code, run **Tasks: Run Task → Import Altair disks - validate and stage
-images**. This validates and copies all four clones into `build/altair-disks/`,
-leaving native sources and Pico flash untouched. Validation and image
-preparation use `fsck.cpm`, `cpmtools` and `z80asm` in the cached Apple
-container. Alternatively, run from the Z80ROMlessSBC root:
+`native/` is the single disk source for **Run interactive CP/M emulator**,
+**Refresh CP/M container and session disks**, and every Pico image/flash task.
+After copying, run the emulator or **Flash Pico - All disks (A-D)** directly.
+Both use the same builder: validate the four disks, patch A with this checkout's
+CP/M, BDOS, BIOS and AUTORUN, and copy B-D unchanged. No import task is needed.
+Applications must use the SBC port map and supported services.
 
-```sh
-python3 scripts/z80_container.py disk stage
-```
-
-The staging tool verifies the exact 524,288-byte size and runs `fsck.cpm -n`
-on each image using the native CP/M geometry. It records source and staged
-SHA-256 hashes in `manifest.json`. If any check fails, the task fails and leaves
-existing staged images and manifest unchanged; those files then represent the
-last successful import, not the failed one. Filesystem validation does not
-test application behavior.
-Use `--drive B` (repeat for other drives) to stage selected disks;
-`--source-dir` and `--staged-dir` select other directories.
-
-| Drive | Cloned source | Staged image |
-| --- | --- | --- |
-| A | `drive_a_cpm63k.img` | `drive_a_cpm63k.img` |
-| B | `drive_b_bdsc.img` | `drive_b_bdsc.img` |
-| C | `drive_c_escape.img` | `drive_c_escape.img` |
-| D | `drive_d_blank.img` | `drive_d_blank.img` |
-
-Run **Tasks: Run Task → Import Altair disks - install selected native drive**,
-select the drive, and confirm replacement. Repeat for each desired drive.
-The task checks that the staged image matches its current clone and manifest
-and rechecks the filesystem before writing. Importing A also rebuilds its
-system tracks and `AUTORUN.COM` from the current sources. Individual-drive flash tasks use
-the native sources. Alternatively, to import C from the terminal:
-
-```sh
-python3 scripts/z80_container.py disk install --drive C --confirm "Replace selected native disk"
-```
-
-This overwrites the selected native image. In particular, importing D replaces
-the DOCTOR/DOCGEN database. Build the board-native A image and matching boot
-package before provisioning it.
-The image builder also replaces A's `AUTORUN.COM`. Applications that depend on
-specific hardware or services need a board-compatible build.
-
-Run **Import Altair disks - prepare Pico images** to prepare without flashing,
-or run `python3 scripts/z80_container.py disk prepare`. It rechecks the staged
-images against their current clones, regenerates A's CP/M, BDOS, BIOS and
-matching boot package, and validates the resulting filesystems. Outputs are
-written to `build/cpm-disk-update/`; B–D are byte-for-byte copies.
-
-**Flash Pico - All disks (A-D)** instead uses all four staged imports directly:
-it revalidates the clone, manifest, and filesystems, then builds the native
-boot package and A image. It preserves B–D byte-for-byte from the same validated
-snapshot.
-It replaces the Pico's A-D and boot package without backups, including its D
-database, and leaves the checked-in native sources unchanged. The task
-requires explicit confirmation and safe power sequencing.
+The emulator writes prepared copies in `build/cpm-session/`; the all-disks
+flash task writes prepared copies in `build/cpm-disk-update/` before deployment.
+Neither preparation changes `native/`. Flashing requires explicit confirmation
+and safe power sequencing; it replaces A-D and their matching boot package
+without backups, preserving Pico firmware and ENV.
 
 ## Building images
 
@@ -115,6 +72,10 @@ python3 scripts/z80_container.py images \
 On macOS CMake runs the image builder in Apple Container. Other hosts require
 Python 3.9+, `z80asm` and `cpmtools`. CMake rebuilds the CP/M images when
 any `native/` image, the builder, or the geometry changes.
+The builder checks exact disk sizes and uses `fsck.cpm -n` to validate source
+and prepared filesystems before writing outputs. Validation failure stops the
+task before output replacement or flashing. Filesystem checks do not establish
+application behavior.
 
 Native auto-run settings occupy only drive A's final reserved system record
 (LBA 63, image offset `0x1F80`), outside the filesystem and boot code.
@@ -166,9 +127,6 @@ warm-boot records.
 
 ## BIOS
 
-The checked-in Drive A files were created under an Altair BIOS with the DPB
-`SPT=32, BSH=4, BLM=15, EXM=0, DSM=149, DRM=63, AL0=0xC0, CKS=16, OFF=2`.
-The image builder installs a replacement BIOS for terminal ports `0x00`-`0x01`
-and disk ports `0x10`-`0x14`, with the final geometry sourced from
-`geometry.py`. See `src/cpm/README.md` for the recovered CP/M memory map and
-boot-package details.
+The image builder installs the current BIOS for terminal ports `0x00`-`0x01`
+and disk ports `0x10`-`0x14`, using the native geometry in `geometry.py`.
+See `src/cpm/README.md` for the CP/M memory map and boot-package details.

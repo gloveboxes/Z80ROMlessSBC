@@ -273,6 +273,40 @@ class BuildImagesTest(unittest.TestCase):
             for name, image in originals.items():
                 self.assertEqual((source / name).read_bytes(), image)
 
+    def test_image_builder_rejects_invalid_disks_before_replacing_outputs(self) -> None:
+        if shutil.which("fsck.cpm") is None:
+            self.skipTest("cpmtools is required")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root / "source", root / "output"
+            source.mkdir()
+            output.mkdir()
+            for name in build_images.SOURCE_DISK_NAMES:
+                (source / name).write_bytes(self.generated_drive)
+            sentinel = output / "z80boot.pkg"
+            sentinel.write_bytes(b"unchanged")
+            damaged = bytearray(b"\xe5" * build_images.DISK_IMAGE_BYTES)
+            entry = bytearray(32)
+            entry[1:12] = b"BROKEN  COM"
+            entry[15] = 1
+            entry[16] = 255
+            damaged[build_images.SYSTEM_BYTES:build_images.SYSTEM_BYTES + 32] = entry
+            for data, message in ((b"invalid", "expected 524288 bytes"),
+                                  (bytes(damaged), "filesystem validation failed")):
+                with self.subTest(error=message):
+                    path = source / build_images.SOURCE_DISK_NAMES[2]
+                    path.write_bytes(data)
+                    result = subprocess.run(
+                        [sys.executable, str(build_images.REPO_ROOT / "src/cpm/build_images.py"),
+                         "--disk-dir", str(source), "--output-dir", str(output)],
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(message, result.stderr)
+                    self.assertEqual(sentinel.read_bytes(), b"unchanged")
+                    self.assertEqual(list(output.iterdir()), [sentinel])
+                    self.assertEqual(path.read_bytes(), data)
+
     def test_example_install_replaces_stale_and_removes_retired_files(self) -> None:
         cpmcp = shutil.which("cpmcp")
         if cpmcp is None:

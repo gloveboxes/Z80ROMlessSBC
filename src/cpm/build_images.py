@@ -494,6 +494,35 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_disk_filesystems(images: dict[str, bytes]) -> None:
+    fsck = shutil.which("fsck.cpm")
+    if fsck is None:
+        raise SystemExit("fsck.cpm was not found; cpmtools is required to validate disk images")
+    for name, image in images.items():
+        if len(image) != DISK_IMAGE_BYTES:
+            raise ValueError(f"{name}: expected {DISK_IMAGE_BYTES} bytes, got {len(image)}")
+    with tempfile.TemporaryDirectory(prefix="z80sbc-disk-check-") as directory:
+        temporary = Path(directory)
+        diskdefs = temporary / "diskdefs"
+        diskdefs.write_text(cpm_diskdefs(), encoding="ascii")
+        environment = {**os.environ, "DISKDEFS": str(diskdefs)}
+        for name, image in images.items():
+            path = temporary / name
+            path.write_bytes(image)
+            result = subprocess.run(
+                [fsck, "-f", "z80sbc", "-n", str(path)],
+                cwd=temporary, env=environment, capture_output=True, text=True,
+            )
+            if result.returncode:
+                details = (result.stdout + result.stderr).strip()
+                raise SystemExit(
+                    f"filesystem validation failed for {name} "
+                    f"(fsck.cpm exit {result.returncode}):\n{details}\n"
+                    "No output images were updated."
+                )
+            print(f"filesystem validated: {name}")
+
+
 def main() -> None:
     args = parse_args()
     if args.assembler is None:
@@ -501,22 +530,20 @@ def main() -> None:
     if args.cpmcp is None:
         raise SystemExit("cpmcp was not found; install cpmtools or pass --cpmcp")
 
+    generated = [(args.disk_dir / name).read_bytes() for name in SOURCE_DISK_NAMES]
+    validate_disk_filesystems(dict(zip(SOURCE_DISK_NAMES, generated)))
     cpm_system = build_banked_cpm_system(args.assembler)
     bios = build_bios(args.assembler)
     utility = build_autorun(args.assembler)
     z80_image = build_z80_image(cpm_system, bios)
     package = build_boot_package(z80_image)
 
-    generated = [
-        (args.disk_dir / name).read_bytes() for name in SOURCE_DISK_NAMES
-    ]
     native = build_native_drive(generated[0], cpm_system, bios)
     disks = [
         install_autorun(native, utility, args.cpmcp),
         *generated[1:],
     ]
-    if any(len(disk) != DISK_IMAGE_BYTES for disk in disks):
-        raise ValueError("all disk images must be exactly 512 KiB")
+    validate_disk_filesystems(dict(zip(OUTPUT_DISK_NAMES, disks)))
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     artifacts: dict[str, bytes] = {

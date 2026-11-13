@@ -18,7 +18,6 @@ running it; a name containing "Build" does not mean build-only.
 | `Refresh CP/M container and session disks` | Build container/audio, assemble current checkout CP/M/BDOS/BIOS and replace `build/cpm-session/` from native sources; does not launch CP/M. |
 | `Run interactive CP/M emulator` | Perform that same refresh, then launch CP/M; stop/save the session before rerunning either task. |
 | `Test Z80 execution in Apple container` | Host DCC fixtures plus isolated container regressions; session disks are unchanged. |
-| `Import Altair disks - ...` | Stage, prepare, or explicitly install native disk sources as described below; none flashes hardware. |
 | `Build KiCad - SMT JLCPCB fabrication and assembly` | Use [JLCPCB manufacturing](../../jlcpcb-gerbers/SKILL.md) and [KiCad tooling](../../kicad-pcb/references/tooling.md); close KiCad first. Does not order boards. |
 
 Refreshing SBC session disks uses this checkout's sources mounted in the
@@ -41,26 +40,36 @@ image and builds it when needed:
 ```sh
 python3 scripts/z80_container.py image
 python3 scripts/z80_container.py images --output-dir build/cpm
-python3 scripts/z80_container.py disk stage
-python3 scripts/z80_container.py disk prepare
 ```
 
-Disk staging and preparation validate the Altair source and use the container;
-`disk install` modifies a selected native image and requires its explicit
-confirmation. Drive A gets current system records and AUTORUN; B–D are copied
-unchanged. Stop the interactive emulator and save wanted session changes before
-`python3 scripts/z80_container.py prepare` replaces session disks.
+`src/disks/native/` is the single source for emulator sessions and all Pico
+disk/image tasks. From the ESP32 project's `Apps` directory, use
+`pwsh ./build-all.ps1 -c /path/to/Z80ROMlessSBC/src/disks/native` to build and
+copy all four disks directly. `-CloneOnly -c ...` copies the current disks.
+The directory must exist; copying replaces A-D, including D's database.
+Stop both emulators and save wanted changes before copying.
 
-- `disk stage`: read `src/disks/source-altair/` and validate/stage A-D in
-  `build/altair-disks/`; leave native sources unchanged.
-- `disk prepare`: revalidate staging and build flash-ready images and boot
-  package in `build/cpm-disk-update/`; leave native sources and hardware unchanged.
-- `disk install --drive D --confirm "Replace selected native disk"`: replace
-  exactly the selected native source from validated staging. Selecting D
-  replaces its database; selecting A rebuilds its system records and AUTORUN.
-- `Flash Pico - All disks (A-D)` uses prepared staged imports and a matching
-  boot package; individual-drive flash tasks use native sources. Import alone
-  does not deploy. Resolve the user's desired destination before choosing a task.
+ESP32 **Run interactive CP/M emulator** edits its persistent
+`disks/512kb/` base images directly; no session-save step is required there.
+**Altair: Build apps and copy disks to Z80 SBC** replaces built app files and
+preserves unrelated content before copying; **Altair: Copy current disks to
+Z80 SBC** copies CP/M edits without rebuilding. Both prompt for the existing
+SBC native folder. Copy-only is required when a build would overwrite a wanted
+edited file. ESP32 F5 debug snapshots are private and do not update base disks.
+
+SBC emulator edits are different: stop the session and use
+`python3 src/disks/save_session_disk.py D` (select A-D) to keep them in native
+sources. Copying from ESP32 replaces those sources; synchronization is one-way,
+not automatic in both directions.
+
+The shared image builder validates exact sizes and source/prepared filesystems
+with `fsck.cpm -n`, rebuilds Drive A's CP/M, BDOS, BIOS and AUTORUN from the
+current checkout, and copies B-D unchanged. Failure stops before output writes
+or flashing; no separate import task is needed.
+`prepare` writes emulator disks to `build/cpm-session/`; the all-disks flash
+task uses `images --output-dir build/cpm-disk-update` and deploys A-D plus the
+matching boot package after authorization. Both leave native sources unchanged.
+Stop/save the emulator before `prepare` or `start` replaces session disks.
 
 For firmware and DCC-generated code debugging, use `z80dasm` to inspect
 linked machine code and `z80asm` for compatible minimal Z80 repros. Set the
