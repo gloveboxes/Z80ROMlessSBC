@@ -254,7 +254,7 @@
 		},
 		{
 			"label": "Run interactive CP/M emulator",
-			"detail": "Validate src/disks/native and patch A with current CP/M, BDOS, BIOS and AUTORUN before starting CP/M on fresh session copies. Ctrl+C stops it; use save_session_disk.py to keep edits in native sources before rerunning.",
+			"detail": "Validate src/disks/native and patch A with current CP/M, BDOS, BIOS and AUTORUN before starting CP/M on fresh session copies. Ctrl+] stops it; Ctrl+C goes to CP/M. Use save_session_disk.py to keep edits before rerunning.",
 			"type": "shell",
 			"command": "python3 scripts/z80_container.py start",
 			"options": {

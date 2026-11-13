@@ -48,6 +48,8 @@ disk/image tasks. From the ESP32 project's `Apps` directory, use
 copy all four disks directly. `-CloneOnly -c ...` copies the current disks.
 The directory must exist; copying replaces A-D, including D's database.
 Stop both emulators and save wanted changes before copying.
+In the task terminal, Ctrl+] stops an interactive container; Ctrl+C is sent
+to CP/M for application interrupts.
 
 ESP32 **Run interactive CP/M emulator** edits its persistent
 `disks/512kb/` base images directly; no session-save step is required there.

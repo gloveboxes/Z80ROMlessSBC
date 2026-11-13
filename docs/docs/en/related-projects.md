@@ -71,7 +71,7 @@ following workflow to bring applications across from the Altair project.
 1. Run **Run interactive CP/M emulator** in that project to edit its
    writable `disks/512kb/` base images. These are also the build-all input/output
    disks. File edits persist directly; finish the application and stop with
-   Ctrl+C before running a host build or copy.
+   Ctrl+] in the task terminal before running a host build or copy.
 2. Stop the SBC emulator and save any wanted session changes too. In the
    Altair project's `Apps` directory, choose:
 

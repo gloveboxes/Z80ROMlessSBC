@@ -104,7 +104,7 @@ Pico. DCC builds run on the host; Z80 tools and execution run in the container.
 | Task | Effect |
 | --- | --- |
 | **Refresh CP/M container and session disks** | Build the shared container and host audio client; assemble this checkout's CP/M, BDOS and BIOS; replace emulator disks in `build/cpm-session/`. Does not start CP/M. |
-| **Run interactive CP/M emulator** | Perform the same refresh, then start CP/M with console/browser I/O and audio. Ctrl+C stops it. |
+| **Run interactive CP/M emulator** | Perform the same refresh, then start CP/M with console/browser I/O and audio. Ctrl+] in the task terminal stops it; Ctrl+C goes to CP/M. |
 | **Test Z80 execution in Apple container** | Build required fixtures with host DCC and run Z80 regressions in an isolated workspace. Does not replace interactive session disks. |
 
 Stop the emulator and save wanted session changes before refreshing or starting:

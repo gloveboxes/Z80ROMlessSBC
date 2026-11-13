@@ -37,7 +37,9 @@ Unlike the ESP32 project's writable base disks, this project's emulator edits
 only `build/cpm-session/`. Saving a session disk does not synchronize edits to
 the ESP32 project; copying from ESP32 replaces the SBC native sources.
 
-Open <http://127.0.0.1:8080/> for the browser terminal. Press Ctrl+C to stop.
+Open <http://127.0.0.1:8080/> for the browser terminal. Press Ctrl+] in the
+task terminal to stop the container and audio client. Ctrl+C goes to CP/M,
+so MBASIC can use it to interrupt a BASIC program.
 
 ## Debug a DCC application
 
