@@ -439,6 +439,7 @@ static void test_startup() {
           return false;
         };
         assert(has(0xa8, 0x1f) && has(0xda, 0x02) && has(0x8d, 0x14) && has(0x81, 0x40));
+        assert(has(0xa0, 0xc0));  // Segment and COM directions rotate the panel 180 degrees.
         assert(pages == 0);
         configured = true;
       }
