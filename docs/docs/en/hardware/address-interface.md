@@ -25,10 +25,11 @@ selection and is not exposed on J2.
 
 ### PIO acceleration
 
-Phases 9 and 10 complete every Z80 I/O cycle in PIO with a 120 MHz
-supervisor clock. A PIO0 state machine (4 words, beside the status OLED's I2C)
-generates the 20 MHz Z80 clock. PIO1 is claimed exclusively for the I/O engine
-(29 words) and holds that clock through PIO0 IRQ 1 with the RP2350's
+Phases 9 and 10 complete every Z80 I/O cycle in PIO. Phase 10 selects
+120 MHz Pico / 20 MHz Z80 or 156 MHz Pico / 26 MHz Z80. A PIO0 state machine
+(4 words, beside the status OLED's I2C) generates the Z80 clock. PIO1 is
+claimed exclusively for the I/O engine (29 words) and holds that clock through
+PIO0 IRQ 1 with the RP2350's
 `IRQ PREV`. PIO2 is left to the CYW43 SPI driver, which takes the highest free
 block. PIO1 owns GP6-GP17 while CP/M runs: `SET` drives UP_OE#/DOWN_OE#, `OUT`
 drives A16, IO_RELEASE and D0-D7 (with their pin directions), side-set drives
@@ -52,7 +53,7 @@ Every cycle holds CLK LOW at its next LOW phase, then:
   at T3's LOW-phase check, never TW's, whatever the IRQ PREV latency. After
   IORQ# rises, PIO isolates U9, rearms WAIT, returns D0-D7 to inputs and only
   then resumes CLK. The next opcode fetch therefore never sees the Pico
-  driving the bus; there is no race against the 50 ns T3-to-T1 window.
+  driving the bus at the next T1 edge.
 
 Core 0 services both FIFOs from the PIO1 RX-not-empty IRQ in bus order, so an
 IN always observes every earlier OUT; it also drains them before granting the
@@ -61,9 +62,9 @@ The fixed HCT32 WAIT circuit remains required.
 
 If either PIO resource cannot be allocated, CP/M start fails closed. Without
 verified bank hardware, PIO1 keeps GP8/A16 on SIO, so other I/O continues but
-banking reports unavailable. The backend requires 20 MHz Z80 / 120 MHz
-supervisor clocks. Stuck transactions trigger fail-closed recovery after
-500 ms.
+banking reports unavailable. The backend requires a matched 20/120 MHz or
+26/156 MHz Z80/Pico clock pair. Stuck transactions trigger fail-closed recovery
+after 500 ms.
 
 ### Firmware and port contract
 
@@ -118,7 +119,7 @@ The board has passed repeated 20 MHz PIO boots and `BANKED.COM`, including
 establishes operation on that board; copy throughput and electrical margins
 have not been measured.
 
-Use **Build and flash Pico - Phase 10 firmware**, confirm the CP/M prompt,
+Use **Build and flash Pico - Phase 10 20 MHz firmware**, confirm the CP/M prompt,
 run `BANKED`, then inspect **Ctrl-] s** for `[pio] active=1 running=1`.
 Firmware-only updates preserve the matching CP/M package, disks, and ENV.
 

@@ -205,7 +205,8 @@ The manifest must describe a complete 65,536-byte image beginning with
 `JP FC00h`. BIOS reports on reserved port `0x05` distinguish cold entry
 (`B0h`) and CCP handoff (`C0h`) from the act of releasing reset. A real prompt
 and filesystem tests remain necessary. The separate Phase 9 automatic-loader
-target and Phase 10 use automatic verified startup at 20 MHz.
+target and the Phase 10 20 MHz configuration use automatic verified startup at
+20 MHz. Phase 10 also has a 26 MHz configuration using a 156 MHz Pico clock.
 
 A 64 KiB journal makes 4 KiB sector replacement recoverable after power loss.
 At startup, firmware replays complete, CRC-valid committed entries and rejects
@@ -271,7 +272,7 @@ wear-levelled storage.
 
 Phases 9 and 10 use the
 [PIO clock and I/O engine](../hardware/address-interface.md#pio-acceleration)
-as their only 20 MHz run clock and I/O entry: every IN and OUT completes in
+as their run clock and I/O entry: every IN and OUT completes in
 PIO, and the stepped software sequence above is used only by the Phase 6-8
 GPIO trap. `OUT 07h` drives A16 in PIO; other OUTs are queued for core 0, and
 an IN waits, with WAIT and CLK held, for core 0's reply byte. Core 0 services

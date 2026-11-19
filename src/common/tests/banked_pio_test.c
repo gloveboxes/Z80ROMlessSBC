@@ -134,9 +134,17 @@ static void test_configuration(void) {
   assert((blocks[1].dirs & (control | 0xFFu << PIN_DATA_0)) == control);
   assert(io_inits == 11 + 12); /* GP6, GP7, GP9, D0-D7, then also GP8 */
   assert(!z80_banked_pio_clock_start(19000000));
+  assert(!z80_banked_pio_clock_start(26000000));
   assert(z80_banked_pio_clock_start(20000000) && clock_running);
   assert(!pio_interrupt_get(pio0, CPU_HOLD_IRQ));
   assert(io_bank0_hw->io[PIN_CLK].ctrl == GPIO_FUNC_PIO0);
+  z80_banked_pio_clock_stop();
+  system_hz = 156000000;
+  assert(rearm());
+  assert(!z80_banked_pio_clock_start(20000000));
+  assert(z80_banked_pio_clock_start(26000000) && clock_running);
+  system_hz = 120000000;
+  assert(z80_banked_pio_clock_start(20000000) && clock_running);
 }
 
 static void test_service_order(void) {

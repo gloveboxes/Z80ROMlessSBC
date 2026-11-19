@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Core 0 only. A PIO0 state machine runs the 20 MHz Z80 clock (PIO0 IRQ flags
+/* Core 0 only. A PIO0 state machine runs the Z80 clock (PIO0 IRQ flags
  * 1..2, shared with the status OLED's I2C) and PIO1 runs the whole I/O engine,
  * claimed exclusively; PIO2 is left to the CYW43 SPI driver. Requires the
- * 120 MHz supervisor clock. Rearm fails if either cannot be allocated;
+ * 120 or 156 MHz supervisor clock. Rearm fails if either cannot be allocated;
  * GP8/A16 is handed to PIO only when bank 1 has been verified.
  *
  * Every Z80 cycle completes in PIO. OUT 07h drives A16; other OUTs are queued

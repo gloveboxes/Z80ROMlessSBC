@@ -36,8 +36,13 @@ bi_decl(bi_program_feature(Z80_FLASH_LAYOUT_FEATURE));
 #endif
 
 enum {
+#if defined(Z80_STAGE10_26MHZ)
+  RUN_CLOCK_HZ = 26000000,
+  SYSTEM_CLOCK_HZ = 156000000,
+#else
   RUN_CLOCK_HZ = 20000000,
   SYSTEM_CLOCK_HZ = 120000000,
+#endif
   DIAGNOSTIC_BYTES = Z80_FLASH_DISK_SLOT_COUNT * Z80_FLASH_DISK_SLOT_BYTES,
 };
 
@@ -608,7 +613,7 @@ int core0_main(void) {
   z80_safe_startup();
   reset_was_watchdog = watchdog_caused_reboot();
   reset_fault = z80_io_trap_take_reset_fault();
-  set_sys_clock_pll(1200000000, 5, 2);
+  set_sys_clock_pll(SYSTEM_CLOCK_HZ * 10u, 5, 2);
   z80_terminal_queue_init();
   queue_init(&control_commands, sizeof(uint16_t), 4);
   z80_usb_console_prepare();
@@ -631,7 +636,7 @@ int core0_main(void) {
       __atomic_load_n(&core1_ready, __ATOMIC_ACQUIRE) != 1) {
     z80_cpu_fail_closed();
     startup_failed = true;
-    boot_failure = !clock_ready ? "expected 120 MHz supervisor clock"
+    boot_failure = !clock_ready ? "supervisor clock mismatch"
                                : "core 1 USB/flash-safe initialization";
     while (true) {
       printf("FAIL: %s; CPU held reset\n", boot_failure);

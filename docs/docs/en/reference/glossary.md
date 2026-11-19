@@ -66,7 +66,7 @@ means it is safe to connect that node to an arbitrary supply.
 | --- | --- | --- |
 | GPIO | General-purpose input/output | Individually programmable Pico pins used for clocks, controls, buses, and status. |
 | PWM | Pulse-width modulation hardware | Pico peripheral generating the Z80 clock in non-PIO builds. |
-| PIO | Programmable I/O hardware in the RP2350 | In Phases 9 and 10, PIO0 generates the 20 MHz Z80 clock and the status OLED/speaker I2C; PIO1 completes every Z80 I/O cycle, including SRAM bank selects. |
+| PIO | Programmable I/O hardware in the RP2350 | In Phases 9 and 10, PIO0 generates the selected Z80 clock and the status OLED/speaker I2C; PIO1 completes every Z80 I/O cycle, including SRAM bank selects. |
 | SIO | Single-cycle I/O block in the RP2350 | Direct Pico GPIO hardware used for static levels and manual clock stepping; not Z80 serial I/O. |
 | IRQ | Interrupt request | Hardware event that diverts Pico execution to the I/O trap handler. |
 | ISR / handler | Interrupt service routine | Time-critical Pico function that freezes and services a trapped Z80 cycle. |

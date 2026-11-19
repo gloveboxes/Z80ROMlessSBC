@@ -107,7 +107,10 @@ void __not_in_flash_func(z80_banked_pio_clock_resume)(void) {
 }
 
 bool z80_banked_pio_clock_start(uint32_t hz) {
-  if (!allocated || hz != 20000000u || clock_get_hz(clk_sys) != 120000000u)
+  uint32_t system_hz = clock_get_hz(clk_sys);
+  if (!allocated ||
+      !((hz == 20000000u && system_hz == 120000000u) ||
+        (hz == 26000000u && system_hz == 156000000u)))
     return false;
   z80_clock_prepare_stepping();
   busy_wait_us_32(1);
@@ -266,7 +269,9 @@ static bool allocate_engine(void) {
     return true;
   /* The clock owns PIO0 IRQ flags 1..2 (the status OLED's I2C uses none) and
    * the engine fills PIO1's instruction store, so PIO1 is not shared. */
-  if (clock_get_hz(clk_sys) != 120000000u || !block_free(io_engine) ||
+  uint32_t system_hz = clock_get_hz(clk_sys);
+  if ((system_hz != 120000000u && system_hz != 156000000u) ||
+      !block_free(io_engine) ||
       !pio_can_add_program(clock_engine, &banked_clock_program) ||
       !pio_can_add_program(io_engine, &banked_io_program) ||
       irq_get_exclusive_handler(PIO1_IRQ_0) != NULL ||

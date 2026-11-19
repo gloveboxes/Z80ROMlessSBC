@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1324" viewBox="0 0 1280 1324" role="img" aria-labelledby="title description">
   <title id="title">Z80 ROMless SBC: system architecture</title>
-  <desc id="description">Phase 10 architecture. A USB serial terminal, a browser terminal over Wi-Fi and internet services connect to core 1 of a Raspberry Pi Pico 2 W, which owns USB, networking, disk writes and saved settings. Bounded queues and the 4 MiB onboard flash sit between the two cores. Core 0 loads the Z80, generates its 20 MHz clock, completes every Z80 I/O cycle with PIO, and services the status OLED and speaker over I2C. Buffers and fixed logic translate between the 3.3 V Pico and the 5 V Z80. The Z80 alone addresses and writes the 128 KiB SRAM, which holds two 64 KiB banks; the Pico never drives the memory bus. Boot has four steps: validate the boot image in flash, feed the Z80 instructions that write its own SRAM, read every byte back for comparison, then reset and run CP/M from SRAM.</desc>
+  <desc id="description">Phase 10 architecture. A USB serial terminal, a browser terminal over Wi-Fi and internet services connect to core 1 of a Raspberry Pi Pico 2 W, which owns USB, networking, disk writes and saved settings. Bounded queues and the 4 MiB onboard flash sit between the two cores. Core 0 loads the Z80, generates its selected 20 or 26 MHz clock, completes every Z80 I/O cycle with PIO, and services the status OLED and speaker over I2C. Buffers and fixed logic translate between the 3.3 V Pico and the 5 V Z80. The Z80 alone addresses and writes the 128 KiB SRAM, which holds two 64 KiB banks; the Pico never drives the memory bus. Boot has four steps: validate the boot image in flash, feed the Z80 instructions that write its own SRAM, read every byte back for comparison, then reset and run CP/M from SRAM.</desc>
   <defs>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #162b45; }
@@ -87,12 +87,12 @@
 
   <rect x="116" y="603" width="1100" height="110" rx="14" fill="#edf4ff" stroke="#b5cef2" stroke-width="2"/>
   <text x="138" y="637" class="heading blue">Core 0 · Z80 real-time control</text>
-  <text x="138" y="667" class="body">ROMless boot loader  ·  20 MHz Z80 clock  ·  PIO completes every Z80 IN and OUT cycle</text>
+  <text x="138" y="667" class="body">ROMless boot loader  ·  20 or 26 MHz Z80 clock  ·  PIO completes every Z80 IN and OUT cycle</text>
   <text x="138" y="694" class="body">Virtual ports for console, disk, services, timers and sound  ·  Status display</text>
 
   <!-- Board hardware: only buffered signals cross between the Pico and the Z80. -->
   <path d="M200 713V797" class="clock" marker-end="url(#orange-arrow)"/>
-  <text x="214" y="774" class="small orange">20 MHz clock</text>
+  <text x="214" y="774" class="small orange">20 or 26 MHz clock</text>
   <path d="M520 713V797" class="io" marker-start="url(#blue-arrow)" marker-end="url(#blue-arrow)"/>
   <text x="534" y="774" class="small blue">Boot instructions, I/O data, control</text>
   <path d="M1060 713V797" class="network" marker-start="url(#teal-arrow)" marker-end="url(#teal-arrow)"/>

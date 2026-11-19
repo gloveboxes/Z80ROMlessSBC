@@ -2,8 +2,9 @@
 
 The project breadboard has already demonstrated 20 MHz operation. See the
 [20 MHz oscilloscope measurement](../hardware/oscilloscope.md#20-mhz-no-io-clock-measurement)
-for the recorded clock evidence and capture procedure. Phases 9 and 10 use
-this 20 MHz configuration after SRAM loading and verification.
+for the recorded clock evidence and capture procedure. Phase 9 and the 20 MHz
+Phase 10 target use that configuration after SRAM loading and verification.
+The 26 MHz Phase 10 target requires separate clock and receive-pin measurements.
 
 Additional frequency testing is optional. Complete the normal phase tests;
 use this check if you change the wiring, components, or clock configuration,

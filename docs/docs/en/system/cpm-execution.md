@@ -116,7 +116,7 @@ Only `IN`/`OUT` reach the Pico; normal memory cycles access SRAM directly with t
 | Term | Meaning |
 | --- | --- |
 | PIO block | A programmable I/O peripheral. The RP2350 has three: PIO0, PIO1 and PIO2. Each has 32 words of instruction memory shared by its state machines. |
-| State machine (SM) | A tiny independent processor inside a block (four per block). It executes one PIO instruction per system clock: 8.33 ns at the 120 MHz supervisor clock, so its timing is exact and repeatable. |
+| State machine (SM) | A tiny independent processor inside a block (four per block). It executes one PIO instruction per system clock: 8.33 ns at 120 MHz or 6.41 ns at 156 MHz. |
 | Scratch and shift registers | Each SM has X and Y scratch registers, an output shift register (OSR) for data going to pins, and an input shift register (ISR) for data read from pins. |
 | Pin mappings | Each SM is configured with windows of GPIOs: `IN` reads from them, `OUT` and `SET` drive them, *side-set* drives a pin in the same instruction as other work, and `JMP PIN` branches on one pin. |
 | FIFOs | Two four-word queues per SM. The SM *pushes* to the RX FIFO for the ARM cores to read; the ARM cores put words in the TX FIFO for the SM to *pull*. *Autopush* pushes the ISR automatically when it is full. |
@@ -126,7 +126,7 @@ Only `IN`/`OUT` reach the Pico; normal memory cycles access SRAM directly with t
 
 | Block | Program | Role |
 | --- | --- | --- |
-| PIO0 | `banked_clock`, 4 words | Generates the 20 MHz Z80 clock (3 ticks HIGH, 3 LOW) on GP2. It stops in a LOW phase whenever PIO0 IRQ flag 1 (I/O hold) or flag 2 (core-0 hold) is set. It shares PIO0 with the status OLED's I²C program. |
+| PIO0 | `banked_clock`, 4 words | Generates the selected 20 or 26 MHz Z80 clock (3 ticks HIGH, 3 LOW) on GP2. It stops in a LOW phase whenever PIO0 IRQ flag 1 (I/O hold) or flag 2 (core-0 hold) is set. It shares PIO0 with the status OLED's I²C program. |
 | PIO1 | `banked_io`, 29 words | The I/O engine. Claimed exclusively; it recognises, completes and times every Z80 `IN` and `OUT`, and drives the data bus, buffer enables, WAIT release and SRAM bank select (A16). |
 | PIO2 | (not used by the Z80) | Left for the CYW43 Wi-Fi driver, whose SPI bus claims the highest free PIO block. |
 
@@ -189,7 +189,7 @@ After the reply, PIO runs exactly two clocks: wait release, then T3's falling-ed
 
 | Owner | Responsibility |
 | --- | --- |
-| PIO0 + PIO1 | All Z80 bus timing: the 20 MHz clock, cycle detection, buffer enables, data drive and sampling, WAIT# release and A16 bank select |
+| PIO0 + PIO1 | All Z80 bus timing: the selected clock, cycle detection, buffer enables, data drive and sampling, WAIT# release and A16 bank select |
 | Core 0 | The Z80's supervisor and the device logic behind its I/O ports |
 | Core 1 | USB, Wi-Fi and network services, the web terminal, flash programming and the disk read-ahead |
 
@@ -219,7 +219,7 @@ See [boot and flash sequencing](#boot-warm-boot-and-flash-commits). Slow stepped
 
 ### Why it is fast
 
-PIO steps resolve at 8.33 ns with no software timing delays. Reported core-0 device work costs about 1 µs per IN and 1.2-1.3 µs per OUT, excluding IRQ entry/exit; the measured 20 MHz workload polls 225,000-266,000 INs/s. Queued OUTs and PIO-only bank switching avoid waiting for ARM work when FIFO space is available. Core-1 workers use bounded queues/mailboxes.
+PIO steps resolve at 8.33 ns for 20 MHz or 6.41 ns for 26 MHz, with no software timing delays. Reported core-0 device work costs about 1 µs per IN and 1.2-1.3 µs per OUT, excluding IRQ entry/exit; the measured 20 MHz workload polls 225,000-266,000 INs/s. Queued OUTs and PIO-only bank switching avoid waiting for ARM work when FIFO space is available. Core-1 workers use bounded queues/mailboxes.
 
 **Ctrl-] s** reports `[pio]` engine state, `[iolat]` handler cost and `[disk]` read-ahead hits. These measurements are workload-specific, not qualification of every network/storage combination.
 

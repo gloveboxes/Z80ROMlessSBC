@@ -1,13 +1,13 @@
-add_library(z80_flash_disk_20mhz STATIC
+add_library(z80_flash_disk_pio STATIC
   ../common/disk_device.c
   ../common/flash_backend.c
   ../common/environment_store.c
 )
-target_include_directories(z80_flash_disk_20mhz PUBLIC
+target_include_directories(z80_flash_disk_pio PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/../common/include)
-target_compile_options(z80_flash_disk_20mhz PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_flash_disk_20mhz PUBLIC
-  z80_runtime_20mhz pico_flash pico_multicore pico_util hardware_flash
+target_compile_options(z80_flash_disk_pio PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(z80_flash_disk_pio PUBLIC
+  z80_runtime_pio pico_flash pico_multicore pico_util hardware_flash
   hardware_watchdog)
 
 set_source_files_properties(core0.c core1.c core_coordination.c status_report.c
@@ -17,7 +17,7 @@ include(disk_diagnostic_build.cmake)
 foreach(stage09_target IN ITEMS
     z80_stage09_flash_storage z80_stage09_cpm_loader)
   add_z80_stage(${stage09_target} main.c
-    z80_io_services z80_flash_disk_20mhz z80_terminal_queue pico_multicore
+    z80_io_services z80_flash_disk_pio z80_terminal_queue pico_multicore
     pico_cyw43_arch_none)
   target_sources(${stage09_target} PRIVATE core0.c core1.c core_coordination.c
     status_report.c ansi_input.c usb_console.c "${diagnostic_header}"

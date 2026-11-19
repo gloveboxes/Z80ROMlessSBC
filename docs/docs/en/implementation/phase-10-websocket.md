@@ -8,7 +8,9 @@
 <p data-checklist-status role="status" aria-live="polite"></p>
 
 - <input type="checkbox" data-checklist-id="prerequisite" aria-label="Phase 9 passed"> **Start here:** complete the [Phase 9 automatic CP/M loader](phase-9-flash-storage.md).
-- **Unchanged:** 120 MHz Pico clock, 20 MHz scope-measured Z80 clock, BIOS and disk layout.
+- **Clocks:** choose 120 MHz Pico / 20 MHz Z80 or 156 MHz Pico / 26 MHz Z80.
+  Both use the same PIO I/O engine, BIOS and disk layout. The 26 MHz target
+  requires receive-pin timing qualification.
 - **Hardware:** onboard Wi-Fi, the [3.3 V SSD1315 status OLED](#ssd1315-status-oled)
   and optional [ATtiny85 speaker](#attiny85-speaker). PCB changes remain deferred.
 
@@ -29,7 +31,8 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
 
 | Update | Exact task name | What changes |
 | --- | --- | --- |
-| Firmware | **Build and flash Pico - Phase 10 firmware** | Preserves disks and ENV settings |
+| 20 MHz firmware | **Build and flash Pico - Phase 10 20 MHz firmware** | Preserves disks and ENV settings |
+| 26 MHz firmware | **Build and flash Pico - Phase 10 26 MHz firmware** | Preserves disks and ENV settings |
 | CP/M system | **Build and flash Pico - CP/M system and Drive A** | Rebuilds CP/M; replaces boot package and Drive A; preserves firmware, B-D and ENV |
 | All disks | **Flash Pico - All disks (A-D)** | Uses `src/disks/native/`, matching the emulator; rebuilds A's system and replaces boot package and A-D, including D's database; preserves firmware and ENV |
 | CP/M system disk | **Flash Pico - Drive A** | Replaces A with a regenerated native image; checks boot compatibility |
@@ -55,10 +58,11 @@ Open the Command Palette, run **Tasks: Run Task**, then choose:
     ```sh
     git submodule update --init --recursive
     cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w
-    cmake --build build --target z80_stage10_websocket_terminal -j
+    cmake --build build --target z80_stage10_websocket_terminal \
+      z80_stage10_websocket_terminal_26mhz -j
     ```
 
-    Output: `build/src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2`.
+    Output: one UF2 per target in `build/src/stage10_websocket_terminal/`.
     These commands build only; they do not deploy. Flash verification proves
     written bytes, not a successful CP/M boot.
 
@@ -558,7 +562,7 @@ For service-specific setup and errors, see [chat](../system/io-ports.md#chat-app
     1. Initialize safe GPIOs and console/control queues.
     2. Start core 1; initialize its alarm pool, USB and flash lockout.
     3. With RESET held, recover the journal, load SRAM and independently verify it.
-    4. Initialize storage/service queues before enabling workers; enable the trap and 20 MHz run clock.
+    4. Initialize storage/service queues before enabling workers; enable the trap and selected run clock.
 
     Boot/core-1 failure leaves RESET asserted. Core 0 continually services flash
     ownership requests. Stop drains disk/service/provisioning work before holding

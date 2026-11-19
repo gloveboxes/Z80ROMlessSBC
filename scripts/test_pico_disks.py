@@ -89,7 +89,7 @@ class DiskFlashTaskTests(unittest.TestCase):
     def test_full_provision_builds_firmware_natively_then_images_in_container(self) -> None:
         tasks = json.loads((REPO_ROOT / ".vscode/tasks.json").read_text())["tasks"]
         task = next(t for t in tasks if t["label"] ==
-                    "Build and flash Pico - Phase 10 firmware and disks")
+                    "Build and flash Pico - Phase 10 20 MHz firmware and disks")
         command = task["command"]
         stages = [shlex.split(stage.strip()) for stage in command.split("&&")]
         self.assertIn("${input:picoProvisionSafety}", command)

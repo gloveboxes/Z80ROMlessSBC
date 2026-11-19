@@ -321,7 +321,8 @@ target_compile_features(usb_console_test PRIVATE c_std_11)
 target_compile_options(usb_console_test PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME usb_core1_console COMMAND usb_console_test)
 set_tests_properties(usb_core1_console PROPERTIES TIMEOUT 5)
-foreach(stage09_test_target IN ITEMS stage09_test stage09_autoboot_test stage10_test)
+foreach(stage09_test_target IN ITEMS
+    stage09_test stage09_autoboot_test stage10_test stage10_26mhz_test)
   add_executable(${stage09_test_target} stage09_test.c ../terminal_queue.c
     ../../stage09_flash_storage/ansi_input.c "${diagnostic_header}")
   target_include_directories(${stage09_test_target} PRIVATE fakes ../include
@@ -336,7 +337,11 @@ endforeach()
 target_compile_definitions(stage09_autoboot_test PRIVATE Z80_STAGE09_AUTOBOOT=1)
 target_compile_definitions(stage10_test PRIVATE
   Z80_STAGE09_AUTOBOOT=1 Z80_STAGE10_NETWORK=1)
+target_compile_definitions(stage10_26mhz_test PRIVATE
+  Z80_STAGE09_AUTOBOOT=1 Z80_STAGE10_NETWORK=1 Z80_STAGE10_26MHZ=1
+  Z80_BANKED_PIO=1)
 add_test(NAME stage10_autoboot_and_routing COMMAND stage10_test)
+add_test(NAME stage10_26mhz_clock_selection COMMAND stage10_26mhz_test)
 add_test(NAME stage09_usb_cpm COMMAND stage09_test)
 add_test(NAME stage09_autoboot_cpm COMMAND stage09_autoboot_test)
 set_tests_properties(stage09_usb_cpm stage09_autoboot_cpm PROPERTIES TIMEOUT 5)

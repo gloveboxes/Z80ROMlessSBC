@@ -7,6 +7,14 @@
 #include "pico/util/queue.h"
 #include "hardware/flash.h"
 
+#if defined(Z80_STAGE10_26MHZ)
+#define EXPECTED_RUN_CLOCK_HZ 26000000u
+#define EXPECTED_SYSTEM_CLOCK_HZ 156000000u
+#else
+#define EXPECTED_RUN_CLOCK_HZ 20000000u
+#define EXPECTED_SYSTEM_CLOCK_HZ 120000000u
+#endif
+
 static int firmware_printf(const char *format, ...);
 static unsigned fake_core;
 static bool connected;
@@ -258,10 +266,12 @@ bool queue_try_remove(queue_t *queue, void *item) {
 unsigned queue_get_level(queue_t *queue) { return queue->count; }
 unsigned z80_memory_bank_status(void) { return 0xB4; }
 z80_banked_pio_latency_t z80_banked_pio_take_latency(void) {
-  /* 3 INs totalling 3600 cycles (10 us each at 120 MHz), max 1440. */
+  /* Three 10 us INs and four 1 us OUTs at the selected system clock. */
+  uint32_t mhz = EXPECTED_SYSTEM_CLOCK_HZ / 1000000u;
   return (z80_banked_pio_latency_t){
-      .available = true, .in_count = 3, .in_cycles = 3600, .in_max_cycles = 1440,
-      .out_count = 4, .out_cycles = 480, .out_max_cycles = 240};
+      .available = true, .in_count = 3, .in_cycles = 30u * mhz,
+      .in_max_cycles = 12u * mhz, .out_count = 4,
+      .out_cycles = 4u * mhz, .out_max_cycles = 2u * mhz};
 }
 z80_banked_pio_status_t z80_banked_pio_status(void) {
   return (z80_banked_pio_status_t){.active = true, .running = true};
@@ -348,9 +358,12 @@ bool z80_cpu_load_and_verify(const uint8_t *image, uint32_t length) {
   return load_ok;
 }
 uint32_t z80_clock_get_hz(void) { return requested_clock; }
-uint32_t clock_get_hz(uint clock) { assert(clock == clk_sys); return 120000000; }
+uint32_t clock_get_hz(uint clock) {
+  assert(clock == clk_sys);
+  return EXPECTED_SYSTEM_CLOCK_HZ;
+}
 void set_sys_clock_pll(uint32_t vco, uint d1, uint d2) {
-  assert(vco == 1200000000 && d1 == 5 && d2 == 2);
+  assert(vco == EXPECTED_SYSTEM_CLOCK_HZ * 10u && d1 == 5 && d2 == 2);
 }
 bool z80_io_trap_enable(z80_io_read_handler_t read_handler,
                         z80_io_write_handler_t write_handler, void *context) {
@@ -528,7 +541,7 @@ static void test_control_and_terminal(void) {
   assert(load_calls == 1 && image_verified && held && !core_launches);
   command('g');
   assert(running && !held && start_calls == 1 && workers_ready);
-  assert(requested_clock == 20000000);
+  assert(requested_clock == EXPECTED_RUN_CLOCK_HZ);
 #ifdef Z80_STAGE10_NETWORK
   assert(speaker_gate == z80_speaker_read_ready);
 #endif
@@ -1276,7 +1289,7 @@ static void test_disk_diagnostic(void) {
   command('l');
   command('t');
   assert(diagnostic_active && running && !image_verified && !core_launches);
-  assert(requested_clock == 20000000);
+  assert(requested_clock == EXPECTED_RUN_CLOCK_HZ);
   test_flash[Z80_FLASH_DISK_OFFSET] = 0xA5;
   virtual_write(6, 0xA4, NULL);
   service_run();
@@ -1398,7 +1411,8 @@ static void test_startup_without_usb(void) {
     return;
   }
   assert(load_calls == 1 && start_calls == 1 && core_launches == 1);
-  assert(running && image_verified && !held && requested_clock == 20000000);
+  assert(running && image_verified && !held &&
+         requested_clock == EXPECTED_RUN_CLOCK_HZ);
   assert(output_length == 0);
   input_length = 0;
   static const char banner[] = "64K CP/M 2.2\r\nA>";

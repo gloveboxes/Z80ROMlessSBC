@@ -39,22 +39,22 @@ target_link_libraries(z80_io_trap PUBLIC z80_cpu hardware_watchdog)
 target_compile_options(z80_io_trap PRIVATE -Wall -Wextra -Werror)
 
 # Stage 9/10 run-time chain: the PIO0 clock and PIO1 I/O engine are the only
-# 20 MHz clock and I/O entry.
+# 20 or 26 MHz run clock and I/O entry.
 # SIO stepping remains for reset and the assisted SRAM loader.
-add_library(z80_runtime_20mhz STATIC
+add_library(z80_runtime_pio STATIC
   common/clock.c
   common/sram.c
   common/cpu.c
   common/io_trap.c
   common/banked_pio.c
 )
-pico_generate_pio_header(z80_runtime_20mhz
+pico_generate_pio_header(z80_runtime_pio
   ${CMAKE_CURRENT_LIST_DIR}/common/banked_io.pio)
-target_include_directories(z80_runtime_20mhz PUBLIC
+target_include_directories(z80_runtime_pio PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/common/include)
-target_compile_definitions(z80_runtime_20mhz PUBLIC Z80_BANKED_PIO=1)
-target_compile_options(z80_runtime_20mhz PRIVATE -Wall -Wextra -Werror)
-target_link_libraries(z80_runtime_20mhz PUBLIC
+target_compile_definitions(z80_runtime_pio PUBLIC Z80_BANKED_PIO=1)
+target_compile_options(z80_runtime_pio PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(z80_runtime_pio PUBLIC
   z80_bus hardware_pio hardware_irq hardware_sync hardware_clocks
   hardware_watchdog)
 

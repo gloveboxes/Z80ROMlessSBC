@@ -1,7 +1,7 @@
-; Phase 9/10 Z80 clock and I/O engine; sysclk = 120 MHz, divider 1.
+; Phase 9/10 Z80 clock and I/O engine; sysclk = 120 or 156 MHz, divider 1.
 ;
 ; PIO0 banked_clock: SET = GP2 (CLK); wrap clock_start..clock_end gives
-; 20 MHz (3 HIGH + 3 LOW ticks). It stops in a LOW phase while PIO0 IRQ 1
+; 20 or 26 MHz (3 HIGH + 3 LOW ticks). It stops in a LOW phase while PIO0 IRQ 1
 ; (I/O hold, raised by PIO1 with IRQ PREV) or IRQ 2 (core-0 CPU hold) is set.
 ; It shares PIO0 with the status OLED's I2C program, which uses no IRQ flags.
 ;

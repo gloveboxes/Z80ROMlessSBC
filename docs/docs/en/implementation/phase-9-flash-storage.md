@@ -64,8 +64,8 @@ USB error/status first. Do not bypass verification merely to get a prompt.
     50% configured duty** (`120 MHz / 6`). The Z80 clock frequency has been
     scope-measured at 20 MHz on the project prototype. This does not establish
     CP/M, disk-I/O or receiving-pin timing margins. I/O traps and flash writes
-    still pause execution. Phase 10 inherits this tested automatic-loader
-    application and its clock settings; combined network operation still
+    still pause execution. Phase 10 uses this automatic-loader application
+    with a selected 20 or 26 MHz run clock; combined network operation still
     requires acceptance testing.
 
 ## Automatic CP/M loader

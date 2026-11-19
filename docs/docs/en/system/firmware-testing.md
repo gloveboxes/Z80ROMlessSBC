@@ -172,7 +172,8 @@ cmake -S . -B build/pico -G Ninja \
   -DPICO_SDK_PATH="$HOME/GitHub/pico/pico-sdk" \
   -DPython3_EXECUTABLE="$(command -v "$PYTHON")"
 cmake --build build/pico \
-  --target z80_stage09_cpm_images z80_stage09_cpm_loader_images z80_cpm_images
+  --target z80_stage09_cpm_images z80_stage09_cpm_loader_images z80_cpm_images \
+  z80_stage10_websocket_terminal_26mhz
 ```
 
 This builds both Phase 9 variants and Phase 10 against the real SDK, without
@@ -183,12 +184,14 @@ they are not build arguments.
 | --- | --- |
 | `src/stage09_flash_storage/z80_stage09_flash_storage.uf2` | Deployable Phase 9 Pico firmware |
 | `src/stage09_flash_storage/z80_stage09_cpm_loader.uf2` | Automatic Phase 9 loader, independent of USB connection |
-| `src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2` | Deployable Phase 10 Pico firmware |
+| `src/stage10_websocket_terminal/z80_stage10_websocket_terminal.uf2` | Phase 10, 20 MHz Z80 firmware |
+| `src/stage10_websocket_terminal/z80_stage10_websocket_terminal_26mhz.uf2` | Phase 10, 26 MHz Z80 firmware |
 | `cpm-stage09/` | Matching Phase 9 boot package, disks, manifest and complete flash image |
 | `cpm-stage09-loader/` | Matching automatic-loader provisioning set |
 | `cpm/` | Matching Phase 10 provisioning set |
 
-Both phases run the Z80 at 20 MHz after SRAM loading/verification. Phase 9
+Phase 9 runs the Z80 at 20 MHz; Phase 10 selects 20 or 26 MHz after SRAM
+loading/verification. Phase 9
 starts on command or automatically with its loader variant; Phase 10 starts
 automatically. The linker reserves flash above `0x1D0000` for storage.
 

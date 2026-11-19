@@ -244,8 +244,8 @@ A mismatch, timeout, unexpected control, loader error, aborted run, disconnect
 or watchdog reboot fails the run. Immediate `x` abort and fail-closed
 reset/isolation remain available. The CPU's 20 MHz grade is not a
 complete-system rating; a pass is functional screening evidence, not analogue
-timing qualification. Phases 9 and 10 run at 20 MHz from the PIO0 clock, not
-this PWM chain.
+timing qualification. Phase 9 and the two Phase 10 clock targets use PIO0,
+not this PWM chain.
 
 #### One-Hour 20 MHz Arithmetic and SRAM Soak
 

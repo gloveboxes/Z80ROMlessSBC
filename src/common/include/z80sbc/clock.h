@@ -6,9 +6,9 @@
 
 enum {
 #if defined(Z80_BANKED_PIO)
-  /* PIO0 generates exactly 20 MHz from the 120 MHz supervisor clock. */
+  /* PIO0 generates 20 MHz at 120 MHz or 26 MHz at 156 MHz. */
   Z80_CLOCK_MIN_HZ = 20000000,
-  Z80_CLOCK_MAX_HZ = 20000000,
+  Z80_CLOCK_MAX_HZ = 26000000,
 #elif defined(Z80_CLOCK_20MHZ)
   Z80_CLOCK_MIN_HZ = 10,
   Z80_CLOCK_MAX_HZ = 20000000,
@@ -18,7 +18,7 @@ enum {
 #endif
 };
 
-// PIO builds accept only 20 MHz; PWM builds select the fastest stable 50%
+// PIO builds accept 20 or 26 MHz; PWM builds select the fastest stable 50%
 // rate not exceeding hz.
 bool z80_clock_set_hz(uint32_t hz);
 uint32_t z80_clock_get_hz(void);

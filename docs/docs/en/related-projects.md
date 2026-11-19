@@ -105,7 +105,8 @@ and complete its tests before moving on to Phase 10.
    **Run interactive CP/M emulator** to use the copied disks. The launcher
    validates them and patches A with this checkout's CP/M, BDOS, BIOS and AUTORUN.
    B-D are copied unchanged. No import step is needed.
-2. For hardware deployment, use **Build and flash Pico - Phase 10 firmware** from the same checkout
+2. For hardware deployment, use a **Build and flash Pico - Phase 10 20 MHz firmware**
+   or **Build and flash Pico - Phase 10 26 MHz firmware** task from the same checkout
    before flashing the matching CP/M disks and boot package. Firmware-only
    deployment preserves storage.
 3. Choose **Terminal → Run Task** and one of the disk deployment tasks below.

@@ -11,9 +11,10 @@ Firmware targets the breadboard circuit. Match firmware to the installed
 hardware; early walking-output diagnostics require their specified population.
 
 SDK startup uses a 144 MHz system clock and independent 48 MHz USB clock.
-Phases 9/10 switch to 120 MHz before USB initialization and run the Z80 at
-20 MHz after SRAM loading/verification. Other phases retain their own clock
-limits and defaults. See [frequency qualification](../implementation/frequency-qualification.md).
+Phase 9 runs at 120 MHz Pico / 20 MHz Z80. Phase 10 has 120/20 MHz and
+156/26 MHz targets; both use six PIO ticks per Z80 cycle. The 26 MHz target
+exceeds the RP2350's 150 MHz system-clock rating and the Z84C0020PEC's
+20 MHz rating. See [frequency qualification](../implementation/frequency-qualification.md).
 
 Phases 9 and 10 generate the Z80 clock and complete every I/O cycle in PIO.
 Without PIO resources, CP/M start fails closed. Without verified bank
@@ -39,7 +40,8 @@ installed circuit. Phase 0 is a checklist with no firmware target.
 | 8 | `src/stage08_virtual_io/` | `z80_stage08_virtual_io` |
 | 9 | `src/stage09_flash_storage/` | `z80_stage09_flash_storage` |
 | 9 automatic loader | `src/stage09_flash_storage/` | `z80_stage09_cpm_loader` |
-| 10 | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal` |
+| 10, 20 MHz | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal` |
+| 10, 26 MHz | `src/stage10_websocket_terminal/` | `z80_stage10_websocket_terminal_26mhz` |
 
 Build the target in the table for your phase. Its UF2 is written to
 `build/src/<source-directory-name>/<target>.uf2`; for example, Phase 3 uses
@@ -80,9 +82,10 @@ Each entry has both **Build Pico - …** (build only) and **Flash Pico - …**
 | Task | Effect |
 | --- | --- |
 | **Build and flash Pico - Phase 9 firmware** | Select Diagnostic or Automatic loader; update firmware only |
-| **Build and flash Pico - Phase 10 firmware** | Update 20 MHz PIO firmware only |
+| **Build and flash Pico - Phase 10 20 MHz firmware** | Update 20 MHz PIO firmware only |
+| **Build and flash Pico - Phase 10 26 MHz firmware** | Update 26 MHz PIO firmware only |
 | **Build and flash Pico - Phase 9 firmware and disks** | Select variant; replace all flash, including disks and ENV |
-| **Build and flash Pico - Phase 10 firmware and disks** | Replace all flash, including disks and ENV |
+| **Build and flash Pico - Phase 10 20 MHz firmware and disks** | Replace all flash, including disks and ENV |
 | **Build and flash Pico - CP/M system and Drive A** | Rebuild and replace matching boot package and Drive A; preserve firmware, B–D, journal, and ENV |
 | **Flash Pico - All disks (A-D)** | Validate `src/disks/native/`, rebuild A's current system, and replace all disks plus matching boot package; preserve firmware and ENV |
 | **Flash Pico - Drive A** | Regenerate native system disk; check installed boot compatibility; replace A only |
@@ -252,7 +255,7 @@ and [device selection and diagnostics](#device-selection-and-diagnostics) below.
 | Firmware only | **Build and flash Pico - Phase 9/10 firmware** | Firmware; preserves CP/M, disks, journal, and ENV |
 | Selected disks | [VS Code disk tasks](#system-and-storage-deployment) | Selected drives only |
 | CP/M assembly | **Build and flash Pico - CP/M system and Drive A** | Matching boot package and Drive A, including its files |
-| Initial provisioning | **Build and flash Pico - Phase 10 firmware and disks** | Entire flash, including disks and ENV |
+| Initial provisioning | **Build and flash Pico - Phase 10 20 MHz firmware and disks** | Entire flash, including disks and ENV |
 
 Selective storage updates require matching `z80sbc-storage:` firmware metadata
 and compatible BIOS geometry. For an existing 512 KiB installation without
@@ -262,7 +265,7 @@ Updating the boot package alone leaves stale system records on Drive A.
 ### Full provisioning
 
 Save required disks/settings first; full provisioning replaces all 4 MiB
-without backups. Use **Build and flash Pico - Phase 10 firmware and disks**,
+without backups. Use **Build and flash Pico - Phase 10 20 MHz firmware and disks**,
 or its Phase 9 equivalent (select Diagnostic or Automatic loader).
 Follow the task’s device-selection and power prompts.
 
@@ -284,17 +287,25 @@ full provisioning replaces them.
 
 ### Phase 10 PIO banking
 
-**Build and flash Pico - Phase 10 firmware** includes the board-validated
-PIO banking path at 20 MHz. It writes firmware only and preserves the matching
-CP/M boot package, disks and ENV. To build without flashing:
+The Phase 10 targets use one PIO banking path and differ only in run clock:
+
+| Target | Pico `clk_sys` | Z80 CLK | Nominal HIGH/LOW |
+| --- | ---: | ---: | ---: |
+| `z80_stage10_websocket_terminal` | 120 MHz | 20 MHz | 25 ns |
+| `z80_stage10_websocket_terminal_26mhz` | 156 MHz | 26 MHz | 19.23 ns |
+
+Both firmware-only tasks preserve the CP/M boot package, disks and ENV. Build
+both without flashing:
 
 ```sh
-.venv-flash/bin/python scripts/pico_build.py --build-dir build \
-  --target z80_stage10_websocket_terminal
+cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w
+cmake --build build --target z80_stage10_websocket_terminal \
+  z80_stage10_websocket_terminal_26mhz -j
 ```
 
-Phases 9 and 10 always link the PIO 20 MHz run-time library
-(`z80_runtime_20mhz`); there is no PWM or software-trap build option for them.
+Phases 9 and 10 link `z80_runtime_pio`; there is no PWM or software-trap
+build option for them. The 26 MHz target needs receive-pin timing and
+functional qualification on each PCB.
 
 See the [board verification notes](../hardware/address-interface.md#board-verification-and-recovery).
 
